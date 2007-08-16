@@ -301,7 +301,9 @@ class MultiTableCopy:
             no access to any tables other than the newly created holding
             table.  The clause can reference the holding table under the name
             "holding."  Any foreign keys from `joins` will still contain the
-            values they had in `source-table`.
+            values they had in `source-table`, but for each "x" of these
+            foreign keys, the holding table will have a column "new_x" that
+            holds the redirected foreign key.
         :param prepare_batch: a callback that is called before each batch of
             rows is poured, within the same transaction that pours those rows.
             It takes as arguments the holding table's name; the source table's

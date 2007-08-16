@@ -1332,7 +1332,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             FROM SectionSelection AS ss WHERE ss.distrorelease = %s
             ''' % sqlvalues(self.id, self.parentseries.id))
 
-    def _copyActiveTranslationsToNewRelease(self, ztm, copier, logger):
+    def _copyActiveTranslationsToNewRelease(
+        self, transaction, copier, logger):
         """We're a new series; inherit translations from parent.
 
         This method uses MultiTableCopy to copy data.
@@ -1437,23 +1438,23 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         copier.extract('POSubmission', ['POMsgSet'], 'active OR published')
 
         # Now pour the holding tables back into the originals
-        copier.pour(ztm)
+        copier.pour(transaction)
 
-    def _copyActiveTranslationsAsUpdate(self, ztm, logger):
+    def _copyActiveTranslationsAsUpdate(self, transaction, logger):
         """Receive active, updated translations from parent series."""
         full_name = "%s_%s" % (self.distribution.name, self.name)
         tables = ['POFile', 'POMsgSet', 'POSubmission']
         copier = MultiTableCopy(full_name, tables, restartable=False)
 
         drop_tables(cursor(), [
-            'equiv_template', 'equiv_potmsgset', 'inert_pomsgsets',
-            'changed_pofiles'])
+            'temp_equiv_template', 'temp_equiv_potmsgset',
+            'temp_inert_pomsgsets', 'temp_changed_pofiles'])
 
         # Map parent POTemplates to corresponding POTemplates in self.  This
         # will come in handy later.
         cur = cursor()
         cur.execute("""
-            CREATE TEMP TABLE equiv_template AS
+            CREATE TEMP TABLE temp_equiv_template AS
             SELECT DISTINCT pt1.id AS id, pt2.id AS new_id
             FROM POTemplate pt1, POTemplate pt2
             WHERE
@@ -1463,30 +1464,31 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 pt2.distrorelease = %s
             """ % sqlvalues(self.parentseries, self))
         cur.execute(
-            "CREATE UNIQUE INDEX equiv_template_pkey ON equiv_template(id)")
-        cur.execute("""
-            CREATE UNIQUE INDEX equiv_template_new_id
-            ON equiv_template(new_id)""")
+            "CREATE UNIQUE INDEX temp_equiv_template_pkey "
+            "ON temp_equiv_template(id)")
+        cur.execute(
+            "CREATE UNIQUE INDEX temp_equiv_template_new_id "
+            "ON temp_equiv_template(new_id)")
 
         # Map parent POTMsgSets to corresponding POTMsgSets in self.
         cur.execute("""
-            CREATE TEMP TABLE equiv_potmsgset AS
+            CREATE TEMP TABLE temp_equiv_potmsgset AS
             SELECT DISTINCT ptms1.id AS id, ptms2.id AS new_id
-            FROM POTMsgSet ptms1, POTMsgSet ptms2, equiv_template
+            FROM POTMsgSet ptms1, POTMsgSet ptms2, temp_equiv_template
             WHERE
-                ptms1.potemplate = equiv_template.id AND
-                ptms2.potemplate = equiv_template.new_id AND
+                ptms1.potemplate = temp_equiv_template.id AND
+                ptms2.potemplate = temp_equiv_template.new_id AND
                 (ptms1.alternative_msgid = ptms2.alternative_msgid OR
                  (ptms1.alternative_msgid IS NULL AND
                   ptms2.alternative_msgid IS NULL AND
                   ptms1.primemsgid = ptms2.primemsgid))
             """)
         cur.execute(
-            "CREATE UNIQUE INDEX equiv_potmsgset_pkey ON equiv_template(id)")
-        cur.execute("""
-            CREATE UNIQUE INDEX equiv_potmsgset_new_id
-            ON equiv_template(new_id)
-            """)
+            "CREATE UNIQUE INDEX temp_equiv_potmsgset_pkey "
+            "ON temp_equiv_potmsgset(id)")
+        cur.execute(
+            "CREATE UNIQUE INDEX temp_equiv_potmsgset_new_id "
+            "ON temp_equiv_potmsgset(new_id)")
 
         holding_tables = {
             'pofile': copier.getHoldingTableName('POFile'),
@@ -1515,17 +1517,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             extracted, so we assume they are newer and better than what we
             have in our holding table.
             """
+            batch_clause = (
+                "holding.id >= %s AND holding.id < %s"
+                % sqlvalues(start_id, end_id))
             cursor().execute("""
                 DELETE FROM %s AS holding
                 USING POFile pf
-                WHERE
+                WHERE %s AND
                     holding.potemplate = pf.potemplate AND
                     holding.language = pf.language AND
                     COALESCE(holding.variant, ''::text) =
-                        COALESCE(pf.variant, ''::text) AND
-                    holding.id >= %s AND
-                    holding.id < %s
-                """ % (holding_table, quote(start_id), quote(end_id)))
+                        COALESCE(pf.variant, ''::text)
+                """ % (holding_table, batch_clause))
 
         # Extract POFiles from parent whose potemplate has an equivalent in
         # self.  Some of those POFiles will have equivalents in self, in which
@@ -1534,10 +1537,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         pofiles_inert_where = """
             EXISTS (
                 SELECT *
-                FROM equiv_template, POFile
+                FROM temp_equiv_template, POFile
                 WHERE
-                    holding.potemplate = equiv_template.id AND
-                    POFile.potemplate = equiv_template.new_id AND
+                    holding.potemplate = temp_equiv_template.id AND
+                    POFile.potemplate = temp_equiv_template.new_id AND
                     POFile.language = holding.language AND
                     COALESCE(POFile.variant, ''::text) =
                         COALESCE(holding.variant, ''::text)
@@ -1546,10 +1549,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         copier.extract(
             'POFile',
-            where_clause="potemplate = equiv_template.id",
+            where_clause="potemplate = temp_equiv_template.id",
             inert_where=pofiles_inert_where,
             prepare_batch=prepare_pofile_batch,
-            external_joins=['equiv_template'])
+            external_joins=['temp_equiv_template'])
         cur = cursor()
 
         # The new POFiles have their unreviewed_count set to zero.  Also,
@@ -1560,10 +1563,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             UPDATE %(pofile_holding_table)s AS holding
             SET
                 unreviewed_count = 0,
-                potemplate = equiv_template.new_id
-            FROM equiv_template
+                potemplate = temp_equiv_template.new_id
+            FROM temp_equiv_template
             WHERE
-                holding.potemplate = equiv_template.id AND
+                holding.potemplate = temp_equiv_template.id AND
                 holding.new_id IS NOT NULL
             """ % query_parameters)
 
@@ -1577,10 +1580,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         cur.execute("""
             UPDATE %(pofile_holding_table)s AS holding
             SET new_id = pf.id
-            FROM POFile pf, equiv_template
+            FROM POFile pf, temp_equiv_template
             WHERE
-                holding.potemplate = equiv_template.id AND
-                pf.potemplate = equiv_template.new_id AND
+                holding.potemplate = temp_equiv_template.id AND
+                pf.potemplate = temp_equiv_template.new_id AND
                 holding.language = pf.language AND
                 COALESCE(holding.variant, ''::text) =
                     COALESCE(pf.variant, ''::text) AND
@@ -1608,27 +1611,26 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             not exist.  Any such POFiles must have been deleted from their
             holding table after they were extracted.
             """
+            batch_clause = (
+                "holding.id >= %s AND holding.id < %s"
+                % sqlvalues(start_id, end_id))
             cur = cursor()
             cur.execute("""
                 DELETE FROM %s AS holding
                 USING POMsgSet pms
-                WHERE
+                WHERE %s AND
                     holding.potmsgset = pms.potmsgset AND
-                    holding.pofile = pms.pofile AND
-                    holding.id >= %s AND
-                    holding.id < %s
-                """ % (holding_table, quote(start_id), quote(end_id)))
+                    holding.pofile = pms.pofile
+                """ % (holding_table, batch_clause))
             cur.execute("""
                 DELETE FROM %s AS holding
-                WHERE
+                WHERE %s AND
                     NOT EXISTS (
                         SELECT *
                         FROM POFile
                         WHERE holding.pofile = POFile.id
-                        ) AND
-                    holding.id >= %s AND
-                    holding.id < %s
-                """ % (holding_table, quote(start_id), quote(end_id)))
+                        )
+                """ % (holding_table, batch_clause))
 
         # We'll extract POMsgSets that already have equivalents in the child
         # distroseries, to make it easier to copy POSubmissions for them
@@ -1638,11 +1640,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 SELECT *
                 FROM
                     %(pofile_holding_table)s pfh,
-                    equiv_potmsgset,
+                    temp_equiv_potmsgset,
                     POMsgSet pms
                 WHERE
-                    holding.potmsgset = equiv_potmsgset.id AND
-                    equiv_potmsgset.new_id = pms.potmsgset AND
+                    holding.potmsgset = temp_equiv_potmsgset.id AND
+                    temp_equiv_potmsgset.new_id = pms.potmsgset AND
                     holding.pofile = pfh.id AND
                     pfh.new_id = pms.pofile
                 )
@@ -1666,20 +1668,21 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # included POTMsgSet in the copy operation.
         cur.execute("""
             UPDATE %(pomsgset_holding_table)s AS holding
-            SET potmsgset = equiv_potmsgset.new_id
-            FROM equiv_potmsgset
-            WHERE holding.potmsgset = equiv_potmsgset.id
+            SET potmsgset = temp_equiv_potmsgset.new_id
+            FROM temp_equiv_potmsgset
+            WHERE holding.potmsgset = temp_equiv_potmsgset.id
             """ % query_parameters)
 
         # Prepare to remove inert POMsgSets from holding before pouring...
         cur.execute("""
-            CREATE TEMP TABLE inert_pomsgsets AS
+            CREATE TEMP TABLE temp_inert_pomsgsets AS
             SELECT id
             FROM %(pomsgset_holding_table)s
             WHERE new_id IS NULL
             """ % query_parameters)
         cur.execute(
-            "CREATE UNIQUE INDEX inert_pomsgset_idx ON inert_pomsgsets(id)")
+            "CREATE UNIQUE INDEX inert_pomsgset_idx "
+            "ON temp_inert_pomsgsets(id)")
 
         # ...and map new_ids in holding to those of child distroseries'
         # corresponding POMsgSets.
@@ -1705,7 +1708,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 self.transaction_manager = transaction_manager
                 cur = cursor()
 
-                cur.execute("SELECT min(id), max(id) FROM inert_pomsgsets")
+                cur.execute(
+                    "SELECT min(id), max(id) FROM temp_inert_pomsgsets")
                 self.lowest_id, self.highest_id = cur.fetchone()
 
             def isDone(self):
@@ -1723,7 +1727,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 cur = cursor()
                 cur.execute("""
                     SELECT id
-                    FROM inert_pomsgsets
+                    FROM temp_inert_pomsgsets
                     WHERE id >= %s
                     ORDER BY id
                     OFFSET %s
@@ -1745,15 +1749,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                         isupdated = original.isupdated,
                         reviewer = original.reviewer,
                         date_reviewed = original.date_reviewed
-                    FROM %s original, inert_pomsgsets
+                    FROM %s original, temp_inert_pomsgsets
                     WHERE
-                        original.id = inert_pomsgsets.id AND
+                        original.id = temp_inert_pomsgsets.id AND
                         original.new_id = target.id AND
                         target.id = original.new_id AND
                         original.iscomplete AND
                         NOT target.iscomplete AND
-                        inert_pomsgsets.id >= %s AND
-                        inert_pomsgsets.id < %s
+                        temp_inert_pomsgsets.id >= %s AND
+                        temp_inert_pomsgsets.id < %s
                     """ % (
                     self.holding_table, quote(self.lowest_id), quote(next)))
 
@@ -1778,36 +1782,43 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             that do not exist.  Any such POSubmissions must have been deleted
             from their holding table after they were extracted.
             """
+            batch_clause = (
+                "holding.id >= %s AND holding.id < %s"
+                % sqlvalues(start_id, end_id))
             cur = cursor()
             cur.execute("""
                 DELETE FROM %s AS holding
-                USING POSubmission ps
-                WHERE
-                    holding.pomsgset = ps.pomsgset AND
-                    holding.pluralform = ps.pluralform AND
-                    (ps.active OR
-                        holding.potranslation = ps.potranslation) AND
-                    holding.id >= %s AND
-                    holding.id < %s
-                """ % (holding_table, quote(start_id), quote(end_id)))
-            cur.execute("""
-                DELETE FROM %s AS holding
-                WHERE
+                WHERE %s AND
                     NOT EXISTS (
                         SELECT *
                         FROM POMsgSet
                         WHERE holding.pomsgset = POMsgSet.id
-                        ) AND
-                    holding.id >= %s AND
-                    holding.id < %s
-                """ % (holding_table, quote(start_id), quote(end_id)))
+                        )
+                """ % (holding_table, batch_clause))
+            cur.execute("""
+                DELETE FROM %s AS holding
+                USING POSubmission better
+                WHERE %s AND
+                    holding.pomsgset = better.pomsgset AND
+                    holding.pluralform = better.pluralform AND
+                    holding.potranslation = better.potranslation
+                """ % (holding_table, batch_clause))
+            cur.execute("""
+                UPDATE POSubmission AS ps
+                SET active = false
+                FROM %s holding
+                WHERE %s AND
+                    holding.pomsgset = ps.pomsgset AND
+                    holding.pluralform = ps.pluralform AND
+                    ps.active
+                """ % (holding_table, batch_clause))
 
         # Exclude POSubmissions for which an equivalent (potranslation,
-        # pomsgset, pluralform), or we'd be introducing needless duplicates;
-        # don't offer replacements for active submissions, i.e. ones with
-        # active set and the same (pomsgset, pluralform); nor for message sets
-        # that the child has newer submissions for, i.e. ones with the same
-        # (pomsgset, pluralform) but greater datecreated.
+        # pomsgset, pluralform) exists, or we'd be introducing needless
+        # duplicates; don't offer replacements for active submissions, i.e.
+        # ones with active set and the same (pomsgset, pluralform); nor for
+        # message sets that the child has newer submissions for, i.e. ones
+        # with the same (pomsgset, pluralform) but greater datecreated.
         # The MultiTableCopy does not allow us to join with the source table
         # for our extraction condition, so we make these unnecessary rows
         # inert instead, and after extraction, delete them from the holding
@@ -1820,18 +1831,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                     better.pomsgset = holding.new_pomsgset AND
                     better.pluralform = holding.pluralform AND
                     (better.potranslation = holding.potranslation OR
-                     better.active OR
-                     better.datecreated > holding.datecreated)
+                     (better.active AND
+                      better.datecreated >= holding.datecreated))
             )
             """
         copier.extract(
-            'POSubmission', where_clause="active AND NOT published",
-            joins=['POMsgSet'], prepare_batch=prepare_posubmission_batch,
-            inert_where=have_better)
+            'POSubmission', joins=['POMsgSet'],
+            where_clause="active AND NOT published AND pms.iscomplete",
+            external_joins=['POMsgSet pms'],
+            prepare_batch=prepare_posubmission_batch, inert_where=have_better)
         cur = cursor()
-        cur.execute(
-            "DELETE FROM %s WHERE new_id IS NULL"
-                % holding_tables['posubmission'])
 
         # Update existing incomplete POMsgSets that need not be replaced by
         # copies from parent, but whose parents are complete.
@@ -1839,16 +1848,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # algorithm.  We're marking POMsgSets as complete, which really won't
         # be true until after pouring.  Can we close it?  Do something safe?
         # Problem is we need information from a holding table.
-        updater = UpdatePOMsgSets(holding_tables['pomsgset'], ztm)
+        updater = UpdatePOMsgSets(holding_tables['pomsgset'], transaction)
         LoopTuner(updater, 2, 500).run()
 
         # Remember which POFiles we will affect, so we can update their stats
         # later.
         cur.execute(
-            "CREATE TEMP TABLE changed_pofiles AS SELECT new_id AS id FROM %s"
+            "CREATE TEMP TABLE temp_changed_pofiles "
+            "AS SELECT new_id AS id FROM %s"
             % holding_tables['pofile'])
         cur.execute(
-            "CREATE UNIQUE INDEX changed_pofiles_pkey ON changed_pofiles(id)")
+            "CREATE UNIQUE INDEX temp_changed_pofiles_pkey "
+            "ON temp_changed_pofiles(id)")
 
         # Now get rid of those inert rows whose new_ids we messed with, or
         # horrible things will happen during pouring.
@@ -1865,24 +1876,24 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # Pour copied rows back to source tables.  Contrary to appearances,
         # this is where the real work happens.
-        copier.pour(ztm)
+        copier.pour(transaction)
 
         # Update the statistics cache for every POFile we touched.
         logging.info("Updating POFile's statistics")
         # XXX: Jeroen Vermeulen 2007-08-10: Use LoopTuner!
         affected_pofiles = POFile.select(
-            "id IN (SELECT id FROM changed_pofiles)")
+            "id IN (SELECT id FROM temp_changed_pofiles)")
         for pofile in affected_pofiles:
             pofile.updateStatistics()
 
         # Clean up after ourselves, in case we get called again this session.
         drop_tables(cursor(), [
-            'equiv_template', 'equiv_potmsgset', 'inert_pomsgsets',
-            'changed_pofiles'])
+            'temp_equiv_template', 'temp_equiv_potmsgset',
+            'temp_inert_pomsgsets', 'temp_changed_pofiles'])
 
-        ztm.commit()
+        transaction.commit()
 
-    def _copy_active_translations(self, ztm, logger):
+    def _copy_active_translations(self, transaction, logger):
         """Copy active translations from the parent into this one.
 
         This method is used in two scenarios: when a new distribution series
@@ -1914,23 +1925,23 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         if len(self.potemplates) == 0:
             # We're a new distroseries; copy from scratch
-            self._copyActiveTranslationsToNewRelease(ztm, copier, logger)
+            self._copyActiveTranslationsToNewRelease(
+                transaction, copier, logger)
         elif copier.needsRecovery():
             # Recover data from previous, abortive run
             logger.info("A copy was already running.  Resuming...")
-            copier.pour(ztm)
+            copier.pour(transaction)
         else:
             # Incremental copy of updates from parent distroseries
-            self._copyActiveTranslationsAsUpdate(ztm, logger)
+            self._copyActiveTranslationsAsUpdate(transaction, logger)
 
-    def copyMissingTranslationsFromParent(self, ztm, logger=None):
+    def copyMissingTranslationsFromParent(self, transaction, logger=None):
         """See IDistroSeries."""
         if logger is None:
             logger = logging
         flush_database_updates()
         flush_database_caches()
-        # Request the translation copy.
-        self._copy_active_translations(ztm, logger)
+        self._copy_active_translations(transaction, logger)
 
     def getPendingPublications(self, archive, pocket, is_careful):
         """See IPublishing."""
