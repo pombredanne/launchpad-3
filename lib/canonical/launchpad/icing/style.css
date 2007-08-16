@@ -145,9 +145,19 @@ input, select, textarea {
 input[type="text"], input[type="submit"], input[type="reset"], textarea {
   font-size: 1em; /* Forces a readable font size in Safari */
 }
+button, input[type="button"], input[type="file"], input[type="password"],
+input[type="submit"], input[type="text"], select, textarea {
+  margin-right: 0.5em;
+}
 input.urlTextType {width: 100%;}
 .fieldRequired, .fieldOptional {color: #999;}
 .formHelp {margin-bottom: 1em;}
+/* Hack to add breathing room to bug status forms: */
+table.listing div.field>table {margin-top: 0.5em;}
+table.listing div.field>label, table.listing div.field>div>label,
+table.listing div.actions {
+  display: block; margin-top: 1em;
+}
 textarea {width: 100%;}
 table.form {width: 100%;}
 
