@@ -1568,10 +1568,10 @@ COMMENT ON COLUMN HWDBSubmission.format IS 'The format version of the submitted 
 COMMENT ON COLUMN HWDBSubmission.status IS 'The status of the submission. See HWDBSubmissionStatus for valid values.';
 COMMENT ON COLUMN HWDBSubmission.private IS 'If True, the submitter allows public access to the data. If false, the data may be used only for statistical purposes.';
 COMMENT ON COLUMN HWDBSubmission.contactable IS 'If True, the submitter agrees to be contacted by upstream developers and package maintainers for tests etc.';
-COMMENT ON COLUMN HWDBSubmission.livecd IS 'If True, the data was collected on a Ubuntu Live CD installation, else it was collected on a regular installation.';
+COMMENT ON COLUMN HWDBSubmission.live_cd IS 'If True, the data was collected on a Ubuntu Live CD installation, else it was collected on a regular installation.';
 COMMENT ON COLUMN HWDBSubmission.submission_id IS 'A unique submission ID.';
 COMMENT ON COLUMN HWDBSubmission.emailaddress IS 'The email address of the submitter.';
 COMMENT ON COLUMN HWDBSubmission.owner IS 'A reference to the Person table. This value is null, if the email address does not belong to an entry in Person table.';
 COMMENT ON COLUMN HWDBSubmission.distroarchrelease IS 'A reference to the distroarchseries of the submission. This value is null, if the submitted values for distribution, distroseries and architecture do not match an existing entry in the Distroarchseries table.';
 COMMENT ON COLUMN HWDBSubmission.raw_submission IS 'A reference to a row of LibraryFileAlias. The library file contains the raw submission data.';
-COMMENT ON COLUMN HWDBSubmission.system IS 'A reference to an entry of the HWDBSystemFingerPrint table. This table stores the system name as returned by HAL (system.vendor, system.product)';
+COMMENT ON COLUMN HWDBSubmission.system_fingerprint IS 'A reference to an entry of the HWDBSystemFingerPrint table. This table stores the system name as returned by HAL (system.vendor, system.product)';

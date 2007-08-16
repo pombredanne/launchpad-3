@@ -17,7 +17,7 @@ together with the following data:
     false, the data may be used only for statistical purposes.
   * contactable: If True, the submitter agrees to be contacted by upstream
     developers and package maintainers for tests etc.
-  * livecd: If True, the data was collected on a Ubuntu Live CD installation,
+  * live_cd: If True, the data was collected on a Ubuntu Live CD installation,
     else it was collected on a regular installation.
   * submission_id: A unique submission ID.
   * emailaddress: The email address of the submitter.
@@ -83,14 +83,14 @@ HWDBSumission table.
     ...     format=HWDBSubmissionFormat.VERSION_1,
     ...     private=False,
     ...     contactable=False,
-    ...     livecd=False,
+    ...     live_cd=False,
     ...     submission_id=u'unique ID 1',
     ...     emailaddress=u'test@canonical.com',
     ...     distroarchseries=None,
     ...     raw_submission=StringIO(submission_data),
     ...     filename=u'hwinfo.txt',
     ...     filesize=len(submission_data),
-    ...     system=u'Dell Inspiron 1234')
+    ...     system_fingerprint=u'Dell Inspiron 1234')
 
 submission_id must be unique. The attempt to create a HWDBSubmission entry
 with an already existing submission_id raises HWDBSubmissionError.
@@ -100,14 +100,14 @@ with an already existing submission_id raises HWDBSubmissionError.
     ...     format=HWDBSubmissionFormat.VERSION_1,
     ...     private=False,
     ...     contactable=False,
-    ...     livecd=False,
+    ...     live_cd=False,
     ...     submission_id=u'unique ID 1',
     ...     emailaddress=u'test@canonical.com',
     ...     distroarchseries=None,
     ...     raw_submission=StringIO(submission_data),
     ...     filename=u'hwinfo.txt',
     ...     filesize=len(submission_data),
-    ...     system=u'Dell Inspiron 1234')
+    ...     system_fingerprint=u'Dell Inspiron 1234')
     Traceback (most recent call last):
     ...
     HWDBSubmissionError: A submission with this ID already exists
@@ -125,21 +125,21 @@ Otherwise, owner is set to None.
     ...     format=HWDBSubmissionFormat.VERSION_1,
     ...     private=False,
     ...     contactable=False,
-    ...     livecd=False,
+    ...     live_cd=False,
     ...     submission_id=u'unique ID 2',
     ...     emailaddress=u'beeblebrox@example.com',
     ...     distroarchseries=None,
     ...     raw_submission=StringIO(submission_data),
     ...     filename=u'hwinfo.txt',
     ...     filesize=len(submission_data),
-    ...     system=u'Acer 6789')
+    ...     system_fingerprint=u'Acer 6789')
     >>> print submission.owner
     None
 
 The submitted data can be retrieved by IHWDBSubmissionSet.getBySubmissionID.
 
     >>> submission = hwdb_submission_set.getBySubmissionID(u'unique ID 1')
-    >>> submission.submission_id, submission.system.fingerprint
+    >>> submission.submission_id, submission.system_fingerprint.fingerprint
     (u'unique ID 1', u'Dell Inspiron 1234')
 
 If a submission is marked as private, it is only returned by 
@@ -152,14 +152,14 @@ the owner of the submission.
     ...     format=HWDBSubmissionFormat.VERSION_1,
     ...     private=True,
     ...     contactable=False,
-    ...     livecd=False,
+    ...     live_cd=False,
     ...     submission_id=u'unique ID 3',
     ...     emailaddress=u'test@canonical.com',
     ...     distroarchseries=None,
     ...     raw_submission=StringIO(submission_data),
     ...     filename=u'hwinfo.txt',
     ...     filesize=len(submission_data),
-    ...     system=u'Dell Inspiron 1234')
+    ...     system_fingerprint=u'Dell Inspiron 1234')
     >>> print hwdb_submission_set.getBySubmissionID(u'unique ID 3')
     None
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
@@ -167,7 +167,7 @@ the owner of the submission.
     u'Sample Person'
     >>> submission = hwdb_submission_set.getBySubmissionID(
     ...     u'unique ID 3', sample_person)
-    >>> submission.submission_id, submission.system.fingerprint
+    >>> submission.submission_id, submission.system_fingerprint.fingerprint
     (u'unique ID 3', u'Dell Inspiron 1234')
 
 Passing another person than the owner as the parameter `user` does not return
@@ -190,15 +190,18 @@ given fingerprint name. Private submissions are excluded, if the parameter
 
     >>> submissions = hwdb_submission_set.getByFingerprintName(
     ...     u'Dell Inspiron 1234')
-    >>> [(s.submission_id, s.system.fingerprint) for s in submissions]
+    >>> [(s.submission_id, s.system_fingerprint.fingerprint)
+    ...  for s in submissions]
     [(u'unique ID 1', u'Dell Inspiron 1234')]
     >>> submissions = hwdb_submission_set.getByFingerprintName(
     ...     u'Dell Inspiron 1234', no_priv)
-    >>> [(s.submission_id, s.system.fingerprint) for s in submissions]
+    >>> [(s.submission_id, s.system_fingerprint.fingerprint)
+    ...  for s in submissions]
     [(u'unique ID 1', u'Dell Inspiron 1234')]
     >>> submissions = hwdb_submission_set.getByFingerprintName(
     ...     u'Dell Inspiron 1234', sample_person)
-    >>> [(s.submission_id, s.system.fingerprint) for s in submissions]
+    >>> [(s.submission_id, s.system_fingerprint.fingerprint)
+    ...  for s in submissions]
     [(u'unique ID 1', u'Dell Inspiron 1234'),
      (u'unique ID 3', u'Dell Inspiron 1234')]
 
@@ -213,14 +216,17 @@ only public submissions are returned, if no parameter `user` is passed
 to the method, or if the passed parameter is not the owner of the submission.
 
     >>> submissions = hwdb_submission_set.getByOwner(sample_person)
-    >>> [(s.submission_id, s.system.fingerprint) for s in submissions]
+    >>> [(s.submission_id, s.system_fingerprint.fingerprint)
+    ...  for s in submissions]
     [(u'unique ID 1', u'Dell Inspiron 1234')]
     >>> submissions = hwdb_submission_set.getByOwner(sample_person,
     ...                                              user=no_priv)
-    >>> [(s.submission_id, s.system.fingerprint) for s in submissions]
+    >>> [(s.submission_id, s.system_fingerprint.fingerprint)
+    ...  for s in submissions]
     [(u'unique ID 1', u'Dell Inspiron 1234')]
     >>> submissions = hwdb_submission_set.getByOwner(sample_person,
     ...                                              user=sample_person)
-    >>> [(s.submission_id, s.system.fingerprint) for s in submissions]
+    >>> [(s.submission_id, s.system_fingerprint.fingerprint)
+    ...  for s in submissions]
     [(u'unique ID 1', u'Dell Inspiron 1234'),
      (u'unique ID 3', u'Dell Inspiron 1234')]

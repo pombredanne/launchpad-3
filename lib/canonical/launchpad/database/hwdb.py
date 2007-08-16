@@ -38,7 +38,7 @@ class HWDBSubmission(SQLBase):
     status = EnumCol(enum=HWDBSubmissionStatus, notNull=True)
     private = BoolCol(notNull=True)
     contactable = BoolCol(notNull=True)
-    livecd = BoolCol(notNull=True, default=False)
+    live_cd = BoolCol(notNull=True, default=False)
     submission_id = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person')
     emailaddress = StringCol(notNull=True)
@@ -46,7 +46,8 @@ class HWDBSubmission(SQLBase):
                                    foreignKey='Distroarchrelease')
     raw_submission = ForeignKey(dbName='raw_submission',
                                 foreignKey='LibraryFileAlias')
-    system = ForeignKey(dbName='system', foreignKey='HWDBSystemFingerprint')
+    system_fingerprint = ForeignKey(dbName='system_fingerprint',
+                                    foreignKey='HWDBSystemFingerprint')
 
 
 class HWDBSubmissionSet:
@@ -55,9 +56,9 @@ class HWDBSubmissionSet:
     implements(IHWDBSubmissionSet)
 
     def createSubmission(self, date_created, format, private, contactable,
-                         livecd, submission_id, emailaddress,
+                         live_cd, submission_id, emailaddress,
                          distroarchseries, raw_submission, filename,
-                         filesize, system):
+                         filesize, system_fingerprint):
         """See `IHWDBSubmissionSet`."""
         
         submission_exists = HWDBSubmission.select(
@@ -68,9 +69,10 @@ class HWDBSubmissionSet:
         
         owner = getUtility(IPersonSet).getByEmail(emailaddress)
 
-        fingerprint = HWDBSystemFingerprint.selectOneBy(fingerprint=system)
+        fingerprint = HWDBSystemFingerprint.selectOneBy(
+            fingerprint=system_fingerprint)
         if fingerprint is None:
-            fingerprint = HWDBSystemFingerprint(fingerprint=system)
+            fingerprint = HWDBSystemFingerprint(fingerprint=system_fingerprint)
 
         libraryfileset = getUtility(ILibraryFileAliasSet)
         libraryfile = libraryfileset.create(
@@ -90,13 +92,13 @@ class HWDBSubmissionSet:
             status=HWDBSubmissionStatus.SUBMITTED,
             private=private,
             contactable=contactable,
-            livecd=livecd,
+            live_cd=live_cd,
             submission_id=submission_id,
             owner=owner,
             emailaddress=emailaddress,
             distroarchrelease=distroarchseries,
             raw_submission=libraryfile,
-            system=fingerprint)
+            system_fingerprint=fingerprint)
 
     def getBySubmissionID(self, submission_id, user=None):
         """See `IHWDBSubmissionSet`."""
@@ -125,19 +127,19 @@ class HWDBSubmissionSet:
             # HWDBSystemFingerprint is explicitly joined a second time, and
             # the sorting done on the column of this "second join".
             query = """
-                system=%s
+                system_fingerprint=%s
                 AND not private
-                AND HWDBSystemFingerprint.id = HWDBSubmission.system
+                AND HWDBSystemFingerprint.id = HWDBSubmission.system_fingerprint
                 """ % sqlvalues(fp)
         else:
             query = """
-                system=%s
+                system_fingerprint=%s
                 AND (not private OR owner=%s)
-                AND HWDBSystemFingerprint.id = HWDBSubmission.system
+                AND HWDBSystemFingerprint.id = HWDBSubmission.system_fingerprint
                 """ % sqlvalues(fp, user)
         return HWDBSubmission.select(
             query,
-            prejoins=['system'],
+            prejoins=['system_fingerprint'],
             clauseTables=['HWDBSystemFingerprint'],
             prejoinClauseTables=['HWDBSystemFingerprint'],
             orderBy=['HWDBSystemFingerprint.fingerprint',
@@ -150,13 +152,13 @@ class HWDBSubmissionSet:
             query = """
                 owner=%s
                 AND not private
-                AND HWDBSystemFingerprint.id = HWDBSubmission.system
+                AND HWDBSystemFingerprint.id = HWDBSubmission.system_fingerprint
                 """ % sqlvalues(owner)
         else:
             query = """
                 owner=%s
                 AND (not private OR owner=%s)
-                AND HWDBSystemFingerprint.id = HWDBSubmission.system
+                AND HWDBSystemFingerprint.id = HWDBSubmission.system_fingerprint
                 """ % sqlvalues(owner, user)
         return HWDBSubmission.select(
             query,

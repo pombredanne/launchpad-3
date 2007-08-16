@@ -33,19 +33,19 @@ class HWDBSubmissionError(Exception):
 class HWDBSubmissionStatus(DBEnumeratedType):
     """The status of a submission to the hardware database."""
 
-    INVALID = DBItem(-1, """
+    INVALID = DBItem(0, """
         Invalid submission
 
         The submitted data could not be parsed.
         """)
 
-    SUBMITTED = DBItem(0, """
+    SUBMITTED = DBItem(1, """
         Submitted
 
         The submitted data has not yet been processed.
         """)
 
-    PROCESSED = DBItem(1, """
+    PROCESSED = DBItem(2, """
         Processed
 
         The submitted data has been processed.
@@ -74,7 +74,7 @@ class IHWDBSubmission(Interface):
         title=_(u'Private Submission'), required=True)
     contactable = Bool(
         title=_(u'Contactable'), required=True)
-    livecd = Bool(
+    live_cd = Bool(
         title=_(u'Data from Live CD'), required=True)
     submission_id = ASCIILine(
         title=_(u'Unique Submission ID'), required=True)
@@ -88,7 +88,7 @@ class IHWDBSubmission(Interface):
         schema=ILibraryFileAlias,
         title=_(u'The raw submission data'),
         required=True)
-    system = Attribute(
+    system_fingerprint = Attribute(
         _(u'The system this submmission was made on'))
 
 
@@ -96,7 +96,7 @@ class IHWDBSubmissionSet(Interface):
     """The set of HWDBSubmissions."""
 
     def createSubmission(date_created, format, private, contactable,
-                         livecd, submission_id, emailaddress,
+                         live_cd, submission_id, emailaddress,
                          distroarchseries, raw_submission, filename,
                          filesize, system):
         """Store submitted raw hardware information in a Librarian file.
