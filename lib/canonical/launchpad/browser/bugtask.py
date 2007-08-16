@@ -1676,6 +1676,10 @@ class BugTaskSearchListingView(LaunchpadFormView):
         """Should the assignee widget be shown on the advanced search page?"""
         return True
 
+    def shouldShowCommenterWidget(self):
+        """Should the commenter widget be shown on the advanced search page?"""
+        return True
+
     def shouldShowComponentWidget(self):
         """Should the component widget be shown on the advanced search page?"""
         context = self.context
@@ -1684,6 +1688,10 @@ class BugTaskSearchListingView(LaunchpadFormView):
              context.currentseries is not None) or
             IDistroSeries.providedBy(context) or
             ISourcePackage.providedBy(context))
+
+    def shouldShowContactWidget(self):
+        """Should the contact widget be shown on the advanced search page?"""
+        return True
 
     def shouldShowNoPackageWidget(self):
         """Should the widget to filter on bugs with no package be shown?
@@ -1707,6 +1715,10 @@ class BugTaskSearchListingView(LaunchpadFormView):
             IDistroSeries.providedBy(self.context) or
             IProduct.providedBy(self.context) and self.context.serieses or
             IProductSeries.providedBy(self.context))
+
+    def shouldShowSubscriberWidget(self):
+        """Should the subscriber widget be shown on the advanced search page?"""
+        return True
 
     def shouldShowUpstreamStatusBox(self):
         """Should the upstream status filtering widgets be shown?"""
@@ -1811,7 +1823,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
             "There's no person with the name or email address '%s'.")
 
         for name in ('assignee', 'bug_reporter', 'bug_contact',
-                     'bug_commenter'):
+                     'bug_commenter', 'subscriber'):
             if self.getWidgetError(name):
                 self.setFieldError(
                     name, error_message %
@@ -1879,7 +1891,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
         params.resolved_upstream = True
         fixed_elsewhere = self.context.searchTasks(params)
         search_url = (
-            "%s/+bugs?field.status_upstream=resolved_upstream" % 
+            "%s/+bugs?field.status_upstream=resolved_upstream" %
                 canonical_url(self.context))
         return dict(count=fixed_elsewhere.count(), url=search_url)
 
