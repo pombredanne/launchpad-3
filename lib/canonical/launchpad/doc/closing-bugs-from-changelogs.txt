@@ -163,13 +163,13 @@ further information:
     'NEW'
 
 It's possible to specify more than one bug in the Launchpad-bugs-fixed
-header, each will be marked as Fix Released. If a nonexistent bug is
-specified, it's ignored.
+header, each will be marked as Fix Released. If a nonexistent bug,
+'666', is specified, it's ignored.
 
     >>> pmount_bug_id = pmount_ubuntu.createBug(bug_params).id
     >>> another_pmount_bug_id = pmount_ubuntu.createBug(bug_params).id
 
-    >>> fixing_text = "%d nonexistent %d" % (
+    >>> fixing_text = "%d 666 %d" % (
     ...     pmount_bug_id, another_pmount_bug_id)
 
     >>> queue_item_id = upload(pmount_release, fixing_text).id
