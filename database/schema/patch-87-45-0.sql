@@ -39,4 +39,4 @@ FROM ProductSeries
 WHERE branch_type = 3
 AND ProductSeries.import_branch = Branch.id;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 45, 0);
