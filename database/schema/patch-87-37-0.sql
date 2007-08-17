@@ -20,9 +20,6 @@ SET date_incomplete = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 WHERE bugtask.status = 15
 AND date_incomplete IS NULL;
 
-ALTER TABLE bugtask ADD CONSTRAINT bugtask_date_incomplete_recorded_chk
-CHECK ((status = 15) != (date_incomplete IS NULL));
-
 CREATE INDEX bugtask__date_incomplete__idx ON BugTask(date_incomplete)
    WHERE date_incomplete IS NOT NULL;
 
