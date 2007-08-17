@@ -1024,14 +1024,10 @@ Let's make some bugtasks that qualify for expiration. A Jokosher
 bugtask and a conjoined pair of ubuntu_hoary and ubuntu bugtasks
 will suffice.
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> # date_incomplete and date_confirmed are guarded by bugtasks's
     >>> # transition logic and ZCML. This function will change the
     >>> # underlying SQLObject's value for a column.
-    >>> def set_so_attr(bugtask, colname, value):
-    ...     attr_setter = getattr(
-    ...         removeSecurityProxy(bugtask), '_SO_set_%s' % colname)
-    ...     attr_setter(value)
+    >>> from canonical.launchpad.ftests import set_so_attr
 
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC

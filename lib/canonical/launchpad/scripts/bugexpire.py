@@ -4,6 +4,9 @@
 
 __metaclass__ = type
 
+__all__ = ['BugJanitor']
+
+
 from logging import getLogger
 
 from zope.component import getUtility
@@ -19,7 +22,7 @@ from canonical.launchpad.webapp.interaction import (
 class BugJanitor:
     """Expire Incomplete BugTasks that are older than a configurable period.
     
-    The BugTask must be unasigned, and the project it is assiciated with
+    The BugTask must be unassigned, and the project it is associated with
     must use Malone for bug tracking.
     """
 

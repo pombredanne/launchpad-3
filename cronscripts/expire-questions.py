@@ -11,6 +11,9 @@ config.answertracker.days_before_expiration
 
 __metaclass__ = type
 
+__all__ = ['ExpireQuestions']
+
+
 import _pythonpath
 
 from canonical.config import config

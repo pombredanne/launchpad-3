@@ -16,12 +16,5 @@ SET
 WHERE 
     email = 'janitor@support.launchpad.net';
 
--- Rename answertracker to launchpadjanitor and remove the
--- unused teammembership role.
--- I do not want to go into any detail regarding how bitter
--- I am that I had to write a function to safely migrate the
--- database janitor roles.
--- select rename_janitor_roles();
-
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 97, 0);
 

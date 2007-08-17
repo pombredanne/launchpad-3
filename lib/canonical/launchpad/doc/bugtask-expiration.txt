@@ -17,9 +17,8 @@ all the rules stated above.
 
 The expiration period is set using the
 config.alone.days_before_expiration configuration variable. It
-defaults to 60 days. The period is measured from the last the
-creation date of bug's last message. We expire bugtasks that
-have had no message activity for 60 days.
+defaults to 60 days. The period is measured from the date_incomplete
+field. We expire bugtasks that are INCOMPLETE for 60 days or more.
 
     >>> from canonical.config import config
     >>> old_age_days = config.malone.days_before_expiration
@@ -41,14 +40,10 @@ expirable (all conditions met), is assigned, status is not INCOMPLETE,
 the bug has been in INCOMPLETE status for less than 60 days, or the
 bug's project uses an external bug tracker.
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> # date_incomplete and date_confirmed are guarded by bugtasks's
     >>> # transition logic and ZCML. This function will change the
     >>> # underlying SQLObject's value for a column.
-    >>> def set_so_attr(bugtask, colname, value):
-    ...     attr_setter = getattr(
-    ...         removeSecurityProxy(bugtask), '_SO_set_%s' % colname)
-    ...     attr_setter(value)
+    >>> from canonical.launchpad.ftests import set_so_attr
 
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
