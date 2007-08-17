@@ -76,8 +76,7 @@ class BranchMergeProposalEditView(LaunchpadEditFormView):
     @action('Delete', name='delete')
     def delete_action(self, action, data):
         """Delete the merge proposal and go back to the source branch."""
-        self.source_branch.removeLandingTarget(
-            self.context.target_branch)
+        self.context.destroySelf()
 
     @action('Cancel', name='cancel')
     def cancel_action(self, action, data):
