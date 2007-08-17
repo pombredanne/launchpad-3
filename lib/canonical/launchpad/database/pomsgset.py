@@ -121,11 +121,6 @@ class POMsgSetMixIn:
             active = self.getActiveSubmission(pluralform)
             if active is not None and active.potranslation is not None:
                 active_translation = active.potranslationID
-                for suggestion in self.suggestions[pluralform]:
-                    assert suggestion.potranslationID != active_translation, (
-                        "Suggestions cache contains unnecessary suggestion")
-                # XXX: JeroenVermeulen 2007-08-05, this filtering no longer
-                # needed with "phase 6" optimizations for bug 30602.
                 self.suggestions[pluralform] = [
                     submission
                     for submission in self.suggestions.get(pluralform)
