@@ -301,12 +301,12 @@ Now we'll add each bug task to the same test milestone. Each bug task has a
 link to an "edit status" form that can be used to choose the milestone we're
 interested in. However, we need to be careful when matching these links, as
 they may contain the same text as other links. We'll use a specific URL
-pattern to avoid matching unrelated URLs.
+pattern to avoid matching unrelated links.
 
 Let's start with the first bug task:
 
     >>> import re
-    >>> edit_status_url = re.compile('1.0/\\+bug/[0-9]+/\\+editstatus')
+    >>> edit_status_url = re.compile(r'1.0/\+bug/[0-9]+/\+editstatus')
     >>> browser.getLink(url=edit_status_url).click()
 
 Completing the "edit status" form allows us to add the bug task to the
@@ -323,7 +323,7 @@ milestone:
 Now we'll add the second bug task to the test milestone, using the same
 method. However this time we'll use a different importance:
 
-    >>> edit_status_url = re.compile('2.0/\\+bug/[0-9]+/\\+editstatus')
+    >>> edit_status_url = re.compile(r'2.0/\+bug/[0-9]+/\+editstatus')
     >>> browser.getLink(url=edit_status_url).click()
     >>> browser.getControl('Milestone').displayValue = [milestone]
     >>> browser.getControl('Importance').value = ['High']
