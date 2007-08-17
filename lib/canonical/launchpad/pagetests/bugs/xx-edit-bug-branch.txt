@@ -7,10 +7,11 @@ The bug branches are displayed on the bug page with their status
 clickable.
 
     >>> user_browser.open('http://launchpad.dev/bugs/4')
-    >>> user_browser.getLink('Best Fix Available')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'bug_branch_details'))
+    Related branch            Developer          Status for this bug
+    Mozilla Firefox 0.9.2     Mark Shuttleworth  Abandoned Attempt
+    Mozilla Firefox Mainline  Sample Person      Fix In Progress
     >>> user_browser.getLink('Fix In Progress').click()
 
 Now we can edit the status.
@@ -19,5 +20,8 @@ Now we can edit the status.
     ...     'Best Fix Available']
     >>> user_browser.getControl('Whiteboard').value = 'A hack, but it works.'
     >>> user_browser.getControl('Save Changes').click()
-    >>> user_browser.getLink('Best Fix Available') is not None
-    True
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'bug_branch_details'))
+    Related branch            Developer          Status for this bug
+    Mozilla Firefox 0.9.2     Mark Shuttleworth  Abandoned Attempt
+    Mozilla Firefox Mainline  Sample Person      Best Fix Available
