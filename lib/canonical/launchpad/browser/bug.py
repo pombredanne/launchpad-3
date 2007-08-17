@@ -155,7 +155,7 @@ class BugContextMenu(ContextMenu):
         return Link('+duplicate', text, icon='edit')
 
     def addupstream(self):
-        text = 'Also affects upstream'
+        text = 'Also affects project'
         return Link('+choose-affected-product', text, icon='add')
 
     def adddistro(self):
@@ -405,7 +405,7 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
 
     schema = IUpstreamBugTask
     field_names = ['product']
-    label = u"Add affected project to bug"
+    label = u"Record as affecting another project"
 
     def _getUpstream(self, distro_package):
         """Return the upstream if there is a packaging link."""
@@ -509,7 +509,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             if field_name not in target_field_names]
 
     def render_upstreamtask(self):
-        self.setUpLabelAndWidgets("Add affected project to bug", ['product'])
+        self.setUpLabelAndWidgets("Confirm project", ['product'])
         self.index = self.upstream_page
 
         # It's not possible to enter the product on this page, so
@@ -540,13 +540,12 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         # action", so we need to assign it to itself in order for the
         # label change to stick around.
         self.continue_action = self.continue_action
-        self.continue_action.label = (
-            u'Indicate bug in %s' % cgi.escape(product.displayname))
+        self.continue_action.label = (u'Add to Bug Report')
         return self.render()
 
     def render_distrotask(self):
         self.setUpLabelAndWidgets(
-            "Add affected source package to bug",
+            "Also affects distribution/package",
             ['distribution', 'sourcepackagename'])
         for bugtask in IBug(self.context).bugtasks:
             if (IDistributionSourcePackage.providedBy(bugtask.target) and
@@ -731,7 +730,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         notify(SQLObjectCreatedEvent(taskadded))
         self.next_url = canonical_url(taskadded)
 
-    @action('Yes, request fix anyway', name='confirm')
+    @action('Yes, Add Anyway', name='confirm')
     def confirm_action(self, action, data):
         self.continue_action.success(data)
 
