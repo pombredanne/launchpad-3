@@ -133,7 +133,7 @@ class Branch(SQLBase):
         if dependent_branch is not None:
             if not IBranch.providedBy(dependent_branch):
                 raise InvalidBranchMergeProposal(
-                    'Dependent branch must be implement IBranch.')
+                    'Dependent branch must implement IBranch.')
             if self.product != dependent_branch.product:
                 raise InvalidBranchMergeProposal(
                     'The source branch and dependent branch must be branches '
