@@ -73,10 +73,8 @@ XXX: Less ideally, the error message should include hyperlinks to the conflict
 branch and the +edit form of the context branch, but ObjectReassignmentView
 will not let us have even that. -- David Allouche 2005-08-17
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> for p_tag in soup('p', 'error message'):
-    ...     print p_tag.renderContents()
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
     Branch name conflict. ... try changing its registrant again.
 
 == Preventing the assignment of a +junk branch to a team ==
@@ -94,9 +92,8 @@ a +junk branch from yourself to a team.
     >>> browser.getControl('Change Registrant').click()
     >>> browser.url
     'http://code.launchpad.dev/~name12/+junk/junk.contrib/+reassign'
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> for p_tag in soup('p', 'error message'):
-    ...     print p_tag.renderContents()
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
     You cannot assign a +junk branch to a team. Create a project first.
 
 (The other is changing the product of a team owned branch to the +junk
