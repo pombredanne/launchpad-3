@@ -157,13 +157,14 @@ class POSubmissionSet:
         # in newest-to-oldest order, because that's the way the view class
         # likes them.
         relevant_submissions = POSubmission.select(
-            "id IN (%s)" % ", ".join(available), orderBy="-datecreated")
+            "id IN (%s)" % ", ".join([quote(id) for id in available]),
+            orderBy="-datecreated")
 
         # Step 3.
         # Figure out which of all_pomsgsets each submission is relevant to,
         # and return our mapping from all_pomsgset to various subsets of
         # load_submissions.
-        pomsgset_ids = set(stored_pomsgsets)
+        pomsgset_ids = set(pomsgset.id for pomsgset in stored_pomsgsets)
         for submission in relevant_submissions:
             # There is a bit of special treatment for POSubmissions belonging
             # to fuzzy POMsgSets, since we don't accept those as suggestions.
