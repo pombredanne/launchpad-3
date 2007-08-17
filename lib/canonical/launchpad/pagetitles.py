@@ -101,7 +101,7 @@ class ContextBugId(SubstitutionHelper):
 
 archive_admin = ContextTitle('Administer %s')
 
-archive_activate = 'Activate PPA'
+archive_activate = 'Activate Personal Package Archive'
 
 archive_builds = ContextTitle('Builds for %s')
 
@@ -134,6 +134,8 @@ bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
 branch_associations = ContextDisplayName(smartquote(
     '"%s" branch associations'))
+
+branch_delete = ContextDisplayName(smartquote('Delete branch "%s"'))
 
 branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
 

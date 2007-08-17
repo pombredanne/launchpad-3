@@ -220,6 +220,12 @@ in the footer of the email with the bug title and URL.
     You received this bug notification because you
     are a bug contact for pmount in ubuntu.
 
+Since the reporter didn't do anything to trigger this change, the bug
+address is used as the From address.
+
+    >>> print msg['From']
+    Launchpad Bug Tracker <1@bugs.launchpad.net>
+
     >>> stub.test_emails = []
 
 Let's see that nothing unexpected happens when we set the source
