@@ -60,7 +60,7 @@
         </tal:mirrored-yet>
         <tr><th>Next mirror:</th>
           <tal:mirror-disabled tal:condition="view/mirror_disabled">
-            <td>Disabled.</td>
+            <td>Disabled</td>
           </tal:mirror-disabled>
           <tal:mirror-enabled tal:condition="not:view/mirror_disabled">
             <tal:mirror-in-future tal:condition="view/mirror_in_future">

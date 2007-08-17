@@ -43,7 +43,6 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
     LaunchpadEditFormView, action)
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.uri import URI
 
 
