@@ -135,6 +135,13 @@ and have revisions (well, a revision).
 The target branch has a revision 1, so the merge time is taken form
 that revision.
 
+    >>> history = list(target_branch.revision_history)
+    >>> branch_revision = history[0]
+    >>> branch_revision.sequence
+    1
+    >>> print branch_revision.revision.revision_date
+    2005-03-09 15:40:00+00:00
+
     >>> merge_proposal.markAsMerged(1, now.next(), reporter)
     >>> print merge_proposal.date_merged
     2005-03-09 15:40:00+00:00
@@ -166,3 +173,29 @@ proposal is used.
     True
     >>> print url
     http://code.launchpad.dev/~sabdfl/firefox/release-0.9/+merge/...
+
+
+== Deleting merge proposals ==
+
+Deleting merge proposals is done through the destroySelf method on the
+merge proposal itself.  The destroySelf method is protected by
+launchpad.Edit, which restricts access to the owner of the source
+branch, the owner of the target branch, or the registrant (and LP
+admins).
+
+    >>> source_branch.landing_targets.count()
+    1
+    >>> merge_proposal = source_branch.landing_targets[0]
+    >>> login('no-priv@canonical.com')
+    >>> merge_proposal.destroySelf()
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<BranchMergeProposal ...>,
+    'destroySelf', 'launchpad.Edit')
+
+Sample Person is the registrant, so they can destroy it.
+
+    >>> login('test@canonical.com')
+    >>> merge_proposal.destroySelf()
+    >>> source_branch.landing_targets.count()
+    0

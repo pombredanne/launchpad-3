@@ -387,8 +387,6 @@ class IBranch(IHasOwner):
         :param date_created: Used to specify the date_created value of the
             merge request.
         """
-    def removeLandingTarget(target_branch):
-        """Remove the BranchMergeProposal specified for the target branch."""
 
     def revisions_since(timestamp):
         """Revisions in the history that are more recent than timestamp."""

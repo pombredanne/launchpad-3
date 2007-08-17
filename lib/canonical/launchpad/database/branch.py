@@ -158,13 +158,6 @@ class Branch(SQLBase):
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created)
 
-    def removeLandingTarget(self, target_branch):
-        """See `IBranch`."""
-        proposal = BranchMergeProposal.selectOneBy(
-            source_branch=self, target_branch=target_branch)
-        if proposal is not None:
-            BranchMergeProposal.delete(proposal.id)
-
     mirror_request_time = UtcDateTimeCol(default=None)
 
     @property

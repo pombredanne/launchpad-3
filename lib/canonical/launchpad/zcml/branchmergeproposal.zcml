@@ -9,6 +9,7 @@
     <allow interface="canonical.launchpad.interfaces.IBranchMergeProposal" />
     <require
         permission="launchpad.Edit"
+        attributes="destroySelf"
         set_schema="canonical.launchpad.interfaces.IBranchMergeProposal" />
   </content>
 
