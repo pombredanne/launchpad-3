@@ -75,7 +75,8 @@ mv ${DISTSCOPYROOT}/dists ${ARCHIVEROOT}/dists.new
 # ensure we don't ressurect things previously deleted, bug 58835.
 rsync -aH --delete ${DISTSROOT}/ ${ARCHIVEROOT}/dists.new
 
-# XXX: dsilvers: 20060204: DAK created some extra d-i pockets which
+# XXX: dsilvers 2006-02-04:
+# DAK created some extra d-i pockets which
 # were aren't necessarily going to create. Until we have a more
 # satisfactory correction in the publisher we just touch the Packages
 # files to ensure that the Release files get generated properly.

@@ -11,6 +11,7 @@ __all__ = [
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchType',
+    'CannotDeleteBranch',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
@@ -134,6 +135,10 @@ class BranchCreationException(Exception):
     """Base class for branch creation exceptions."""
 
 
+class CannotDeleteBranch(Exception):
+    """The branch cannot be deleted at this time."""
+
+
 class BranchCreationForbidden(BranchCreationException):
     """A Branch visibility policy forbids branch creation.
 
@@ -159,7 +164,7 @@ class BranchURIField(URIField):
 
         super(BranchURIField, self)._validate(value)
 
-        # XXX thumper 2007-06-12
+        # XXX thumper 2007-06-12:
         # Move this validation code into IBranchSet so it can be
         # reused in the XMLRPC code, and the Authserver.
         # This also means we could get rid of the imports above.
@@ -307,6 +312,10 @@ class IBranch(IHasOwner):
         description=_("Disable periodic pulling of this branch by Launchpad. "
                       "That will prevent connection attempts to the branch "
                       "URL. Use this if the branch is no longer available."))
+    mirror_request_time = Datetime(
+        title=_("If this value is more recent than the last mirror attempt, "
+                "then the branch will be mirrored on the next mirror run."),
+        required=False)
 
     # Scanning attributes
     last_scanned = Datetime(
@@ -355,6 +364,22 @@ class IBranch(IHasOwner):
 
     def revisions_since(timestamp):
         """Revisions in the history that are more recent than timestamp."""
+
+    def canBeDeleted():
+        """Can this branch be deleted in its current state.
+
+        A branch is considered deletable if it has no revisions, is not
+        linked to any bugs, specs, productseries, or code imports, and
+        has no subscribers.
+        """
+
+    def associatedProductSeries():
+        """Return the product series that this branch is associated with.
+
+        A branch may be associated with a product series as either a
+        user_branch or import_branch.  Also a branch can be associated
+        with more than one product series as a user_branch.
+        """
 
     # subscription-related methods
     def subscribe(person, notification_level, max_diff_lines):
@@ -417,6 +442,28 @@ class IBranch(IHasOwner):
                the corresponding BranchRevision rows for this branch.
         """
 
+    def requestMirror():
+        """Request that this branch be mirrored on the next run of the branch
+        puller.
+        """
+
+    def startMirroring():
+        """Signal that this branch is being mirrored."""
+
+    def mirrorComplete(last_revision_id):
+        """Signal that a mirror attempt has completed successfully.
+
+        :param last_revision_id: The revision ID of the tip of the mirrored
+            branch.
+        """
+
+    def mirrorFailed(reason):
+        """Signal that a mirror attempt failed.
+
+        :param reason: An error message that will be displayed on the branch
+            detail page.
+        """
+
 
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
@@ -456,6 +503,9 @@ class IBranchSet(Interface):
         Raises BranchCreationForbidden if the creator is not allowed
         to create a branch for the specified product.
         """
+
+    def delete(branch):
+        """Delete the specified branch."""
 
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
@@ -541,7 +591,7 @@ class IBranchSet(Interface):
         visible_by_user=None):
         """Branches associated with person with appropriate lifecycle.
 
-        XXX: thumper 2007-03-23
+        XXX: thumper 2007-03-23:
         The intent here is to just show interesting branches for the
         person.
         Following a chat with lifeless we'd like this to be listed and
@@ -666,6 +716,18 @@ class IBranchSet(Interface):
         only public branches are returned.
         """
 
+    def getHostedPullQueue():
+        """Return the queue of hosted branches to mirror using the puller."""
+
+    def getMirroredPullQueue():
+        """Return the queue of mirrored branches to mirror using the puller."""
+
+    def getImportedPullQueue():
+        """Return the queue of imported branches to mirror using the puller."""
+
+    def getPullQueue():
+        """Return the entire queue of branches to mirror using the puller."""
+
 
 class IBranchDelta(Interface):
     """The quantitative changes made to a branch that was edited or altered."""
@@ -684,9 +746,9 @@ class IBranchDelta(Interface):
     last_scanned_id = Attribute("The revision id of the tip revision.")
 
 
-# XXX: thumper 2007-07-23
+# XXX: thumper 2007-07-23 bug=66950:
 # Both BranchLifecycleStatusFilter and IBranchLifecycleFilter
-# are used only in browser/branchlisting.py, see bug 66950.
+# are used only in browser/branchlisting.py.
 class BranchLifecycleStatusFilter(EnumeratedType):
     """Branch Lifecycle Status Filter
 

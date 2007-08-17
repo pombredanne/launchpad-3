@@ -26,8 +26,8 @@
       tal:content="string:@import url(${icingroot}/style.css);"/>
     <style tal:condition="is_demo" type="text/css"
     >html, body {background: #ddd url(/@@/demo) !important;}</style>
-    <style tal:condition="not: site_message" type="text/css"
-    >#help_panel {top: 28px !important;}</style>
+    <style tal:condition="site_message" type="text/css"
+    >#help {top: 47px !important;}</style>
     <!--[if IE 7]>
       <style type="text/css">#portlets {left: 20px;}</style>
     <![endif]-->
@@ -53,13 +53,15 @@
     <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/lpmenu.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
+    <script type="text/javascript"
+        tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
     <script type="text/javascript">
       function onLoadFunction() {
         lpmenu.initialize(['menuroot'], '/', 'menupreload',
                            [], '1.3em', 16, true);
         sortables_init();
         initHelpPanel();
-        initPortlets();
+        PortletManager.initialize(cookie_scope);
       }
       registerLaunchpadFunction(onLoadFunction);
     </script>
@@ -210,7 +212,7 @@
                            <div class="pageheading"
                                 tal:condition="view/macro:pagehas/pageheading">
                             <metal:block define-slot="pageheading">
-                              <!-- XXX obsolete -->
+                              <!-- XXX Mark Shuttleworth 2007-04-30: Obsolete -->
                             </metal:block>
                           </div>
                           <tal:notifications
@@ -345,5 +347,9 @@
     </div>
   </body>
 </html>
+<tal:requestlog
+    define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
+    replace="structure string:<!-- at least ${log} -->" />
 </metal:page>
 <!-- 1-0 inprogress Help panel wrong in IE/Win; portlets wrong in IE/Mac -->
+

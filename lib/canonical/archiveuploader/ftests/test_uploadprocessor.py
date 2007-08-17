@@ -9,6 +9,8 @@ import shutil
 import tempfile
 import unittest
 
+from email import message_from_string
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -151,7 +153,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         foo_bar = "Foo Bar <foo.bar@canonical.com>"
         self.assertEqual([e.strip() for e in to_addrs], [foo_bar])
         self.assertTrue(
-            "rejected" not in raw_msg, 
+            "rejected" not in raw_msg,
             "Expected acceptance email not rejection. Actually Got:\n%s"
                 % raw_msg)
 
@@ -196,10 +198,12 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Check the mailer stub has a rejection email for Daniel
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg).get_payload(decode=True)
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         self.assertEqual(to_addrs, [daniel])
         self.assertTrue("Unhandled exception processing upload: Exception "
-                        "raised by BrokenUploadPolicy for testing." in raw_msg)
+                        "raised by BrokenUploadPolicy for testing." 
+                        in msg)
 
     def testUploadToFrozenDistro(self):
         """Uploads to a frozen distroseries should work, but be unapproved.
@@ -316,16 +320,18 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
     def testMixedCommercialUploadFails(self):
         """Uploads with commercial and non-commercial files are rejected.
-        
+
         Test that a package that has commercial and non-commercial files in it
         is rejected.  Commercial uploads should be entirely commercial.
         """
-        # Extra setup for breezy
+        # Extra setup for breezy.
         self.setupBreezy()
         self.layer.txn.commit()
 
-        # Set up the uploadprocessor with appropriate options and logger
-        self.options.context = 'anything' # upload policy allows anything
+        # Upload policy allows anything.
+        self.options.context = 'anything'
+
+        # Set up the uploadprocessor with appropriate options and logger.
         uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
 
@@ -333,14 +339,14 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("foocomm_1.0-1-illegal-component-mix")
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Check that it was rejected:
+        # Check that it was rejected.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         foo_bar = "Foo Bar <foo.bar@canonical.com>"
         self.assertEqual([e.strip() for e in to_addrs], [foo_bar])
         self.assertTrue(
-            "Cannot mix commercial files with non-commercial." in raw_msg, 
+            "Cannot mix commercial files with non-commercial." in raw_msg,
             "Expected email containing 'Cannot mix commercial files with "
-                "non-commercial.', got:\n%s" % raw_msg)
+            "non-commercial.', got:\n%s" % raw_msg)
 
     def testCommercialUpload(self):
         """Commercial packages should be uploaded to the commercial archive.
@@ -373,7 +379,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(foocomm_spr.component.name, 'commercial')
 
         # Check that the right archive was picked.
-        self.assertEqual(foocomm_spr.upload_archive.description, 
+        self.assertEqual(foocomm_spr.upload_archive.description,
             'Commercial archive')
 
         # Accept and publish the upload.
@@ -385,9 +391,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Check the publishing record's archive and component.
         foocomm_spph = SourcePackagePublishingHistory.selectOneBy(
             sourcepackagerelease=foocomm_spr)
-        self.assertEqual(foocomm_spph.archive.description, 
+        self.assertEqual(foocomm_spph.archive.description,
             'Commercial archive')
-        self.assertEqual(foocomm_spph.component.name, 
+        self.assertEqual(foocomm_spph.component.name,
             'commercial')
 
         # Now upload a binary package of 'foocomm'.
@@ -409,9 +415,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Check the publishing record's archive and component.
         foocomm_bpph = BinaryPackagePublishingHistory.selectOneBy(
             binarypackagerelease=foocomm_bpr)
-        self.assertEqual(foocomm_bpph.archive.description, 
+        self.assertEqual(foocomm_bpph.archive.description,
             'Commercial archive')
-        self.assertEqual(foocomm_bpph.component.name, 
+        self.assertEqual(foocomm_bpph.component.name,
             'commercial')
 
 
@@ -425,17 +431,21 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         distroseries and an new uploadprocessor instance.
         """
         TestUploadProcessorBase.setUp(self)
-
+        self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         # Let's make 'name16' person member of 'launchpad-beta-tester'
         # team only in the context of this test.
         beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
         admin = getUtility(ILaunchpadCelebrities).admin
-        name16 = getUtility(IPersonSet).getByName("name16")
-        beta_testers.addMember(name16, admin)
+        self.name16 = getUtility(IPersonSet).getByName("name16")
+        beta_testers.addMember(self.name16, admin)
         # Pop the two messages notifying the team modification.
         unused = stub.test_emails.pop()
         unused = stub.test_emails.pop()
 
+        # create name16 PPA
+        self.name16_ppa = getUtility(IArchiveSet).new(
+            owner=self.name16, distribution=self.ubuntu,
+            purpose=ArchivePurpose.PPA)
         # Extra setup for breezy
         self.setupBreezy()
         self.layer.txn.commit()
@@ -452,39 +462,41 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
 
-    def assertEmail(self, contents=[], recipients=[]):
+    def assertEmail(self, contents=None, recipients=None):
         """Check email last email content and recipients."""
         if not recipients:
             recipients = self.default_recipients
+        if not contents:
+            contents = []
 
         self.assertEqual(
             len(stub.test_emails), 1,
             'Unexpected number of emails sent: %s' % len(stub.test_emails))
 
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        body = msg.get_payload(decode=True)
 
         clean_recipients = [r.strip() for r in to_addrs]
         for recipient in list(recipients):
             self.assertTrue(recipient in clean_recipients)
 
+        subject = "Subject: %s" % msg['Subject']
+        body = subject + body
+
         for content in list(contents):
             self.assertTrue(
-                content in raw_msg,
-                "Expect: '%s'\nGot:\n%s" % (content, raw_msg))
+                content in body,
+                "Expect: '%s'\nGot:\n%s" % (content, body))
 
     def testUploadToPPA(self):
         """Upload to a PPA gets there.
 
         Email announcement is sent and package is on queue ACCEPTED even if
         the source is NEW (PPA Auto-Accept everything).
-        Note the the name16 PPA is automatically created by a succesfully
-        upload.
         Also test IArchiveSet.getPendingAcceptancePPAs() and check it returns
         the just-modified archive.
         """
-        name16 = getUtility(IPersonSet).getByName("name16")
-        self.assertEqual(name16.archive, None)
-
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
@@ -492,35 +504,68 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "Subject: [PPA name16] Accepted bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
-        self.assertNotEqual(name16.archive, None)
-
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=name16.archive)
+            version="1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
         pending_queue = queue_items[0]
-        self.assertEqual(pending_queue.archive, name16.archive)
+        self.assertEqual(pending_queue.archive, self.name16.archive)
         self.assertEqual(
             pending_queue.pocket, PackagePublishingPocket.RELEASE)
 
-        pending_ppas = getUtility(IArchiveSet).getPendingAcceptancePPAs()
+        pending_ppas = self.breezy.distribution.getPendingAcceptancePPAs()
         self.assertEqual(pending_ppas.count(), 1)
-        self.assertEqual(pending_ppas[0], name16.archive)
+        self.assertEqual(pending_ppas[0], self.name16.archive)
+
+    def testUploadToUnknownPPA(self):
+        """Upload to a unknown PPA.
+
+        Upload gets processed as if it was targeted to the ubuntu PRIMARY
+        archive, however it is rejected, since it could not find the
+        specified PPA.
+
+        A rejection notification is sent to the uploader.
+        """
+        upload_dir = self.queueUpload("bar_1.0-1", "~spiv/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected",
+            "Could not find PPA for 'spiv'"]
+        self.assertEmail(contents)
+
+    def testUploadToDisabledPPA(self):
+        """Upload to a disabled PPA.
+
+        Upload gets processed as if it was targeted to the ubuntu PRIMARY
+        archive, however it is rejected since the PPA is disabled.
+        A rejection notification is sent to the uploader.
+        """
+        spiv = getUtility(IPersonSet).getByName("spiv")
+        spiv_archive = getUtility(IArchiveSet).new(
+            owner=spiv, distribution=self.ubuntu,
+            purpose=ArchivePurpose.PPA)
+        spiv_archive.enabled = False
+        self.layer.commit()
+
+        upload_dir = self.queueUpload("bar_1.0-1", "~spiv/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected",
+            "Personal Package Archive for Andrew Bennetts is disabled"]
+        self.assertEmail(contents)
 
     def testPPADistroSeriesOverrides(self):
         """It's possible to override target distroserieses of PPA uploads.
 
         Similar to usual PPA uploads:
 
-         * The PPA is created if necessary.
          * Email notification is sent
          * The upload is auto-accepted in the overridden target distroseries.
          * The modified PPA is found by getPendingAcceptancePPA() lookup.
         """
-        name16 = getUtility(IPersonSet).getByName("name16")
-        self.assertEqual(name16.archive, None)
-
         upload_dir = self.queueUpload(
             "bar_1.0-1", "~name16/ubuntu/hoary")
         self.processUpload(self.uploadprocessor, upload_dir)
@@ -529,27 +574,28 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "Subject: [PPA name16] Accepted bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
-        self.assertNotEqual(name16.archive, None)
-
         hoary = self.ubuntu['hoary']
         queue_items = hoary.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=name16.archive)
+            version="1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
         pending_queue = queue_items[0]
-        self.assertEqual(pending_queue.archive, name16.archive)
+        self.assertEqual(pending_queue.archive, self.name16.archive)
         self.assertEqual(
             pending_queue.pocket, PackagePublishingPocket.RELEASE)
 
-        pending_ppas = getUtility(IArchiveSet).getPendingAcceptancePPAs()
+        pending_ppas = self.ubuntu.getPendingAcceptancePPAs()
         self.assertEqual(pending_ppas.count(), 1)
-        self.assertEqual(pending_ppas[0], name16.archive)
+        self.assertEqual(pending_ppas[0], self.name16.archive)
 
     def testUploadToTeamPPA(self):
         """Upload to a team PPA also gets there."""
         ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
-        self.assertEqual(ubuntu_team.archive, None)
+        getUtility(IArchiveSet).new(
+            owner=ubuntu_team, distribution=self.ubuntu,
+            purpose=ArchivePurpose.PPA)
+        self.layer.commit()
 
         upload_dir = self.queueUpload("bar_1.0-1", "~ubuntu-team/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
@@ -558,12 +604,14 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "Subject: [PPA ubuntu-team] Accepted bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
-        self.assertNotEqual(ubuntu_team.archive, None)
-
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
             version="1.0-1", exact_match=True, archive=ubuntu_team.archive)
         self.assertEqual(queue_items.count(), 1)
+
+        pending_ppas = self.ubuntu.getPendingAcceptancePPAs()
+        self.assertEqual(pending_ppas.count(), 1)
+        self.assertEqual(pending_ppas[0], ubuntu_team.archive)
 
     def testNotMemberUploadToTeamPPA(self):
         """Upload to a team PPA is rejected when the uploader is not member.
@@ -573,7 +621,10 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         """
         ubuntu_translators = getUtility(IPersonSet).getByName(
             "ubuntu-translators")
-        self.assertEqual(ubuntu_translators.archive, None)
+        getUtility(IArchiveSet).new(
+            owner=ubuntu_translators, distribution=self.ubuntu,
+            purpose=ArchivePurpose.PPA)
+        self.layer.commit()
 
         upload_dir = self.queueUpload("bar_1.0-1", "~ubuntu-translators/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
@@ -581,13 +632,17 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         contents = [""]
         self.assertEmail(contents)
 
-        self.assertEqual(ubuntu_translators.archive, None)
-
-        pending_ppas = getUtility(IArchiveSet).getPendingAcceptancePPAs()
+        pending_ppas = self.ubuntu.getPendingAcceptancePPAs()
         self.assertEqual(pending_ppas.count(), 0)
 
     def testUploadToSomeoneElsePPA(self):
         """Upload to a someone else's PPA gets rejected with proper message."""
+        kinnison = getUtility(IPersonSet).getByName("kinnison")
+        getUtility(IArchiveSet).new(
+            owner=kinnison, distribution=self.ubuntu,
+            purpose=ArchivePurpose.PPA)
+        self.layer.commit()
+
         upload_dir = self.queueUpload("bar_1.0-1", "~kinnison/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
@@ -608,10 +663,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
 
     def testUploadSignedByNonUbuntero(self):
         """Check if a non-ubuntero can upload to his PPA."""
-        name16 = getUtility(IPersonSet).getByName("name16")
-        self.assertEqual(name16.archive, None)
-
-        name16.activesignatures[0].active = False
+        self.name16.activesignatures[0].active = False
         self.layer.commit()
 
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
@@ -621,15 +673,12 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "Subject: bar_1.0-1_source.changes rejected",
             "PPA uploads must be signed by an 'ubuntero'."]
         self.assertEmail(contents)
-        self.assertTrue(name16.archive is None)
+        self.assertTrue(self.name16.archive is not None)
 
     def testUploadSignedByBetaTesterMember(self):
         """Check if a non-member of launchpad-beta-testers can upload to PPA."""
-        name16 = getUtility(IPersonSet).getByName("name16")
-        self.assertEqual(name16.archive, None)
-
         beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
-        name16.leave(beta_testers)
+        self.name16.leave(beta_testers)
         # Pop the message notifying the membership modification.
         unused = stub.test_emails.pop()
 
@@ -640,7 +689,17 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "Subject: bar_1.0-1_source.changes rejected",
             "PPA is only allowed for members of launchpad-beta-testers team."]
         self.assertEmail(contents)
-        self.assertEqual(name16.archive, None)
+
+    def testUploadToAMismatchingDistribution(self):
+        """Check if we only accept uploads to the Archive.distribution."""
+        upload_dir = self.queueUpload("bar_1.0-1", "~cprov/ubuntutest")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected",
+            "Personal Package Archive for Celso Providelo only "
+            "supports uploads to 'ubuntu'"]
+        self.assertEmail(contents)
 
     def testUploadToUnknownDistribution(self):
         """Upload to unknown distribution gets proper rejection email."""

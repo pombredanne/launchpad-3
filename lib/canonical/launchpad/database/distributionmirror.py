@@ -20,21 +20,20 @@ from canonical.config import config
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
 from canonical.archivepublisher.diskpool import poolify
 
 from canonical.lp.dbschema import (
-    MirrorSpeed, MirrorContent, MirrorStatus, PackagePublishingPocket,
-    PackagePublishingStatus, SourcePackageFileType,
-    BinaryPackageFileType)
+    BinaryPackageFileType, PackagePublishingPocket, PackagePublishingStatus,
+    SourcePackageFileType)
 
 from canonical.launchpad.interfaces import (
-    IDistributionMirror, IMirrorDistroSeriesSource, IMirrorDistroArchSeries,
-    IMirrorProbeRecord, IDistributionMirrorSet, PROBE_INTERVAL, pocketsuffix,
-    IDistroSeries, IDistroArchSeries, IMirrorCDImageDistroSeries,
-    ILaunchpadCelebrities)
+    IDistributionMirrorSet, IDistributionMirror, IDistroArchSeries,
+    IDistroSeries, ILaunchpadCelebrities, IMirrorCDImageDistroSeries,
+    IMirrorDistroArchSeries, IMirrorDistroSeriesSource, IMirrorProbeRecord,
+    MirrorContent, MirrorSpeed, MirrorStatus, pocketsuffix, PROBE_INTERVAL)
 from canonical.launchpad.database.country import Country
 from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
@@ -72,11 +71,11 @@ class DistributionMirror(SQLBase):
     enabled = BoolCol(
         notNull=True, default=False)
     speed = EnumCol(
-        notNull=True, schema=MirrorSpeed)
+        notNull=True, enum=MirrorSpeed)
     country = ForeignKey(
         dbName='country', foreignKey='Country', notNull=True)
     content = EnumCol(
-        notNull=True, schema=MirrorContent)
+        notNull=True, enum=MirrorContent)
     official_candidate = BoolCol(
         notNull=True, default=False)
     official_approved = BoolCol(
@@ -130,12 +129,12 @@ class DistributionMirror(SQLBase):
 
     def getOverallStatus(self):
         """See IDistributionMirror"""
-        # XXX: We shouldn't be using MirrorStatus to represent the overall
+        # XXX Guilherme Salgado 2006-08-16: 
+        # We shouldn't be using MirrorStatus to represent the overall
         # status of a mirror, but for now it'll do the job and we'll use the
         # UNKNOWN status to represent a mirror without any content (which may
         # mean the mirror was never verified or it was verified and no content
         # was found).
-        # -- Guilherme Salgado, 2006-08-16
         if self.content == MirrorContent.RELEASE:
             if self.cdimage_serieses:
                 return MirrorStatus.UP
@@ -351,9 +350,9 @@ class DistributionMirror(SQLBase):
             for pocket, suffix in pocketsuffix.items():
                 for component in series.components:
                     for arch_series in series.architectures:
-                        # XXX: This hack is a cheap attempt to try and avoid
-                        # https://launchpad.net/bugs/54791 from biting us.
-                        # -- Guilherme Salgado, 2006-08-01
+                        # XXX Guilherme Salgado 2006-08-01 bug=54791: 
+                        # This hack is a cheap attempt to try and avoid
+                        # bug 54791 from biting us.
                         if arch_series.architecturetag in ('hppa', 'ia64'):
                             continue
 
@@ -425,10 +424,11 @@ class DistributionMirrorSet:
             mirrors.append(main_mirror)
         return mirrors
 
-    def getMirrorsToProbe(self, content_type, ignore_last_probe=False):
+    def getMirrorsToProbe(
+            self, content_type, ignore_last_probe=False, limit=None):
         """See IDistributionMirrorSet"""
         query = """
-            SELECT distributionmirror.id, max(mirrorproberecord.date_created)
+            SELECT distributionmirror.id, MAX(mirrorproberecord.date_created)
             FROM distributionmirror 
             LEFT OUTER JOIN mirrorproberecord
                 ON mirrorproberecord.distribution_mirror = distributionmirror.id
@@ -440,10 +440,17 @@ class DistributionMirrorSet:
 
         if not ignore_last_probe:
             query += """
-                HAVING max(mirrorproberecord.date_created) IS NULL
-                    OR max(mirrorproberecord.date_created) 
+                HAVING MAX(mirrorproberecord.date_created) IS NULL
+                    OR MAX(mirrorproberecord.date_created) 
                         < %s - '%s hours'::interval
                 """ % sqlvalues(UTC_NOW, PROBE_INTERVAL)
+
+        query += """
+            ORDER BY MAX(COALESCE(
+                mirrorproberecord.date_created, '1970-01-01')) ASC, id"""
+
+        if limit is not None:
+            query += " LIMIT %d" % limit
 
         conn = DistributionMirror._connection
         ids = ", ".join(str(id) for (id, date_created) in conn.queryAll(query))
@@ -599,7 +606,7 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
     component = ForeignKey(
         dbName='component', foreignKey='Component', notNull=True)
     status = EnumCol(
-        notNull=True, default=MirrorStatus.UNKNOWN, schema=MirrorStatus)
+        notNull=True, default=MirrorStatus.UNKNOWN, enum=MirrorStatus)
     pocket = EnumCol(
         notNull=True, schema=PackagePublishingPocket)
 
@@ -667,7 +674,7 @@ class MirrorDistroSeriesSource(SQLBase, _MirrorSeriesMixIn):
     component = ForeignKey(
         dbName='component', foreignKey='Component', notNull=True)
     status = EnumCol(
-        notNull=True, default=MirrorStatus.UNKNOWN, schema=MirrorStatus)
+        notNull=True, default=MirrorStatus.UNKNOWN, enum=MirrorStatus)
     pocket = EnumCol(
         notNull=True, schema=PackagePublishingPocket)
 

@@ -26,10 +26,9 @@ from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
     IDistributionSet, ILanguageSet, ILaunchBag, InvalidQuestionStateError,
-    IPersonSet, IQuestion, IQuestionMessage)
+    IPersonSet, IQuestion, IQuestionMessage, QuestionAction, QuestionStatus)
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests.event import TestEventListener
-from canonical.lp.dbschema import QuestionAction, QuestionStatus
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
 

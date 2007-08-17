@@ -7,14 +7,56 @@ __metaclass__ = type
 __all__ = [
     'IGPGKey',
     'IGPGKeySet',
+    'GPGKeyAlgorithm',
     ]
 
 from zope.schema import Bool, Int, TextLine, Choice
 from zope.interface import Interface, Attribute
-from canonical.launchpad import _
 
+from canonical.lazr import DBEnumeratedType, DBItem
+
+from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.validators.gpg import valid_fingerprint, valid_keyid
+
+
+# XXX: cprov 2004-10-04:
+# (gpg+dbschema) the data structure should be rearranged to support 4 field
+# needed: keynumber(1,16,17,20), keyalias(R,g,D,G), title and description
+class GPGKeyAlgorithm(DBEnumeratedType):
+    """
+    GPG Compilant Key Algorithms Types:
+
+    1 : "R", # RSA
+    16: "g", # ElGamal
+    17: "D", # DSA
+    20: "G", # ElGamal, compromised
+
+    FIXME
+    Rewrite it according the experimental API retuning also a name attribute
+    tested on 'algorithmname' attribute
+
+    """
+
+    R = DBItem(1, """
+        R
+
+        RSA""")
+
+    LITTLE_G = DBItem(16, """
+         g
+
+         ElGamal""")
+
+    D = DBItem(17, """
+        D
+
+        DSA""")
+
+    G = DBItem(20, """
+        G
+
+        ElGamal, compromised""")
 
 
 class IGPGKey(IHasOwner):

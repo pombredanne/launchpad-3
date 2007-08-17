@@ -101,7 +101,7 @@ edit the Status Whiteboard using the 'Edit Question' page.
 Since the assignee is notified of changes to the question, his name also
 appears under the 'Also notified' list in the 'Subscribers' portlet:
 
-    >>> portlet = soup.first('div', id='question-subscribers')
+    >>> portlet = soup.first('div', id='portlet-subscribers')
     >>> also_notified = portlet.first('b')
     >>> also_notified
     <b>Also notified:</b>

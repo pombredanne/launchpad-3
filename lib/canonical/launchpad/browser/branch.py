@@ -9,6 +9,7 @@ __all__ = [
     'PersonBranchAddView',
     'ProductBranchAddView',
     'BranchContextMenu',
+    'BranchDeletionView',
     'BranchEditView',
     'BranchReassignmentView',
     'BranchNavigation',
@@ -37,7 +38,7 @@ from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchType, BranchVisibilityRule, IBranch,
     IBranchSet, IBranchSubscription, IBugSet,
-    ILaunchpadCelebrities, IPersonSet)
+    ICodeImportSet, ILaunchpadCelebrities, IPersonSet)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
@@ -82,19 +83,30 @@ class BranchNavigation(Navigation):
         if person is not None:
             return self.context.getSubscription(person)
 
+    @stepto("+code-import")
+    def traverse_code_import(self):
+        """Traverses to an `ICodeImport`."""
+        return getUtility(ICodeImportSet).getByBranch(self.context)
+
 
 class BranchContextMenu(ContextMenu):
     """Context menu for branches."""
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'browse', 'reassign', 'subscription', 'addsubscriber',
-             'associations']
+    links = ['edit', 'delete_branch', 'browse', 'reassign', 'subscription',
+             'addsubscriber', 'associations']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change branch details'
         return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def delete_branch(self):
+        text = 'Delete branch'
+        enabled = self.context.canBeDeleted()
+        return Link('+delete', text, enabled=enabled)
 
     def browse(self):
         text = 'Browse code'
@@ -172,8 +184,8 @@ class BranchView(LaunchpadView):
 
     def edit_link_url(self):
         """Target URL of the Edit link used in the actions portlet."""
-        # XXX: that should go away when bug #5313 is fixed.
-        #  -- DavidAllouche 2005-12-02
+        # XXX: DavidAllouche 2005-12-02 bug=5313:
+        # That should go away when bug #5313 is fixed.
         linkdata = BranchContextMenu(self.context).edit()
         return '%s/%s' % (canonical_url(self.context), linkdata.target)
 
@@ -199,8 +211,8 @@ class BranchView(LaunchpadView):
 
     def upload_url(self):
         """The URL the logged in user can use to upload to this branch."""
-        return 'sftp://%s@bazaar.launchpad.net/%s' % (
-            self.user.name, self.context.unique_name)
+        url_base = config.codehosting.upload_url_base % (self.user.name,)
+        return '%s/%s' % (url_base, self.context.unique_name)
 
     def is_hosted_branch(self):
         """Whether this is a user-provided hosted branch."""
@@ -271,6 +283,30 @@ class BranchEditFormView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
+class BranchDeletionView(LaunchpadFormView):
+    """Used to delete a branch."""
+
+    schema = IBranch
+    field_names = []
+
+    @action('Delete Branch', name='delete_branch')
+    def delete_branch_action(self, action, data):
+        branch = self.context
+        if self.context.canBeDeleted():
+            # Since the user is going to delete the branch, we need to have
+            # somewhere valid to send them next.  Since most of the time it
+            # will be the owner of the branch deleting it, we should send
+            # them to the code listing for the owner.
+            self.next_url = canonical_url(branch.owner)
+            message = "Branch %s deleted." % branch.unique_name
+            getUtility(IBranchSet).delete(branch)
+            self.request.response.addNotification(message)
+        else:
+            self.request.response.addNotification(
+                "This branch cannot be deleted.")
+            self.next_url = canonical_url(branch)
+
+
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 
     schema = IBranch
@@ -330,9 +366,9 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
     def add_action(self, action, data):
         """Handle a request to create a new branch for this product."""
         try:
-            # XXX thumper 2007-06-27, the branch_type needs to be passed
+            # XXX thumper 2007-06-27 spec=branch-creation-refactoring:
+            # The branch_type needs to be passed
             # in as part of the view data, see spec
-            # launchpad-bazaar/+spec/branch-creation-refactoring
             self.branch = getUtility(IBranchSet).new(
                 branch_type=BranchType.MIRRORED,
                 name=data['name'],
@@ -438,10 +474,10 @@ class ProductBranchAddView(BranchAddView):
 class BranchReassignmentView(ObjectReassignmentView):
     """Reassign branch to a new owner."""
 
-    # XXX: this view should have a "name" field to allow the user to resolve a
+    # XXX: David Allouche 2006-08-16:
+    # This view should have a "name" field to allow the user to resolve a
     # name conflict without going to another page, but this is hard to do
     # because ObjectReassignmentView uses a custom form.
-    # -- David Allouche 2006-08-16
 
     @property
     def nextUrl(self):
