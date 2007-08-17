@@ -720,10 +720,11 @@ class TranslationImportQueue:
 
         return queries, clause_tables
 
-    def getAllEntries(self, target=None, status=None, file_extension=None):
+    def getAllEntries(self, target=None, import_status=None,
+                      file_extension=None):
         """See ITranslationImportQueue."""
         queries, clause_tables = self._getQueryByFiltering(
-            target, status, file_extension)
+            target, import_status, file_extension)
         return TranslationImportQueueEntry.select(
             " AND ".join(queries), clauseTables=clause_tables,
             orderBy=['status', 'dateimported', 'id'])
@@ -743,7 +744,7 @@ class TranslationImportQueue:
                 clause_tables.append('DistroRelease')
                 queries.append('distrorelease = DistroRelease.id')
 
-            queries.append('defer_translation_imports IS FALSE')
+            queries.append('DistroRelease.defer_translation_imports IS FALSE')
 
         return TranslationImportQueueEntry.selectFirst(
             " AND ".join(queries), clauseTables=clause_tables,
@@ -903,9 +904,9 @@ class HasTranslationImportsMixin:
         translation_import_queue = TranslationImportQueue()
         return translation_import_queue.getFirstEntryToImport(target=self)
 
-    def getTranslationImportQueueEntries(self, status=None,
+    def getTranslationImportQueueEntries(self, import_status=None,
                                          file_extension=None):
         """See `IHasTranslationImports`."""
         translation_import_queue = TranslationImportQueue()
         return translation_import_queue.getAllEntries(
-            self, status=status, file_extension=file_extension)
+            self, import_status=import_status, file_extension=file_extension)

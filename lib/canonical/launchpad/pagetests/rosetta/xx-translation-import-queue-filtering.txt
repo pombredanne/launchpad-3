@@ -1,6 +1,9 @@
 With this test we are going to test the entries filtering on the translation
 import queue form.
 
+To get the filter widgets we will use their names directly because there
+is no human readable labels associated with them.
+
 Let's add 100 files to the queue so we have enough entries to play with.
 
   >>> import canonical.launchpad

@@ -31,9 +31,9 @@
       <!-- Queue entries -->
       <div>
         <tal:block condition="not:view/batchnav/currentBatch">
-          <div class="documentDescription">
+          <p id="no-entries">
             There are no entries that match this filtering.
-          </div>
+          </p>
         </tal:block>
         <tal:block condition="view/batchnav/currentBatch">
           <form action=""
@@ -50,7 +50,7 @@
             <tal:navigation
                  replace="structure view/batchnav/@@+navigation-links-upper" />
 
-            <table id='import-entries-list' class="listing" width="100%">
+            <table id="import-entries-list" class="listing" width="100%">
               <tal:loop repeat="entry view/batchnav/currentBatch">
                 <tr>
                   <tal:comment replace="nothing">
@@ -128,10 +128,12 @@
                     tal:define="script view/focusedElementScript"
                     tal:condition="script"
                     tal:content="structure script" />
-
-            <div class="actions">
-              <input tal:replace="structure view/change_status_action/render" />
-            </div>
+            <tal:block define="user request/lp:person" condition="user">
+              <div class="actions">
+                <input
+                  tal:replace="structure view/change_status_action/render" />
+              </div>
+            </tal:block>
           </form>
         </tal:block>
       </div>

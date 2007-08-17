@@ -19,6 +19,7 @@ from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IHasTranslationImports, IPillarNameSet, ITranslationImportQueue,
@@ -56,46 +57,45 @@ class HasTranslationImportsView(LaunchpadFormView):
         self._initial_values = {}
         LaunchpadFormView.initialize(self)
 
-    def createFilterTargetField(self):
-        """Create a field with a vocabulary to filter by target.
-
-        By default this option is empty. It's useful for
-        ITranslationImportQueue view which inherite from this class and
-        provides content for this method.
-
-        :return: A form.Fields instance containing the target field or None.
-        """
-        return None
+    def createFilterFieldHelper(self, name, source, title):
+        """A helper method for creating filter fields."""
+        self._initial_values[name] = 'all'
+        return form.Fields(
+            Choice(
+                __name__=name,
+                source=source,
+                title=_(title)),
+            custom_widget=self.custom_widgets[name],
+            render_context=self.render_context)
 
     def createFilterStatusField(self):
         """Create a field with a vocabulary to filter by import status.
 
         :return: A form.Fields instance containing the status field.
         """
-        name = 'filter_status'
-        self._initial_values[name] = 'all'
-        return form.Fields(
-            Choice(
-                __name__=name,
-                source=TranslationImportStatusVocabularyFactory(),
-                title=_('Choose which status to show')),
-            custom_widget=self.custom_widgets[name],
-            render_context=self.render_context)
+        return self.createFilterFieldHelper(
+            name='filter_status',
+            source=TranslationImportStatusVocabularyFactory(),
+            title='Choose which status to show')
 
     def createFilterFileExtensionField(self):
         """Create a field with a vocabulary to filter by file extension.
 
         :return: A form.Fields instance containing the file extension field.
         """
-        name = 'filter_extension'
-        self._initial_values[name] = 'all'
-        return form.Fields(
-            Choice(
-                __name__=name,
-                source=TranslationImportFileExtensionVocabularyFactory(),
-                title=_('Show entries with this extension')),
-            custom_widget=self.custom_widgets[name],
-            render_context=self.render_context)
+        return self.createFilterFieldHelper(
+            name='filter_extension',
+            source=TranslationImportFileExtensionVocabularyFactory(),
+            title='Show entries with this extension')
+
+    def createFilterTargetField(self):
+        """Create a field with a vocabulary to filter by target.
+
+        By default this does nothing. Subclasses can override this.
+
+        :return: A form.Fields instance containing the target field or None.
+        """
+        return None
 
     def createEntryStatusField(self, entry):
         """Create a field with a vocabulary with entry's import status.
@@ -113,7 +113,7 @@ class HasTranslationImportsView(LaunchpadFormView):
             render_context=self.render_context)
 
     def setUpFields(self):
-        """Set up the form_fields from custom_widgets."""
+        """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpFields(self)
         # setup filter fields.
         target_field = self.createFilterTargetField()
@@ -126,22 +126,20 @@ class HasTranslationImportsView(LaunchpadFormView):
             self.form_fields)
 
     def setUpWidgets(self):
+        """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpWidgets(self)
 
         if not self.filter_action.submitted():
             self.setUpEntriesWidgets()
 
     def setUpEntriesWidgets(self):
-        # Prepare entries fields.
-        fields = None
+        """Prepare translation import entries widgets to be rendered."""
+        fields = form.Fields()
         for entry in self.batchnav.currentBatch():
-            if fields is None:
-                fields = self.createEntryStatusField(entry)
-            else:
-                fields = (self.createEntryStatusField(entry) + fields)
+            fields += self.createEntryStatusField(entry)
 
-        if fields is not None:
-            self.form_fields = (fields + self.form_fields)
+        if len(fields) > 0:
+            self.form_fields += fields
 
             self.widgets += form.setUpWidgets(
                 fields, self.prefix, self.context, self.request,
@@ -168,7 +166,9 @@ class HasTranslationImportsView(LaunchpadFormView):
     def change_status_action(self, action, data):
         """Handle a queue submission changing the status of its entries."""
         # The user must be logged in.
-        assert self.user is not None
+        if self.user is None:
+            raise UnexpectedFormData(
+                'Users not logged cannot submit this form.')
 
         number_of_changes = 0
         for form_item in data:
@@ -178,11 +178,13 @@ class HasTranslationImportsView(LaunchpadFormView):
 
             # It's an form_item to handle.
             try:
-                common, id_string = form_item.split('_')
+                # 'ignored' is 'status' due to the previous check, so we could
+                # ignore that part.
+                ignored, id_string = form_item.split('_')
                 # The id is an integer
                 id = int(id_string)
             except ValueError:
-                # We got an form_item with more than one '-' char or with an
+                # We got an form_item with more than one '_' char or with an
                 # id that is not a number, that means that someone is playing
                 # badly with our system so it's safe to just ignore the
                 # request.
@@ -236,7 +238,7 @@ class HasTranslationImportsView(LaunchpadFormView):
                 "Changed the status of %d queue entries." % number_of_changes)
 
     def getEntriesFilteringOptions(self):
-        """Return the options applied by the filtering."""
+        """Return the selected filtering."""
         target = None
         file_extension = None
         status = None
@@ -274,30 +276,25 @@ class HasTranslationImportsView(LaunchpadFormView):
         """Return the entries in the queue for this context."""
         target, file_extension, status = self.getEntriesFilteringOptions()
         assert target is None, (
-            'Inherite from this view class if target filter is being used.')
+            'Inherit from this view class if target filter is being used.')
 
         return IHasTranslationImports(
             self.context).getTranslationImportQueueEntries(
-                status=status, file_extension=file_extension)
-
-    @property
-    def has_entries(self):
-        """Whether there are entries in the queue."""
-        return self.entries.count() > 0
+                import_status=status, file_extension=file_extension)
 
     @property
     def has_target_filter(self):
         """Whether the form should show the target filter."""
         return self.widgets.get('filter_target') is not None
 
-    @property
+    @cachedproperty
     def batchnav(self):
         """Return batch object for this page."""
         return TableBatchNavigator(self.entries, self.request)
 
 
 class EntryImportStatusVocabularyFactory:
-    """Factory for a vocabulary containing a list of status for import."""
+    """Factory for a vocabulary containing a list of statuses for import."""
 
     implements(IContextSourceBinder)
 
@@ -308,7 +305,6 @@ class EntryImportStatusVocabularyFactory:
             vocabulary.
         """
         self.entry = entry
-
 
     def __call__(self, context):
         terms = []
@@ -338,7 +334,7 @@ class EntryImportStatusVocabularyFactory:
 
 
 class TranslationImportStatusVocabularyFactory:
-    """Factory for a vocabulary containing a list of import status."""
+    """Factory for a vocabulary containing a list of import statuses."""
 
     implements(IContextSourceBinder)
 
@@ -362,5 +358,4 @@ class TranslationImportFileExtensionVocabularyFactory:
             title = 'Only %s files' % extension
             terms.append(SimpleTerm(extension, extension, title))
         return SimpleVocabulary(terms)
-
 

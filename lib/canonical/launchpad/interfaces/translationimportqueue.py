@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd. All rights reserved.
+# Copyright 2005-2007 Canonical Ltd. All rights reserved.
 
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, TextLine, Datetime, Field
@@ -185,13 +185,13 @@ class ITranslationImportQueue(Interface):
         """Return the ITranslationImportQueueEntry with the given id or None.
         """
 
-    def getAllEntries(target=None, status=None, file_extension=None):
+    def getAllEntries(target=None, import_status=None, file_extension=None):
         """Return all entries this import queue has
 
         :arg target: IPerson, IProduct, IProductSeries, IDistribution,
             IDistroSeries or ISourcePackage the import entries are attached to
             or None to get all entries available.
-        :arg status: RosettaImportStatus entry.
+        :arg import_status: RosettaImportStatus entry.
         :arg file_extension: String with the file type extension, usually 'po'
             or 'pot'.
 
@@ -208,11 +208,12 @@ class ITranslationImportQueue(Interface):
         """
 
     def getPillarObjectsWithImports(status=None):
-        """Return list of Product's and DistroSeries's with pending imports.
+        """Return list of Product and DistroSeries with pending imports.
 
         :arg status: Filter by RosettaImportStatus.
 
-        All returned items must implement IHasTranslationImports."""
+        All returned items will implement IHasTranslationImports.
+        """
 
     def executeOptimisticApprovals(ztm):
         """Try to move entries from the Needs Review status to Approved one.
@@ -292,13 +293,14 @@ class IHasTranslationImports(Interface):
     def getFirstEntryToImport():
         """Return the first entry of the queue ready to be imported."""
 
-    def getTranslationImportQueueEntries(status=None, file_extension=None):
+    def getTranslationImportQueueEntries(imports_status=None,
+                                         file_extension=None):
         """Return entries in the translation import queue for this entity.
 
-        :arg status: RosettaImportStatus DB Schema entry.
+        :arg import_status: RosettaImportStatus DB Schema entry.
         :arg file_extension: String with the file type extension, usually 'po'
             or 'pot'.
 
-        If either status or file_extension are given, the returned entries are
-        filtered based on those values.
+        If one of both of 'import_status' or 'file_extension' are given, the
+        returned entries are filtered based on those values.
         """

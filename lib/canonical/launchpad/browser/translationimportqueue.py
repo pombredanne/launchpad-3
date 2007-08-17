@@ -13,14 +13,11 @@ __all__ = [
 
 import os
 from zope.component import getUtility
-from zope.formlib import form
 from zope.interface import implements
-from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad import _
 from canonical.launchpad.browser.hastranslationimports import (
     HasTranslationImportsView)
 from canonical.launchpad.interfaces import (
@@ -215,25 +212,22 @@ class TranslationImportQueueView(HasTranslationImportsView):
     @property
     def entries(self):
         """Return the entries in the queue for this context."""
-        target, file_extension, status = self.getEntriesFilteringOptions()
+        target, file_extension, import_status = (
+            self.getEntriesFilteringOptions())
 
         return self.context.getAllEntries(
-                target=target, status=status, file_extension=file_extension)
+                target=target, import_status=import_status,
+                file_extension=file_extension)
 
     def createFilterTargetField(self):
         """Create a field with a vocabulary to filter by target.
 
         :return: A form.Fields instance containing the target field.
         """
-        name = 'filter_target'
-        self._initial_values[name] = 'all'
-        return form.Fields(
-            Choice(
-                __name__=name,
-                source=TranslationImportTargetVocabularyFactory(),
-                title=_('Choose which target to show')),
-            custom_widget=self.custom_widgets[name],
-            render_context=self.render_context)
+        return self.createFilterFieldHelper(
+            name='filter_target',
+            source=TranslationImportTargetVocabularyFactory(),
+            title='Choose which target to show')
 
 
 class TranslationImportTargetVocabularyFactory:

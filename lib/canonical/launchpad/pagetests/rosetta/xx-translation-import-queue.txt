@@ -31,10 +31,10 @@ The upload consists of a tarball containing templates and/or translations.
     True
     >>> for tag in find_tags_by_class(ff_owner_browser.contents,
     ...                               'informational message'):
-    ...     print tag.renderContents()
+    ...     print extract_text(tag.renderContents())
     Thank you for your upload. 1 files from the tarball will be reviewed soon
     by an admin and then imported into Launchpad. You can track its status
-    from the <a ...>Translation Import Queue</a>
+    from the Translation Import Queue
 
 The confirmation form shows the user the link where they could track the
 import status:
@@ -95,15 +95,14 @@ files such as directories or devices.
 If we are logged in as an administrator, the same page provides a link to where
 we can edit imports.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser = Browser()
+  >>> browser.addHeader('Authorization', 'Basic jordi@ubuntu.com:test')
   >>> browser.open('http://translations.launchpad.dev/+imports')
-  >>> browser.url
-  'http://translations.launchpad.dev/+imports'
   >>> 'po/es.po' in browser.contents
   True
   >>> 'Mozilla Firefox Series' in browser.contents
   True
-  >>> browser.getLink(url='imports/3')
+  >>> browser.getLink(url='+imports/3')
   <Link text='[IMG]' url='http://translations.launchpad.dev/+imports/3'>
   >>> browser.getControl(name='field.status_3').displayValue
   ['Needs Review']
@@ -122,8 +121,8 @@ Now, we attach a new file to an already existing translation resource.
   >>> browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload'
   >>> for tag in find_tags_by_class(browser.contents, 'message'):
-  ...     print tag
-  <div...Thank you for your upload. The file content will be imported soon...
+  ...     print tag.renderContents()
+  Thank you for your upload. The file content will be imported soon...
 
 The import queue should have two additional entries with the last upload as
 the last entry.
@@ -142,7 +141,7 @@ the last entry.
   ...<td>Needs Review</td>...
   ...evolution in Ubuntu Hoary...
   ...<td>Needs Review</td>...
-  ...Carlos Perelló Marín...
+  ...Jordi Mallach...
   ...Template "evolution-2.2" in Ubuntu Hoary package "evolution"...
 
 Open the edit form for the third entry.
@@ -179,18 +178,24 @@ There is an option to remove entries from the queue.
 
 No Privileges Person will try to remove it, but will fail.
 
-  >>> print http(r"""
-  ... POST /+imports HTTP/1.1
-  ... Host: translations.launchpad.dev
-  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 210
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... field.filter_target=all&field.filter_status=all&field.filter_extension=all&field.status_1=DELETED&field.status_2=DELETED&field.status_3=DELETED&field.status_4=DELETED&field.actions.change_status=Change%20status""")
-  HTTP/1.1 500 Internal Server Error
+  >>> import urllib
+  >>> post_data = urllib.urlencode(
+  ...     {
+  ...         'field.filter_target': 'all',
+  ...         'field.filter_status': 'all',
+  ...         'field.filter_extension': 'all',
+  ...         'field.status_1': 'DELETED',
+  ...         'field.status_2': 'DELETED',
+  ...         'field.status_3': 'DELETED',
+  ...         'field.status_4': 'DELETED',
+  ...         'field.actions.change_status': 'Change status',
+  ...     })
+  >>> user_browser.open(
+  ...     'http://translations.launchpad.dev/+imports',
+  ...     data=post_data)
+  Traceback (most recent call last):
   ...
-  ...UnexpectedFormData...
-  ...
+  UnexpectedFormData...
 
 But Jordi, a Rosetta expert, will be allowed to remove it.
 

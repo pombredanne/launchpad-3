@@ -25,14 +25,14 @@
         Translation files waiting to be imported for $context
       </h1>
 
-      <div class="documentDescription">
-        Here you have all translation related entries that are
-        imported, blocked, deleted or waiting to be imported in Launchpad for
+      <p id="description">
+        These translation related entries are imported, blocked, deleted or
+        waiting to be imported in Launchpad for
         <tal:displayname replace="context/displayname">Foo</tal:displayname>.
         <tal:login condition="not:request/lp:person">
           <a href="+login">Log in</a> to change items in this list.
         </tal:login>
-      </div>
+      </p>
 
       <metal:translation-import-queue
         use-macro="view/translation_import_queue_content" />
