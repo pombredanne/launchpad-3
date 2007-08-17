@@ -42,7 +42,6 @@ class BranchMergeProposalContextMenu(ContextMenu):
     """Context menu for branches."""
 
     usedfor = IBranchMergeProposal
-    facet = 'branches'
     links = ['merge']
 
     @enabled_with_permission('launchpad.Edit')

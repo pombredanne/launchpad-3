@@ -21,6 +21,20 @@
 
 <metal:block fill-slot="help">
 
+  <p>
+    A branch merge proposal can be marked as merged.
+  </p>
+
+  <p>
+    A proposal that has been merged no longer shows up on the
+    list of merge candidates on the target branch.
+  </p>
+
+  <p>
+    The user that marks the proposal as merged is recorded, along
+    with the revision number of the target branch where the merge
+    occurred.
+  </p>
 
 </metal:block>
 <tal:comment condition="nothing"><!-- end help slot --></tal:comment>

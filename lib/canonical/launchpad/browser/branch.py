@@ -622,23 +622,6 @@ class BranchSubscriptionsView(LaunchpadView):
                 for subscription in sorted_subscriptions]
 
 
-class AttributeDisplayWidget(BrowserWidget):
-
-    implements(IDisplayWidget)
-
-    def __init__(self, context, vocabulary, request, field_name):
-        import pdb; pdb.set_trace()
-        super(AttributeDisplayWidget, self).__init__(context, request)
-        self.field_name = field_name
-
-    def __call__(self):
-        import pdb; pdb.set_trace()
-        if hasattr(self.context, self.field_name):
-            return getattr(self.context, self.field_name)
-        else:
-            return ''
-
-
 class RegisterBranchMergeProposalView(LaunchpadFormView):
     """The view to register new branch merge proposals."""
     schema = IBranchMergeProposal
@@ -655,8 +638,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
 
         registrant = self.user
         source_branch = self.context
-        target_branch = data.get('target_branch')
-        dependent_branch = data.get('dependent_branch')
+        target_branch = data['target_branch']
+        dependent_branch = data['dependent_branch']
         whiteboard = data['whiteboard']
 
         # If the dependent_branch is set explicitly the same as the
@@ -674,6 +657,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             self.next_url = canonical_url(source_branch)
 
     def validate(self, data):
+
         source_branch = self.context
         target_branch = data.get('target_branch')
         dependent_branch = data.get('dependent_branch')

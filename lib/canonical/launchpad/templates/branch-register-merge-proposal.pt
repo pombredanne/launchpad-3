@@ -25,7 +25,22 @@
 
 <metal:block fill-slot="help">
 
-  <p>Add some help.</p>
+  <p>
+    The purpose of a branch merge proposal is to indicate that one
+    branch is intending to be merged back into another branch.
+  </p>
+
+  <p>
+    The target branch is where the code will eventually be merged
+    into.
+  </p>
+
+  <p>
+    The dependent branch allows you to indicate that the branch
+    <em><tal:branch-name replace="context/displayname"/></em>
+    was branched of a different branch than the target branch.
+  </p>
+
 
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
 
