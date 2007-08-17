@@ -266,7 +266,7 @@ class POTemplate(SQLBase, RosettaStats):
         query = 'potemplate = %s' % sqlvalues(self.id)
         if only_current:
             query += ' AND sequence > 0'
-        if context:
+        if context is not None:
             query += ' AND context=%s' % sqlvalues(context)
         else:
             query += ' AND context IS NULL'

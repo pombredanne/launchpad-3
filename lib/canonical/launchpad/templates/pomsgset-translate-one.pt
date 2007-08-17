@@ -74,12 +74,12 @@
     </div>
   </td>
 </tr>
-<tr class="discreet secondary translation">
+<tr class="discreet secondary translation"
+    tal:condition="context/potmsgset/context">
   <th colspan="3">Context:</th>
   <td />
   <td>
-    <div tal:condition="context/potmsgset/context"
-         tal:content="context/potmsgset/context"
+    <div tal:content="context/potmsgset/context"
          tal:attributes="id string:${view/html_id}_context">
       Context
     </div>

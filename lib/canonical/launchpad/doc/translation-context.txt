@@ -37,26 +37,7 @@ what email has been sent, to whom, and what the body of the message contains:
 
 Here's a fake logger to capture any errors that happen.
 
-    >>> class FakeLogger:
-    ...     def message(self, prefix, *stuff, **kw):
-    ...         print prefix, ' '.join(stuff)
-    ...
-    ...         if 'exc_info' in kw:
-    ...             import sys
-    ...             import traceback
-    ...             exception = traceback.format_exception(*sys.exc_info())
-    ...             for thing in exception:
-    ...                 for line in thing.splitlines():
-    ...                     self.log(line)
-    ...
-    ...     def log(self, *stuff, **kw):
-    ...         self.message('log>', *stuff, **kw)
-    ...
-    ...     def warning(self, *stuff, **kw):
-    ...         self.message('WARNING', *stuff, **kw)
-    ...
-    ...     def info(self, *stuff, **kw):
-    ...         self.message('INFO', *stuff, **kw)
+    >>> from canonical.launchpad.scripts import FakeLogger
 
 This is a function for importing a pofile or potemplate from a string,
 printing out the import status after import is done.
@@ -366,3 +347,50 @@ It's different from the imported file only in a few headers.
     msgstr[0] "%d translation"
     msgstr[1] "%d translationes"
     msgstr[2] "%d translations"
+
+== Edge cases ==
+
+=== Messages with empty context ===
+
+Messages without msgctxt keyword and with empty value for msgctxt are
+not same.
+
+    >>> potemplate_contents = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "POT-Creation-Date: 2004-07-11 16:16+0900\n"
+    ... "Content-Type: text/plain; charset=CHARSET\n"
+    ... "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+    ... "X-Rosetta-Export-Date: %s\n"
+    ...
+    ... msgid "bar"
+    ... msgstr ""
+    ...
+    ... msgctxt ""
+    ... msgid "bar"
+    ... msgstr ""
+    ... ''' % datetime.datetime.now(UTC).isoformat()
+
+This file can now be correctly imported:
+
+    >>> import_pofile_or_potemplate(potemplate_contents, person, series,
+    ...                             potemplate=potemplate)
+    IMPORTED
+
+The method getPOTMsgSetByMsgIDText returns a message without context if
+no context is specified.
+
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'bar')
+    >>> print potmsgset.msgid
+    bar
+    >>> print potmsgset.context
+    None
+
+The method getPOTMsgSetByMsgIDText returns a message with empty context
+if empty context is specified, and not the message with None context.
+
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'bar', context=u'')
+    >>> print potmsgset.msgid
+    bar
+    >>> potmsgset.context
+    u''

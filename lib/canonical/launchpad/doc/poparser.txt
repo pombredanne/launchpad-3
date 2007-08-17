@@ -20,7 +20,7 @@ We should be completely sure that a .po file with an empty header is reported.
   ...
   TranslationFormatSyntaxError:...
 
-PO files with context after msgid's are reported as broken.
+PO files with context after msgids are reported as broken.
 
   >>> parser = POParser()
   >>> parser.write('msgid ""\nmsgstr ""\n'

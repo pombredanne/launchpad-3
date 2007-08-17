@@ -23,7 +23,7 @@ class IPOTMsgSet(Interface):
     # form 0 -- i.e. it's redundant. However, it acts as a cached value.
 
     context = Attribute(
-        "String used to disambiguate messages with identical msgid's.")
+        "String used to disambiguate messages with identical msgids.")
 
     primemsgid_ID = Int(title=u'Key of primary msgid for this set.',
         required=True, readonly=True)

@@ -532,7 +532,7 @@ class POFile(SQLBase, POFileMixIn):
             query += ' AND context IS NULL'
 
         potmsgset = POTMsgSet.selectOne(query +
-            (' AND primemsgid = %d' % pomsgid.id))
+            (' AND primemsgid = %s' % sqlvalues(pomsgid)))
 
         if potmsgset is None:
             # There is no IPOTMsgSet for this id.
