@@ -81,39 +81,40 @@ printing out the import status after import is done.
     ...         potemplate.importFromQueue(FakeLogger())
     ...     print entry.status.name
 
-== Import ==
+== Import PO templates ==
 
 Login as an admin to be able to do changes to the import queue.
 
     >>> login('carlos@canonical.com')
 
-Now, is time to create the new potemplate
+We are creating a new potemplate for Firefox product.
 
     >>> from canonical.launchpad.database import ProductRelease
     >>> release = ProductRelease.get(3)
     >>> release.productseries.product.name
     u'firefox'
     >>> series = release.productseries
-    >>> ptn = getUtility(IPOTemplateNameSet)['firefox']
+    >>> potemplatename = getUtility(IPOTemplateNameSet)['firefox']
     >>> subset = POTemplateSubset(productseries=series)
 
 Here's the person who'll be doing the import.
 
     >>> person_set = getUtility(IPersonSet)
-    >>> person = person_set.getByName('carlos')
+    >>> person = person_set.getByEmail('carlos@canonical.com')
 
 And this is the POTemplate where the import will be done.
 
     >>> potemplate = subset.new(
-    ...     potemplatename=ptn,
+    ...     potemplatename=potemplatename,
     ...     path='po/firefox.pot',
     ...     owner=person)
 
 We've got a template with two pairs of messages with duplicated msgids.
 In the first pair of messages, there is context added using 'msgctxt'
 to only one, and in the second pair of messages, different context is
-present on both messages (and, we're also using the fact that for plural
-form messages, gettext makes use of only msgid when comparing messages).
+present on both messages (note that two messages with the same msgid,
+where one contains a plural form and the other doesn't, are treated as
+the same message in gettext, and we have to use msgctxt on one of them).
 
     >>> potemplate_contents = r'''
     ... msgid ""
@@ -135,6 +136,8 @@ form messages, gettext makes use of only msgid when comparing messages).
     ... msgid "%%d file"
     ... msgstr ""
     ...
+    ... # This message has the same msgid as the one above, but it's a plural
+    ... # form message which gettext treats as the same if no context is added
     ... #, c-format
     ... msgctxt "Second message"
     ... msgid "%%d file"
@@ -150,9 +153,9 @@ This file can now be correctly imported:
     IMPORTED
 
 The method getPOTMsgSetByMsgIDText returns a message without context if
-context is not asked for specifically.
+no context is specified.
 
-    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText('bar')
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'bar')
     >>> print potmsgset.msgid
     bar
     >>> print potmsgset.context
@@ -161,13 +164,14 @@ context is not asked for specifically.
 And if all the messages have a context, getPOTMsgSetByMsgIDText returns
 nothing when context is not specified.
 
-    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText('%d file')
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'%d file')
     >>> print potmsgset
     None
 
-To get a message with context, we pass a context parameter.
+To get a message with a context, we pass a context parameter.
 
-    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText('bar', context='context')
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'bar',
+    ...                                                context=u'context')
     >>> print potmsgset.msgid
     bar
     >>> print potmsgset.context
@@ -175,14 +179,14 @@ To get a message with context, we pass a context parameter.
 
 It also works for plural form messages.
 
-    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText('%d file',
-    ...                                                context='First message')
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'%d file',
+    ...                                                context=u'First message')
     >>> print potmsgset.msgid
     %d file
     >>> print potmsgset.context
     First message
-    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText('%d file',
-    ...                                                context='Second message')
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'%d file',
+    ...                                                context=u'Second message')
     >>> print potmsgset.msgid
     %d file
     >>> print potmsgset.context
@@ -216,6 +220,8 @@ Importing this file fails because of conflicting messages.
     ...duplicate msgid...
     FAILED
 
+== Importing PO files ==
+
 We can also import POFile with context messages.
 
     >>> pofile = potemplate.newPOFile('sr')
@@ -230,11 +236,11 @@ We can also import POFile with context messages.
     ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "bar"
-    ... msgstr "foo"
+    ... msgstr "bar with no context"
     ...
     ... msgctxt "context"
     ... msgid "bar"
-    ... msgstr "fooing"
+    ... msgstr "bar with context"
     ...
     ... #, c-format
     ... msgctxt "First message"
@@ -257,26 +263,26 @@ Importing this file succeeds.
     IMPORTED
 
 If we don't pass context to POFile.getPOMsgSet method, we get the translation
-for the message without the context.
+for the message without a context.
 
     >>> pomsgset = pofile.getPOMsgSet(key=u'bar')
     >>> print pomsgset.active_texts
-    [u'foo']
+    [u'bar with no context']
 
 If we pass the context parameter to getPOMsgSet, we get the translation for
 a message with context.
 
     >>> pomsgset = pofile.getPOMsgSet(key=u'bar', context=u'context')
     >>> print pomsgset.active_texts
-    [u'fooing']
+    [u'bar with context']
 
-If a message requires context, you cannot get it without it:
+If message has a context, you cannot get it without specifying the context:
 
     >>> pomsgset = pofile.getPOMsgSet(key=u'%d file')
     >>> print pomsgset
     None
 
-If you add context, it actually works.
+If you specify context, it actually works.
 
     >>> pomsgset = pofile.getPOMsgSet(key=u'%d file', context=u'First message')
     >>> print pomsgset.active_texts
@@ -317,6 +323,8 @@ the same contents, except that header is marked fuzzy.
     msgid "%d file"
     msgstr ""
     <BLANKLINE>
+    # This message has the same msgid as the one above, but it's a plural
+    # form message which gettext treats as the same if no context is added
     #, c-format
     msgctxt "Second message"
     msgid "%d file"
@@ -324,7 +332,8 @@ the same contents, except that header is marked fuzzy.
     msgstr[0] ""
     msgstr[1] ""
 
-And a Serbian PO file is exported using regular export_to_pofile call.
+And a Serbian PO file is exported using regular export_pofile call.
+It's different from the imported file only in a few headers.
 
     >>> from canonical.launchpad.database import LanguageSet
     >>> language = LanguageSet()['sr']
@@ -339,11 +348,11 @@ And a Serbian PO file is exported using regular export_to_pofile call.
     "X-Rosetta-Export-Date: ...\n"
     <BLANKLINE>
     msgid "bar"
-    msgstr "foo"
+    msgstr "bar with no context"
     <BLANKLINE>
     msgctxt "context"
     msgid "bar"
-    msgstr "fooing"
+    msgstr "bar with context"
     <BLANKLINE>
     #, c-format
     msgctxt "First message"
