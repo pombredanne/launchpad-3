@@ -93,6 +93,8 @@ def get_external_bugtracker(bugtracker, version=None):
         return DebBugs()
     elif bugtrackertype == BugTrackerType.MANTIS:
         return Mantis(bugtracker.baseurl)
+    elif bugtrackertype == BugTrackerType.TRAC:
+        return Trac(bugtracker.baseurl)
     else:
         raise UnknownBugTrackerTypeError(bugtrackertype.name,
             bugtracker.name)
@@ -769,3 +771,119 @@ class Mantis(ExternalBugTracker):
                  (remote_status, remote_resolution))
         return BugTaskStatus.UNKNOWN
 
+
+class Trac(ExternalBugTracker):
+    """An ExternalBugTracker instance for handling Trac bugtrackers."""
+
+    ticket_url = 'ticket/%i?format=csv'
+    batch_url = 'query?%s&order=resolution&format=csv'
+    batch_query_threshold = 10
+
+    def __init__(self, baseurl):
+        # Trac can be really finicky about slashes in URLs, so we strip any
+        # trailing slashes to ensure we don't incur its wrath in the form of
+        # a 404.
+        self.baseurl = baseurl.rstrip('/')
+
+    def initializeRemoteBugDB(self, bug_ids):
+        """Do any initialization before each bug watch is updated.
+
+        If the URL specified for the bugtracker is not valid a
+        BugTrackerConnectError will be raised.
+        """
+        self.bugs = {}
+        # Trac offers two ways for us to get bug details from them in CSV
+        # format: individually or in groups. For large lists of bug ids we get
+        # them as a batch from the remote bug tracker so as to avoid
+        # effectively DOSing it.
+        if len(bug_ids) > self.batch_query_threshold:
+            id_string = '&'.join(['id=%s' % id for id in bug_ids])
+            query_url = "%s/%s" % (self.baseurl, self.batch_url % id_string)
+            try:
+                csv_data = self.urlopen(query_url)
+            except (urllib2.HTTPError, urllib2.URLError), val:
+                raise BugTrackerConnectError(query_url, val)
+
+            remote_bugs = csv.DictReader(csv_data)
+            for remote_bug in remote_bugs:
+                # We're only interested in the bug if it's one of the ones in
+                # bug_ids, just in case we get all the tickets in the Trac
+                # instance back instead of only the ones we want.
+                if remote_bug['id'] not in bug_ids:
+                    continue
+
+                self.bugs[int(remote_bug['id'])] = remote_bug
+
+        else:
+            # When there aren't more than batch_query_threshold bugs to update
+            # we make one request per bug id to the remote bug tracker, which
+            # (providing it's a reasonably up-to-date Trac instance) will give
+            # us a CSV export of the ticket we ask for. If it doesn't, we can
+            # safely assume that it either doesn't support this functionality
+            # or has this functionality deliberately disabled; either way
+            # there is little
+            # we can do about it.
+            for bug_id in bug_ids:
+                # If we can't get the remote bug for any reason a
+                # BugTrackerConnectError will be raised at this point.
+                # We don't use _getPage at this point for the simple reason
+                # that it doesn't return a file-like object, so we can't use
+                # the csv module's helpful DictReader on its output.
+                bug_id = int(bug_id)
+                try:
+                    csv_data = self.urlopen(
+                        "%s/%s" % (self.baseurl, self.ticket_url % bug_id))
+                except (urllib2.HTTPError, urllib2.URLError), val:
+                    raise BugTrackerConnectError(self.baseurl, val)
+
+                reader = csv.DictReader(csv_data)
+                self.bugs[bug_id] = reader.next()
+
+
+    def getRemoteStatus(self, bug_id):
+        """Return the remote status for the given bug id.
+
+        Raise BugNotFound if the bug can't be found.
+        Raise InvalidBugId if the bug id has an unexpected format.
+        """
+        try:
+            bug_id = int(bug_id)
+        except ValueError:
+            raise InvalidBugId(
+                "bug_id must be convertable an integer: %s" + str(bug_id))
+
+        try:
+            remote_bug = self.bugs[bug_id]
+        except KeyError:
+            raise BugNotFound(bug_id)
+
+        # If the bug has a valid resolution as well as a status then we return
+        # that, since it's more informative than the status field on its own.
+        if (remote_bug.has_key('resolution') and
+            remote_bug['resolution'] not in ['', '--', None]):
+            return remote_bug['resolution']
+        else:
+            return remote_bug['status']
+
+    def convertRemoteStatus(self, remote_status):
+        """See IExternalBugTracker"""
+        status_map = {
+            'assigned': BugTaskStatus.CONFIRMED,
+            # XXX: 2007-08-06 Graham Binns:
+            #      We should follow dupes if possible.
+            'duplicate': BugTaskStatus.CONFIRMED,
+            'fixed': BugTaskStatus.FIXRELEASED,
+            'invalid': BugTaskStatus.INVALID,
+            'new': BugTaskStatus.NEW,
+            'open': BugTaskStatus.NEW,
+            'reopened': BugTaskStatus.NEW,
+            'wontfix': BugTaskStatus.WONTFIX,
+            'worksforme': BugTaskStatus.INVALID,
+            UNKNOWN_REMOTE_STATUS: BugTaskStatus.UNKNOWN,
+        }
+
+        try:
+            return status_map[remote_status]
+        except KeyError:
+            log.warn("Unknown status '%s'" % remote_status)
+            return BugTaskStatus.UNKNOWN
