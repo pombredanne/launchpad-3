@@ -210,7 +210,7 @@ questions opened by that person.
 
     >>> browser.open('http://launchpad.dev/~name16')
     >>> find_portlet(browser.contents, 'Latest questions')
-    <div class="portlet">
+    <div class="portlet" id="...">
         <h2>Latest questions</h2>
         ...
     </div>

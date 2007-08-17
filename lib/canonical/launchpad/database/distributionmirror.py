@@ -424,10 +424,11 @@ class DistributionMirrorSet:
             mirrors.append(main_mirror)
         return mirrors
 
-    def getMirrorsToProbe(self, content_type, ignore_last_probe=False):
+    def getMirrorsToProbe(
+            self, content_type, ignore_last_probe=False, limit=None):
         """See IDistributionMirrorSet"""
         query = """
-            SELECT distributionmirror.id, max(mirrorproberecord.date_created)
+            SELECT distributionmirror.id, MAX(mirrorproberecord.date_created)
             FROM distributionmirror 
             LEFT OUTER JOIN mirrorproberecord
                 ON mirrorproberecord.distribution_mirror = distributionmirror.id
@@ -439,10 +440,17 @@ class DistributionMirrorSet:
 
         if not ignore_last_probe:
             query += """
-                HAVING max(mirrorproberecord.date_created) IS NULL
-                    OR max(mirrorproberecord.date_created) 
+                HAVING MAX(mirrorproberecord.date_created) IS NULL
+                    OR MAX(mirrorproberecord.date_created) 
                         < %s - '%s hours'::interval
                 """ % sqlvalues(UTC_NOW, PROBE_INTERVAL)
+
+        query += """
+            ORDER BY MAX(COALESCE(
+                mirrorproberecord.date_created, '1970-01-01')) ASC, id"""
+
+        if limit is not None:
+            query += " LIMIT %d" % limit
 
         conn = DistributionMirror._connection
         ids = ", ".join(str(id) for (id, date_created) in conn.queryAll(query))
