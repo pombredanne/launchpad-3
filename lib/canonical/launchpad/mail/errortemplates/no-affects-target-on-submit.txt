@@ -1,14 +1,15 @@
-You didn't specify on what you want to file a bug on. A new bug has to
-affect either a product or a distribution. Please use the 'affects'
-command in order to specify on what you want to file a bug on. For
-example, in order to file a bug on Launchpad itself, use:
+You didn't specify the project, distribution, or package that the bug is about.
 
-    affects /products/malone
+To do this, include a line that starts with a blank space, then the word 'affects', then the Launchpad ID of the project or distribution, then (if it's a package) a slash and the name of the package.
 
-To file a bug on Firefox in Ubuntu:
+For example, reporting a bug on a project:
 
-    affects /distros/ubuntu/firefox
+ affects firefox
 
-To file a bug on Ubuntu without specifying a package:
+Reporting a bug on a distribution:
 
-    affects /distros/ubuntu
+ affects ubuntu
+
+Reporting a bug on a distribution package:
+
+ affects ubuntu/firefox

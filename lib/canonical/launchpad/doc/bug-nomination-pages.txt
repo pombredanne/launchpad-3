@@ -16,7 +16,7 @@ the bug to series for which they are drivers.
     >>> bug_one_in_ubuntu_firefox = getUtility(IBugTaskSet).get(17)
     >>> print bug_one_in_ubuntu_firefox.bug.id
     1
-    >>> print bug_one_in_ubuntu_firefox.target.bugtargetname
+    >>> print bug_one_in_ubuntu_firefox.target.bugtargetdisplayname
     mozilla-firefox (Ubuntu)
 
     >>> nomination_view = getMultiAdapter(
@@ -74,8 +74,8 @@ Here's an example of nominating a bug for a productseries.
     >>> bug_one_in_firefox = getUtility(IBugTaskSet).get(2)
     >>> print bug_one_in_firefox.bug.id
     1
-    >>> print bug_one_in_firefox.target.bugtargetname
-    firefox (upstream)
+    >>> print bug_one_in_firefox.target.bugtargetdisplayname
+    Mozilla Firefox
 
     >>> firefox = bug_one_in_firefox.target
 
@@ -108,7 +108,7 @@ Here's an example of nominating a bug for a productseries.
     1
 
     >>> print request.response.notifications[0].message
-    Added nominations for: firefox trunk (upstream)
+    Added nominations for: Mozilla Firefox trunk
 
 
 == Approving and Declining Nominations ==
@@ -210,15 +210,15 @@ For example, bug one is currently nominated for Hoary and Warty.
 
     >>> ubuntu_nominations = bug_one.getNominations(ubuntu)
     >>> for nomination in ubuntu_nominations:
-    ...     print nomination.target.bugtargetname
+    ...     print nomination.target.bugtargetdisplayname
     Ubuntu Hoary
     Ubuntu Warty
 
 Bug #1 currently has three tasks.
 
     >>> for bugtask in bug_one.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
     mozilla-firefox (Ubuntu)
     mozilla-firefox (Debian)
 
@@ -254,7 +254,7 @@ launchpad.Driver permission on the nomination.
     >>> def print_nominations(nominations):
     ...     for nomination in nominations:
     ...         print "%s, %s" % (
-    ...             nomination.target.bugtargetname,
+    ...             nomination.target.bugtargetdisplayname,
     ...             nomination.status.title)
     >>> print_nominations(bug_one.getNominations(ubuntu))
     Ubuntu Hoary, Declined
@@ -273,8 +273,8 @@ bugtask has been added.
     Ubuntu Warty, Nominated
 
     >>> for bugtask in bug_one.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
     mozilla-firefox (Ubuntu)
     mozilla-firefox (Ubuntu Grumpy)
     mozilla-firefox (Debian)

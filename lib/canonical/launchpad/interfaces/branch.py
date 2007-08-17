@@ -8,12 +8,16 @@ __all__ = [
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreatorNotMemberOfOwnerTeam',
+    'BranchLifecycleStatus',
+    'BranchLifecycleStatusFilter',
+    'BranchType',
+    'CannotDeleteBranch',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
     'IBranchDelta',
-    'IBranchLifecycleFilter',
     'IBranchBatchNavigator',
+    'IBranchLifecycleFilter',
     ]
 
 from zope.interface import Interface, Attribute
@@ -22,8 +26,6 @@ from zope.component import getUtility
 from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 
 from canonical.config import config
-from canonical.lp.dbschema import (
-    BranchLifecycleStatus, BranchLifecycleStatusFilter)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
@@ -31,6 +33,95 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from canonical.lazr import (
+    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+
+
+class BranchLifecycleStatus(DBEnumeratedType):
+    """Branch Lifecycle Status
+
+    This indicates the status of the branch, as part of an overall
+    "lifecycle". The idea is to indicate to other people how mature this
+    branch is, or whether or not the code in the branch has been deprecated.
+    Essentially, this tells us what the author of the branch thinks of the
+    code in the branch.
+    """
+    sort_order = (
+        'MATURE', 'DEVELOPMENT', 'EXPERIMENTAL', 'MERGED', 'ABANDONED', 'NEW')
+
+    NEW = DBItem(1, """
+        New
+
+        This branch has just been created, and we know nothing else about
+        it.
+        """)
+
+    EXPERIMENTAL = DBItem(10, """
+        Experimental
+
+        This branch contains code that is considered experimental. It is
+        still under active development and should not be merged into
+        production infrastructure.
+        """)
+
+    DEVELOPMENT = DBItem(30, """
+        Development
+
+        This branch contains substantial work that is shaping up nicely, but
+        is not yet ready for merging or production use. The work is
+        incomplete, or untested.
+        """)
+
+    MATURE = DBItem(50, """
+        Mature
+
+        The developer considers this code mature. That means that it
+        completely addresses the issues it is supposed to, that it is tested,
+        and that it has been found to be stable enough for the developer to
+        recommend it to others for inclusion in their work.
+        """)
+
+    MERGED = DBItem(70, """
+        Merged
+
+        This code has successfully been merged into its target branch(es),
+        and no further development is anticipated on the branch.
+        """)
+
+    ABANDONED = DBItem(80, """
+        Abandoned
+
+        This branch contains work which the author has abandoned, likely
+        because it did not prove fruitful.
+        """)
+
+
+class BranchType(DBEnumeratedType):
+    """Branch Type
+
+    The type of a branch determins the branch interaction with a number
+    of other subsystems.
+    """
+
+    HOSTED = DBItem(1, """
+        Hosted
+
+        Hosted branches have their main repository on the supermirror.
+        """)
+
+    MIRRORED = DBItem(2, """
+        Mirrored
+
+        Mirrored branches are primarily hosted elsewhere and are
+        periodically pulled from the remote site into the supermirror.
+        """)
+
+    IMPORTED = DBItem(3, """
+        Imported
+
+        Imported branches have been converted from some other revision
+        control system into bzr and are made available through the supermirror.
+        """)
 
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
@@ -42,6 +133,10 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
 
 class BranchCreationException(Exception):
     """Base class for branch creation exceptions."""
+
+
+class CannotDeleteBranch(Exception):
+    """The branch cannot be deleted at this time."""
 
 
 class BranchCreationForbidden(BranchCreationException):
@@ -69,7 +164,7 @@ class BranchURIField(URIField):
 
         super(BranchURIField, self)._validate(value)
 
-        # XXX thumper 2007-06-12
+        # XXX thumper 2007-06-12:
         # Move this validation code into IBranchSet so it can be
         # reused in the XMLRPC code, and the Authserver.
         # This also means we could get rid of the imports above.
@@ -112,7 +207,7 @@ class IBranch(IHasOwner):
 
     id = Int(title=_('ID'), readonly=True, required=True)
     branch_type = Choice(
-        title=_("Branch type"), required=True, vocabulary='BranchType',
+        title=_("Branch type"), required=True, vocabulary=BranchType,
         description=_("Hosted branches have Launchpad code hosting as the "
                       "primary location and can be pushed to.  Mirrored "
                       "branches are pulled from the remote location "
@@ -188,7 +283,7 @@ class IBranch(IHasOwner):
 
     # Stats and status attributes
     lifecycle_status = Choice(
-        title=_('Status'), vocabulary='BranchLifecycleStatus',
+        title=_('Status'), vocabulary=BranchLifecycleStatus,
         default=BranchLifecycleStatus.NEW,
         description=_(
         "The author's assessment of the branch's maturity. "
@@ -217,6 +312,10 @@ class IBranch(IHasOwner):
         description=_("Disable periodic pulling of this branch by Launchpad. "
                       "That will prevent connection attempts to the branch "
                       "URL. Use this if the branch is no longer available."))
+    mirror_request_time = Datetime(
+        title=_("If this value is more recent than the last mirror attempt, "
+                "then the branch will be mirrored on the next mirror run."),
+        required=False)
 
     # Scanning attributes
     last_scanned = Datetime(
@@ -265,6 +364,22 @@ class IBranch(IHasOwner):
 
     def revisions_since(timestamp):
         """Revisions in the history that are more recent than timestamp."""
+
+    def canBeDeleted():
+        """Can this branch be deleted in its current state.
+
+        A branch is considered deletable if it has no revisions, is not
+        linked to any bugs, specs, productseries, or code imports, and
+        has no subscribers.
+        """
+
+    def associatedProductSeries():
+        """Return the product series that this branch is associated with.
+
+        A branch may be associated with a product series as either a
+        user_branch or import_branch.  Also a branch can be associated
+        with more than one product series as a user_branch.
+        """
 
     # subscription-related methods
     def subscribe(person, notification_level, max_diff_lines):
@@ -327,6 +442,28 @@ class IBranch(IHasOwner):
                the corresponding BranchRevision rows for this branch.
         """
 
+    def requestMirror():
+        """Request that this branch be mirrored on the next run of the branch
+        puller.
+        """
+
+    def startMirroring():
+        """Signal that this branch is being mirrored."""
+
+    def mirrorComplete(last_revision_id):
+        """Signal that a mirror attempt has completed successfully.
+
+        :param last_revision_id: The revision ID of the tip of the mirrored
+            branch.
+        """
+
+    def mirrorFailed(reason):
+        """Signal that a mirror attempt failed.
+
+        :param reason: An error message that will be displayed on the branch
+            detail page.
+        """
+
 
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
@@ -366,6 +503,9 @@ class IBranchSet(Interface):
         Raises BranchCreationForbidden if the creator is not allowed
         to create a branch for the specified product.
         """
+
+    def delete(branch):
+        """Delete the specified branch."""
 
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
@@ -451,7 +591,7 @@ class IBranchSet(Interface):
         visible_by_user=None):
         """Branches associated with person with appropriate lifecycle.
 
-        XXX: thumper 2007-03-23
+        XXX: thumper 2007-03-23:
         The intent here is to just show interesting branches for the
         person.
         Following a chat with lifeless we'd like this to be listed and
@@ -576,6 +716,18 @@ class IBranchSet(Interface):
         only public branches are returned.
         """
 
+    def getHostedPullQueue():
+        """Return the queue of hosted branches to mirror using the puller."""
+
+    def getMirroredPullQueue():
+        """Return the queue of mirrored branches to mirror using the puller."""
+
+    def getImportedPullQueue():
+        """Return the queue of imported branches to mirror using the puller."""
+
+    def getPullQueue():
+        """Return the entire queue of branches to mirror using the puller."""
+
 
 class IBranchDelta(Interface):
     """The quantitative changes made to a branch that was edited or altered."""
@@ -594,12 +746,40 @@ class IBranchDelta(Interface):
     last_scanned_id = Attribute("The revision id of the tip revision.")
 
 
+# XXX: thumper 2007-07-23 bug=66950:
+# Both BranchLifecycleStatusFilter and IBranchLifecycleFilter
+# are used only in browser/branchlisting.py.
+class BranchLifecycleStatusFilter(EnumeratedType):
+    """Branch Lifecycle Status Filter
+
+    Used to populate the branch lifecycle status filter widget.
+    UI only.
+    """
+    use_template(BranchLifecycleStatus)
+
+    sort_order = (
+        'CURRENT', 'ALL', 'NEW', 'EXPERIMENTAL', 'DEVELOPMENT', 'MATURE',
+        'MERGED', 'ABANDONED')
+
+    CURRENT = Item("""
+        New, Experimental, Development or Mature
+
+        Show the currently active branches.
+        """)
+
+    ALL = Item("""
+        Any Status
+
+        Show all the branches.
+        """)
+
+
 class IBranchLifecycleFilter(Interface):
     """A helper interface to render lifecycle filter choice."""
 
     # Stats and status attributes
     lifecycle = Choice(
-        title=_('Lifecycle Filter'), vocabulary='BranchLifecycleStatusFilter',
+        title=_('Lifecycle Filter'), vocabulary=BranchLifecycleStatusFilter,
         default=BranchLifecycleStatusFilter.CURRENT,
         description=_(
         "The author's assessment of the branch's maturity. "

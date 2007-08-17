@@ -99,8 +99,9 @@ class TranslationGroupSet:
 
     def getByPerson(self, person):
         """See ITranslationGroupSet."""
-        # XXX CarlosPerelloMarin 20070402: direct members query is required
-        # until teams are members of themselves. See bug #30789 for more info.
+        # XXX CarlosPerelloMarin 2007-04-02 bug=30789:
+        # Direct members query is required until teams are members
+        # of themselves.
         direct = TranslationGroup.select("""
             Translator.translationgroup = TranslationGroup.id AND
             Translator.translator = %s

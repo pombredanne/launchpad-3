@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-summary">
     <h2 tal:content="context/title">object title</h2>
 
     <div class="portletBody">

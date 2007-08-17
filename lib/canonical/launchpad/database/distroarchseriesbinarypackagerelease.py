@@ -71,10 +71,9 @@ class DistroArchSeriesBinaryPackageRelease:
             self.distribution,
             self.build.sourcepackagerelease)
 
-    # XXX: I'd like to rename this to
+    # XXX: kiko, 2006-02-01: I'd like to rename this to
     # current_published_publishing_record, because that's what it
     # returns, but I don't want to do that right now.
-    #   -- kiko, 2006-02-01
     @property
     def current_publishing_record(self):
         """See IDistroArchSeriesBinaryPackageRelease."""
@@ -218,16 +217,6 @@ class DistroArchSeriesBinaryPackageRelease:
     def installedsize(self):
         """See IBinaryPackageRelease."""
         return self.binarypackagerelease.installedsize
-
-    @property
-    def copyright(self):
-        """See IBinaryPackageRelease."""
-        return self.binarypackagerelease.copyright
-
-    @property
-    def licence(self):
-        """See IBinaryPackageRelease."""
-        return self.binarypackagerelease.licence
 
     @property
     def architecturespecific(self):

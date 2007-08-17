@@ -12,12 +12,14 @@ import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
-from zope.security.simplepolicies import PermissiveSecurityPolicy
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.launchpad.interfaces import IBranchSet, IPersonSet
+from canonical.launchpad.interfaces import (
+    BranchType, EmailAddressStatus, IBranchSet, IEmailAddressSet, IPersonSet,
+    IProductSet, IWikiNameSet)
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 
@@ -27,9 +29,6 @@ from canonical.authserver.interfaces import (
 from canonical.authserver.database import (
     DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
     DatabaseBranchDetailsStorage)
-from canonical.lp import dbschema
-
-from canonical.launchpad.ftests.harness import LaunchpadTestCase
 
 from canonical.testing.layers import LaunchpadScriptLayer
 
@@ -37,31 +36,89 @@ from canonical.testing.layers import LaunchpadScriptLayer
 UTC = pytz.timezone('UTC')
 
 
-class TestDatabaseSetup(LaunchpadTestCase):
+class DatabaseTest(unittest.TestCase):
+    """Base class for authserver database tests.
 
-    def setUp(self):
-        super(TestDatabaseSetup, self).setUp()
-        self.connection = self.connect()
-        self.cursor = self.connection.cursor()
-
-    def tearDown(self):
-        self.cursor.close()
-        self.connection.close()
-        super(TestDatabaseSetup, self).tearDown()
-
-
-class DatabaseStorageTestCase(unittest.TestCase):
+    Runs the tests in using the web database adapter and the stricter Launchpad
+    security model. Provides a `cursor` instance variable for ad-hoc queries.
+    """
 
     layer = LaunchpadScriptLayer
 
     def setUp(self):
         LaunchpadScriptLayer.switchDbConfig('authserver')
-        super(DatabaseStorageTestCase, self).setUp()
+        super(DatabaseTest, self).setUp()
+        self._old_policy = getSecurityPolicy()
+        setSecurityPolicy(LaunchpadSecurityPolicy)
         self.cursor = cursor()
 
     def tearDown(self):
-        self.cursor.close()
-        super(DatabaseStorageTestCase, self).tearDown()
+        setSecurityPolicy(self._old_policy)
+        super(DatabaseTest, self).tearDown()
+
+    def isBranchInPullQueue(self, branch_id):
+        """Whether the branch with this id is present in the pull queue."""
+        storage = DatabaseBranchDetailsStorage(None)
+        results = storage._getBranchPullQueueInteraction()
+        return branch_id in (
+            result_branch_id
+            for result_branch_id, result_pull_url, unique_name in results)
+
+    def getMirrorRequestTime(self, branch_id):
+        """Return the value of mirror_request_time for the branch with the
+        given id.
+
+        :param branch_id: The id of a row in the Branch table. An int.
+        :return: A timestamp or None.
+        """
+        self.cursor.execute(
+            "SELECT mirror_request_time FROM branch WHERE id = %s"
+            % sqlvalues(branch_id))
+        [mirror_request_time] = self.cursor.fetchone()
+        return mirror_request_time
+
+    def setSeriesDateLastSynced(self, series_id, value=None, now_minus=None):
+        """Helper to set the datelastsynced of a ProductSeries.
+
+        :param series_id: Database id of the ProductSeries to update.
+        :param value: SQL expression to set datelastsynced to.
+        :param now_minus: shorthand to set a value before the current time.
+        """
+        # Exactly one of value or now_minus must be set.
+        self.failUnless(
+            (value is None) ^ (now_minus is None),
+            "Exactly one of value or now_minus must be set")
+        if now_minus is not None:
+            value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
+                     % now_minus)
+        self.cursor.execute(
+            "UPDATE ProductSeries SET datelastsynced = (%s) WHERE id = %d"
+            % (value, series_id))
+
+    def setBranchLastMirrorAttempt(self, branch_id, value=None, now_minus=None):
+        """Helper to set the last_mirror_attempt of a Branch.
+
+        :param branch_id: Database id of the Branch to update.
+        :param value: SQL expression to set last_mirror_attempt to.
+        :param now_minus: shorthand to set a value before the current time.
+        """
+        # Exactly one of value or now_minus must be set.
+        self.failUnless(
+            (value is None) ^ (now_minus is None),
+            "Exactly one of value or now_minus must be set")
+        if now_minus is not None:
+            value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
+                     % now_minus)
+        self.cursor.execute(
+            "UPDATE Branch SET last_mirror_attempt = (%s) WHERE id = %d"
+            % (value, branch_id))
+
+
+class UserDetailsStorageTest(DatabaseTest):
+
+    def setUp(self):
+        super(UserDetailsStorageTest, self).setUp()
+        self.salt = '\xf4;\x15a\xe4W\x1f'
 
     def test_verifyInterface(self):
         self.failUnless(verifyObject(IUserDetailsStorage,
@@ -77,36 +134,35 @@ class DatabaseStorageTestCase(unittest.TestCase):
         # Note: we access _getUserInteraction directly to avoid mucking around
         # with setting up a ConnectionPool
         storage = DatabaseUserDetailsStorage(None)
-        userDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
+        userDict = storage._getUserInteraction('mark@hbd.com')
         self.assertEqual('Mark Shuttleworth', userDict['displayname'])
         self.assertEqual(['mark@hbd.com'], userDict['emailaddresses'])
         self.assertEqual('MarkShuttleworth', userDict['wikiname'])
         self.failUnless(userDict.has_key('salt'))
 
         # Getting by ID should give the same result as getting by email
-        userDict2 = storage._getUserInteraction(self.cursor, userDict['id'])
+        userDict2 = storage._getUserInteraction(userDict['id'])
         self.assertEqual(userDict, userDict2)
 
         # Getting by nickname should also give the same result
-        userDict3 = storage._getUserInteraction(self.cursor, 'sabdfl')
+        userDict3 = storage._getUserInteraction('sabdfl')
         self.assertEqual(userDict, userDict3)
 
     def test_getUserMissing(self):
         # Getting a non-existent user should return {}
         storage = DatabaseUserDetailsStorage(None)
-        userDict = storage._getUserInteraction(self.cursor, 'noone@fake.email')
+        userDict = storage._getUserInteraction('noone@fake.email')
         self.assertEqual({}, userDict)
 
         # Ditto for getting a non-existent user by id :)
-        userDict = storage._getUserInteraction(self.cursor, 9999)
+        userDict = storage._getUserInteraction(9999)
         self.assertEqual({}, userDict)
 
     def test_getUserMultipleAddresses(self):
         # Getting a user with multiple addresses should return all the
         # confirmed addresses.
         storage = DatabaseUserDetailsStorage(None)
-        userDict = storage._getUserInteraction(self.cursor,
-                                               'stuart.bishop@canonical.com')
+        userDict = storage._getUserInteraction('stuart.bishop@canonical.com')
         self.assertEqual('Stuart Bishop', userDict['displayname'])
         self.assertEqual(['stuart.bishop@canonical.com',
                           'stuart@stuartbishop.net'],
@@ -116,41 +172,65 @@ class DatabaseStorageTestCase(unittest.TestCase):
         # Unconfirmed addresses should not be returned, so if we add a NEW
         # address, it won't change the result.
         storage = DatabaseUserDetailsStorage(None)
-        userDict = storage._getUserInteraction(self.cursor,
-                                               'stuart.bishop@canonical.com')
-        self.cursor.execute('''
-            INSERT INTO EmailAddress (email, person, status)
-            VALUES ('sb@example.com', %d, %d)
-            ''' % (userDict['id'], dbschema.EmailAddressStatus.NEW.value))
-        userDict2 = storage._getUserInteraction(self.cursor,
-                                                'stuart.bishop@canonical.com')
+        userDict = storage._getUserInteraction('stuart.bishop@canonical.com')
+
+        transaction.begin()
+        login(ANONYMOUS)
+        stub = getUtility(IPersonSet).getByName('stub')
+        email_set = getUtility(IEmailAddressSet)
+        email = email_set.new('sb@example.com', stub, EmailAddressStatus.NEW)
+        logout()
+        transaction.commit()
+
+        userDict2 = storage._getUserInteraction('stuart.bishop@canonical.com')
         self.assertEqual(userDict, userDict2)
 
     def test_preferredEmailFirst(self):
         # If there's a PREFERRED address, it should be first in the
         # emailaddresses list.  Let's make stuart@stuartbishop.net PREFERRED
         # rather than stuart.bishop@canonical.com.
+        transaction.begin()
+        email_set = getUtility(IEmailAddressSet)
+
+        email = email_set.getByEmail('stuart.bishop@canonical.com')
+        email.status = EmailAddressStatus.VALIDATED
+        email.syncUpdate()
+
+        email = email_set.getByEmail('stuart@stuartbishop.net')
+        email.status = EmailAddressStatus.PREFERRED
+        email.syncUpdate()
+        transaction.commit()
+
         storage = DatabaseUserDetailsStorage(None)
-        self.cursor.execute('''
-            UPDATE EmailAddress SET status = %d
-            WHERE email = 'stuart.bishop@canonical.com'
-            ''' % (dbschema.EmailAddressStatus.VALIDATED.value,))
-        self.cursor.execute('''
-            UPDATE EmailAddress SET status = %d
-            WHERE email = 'stuart@stuartbishop.net'
-            ''' % (dbschema.EmailAddressStatus.PREFERRED.value,))
-        userDict = storage._getUserInteraction(self.cursor,
-                                               'stuart.bishop@canonical.com')
-        self.assertEqual(['stuart@stuartbishop.net',
-                          'stuart.bishop@canonical.com'],
-                         userDict['emailaddresses'])
+        userDict = storage._getUserInteraction('stuart.bishop@canonical.com')
+        self.assertEqual(
+            ['stuart@stuartbishop.net', 'stuart.bishop@canonical.com'],
+            userDict['emailaddresses'])
+
+    def test_emailAlphabeticallySorted(self):
+        # Although the preferred email address is first in the emailaddresses
+        # list, the rest are alphabetically sorted.
+        transaction.begin()
+        stub = getUtility(IPersonSet).getByName('stub')
+        email_set = getUtility(IEmailAddressSet)
+        # Use a silly email address that is going to appear before all others
+        # in alphabetical sorting.
+        email = email_set.new(
+            '_stub@canonical.com', stub, EmailAddressStatus.VALIDATED)
+        transaction.commit()
+
+        storage = DatabaseUserDetailsStorage(None)
+        userDict = storage._getUserInteraction('stub')
+        self.assertEqual(
+            ['stuart.bishop@canonical.com', '_stub@canonical.com',
+             'stuart@stuartbishop.net'],
+            userDict['emailaddresses'])
 
     def test_authUserNoUser(self):
         # Authing a user that doesn't exist should return {}
         storage = DatabaseUserDetailsStorage(None)
         ssha = SSHADigestEncryptor().encrypt('supersecret!')
-        userDict = storage._authUserInteraction(self.cursor, 'noone@fake.email',
-                                                ssha)
+        userDict = storage._authUserInteraction('noone@fake.email', ssha)
         self.assertEqual({}, userDict)
 
     def test_authUserNullPassword(self):
@@ -158,7 +238,7 @@ class DatabaseStorageTestCase(unittest.TestCase):
         storage = DatabaseUserDetailsStorage(None)
         ssha = SSHADigestEncryptor().encrypt('supersecret!')
         # The 'admins' user in the sample data has no password, so we use that.
-        userDict = storage._authUserInteraction(self.cursor, 'admins', ssha)
+        userDict = storage._authUserInteraction('admins', ssha)
         self.assertEqual({}, userDict)
 
     def test_authUserUnconfirmedEmail(self):
@@ -170,40 +250,112 @@ class DatabaseStorageTestCase(unittest.TestCase):
             WHERE id = (SELECT person FROM EmailAddress WHERE email =
                         'justdave@bugzilla.org')'''
             % (ssha,))
-        userDict = storage._authUserInteraction(self.cursor,
-                                                'justdave@bugzilla.org', ssha)
+        userDict = storage._authUserInteraction('justdave@bugzilla.org', ssha)
         self.assertEqual({}, userDict)
 
-    def test_nameInV2UserDict(self):
-        # V2 user dicts should have a 'name' field.
-        storage = DatabaseUserDetailsStorageV2(None)
-        userDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
-        self.assertEqual('sabdfl', userDict['name'])
+    def test_authUser(self):
+        # Authenticating a user with the right password should work
+        storage = DatabaseUserDetailsStorage(None)
+        ssha = SSHADigestEncryptor().encrypt('test', self.salt)
+        userDict = storage._authUserInteraction('mark@hbd.com', ssha)
+        self.assertNotEqual({}, userDict)
 
+        # In fact, it should return the same dict as getUser
+        goodDict = storage._getUserInteraction('mark@hbd.com')
+        self.assertEqual(goodDict, userDict)
 
-class NewDatabaseStorageTestCase(unittest.TestCase):
-    # Tests that call database methods that use the new-style database
-    # connection infrastructure.
+        # Unicode email addresses are handled too.
+        self.cursor.execute(
+            "INSERT INTO EmailAddress (person, email, status) "
+            "VALUES ("
+            "  1, "
+            "  '%s', "
+            "  2)"  # 2 == Validated
+            % (u'm\xe3rk@hbd.com'.encode('utf-8'),)
+        )
+        userDict = storage._authUserInteraction(u'm\xe3rk@hbd.com', ssha)
+        goodDict = storage._getUserInteraction(u'm\xe3rk@hbd.com')
+        self.assertEqual(goodDict, userDict)
 
-    layer = LaunchpadScriptLayer
+    def test_authUserByNickname(self):
+        # Authing a user by their nickname should work, just like an email
+        # address in test_authUser.
+        storage = DatabaseUserDetailsStorage(None)
+        ssha = SSHADigestEncryptor().encrypt('test', self.salt)
+        userDict = storage._authUserInteraction('sabdfl', ssha)
+        self.assertNotEqual({}, userDict)
 
-    def setUp(self):
+        # In fact, it should return the same dict as getUser
+        goodDict = storage._getUserInteraction('sabdfl')
+        self.assertEqual(goodDict, userDict)
+
+        # And it should be the same as returned by looking them up by email
+        # address.
+        goodDict = storage._getUserInteraction('mark@hbd.com')
+        self.assertEqual(goodDict, userDict)
+
+    def test_authUserByNicknameNoEmailAddr(self):
+        # Just like test_authUserByNickname, but for a user with no email
+        # address.  The result should be the same.
+
+        # The authserver isn't allowed to delete email addresses.
+        LaunchpadScriptLayer.switchDbConfig('launchpad')
+        self.cursor = cursor()
+        self.cursor.execute(
+            "DELETE FROM EmailAddress WHERE person = 1;"
+        )
         LaunchpadScriptLayer.switchDbConfig('authserver')
-        super(NewDatabaseStorageTestCase, self).setUp()
-        self._old_policy = getSecurityPolicy()
-        setSecurityPolicy(LaunchpadSecurityPolicy)
 
-    def tearDown(self):
-        setSecurityPolicy(self._old_policy)
-        super(NewDatabaseStorageTestCase, self).tearDown()
+        storage = DatabaseUserDetailsStorage(None)
+        ssha = SSHADigestEncryptor().encrypt('test', self.salt)
+        userDict = storage._authUserInteraction('sabdfl', ssha)
+        self.assertNotEqual({}, userDict)
 
-    def _getTime(self, row_id):
-        cur = cursor()
-        cur.execute("""
-            SELECT mirror_request_time FROM Branch
-            WHERE id = %d""" % row_id)
-        [mirror_request_time] = cur.fetchone()
-        return mirror_request_time
+        # In fact, it should return the same dict as getUser
+        goodDict = storage._getUserInteraction('sabdfl')
+        self.assertEqual(goodDict, userDict)
+
+    def test_authUserBadPassword(self):
+        # Authing a real user with the wrong password should return {}
+        storage = DatabaseUserDetailsStorage(None)
+        ssha = SSHADigestEncryptor().encrypt('wrong', self.salt)
+        userDict = storage._authUserInteraction('mark@hbd.com', ssha)
+        self.assertEqual({}, userDict)
+
+    def test_getSSHKeys_empty(self):
+        # getSSHKeys returns an empty list for users without SSH keys.
+        storage = DatabaseUserDetailsStorage(None)
+        keys = storage._getSSHKeysInteraction('no-priv')
+        self.assertEqual([], keys)
+
+    def test_getSSHKeys_no_such_user(self):
+        storage = DatabaseUserDetailsStorage(None)
+        keys = storage._getSSHKeysInteraction('no-such-user')
+        self.assertEqual([], keys)
+        
+    def test_getSSHKeys(self):
+        # getSSHKeys returns a list of keytype, keytext tuples for users with
+        # SSH keys.
+
+        self.cursor.execute("""
+            SELECT keytext FROM SSHKey
+            JOIN Person ON (SSHKey.person = Person.id)
+            WHERE Person.name = 'sabdfl'
+            """)
+        [expected_keytext] = self.cursor.fetchone()
+
+        storage = DatabaseUserDetailsStorage(None)
+        [(keytype, keytext)] = storage._getSSHKeysInteraction('sabdfl')
+        self.assertEqual('DSA', keytype)
+        self.assertEqual(expected_keytext, keytext)
+
+
+class HostedBranchStorageTest(DatabaseTest):
+    """Tests for the implementation of `IHostedBranchStorage`."""
+
+    def test_verifyInterface(self):
+        self.failUnless(verifyObject(IBranchDetailsStorage,
+                                     DatabaseBranchDetailsStorage(None)))
 
     def test_createBranch(self):
         storage = DatabaseUserDetailsStorageV2(None)
@@ -254,34 +406,25 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         # getBranchesForUser returns all of the hosted branches that a user may
         # write to. The branches are grouped by product, and are specified by
         # name and id. The name and id of the products are also included.
+        transaction.begin()
+        no_priv = getUtility(IPersonSet).getByName('no-priv')
+        firefox = getUtility(IProductSet).getByName('firefox')
+        new_branch = getUtility(IBranchSet).new(
+            BranchType.HOSTED, 'branch2', no_priv, no_priv, firefox, None)
+        # We only create new_branch so that we can test getBranchesForUser.
+        # Zope's security is not relevant and only gets in the way, because
+        # there's no logged in user.
+        new_branch = removeSecurityProxy(new_branch)
+        transaction.commit()
+
         storage = DatabaseUserDetailsStorageV2(None)
-        fetched_branches = storage._getBranchesForUserInteraction(12)
+        fetched_branches = storage._getBranchesForUserInteraction(no_priv.id)
 
-        # Flatten the structured return value of getBranchesForUser so that we
-        # can easily compare it to the data from our SQLObject methods.
-        flattened = []
-        for user_id, branches_by_product in fetched_branches:
-            for (product_id, product_name), branches in branches_by_product:
-                for branch_id, branch_name in branches:
-                    flattened.append(
-                        (user_id, product_id, product_name, branch_id,
-                         branch_name))
-
-        # Get the hosted branches for user 12 from SQLObject classes.
-        login(ANONYMOUS)
-        try:
-            person = getUtility(IPersonSet).get(12)
-            login(person.preferredemail.email)
-            expected_branches = getUtility(
-                IBranchSet).getHostedBranchesForPerson(person)
-            expected_branches = [
-                (branch.owner.id, branch.product.id, branch.product.name,
-                 branch.id, branch.name)
-                for branch in expected_branches]
-        finally:
-            logout()
-
-        self.assertEqual(set(expected_branches), set(flattened))
+        self.assertEqual(
+            [(no_priv.id,
+              [((firefox.id, firefox.name),
+                [(new_branch.id, new_branch.name)])])],
+            fetched_branches)
 
     def test_getBranchesForUserNullProduct(self):
         # getBranchesForUser returns branches for hosted branches with no
@@ -297,8 +440,8 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         login(login_email)
         try:
             branch = getUtility(IBranchSet).new(
-                dbschema.BranchType.HOSTED, 'foo-branch', person, person,
-                None, None, None)
+                BranchType.HOSTED, 'foo-branch', person, person, None, None,
+                None)
         finally:
             logout()
             transaction.commit()
@@ -351,11 +494,37 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         self.assertEqual(13, branch_id)
         self.assertEqual(READ_ONLY, permissions)
 
+    def test_getBranchInformation_mirrored(self):
+        # Mirrored branches cannot be written to by the smartserver or SFTP
+        # server.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'name12', 'firefox', 'main')
+        self.assertEqual(1, branch_id)
+        self.assertEqual(READ_ONLY, permissions)
+
+    def test_getBranchInformation_imported(self):
+        # Imported branches cannot be written to by the smartserver or SFTP
+        # server.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'vcs-imports', 'gnome-terminal', 'import')
+        self.assertEqual(75, branch_id)
+        self.assertEqual(READ_ONLY, permissions)        
+
     def test_getBranchInformation_private(self):
         # When we get the branch information for a private branch that is
         # hidden to us, it is an if the branch doesn't exist at all.
         store = DatabaseUserDetailsStorageV2(None)
+
         # salgado is a member of landscape-developers.
+        person_set = getUtility(IPersonSet)
+        salgado = person_set.getByName('salgado')
+        landscape_dev = person_set.getByName('landscape-developers')
+        self.assertTrue(
+            salgado.inTeam(landscape_dev),
+            "salgado should be in landscape-developers team, but isn't.")
+
         store._createBranchInteraction(
             'salgado', 'landscape-developers', 'landscape',
             'some-branch')
@@ -371,215 +540,87 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         storage = DatabaseUserDetailsStorageV2(None)
         branchID = storage._createBranchInteraction(
             1, 'sabdfl', '+junk', 'foo')
-        self.assertEqual(self._getTime(branchID), None)
-
-
-class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
-    # Tests that do some database writes (but makes sure to roll them back)
-
-    layer = LaunchpadScriptLayer
-
-    def setUp(self):
-        TestDatabaseSetup.setUp(self)
-        # This is the salt for Mark's password in the sample data.
-        self.salt = '\xf4;\x15a\xe4W\x1f'
-
-    def _getTime(self, row_id):
-        self.cursor.execute("""
-            SELECT mirror_request_time FROM Branch
-            WHERE id = %d""" % row_id)
-        [mirror_request_time] = self.cursor.fetchone()
-        return mirror_request_time
+        self.assertEqual(self.getMirrorRequestTime(branchID), None)
 
     def test_requestMirror(self):
         # requestMirror should set the mirror_request_time field to be the
         # current time.
         hosted_branch_id = 25
         # make sure the sample data is sane
-        self.assertEqual(self._getTime(hosted_branch_id), None)
+        self.assertEqual(self.getMirrorRequestTime(hosted_branch_id), None)
+
+        cur = cursor()
+        cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
+        [current_db_time] = cur.fetchone()
 
         storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(self.cursor, hosted_branch_id)
-        self.cursor.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
-        [current_db_time] = self.cursor.fetchone()
-        self.assertEqual(current_db_time, self._getTime(hosted_branch_id))
+        storage._requestMirrorInteraction(hosted_branch_id)
 
-    def test_authUser(self):
-        # Authenticating a user with the right password should work
-        storage = DatabaseUserDetailsStorage(None)
-        ssha = SSHADigestEncryptor().encrypt('test', self.salt)
-        userDict = storage._authUserInteraction(self.cursor, 'mark@hbd.com',
-                                                ssha)
-        self.assertNotEqual({}, userDict)
+        self.assertTrue(
+            current_db_time < self.getMirrorRequestTime(hosted_branch_id),
+            "Branch mirror_request_time not updated.")
 
-        # In fact, it should return the same dict as getUser
-        goodDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
-        self.assertEqual(goodDict, userDict)
+    def test_mirrorComplete_resets_mirror_request(self):
+        # After successfully mirroring a branch, mirror_request_time should be
+        # set to NULL.
 
-        # Unicode email addresses are handled too.
-        self.cursor.execute(
-            "INSERT INTO EmailAddress (person, email, status) "
-            "VALUES ("
-            "  1, "
-            "  '%s', "
-            "  2)"  # 2 == Validated
-            % (u'm\xe3rk@hbd.com'.encode('utf-8'),)
-        )
-        userDict = storage._authUserInteraction(self.cursor, u'm\xe3rk@hbd.com',
-                                                ssha)
-        goodDict = storage._getUserInteraction(self.cursor, u'm\xe3rk@hbd.com')
-        self.assertEqual(goodDict, userDict)
-
-    def test_authUserByNickname(self):
-        # Authing a user by their nickname should work, just like an email
-        # address in test_authUser.
-        storage = DatabaseUserDetailsStorage(None)
-        ssha = SSHADigestEncryptor().encrypt('test', self.salt)
-        userDict = storage._authUserInteraction(self.cursor, 'sabdfl', ssha)
-        self.assertNotEqual({}, userDict)
-
-        # In fact, it should return the same dict as getUser
-        goodDict = storage._getUserInteraction(self.cursor, 'sabdfl')
-        self.assertEqual(goodDict, userDict)
-
-        # And it should be the same as returned by looking them up by email
-        # address.
-        goodDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
-        self.assertEqual(goodDict, userDict)
-
-    def test_authUserByNicknameNoEmailAddr(self):
-        # Just like test_authUserByNickname, but for a user with no email
-        # address.  The result should be the same.
-        self.cursor.execute(
-            "DELETE FROM EmailAddress WHERE person = 1;"
-        )
-        storage = DatabaseUserDetailsStorage(None)
-        ssha = SSHADigestEncryptor().encrypt('test', self.salt)
-        userDict = storage._authUserInteraction(self.cursor, 'sabdfl', ssha)
-        self.assertNotEqual({}, userDict)
-
-        # In fact, it should return the same dict as getUser
-        goodDict = storage._getUserInteraction(self.cursor, 'sabdfl')
-        self.assertEqual(goodDict, userDict)
-
-    def test_authUserBadPassword(self):
-        # Authing a real user with the wrong password should return {}
-        storage = DatabaseUserDetailsStorage(None)
-        ssha = SSHADigestEncryptor().encrypt('wrong', self.salt)
-        userDict = storage._authUserInteraction(self.cursor, 'mark@hbd.com',
-                                                ssha)
-        self.assertEqual({}, userDict)
-
-    def test_getSSHKeys(self):
-        # FIXME: there should probably be some SSH keys in the sample data,
-        #        so that this test wouldn't need to add some.
-
-        self.cursor.execute(
-            "SELECT keytext FROM SSHKey WHERE person = 1")
-        [keytext] = self.cursor.fetchone()
-
-        # Add test push mirror access
-        self.cursor.execute(
-            "INSERT INTO PushMirrorAccess (name, person) "
-            "VALUES ("
-            "  'marks-archive@example.com',"
-            "  1) "
-        )
-
-        # Fred's SSH key should have access to freds-archive@example.com
-        storage = DatabaseUserDetailsStorage(None)
-        keys = storage._getSSHKeysInteraction(self.cursor,
-                                              'marks-archive@example.com')
-        self.assertEqual([('DSA', keytext)], keys)
-
-        # Fred's SSH key should also have access to an archive with his email
-        # address
-        keys = storage._getSSHKeysInteraction(self.cursor, 'mark@hbd.com')
-        self.assertEqual([('DSA', keytext)], keys)
-
-        # Fred's SSH key should also have access to an archive whose name
-        # starts with his email address + '--'.
-        keys = storage._getSSHKeysInteraction(self.cursor,
-                                              'mark@hbd.com--2005')
-        self.assertEqual([('DSA', keytext)], keys)
-
-        # No-one should have access to wilma@hbd.com
-        keys = storage._getSSHKeysInteraction(self.cursor, 'wilma@hbd.com')
-        self.assertEqual([], keys)
-
-        # Mark should not have access to wilma@hbd.com--2005, even if he has the
-        # email address wilma@hbd.com--2005.mark.is.a.hacker.com
-        self.cursor.execute(
-            "INSERT INTO EmailAddress (person, email, status) "
-            "VALUES ("
-            "  1, "
-            "  'wilma@hbd.com--2005.mark.is.a.hacker.com',"
-            "  2)"  # 2 == Validated
-        )
-        keys = storage._getSSHKeysInteraction(
-            self.cursor, 'wilma@mark@hbd.com--2005.mark.is.a.hacker.com'
-        )
-        self.assertEqual([], keys)
-        keys = storage._getSSHKeysInteraction(
-            self.cursor, 'wilma@mark@hbd.com--2005.mark.is.a.hacker.com--2005'
-        )
-        self.assertEqual([], keys)
-
-        # Fred should not have access to archives named after an unvalidated
-        # email address of his
-        self.cursor.execute(
-            "INSERT INTO EmailAddress (person, email, status) "
-            "VALUES ("
-            "  1, "
-            "  'mark@hotmail',"
-            "  1)"  # 1 == New (unvalidated)
-        )
-        keys = storage._getSSHKeysInteraction(self.cursor, 'mark@hotmail')
-        self.assertEqual([], keys)
-
-    def test_getUserNoWikiname(self):
-        # Ensure that the authserver copes gracefully with users with:
-        #    a) no wikinames at all
-        #    b) no wikiname for http://www.ubuntulinux.com/wiki/
-        # (even though in the long run we want to make sure these situations can
-        # never happen, until then the authserver should be robust).
-
-        # First, make sure that the sample user has no wikiname.
-        self.cursor.execute("""
-            DELETE FROM WikiName
-            WHERE id = (SELECT id FROM Person
-                        WHERE displayname = 'Sample Person')
-            """)
-
-        # Get the user dict for Sample Person (test@canonical.com).
+        # Request that 25 (a hosted branch) be mirrored. This sets
+        # mirror_request_time.
         storage = DatabaseUserDetailsStorageV2(None)
-        userDict = storage._getUserInteraction(self.cursor,
-                                               'test@canonical.com')
+        storage._requestMirrorInteraction(25)
 
-        # The user dict has results, even though the wikiname is empty
-        self.assertNotEqual({}, userDict)
-        self.assertEqual('', userDict['wikiname'])
-        self.assertEqual(12, userDict['id'])
+        # Simulate successfully mirroring branch 25
+        storage = DatabaseBranchDetailsStorage(None)
+        cur = cursor()
+        storage._startMirroringInteraction(25)
+        storage._mirrorCompleteInteraction(25, 'rev-1')
 
-        # Now lets add a wikiname, but for a different wiki.
-        self.cursor.execute(
-            "INSERT INTO WikiName (person, wiki, wikiname) "
-            "VALUES (12, 'http://foowiki/', 'SamplePerson')"
-        )
+        self.assertEqual(None, self.getMirrorRequestTime(25))
 
-        # The authserver should return exactly the same results.
-        userDict2 = storage._getUserInteraction(self.cursor,
-                                                'test@canonical.com')
-        self.assertEqual(userDict, userDict2)
+    def test_mirrorFailed_resets_mirror_request(self):
+        # After failing to mirror a branch, mirror_request_time for that branch
+        # should be set to NULL.
 
-    def testTeamDict(self):
+        # Request that 25 (a hosted branch) be mirrored. This sets
+        # mirror_request_time.
+        storage = DatabaseUserDetailsStorageV2(None)
+        storage._requestMirrorInteraction(25)
+
+        # Simulate successfully mirroring branch 25
+        storage = DatabaseBranchDetailsStorage(None)
+        cur = cursor()
+        storage._startMirroringInteraction(25)
+        storage._mirrorFailedInteraction(25, 'failed')
+
+        self.assertEqual(None, self.getMirrorRequestTime(25))
+
+    def test_requested_hosted_branches(self):
+        # Hosted branches that HAVE had a mirror requested should be in
+        # the branch queue
+
+        # Mark 25 (a hosted branch) as recently mirrored.
+        storage = DatabaseBranchDetailsStorage(None)
+        storage._startMirroringInteraction(25)
+        storage._mirrorCompleteInteraction(25, 'rev-1')
+
+        # Request a mirror
+        storage = DatabaseUserDetailsStorageV2(None)
+        storage._requestMirrorInteraction(25)
+
+        self.failUnless(self.isBranchInPullQueue(25), "Should be in queue")
+
+
+class UserDetailsStorageV2Test(DatabaseTest):
+    """Test the implementation of `IUserDetailsStorageV2`."""
+
+    def test_teamDict(self):
         # The user dict from a V2 storage should include a 'teams' element with
         # a list of team dicts, one for each team the user is in, including
         # the user.
 
         # Get a user dict
         storage = DatabaseUserDetailsStorageV2(None)
-        userDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
+        userDict = storage._getUserInteraction('mark@hbd.com')
 
         # Sort the teams by id, they may be returned in any order.
         teams = sorted(userDict['teams'], key=lambda teamDict: teamDict['id'])
@@ -600,8 +641,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
             ], teams)
 
         # The dict returned by authUser should be identical.
-        userDict2 = storage._authUserInteraction(self.cursor,
-                                                 'mark@hbd.com', 'test')
+        userDict2 = storage._authUserInteraction('mark@hbd.com', 'test')
         self.assertEqual(userDict, userDict2)
 
     def test_authUserUnconfirmedEmail(self):
@@ -614,30 +654,214 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
                         WHERE email = 'justdave@bugzilla.org')'''
             % (ssha,))
         userDict = storage._authUserInteraction(
-            self.cursor, 'justdave@bugzilla.org', 'supersecret!')
+            'justdave@bugzilla.org', 'supersecret!')
         self.assertEqual({}, userDict)
 
+    def test_nameInV2UserDict(self):
+        # V2 user dicts should have a 'name' field.
+        storage = DatabaseUserDetailsStorageV2(None)
+        userDict = storage._getUserInteraction('mark@hbd.com')
+        self.assertEqual('sabdfl', userDict['name'])
 
-class BranchDetailsDatabaseStorageInterfaceTestCase(TestDatabaseSetup):
+    def test_getUserNoWikiname(self):
+        # Ensure that the authserver copes gracefully with users with:
+        #    a) no wikinames at all
+        #    b) no wikiname for http://www.ubuntulinux.com/wiki/
+        # (even though in the long run we want to make sure these situations can
+        # never happen, until then the authserver should be robust).
 
-    def test_verifyInterface(self):
-        self.failUnless(verifyObject(IBranchDetailsStorage,
-                                     DatabaseBranchDetailsStorage(None)))
+        # First, make sure that the sample user has no wikiname.
+        transaction.begin()
+        person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        wiki_names = getUtility(IWikiNameSet).getAllWikisByPerson(person)
+        for wiki_name in wiki_names:
+            wiki_name.destroySelf()
+        transaction.commit()
+
+        # Get the user dict for Sample Person (test@canonical.com).
+        storage = DatabaseUserDetailsStorageV2(None)
+        userDict = storage._getUserInteraction('test@canonical.com')
+
+        # The user dict has results, even though the wikiname is empty
+        self.assertNotEqual({}, userDict)
+        self.assertEqual('', userDict['wikiname'])
+        self.assertEqual(12, userDict['id'])
+
+        # Now lets add a wikiname, but for a different wiki.
+        transaction.begin()
+        login(ANONYMOUS)
+        person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        getUtility(IWikiNameSet).new(person, 'http://foowiki/', 'SamplePerson')
+        logout()
+        transaction.commit()
+
+        # The authserver should return exactly the same results.
+        userDict2 = storage._getUserInteraction('test@canonical.com')
+        self.assertEqual(userDict, userDict2)
 
 
-class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
+class BranchDetailsStorageTest(DatabaseTest):
+    """Tests for the implementation of `IBranchDetailsStorage`."""
 
     def setUp(self):
-        TestDatabaseSetup.setUp(self)
+        super(BranchDetailsStorageTest, self).setUp()
         self.storage = DatabaseBranchDetailsStorage(None)
+
+    def test_startMirroring(self):
+        # verify that the last mirror time is None before hand.
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertEqual(row[0], None)
+        self.assertEqual(row[1], None)
+
+        success = self.storage._startMirroringInteraction(1)
+        self.assertEqual(success, True)
+
+        # verify that last_mirror_attempt is set
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertNotEqual(row[0], None)
+        self.assertEqual(row[1], None)
+
+    def test_startMirroring_invalid_branch(self):
+        # verify that no branch exists with id == -1
+        self.cursor.execute("""
+            SELECT id FROM branch WHERE id = -1""")
+        self.assertEqual(self.cursor.rowcount, 0)
+
+        success = self.storage._startMirroringInteraction(-11)
+        self.assertEqual(success, False)
+
+    def test_mirrorFailed(self):
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
+                mirror_status_message
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertEqual(row[0], None)
+        self.assertEqual(row[1], None)
+        self.assertEqual(row[2], 0)
+        self.assertEqual(row[3], None)
+
+        success = self.storage._startMirroringInteraction(1)
+        self.assertEqual(success, True)
+        success = self.storage._mirrorFailedInteraction(1, "failed")
+        self.assertEqual(success, True)
+
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
+                mirror_status_message
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertNotEqual(row[0], None)
+        self.assertEqual(row[1], None)
+        self.assertEqual(row[2], 1)
+        self.assertEqual(row[3], 'failed')
+
+    def test_mirrorComplete(self):
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertEqual(row[0], None)
+        self.assertEqual(row[1], None)
+        self.assertEqual(row[2], 0)
+
+        success = self.storage._startMirroringInteraction(1)
+        self.assertEqual(success, True)
+        success = self.storage._mirrorCompleteInteraction(1, 'rev-1')
+        self.assertEqual(success, True)
+
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
+                   last_mirrored_id
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertNotEqual(row[0], None)
+        self.assertEqual(row[0], row[1])
+        self.assertEqual(row[2], 0)
+        self.assertEqual(row[3], 'rev-1')
+
+    def test_mirrorComplete_resets_failure_count(self):
+        # this increments the failure count ...
+        self.test_mirrorFailed()
+
+        success = self.storage._startMirroringInteraction(1)
+        self.assertEqual(success, True)
+        success = self.storage._mirrorCompleteInteraction(1, 'rev-1')
+        self.assertEqual(success, True)
+
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertNotEqual(row[0], None)
+        self.assertEqual(row[0], row[1])
+        self.assertEqual(row[2], 0)
+
+    def test_unrequested_hosted_branches(self):
+        # Hosted branches that haven't had a mirror requested should NOT be
+        # included in the branch queue
+
+        # Branch 25 is a hosted branch.
+        # Double check that its mirror_request_time is NULL. The sample data
+        # should guarantee this.
+        self.assertEqual(None, self.getMirrorRequestTime(25))
+
+        # Mark 25 as recently mirrored.
+        self.storage._startMirroringInteraction(25)
+        self.storage._mirrorCompleteInteraction(25, 'rev-1')
+
+        self.failIf(self.isBranchInPullQueue(25),
+                    "Shouldn't be in queue until mirror requested")
+
+    def test_mirror_stale_hosted_branches(self):
+        # Hosted branches which haven't been mirrored for a whole day should be
+        # mirrored even if they haven't asked for it.
+
+        # Branch 25 is a hosted branch, hasn't been mirrored for over 1 day
+        # and has not had a mirror requested
+        self.failUnless(self.isBranchInPullQueue(25))
+
+        # Mark 25 as recently mirrored.
+        self.storage._startMirroringInteraction(25)
+        self.storage._mirrorCompleteInteraction(25, 'rev-1')
+
+        # 25 should only be in the pull queue if a mirror has been requested
+        self.failIf(self.isBranchInPullQueue(25),
+                    "hosted branch no longer in pull list")
+
+    def test_recordSuccess(self):
+        # recordSuccess must insert the given data into BranchActivity.
+        started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
+        completed = datetime.datetime(2007, 07, 05, 19, 34, 24, tzinfo=UTC)
+        started_tuple = tuple(started.utctimetuple())
+        completed_tuple = tuple(completed.utctimetuple())
+        success = self.storage._recordSuccessInteraction(
+            'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
+        self.assertEqual(success, True, '_recordSuccessInteraction failed')
+
+        self.cursor.execute("""
+            SELECT name, hostname, date_started, date_completed
+                FROM ScriptActivity where name = 'test-recordsuccess'""")
+        row = self.cursor.fetchone()
+        self.assertEqual(row[0], 'test-recordsuccess')
+        self.assertEqual(row[1], 'vostok')
+        self.assertEqual(row[2], started.replace(tzinfo=None))
+        self.assertEqual(row[3], completed.replace(tzinfo=None))
 
     def test_getBranchPullQueue(self):
         # Set up the database so the vcs-import branch will appear in the queue.
+        transaction.begin()
         self.setSeriesDateLastSynced(3, now_minus='1 second')
         self.setBranchLastMirrorAttempt(14, now_minus='1 day')
-        self.connection.commit()
+        transaction.commit()
 
-        results = self.storage._getBranchPullQueueInteraction(self.cursor)
+        results = self.storage._getBranchPullQueueInteraction()
 
         # The first item in the row is the id.
         results_dict = dict((row[0], row) for row in results)
@@ -661,11 +885,12 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # If a branch doesn't have an associated product the unique name
         # returned should have +junk in the product segment. See
         # Branch.unique_name for precedent.
+        transaction.begin()
         self.setSeriesDateLastSynced(3, now_minus='1 second')
         self.setBranchLastMirrorAttempt(14, now_minus='1 day')
-        self.connection.commit()
+        transaction.commit()
 
-        results = self.storage._getBranchPullQueueInteraction(self.cursor)
+        results = self.storage._getBranchPullQueueInteraction()
 
         # The first item in the row is the id.
         results_dict = dict((row[0], row) for row in results)
@@ -679,6 +904,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # then that rows are ordered so that older last_mirror_attempts are
         # listed earlier.
 
+        transaction.begin()
         # Clear last_mirror_attempt on all rows
         self.cursor.execute("UPDATE Branch SET last_mirror_attempt = NULL")
 
@@ -692,9 +918,10 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
                                            - interval '%d days')
                 WHERE id = %d"""
                 % (branchID, branchID))
+        transaction.commit()
 
         # Call getBranchPullQueue
-        results = self.storage._getBranchPullQueueInteraction(self.cursor)
+        results = self.storage._getBranchPullQueueInteraction()
 
         # Get the branch IDs from the results for the branches we modified:
         branches = [row[0] for row in results if row[0] in range(16, 26)]
@@ -702,231 +929,6 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # All 10 branches should be in the list in order of descending
         # ID due to the last_mirror_attempt values.
         self.assertEqual(list(reversed(branches)), range(16, 26))
-
-    def test_startMirroring(self):
-        # verify that the last mirror time is None before hand.
-        self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored
-                FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
-        self.assertEqual(row[0], None)
-        self.assertEqual(row[1], None)
-
-        success = self.storage._startMirroringInteraction(self.cursor, 1)
-        self.assertEqual(success, True)
-
-        # verify that last_mirror_attempt is set
-        self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored
-                FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
-        self.assertNotEqual(row[0], None)
-        self.assertEqual(row[1], None)
-
-    def test_startMirroring_invalid_branch(self):
-        # verify that no branch exists with id == -1
-        self.cursor.execute("""
-            SELECT id FROM branch WHERE id = -1""")
-        self.assertEqual(self.cursor.rowcount, 0)
-
-        success = self.storage._startMirroringInteraction(self.cursor, -11)
-        self.assertEqual(success, False)
-
-    def test_mirrorFailed(self):
-        self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
-                mirror_status_message
-                FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
-        self.assertEqual(row[0], None)
-        self.assertEqual(row[1], None)
-        self.assertEqual(row[2], 0)
-        self.assertEqual(row[3], None)
-
-        success = self.storage._startMirroringInteraction(self.cursor, 1)
-        self.assertEqual(success, True)
-        success = self.storage._mirrorFailedInteraction(
-            self.cursor, 1, "failed")
-        self.assertEqual(success, True)
-
-        self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
-                mirror_status_message
-                FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
-        self.assertNotEqual(row[0], None)
-        self.assertEqual(row[1], None)
-        self.assertEqual(row[2], 1)
-        self.assertEqual(row[3], 'failed')
-
-    def test_mirrorComplete(self):
-        self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored, mirror_failures
-                FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
-        self.assertEqual(row[0], None)
-        self.assertEqual(row[1], None)
-        self.assertEqual(row[2], 0)
-
-        success = self.storage._startMirroringInteraction(self.cursor, 1)
-        self.assertEqual(success, True)
-        success = self.storage._mirrorCompleteInteraction(self.cursor, 1, 'rev-1')
-        self.assertEqual(success, True)
-
-        self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
-                   last_mirrored_id
-                FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
-        self.assertNotEqual(row[0], None)
-        self.assertEqual(row[0], row[1])
-        self.assertEqual(row[2], 0)
-        self.assertEqual(row[3], 'rev-1')
-
-    def test_mirrorComplete_resets_mirror_request(self):
-        # After successfully mirroring a branch, mirror_request_time should be
-        # set to NULL.
-
-        # Request that 25 (a hosted branch) be mirrored. This sets
-        # mirror_request_time.
-        storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(self.cursor, 25)
-
-        # Simulate successfully mirroring branch 25
-        self.storage._startMirroringInteraction(self.cursor, 25)
-        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
-
-        self.assertEqual(None, self.getMirrorRequestTime(25))
-
-    def test_mirrorFailed_resets_mirror_request(self):
-        # After failing to mirror a branch, mirror_request_time for that branch
-        # should be set to NULL.
-
-        # Request that 25 (a hosted branch) be mirrored. This sets
-        # mirror_request_time.
-        storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(self.cursor, 25)
-
-        # Simulate successfully mirroring branch 25
-        self.storage._startMirroringInteraction(self.cursor, 25)
-        self.storage._mirrorFailedInteraction(self.cursor, 25, 'failed')
-
-        self.assertEqual(None, self.getMirrorRequestTime(25))
-
-    def test_mirrorComplete_resets_failure_count(self):
-        # this increments the failure count ...
-        self.test_mirrorFailed()
-
-        success = self.storage._startMirroringInteraction(self.cursor, 1)
-        self.assertEqual(success, True)
-        success = self.storage._mirrorCompleteInteraction(
-            self.cursor, 1, 'rev-1')
-        self.assertEqual(success, True)
-
-        self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored, mirror_failures
-                FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
-        self.assertNotEqual(row[0], None)
-        self.assertEqual(row[0], row[1])
-        self.assertEqual(row[2], 0)
-
-    def test_unrequested_hosted_branches(self):
-        # Hosted branches that haven't had a mirror requested should NOT be
-        # included in the branch queue
-
-        # Branch 25 is a hosted branch.
-        # Double check that its mirror_request_time is NULL. The sample data
-        # should guarantee this.
-        self.assertEqual(None, self.getMirrorRequestTime(25))
-
-        # Mark 25 as recently mirrored.
-        self.storage._startMirroringInteraction(self.cursor, 25)
-        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
-
-        self.failIf(self.isBranchInPullQueue(25),
-                    "Shouldn't be in queue until mirror requested")
-
-    def test_requested_hosted_branches(self):
-        # Hosted branches that HAVE had a mirror requested should be in
-        # the branch queue
-
-        # Mark 25 (a hosted branch) as recently mirrored.
-        self.storage._startMirroringInteraction(self.cursor, 25)
-        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
-
-        # Request a mirror
-        storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(self.cursor, 25)
-
-        self.failUnless(self.isBranchInPullQueue(25), "Should be in queue")
-
-    def test_mirror_stale_hosted_branches(self):
-        # Hosted branches which haven't been mirrored for a whole day should be
-        # mirrored even if they haven't asked for it.
-
-        # Branch 25 is a hosted branch, hasn't been mirrored for over 1 day
-        # and has not had a mirror requested
-        self.failUnless(self.isBranchInPullQueue(25))
-
-        # Mark 25 as recently mirrored.
-        self.storage._startMirroringInteraction(self.cursor, 25)
-        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
-
-        # 25 should only be in the pull queue if a mirror has been requested
-        self.failIf(self.isBranchInPullQueue(25),
-                    "hosted branch no longer in pull list")
-
-    def getMirrorRequestTime(self, branch_id):
-        """Return the value of mirror_request_time for the branch with the
-        given id.
-
-        :param branch_id: The id of a row in the Branch table. An int.
-        :return: A timestamp or None.
-        """
-        self.cursor.execute(
-            "SELECT mirror_request_time FROM branch WHERE id = %s"
-            % sqlvalues(branch_id))
-        return self.cursor.fetchone()[0]
-
-    def isBranchInPullQueue(self, branch_id):
-        """Whether the branch with this id is present in the pull queue."""
-        results = self.storage._getBranchPullQueueInteraction(self.cursor)
-        return branch_id in (
-            result_branch_id
-            for result_branch_id, result_pull_url, unique_name in results)
-
-    def setSeriesDateLastSynced(self, series_id, value=None, now_minus=None):
-        """Helper to set the datelastsynced of a ProductSeries.
-
-        :param series_id: Database id of the ProductSeries to update.
-        :param value: SQL expression to set datelastsynced to.
-        :param now_minus: shorthand to set a value before the current time.
-        """
-        # Exactly one of value or now_minus must be set.
-        assert int(value is None) + int(now_minus is None) == 1
-        if now_minus is not None:
-            value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
-                     % now_minus)
-        self.cursor.execute(
-            "UPDATE ProductSeries SET datelastsynced = (%s) WHERE id = %d"
-            % (value, series_id))
-
-    def setBranchLastMirrorAttempt(self, branch_id, value=None, now_minus=None):
-        """Helper to set the last_mirror_attempt of a Branch.
-
-        :param branch_id: Database id of the Branch to update.
-        :param value: SQL expression to set last_mirror_attempt to.
-        :param now_minus: shorthand to set a value before the current time.
-        """
-        # Exactly one of value or now_minus must be set.
-        assert int(value is None) + int(now_minus is None) == 1
-        if now_minus is not None:
-            value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
-                     % now_minus)
-        self.cursor.execute(
-            "UPDATE Branch SET last_mirror_attempt = (%s) WHERE id = %d"
-            % (value, branch_id))
 
     def test_import_branches_only_listed_when_due(self):
         # Import branches (branches owned by vcs-imports) are only listed when
@@ -953,9 +955,10 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
 
         # Mark ProductSeries 3 as never successfully synced, and branch 14 as
         # never mirrored.
+        transaction.begin()
         self.setSeriesDateLastSynced(3, 'NULL')
         self.setBranchLastMirrorAttempt(14, 'NULL')
-        self.connection.commit()
+        transaction.commit()
 
         # Since the import was never successful, the branch should not be in
         # the pull queue.
@@ -965,7 +968,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # Mark ProductSeries 3 as just synced, and branch 14 as never mirrored.
         self.setSeriesDateLastSynced(3, now_minus='1 second')
         self.setBranchLastMirrorAttempt(14, 'NULL')
-        self.connection.commit()
+        transaction.commit()
 
         # We have a new import! We must mirror it as soon as possible.
         self.failUnless(self.isBranchInPullQueue(14),
@@ -976,7 +979,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # that we are no exercising the 'one mirror per day' logic.
         self.setSeriesDateLastSynced(3, now_minus='1 day 15 minutes')
         self.setBranchLastMirrorAttempt(14, now_minus='1 day 10 minutes')
-        self.connection.commit()
+        transaction.commit()
 
         # Since the the import was not successfully synced since the last
         # mirror, we do not have anything new to mirror.
@@ -987,7 +990,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # mirrored before this sync.
         self.setSeriesDateLastSynced(3, now_minus='1 second')
         self.setBranchLastMirrorAttempt(14, now_minus='1 day')
-        self.connection.commit()
+        transaction.commit()
 
         # The import was updated since the last mirror attempt. There might be
         # new revisions to mirror.
@@ -1004,7 +1007,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # mirrored more than 1 day ago.
         self.setSeriesDateLastSynced(3, 'NULL')
         self.setBranchLastMirrorAttempt(14, now_minus='1 day 1 minute')
-        self.connection.commit()
+        transaction.commit()
         self.failUnless(self.isBranchInPullQueue(14),
             "import branch last mirrored >1 day ago not in pull queue.")
 
@@ -1012,29 +1015,9 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # mirrored recently.
         self.setSeriesDateLastSynced(3, 'NULL')
         self.setBranchLastMirrorAttempt(14, now_minus='5 minutes')
-        self.connection.commit()
+        transaction.commit()
         self.failIf(self.isBranchInPullQueue(14),
             "import branch mirrored <1 day ago in pull queue.")
-
-    def test_recordSuccess(self):
-        # recordSuccess must insert the given data into BranchActivity.
-        started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
-        completed = datetime.datetime(2007, 07, 05, 19, 34, 24, tzinfo=UTC)
-        started_tuple = tuple(started.utctimetuple())
-        completed_tuple = tuple(completed.utctimetuple())
-        success = self.storage._recordSuccessInteraction(
-            self.cursor, 'test-recordsuccess', 'vostok',
-            started_tuple, completed_tuple)
-        self.assertEqual(success, True, '_recordSuccessInteraction failed')
-
-        self.cursor.execute("""
-            SELECT name, hostname, date_started, date_completed
-                FROM ScriptActivity where name = 'test-recordsuccess'""")
-        row = self.cursor.fetchone()
-        self.assertEqual(row[0], 'test-recordsuccess')
-        self.assertEqual(row[1], 'vostok')
-        self.assertEqual(row[2], started.replace(tzinfo=None))
-        self.assertEqual(row[3], completed.replace(tzinfo=None))
 
 
 def test_suite():

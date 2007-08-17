@@ -91,6 +91,8 @@ def get_external_bugtracker(bugtracker, version=None):
         return Bugzilla(bugtracker.baseurl, version)
     elif bugtrackertype == BugTrackerType.DEBBUGS:
         return DebBugs()
+    elif bugtrackertype == BugTrackerType.MANTIS:
+        return Mantis(bugtracker.baseurl)
     else:
         raise UnknownBugTrackerTypeError(bugtrackertype.name,
             bugtracker.name)
@@ -102,7 +104,7 @@ class ExternalBugTracker:
     implements(IExternalBugtracker)
 
     def urlopen(self, request, data=None):
-        return urllib.urlopen(request, data)
+        return urllib2.urlopen(request, data)
 
     def initializeRemoteBugDB(self, bug_ids):
         """Do any initialization before each bug watch is updated.
@@ -285,9 +287,9 @@ class Bugzilla(ExternalBugTracker):
                 # VERIFIED WONTFIX maps directly to WONTFIX
                 malone_status = BugTaskStatus.WONTFIX
             else:
-                #XXX: Which are the valid resolutions? We should fail
-                #     if we don't know of the resolution. Bug 31745.
-                #     -- Bjorn Tillenius, 2005-02-03
+                #XXX: Bjorn Tillenius 2005-02-03 Bug=31745:
+                #     Which are the valid resolutions? We should fail
+                #     if we don't know of the resolution.
                 malone_status = BugTaskStatus.INVALID
         elif remote_status in ['REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED']:
             # DEFERRED: bugzilla.redhat.com
@@ -491,7 +493,7 @@ class DebBugs(ExternalBugTracker):
             malone_status = BugTaskStatus.UNKNOWN
         if status == 'open':
             confirmed_tags = [
-                'help', 'confirmed', 'upstream', 'fixed-upstream', 'wontfix']
+                'help', 'confirmed', 'upstream', 'fixed-upstream']
             fix_committed_tags = ['pending', 'fixed', 'fixed-in-experimental']
             if 'moreinfo' in tags:
                 malone_status = BugTaskStatus.INCOMPLETE
@@ -503,6 +505,8 @@ class DebBugs(ExternalBugTracker):
                 if fix_committed_tag in tags:
                     malone_status = BugTaskStatus.FIXCOMMITTED
                     break
+            if 'wontfix' in tags:
+                malone_status = BugTaskStatus.WONTFIX
 
         return malone_status
 
@@ -652,7 +656,8 @@ class Mantis(ExternalBugTracker):
         # with the fact that the bug summary can contain embedded "\r\n"
         # characters! I don't see a better way to handle this short of
         # not using the CSV module and forcing all lines to have the
-        # same number as fields as the header. XXX: report Mantis bug.
+        # same number as fields as the header. 
+        # XXX: kiko 2007-07-05: Report Mantis bug.
         csv_data = csv_data.strip().split("\r\n0")
 
         if not csv_data:
@@ -754,10 +759,10 @@ class Mantis(ExternalBugTracker):
             if remote_resolution == "won't fix":
                 return BugTaskStatus.WONTFIX
             if remote_resolution == 'duplicate':
-                # XXX: follow duplicates
+                # XXX: kiko 2007-07-05: Follow duplicates
                 return BugTaskStatus.INVALID
             if remote_resolution in ['open', 'no change required']:
-                # XXX: pretty inconsistently used
+                # XXX: kiko 2007-07-05: Pretty inconsistently used
                 return BugTaskStatus.FIXRELEASED
 
         log.warn("Unknown status/resolution %s/%s" %

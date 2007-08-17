@@ -23,6 +23,8 @@ __all__ = [
     'PersonChangePasswordView',
     'PersonClaimView',
     'PersonCodeOfConductEditView',
+    'PersonCommentedBugTaskSearchListingView',
+    'PersonDeactivateAccountView',
     'PersonDynMenu',
     'PersonEditEmailsView',
     'PersonEditHomePageView',
@@ -98,7 +100,9 @@ from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
+from zope.app.session.interfaces import ISession
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.event import notify
 from zope.interface import implements
 from zope.component import getUtility
 from zope.publisher.interfaces.browser import IBrowserPublisher
@@ -106,11 +110,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.searchbuilder import any, NULL
-from canonical.lp.dbschema import (
-    LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    TeamSubscriptionPolicy, SpecificationFilter, QuestionParticipation,
-    PersonCreationRationale, BugTaskStatus, TeamMembershipRenewalPolicy)
+from canonical.lp.dbschema import BugTaskStatus, SpecificationFilter
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
@@ -124,8 +124,11 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    BugTaskSearchParams, IPersonBugTaskSearch, IBranchSet, ITeamMembership,
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
+    BugTaskSearchParams, IBranchSet, ITeamMembership,
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
+    LoginTokenType, PersonCreationRationale, QuestionParticipation,
+    SSHKeyType, TeamMembershipStatus, TeamMembershipRenewalPolicy,
+    TeamSubscriptionPolicy)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -146,6 +149,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import (
+    IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu,
     ApplicationMenu, enabled_with_permission, Navigation, stepto,
@@ -212,6 +217,10 @@ class PersonNavigation(CalendarTraversalMixin,
         if membership is None:
             return None
         return TeamMembershipSelfRenewalView(membership, self.request)
+
+    @stepto('+archive')
+    def traverse_archive(self):
+        return self.context.archive
 
 
 class PersonDynMenu(DynMenu):
@@ -596,8 +605,8 @@ class PersonBugsMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'bugs'
-    links = ['assignedbugs', 'reportedbugs', 'subscribedbugs', 'relatedbugs',
-             'softwarebugs', 'mentoring']
+    links = ['assignedbugs', 'commentedbugs', 'reportedbugs',
+             'subscribedbugs', 'relatedbugs', 'softwarebugs', 'mentoring']
 
     def relatedbugs(self):
         text = 'List related bugs'
@@ -623,6 +632,10 @@ class PersonBugsMenu(ApplicationMenu):
         text = 'Mentoring offered'
         enabled = self.context.mentoring_offers
         return Link('+mentoring', text, enabled=enabled, icon='info')
+
+    def commentedbugs(self):
+        text = 'List commented bugs'
+        return Link('+commentedbugs', text, icon='bugs')
 
 
 class PersonSpecsMenu(ApplicationMenu):
@@ -727,6 +740,22 @@ class CommonMenuLinks:
         summary = 'Projects %s is involved with' % self.context.browsername
         return Link(target, text, summary, icon='packages')
 
+    @enabled_with_permission('launchpad.Edit')
+    def activate_ppa(self):
+        target = "+activate-ppa"
+        text = 'Activate Personal Package Archive'
+        summary = ('Acknowledge terms of service for Launchpad Personal '
+                   'Package Archive.')
+        enable_link = (self.context.archive is None)
+        return Link(target, text, summary, icon='edit', enabled=enable_link)
+
+    def show_ppa(self):
+        target = '+archive'
+        text = 'Show Personal Package Archive'
+        summary = 'Browse Personal Package Archive packages.'
+        enable_link = (self.context.archive is not None)
+        return Link(target, text, summary, icon='info', enabled=enable_link)
+
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
@@ -737,8 +766,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys',
              'memberships', 'mentoringoffers',
-             'codesofconduct', 'karma', 'common_packages', 'related_projects',
-             'administer']
+             'codesofconduct', 'karma', 'common_packages', 'administer',
+             'related_projects', 'activate_ppa', 'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -846,7 +875,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'add_member', 'memberships', 'received_invitations', 'mugshots',
              'editemail', 'editlanguages', 'polls', 'add_poll',
              'joinleave', 'mentorships', 'reassign', 'common_packages',
-             'related_projects']
+             'related_projects', 'activate_ppa', 'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1052,6 +1081,38 @@ class PersonAddView(LaunchpadFormView):
         token.sendProfileCreatedEmail(person, creation_comment)
 
 
+class PersonDeactivateAccountView(LaunchpadFormView):
+
+    schema = IPerson
+    field_names = ['account_status_comment', 'password']
+    label = "Deactivate your Launchpad account"
+    custom_widget('account_status_comment', TextAreaWidget, height=5, width=60)
+
+    def validate(self, data):
+        loginsource = getUtility(IPlacelessLoginSource)
+        principal = loginsource.getPrincipalByLogin(
+            self.user.preferredemail.email)
+        assert principal is not None, "User must be logged in at this point."
+        if not principal.validate(data.get('password')):
+            self.setFieldError('password', 'Incorrect password.')
+            return
+
+    @action(_("Deactivate My Account"), name="deactivate")
+    def deactivate_action(self, action, data):
+        self.context.deactivateAccount(data['account_status_comment'])
+        session = ISession(self.request)
+        authdata = session['launchpad.authenticateduser']
+        previous_login = authdata.get('personid')
+        assert previous_login is not None, (
+            "User is not logged in; he can't be here.")
+        authdata['personid'] = None
+        authdata['logintime'] = datetime.utcnow()
+        notify(LoggedOutEvent(self.request))
+        self.request.response.addNoticeNotification(
+            _(u'Your account has been deactivated.'))
+        self.next_url = self.request.getApplicationURL()
+
+
 class PersonClaimView(LaunchpadFormView):
     """The page where a user can claim an unvalidated profile."""
 
@@ -1127,9 +1188,8 @@ class RedirectToEditLanguagesView(LaunchpadView):
 
     This view should always be registered with a launchpad.AnyPerson
     permission, to make sure the user is logged in. It exists so that
-    we can keep the /rosetta/prefs link working and also provide a link
-    for non logged in users that will require them to login and them send
-    them straight to the page they want to go.
+    we provide a link for non logged in users that will require them to login
+    and them send them straight to the page they want to go.
     """
 
     def initialize(self):
@@ -1215,7 +1275,8 @@ class PersonSpecFeedbackView(HasSpecificationsView):
 class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs reported by someone."""
 
-    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
 
     def search(self):
         # Specify both owner and bug_reporter to try to prevent the same
@@ -1251,26 +1312,21 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
     columns_to_show = ["id", "summary", "importance", "status"]
 
-    def initialize(self):
-        # Set schema here to avoid ZCML magic overriding it.
-        self.schema = IPersonBugTaskSearch
-        BugTaskSearchListingView.initialize(self)
-
     @property
     def current_package(self):
         """Get the package whose bugs are currently being searched."""
         if not (
-            self.distribution_widget.hasInput() and
-            self.distribution_widget.getInputValue()):
+            self.widgets['distribution'].hasInput() and
+            self.widgets['distribution'].getInputValue()):
             raise UnexpectedFormData("A distribution is required")
         if not (
-            self.sourcepackagename_widget.hasInput() and
-            self.sourcepackagename_widget.getInputValue()):
+            self.widgets['sourcepackagename'].hasInput() and
+            self.widgets['sourcepackagename'].getInputValue()):
             raise UnexpectedFormData("A sourcepackagename is required")
 
-        distribution = self.distribution_widget.getInputValue()
+        distribution = self.widgets['distribution'].getInputValue()
         return distribution.getSourcePackage(
-            self.sourcepackagename_widget.getInputValue())
+            self.widgets['sourcepackagename'].getInputValue())
 
     def search(self, searchtext=None):
         distrosourcepackage = self.current_package
@@ -1317,17 +1373,6 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
                 'url': self.getBugContactPackageSearchURL(other_package)})
 
         return package_links
-
-    def getExtraSearchParams(self):
-        """Overridden from BugTaskSearchListingView, to filter the search."""
-        search_params = {}
-
-        if self.status_widget.hasInput():
-            search_params['status'] = any(*self.status_widget.getInputValue())
-        if self.unassigned_widget.hasInput():
-            search_params['assignee'] = NULL
-
-        return search_params
 
     def getBugContactPackageSearchURL(self, distributionsourcepackage=None,
                                       advanced=False, extra_params=None):
@@ -1411,9 +1456,9 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
             extra_params=inprogress_bugs_params)
 
     def shouldShowSearchWidgets(self):
-        # XXX: It's not possible to search amongst the bugs on maintained
+        # XXX: Guilherme Salgado 2005-11-05:
+        # It's not possible to search amongst the bugs on maintained
         # software, so for now I'll be simply hiding the search widgets.
-        # -- Guilherme Salgado, 2005-11-05
         return False
 
     # Methods that customize the advanced search form.
@@ -1431,7 +1476,8 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 class PersonRelatedBugsView(BugTaskSearchListingView):
     """All bugs related to someone."""
 
-    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
 
     def search(self):
         """Return the open bugs related to a person."""
@@ -1441,8 +1487,10 @@ class PersonRelatedBugsView(BugTaskSearchListingView):
         subscriber_params.subscriber = context
         assignee_params = copy.copy(params)
         owner_params = copy.copy(params)
-        # Only override the assignee and owner if they were not specified
-        # by the user.
+        commenter_params = copy.copy(params)
+
+        # Only override the assignee, commenter and owner if they were not
+        # specified by the user.
         if assignee_params.assignee is None:
             assignee_params.assignee = context
         if owner_params.owner is None:
@@ -1450,8 +1498,12 @@ class PersonRelatedBugsView(BugTaskSearchListingView):
             # bug (but different tasks) being displayed.
             owner_params.owner = context
             owner_params.bug_reporter = context
+        if commenter_params.bug_commenter is None:
+            commenter_params.bug_commenter = context
+
         tasks = self.context.searchTasks(
-            assignee_params, subscriber_params, owner_params)
+            assignee_params, subscriber_params, owner_params,
+            commenter_params)
         return BugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
@@ -1473,7 +1525,8 @@ class PersonRelatedBugsView(BugTaskSearchListingView):
 class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs assigned to someone."""
 
-    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
 
     def search(self):
         """Return the open bugs assigned to a person."""
@@ -1506,10 +1559,40 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
         return canonical_url(self.context) + "/+assignedbugs"
 
 
+class PersonCommentedBugTaskSearchListingView(BugTaskSearchListingView):
+    """All bugs commented on by a Person."""
+
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
+
+    def search(self):
+        """Return the open bugs commented on by a person."""
+        return BugTaskSearchListingView.search(
+            self, extra_params={'bug_commenter': self.context})
+
+    def getSearchPageHeading(self):
+        """The header for the search page."""
+        return "Bugs commented on by %s" % self.context.displayname
+
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs commented on by %s: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs commented on by %s" % self.context.displayname
+
+    def getSimpleSearchURL(self):
+        """Return a URL that can be used as an href to the simple search."""
+        return canonical_url(self.context) + "/+commentedbugs"
+
+
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs someone is subscribed to."""
 
-    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
 
     def search(self):
         return BugTaskSearchListingView.search(
@@ -1897,12 +1980,13 @@ class PersonEditWikiNamesView(LaunchpadView):
         context.ubuntuwiki.wikiname = ubuntuwikiname
 
         for w in context.otherwikis:
-            # XXX: We're exposing WikiName IDs here because that's the only
+            # XXX: GuilhermeSalgado 2005-08-25:
+            # We're exposing WikiName IDs here because that's the only
             # unique column we have. If we don't do this we'll have to
             # generate the field names using the WikiName.wiki and
             # WikiName.wikiname columns (because these two columns make
             # another unique identifier for WikiNames), but that's tricky and
-            # not worth the extra work. -- GuilhermeSalgado 25/08/2005
+            # not worth the extra work.
             if form.get('remove_%d' % w.id):
                 w.destroySelf()
             else:
@@ -1964,10 +2048,11 @@ class PersonEditIRCNicknamesView(LaunchpadView):
 
         form = self.request.form
         for ircnick in self.context.ircnicknames:
-            # XXX: We're exposing IrcID IDs here because that's the only
+            # XXX: GuilhermeSalgado 2005-08-25:
+            # We're exposing IrcID IDs here because that's the only
             # unique column we have, so we don't have anything else that we
             # can use to make field names that allow us to uniquely identify
-            # them. -- GuilhermeSalgado 25/08/2005
+            # them.
             if form.get('remove_%d' % ircnick.id):
                 ircnick.destroySelf()
             else:
@@ -2098,8 +2183,8 @@ class PersonTranslationView(LaunchpadView):
     def batchnav(self):
         batchnav = BatchNavigator(self.context.translation_history,
                                   self.request)
-        # XXX: See bug 60320. Because of a template reference to
-        # pofile.potemplate.displayname, it would be ideal to also
+        # XXX: kiko 2006-03-17 bug=60320: Because of a template reference
+        # to pofile.potemplate.displayname, it would be ideal to also
         # prejoin inside translation_history:
         #   potemplate.potemplatename
         #   potemplate.productseries
@@ -2115,7 +2200,6 @@ class PersonTranslationView(LaunchpadView):
         # before passing it on to avoid reissuing it. Note also that the
         # fact that we iterate over currentBatch() here means that the
         # translation_history query is issued again. Tough luck.
-        #   -- kiko, 2006-03-17
         ids = set(record.pofile.potemplate.id
                   for record in batchnav.currentBatch())
         if ids:
@@ -2175,7 +2259,7 @@ class PersonGPGView(LaunchpadView):
         getattr(self, action)()
 
     def claim_gpg(self):
-        # XXX cprov 20050401 As "Claim GPG key" takes a lot of time, we
+        # XXX cprov 2005-04-01: As "Claim GPG key" takes a lot of time, we
         # should process it throught the NotificationEngine.
         gpghandler = getUtility(IGPGHandler)
         fingerprint = self.request.form.get('fingerprint')
@@ -2662,8 +2746,8 @@ class RequestPeopleMergeView(AddView):
         token = logintokenset.new(user, login, email.email,
                                   LoginTokenType.ACCOUNTMERGE)
 
-        # XXX: SteveAlexander: an experiment to see if this improves
-        #      problems with merge people tests.  2006-03-07
+        # XXX: SteveAlexander 2006-03-07: An experiment to see if this
+        #      improves problems with merge people tests.  
         import canonical.database.sqlbase
         canonical.database.sqlbase.flush_database_updates()
         token.sendMergeRequestEmail()

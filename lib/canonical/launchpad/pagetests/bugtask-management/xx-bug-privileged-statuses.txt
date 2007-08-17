@@ -7,7 +7,7 @@ Contact team may change a bug to that status.
     ...     contents = browser.contents
     ...     for listing in find_tags_by_class(contents, 'listing'):
     ...         for highlight in listing('tr', attrs={'class':'highlight'}):
-    ...             for td in highlight('td')[1:4]:
+    ...             for td in highlight('td')[0:3]:
     ...                 print ' '.join(td(text=lambda t: not t.isspace()))
 
 == Unprivileged users ==

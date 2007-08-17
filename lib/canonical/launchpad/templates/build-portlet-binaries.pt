@@ -1,15 +1,23 @@
-<div class="portlet">
+<div class="portlet" id="portlet-binaries">
 
   <h2>Resulting binaries</h2>
 
   <div class="portletBody portletContent">
 
-    <ul>
+    <ul tal:condition="context/is_trusted">
       <li tal:repeat="binpkg context/distroarchseriesbinarypackages">
         <a tal:attributes="href binpkg/fmt:url"
            tal:content="string:${binpkg/name} ${binpkg/version}">
            foopkg 1.2-3
         </a>
+      </li>
+    </ul>
+
+    <ul tal:condition="not:context/is_trusted">
+      <li tal:repeat="binpkg context/binarypackages">
+         <span tal:content="string:${binpkg/name} ${binpkg/version}">
+           foopkg 1.2-3
+         </span>
       </li>
     </ul>
 

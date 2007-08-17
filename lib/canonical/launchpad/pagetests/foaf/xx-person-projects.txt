@@ -5,12 +5,12 @@ team.
 
     >>> anon_browser.open('http://launchpad.dev/~ubuntu-team')
     >>> related_projects = find_tag_by_id(
-    ...     anon_browser.contents, 'related-projects')
+    ...     anon_browser.contents, 'portlet-related-projects')
     >>> for tr in related_projects.findAll('tr'):
     ...     print extract_text(tr)
     Ubuntu Linux
     Ubuntu Test
-    Ubuntu
+    Tomcat
 
 The +projects page displays a table with links to open bugs,
 unimplemented specs and open questions.
@@ -26,7 +26,7 @@ unimplemented specs and open questions.
     Name            Bugs    Blueprints  Questions
     Ubuntu Linux    4       1           8
     Ubuntu Test     0       0           0
-    Ubuntu          1       0           0
+    Tomcat          1       0           0
 
     >>> print anon_browser.getLink('4').url
     http://launchpad.dev/ubuntu/+bugs
@@ -43,7 +43,7 @@ displays only the first five.
 
     >>> anon_browser.open('http://launchpad.dev/~sabdfl')
     >>> related_projects = find_tag_by_id(
-    ...     anon_browser.contents, 'related-projects')
+    ...     anon_browser.contents, 'portlet-related-projects')
     >>> for tr in related_projects.findAll('tr'):
     ...     print extract_text(tr)
     Ubuntu Linux

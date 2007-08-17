@@ -118,8 +118,9 @@ class KarmaCacheUpdater(LaunchpadCronScript):
         self.cur.execute("""VACUUM KarmaTotalCache""")
 
         # Insert new records into the KarmaTotalCache table. 
-        
-        # XXX: If deadlocks ever become a problem, first LOCK the
+
+        # XXX: salgado 2007-02-06:
+        # If deadlocks ever become a problem, first LOCK the
         # corresponding rows in the Person table so the bulk insert cannot
         # fail. We don't bother at the moment as this would involve granting
         # UPDATE rights on the Person table to the karmacacheupdater user.

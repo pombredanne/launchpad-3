@@ -91,14 +91,16 @@ SQLObject here.  But the test framework doesn't appear to support this
     ...                WHERE hostname = 'frobisher.example.com';''')
     >>> connection.commit()
 
-If we check again from the web apps point of view, we see that the
-status is indeed updated.
+Now we abort the implicit transaction and flush SQLObject's caches so
+we can see the above changes.
 
-XXX: MichaelHudson 2007-07-10, nothing short of tearing down the
-connection and reconnecting seems to see the change made above.
+    >>> import transaction
+    >>> transaction.abort()
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
 
-    >>> from canonical.testing.layers import LaunchpadFunctionalLayer
-    >>> LaunchpadFunctionalLayer.testSetUp() # Reset the database connection.
+So when we check again from the web apps point of view, we see that
+the status is indeed updated.
 
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> machine = machine_set.getByHostname('frobisher.example.com')

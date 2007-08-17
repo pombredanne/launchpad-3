@@ -177,10 +177,31 @@ class LibrarianNoResetTestCase(unittest.TestCase):
 
     def testNoReset3(self):
         # The file added by testNoReset1 should be gone
-        # XXX: We should get a DownloadFailed exception here, as per
-        # Bug #51370 -- StuartBishop 20060630
+        # XXX: StuartBishop 2006-06-30 Bug=51370:
+        # We should get a DownloadFailed exception here.
         data = urlopen(LibrarianTestCase.url).read()
         self.failIfEqual(data, self.sample_data)
+
+
+class LibrarianHideTestCase(unittest.TestCase):
+    layer = LaunchpadLayer
+
+    def testHideLibrarian(self):
+        # First perform a successful upload:
+        client = LibrarianClient()
+        data = 'foo'
+        client.remoteAddFile(
+            'foo', len(data), StringIO(data), 'text/plain')
+
+        # Hide the librarian, and show that the upload fails:
+        LibrarianLayer.hide()
+        self.assertRaises(UploadFailed, client.remoteAddFile,
+                          'foo', len(data), StringIO(data), 'text/plain')
+
+        # Reveal the librarian again, allowing uploads:
+        LibrarianLayer.reveal()
+        client.remoteAddFile(
+            'foo', len(data), StringIO(data), 'text/plain')
 
 
 class DatabaseTestCase(BaseTestCase):
