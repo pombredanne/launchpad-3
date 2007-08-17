@@ -71,7 +71,7 @@ class POMsgSetMixIn:
         subs = getUtility(IPOSubmissionSet).getSubmissionsFor(
             stored_pomsgset, dummy_pomsgset)
 
-        assert (len(subs.keys()) == 1,
+        assert len(subs) == 1, (
             "Received suggestions for unexpected POMsgSet.")
         return subs[self]
 
@@ -122,7 +122,7 @@ class POMsgSetMixIn:
             if active is not None and active.potranslation is not None:
                 active_translation = active.potranslationID
                 for suggestion in self.suggestions[pluralform]:
-                    assert (suggestion.potranslationID != active_translation,
+                    assert suggestion.potranslationID != active_translation, (
                         "Suggestions cache contains unnecessary suggestion")
                 # XXX: JeroenVermeulen 2007-08-05, this filtering no longer
                 # needed with "phase 6" optimizations for bug 30602.

@@ -43,7 +43,8 @@ class POSubmissionSet:
         if not all_pomsgsets:
             return result
 
-        # Figure out what language we're retrieving for.
+        # Figure out what language we're retrieving for, and ensure that all
+        # pomsgsets are for that same language.
         language = all_pomsgsets[0].language
         for pomsgset in all_pomsgsets:
             assert pomsgset.language == language, "POMsgSets mix languages!"
@@ -156,7 +157,7 @@ class POSubmissionSet:
         # in newest-to-oldest order, because that's the way the view class
         # likes them.
         relevant_submissions = POSubmission.select(
-            "id IN %s" % sqlvalues(available.keys()), orderBy="-datecreated")
+            "id IN (%s)" % ", ".join(available), orderBy="-datecreated")
 
         # Step 3.
         # Figure out which of all_pomsgsets each submission is relevant to,
@@ -181,7 +182,7 @@ class POSubmissionSet:
             # triggering a new database query.
             owner_id = submission.pomsgsetID
             primemsgid = available[submission.id]
-            assert (owner_id is not None,
+            assert owner_id is not None, (
                     "POSubmission in database has no POMsgSet.")
 
             if owner_id in pomsgset_ids and submission.pomsgset.isfuzzy:
@@ -191,9 +192,9 @@ class POSubmissionSet:
                 # are expecting it as a useful suggestion, though we do need
                 # to present it to its owning pomsgset.
                 of_pomsgset = submission.pomsgset
-                assert (of_pomsgset in takers_for_primemsgid[primemsgid],
+                assert of_pomsgset in takers_for_primemsgid[primemsgid], (
                         "Fuzzy POMsgSet submission retrieved for no purpose.")
-                assert (of_pomsgset in result,
+                assert of_pomsgset in result, (
                         "Fetched submission for unexpected, fuzzy POMsgSet.")
                 result[of_pomsgset].append(submission)
             else:
@@ -201,13 +202,10 @@ class POSubmissionSet:
                 # so it's relevant to any POMsgSets that refer to the same
                 # primemsgid, including the POMsgSet it itself is attached to.
 
-                # XXX: JeroenVermeulen 2007-08-02, this assertion may still
-                # trigger the unnecessary queries.  Remove it after testing
-                # with production data!  (bug ?????)
-                # XXX: JeroenVermeulen 2007-08-02, when landing this, register
-                # a bug reminding me to remove the assertion, and add its bug
-                # number to the XXX note above.
-                assert (not submission.pomsgset.isfuzzy,
+                # XXX: JeroenVermeulen 2007-08-02 bug=132660: this assertion
+                # may still trigger the unnecessary queries.  Remove it after
+                # testing with production data!
+                assert not submission.pomsgset.isfuzzy, (
                         "Fuzzy POMsgSet submission fetched as a suggestion.")
                 for recipient in takers_for_primemsgid[primemsgid]:
                     result[recipient].append(submission)
