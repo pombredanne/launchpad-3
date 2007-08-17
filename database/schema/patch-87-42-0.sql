@@ -13,7 +13,10 @@ CREATE TABLE BranchMergeProposal
    merge_reporter INT REFERENCES Person,
    date_created TIMESTAMP WITHOUT TIME ZONE NOT NULL
        DEFAULT timezone('UTC'::text, now()),
-   CONSTRAINT different_branches CHECK (source_branch != target_branch),
+   CONSTRAINT different_branches CHECK
+       (source_branch != target_branch AND
+        dependent_branch != source_branch AND
+        dependent_branch != target_branch),
    CONSTRAINT positive_revno CHECK ((merged_revno is NULL) or (merged_revno > 0)),
    UNIQUE(source_branch, target_branch, date_merged)
 );

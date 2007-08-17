@@ -77,8 +77,8 @@ class BranchAddLandingTarget(TestCase):
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target, dependent_branch=self.product)
 
-    def test_dependentBranchSameProject(self):
-        """The dependent branch, if it is there, must be for the same project.
+    def test_dependentBranchSameProduct(self):
+        """The dependent branch, if it is there, must be for the same product.
         """
         self.dependent.product = None
         self.assertRaises(
@@ -89,6 +89,18 @@ class BranchAddLandingTarget(TestCase):
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target, self.dependent)
+
+    def test_dependentMustNotBeTheSource(self):
+        """The target and source branch cannot be the same."""
+        self.assertRaises(
+            InvalidBranchMergeProposal, self.source.addLandingTarget,
+            self.user, self.target, self.source)
+
+    def test_dependentMustNotBeTheTarget(self):
+        """The target and source branch cannot be the same."""
+        self.assertRaises(
+            InvalidBranchMergeProposal, self.source.addLandingTarget,
+            self.user, self.target, self.target)
 
     def test_existingMergeProposal(self):
         """If there is an existing merge proposal for the source and target

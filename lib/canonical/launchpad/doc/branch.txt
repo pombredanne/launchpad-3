@@ -78,9 +78,10 @@ If it doesn't exist an exception NotFoundError is raised
     >>> personset = getUtility(IPersonSet)
     >>> ddaa = personset.getByName('ddaa')
 
-    >>> now = time_generator()
+    >>> from canonical.launchpad.ftests import time_counter
+    >>> now = time_counter()
 
-The time_generator is used to create nicely ordered 'fake' date_created
+The time_counter is used to create nicely ordered 'fake' date_created
 times for the branches.  This avoids using transaction.commit to get the
 date_created values from the database.
 

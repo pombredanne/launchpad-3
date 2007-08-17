@@ -6,7 +6,6 @@ __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 import re
 
 from zope.interface import implements
-from zope.security.proxy import isinstance as zope_isinstance
 from zope.component import getUtility
 
 from sqlobject import (
@@ -121,9 +120,9 @@ class Branch(SQLBase):
         if self.product is None:
             raise InvalidBranchMergeProposal(
                 'Junk branches cannot be used as source branches.')
-        if not zope_isinstance(target_branch, Branch):
+        if not IBranch.providedBy(target_branch):
             raise InvalidBranchMergeProposal(
-                'Target branch must be a branch')
+                'Target branch must implement IBranch.')
         if self == target_branch:
             raise InvalidBranchMergeProposal(
                 'Source and target branches must be different.')
@@ -132,13 +131,19 @@ class Branch(SQLBase):
                 'The source branch and target branch must be branches of the '
                 'same project.')
         if dependent_branch is not None:
-            if not zope_isinstance(dependent_branch, Branch):
+            if not IBranch.providedBy(dependent_branch):
                 raise InvalidBranchMergeProposal(
-                    'Dependent branch must be a branch')
+                    'Dependent branch must be implement IBranch.')
             if self.product != dependent_branch.product:
                 raise InvalidBranchMergeProposal(
                     'The source branch and dependent branch must be branches '
                     'of the same project.')
+            if self == dependent_branch:
+                raise InvalidBranchMergeProposal(
+                    'Source and dependent branches must be different.')
+            if target_branch == dependent_branch:
+                raise InvalidBranchMergeProposal(
+                    'Target and dependent branches must be different.')
 
         target = BranchMergeProposal.selectOneBy(
             source_branch=self, target_branch=target_branch, date_merged=None)

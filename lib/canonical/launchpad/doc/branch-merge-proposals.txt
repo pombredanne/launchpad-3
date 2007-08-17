@@ -34,7 +34,8 @@ All merge proposals have to be registered by a Person.
     ...     IBranchSet, IPersonSet)
     >>> person_set = getUtility(IPersonSet)
     >>> sample_person = person_set.getByEmail('test@canonical.com')
-    >>> now = time_generator()
+    >>> from canonical.launchpad.ftests import time_counter
+    >>> now = time_counter()
 
 In order to register a merge proposal there has to be a source branch
 and a target branch.
@@ -121,12 +122,31 @@ But the merge proposal is still listed in the source's targets.
     ...     print proposal.target_branch.unique_name
     ~name12/gnome-terminal/main
 
+The firefox branches are the branches that are attached to a product
+and have revisions (well, a revision).
+
+    >>> source_branch = branch_set.getByUniqueName(
+    ...     '~sabdfl/firefox/release-0.9')
+    >>> target_branch = branch_set.getByUniqueName(
+    ...     '~sabdfl/firefox/release-0.9.2')
+    >>> merge_proposal = source_branch.addLandingTarget(
+    ...     sample_person, target_branch, date_created=now.next())
+
+The target branch has a revision 1, so the merge time is taken form
+that revision.
+
+    >>> merge_proposal.markAsMerged(1, now.next(), reporter)
+    >>> print merge_proposal.date_merged
+    2005-03-09 15:40:00+00:00
+    >>> print merge_proposal.merge_reporter.browsername
+    Mark Shuttleworth
+
 
 == Interfaces ==
 
 The BranchMergeProposal must implement the IBranchMergeProposal interface.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import IBranchMergeProposal
     >>> verifyObject(IBranchMergeProposal, merge_proposal)
     True
@@ -145,4 +165,4 @@ proposal is used.
     >>> url[url.rfind('/')+1:] == str(merge_proposal.id)
     True
     >>> print url
-    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/...
+    http://code.launchpad.dev/~sabdfl/firefox/release-0.9/+merge/...

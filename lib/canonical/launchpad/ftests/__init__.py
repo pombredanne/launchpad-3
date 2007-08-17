@@ -6,7 +6,7 @@ from canonical.launchpad.ftests._launchpadformharness import (
 from canonical.launchpad.ftests._login import *
 from canonical.launchpad.ftests._sqlobject import syncUpdate
 from canonical.launchpad.ftests._tales import test_tales
-from canonical.launchpad.ftests.timegenerator import time_generator
+from canonical.launchpad.ftests.timecounter import time_counter
 from canonical.launchpad.ftests.keys_for_tests import (
     import_public_test_keys, import_public_key, import_secret_test_key,
     decrypt_content)
