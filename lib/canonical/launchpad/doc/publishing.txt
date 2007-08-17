@@ -162,7 +162,7 @@ Generating respective "Packages" stanzas based on IArchivePublish:
 
  >>> print bpph.getIndexStanza() #doctest: -NORMALIZE_WHITESPACE
  Package: mozilla-firefox
- Priority: Important
+ Priority: important
  Section: editors
  Maintainer: Mark Shuttleworth <mark@canonical.com>
  Architecture: i386

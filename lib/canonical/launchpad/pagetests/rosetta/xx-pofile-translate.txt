@@ -11,6 +11,7 @@ xx-pofile-translate-html-tags-escape.txt
 xx-pofile-translate-lang-direction.txt
 xx-pofile-translate-message-filtering.txt
 xx-pofile-translate-newlines-check.txt
+xx-pofile-translate-performance.txt
 
 
 == Anonymous access ==

@@ -11,11 +11,10 @@ __all__ = ['SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
            ]
 
 from warnings import warn
-import operator
 import os
 
 from zope.interface import implements
-from sqlobject import ForeignKey, StringCol, BoolCol, IntCol
+from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -550,7 +549,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         fields = IndexStanzaFields()
         fields.append('Package', bpr.name)
-        fields.append('Priority', self.priority.title)
+        fields.append('Priority', self.priority.title.lower())
         fields.append('Section', self.section.name)
         fields.append('Installed-Size', bpr.installedsize)
         fields.append('Maintainer', spr.dsc_maintainer_rfc822)
