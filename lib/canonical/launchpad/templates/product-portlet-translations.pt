@@ -1,4 +1,5 @@
-<div class="portlet" tal:define="translatable view/primary_translatable">
+<div class="portlet" id="portlet-translations
+     tal:define="translatable view/primary_translatable">
 
   <h2>Translations for <span tal:replace="context/displayname" /></h2>
 

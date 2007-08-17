@@ -1,4 +1,5 @@
-<div class="portlet" tal:condition="view/getTopFiveContributors">
+<div class="portlet" id="portlet-top-contributors"
+     tal:condition="view/getTopFiveContributors">
   <h2>Top contributors</h2>
   <div class="portletBody portletContent">
     <ul class="person">
