@@ -13,7 +13,7 @@
         <li tal:repeat="fbreq fbreqs">
 
         <tal:requester replace="structure fbreq/requester/fmt:link" />
-        wants feedback from
+        requested feedback from
         <strong tal:content="structure fbreq/reviewer/fmt:link" />:
         <div
           tal:condition="fbreq/queuemsg"
