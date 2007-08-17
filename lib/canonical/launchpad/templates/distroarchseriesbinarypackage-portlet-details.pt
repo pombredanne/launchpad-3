@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-details">
 
   <h2>Package "<span tal:replace="context/name">apache2</span>"
   (<span tal:replace="context/distroarchseries/architecturetag">i386</span>)

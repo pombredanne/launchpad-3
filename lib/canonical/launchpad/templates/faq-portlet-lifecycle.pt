@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-lifecycle">
   <h2>Lifecycle</h2>
   <div class="portletBody">
     <table>

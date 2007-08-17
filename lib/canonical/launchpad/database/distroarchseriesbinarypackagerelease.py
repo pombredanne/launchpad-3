@@ -219,16 +219,6 @@ class DistroArchSeriesBinaryPackageRelease:
         return self.binarypackagerelease.installedsize
 
     @property
-    def copyright(self):
-        """See IBinaryPackageRelease."""
-        return self.binarypackagerelease.copyright
-
-    @property
-    def licence(self):
-        """See IBinaryPackageRelease."""
-        return self.binarypackagerelease.licence
-
-    @property
     def architecturespecific(self):
         """See IBinaryPackageRelease."""
         return self.binarypackagerelease.architecturespecific
