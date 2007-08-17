@@ -44,7 +44,8 @@ And it needs to maintain a minimum length
     ...     import time
     ...     from canonical.launchpad.interfaces import IPersonSet
     ...     from canonical.launchpad.interfaces import IEmailAddressSet
-    ...     from canonical.lp.dbschema import PersonCreationRationale
+    ...     from canonical.launchpad.interfaces.person import (
+    ...         PersonCreationRationale)
     ...     UNKNOWN = PersonCreationRationale.UNKNOWN
     ...     person_set = getUtility(IPersonSet)
     ...     person, ignored = person_set.createPersonAndEmail(
