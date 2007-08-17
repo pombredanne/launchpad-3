@@ -1,4 +1,5 @@
-<div class="portlet" tal:condition="context/attachments"
+<div class="portlet" id="portlet-attachments"
+     tal:condition="context/attachments"
      tal:define="current_task view/currentBugTask;
                  url current_task/fmt:url">
 
