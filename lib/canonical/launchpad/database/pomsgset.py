@@ -41,7 +41,6 @@ class POMsgSetMixIn:
     @property
     def pluralforms(self):
         """See `IPOMsgSet`."""
-
         if self.potmsgset.plural_text is not None:
             if self.pofile.language.pluralforms is not None:
                 entries = self.pofile.language.pluralforms
@@ -60,7 +59,6 @@ class POMsgSetMixIn:
         This retrieves all POSubmissions that form useful suggestions for self
         from the database, as well as any POSubmissions that are already
         attached to self, all in new-to-old order of datecreated."""
-
         # An SQL clause matching a POMsgSet to our own identity.  It goes into
         # an OR expression, so default is false.
         match_self_sql = 'false'
@@ -73,23 +71,20 @@ class POMsgSetMixIn:
 
         parameters['match_self'] = match_self_sql
 
-        joins = ['POMsgSet', 'POFile', 'POTMsgSet']
+        joins = ['POMsgSet', 'POTMsgSet']
         query = """
                 POSubmission.pomsgset = POMsgSet.id AND
-                POMsgSet.pofile = POFile.id AND
+                POMsgSet.language = %(language)s AND
                 POMsgSet.potmsgset = POTMsgSet.id AND
                 (%(match_self)s OR NOT POMsgSet.isfuzzy) AND
-                POFile.language = %(language)s AND
                 POTMsgSet.primemsgid = %(primemsgid)s
             """ % parameters
 
-        # XXX: JeroenVermeulen 2007-016-17, pre-join potranslations!
         return POSubmission.select(
             query, clauseTables=joins, orderBy='-datecreated', distinct=True)
 
     def initializeSubmissionsCaches(self, related_submissions=None):
-        """See `IPOMsgSet`."""
-
+        """See `IPOMsgSet`.""" 
         if self._hasSubmissionsCaches():
             return
 
@@ -113,7 +108,10 @@ class POMsgSetMixIn:
                 "POMsgSet's incoming submission cache data not ordered "
                 "from newest to oldest")
             pluralform = submission.pluralform
-            if submission.pomsgset == self:
+            # Compare foreign-key value to our primary key, rather than
+            # comparing objects, to avoid fetching submission.pomsgset from
+            # database.
+            if submission.pomsgsetID == self.id:
                 self.attached_submissions.setdefault(pluralform, [])
                 self.attached_submissions[pluralform].append(submission)
                 if submission.active:
@@ -127,13 +125,16 @@ class POMsgSetMixIn:
 
         # Now that we know what our active posubmissions are, filter out any
         # suggestions that refer to the same potranslations.
+        # XXX: JeroenVermeulen 2007-08-02, can we move this selection into SQL
+        # to speed up the big expensive queries on POSubmission by making them
+        # return less data?  (bug 30602)
         for pluralform in self.suggestions.keys():
             active = self.getActiveSubmission(pluralform)
             if active is not None and active.potranslation is not None:
                 self.suggestions[pluralform] = [
                     submission
                     for submission in self.suggestions.get(pluralform)
-                    if submission.potranslation != active.potranslation]
+                    if submission.potranslationID != active.potranslationID]
 
         assert self._hasSubmissionsCaches(), (
             "Failed to set up POMsgSet's submission caches")
@@ -179,6 +180,7 @@ class DummyPOMsgSet(POMsgSetMixIn):
         self.potmsgset = potmsgset
         self.isfuzzy = False
         self.commenttext = None
+        self.language = pofile.language
 
     @property
     def active_texts(self):
@@ -229,6 +231,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         foreignKey='Person', dbName='reviewer', notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(dbName='date_reviewed', notNull=False,
         default=None)
+    language = ForeignKey(foreignKey='Language', dbName='language')
 
     submissions = SQLMultipleJoin('POSubmission', joinColumn='pomsgset')
 
@@ -255,13 +258,15 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
     @property
     def published_texts(self):
         """See `IPOMsgSet`."""
-        self._fetchActiveAndPublishedSubmissions()
+        if self.published_submissions is None:
+            self._fetchActiveAndPublishedSubmissions()
         return self._extractTranslations(self.published_submissions)
 
     @property
     def active_texts(self):
         """See `IPOMsgSet`."""
-        self._fetchActiveAndPublishedSubmissions()
+        if self.active_submissions is None:
+            self._fetchActiveAndPublishedSubmissions()
         return self._extractTranslations(self.active_submissions)
 
     def isNewerThan(self, timestamp):
@@ -369,10 +374,9 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         bigger job with lots of other byproducts that may not turn out to be
         needed.
         """
-
         active = {}
         published = {}
-        # XXX: JeroenVermeulen 2007-016-17, prejoin potranslations!
+
         query = "pomsgset = %s AND (active OR published)" % quote(self)
         for submission in POSubmission.select(query):
             pluralform = submission.pluralform
@@ -391,7 +395,6 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def getActiveSubmission(self, pluralform):
         """See `IPOMsgSet`."""
-
         if self.active_submissions is None:
             if self.id is None:
                 return None
@@ -400,7 +403,6 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def getPublishedSubmission(self, pluralform):
         """See `IPOMsgSet`."""
-
         if self.published_submissions is None:
             if self.id is None:
                 return None
@@ -421,11 +423,22 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         is_editor = (force_edition_rights or
                      self.pofile.canEditTranslations(person))
 
+        assert (published or is_editor or
+                self.pofile.canAddSuggestions(person)), (
+            '%s cannot add translations nor can add suggestions' % (
+                person.displayname))
+
         # First, check that the translations are correct.
         potmsgset = self.potmsgset
         original_texts = [potmsgset.singular_text]
         if potmsgset.plural_text is not None:
             original_texts.append(potmsgset.plural_text)
+
+        # If the update is on the translation credits message, yet
+        # update is not published, silently return
+        # XXX 2007-06-26 Danilo: Do we want to raise an exception here?
+        if potmsgset.is_translation_credit and not published:
+            return
 
         # By default all translations are correct.
         validation_status = TranslationValidationStatus.OK
@@ -838,7 +851,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         pluralforms = self.pluralforms
 
         # Calculate the number of published plural forms.
-        # XXX: JeroenVermeulen 2007-06-10, why the cap on pluralform?
+        # XXX: JeroenVermeulen 2007-06-10: Why the cap on pluralform?
         published_count = 0
         for (plural, published) in self.published_submissions.items():
             if plural < pluralforms and published.id is not None:
@@ -851,7 +864,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             self.publishedfuzzy = False
 
         # Calculate the number of active plural forms.
-        # XXX: JeroenVermeulen 2007-06-10, why the cap on pluralform?
+        # XXX: JeroenVermeulen 2007-06-10: Why the cap on pluralform?
         active_count = 0
         for (plural, active) in self.active_submissions.items():
             if plural < pluralforms and active.id is not None:
@@ -866,7 +879,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         flush_database_updates()
 
         # Let's see if we got updates from Rosetta
-        # XXX: JeroenVermeulen 2007-06-13, does this really work?
+        # XXX: JeroenVermeulen 2007-06-13: does this really work?
         updated_pomsgset = POMsgSet.select("""
             POMsgSet.id = %s AND
             POMsgSet.isfuzzy = FALSE AND

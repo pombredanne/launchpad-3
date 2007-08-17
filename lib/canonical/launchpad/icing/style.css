@@ -64,10 +64,10 @@ thead th, tr.thead th {text-align: center;}
 
 html {
   position: relative;
-  font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
-  font-size: 8.5pt;
-  color: #505050;
-  background-color: #FFFFFF;
+  font-family: sans-serif;
+  font-size: 10pt;
+  color: #333;
+  background-color: #fff;
 }
 body {margin: 0; padding: 0;}
 
@@ -77,16 +77,15 @@ body {margin: 0; padding: 0;}
 :visited                      {color: #324c7f; text-decoration: none;}
 
 h1, h2, h3, h4, h5, h6 {background: none; color: #83ad23; font-weight: normal;}
-h1 {font-size: 2.8em;    margin: 0;              padding: 0px 0px 10px 0px;}
-h2 {font-size: 1.55em; margin: 1em 0 0.75em;   padding: 0;} /* FP; /products */
-h3 {font-size: 1.15em; margin: 1em 0 0.5em 0;  padding: 0;} /* +topcontributors */
+h1 {font-size: 2.2em;  margin: 0;              padding: 0px 0px 10px 0px;}
+h2 {font-size: 1.5em;  margin: 1em 0 0.75em;   padding: 0;} /* FP; /products */
+h3 {font-size: 1.1em;  margin: 1em 0 0.5em 0;  padding: 0;} /* +topcontributors */
 h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
 h5 {font-size: 1em;    margin: 0;              padding: 0;}
 h6 {font-size: 1em;    margin: 0;              padding: 0;}
-h1:first-child, h2:first-child, h3:first-child, h4:first-child {margin-top: 0;}
 
 .exception {color: #cc0000;}
-.discreet, .lesser {font-size: smaller;}
+.discreet, .lesser {font-size: 80%;}
 .unavailable {color: #999; background: none;}
 .oopsid {color: #cc0000; font-weight: bold;}
 
@@ -140,7 +139,7 @@ form {border: 0; margin: 0; padding: 0;}
 input, select, textarea {
   background-color: #fff;
   color: #656565;
-  font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
+  font-family: sans-serif;
   margin: 0;
 }
 input[type="text"], input[type="submit"], input[type="reset"], textarea {
@@ -166,7 +165,7 @@ img {
   border: none;
 }
 
-/* see launchpad.js:activateCollapsables() */
+/* see launchpad.js:activateCollapsibles() */
 .collapsible legend a, .collapsible legend a:visited {
   text-decoration: none;
   color: #000088;
@@ -175,6 +174,8 @@ img.collapseIcon {text-decoration: none; margin-bottom: -3px;}
 .collapsible legend a span {text-decoration: underline;}
 .collapsible {padding: 0; margin: 0;}
 .collapsed {border: none; margin-bottom: 0;}
+fieldset .collapsed {display: none;}
+fieldset .expanded {display: block;}
 
 form.primary.search {
   margin-bottom: 2em;
@@ -584,7 +585,6 @@ body.pillarindex table#applications th {padding-left: 0;}
 #globalsearch {
   float: right;
   margin-top: 15px;
-  margin-right: 70px; /* should prevent search field from sliding under tabs */
 }
 #globalsearch #q {border: 1px solid #a7c2ce; width: 170px;}
 #globalsearch #searchbutton {
@@ -600,10 +600,10 @@ body.pillarindex table#applications th {padding-left: 0;}
 #globalsearchscope label {display: block; padding: 0 0 2px;}
 
 /* The last element is a standard footer. */
-#globalfooter {clear: both;}
+#globalfooter {clear: both; margin-left: -20px;}
 /* It has a top border if the page doesn't already have a rounded border. */
 body.freeform #globalfooter {
-  border-top: 1px solid #ccc;
+  border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
   padding-top: 0.5em;
 }
 
@@ -714,7 +714,6 @@ ul#applicationchooser li#applicationchooser_selected {
   margin: 0 0 20px -100%;
   padding: 0 20px;
   list-style: none;
-  font-size: 11px;
   right: 240px;
 }
 /* IE6 and  lower ignore the left padding, so we add extra positioning. */
@@ -735,6 +734,14 @@ a conditional comment in main-template.pt to work around the above rule. */
   margin: 0px 0px 1px 0px;
   color: #FFFFFF;
   font-weight: bold;
+}
+#portlets .portlet h2 a, #portlets .portlet h2 a:hover {
+  display: block;
+  color: inherit;
+  text-decoration: inherit;
+}
+#portlets .portlet.expanded h2 {
+  background-image: url(leftnav_bg_expanded.gif);
 }
 #portlets #actions h2 {
   background-image: url(leftnav_bg_uncollapsible.gif);
@@ -765,32 +772,13 @@ a conditional comment in main-template.pt to work around the above rule. */
 #portlets .portlet,
 #portlets .portlet h2,
 #portlets .portlet li {
-  font-size: 11px !important;
+  font-size: 12px !important;
 }
 #portlets .portlet h2 {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-}
-#portlets .portlet h2 a {
-  float: left;
-  display: block;
-  width: 180px;
-  height: 18px;
-  background-color: #8F8F8F;
-  background-image: url(leftnav_bg.gif);
-  background-repeat: no-repeat;
-  background-position: left top;
-  overflow: hidden;
-  padding: 2px 10px 0px 10px;
-  margin: 0px 0px 1px 0px;
-  color: #FFFFFF;
-  font-weight: bold;
-}
-#portlets .portlet h2 a:hover {
-  background-color: #A3A3A3;
-  text-decoration: none;
 }
 #portlets .portlet ul li a:hover {
   background-color: #fff;
@@ -847,18 +835,18 @@ a conditional comment in main-template.pt to work around the above rule. */
 #structuralobjectheading .main {
   font-weight: bold;
   margin: 1px 0 0 70px;
-  font-size: 2.3em;
+  font-size: 24px;
 }
 #structuralobjectheading .intro {
   margin: 2px 0 0 70px;
-  font-size: 1em;
+  font-size: 12px;
 }
 #structural-children {
   clear: both;
   font-size: 0.75em;
   margin-top: 2em;
   padding: 2em 0 0;
-  border-top: 1px dotted #ccc;
+  border-top: 1px dotted #cbcbcb; /* matches color of mainarea_* images */
 }
 #applicationchooser {
   clear: both;
@@ -871,24 +859,13 @@ a conditional comment in main-template.pt to work around the above rule. */
   background-image: url(mainarea_bottom.gif);
   background-repeat: repeat-x;
   background-position: bottom left;
+  margin: 0 -20px 0 -38px; /* opposite of margin for #nonhelp */
   position: relative;
   top: -15px; /*- reduces logo~tab gap -*/
 }
 body.freeform #mainarea {top: 0;}
 * html #mainarea {top: 0;}
 body.freeform #mainarea {top: 20px;} /*- no logo on freeform pages -*/
-#mainarea div.t {
-  width: 100%;
-  background-image: url(mainarea_left.gif);
-  background-repeat: repeat-y;
-  background-position: top left;
-}
-#mainarea div.u {
-  width: 100%;
-  background-image: url(mainarea_right.gif);
-  background-repeat: repeat-y;
-  background-position: top right;
-}
 #mainarea div.v {
   width: 100%;
   background-image: url(mainarea_bottomleft.gif);
@@ -922,6 +899,22 @@ body.freeform #mainarea {top: 20px;} /*- no logo on freeform pages -*/
 #singlecolumn div.z {
   padding: 0 0 20px; /* XXX Makes the top right corner disappear */
 }
+
+/* Some pages end with links to related items. */
+/* Examples: branch page, bug page. */
+.related {
+  margin-top: 4em;
+  border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
+  padding-top: 1em;
+}
+.related ul {
+  list-style: none;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  text-indent: 0.5em;
+}
+.related ul li:before {content: "\00BB \0020";}
+
 /* --- Various custom list formats --- */
 
 #maincontent ol, #maincontent ul, #singlecolumn ul, #singlecolumn ol {
@@ -940,6 +933,7 @@ ul.distro, li.distro                 {list-style-image: url(/@@/distribution);}
 ul.distroseries, li.distroseries   {list-style-image: url(/@@/distribution);}
 ul.download, li.download             {list-style-image: url(/@@/download);}
 ul.edit, li.edit                     {list-style-image: url(/@@/edit);}
+ul.faq, li.faq                       {list-style-image: url(/@@/faq);}
 ul.info, li.info                     {list-style-image: url(/@@/info);}
 ul.language, li.language             {list-style-image: url(/@@/language);}
 ul.locked, li.locked                 {list-style-image: url(/@@/locked);}
@@ -963,7 +957,8 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 
 #application-footer strong {font-weight: normal;}
 
-.report, .boardComment {font-size: 1.125em;} /* bug descriptions/comments */
+.description, .report, .boardComment {font-size: 1.125em;}
+/* person/project/bug descriptions, bug comments */
 .report h2 {font-size: 1.4em;}
 .boardComment {border: 1px solid #ddd; margin: 1em 0 1.5em;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
@@ -1149,6 +1144,9 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 .importanceLOW       { color: Black; }
 .importanceWISHLIST  { color: Blue; }
 .importanceUNDECIDED { color: #999; }
+.status :link, .importance :link {color: inherit; text-decoration: none;}
+
+#bug-description {font-family: monospace;}
 
 /* --- Blueprints --- */
 
@@ -1390,12 +1388,11 @@ div#applications {padding: 1em 0; text-align: center;}
 }
 .central {
   clear: left; /* Bugs FP */
-  font-size: 1.5em;
+  font-size: 1.125em;
   margin: 0 auto 1em;
   padding: 0.5em 0; /* FP should fit in ~750px; Bugs FP */
   width: auto;
 }
-.tab-unknown .central {font-size: 1.75em;}
 .central input {
   font-size: 1em;
 }
@@ -1404,7 +1401,7 @@ div#applications {padding: 1em 0; text-align: center;}
   font-size: 1.2em;
 }
 #application-summary, #application-footer {
-  font-size: 1.4em;
+  font-size: 1.2em;
   line-height: 1.4em;
   margin-top: 0;
 }
@@ -1439,7 +1436,7 @@ div.left, div.right {width: 50%;}
 div.left {clear: both; float: left;}
 div.right {clear: right; float: right;}
 div.left div.portlet, div.right div.portlet {
-  border: dotted #ccc;
+  border: dotted #cbcbcb; /* matches color of mainarea_* images */
   border-width: 1px 0 0 0;
   margin-top: 1em;
   padding-top: 1em;
@@ -1477,7 +1474,7 @@ li {
 }
 */
 
-.bug-summary {
+.bug-summary, .summary {
   font-weight: bold;
 }
 
@@ -1494,7 +1491,7 @@ table.summary {float: right; margin: 0 0 1em 1em;}
 table.listing table.summary {margin-top: 0.5em;}
 table.summary caption {font-style: italic; margin-left: 1em;}
 div.right table.summary {float: none; margin: 1em auto;}
-table.summary tr {border: dotted #ccc; border-width: 1px 0;}
+table.summary tr {border: dotted #cbcbcb; border-width: 1px 0;}
 table.summary td {padding-left: 0.5em;}
 table.summary ul, table.summary ul li {
   list-style-position: inside;
@@ -1517,7 +1514,7 @@ table.contributions td {vertical-align: middle; width: 16px;}
 
 /* --- Listing tables --- */
 
-table.listing {margin: 0; width: 100%;}
+table.listing {margin: 0; width: 100%; font-size: 8.5pt;}
 table.listing, table.listing tbody {border-bottom: 1px solid #d2d2d2;}
 table.listing thead, table.listing thead th, table.listing tfoot tr {
   border: 1px solid #d2d2d2;
@@ -1529,6 +1526,8 @@ tr.highlight {background-color: #ff9;}
 table.listing tr.note {font-size: smaller;}
 tr.amount, td.amount {text-align: right;}
 table.listing th, table.listing td {padding: 0.25em;}
+/* We don't want extra padding on nested tables, such as batch navigation. */
+table.listing table th, table.listing table td {padding: 0;}
 table.listing th {font-size: 1.125em; white-space: nowrap;}
 table.listing td {border: 1px #d2d2d2; border-style: dotted none none none;}
 table.listing tr.note td {border-style: none;}
@@ -1566,7 +1565,7 @@ th.descending {
 .sortkey, .revsortkey {display: none;}
 
 /* Clouds of links. */
-.cloud-size-small { 
+.cloud-size-small {
   font-size: 1em;
 }
 .cloud-size-medium {
@@ -1575,14 +1574,23 @@ th.descending {
 .cloud-size-large {
   font-size: 1.7em;
 }
-.cloud-shade-dark { 
+.cloud-shade-dark {
   color: #00f;
 }
-.cloud-shade-medium { 
+.cloud-shade-medium {
   color: #7878ff;
 }
 .cloud-shade-light {
   color: #b8b8ff;
+}
+.cloud-highlight-dark {
+  color: #00c500;
+}
+.cloud-highlight-medium {
+  color: #90e090;
+}
+.cloud-highlight-light {
+  color: #b8ffb8;
 }
 
 .vcsimportSUCCESS {} /* inherited text color */

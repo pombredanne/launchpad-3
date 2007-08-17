@@ -6,7 +6,8 @@ __metaclass__ = type
 
 import os
 
-from canonical.launchpad.components.externalbugtracker import Bugzilla
+from canonical.launchpad.components.externalbugtracker import (
+    Bugzilla, Mantis, Trac)
 
 
 def read_test_file(name):
@@ -149,4 +150,47 @@ class TestOldBugzilla(TestBugzilla):
     def _getBugsToTest(self):
         return {42: ('RESOLVED', 'FIXED'),
                 123543: ('ASSIGNED', '')}
+
+
+class TestMantis(Mantis):
+    """Mantis ExternalSystem for use in tests.
+
+    It overrides _getPage and _postPage, so that access to a real
+    Mantis instance isn't needed.
+    """
+
+    trace_calls = False
+
+    def _getPage(self, page):
+        if self.trace_calls:
+            print "CALLED _getPage(%r)" % (page,)
+        if page == "csv_export.php":
+            return read_test_file('mantis_example_bug_export.csv')
+        else:
+            return ''
+
+    def _postPage(self, page, form):
+        if self.trace_calls:
+            print "CALLED _postPage(%r, ...)" % (page,)
+        return ''
+
+
+class TestTrac(Trac):
+    """Trac ExternalBugTracker for testing purposes.
+
+    It overrides urlopen, so that access to a real Trac instance isn't needed.
+    Also, it overrides the default batch_query_threshold for the sake of
+    making test data sane.
+    """
+
+    batch_query_threshold = 10.
+    trace_calls = False
+
+    def urlopen(self, url):
+        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
+
+        if self.trace_calls:
+            print "CALLED urlopen(%r)" % (url,)
+
+        return open(file_path + '/' + 'trac_example_ticket_export.csv', 'r')
 

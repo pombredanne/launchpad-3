@@ -1,6 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from canonical.launchpad.database.codeimport import *
+from canonical.launchpad.database.codeimportmachine import *
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.pillar import *
@@ -79,6 +80,7 @@ from canonical.launchpad.database.build import *
 from canonical.launchpad.database.builder import *
 from canonical.launchpad.database.buildqueue import *
 from canonical.launchpad.database.publishing import *
+from canonical.launchpad.database.faq import *
 from canonical.launchpad.database.files import *
 from canonical.launchpad.database.bounty import *
 from canonical.launchpad.database.bountymessage import *
@@ -123,3 +125,4 @@ from canonical.launchpad.database.archive import *
 from canonical.launchpad.database.emailaddress import *
 from canonical.launchpad.database.openidserver import *
 from canonical.launchpad.database.entitlement import *
+from canonical.launchpad.database.mailinglist import *

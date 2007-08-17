@@ -29,7 +29,7 @@ Bazaar model does not forbid users from replacing the history of a branch.
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IBranch, IBranchSet, IBranchSubscription)
+    ...     BranchType, IBranch, IBranchSet, IBranchSubscription)
     >>> from canonical.launchpad.database import (
     ...     Branch, BranchSet, BranchSubscription,)
     >>> verifyObject(IBranch, Branch.get(1))
@@ -95,7 +95,8 @@ date_created values from the database.
     >>> title = "David Allouche's Main GNOME Terminal Branch"
     >>> summary = "Main line of development for David Allouche on GNOME Terminal."
     >>> home_page = "http://example.com/~ddaa/"
-    >>> gterm_dev = branchset.new('dev', ddaa, ddaa, gterm_product, gterm_dev_url,
+    >>> gterm_dev = branchset.new(
+    ...     BranchType.MIRRORED, 'dev', ddaa, ddaa, gterm_product, gterm_dev_url,
     ...     title, summary=summary, home_page=home_page, date_created=now.next())
 
     >>> gterm_dev.name
@@ -118,8 +119,9 @@ no title, and no summary, and even no URL.
 Branches with no URL are primarily hosted on the supermirror.
 
     >>> url = 'http://example.com/~ddaa/junkcode'
-    >>> junkcode = branchset.new('junkcode', ddaa, ddaa, None, None,
-    ...                          date_created=now.next())
+    >>> junkcode = branchset.new(
+    ...     BranchType.HOSTED, 'junkcode', ddaa, ddaa, None, None,
+    ...     date_created=now.next())
 
     >>> junkcode.name
     u'junkcode'
@@ -341,7 +343,7 @@ The owner's name is usually not displayed in branch listings, but it is used in
 the sort key to guarantee a predictable sort order. This relies on the fact
 that (owner, product, name) is unique for all branches.
 
-    >>> from canonical.lp.dbschema import BranchLifecycleStatus
+    >>> from canonical.launchpad.interfaces import BranchLifecycleStatus
     >>> gterm_slowness = branchset[19]
     >>> gterm_slowness.sort_key
     (u'gnome-terminal', ..., u'Sample Person', u'slowness', u'name12')
@@ -385,9 +387,9 @@ Both of these attributes are contolled through the UI through the use
 of the enumerated types: BranchSubscriptionDiffSize, and
 BranchSubscriptionNotificationLevel.
 
-    >>> from canonical.launchpad.interfaces import IPerson, IBranchSubscription
-    >>> from canonical.lp.dbschema import (
+    >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
+    ...     IPerson, IBranchSubscription)
     >>> sabdfl = personset.getByName('sabdfl')
     >>> sabdfl.subscribed_branches.count()
     0
@@ -427,7 +429,8 @@ the branches registered, authored and subscribed to by this person.
     0
     >>> url = 'http://example.com/~lifeless/mesh-merge'
     >>> title = "Experimental mesh merging algorithm."
-    >>> meshmerge = branchset.new('mesh-merge', lifeless, lifeless, None, url,
+    >>> meshmerge = branchset.new(
+    ...     BranchType.MIRRORED, 'mesh-merge', lifeless, lifeless, None, url,
     ...     title, summary=title, date_created=now.next())
     >>> junkcode.author = lifeless
     >>> syncUpdate(junkcode)
@@ -804,3 +807,62 @@ extra display information.
     ...     print branch.lifecycle_status.title, branch.unique_name
     Development ~name12/gnome-terminal/main
 
+
+== Associated product series ==
+
+A branch is able to return a list of product series that the branch is
+associated with through either ProductSeries.user_branch or
+ProductSeries.import_branch.
+
+    >>> branch = branchset.getByUniqueName('~vcs-imports/evolution/main')
+    >>> series = list(branch.associatedProductSeries())
+    >>> len(series)
+    1
+    >>> series = series[0]
+    >>> print series.product.name, series.name
+    evolution trunk
+
+
+== Deleting branches ==
+
+If a user creates a branch in error, they should be able to remove that branch.
+
+A branch can be deleted if it has not yet been pushed to (or mirrored), and
+is not associated with any bugs or blueprints, has no subscribers, and hasn't
+been associated with any product series.
+
+Deleting the branch is done through the BranchSet.  If the branch is not
+deletable then an exception is raised.
+
+More details can be found in the file
+canonical/launchpad/database/tests/test_branch.py.
+
+    >>> branch = branchset.new(
+    ...     BranchType.MIRRORED, 'to-delete', ddaa, ddaa, gterm_product,
+    ...     'http://example.com/branches/to-delete', 'A branch to delete',
+    ...     date_created=now.next())
+
+    >>> print branch.unique_name
+    ~ddaa/gnome-terminal/to-delete
+    >>> branch.canBeDeleted()
+    True
+
+Adding a subscriber makes it not deletable.
+
+    >>> ignored = branch.subscribe(
+    ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None)
+    >>> branch.canBeDeleted()
+    False
+    >>> branchset.delete(branch)
+    Traceback (most recent call last):
+    ...
+    CannotDeleteBranch: Cannot delete branch: ~ddaa/gnome-terminal/to-delete
+
+The process can be rectified though by removing the offending links.
+
+    >>> branch.unsubscribe(ddaa)
+    >>> branch.canBeDeleted()
+    True
+    >>> branchset.delete(branch)
+    >>> print branchset.getByUniqueName('~ddaa/gnome-terminal/to-delete')
+    None

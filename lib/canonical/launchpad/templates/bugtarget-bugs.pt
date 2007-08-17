@@ -9,6 +9,8 @@
     <script type="text/javascript" src="/+icing/PlotKit_Packed.js"></script>
   </metal:block>
   <metal:portlets fill-slot="portlets">
+    <tal:block content="structure context/@@+portlet-bugfilters" />
+    <tal:block content="structure context/@@+portlet-bugtags" />
     <tal:releasecriticalbugs
       tal:condition="view/shouldShowReleaseCriticalPortlet"
       tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
@@ -36,9 +38,6 @@
               </li>
             </ul>
             </noscript>
-          </div>
-          <div>
-            &raquo; <a href="+bugs">Show all open bugs</a>
           </div>
         </div>
         <div class="two column right">
@@ -94,6 +93,9 @@
                 <strong tal:content="cve_bugs/count"></strong>
                 open CVE bugs
               </a>
+            </li>
+            <li style="font-weight: bold;">
+              <a href="+bugs">List all open bugs</a>
             </li>
           </ul>
           <ul class="rollover buttons">

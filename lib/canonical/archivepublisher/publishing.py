@@ -2,7 +2,9 @@
 
 __all__ = ['Publisher', 'pocketsuffix', 'suffixpocket', 'getPublisher']
 
+__metaclass__ = type
 
+import apt_pkg
 from datetime import datetime
 import gzip
 import logging
@@ -12,7 +14,6 @@ from sha import sha
 import stat
 import tempfile
 
-from Crypto.Hash.SHA256 import new as sha256
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
@@ -23,7 +24,7 @@ from canonical.archivepublisher.ftparchive import FTPArchiveHandler
 from canonical.launchpad.interfaces import pocketsuffix
 from canonical.librarian.client import LibrarianClient
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus)
+    ArchivePurpose, PackagePublishingPocket, PackagePublishingStatus)
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
@@ -46,6 +47,23 @@ Label: %s
 Architecture: %s
 """
 
+class sha256:
+    """Encapsulates apt_pkg.sha256sum as expected by publishing.
+
+    It implements '__init__' and 'hexdigest' methods from PEP-247, which are
+    the only ones required in soyuz-publishing-system.
+
+    It's a work around for broken Crypto.Hash.SHA256. See further information
+    in bug #131503.
+    """
+    def __init__(self, content):
+        self._sum = apt_pkg.sha256sum(content)
+
+    def hexdigest(self):
+        """Return the hexdigest produced by apt_pkg.sha256sum."""
+        return self._sum
+
+
 def reorder_components(components):
     """Return a list of the components provided.
 
@@ -60,6 +78,7 @@ def reorder_components(components):
             components.remove(comp)
     ret.extend(components)
     return ret
+
 
 def _getDiskPool(pubconf, log):
     """Return a DiskPool instance for a given PubConf.
@@ -78,25 +97,26 @@ def _getDiskPool(pubconf, log):
 
     return dp
 
-def getPublisher(archive, distribution, allowed_suites, log, distsroot=None):
-    """Return an initialised Publisher instance according given context.
 
-    Optionally the user override the resulting indexes location via 'distroot'
-    option.
+def getPublisher(archive, allowed_suites, log, distsroot=None):
+    """Return an initialised Publisher instance for the given context.
+
+    The callsites can override the location where the archive indexes will
+    be stored via 'distroot' argument.
     """
-    if distribution.main_archive.id == archive.id:
+    if archive.purpose == ArchivePurpose.PRIMARY:
         log.debug("Finding configuration for %s main_archive."
-                  % distribution.name)
+                  % archive.distribution.name)
     else:
         log.debug("Finding configuration for '%s' PPA."
                   % archive.owner.name)
     try:
-        pubconf = archive.getPubConfig(distribution)
+        pubconf = archive.getPubConfig()
     except LucilleConfigError, info:
         log.error(info)
         raise
 
-    # XXX cprov 20070103: remove security proxy of the Config instance
+    # XXX cprov 2007-01-03: remove security proxy of the Config instance
     # returned by IArchive. This is kinda of a hack because Config doesn't
     # have any interface yet.
     pubconf = removeSecurityProxy(pubconf)
@@ -108,8 +128,7 @@ def getPublisher(archive, distribution, allowed_suites, log, distsroot=None):
 
     log.debug("Preparing publisher.")
 
-    return Publisher(log, pubconf, disk_pool, distribution, archive,
-                     allowed_suites)
+    return Publisher(log, pubconf, disk_pool, archive, allowed_suites)
 
 
 class Publisher(object):
@@ -119,8 +138,8 @@ class Publisher(object):
     the processing of each DistroSeries and DistroArchSeries in question
     """
 
-    def __init__(self, log, config, diskpool, distribution, archive,
-                 allowed_suites=None, library=None):
+    def __init__(self, log, config, diskpool, archive, allowed_suites=None,
+                 library=None):
         """Initialise a publisher.
 
         Publishers need the pool root dir and a DiskPool object.
@@ -131,7 +150,7 @@ class Publisher(object):
         """
         self.log = log
         self._config = config
-        self.distro = distribution
+        self.distro = archive.distribution
         self.archive = archive
         self.allowed_suites = allowed_suites
 
@@ -347,7 +366,7 @@ class Publisher(object):
 
     def _writeDistroRelease(self, distroseries, pocket):
         """Write out the Release files for the provided distroseries."""
-        # XXX: untested method -- kiko, 2006-08-24
+        # XXX: kiko 2006-08-24: Untested method.
 
         # As we generate file lists for apt-ftparchive we record which
         # distroseriess and so on we need to generate Release files for.
@@ -411,24 +430,32 @@ class Publisher(object):
     def _writeDistroArchRelease(self, distroseries, pocket, component,
                                 architecture, all_files):
         """Write out a Release file for a DAR."""
-        # XXX: untested method -- kiko, 2006-08-24
+        # XXX kiko 2006-08-24: Untested method.
 
         full_name = distroseries.name + pocketsuffix[pocket]
 
+        # XXX cprov 2007-07-11: it will be affected by CommercialRepo changes.
+        if self.archive == self.distro.main_archive:
+            index_suffixes = ('', '.gz', '.bz2')
+        else:
+            index_suffixes = ('.gz',)
+
         self.log.debug("Writing Release file for %s/%s/%s" % (
             full_name, component, architecture))
-        if architecture != "source":
-            file_stub = "Packages"
 
-            # Set up the debian-installer paths, which are nested
-            # inside the component
-            di_path = os.path.join(component, "debian-installer",
-                                   architecture)
-            di_file_stub = os.path.join(di_path, file_stub)
-            for suffix in ('', '.gz', '.bz2'):
-                all_files.add(di_file_stub + suffix)
+        if architecture != "source":
             # Strip "binary-" off the front of the architecture
             clean_architecture = architecture[7:]
+            file_stub = "Packages"
+
+            if self.archive == self.distro.main_archive:
+                # Set up the debian-installer paths for main_archive.
+                # d-i paths are nested inside the component.
+                di_path = os.path.join(
+                    component, "debian-installer", architecture)
+                di_file_stub = os.path.join(di_path, file_stub)
+                for suffix in index_suffixes:
+                    all_files.add(di_file_stub + suffix)
         else:
             file_stub = "Sources"
             clean_architecture = architecture
@@ -436,8 +463,10 @@ class Publisher(object):
         # Now, grab the actual (non-di) files inside each of
         # the suite's architectures
         file_stub = os.path.join(component, architecture, file_stub)
-        for suffix in ('', '.gz', '.bz2'):
+
+        for suffix in index_suffixes:
             all_files.add(file_stub + suffix)
+
         all_files.add(os.path.join(component, architecture, "Release"))
 
         f = open(os.path.join(self._config.distsroot, full_name,

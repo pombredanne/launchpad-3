@@ -27,6 +27,16 @@
                 PostgreSQL's default setting is used.
             </description>
         </key>
+        <key name="db_statement_timeout_precision" datatype="integer"
+            required="no" default="5000">
+            <description>
+                The statement timeout will be updated after this many
+                ms of statements being executed, decreasing the statement
+                timeout while the request is being processed. We don't just
+                update the statement timeout after every query to control
+                the number of unnecessary db queries sent.
+            </description>
+        </key>
         <key name="soft_request_timeout" datatype="integer" required="no">
             <description>
                 A soft request timeout in milliseconds.  If a request
@@ -281,13 +291,6 @@ k            </description>
             <description>
                 The team that can use Launchpad as an OpenID provider.
                 Set to 'all' for open access.
-            </description>
-        </key>
-        <key name="openid_sreg_trustroots"
-             datatype="canonical.config.commalist" default="">
-            <description>
-                A list of OpenID trust roots for which we will send
-                simple registration information.
             </description>
         </key>
         <key name="non_restricted_hostname" datatype="string"
@@ -920,6 +923,8 @@ k            </description>
 
     <sectiontype name="codehosting">
         <key name="authserver" datatype="string" />
+        <key name="upload_url_base" datatype="string"
+             default="sftp://%s@bazaar.launchpad.net" />
         <key name="host_key_pair_path" datatype="string" />
         <key name="branches_root" datatype="string" />
         <key name="port" datatype="string" default="tcp:5022" />

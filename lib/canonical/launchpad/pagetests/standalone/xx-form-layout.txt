@@ -60,8 +60,7 @@ A multi-line text widget is displayed in two table rows:
     </th>
   </tr>
   <tr>
-    <td>&nbsp;</td>
-    <td>
+    <td colspan="2">
       <div><textarea ... name="field.summary" ...></textarea></div>
       <p class="formHelp">...</p>
     </td>
@@ -80,8 +79,7 @@ label row:
     </th>
   </tr>
   <tr>
-    <td>&nbsp;</td>
-    <td>
+    <td colspan="2">
       <div><textarea ... name="field.description" ...></textarea></div>
       <p class="formHelp">...</p>
     </td>

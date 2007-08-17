@@ -77,4 +77,9 @@
         <allow interface="canonical.launchpad.interfaces.IMilestoneSet" />
     </securedutility>
 
+    <!-- ProjectMilestone -->
+    <content class="canonical.launchpad.database.milestone.ProjectMilestone">
+        <allow interface="canonical.launchpad.interfaces.IProjectMilestone" />
+    </content>
+
 </configure>

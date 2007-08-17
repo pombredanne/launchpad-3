@@ -38,7 +38,8 @@ class IUserDetailsStorage(Interface):
     dictionary containing:
         :id:             person id (integer, doesn't change ever)
         :displayname:    full name, for display
-        :emailaddresses: list of email addresses
+        :emailaddresses: list of email addresses, preferred email first, the
+                         rest alphabetically sorted.
         :wikiname:       the wikiname of this user on
                          http://www.ubuntulinux.com/wiki/
         :salt:           salt of a SSHA digest, base64-encoded.
@@ -78,7 +79,8 @@ class IUserDetailsStorageV2(Interface):
     dictionary containing:
         :id:             person id (integer, doesn't change ever)
         :displayname:    full name, for display
-        :emailaddresses: list of email addresses
+        :emailaddresses: list of email addresses, preferred email first, the
+                         rest alphabetically sorted.
         :wikiname:       the wikiname of this user on
                          http://www.ubuntulinux.com/wiki/
         :teams:          a list of team dicts for each team the user is a member
@@ -140,6 +142,13 @@ class IHostedBranchStorage(Interface):
     def getBranchInformation(loginID, personName, productName, branchName):
         """Return the database ID and permissions for a branch.
 
+        :param loginID: The login ID for the person asking for the branch
+            information. This is used for branch privacy checks.
+        :param personName: The owner of the branch.
+        :param productName: The product that the branch belongs to. '+junk' is
+            allowed.
+        :param branchName: The name of the branch.
+
         :returns: (branch_id, permissions), where 'permissions' is 'w' if the
             user represented by 'loginID' can write to the branch, and 'r' if
             they cannot. If the branch doesn't exist, return ('', '').
@@ -151,15 +160,17 @@ class IHostedBranchStorage(Interface):
         :returns: a product ID.
         """
 
-    def createBranch(personID, productID, branchName):
+    def createBranch(loginID, personName, productName, branchName):
         """Register a new hosted branch in Launchpad.
 
         This is called by the bazaar.launchpad.net server when a user pushes a
         new branch to it.  See also
         https://launchpad.canonical.com/SupermirrorFilesystemHierarchy.
 
-        :param personID: a person ID.
-        :param productID: a product ID.
+        :param loginID: the person ID of the user creating the branch.
+        :param personName: the unique name of the owner of the branch.
+        :param productName: the unique name of the product that the branch
+            belongs to.
         :param branchName: the name for this branch, to be used in URLs.
         :returns: the ID for the new branch.
         """
@@ -216,4 +227,18 @@ class IBranchDetailsStorage(Interface):
         :param branchID: The database ID of the given branch.
         :param reason: A string giving the reason for the failure.
         :returns: True if the branch status was successfully updated.
+        """
+
+    def recordSuccess(name, hostname, date_started, date_completed):
+        """Notify Launchpad that a mirror script has successfully completed.
+
+        Create an entry in the ScriptActivity table with the provided data.
+
+        :param name: Name of the script.
+        :param hostname: Where the script was running.
+
+        :param date_started: When the script started, as an UTC time tuple.
+        :param date_completed: When the script completed (now), as an UTC time
+            tuple.
+        :returns: True if the ScriptActivity record was successfully inserted.
         """

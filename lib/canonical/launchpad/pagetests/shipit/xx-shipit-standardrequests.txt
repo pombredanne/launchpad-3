@@ -51,7 +51,7 @@
   And we can also create a new one.
 
   >>> browser.open('http://shipit.ubuntu.dev/standardoptions/+new')
-  >>> browser.getControl(name='field.flavour').value = ['Edubuntu']
+  >>> browser.getControl(name='field.flavour').displayValue = ['Edubuntu']
   >>> browser.getControl(name='field.quantityx86').value = '20'
   >>> browser.getControl(name='field.quantityamd64').value = '10'
   >>> browser.getControl('Add').click()

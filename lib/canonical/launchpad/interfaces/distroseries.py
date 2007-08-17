@@ -219,8 +219,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getPublishedReleases(sourcepackage_or_name, pocket=None, version=None,
                              include_pending=False, exclude_pocket=None,
                              archive=None):
-        """Given a SourcePackageName, return a list of the currently
-        published SourcePackageReleases as SourcePackagePublishing records.
+        """Return the SourcePackagePublishingHistory(s)
+
+        Given a ISourcePackageName or name.
 
         If pocket is not specified, we look in all pockets.
 
@@ -238,7 +239,17 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """
 
     def getSourcesPublishedForAllArchives():
-        """Return all sourcepackage published across all the archives.
+        """Return all sourcepackages published across all the archives.
+
+        It's only used in the buildmaster/master.py context for calculating
+        the publication that are still missing build records.
+
+        It will consider all publishing records in PENDING or PUBLISHED status
+        as part of the 'build-unpublished-source' specification.
+
+        For 'main_archive' candidates it will automatically exclude RELEASE
+        pocket records of released distroseries (ensuring that we won't waste
+        time with records that can't be accepted).
 
         Return a SelectResult of SourcePackagePublishingHistory.
         """
@@ -263,9 +274,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def createUploadedSourcePackageRelease(
         sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator, urgency,
-        changelog, dsc, dscsigningkey, section, manifest,
-        dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-        dsc_binaries, archive, dateuploaded=None):
+        changelog, dsc, dscsigningkey, section, manifest, dsc_maintainer_rfc822,
+        dsc_standards_version, dsc_format, dsc_binaries, archive, copyright,
+        dateuploaded=None):
         """Create an uploads SourcePackageRelease
 
         Set this distroseries set to be the uploadeddistroseries.
@@ -284,6 +295,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
          * manifest: IManifest
          * dscsigningkey: IGPGKey used to sign the DSC file
          * dsc: string, original content of the dsc file
+         * copyright: string, the original debian/copyright content
          * changelog: string, changelog extracted from the changesfile
          * architecturehintlist: string, DSC architectures
          * builddepends: string, DSC build dependencies

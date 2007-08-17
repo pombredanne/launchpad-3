@@ -36,6 +36,9 @@
       <thead>
         <tr>
           <th>Priority</th>
+          <th tal:condition="view/is_project_milestone">
+            Product
+          </th>
           <th>Specification</th>
           <th>Assignee</th>
           <th>Delivery</th>
@@ -48,6 +51,10 @@
             <span tal:content="spec/priority/title"
                   tal:attributes="
                   class string:specpriority${spec/priority/name}">High</span>
+          </td>
+          <td tal:condition="view/is_project_milestone">
+              <a tal:attributes="href spec/milestone/fmt:url"
+                 tal:content="spec/product/displayname" />
           </td>
           <td>
             <a tal:content="spec/title/fmt:shorten/60"
@@ -84,6 +91,9 @@
       <thead>
         <tr>
           <th colspan="3">Report</th>
+          <th tal:condition="view/is_project_milestone">
+            Product
+          </th>
           <th>Importance</th>
           <th>Assignee</th>
           <th>Status</th>
@@ -101,6 +111,10 @@
                tal:content="bugtask/bug/title/fmt:shorten/65">
                Bug Title Here
             </a>
+          </td>
+          <td tal:condition="view/is_project_milestone">
+            <a tal:attributes="href bugtask/milestone/fmt:url"
+               tal:content="bugtask/product/displayname" />
           </td>
           <td>
             <span class="sortkey" tal:content="bugtask/importance/sortkey" />

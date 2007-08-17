@@ -12,9 +12,6 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 
-from canonical.launchpad import _
-
-
 class IBuild(Interface):
     """A Build interface"""
     id = Attribute("The build ID.")
@@ -30,8 +27,8 @@ class IBuild(Interface):
     pocket = Attribute("Target pocket of this build")
     dependencies = Attribute("Debian-like dependency line for DEPWAIT builds")
     archive = Attribute("The archive")
-    
-    # useful properties
+
+    # Properties
     title = Attribute("Build Title")
     changesfile = Attribute("The Build Changesfile object, returns None if "
                             "it is a gina-inserted record.")
@@ -84,7 +81,6 @@ class IBuild(Interface):
                                    depends, recommends, suggests,
                                    conflicts, replaces, provides,
                                    essential, installedsize,
-                                   copyright, licence,
                                    architecturespecific):
         """Create a binary package release with the provided args, attached
         to this specific build.
@@ -133,6 +129,14 @@ class IBuildSet(Interface):
 
     def getBuildsForBuilder(builder_id, status=None, name=None):
         """Return build records touched by a builder.
+
+        If status is provided, only builders with that status will
+        be returned. If name is passed, return only build which the
+        sourcepackagename matches (SQL LIKE).
+        """
+
+    def getBuildsForArchive(archive, status=None, name=None, pocket=None):
+        """Return build records targeted to a given IArchive.
 
         If status is provided, only builders with that status will
         be returned. If name is passed, return only build which the

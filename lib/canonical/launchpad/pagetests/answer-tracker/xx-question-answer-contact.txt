@@ -52,7 +52,7 @@ languages (more on this below).
 
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print extract_text(message)
-    Your preferred languages were set to your browser languages: 
+    Your preferred languages were updated to include your browser languages: 
     English (en), Spanish (es).
     You have been added as an answer contact for Ubuntu.
     English was added to Landscape Developers's preferred languages.
@@ -107,7 +107,7 @@ question.
 
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/+question/7')
-    >>> portlet = find_tag_by_id(browser.contents, 'question-subscribers')
+    >>> portlet = find_tag_by_id(browser.contents, 'portlet-subscribers')
     >>> also_notified = portlet.find('b')
     >>> also_notified
     <b>Also notified:</b>
@@ -193,7 +193,7 @@ subscribed to Spanish questions.
     >>> print language, language.next.strip()
     Language: English
 
-    >>> portlet = find_tag_by_id(browser.contents, 'question-subscribers')
+    >>> portlet = find_tag_by_id(browser.contents, 'portlet-subscribers')
     >>> print extract_text(portlet)
     Subscribers to question #10
     Sample Person
@@ -212,7 +212,7 @@ Question:
     >>> print language, language.next.strip()
     Language: Spanish
 
-    >>> portlet = find_tag_by_id(browser.contents, 'question-subscribers')
+    >>> portlet = find_tag_by_id(browser.contents, 'portlet-subscribers')
     >>> print extract_text(portlet).encode('ASCII', 'backslashreplace')
     Subscribers to question #12
     Carlos Perell\xf3 Mar\xedn

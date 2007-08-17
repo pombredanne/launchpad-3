@@ -16,8 +16,9 @@ from canonical.launchpad.mail import stub
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IDistributionMirrorSet, ILibraryFileAliasSet)
-from canonical.lp.dbschema import PackagePublishingPocket, MirrorStatus
+    IDistributionSet, IDistributionMirrorSet, ILibraryFileAliasSet,
+    MirrorStatus)
+from canonical.lp.dbschema import PackagePublishingPocket
 
 
 class TestDistributionMirror(LaunchpadFunctionalTestCase):

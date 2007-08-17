@@ -15,9 +15,10 @@ with other tests)
   >>> ubuntu = distribution_set['ubuntu']
   >>> hoary = ubuntu['hoary']
 
-  XXX cprov 20060529: new distroseries should be provided by IDistribution
-  This maybe affected by derivation design and is documented in bug
-  #49133
+  # XXX cprov 2006-05-29 bug=49133: 
+  # New distroseries should be provided by IDistribution.
+  # This maybe affected by derivation design and is documented in bug.
+
 
   >>> from canonical.launchpad.interfaces import IDistroSeriesSet
   >>> distroseries_set = getUtility(IDistroSeriesSet)

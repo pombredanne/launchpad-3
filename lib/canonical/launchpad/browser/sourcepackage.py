@@ -84,7 +84,7 @@ class SourcePackageSOP(StructuralObjectPresentation):
         return self.context.sourcepackagename
 
     def listChildren(self, num):
-        # XXX mpt 20061004: Versions published, earliest first
+        # XXX mpt 2006-10-04: Versions published, earliest first.
         return []
 
     def countChildren(self):
@@ -121,17 +121,6 @@ class SourcePackageOverviewMenu(ApplicationMenu):
     def builds(self):
         text = 'Show builds'
         return Link('+builds', text, icon='info')
-
-
-class SourcePackageBugsMenu(ApplicationMenu):
-
-    usedfor = ISourcePackage
-    facet = 'bugs'
-    links = ['reportbug']
-
-    def reportbug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='add')
 
 
 class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):

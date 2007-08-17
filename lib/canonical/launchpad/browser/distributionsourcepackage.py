@@ -32,7 +32,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
-
 class DistributionSourcePackageSOP(StructuralObjectPresentation):
 
     def getIntroHeading(self):
@@ -42,7 +41,7 @@ class DistributionSourcePackageSOP(StructuralObjectPresentation):
         return self.context.name
 
     def listChildren(self, num):
-        # XXX mpt 20061004: package releases, most recent first
+        # XXX mpt 2006-10-04: package releases, most recent first
         return self.context.releases
 
     def listAltChildren(self, num):
@@ -60,11 +59,7 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionSourcePackage
     facet = 'overview'
-    links = ['reportbug', 'managebugcontacts']
-
-    def reportbug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='add')
+    links = ['managebugcontacts']
 
     def managebugcontacts(self):
         return Link('+subscribe', 'Bugmail Settings', icon='edit')
@@ -74,7 +69,7 @@ class DistributionSourcePackageBugsMenu(DistributionSourcePackageOverviewMenu):
 
     usedfor = IDistributionSourcePackage
     facet = 'bugs'
-    links = ['reportbug', 'managebugcontacts']
+    links = ['managebugcontacts']
 
 
 class DistributionSourcePackageNavigation(GetitemNavigation,
@@ -126,8 +121,8 @@ class DistributionSourcePackageBugContactsView(LaunchpadFormView):
         team_contacts_field = List(
             __name__='bugmail_contact_team',
             title=u'Team bug contacts',
-            description=u'You can add the teams you are a member of '
-                         'to the bug contacts.',
+            description=(u'You can add the teams of which you are an '
+                          'administrator to the bug contacts.'),
             value_type=Choice(vocabulary=team_vocabulary),
             required=False)
         return form.FormField(
@@ -287,6 +282,6 @@ class DistributionSourcePackageBugContactsView(LaunchpadFormView):
 
     @cachedproperty
     def user_teams(self):
-        """Return the teams that the current user is a member of."""
-        return [membership.team
-                for membership in self.user.myactivememberships]
+        """Return the teams that the current user is an administrator of."""
+        return list(self.user.getAdministratedTeams())
+

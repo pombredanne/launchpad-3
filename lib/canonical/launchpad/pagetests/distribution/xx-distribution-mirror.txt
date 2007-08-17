@@ -6,9 +6,9 @@ First of all we'll create a new mirror for the Ubuntu distribution...
     >>> browser.open('http://launchpad.dev/ubuntu/+newmirror')
     >>> http_url = 'http://my.mirror.com/pub'
     >>> browser.getControl('Description').value = 'My own mirror'
-    >>> browser.getControl('Link Speed').value = ['1 Mbps']
-    >>> browser.getControl('Location').value =  ['9']
-    >>> browser.getControl('Content').value = ['Archive']
+    >>> browser.getControl('Link Speed').displayValue = ['1 Mbps']
+    >>> browser.getControl('Location').displayValue =  ['Antarctica']
+    >>> browser.getControl('Content').displayValue = ['Archive']
     >>> browser.getControl('HTTP URL').value = http_url
     >>> browser.getControl('Create Mirror').click()
  
@@ -83,8 +83,8 @@ Now one of the mirror administrators goes and make this an official mirror,
 leaving a comment on the whiteboard (which is visible to mirror admins and to
 the mirror owner, but can only be edited by mirror admins).
  
-    # XXX: matsubara 2006-05-18: We need to reset the Browser object to
-    # reset the headers.  https://launchpad.net/launchpad/+bug/45226
+    # XXX: matsubara 2006-05-18 bug=45226:
+    # We need to reset the Browser object to reset the headers.
     >>> from zope.testbrowser.testing import Browser
     >>> karl_browser = Browser()
     >>> karl_browser.handleErrors = False
@@ -174,16 +174,16 @@ admins --not even the mirror owner can see it.
 
 When creating a new mirror, at least an HTTP or FTP URL must be given.
 
-    # XXX: matsubara 2006-05-18: We need to reset the Browser object to
-    # reset the headers.  https://launchpad.net/launchpad/+bug/45226
+    # XXX: matsubara 2006-05-18 bug=45226: 
+    # We need to reset the Browser object to reset the headers.
     >>> browser = Browser()
     >>> browser.handleErrors = False
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
 
     >>> browser.open('http://launchpad.dev/ubuntu/+newmirror')
-    >>> browser.getControl('Link Speed').value = ['1 Mbps']
-    >>> browser.getControl('Location').value =  ['9']
-    >>> browser.getControl('Content').value = ['Archive']
+    >>> browser.getControl('Link Speed').displayValue = ['1 Mbps']
+    >>> browser.getControl('Location').displayValue =  ['Antarctica']
+    >>> browser.getControl('Content').displayValue = ['Archive']
     >>> browser.getControl('Create Mirror').click()
  
     >>> for tag in find_tags_by_class(browser.contents, 'error message'):

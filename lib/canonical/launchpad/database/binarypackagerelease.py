@@ -51,8 +51,6 @@ class BinaryPackageRelease(SQLBase):
     provides = StringCol(dbName='provides')
     essential = BoolCol(dbName='essential', default=False)
     installedsize = IntCol(dbName='installedsize')
-    copyright = StringCol(dbName='copyright')
-    licence = StringCol(dbName='licence')
     architecturespecific = BoolCol(dbName='architecturespecific',
                                    notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
@@ -62,17 +60,17 @@ class BinaryPackageRelease(SQLBase):
 
     @property
     def title(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return '%s-%s' % (self.binarypackagename.name, self.version)
 
     @property
     def name(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagename.name
 
     @property
     def distributionsourcepackagerelease(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         # import here to avoid circular import problems
         from canonical.launchpad.database.distributionsourcepackagerelease \
             import DistributionSourcePackageRelease
@@ -82,8 +80,16 @@ class BinaryPackageRelease(SQLBase):
 
     @property
     def sourcepackagename(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.build.sourcepackagerelease.sourcepackagename.name
+
+    @property
+    def is_new(self):
+        """See `IBinaryPackageRelease`."""
+        distroarchseries = self.build.distroarchseries
+        distroarchseries_binary_package = distroarchseries.getBinaryPackage(
+            self.name)
+        return distroarchseries_binary_package.currentrelease is None
 
     def lastversions(self):
         """Return the SUPERSEDED BinaryPackageReleases in a DistroSeries.
@@ -97,7 +103,7 @@ class BinaryPackageRelease(SQLBase):
         # to determine what it actually wants to fetch. For now, I'm just
         # modifying this to be archive-aware, which will keep the current
         # crackful behaviour.
-        
+
         # Daniel Debonzi: To get the lastest versions of a BinaryPackage
         # Im suposing that one BinaryPackage is build for only one
         # DistroSeries (Each DistroSeries compile all its Packages). 
@@ -127,7 +133,7 @@ class BinaryPackageRelease(SQLBase):
             query, clauseTables=clauseTables, distinct=True))
 
     def addFile(self, file):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         determined_filetype = None
         if file.filename.endswith(".deb"):
             determined_filetype = dbschema.BinaryPackageFileType.DEB
@@ -142,8 +148,8 @@ class BinaryPackageRelease(SQLBase):
 
     def publish(self, priority, status, pocket, embargo,
                 distroarchseries=None):
-        """See IBinaryPackageRelease."""
-        # XXX: completely untested code
+        """See `IBinaryPackageRelease`."""
+        # XXX kiko 2005-11-02: Completely untested code.
         if not distroarchseries:
             distroarchseries = self.build.distroarchseries
 
@@ -160,7 +166,7 @@ class BinaryPackageRelease(SQLBase):
             )
 
     def override(self, component=None, section=None, priority=None):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         if component is not None:
             self.component = component
         if section is not None:

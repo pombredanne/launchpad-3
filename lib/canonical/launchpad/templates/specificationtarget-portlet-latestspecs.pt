@@ -1,10 +1,8 @@
-<div
-  tal:define="specs view/getLatestSpecifications"
-  tal:condition="specs"
-  class="portlet"
->
+<div class="portlet" id="portlet-blueprints"
+  tal:define="specs view/getLatestSpecifications" tal:condition="specs">
+  <h2>Latest blueprints</h2>
+  <div class="portletBody">
 
-  <h2>Latest proposed features</h2>
   <table>
     <tbody>
       <tr tal:repeat="spec specs"
@@ -12,4 +10,6 @@
       </tr>
     </tbody>
   </table>
+
+  </div>
 </div>

@@ -5,7 +5,7 @@
                     xml:lang view/lang|default_language|default;
                     dir view/dir|string:ltr"
     tal:define="
-        icingrev string:5;
+        icingrev string:117;
         rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
         icingroot string:${rooturl}+icing/rev${icingrev};
         site_message modules/canonical.config/config/launchpad/site_message;
@@ -26,26 +26,49 @@
       tal:content="string:@import url(${icingroot}/style.css);"/>
     <style tal:condition="is_demo" type="text/css"
     >html, body {background: #ddd url(/@@/demo) !important;}</style>
-    <style tal:condition="not: site_message" type="text/css"
-    >#help_panel {top: 28px !important;}</style>
+    <style tal:condition="site_message" type="text/css"
+    >#help {top: 47px !important;}</style>
     <!--[if IE 7]>
       <style type="text/css">#portlets {left: 20px;}</style>
     <![endif]-->
-    <!-- Launchpad JS code -->
+
+    <tal:comment condition="nothing">
+      This CSS collapses portlets and the contents of collapsible fieldsets,
+      without the flashing that would result from doing it in JavaScript.
+      activateCollapsibles() removes the class="collapsed" from fieldsets, to
+      re-show their divs, once the children themselves have been collapsed.
+    </tal:comment>
+    <style type="text/css">
+      #portlets .portletBody, fieldset.collapsed div,
+      fieldset div.collapsed {display: none;}
+    </style>
+    <noscript>
+      <style type="text/css">
+        #portlets .portletBody, fieldset.collapsible div,
+        fieldset div.collapsed {display: block;}
+      </style>
+    </noscript>
+
     <script type="text/javascript" tal:attributes="src string:${icingroot}/MochiKit.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/lpmenu.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
+    <script type="text/javascript"
+        tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
+    <script type="text/javascript">
+      function onLoadFunction() {
+        lpmenu.initialize(['menuroot'], '/', 'menupreload',
+                           [], '1.3em', 16, true);
+        sortables_init();
+        initHelpPanel();
+        PortletManager.initialize(cookie_scope);
+      }
+      registerLaunchpadFunction(onLoadFunction);
+    </script>
     <link rel="shortcut icon" tal:attributes="href string:${icingroot}/launchpad.png" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
   <body
-    onload="
-      lpmenu.initialize(['menuroot'], '/', 'menupreload', [], '1.3em', 16, true);
-      sortables_init();
-      initHelpPanel();
-      initPortlets();
-    "
     id="document"
     tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
   >
@@ -122,8 +145,7 @@
         </div>
       </form>
       <div tal:condition="view/macro:pagehas/applicationborder" id="mainarea">
-        <div class="t">
-          <div class="u">
+
             <div class="v">
               <div class="w">
                 <div class="x">
@@ -190,7 +212,7 @@
                            <div class="pageheading"
                                 tal:condition="view/macro:pagehas/pageheading">
                             <metal:block define-slot="pageheading">
-                              <!-- XXX obsolete -->
+                              <!-- XXX Mark Shuttleworth 2007-04-30: Obsolete -->
                             </metal:block>
                           </div>
                           <tal:notifications
@@ -225,8 +247,7 @@
                 </div><!--id="x"-->
               </div><!--id="w"-->
             </div><!--id="v"-->
-          </div><!--id="u"-->
-        </div><!--id="t"-->
+
       </div><!--id="mainarea"-->
       <tal:noborder condition="not:view/macro:pagehas/applicationborder">
         <tal:notifications
@@ -326,5 +347,9 @@
     </div>
   </body>
 </html>
+<tal:requestlog
+    define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
+    replace="structure string:<!-- at least ${log} -->" />
 </metal:page>
 <!-- 1-0 inprogress Help panel wrong in IE/Win; portlets wrong in IE/Mac -->
+

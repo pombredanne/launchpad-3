@@ -176,13 +176,13 @@ see questions for any, some, all, or none of their languages by
 toggling the check box for each of their preferred languages. In
 this example, Carlos speaks two languages (Spanish and Catalan),
 and Answers adds English to the list of languages. There are no
-Catalan questions, so no Cataloan checkbox is displayed.
+Catalan questions, so no Catalan checkbox is displayed.
 
     >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+questions')
     >>> language_control = browser.getControl(name='field.language')
     >>> for label in sorted(language_control.displayOptions):
-    ...     # print the label without the leading non-breaking space.
+    ...     # Print the label without the leading non-breaking space.
     ...     label[1:]
     'English (en)'
     'Spanish (es)'
@@ -198,6 +198,51 @@ the search results.
     >>> for question in content.fetch('td', 'question'):
     ...     question.first('a').renderContents()
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
+
+Some users, translators in particular, speak an English variant.
+English variants are considered to be English in the Answers,
+so English is displayed among the languages. Dafydd is a translator
+for en_GB, Japanese, and Welsh. knowing en_GB, he will be shown
+English questions. As there are no Japanese or Welsh questions, there
+will not be any controls present for those two languages when
+searching Ubuntu.
+
+    >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:daf')
+    >>> daf_browser.open('http://launchpad.dev/~daf/+editlanguages')
+    >>> daf_browser.getControl('English (United Kingdom)').selected
+    True
+    >>> daf_browser.getControl('Japanese').selected
+    True
+    >>> daf_browser.getControl('Welsh').selected
+    True
+    >>> daf_browser.getControl('English', index=1).selected
+    False
+
+The user's languages are presented as controls in the question form.
+The controls are filters that allow the user to see questions in
+his languages. Daf, in this example, can see a language filter for
+English, and can use it to locate English questions.
+
+    >>> daf_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
+    >>> language_control = daf_browser.getControl(name='field.language')
+    >>> for label in language_control.displayOptions:
+    ...     # Print the label without the leading non-breaking space.
+    ...     label[1:]
+    'English (en)'
+
+    >>> daf_browser.getControl(name='field.language').options
+    ['en']
+
+    >>> daf_browser.getControl('English (en)').selected = True
+    >>> daf_browser.getControl('Search').click()
+    >>> content = find_main_content(daf_browser.contents)
+    >>> for question in content.fetch('td', 'question'):
+    ...     question.first('a').renderContents()
+    'Continue playing after shutdown'
+    'Play DVDs in Totem'
+    'mailto: problem in webpage'
+    'Installation of Java Runtime Environment for Mozilla'
+    'Slow system'
 
 
 == Multiple Request Languages in Latest Questions ==
@@ -218,7 +263,7 @@ showing no questions when there could be in other languages.)
 
 == Questions by language ==
 
-When unsolved questions are in languages that no answer contacts
+When open questions are in languages that no answer contacts
 speak, the project questions page displays links to see those 
 questions. Each link is to a page that displays the questions
 for a specific language. No Privileges Person is looking for a
@@ -234,7 +279,7 @@ questions going unanswered.
     >>> user_browser.open('http://answers.launchpad.dev/firefox')
     >>> paragraph = find_main_content(user_browser.contents).find('p')
     >>> print extract_text(paragraph)
-    Mozilla Firefox has unsolved questions in the following languages:
+    Mozilla Firefox has unanswered questions in the following languages:
     1 in Portuguese (Brazil). Can you help?
 
 No Privileges Person follows the 'Portuguese (Brazil)' link to view
@@ -251,7 +296,9 @@ the preceding page.
     >>> print language_field.type
     hidden
 
-    >>> user_browser.getControl(name='field.status').value
+    >>> labels = user_browser.getControl(name='field.status').displayValue
+    >>> # Print the label without the leading non-breaking space.
+    >>> [label[1:] for label in labels]
     ['Open']
 
     >>> content = find_main_content(user_browser.contents)

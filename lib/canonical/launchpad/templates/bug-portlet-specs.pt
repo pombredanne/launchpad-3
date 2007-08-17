@@ -1,14 +1,10 @@
-<div class="portlet" tal:condition="context/specifications">
-
-  <h2>Related specifications</h2>
-
+<div class="portlet" id="portlet-blueprints"
+     tal:condition="context/specifications">
+  <h2>Related blueprints</h2>
   <div class="portletBody">
-
     <table>
       <tr tal:repeat="spec context/specifications"
           tal:replace="structure spec/@@+listing-compact" />
     </table>
-
   </div>
-
 </div>

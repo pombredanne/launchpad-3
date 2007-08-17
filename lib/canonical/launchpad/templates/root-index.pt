@@ -4,21 +4,17 @@
 
   <div class="informational message" tal:condition="view/isBetaUser">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
-      <script type="text/javascript"
-              tal:content="view/getEnableRedirectScript"></script>
       <p>As a member of the Launchpad Beta Testers team, you would
       normally be redirected to the beta site when viewing Launchpad
       pages.  However, you currently have this disabled.</p>
-      <p><button onclick="enable_beta_redirect()">Enable beta site
+      <p><button onclick="setBetaRedirect(true)">Enable beta site
       redirection</button></p>
     </tal:redirect_inhibited>
     <tal:redirect_enabled condition="not:view/isRedirectInhibited">
-      <script type="text/javascript"
-              tal:content="view/getInhibitRedirectScript"></script>
       <p>As a member of the Launchpad Beta Testers team, you will be
       redirected to the beta site when viewing Launchpad pages other
       than the front page.</p>
-      <p><button onclick="inhibit_beta_redirect()">Disable redirection
+      <p><button onclick="setBetaRedirect(false)">Disable redirection
       for 2 hours</button></p>
     </tal:redirect_enabled>
   </div>
@@ -49,32 +45,22 @@
           <h2>What&#8217;s new</h2>
           <ul class="news">
             <li>
-              <a href="https://help.launchpad.net/MentoringManagement">
-                NEW! Mentoring management to help new contributors to your
-                project
-              </a>
+              <a href="https://help.launchpad.net/FrequentlyAskedQuestions"
+                 >Frequently Asked Questions: create standard answers to FAQs
+                in the Answer Tracker</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/FeatureHighlights/">
-                Feature Highlight Guide for Launchpad 1.0 (web
-                and PDF)
-              </a>
+              <a href="https://help.launchpad.net/Mantis">Watch remote bugs
+                in Mantis bug trackers</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/KarmaCalculation">
-                Learn how we calculate your Launchpad karma
-              </a>
+              <a href="https://help.launchpad.net/FileDownloadsOverview">File
+                downloads: make installers, documentation and other files
+                available from your project's overview page</a>
             </li>
             <li>
-              <a href="/~launchpad-beta-testers/">
-                Join the Launchpad Beta Testers team to help test and debug
-                new Launchpad features
-              </a>
-            </li>
-            <li tal:replace="nothing">
-              <a
-              href="">
-              </a>
+             <a href="https://help.launchpad.net/BugStatuses">New clearer bug
+                status names</a>
             </li>
           </ul>
         </div>

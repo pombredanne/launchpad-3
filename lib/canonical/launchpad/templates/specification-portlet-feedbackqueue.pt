@@ -2,6 +2,7 @@
   tal:define="fbreqs context/feedbackrequests"
   tal:condition="fbreqs"
   class="portlet"
+  id="portlet-feedback"
 >
 
     <h2>Feedback requests</h2>

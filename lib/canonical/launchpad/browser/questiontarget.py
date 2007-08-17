@@ -33,16 +33,17 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import (
-    browserLanguages, is_english_variant, request_languages)
+    browserLanguages, is_english_variant, preferred_or_request_languages)
+from canonical.launchpad.browser.faqcollection import FAQCollectionMenu
 from canonical.launchpad.interfaces import (
-    IDistribution, ILanguageSet, IProject, IQuestionCollection, IQuestionSet,
-    IQuestionTarget, ISearchableByQuestionOwner, ISearchQuestionsForm,
-    NotFoundError)
+    IDistribution, IFAQCollection, ILanguageSet, IProject,
+    IQuestionCollection, IQuestionSet, IQuestionTarget,
+    ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError,
+    QuestionStatus)
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, custom_widget, LaunchpadFormView,
-    Link, safe_action, stepto, stepthrough, urlappend)
+    action, canonical_url, custom_widget, LaunchpadFormView, Link,
+    safe_action, stepto, stepthrough, urlappend)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import QuestionStatus
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
 
@@ -75,15 +76,26 @@ class UserSupportLanguagesMixin:
     def user_support_languages(self):
         """The set of user support languages.
 
-        This set includes the user's preferred languages, excluding all
-        English variants. If the user is not logged in, or doesn't have
-        any preferred languages set, the languages will be inferred
-        from the request (the Accept-Language header and GeoIP
-        information).
+        This set includes the user's preferred languages, or request
+        languages, or GeoIP languages, according to the implementation of
+        preferred_or_request_languages(), which specifies:
+
+        - When the user does not have preferred languages, the languages
+          will be inferred from the request Accept-Language header.
+
+        - As a last resort, the code falls back on GeoIP rules to determine
+          the user's languages.
+
+        English is added to the list instead when an English variant is
+        returned.
         """
-        languages = set(
-            language for language in request_languages(self.request)
-            if not is_english_variant(language))
+        english = getUtility(ILanguageSet)['en']
+        languages = set()
+        for language in preferred_or_request_languages(self.request):
+            if is_english_variant(language):
+                languages.add(english)
+            else:
+                languages.add(language)
         languages = list(languages)
         return languages
 
@@ -204,6 +216,11 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             [QuestionStatus.ANSWERED, QuestionStatus.SOLVED])] = _('Answered')
 
         return mapping
+
+    @property
+    def context_is_project(self):
+        """Return True when the context is a project."""
+        return IProject.providedBy(self.context)
 
     @property
     def pagetitle(self):
@@ -335,6 +352,29 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         else:
             return True
 
+    @cachedproperty
+    def matching_faqs_count(self):
+        """Return the FAQs matching the same keywords."""
+        if not self.search_text:
+            return 0
+        try:
+            faq_collection = IFAQCollection(self.context)
+        except TypeError:
+            # The context is not adaptable to IFAQCollection.
+            return 0
+        return faq_collection.searchFAQs(search_text=self.search_text).count()
+
+    @property
+    def matching_faqs_url(self):
+        """Return the URL to use to display the list of matching FAQs."""
+        assert self.matching_faqs_count > 0, (
+            "can't call matching_faqs_url when matching_faqs_count == 0")
+        collection = IFAQCollection(self.context)
+        return canonical_url(collection) + '/+faqs?' + urlencode({
+            'field.search_text': self.search_text,
+            'field.actions.search': 'Search',
+            })
+
     @safe_action
     @action(_('Search'))
     def search_action(self, action, data):
@@ -392,6 +432,9 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
     in user in a questiontarget context.
     """
 
+    # No point showing a matching FAQs link on this report.
+    matching_faqs_count = 0
+
     @property
     def pageheading(self):
         """See `SearchQuestionsView`."""
@@ -428,6 +471,9 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
     It displays and searches the questions needing attention from the
     logged in user in a questiontarget context.
     """
+
+    # No point showing a matching FAQs link on this report.
+    matching_faqs_count = 0
 
     @property
     def pageheading(self):
@@ -467,6 +513,9 @@ class QuestionCollectionByLanguageView(SearchQuestionsView):
      """
 
     custom_widget('language', LabeledMultiCheckBoxWidget, visible=False)
+
+    # No point showing a matching FAQs link on this report.
+    matching_faqs_count = 0
 
     def __init__(self, context, request):
         """Initialize the view, and check that a language was submitted.
@@ -647,8 +696,9 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             language_str = ', '.join([lang.displayname for lang in languages])
             response.addNotification(
                 _('<a href="/people/+me/+editlanguages">Your preferred '
-                  'languages</a> were set to your browser languages: '
-                  '$languages.', mapping={'languages' : language_str}))
+                  'languages</a> were updated to include your browser '
+                  'languages: $languages.',
+                  mapping={'languages' : language_str}))
 
 
 class QuestionTargetFacetMixin:
@@ -695,12 +745,19 @@ class QuestionTargetTraversalMixin:
         return self.redirectSubTree(target)
 
 
-class QuestionCollectionAnswersMenu(ApplicationMenu):
+
+# XXX flacoste 2007-07-08 bug=125851:
+# This menu shouldn't "extend" FAQCollectionMenu.
+# But this is needed because of limitations in the current menu architecture.
+# Menu should be built by merging all menus applying to the context object
+# (-based on the interfaces it provides).
+class QuestionCollectionAnswersMenu(FAQCollectionMenu):
     """Base menu definition for QuestionCollection searchable by owner."""
 
     usedfor = ISearchableByQuestionOwner
     facet = 'answers'
-    links = ['open', 'answered', 'myrequests', 'need_attention']
+    links = FAQCollectionMenu.links + [
+        'open', 'answered', 'myrequests', 'need_attention']
 
     def makeSearchLink(self, statuses, sort='by relevancy'):
         """Return the search parameters for a search link."""

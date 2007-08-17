@@ -1,6 +1,7 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
 import os
+import socket
 
 from canonical.config import config
 from contrib.glock import GlobalLock, LockAlreadyAcquired
@@ -15,6 +16,8 @@ class JobManager:
     The jobmanager is responsible for organizing the mirroring of all
     branches.
     """
+
+    name = 'branch-puller'
 
     def __init__(self):
         self.branches_to_mirror = []
@@ -62,6 +65,12 @@ class JobManager:
     def unlock(self):
         self.actualLock.release()
 
+    def recordActivity(self, branch_status_client,
+                       date_started, date_completed):
+        """Record successful completion of the script."""
+        branch_status_client.recordSuccess(
+            self.name, socket.gethostname(), date_started, date_completed)
+
 
 class UploadJobManager(JobManager):
     """Manage mirroring of upload branches.
@@ -69,6 +78,8 @@ class UploadJobManager(JobManager):
     UploadJobManager is responsible for the mirroring of branches that were
     uploaded to the bazaar.launchpad.net SFTP server.
     """
+
+    name = 'branch-puller-upload'
 
     def __init__(self):
         JobManager.__init__(self)
@@ -87,6 +98,8 @@ class ImportJobManager(JobManager):
     the VCS imports system.
     """
 
+    name = 'branch-puller-import'
+
     def __init__(self):
         JobManager.__init__(self)
         self.lockfilename = '/var/lock/launchpad-branch-puller-import.lock'
@@ -103,6 +116,8 @@ class MirrorJobManager(JobManager):
     MirrorJobManager is responsible for the mirroring of branches hosted on the
     internet.
     """
+
+    name = 'branch-puller-mirror'
 
     def __init__(self):
         JobManager.__init__(self)

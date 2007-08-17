@@ -72,14 +72,14 @@ class Error(Exception):
     pass
 
 #===============================================================
-# Sanitizer for Upstream ... XXX cprov !!!!
+# XXX cprov 2005-01-26: Sanitizer for Upstream ...!!!!
 from sgmllib import entityref
 from htmlentitydefs import entitydefs
 
 def entities_remove(data):
-    ##XXX: cprov
-    ## Use some blackmagic to remove HTML pieces.
-    mapset = re.findall(entityref, data)    
+    # XXX: cprov 2005-01-26:
+    # Use some blackmagic to remove HTML pieces.
+    mapset = re.findall(entityref, data)
     for key in mapset:
         data = re.sub(entityref, entitydefs[key], data)
     return data
