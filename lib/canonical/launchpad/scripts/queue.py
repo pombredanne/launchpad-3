@@ -856,8 +856,7 @@ class QueueActionOverride(QueueAction):
                         build.build.distroarchseries.distroseries.distribution)
                     new_archive = distribution.getArchiveByComponent(
                         self.component_name)
-                    if (new_archive is not None and
-                            new_archive != build.build.archive):
+                    if (new_archive != build.build.archive):
                         raise QueueActionError(
                             "Overriding component to '%s' failed because it "
                             "would require a new archive."
