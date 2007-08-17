@@ -52,7 +52,7 @@ def quote(text):
 class BranchSOP(StructuralObjectPresentation):
     """Provides the structural heading for `IBranch`."""
 
-    def is_private(self):
+    def isPrivate(self):
         return self.context.private
 
     def getMainHeading(self):

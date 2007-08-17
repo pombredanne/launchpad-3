@@ -101,7 +101,7 @@ branches.
 
     >>> def print_landscape_overview_branches(browser):
     ...     browser.open('http://launchpad.dev/landscape')
-    ...     branches = find_portlet(browser.contents, 'Latest code')
+    ...     branches = find_portlet(browser.contents, 'Latest branches')
     ...     if branches is None:
     ...         print 'Latest code portlet not shown'
     ...     else:

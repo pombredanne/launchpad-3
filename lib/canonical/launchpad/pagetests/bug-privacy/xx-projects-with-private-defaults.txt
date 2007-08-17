@@ -16,7 +16,7 @@ That they will be private is shown using Launchpad's standard "private" style.
     <style...</style>
     >>> print find_tag_by_id(user_browser.contents, 'privatebadge')
     <img...private...>
-    
+
 And the same on the "advanced" bug-reporting page.
 
     >>> user_browser.open("http://launchpad.dev/redfish/+filebug-advanced")

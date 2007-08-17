@@ -26,7 +26,7 @@
       tal:content="string:@import url(${icingroot}/style.css);"/>
     <style
       type="text/css"
-      tal:condition="view/is_private | CONTEXTS/lp:immediate_object_is_private"
+      tal:condition="view/isPrivate | CONTEXTS/lp:immediate_object_is_private"
       id="privatestyle"
     >#nonheader {background: url(/@@/private-bg) top left repeat-x;}</style>
     <style tal:condition="is_demo" type="text/css"

@@ -2181,7 +2181,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
 
 class BugTaskSOP(StructuralObjectPresentation):
 
-    def is_private(self):
+    def isPrivate(self):
         return self.context.bug.private
 
     def getIntroHeading(self):

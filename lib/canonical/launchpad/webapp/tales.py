@@ -1715,4 +1715,4 @@ class GotoStructuralObject:
                 self.use_context, IStructuralHeaderPresentation)
         except NoCanonicalUrl:
             return False
-        return adapter.is_private()
+        return adapter.isPrivate()
