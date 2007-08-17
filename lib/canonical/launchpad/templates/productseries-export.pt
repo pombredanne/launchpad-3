@@ -39,7 +39,7 @@
       <p>
         When these translations have been exported, a message will be sent to
         <code tal:content="view/user/preferredemail/email">user@domain</code>.
-        This message will provide you with a link to download your file from.
+        This message will tell you where you can download your file.
       </p>
 
       <div class="formControls">

@@ -1,11 +1,10 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Browser code for PO templates."""
 
 __metaclass__ = type
 
 __all__ = [
-    'BaseExportView',
     'POTemplateAdminView',
     'POTemplateEditView',
     'POTemplateFacets',
@@ -403,10 +402,6 @@ class POTemplateExportView(BaseExportView):
 
     def processForm(self):
         """Process a form submission requesting a translation export."""
-
-        if self.request.method != 'POST':
-            return
-
         what = self.request.form.get('what')
         if what == 'all':
             export_potemplate = True
@@ -432,21 +427,12 @@ class POTemplateExportView(BaseExportView):
                 'of them.')
             return
 
-        format = self.validateFileFormat(self.request.form.get('format'))
-        if not format:
-            return
-
         if export_potemplate:
-            self.request_set.addRequest(
-                self.user, self.context, pofiles, format)
-        elif pofiles:
-            self.request_set.addRequest(self.user, None, pofiles, format)
+            requested_templates = [self.context]
         else:
-            self.request.response.addErrorNotification(
-                'Please select at least one pofile or the PO template.')
-            return
+            requested_templates = None
 
-        self.nextURL()
+        return (requested_templates, pofiles)
 
     def pofiles(self):
         """Return a list of PO files available for export."""

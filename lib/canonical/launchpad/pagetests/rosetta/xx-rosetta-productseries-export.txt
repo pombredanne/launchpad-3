@@ -11,20 +11,20 @@ Any authenticated user can request a tarball export for a productseries.  The
 option is presented in the sidebar as "Download translations" on the
 productseries' translations page.
 
-  >>> user_browser.open('http://translations.launchpad.dev/evolution/trunk/')
-  >>> user_browser.getLink('Download translations').click()
-  >>> print user_browser.url
-  http://translations.launchpad.dev/evolution/trunk/+export
+    >>> user_browser.open('http://translations.launchpad.dev/evolution/trunk/')
+    >>> user_browser.getLink('Download translations').click()
+    >>> print user_browser.url
+    http://translations.launchpad.dev/evolution/trunk/+export
 
 Another way of getting there is by going to the product's +translate page.
 It will select a series of the product as its primary translation target, and
 offer a download link for that series.
 
-  >>> user_browser.open(
-  ...     'http://translations.launchpad.dev/evolution/+translations')
-  >>> user_browser.getLink('Download translations').click()
-  >>> print user_browser.url
-  http://translations.launchpad.dev/evolution/trunk/+export
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/evolution/+translations')
+    >>> user_browser.getLink('Download translations').click()
+    >>> print user_browser.url
+    http://translations.launchpad.dev/evolution/trunk/+export
 
 
 == Anonymous access ==
@@ -32,11 +32,11 @@ offer a download link for that series.
 To prevent spambot activity from becoming a problem, the download option is
 not available to anonymous visitors.
 
-  >>> anon_browser.open('http://translations.launchpad.dev/evolution/trunk/')
-  >>> anon_browser.getLink('Download translations').click()
-  Traceback (most recent call last):
-  ...
-  Unauthorized:...
+    >>> anon_browser.open('http://translations.launchpad.dev/evolution/trunk/')
+    >>> anon_browser.getLink('Download translations').click()
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
 
 
 == Making the request ==
@@ -44,44 +44,44 @@ not available to anonymous visitors.
 The logged-in user sees a page that lets them select an export format, and
 request the download.
 
-  >>> print user_browser.title
-  Download translations for "Evolution Series: trunk"
+    >>> print user_browser.title
+    Download translations for "Evolution Series: trunk"
 
 
 === File format ===
 
 The request must specify a file format.
 
-  >>> user_browser.getControl('Format:').clear() 
-  >>> user_browser.getControl('Request Download').click()
+    >>> user_browser.getControl('Format:').clear() 
+    >>> user_browser.getControl('Request Download').click()
 
-  >>> for tag in find_tags_by_class(user_browser.contents, 'error'):
-  ...     print tag
-  <div class="error message">Please select a valid format for download.</div>
+    >>> for message in get_feedback_messages(user_browser):
+    ...     print message
+    Please select a valid format for download.
 
 The most usual and most well-supported format is PO.
 
-  >>> user_browser.getControl('Format:').value = ['PO']
-  >>> user_browser.getControl('Request Download').click()
+    >>> user_browser.getControl('Format:').value = ['PO']
+    >>> user_browser.getControl('Request Download').click()
 
-  >>> print user_browser.url
-  http://translations.launchpad.dev/evolution/trunk
+    >>> print user_browser.url
+    http://translations.launchpad.dev/evolution/trunk
 
-  >>> for tag in find_tags_by_class(user_browser.contents, 'informational'):
-  ...     print tag
-  <div class="informational message">Your request has been received. Expect to receive an email shortly.</div>
+    >>> for message in get_feedback_messages(user_browser):
+    ...     print message
+    Your request has been received. Expect to receive an email shortly.
 
 An alternative is MO.
 
-  >>> user_browser.getLink('Download translations').click()
-  >>> user_browser.getControl('Format:').value = ['PO']
-  >>> user_browser.getControl('Request Download').click()
-  >>> print user_browser.url
-  http://translations.launchpad.dev/evolution/trunk
+    >>> user_browser.getLink('Download translations').click()
+    >>> user_browser.getControl('Format:').value = ['PO']
+    >>> user_browser.getControl('Request Download').click()
+    >>> print user_browser.url
+    http://translations.launchpad.dev/evolution/trunk
 
-  >>> for tag in find_tags_by_class(user_browser.contents, 'informational'):
-  ...     print tag
-  <div class="informational message">Your request has been received. Expect to receive an email shortly.</div>
+    >>> for message in get_feedback_messages(user_browser):
+    ...     print message
+    Your request has been received. Expect to receive an email shortly.
 
 
 === Nothing to export ===
@@ -89,24 +89,18 @@ An alternative is MO.
 Where there are no translation files to be exported, the user is not offered
 the option to download any.
 
-  >>> user_browser.open('http://translations.launchpad.dev/bzr/trunk/+export')
-  >>> for tag in find_tags_by_class(user_browser.contents, 'message'):
-  ...     print tag.renderContents()
-  This product series does not have any translation files available for
-  download.
+    >>> user_browser.open('http://translations.launchpad.dev/bzr/trunk/+export')
+    >>> for message in get_feedback_messages(user_browser):
+    ...     print message
+    This product series does not have any translation files available for
+    download.
 
 On +translate pages for products that do not have any translations, the action
-link for "Download translations" is still there, but it will point to the
-export page for some arbitrary series--which shows the same error message
-because there is simply nothing to download.
+link for "Download translations" is hidden.
 
-  >>> user_browser.open('http://translations.launchpad.dev/bzr/')
-  >>> user_browser.getLink('Download translations').click()
-  >>> print user_browser.url
-  http://translations.launchpad.dev/bzr/trunk/+export
-  >>> for tag in find_tags_by_class(user_browser.contents, 'message'):
-  ...     print tag.renderContents()
-  This product series does not have any translation files available for
-  download.
-
+    >>> user_browser.open('http://translations.launchpad.dev/bzr/')
+    >>> user_browser.getLink('Download translations')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 

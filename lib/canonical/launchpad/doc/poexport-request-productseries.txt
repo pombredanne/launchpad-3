@@ -1,33 +1,16 @@
 = Product Series Translation Exports =
 
 
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IPOExportRequestSet
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPOExportRequestSet
 
 This is a dummy logger class to capture the export's log messages.
 
     >>> import sys
     >>> import traceback
-
-    >>> class MockLogger:
-    ...     messages = []
-    ...
-    ...     def log(self, *stuff, **kw):
-    ...         print 'log>', ' '.join(stuff)
-    ...
-    ...         if 'exc_info' in kw:
-    ...             exception = traceback.format_exception(*sys.exc_info())
-    ...             for thing in exception:
-    ...                 for line in thing.splitlines():
-    ...                     self.log(line)
-    ...
-    ...     debug = info = warn = error = log
-    ...
-    ...     def exception(self, *stuff):
-    ...         self.log(*stuff, **{'exc_info': True})
-
-  >>> from canonical.launchpad.database import Person
-  >>> person = Person.selectOneBy(name='name12')
+    >>> from canonical.launchpad.ftests.logger import MockLogger
+    >>> from canonical.launchpad.database import Person
+    >>> person = Person.selectOneBy(name='name12')
 
 An arbitrary logged-in user requests an export of all translations for
 Evolution series trunk.
@@ -36,77 +19,77 @@ At the UI level, this is easy.  At the level we are looking at now, this
 consists of a series of requests for all templates and translations attached
 to the product series.
 
-  >>> from canonical.launchpad.database import (
-  ...     POFile, POTemplate, Product, ProductSeries)
-  >>> evolution_product = Product.selectOneBy(name='evolution')
-  >>> evolution_trunk = ProductSeries.selectOneBy(
-  ...     product=evolution_product, name='trunk')
-  >>> potemplates = list(POTemplate.selectBy(productseries=evolution_trunk))
-  >>> pofiles = []
-  >>> for template in potemplates:
-  ...     pofiles += template.pofiles
+    >>> from canonical.launchpad.database import (
+    ...     POFile, POTemplate, Product, ProductSeries)
+    >>> evolution_product = Product.selectOneBy(name='evolution')
+    >>> evolution_trunk = ProductSeries.selectOneBy(
+    ...     product=evolution_product, name='trunk')
+    >>> potemplates = list(POTemplate.selectBy(productseries=evolution_trunk))
+    >>> pofiles = []
+    >>> for template in potemplates:
+    ...     pofiles += template.pofiles
 
-  >>> request_set = getUtility(IPOExportRequestSet)
-  >>> request_set.addRequest(person, potemplates, pofiles)
+    >>> request_set = getUtility(IPOExportRequestSet)
+    >>> request_set.addRequest(person, potemplates, pofiles)
 
 Now we request that the queue be processed.
 
-  >>> class MockTransactionManager:
-  ...     def commit(self):
-  ...         pass
+    >>> class MockTransactionManager:
+    ...     def commit(self):
+    ...         pass
 
-  >>> from canonical.launchpad.scripts.po_export_queue import process_queue
-  >>> process_queue(MockTransactionManager(), MockLogger())
-  log> Exporting objects for ..., related to template evolution-2.2 in
-  Evolution trunk
-  log> Exporting objects for ..., related to template evolution-2.2-test in
-  Evolution trunk
+    >>> from canonical.launchpad.scripts.po_export_queue import process_queue
+    >>> process_queue(MockTransactionManager(), MockLogger())
+    log> Exporting objects for ..., related to template evolution-2.2 in
+    Evolution trunk
+    log> Exporting objects for ..., related to template evolution-2.2-test in
+    Evolution trunk
 
 We need to make sure the Librarian data has settled into place.
 
-  >>> import transaction
-  >>> transaction.commit()
+    >>> import transaction
+    >>> transaction.commit()
 
 The user receives a confirmation email.
 
-  >>> def print_mail_body(body):
-  ...     lines = body[body.index('\n\n')+2:].split('\n')
-  ...     for line in lines:
-  ...         print ">", line
+    >>> def print_mail_body(body):
+    ...     lines = body[body.index('\n\n')+2:].split('\n')
+    ...     for line in lines:
+    ...         print ">", line
 
-  >>> from canonical.launchpad.mail.stub import test_emails
-  >>> len(test_emails)
-  1
-  >>> from_addr, to_addrs, body = test_emails.pop()
-  >>> print_mail_body(body)
-  >
-  > Hello ...,
-  >
-  > The files you requested from Rosetta are ready for download
-  > from the following location:
-  >
-  >     http://localhost:58000/.../rosetta-evolution-2.2.tar.gz
+    >>> from canonical.launchpad.mail.stub import test_emails
+    >>> len(test_emails)
+    1
+    >>> from_addr, to_addrs, body = test_emails.pop()
+    >>> print_mail_body(body)
+    >
+    > Hello ...,
+    >
+    > The files you requested from Rosetta are ready for download
+    > from the following location:
+    >
+    >     http://localhost:58000/.../rosetta-evolution-2.2.tar.gz
 
 The email contains a URL linking to where the exported file can be downloaded.
 
-  >>> import re
+    >>> import re
 
-  >>> def extract_url(text):
-  ...     urls = re.compile(r'^ *(http://.*)$', re.M).findall(text)
-  ...     return urls[0]
+    >>> def extract_url(text):
+    ...     urls = re.compile(r'^ *(http://.*)$', re.M).findall(text)
+    ...     return urls[0]
 
-  >>> url = extract_url(body)
+    >>> url = extract_url(body)
 
 Let's download it and make sure the contents look ok.
 
-  >>> import urllib2
-  >>> from canonical.launchpad.helpers import string_to_tarfile
-  >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
-  >>> for name in sorted(tarball.getnames()):
-  ...   print name
-  rosetta-evolution-2.2/
-  rosetta-evolution-2.2/es.po
-  rosetta-evolution-2.2/evolution-2.2-test.pot
-  rosetta-evolution-2.2/evolution-2.2.pot
-  rosetta-evolution-2.2/pt_BR.po
+    >>> import urllib2
+    >>> from canonical.launchpad.helpers import string_to_tarfile
+    >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
+    >>> for name in sorted(tarball.getnames()):
+    ...   print name
+    rosetta-evolution-2.2/
+    rosetta-evolution-2.2/es.po
+    rosetta-evolution-2.2/evolution-2.2-test.pot
+    rosetta-evolution-2.2/evolution-2.2.pot
+    rosetta-evolution-2.2/pt_BR.po
 

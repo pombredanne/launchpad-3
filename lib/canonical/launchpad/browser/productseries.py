@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -261,21 +261,10 @@ class ProductSeriesTranslationsExportView(BaseExportView):
 
     def processForm(self):
         """Process form submission requesting translations export."""
-        if self.request.method != 'POST':
-            return
-
-        format = self.validateFileFormat(self.request.form.get('format'))
-        if format is None:
-            return
-
         pofiles = []
         for potemplate in self.context.potemplates:
             pofiles += list(potemplate.pofiles)
-
-        self.request_set.addRequest(
-            self.user, self.context.potemplates, pofiles, format)
-
-        self.nextURL()
+        return (self.context.potemplates, pofiles)
 
     def getDefaultFormat(self):
         templates = self.context.potemplates

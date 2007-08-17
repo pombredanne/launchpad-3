@@ -50,7 +50,7 @@ class POExportRequestSet:
             pofiles = []
 
         if not (potemplates or pofiles):
-            raise ValueError(
+            raise AssertionError(
                 "Can't add a request with no PO templates and no PO files.")
 
         for potemplate in potemplates:
