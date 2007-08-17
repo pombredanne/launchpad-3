@@ -237,9 +237,6 @@
         <td>A link to a resource outside of Launchpad.</td>
       </tr>
       <tr>
-        <td>locked-large</td>
-        <td><img alt="" src="/@@/locked-large" /></td>
-      <tr>
         <td>mail</td>
         <td><img src="/@@/mail" /></td>
         <td>Mail or an email address.</td>
@@ -343,6 +340,11 @@
       <tr>
         <td>project-mugshot</td>
         <td><img alt="" src="/@@/project-mugshot" /></td>
+      </tr>
+      <tr>
+        <td>read-only</td>
+        <td><img alt="" src="/@@/read-only" /></td>
+        <td>The adjacent element cannot be changed.</td>
       </tr>
       <tr>
         <td>remove</td>

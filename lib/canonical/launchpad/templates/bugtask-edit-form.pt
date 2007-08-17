@@ -173,7 +173,7 @@
           <img
             tal:condition="not:view/userCanEditMilestone"
             alt=""
-            src="/@@/locked"
+            src="/@@/read-only"
           />
           <tal:widget content="structure view/widgets/milestone" />
         </td>
