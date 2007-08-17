@@ -23,6 +23,7 @@ __all__ = [
     'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer'
     ]
 
+import socket
 import time
 from urllib import urlopen
 
@@ -228,6 +229,9 @@ class LibrarianLayer(BaseLayer):
     # Flag maintaining state of hide()/reveal() calls
     _hidden = False
 
+    # Fake upload socket used when the librarian is hidden
+    _fake_upload_socket = None
+
     @classmethod
     @profiled
     def hide(cls):
@@ -238,7 +242,17 @@ class LibrarianLayer(BaseLayer):
         looks for the Librarian server on the wrong port.
         """
         cls._hidden = True
-        config.librarian.upload_port = 58091
+        if cls._fake_upload_socket is None:
+            # Bind to a socket, but don't listen to it.  This way we
+            # guarantee that connections to the given port will fail.
+            cls._fake_upload_socket = socket.socket(
+                socket.AF_INET, socket.SOCK_STREAM)
+            assert config.librarian.upload_host == 'localhost', (
+                'Can only hide librarian if it is running locally')
+            cls._fake_upload_socket.bind(('127.0.0.1', 0))
+
+        host, port = cls._fake_upload_socket.getsockname()
+        config.librarian.upload_port = port
 
     @classmethod
     @profiled
@@ -289,13 +303,14 @@ class DatabaseLayer(BaseLayer):
         # Ensure that the database is connectable. Because we might have
         # just created it, keep trying for a few seconds incase PostgreSQL
         # is taking its time getting its house in order.
-        for count in range(0,10):
+        attempts = 60
+        for count in range(0, attempts):
             try:
                 cls.connect().close()
             except psycopg.Error:
-                if count == 9:
+                if count == attempts - 1:
                     raise
-                time.sleep(1)
+                time.sleep(0.5)
             else:
                 break
 

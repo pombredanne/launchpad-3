@@ -18,9 +18,9 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     EntitlementInvalidError, EntitlementQuota, EntitlementQuotaExceededError,
-    IEntitlement, IEntitlementSet, NotFoundError)
+    EntitlementState, EntitlementType, IEntitlement, IEntitlementSet,
+    NotFoundError)
 
-from canonical.lp.dbschema import EntitlementState, EntitlementType
 
 class Entitlement(SQLBase):
     """A table recording the entitlements for a person or team."""
@@ -39,7 +39,7 @@ class Entitlement(SQLBase):
     entitlement_type = EnumCol(
         dbName='entitlement_type',
         notNull=True,
-        schema=EntitlementType,
+        enum=EntitlementType,
         default=EntitlementType.PRIVATE_BUGS)
     quota = IntCol(notNull=True)
     amount_used = IntCol(notNull=True, default=0)
@@ -52,7 +52,7 @@ class Entitlement(SQLBase):
     state = EnumCol(
         dbName='state',
         notNull=True,
-        schema=EntitlementState,
+        enum=EntitlementState,
         default=EntitlementState.INACTIVE)
     whiteboard = StringCol(notNull=False, default=None)
     is_dirty = BoolCol(dbName="is_dirty", notNull=True, default=True)

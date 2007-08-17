@@ -1,6 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""The time_generator is a handy generator to use in doctests."""
+"""The time_counter is a handy function to use in doctests."""
 
 __metaclass__ = type
 __all__ = []
@@ -9,13 +9,13 @@ from datetime import datetime, timedelta
 from pytz import UTC
 
 
-def time_generator(origin=None, delta=timedelta(seconds=5)):
+def time_counter(origin=None, delta=timedelta(seconds=5)):
     """A generator for yielding datetime values.
 
     Each time the generator yields a value, the origin is incremented
     by the delta.
 
-    >>> now = time_generator(datetime(2007, 12, 1), timedelta(days=1))
+    >>> now = time_counter(datetime(2007, 12, 1), timedelta(days=1))
     >>> now.next()
     datetime.datetime(2007, 12, 1, 0, 0)
     >>> now.next()

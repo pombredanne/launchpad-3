@@ -54,14 +54,14 @@ class BranchMergeProposal(SQLBase):
                      merge_reporter=None):
         """See `IBranchMergeProposal`."""
         self.merged_revno = merged_revno
+        self.merge_reporter = merge_reporter
+
         if merged_revno is not None:
             branch_revision = BranchRevision.selectOneBy(
                 branch=self.target_branch, sequence=merged_revno)
             if branch_revision is not None:
-                self.date_merged = branch_revision.revision.revision_date
-                return
+                date_merged = branch_revision.revision.revision_date
 
         if date_merged is None:
             date_merged = UTC_NOW
         self.date_merged = date_merged
-        self.merge_reporter = merge_reporter

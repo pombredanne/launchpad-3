@@ -1,4 +1,4 @@
-<div class="portlet" tal:condition="view/calendar">
+<div class="portlet" id="portlet-info" tal:condition="view/calendar">
   <h2 tal:content="view/calendar/title">Calendar</h2>
 
   <div class="portletBody portletContent">
@@ -28,7 +28,8 @@
 </div>
 <tal:nocalendar condition="not:view/calendar">
   <!-- No calendar -->
-  <div class="portlet" tal:condition="context/required:launchpad.Edit">
+  <div class="portlet" id="portlet-info"
+       tal:condition="context/required:launchpad.Edit">
     <h2>Calendar</h2>
     <div class="portletBody portletContent" style="text-align: center">
       <form action="+calendar-create" method="post">
