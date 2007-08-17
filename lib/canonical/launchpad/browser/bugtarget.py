@@ -426,7 +426,7 @@ class FileBugViewBase(LaunchpadFormView):
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 
-    @action("Subscribe to This Bug", name="this_is_my_bug",
+    @action("Subscribe to This Bug Report", name="this_is_my_bug",
             failure=handleSubmitBugFailure)
     def this_is_my_bug_action(self, action, data):
         """Subscribe to the bug suggested."""
