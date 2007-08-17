@@ -1474,7 +1474,7 @@ class BugTaskSet:
             BugTask.id IN (
                 SELECT BugTask.id
                 FROM BugTask
-                    LEFT JOIN Distribution
+                    INNER JOIN Distribution
                         ON BugTask.distribution = Distribution.id
                 WHERE
                     %(status_assignee_age)s
@@ -1482,7 +1482,7 @@ class BugTaskSet:
                 UNION
                 SELECT BugTask.id
                 FROM BugTask
-                    LEFT JOIN Product
+                    INNER JOIN Product
                         ON BugTask.product = Product.id
                 WHERE
                     %(status_assignee_age)s
@@ -1490,9 +1490,9 @@ class BugTaskSet:
                 UNION
                 SELECT BugTask.id
                 FROM BugTask 
-                    LEFT JOIN DistroRelease
+                    INNER JOIN DistroRelease
                         ON BugTask.distrorelease = DistroRelease.id
-                    LEFT JOIN Distribution
+                    INNER JOIN Distribution
                         ON DistroRelease.distribution = Distribution.id
                 WHERE
                     %(status_assignee_age)s
@@ -1500,9 +1500,9 @@ class BugTaskSet:
                 UNION
                 SELECT BugTask.id
                 FROM BugTask 
-                    LEFT JOIN ProductSeries
+                    INNER JOIN ProductSeries
                         ON BugTask.productseries = ProductSeries.id
-                    LEFT JOIN Product
+                    INNER JOIN Product
                         ON ProductSeries.product = Product.id
                 WHERE
                     %(status_assignee_age)s
