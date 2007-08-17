@@ -191,7 +191,9 @@ class OutputMsgSet:
         self.filereferences = ''
 
     def set_context(self, context):
-        """Set context for the message set."""
+        """Set context for this message set.
+
+        This corresponds to 'msgctxt' keyword in the exported PO file."""
         self.context = context
 
     def add_msgid(self, msgid):
