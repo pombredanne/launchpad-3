@@ -1,7 +1,7 @@
 <tal:block condition="request/lp:person">
 <tal:block condition="not: context/hide_email_addresses">
   <tal:block condition="python:context.validatedemails or context.preferredemail">
-    <div class="portlet" tal:condition="request/lp:person">
+    <div class="portlet" id="portlet-emails">
 
       <h2>Confirmed e-mail addresses</h2>
 
