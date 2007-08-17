@@ -7,7 +7,7 @@ revision control portlet should show 'None given'
 
   >>> anon_browser.open('http://launchpad.dev/firefox/trunk')
   >>> print find_portlet(anon_browser.contents, 'Revision control details')
-  <div class="portlet">
+  <div class="portlet" id="...">
   ...<i>None given</i>...
   </div>
 
@@ -29,6 +29,6 @@ Should now be back at the main series page
   >>> browser.url
   'http://launchpad.dev/firefox/trunk'
   >>> print find_portlet(browser.contents, 'Revision control details')
-  <div class="portlet">
+  <div class="portlet" id="...">
   ...<a href="http://code.launchpad.dev/~name12/firefox/main">Mozilla Firefox Mainline</a>...
   </div>
