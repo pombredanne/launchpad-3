@@ -1351,12 +1351,12 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
   color: #3840be;
 }
 
-.questionstatusOPEN      {color: black;}
-.questionstatusNEEDSINFO {color: black;}
-.questionstatusANSWERED  {color: green;}
-.questionstatusSOLVED    {color: green;}
-.questionstatusEXPIRED   {color: red;}
-.questionstatusINVALID   {color: red;}
+.questionstatusOPEN      {color: #000;} /* black */
+.questionstatusNEEDSINFO {color: #930;} /* brown */
+.questionstatusANSWERED  {color: #363;} /* grey-green */
+.questionstatusSOLVED    {color: #090;} /* green */
+.questionstatusEXPIRED   {color: #666;} /* dark grey */
+.questionstatusINVALID   {color: #c00;} /* red */
 
 
 /* --- Other --- */
