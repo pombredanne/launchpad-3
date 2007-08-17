@@ -657,7 +657,6 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             self.next_url = canonical_url(source_branch)
 
     def validate(self, data):
-
         source_branch = self.context
         target_branch = data.get('target_branch')
         dependent_branch = data.get('dependent_branch')
