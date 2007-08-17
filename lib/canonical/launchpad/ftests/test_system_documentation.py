@@ -203,20 +203,28 @@ def mailingListPrintActions(pending_actions):
     """A helper function for the mailinglist-xmlrpc.txt doctest.
 
     This helps print the data structure returned from .getPendingActions() in
-    a more succinct way to produce a more readable doctest.  It also helps
-    fuzz the difference in output between running the doctest against both the
-    XMLRPC proxy (where values will be non-prefixed 8-bit strings) and the
-    XMLRPC view (where values will be unicodes).
+    a more succinct way so as to produce a more readable doctest.  It also
+    eliminates trivial representational differences caused by the doctest
+    being run both with an internal view and via an XMLRPC proxy.
+
+    The problem is that the types of the values in the pending_actions
+    dictionary will be different depending on which way the doctest is run.
+    The contents will be the same but when run via an XMLRPC proxy, the values
+    will be strs, and when run via the internal view, they will be unicodes.
+    If you don't coerce the values, they'll print differently, superficially
+    breaking the doctest.  For example, unicodes will print with a u-prefix
+    (e.g. u'Welcome to Team One') while the strs will print without a prefix
+    (e.g. 'Welcome to Team One').
+
+    The only way to write a doctest so that both correct results will pass is
+    to coerce one string type to the other, and coercing to unicodes seems
+    like the most straightforward thing to do.  The keys of the dictionary do
+    not need to be coerced because they will be strs in both cases.
     """
     for action in sorted(pending_actions):
         for team in sorted(pending_actions[action]):
             if action in ('create', 'modify'):
                 team, modification = team
-                # Further, we must coerce all values in the modification dict
-                # to unicode, so as to handle the fact that this doctest is
-                # called both via an internal view and through an XMLRPC
-                # proxy.  The former returns unicode values natively, the
-                # latter strs.  The keys are the same in both cases.
                 modification = dict((k, unicode(v))
                                     for k, v in modification.items())
                 print team, '-->', action, modification

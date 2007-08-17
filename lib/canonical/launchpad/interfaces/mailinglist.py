@@ -289,6 +289,12 @@ class IRequestedMailingListAPI(Interface):
     def getPendingActions():
         """Return all pending mailing list actions.
 
+        In addition, any mailing list for which there are actions pending will
+        have their states transitioned to the next node in the workflow.  For
+        example, an APPROVED mailing list will be transitioned to
+        CONSTRUCTING, and a MODIFIED mailing list will be transitioned to
+        UPDATING.
+
         :return: A dictionary with keys being the action names and values
             being a sequence of values describing the details of each action.
 
@@ -312,6 +318,11 @@ class IRequestedMailingListAPI(Interface):
 
         When Mailman processes the actions requested in getPendingActions(),
         it will report the status of those actions back to Launchpad.
+
+        In addition, any mailing list for which a status is being reported
+        will have its state transitioned to the next node in the workflow.
+        For example, a CONSTRUCTING or UPDATING mailing list will be
+        transitioned to ACTIVE or FAILED depending on the status.
 
         :param statuses: A dictionary mapping team names to result strings.
             The result strings may be either 'success' or 'failure'.

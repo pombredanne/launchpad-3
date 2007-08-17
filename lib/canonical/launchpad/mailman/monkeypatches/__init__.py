@@ -1,10 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 import os
-import re
-import errno
-import shutil
-import subprocess
 
 HERE = os.path.dirname(__file__)
 

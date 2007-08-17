@@ -115,7 +115,7 @@ def build_mailman():
             cwd=mailman_bin)
         if retcode:
             print >> sys.stderr, 'Could not create site list'
-            return recode
+            return retcode
 
     # Create a directory to hold the gzip'd tarballs for the directories of
     # deactivated lists.

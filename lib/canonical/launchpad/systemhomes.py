@@ -17,7 +17,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IBazaarApplication, IBranchSet, IBugExternalRefSet,
+    BugTaskSearchParams, IBazaarApplication, IBugExternalRefSet,
     IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet, IDistroSeriesSet,
     ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
     IMailingListApplication, IMaloneApplication,
