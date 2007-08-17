@@ -1,4 +1,5 @@
-<div class="portlet" tal:condition="context/myactivememberships">
+<div class="portlet" id="portlet-team-assigned-bugs"
+     tal:condition="context/myactivememberships">
 
   <h2><span tal:replace="context/title" />'s teams</h2>
 
