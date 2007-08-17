@@ -485,7 +485,7 @@ class BranchReassignmentView(ObjectReassignmentView):
                    quote(branch.product.displayname),
                    branch.name))
             # XXX 2007-08-07 MichaelHudson, branch.product can be None in the
-            # lines above.
+            # lines above.  See bug 133126.
             return False
 
 
