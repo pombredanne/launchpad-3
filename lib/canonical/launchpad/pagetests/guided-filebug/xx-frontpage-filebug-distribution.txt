@@ -108,7 +108,7 @@ and not on the distribution:
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/...'
     >>> user_browser.title
-    'Bug #... in firefox (upstream)...'
+    'Bug #... in Mozilla Firefox...'
 
 
 == Advanced filebug page ==

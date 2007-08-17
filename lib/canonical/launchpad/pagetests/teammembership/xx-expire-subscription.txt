@@ -26,7 +26,7 @@ variables:
 Let's do it under the wraps:
 
   >>> from canonical.launchpad.database import Person, TeamMembership
-  >>> from canonical.lp.dbschema import TeamMembershipStatus
+  >>> from canonical.launchpad.interfaces import TeamMembershipStatus
   >>> sampleperson = Person.byName('name12')
   >>> team = Person.byName('name20')
   >>> tm = TeamMembership.selectOneBy(personID=sampleperson.id, teamID=team.id)

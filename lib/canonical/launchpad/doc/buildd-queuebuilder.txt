@@ -144,6 +144,7 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
   ...         builddependsindep='foo (<< 1.0)',
   ...         builddepends=None,
   ...         dsc=None,
+  ...         copyright='placeholder ...',
   ...         changelog=None,
   ...         manifest=manifest,
   ...         dscsigningkey=None,
@@ -403,7 +404,7 @@ the sample data:
 
   >>> name6 = SourcePackageName(name="test-ppa")
   >>> spr_hoary_ppa, pub_hoary_ppa = createPackageAndPublication(
-  ...     name6, hoary, "i386", archive=cprov.archive)
+  ...     name6, hoary, "i386 hppa", archive=cprov.archive)
 
 Now we create builds and buildqueues and check their contents:
 
@@ -417,6 +418,10 @@ Check that we only created new Build entry for ppa publication:
   >>> for build in sorted(new_builds, key=operator.attrgetter('id')):
   ...   print build.title
   i386 build of test-ppa 674 in ubuntu hoary UPDATES
+
+Note that it did not create a build for 'hppa' as is requested in the
+given 'architeturehintlist' ('i386 hppa'). Only 'i386' and 'amd64' are
+allowed for PPA (see further comments in buildmaster/master.py).
 
 Check if BuildQueue are also created for ppa_builds:
 

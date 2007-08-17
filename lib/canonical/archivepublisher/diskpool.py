@@ -299,7 +299,7 @@ class DiskPoolEntry:
         # Now we rename the source file into the target component.
         sourcepath = self.pathFor(self.file_component)
 
-        # XXX cprov 20060526: if it fails the symlinks are severely broken
+        # XXX cprov 2006-05-26: if it fails the symlinks are severely broken
         # or maybe we are writing them wrong. It needs manual fix !
         # Nonetheless, we carry on checking other candidates.
         # Use 'find -L . -type l' on pool to find out broken symlinks
@@ -312,7 +312,7 @@ class DiskPoolEntry:
         assert os.path.exists(sourcepath)
         os.rename(sourcepath, targetpath)
 
-        # XXX cprov 20060612: it may cause problems to the database, since
+        # XXX cprov 2006-06-12: it may cause problems to the database, since
         # ZTM isn't handled properly in scripts/publish-distro.py. Things are
         # commited mid-procedure & bare exception is caught.
 

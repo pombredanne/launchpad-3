@@ -50,6 +50,15 @@
     />
 
   <browser:page
+    name="+addspec"
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.NewSpecificationFromDistributionView"
+    facet="specifications"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+  />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IDistribution"
     permission="zope.Public"
     class="canonical.launchpad.browser.DistributionDynMenu"
@@ -214,12 +223,17 @@
     <browser:page
       name="+builds-list"
       template="../templates/builds-list.pt"
-      />
-    <browser:page
-      name="+ppas"
-      template="../templates/ppa-list.pt"
-      />
+     />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionPPASearchView"
+    name="+ppas"
+    permission="zope.Public"
+    facet="overview"
+    template="../templates/distribution-ppa-list.pt"
+    />
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistribution"

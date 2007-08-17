@@ -23,7 +23,7 @@ If the button is clicked, the bug is nominated for the series.
     'http://bugs.launchpad.dev/ubuntu/grumpy/+source/evolution/+bug/10'
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print extract_text(message)
-    This bug has been nominated to be fixed in Ubuntu Grumpy
+    This bug has been nominated to be fixed in Ubuntu Grumpy.
 
     >>> user_browser.getControl('Also Needs Fixing Here')
     Traceback (most recent call last):
@@ -36,7 +36,8 @@ It works the same way for product series contexts.
     ...  'http://launchpad.dev/firefox/1.0/+bug/10')
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print extract_text(message)
-    This bug is not recorded as needing to be fixed in firefox 1.0 (upstream).
+    This bug is not recorded as needing to be fixed in
+    Mozilla Firefox 1.0.
     >>> user_browser.getControl('Also Needs Fixing Here') is not None
     True
 
@@ -45,7 +46,7 @@ It works the same way for product series contexts.
     'http://bugs.launchpad.dev/firefox/1.0/+bug/10'
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print extract_text(message)
-    This bug has been nominated to be fixed in firefox 1.0 (upstream)
+    This bug has been nominated to be fixed in Mozilla Firefox 1.0.
 
     >>> user_browser.getControl('Also Needs Fixing Here')
     Traceback (most recent call last):

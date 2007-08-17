@@ -19,10 +19,10 @@ class NicknameGenerationError(Exception):
 
 def _is_nick_registered(nick):
     """Answer the question: is this nick registered?"""
-    # XXX: This should use IPersonSet.  Before we change this, we need to
+    # XXX: SteveAlexander 2005-06-12:
+    #      This should use IPersonSet.  Before we change this, we need to
     #      make sure that all users of nickname.py are running inside the
     #      launchpad web application, or are using zcml_for_scripts.
-    #      SteveAlexander, 2005-06-12
     from canonical.launchpad.database import PersonSet
     return PersonSet().getByName(nick) is not None
 

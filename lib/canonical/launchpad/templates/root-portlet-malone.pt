@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-bugs">
   <h2>Bug tracking</h2>
 
   <div class="portletBody portletContent" i18n:translate="malone-blurb"

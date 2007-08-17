@@ -39,7 +39,7 @@ from canonical.launchpad.browser.sourcepackage import (
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFile, IPOFileSet,
     IPOExportRequestSet, IPOTemplateSubset, ITranslationImporter,
-    ITranslationImportQueue, IProductSeries, ISourcePackage)
+    ITranslationImportQueue, IProductSeries, ISourcePackage, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
     GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
@@ -58,6 +58,11 @@ class POTemplateNavigation(Navigation):
             'We only know about GET, HEAD, and POST')
 
         user = getUtility(ILaunchBag).user
+
+        # We do not want users to see the 'en' potemplate because
+        # we store the messages we want to translate as English.
+        if name == 'en':
+            raise NotFoundError(name)
 
         pofile = self.context.getPOFileByLang(name)
 
@@ -293,7 +298,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                     "Your upload was ignored because you didn't select a "
                     "file. Please select a file and try again.")
             else:
-                # XXX: Carlos Perello Marin 2004/12/30
+                # XXX: Carlos Perello Marin 2004-12-30
                 # Epiphany seems to have an unpredictable bug with upload
                 # forms (or perhaps it's launchpad because I never had
                 # problems with bugzilla). The fact is that some uploads don't

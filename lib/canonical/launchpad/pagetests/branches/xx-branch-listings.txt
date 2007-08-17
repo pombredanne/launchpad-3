@@ -91,7 +91,7 @@ subset of the branches are shown.
    >>> filter_control = browser.getControl('Show branches with status of')
    >>> filter_control
    <ListControl name='field.lifecycle' type='select'>
-   >>> filter_control.value
+   >>> filter_control.displayValue
    ['New, Experimental, Development or Mature']
    >>> filter_control.displayOptions
    ['New, Experimental, Development or Mature', 'Any Status', 'New', 'Experimental', 'Development', 'Mature', 'Merged', 'Abandoned']
@@ -146,7 +146,7 @@ will cause only branches with that status to be listed.
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   2.4  50 Abandoned    gnome-terminal  Registrant
+   2.4 ... Abandoned    gnome-terminal  Registrant
 
 If anyone tries to hack the URL, and put in an invalid
 status value, it will default to current branches.

@@ -131,7 +131,7 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
     @action('Add file', name='add')
     def add_action(self, action, data):
         file_upload = self.request.form.get(self.widgets['filecontent'].name)
-        # XXX write a proper upload widget. -- BradCrittenden, 2007-04-26
+        # XXX BradCrittenden 2007-04-26: Write a proper upload widget.
         if file_upload and data['description']:
             # replace slashes in the filename with less problematic dashes.
             filename = file_upload.filename.replace('/', '-')
