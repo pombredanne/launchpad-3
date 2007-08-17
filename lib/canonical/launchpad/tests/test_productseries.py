@@ -15,7 +15,7 @@ from canonical.launchpad.database.productseries import (
     DatePublishedSyncError, ProductSeries, NoImportBranchError)
 from canonical.launchpad.ftests import login
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
-from canonical.launchpad.interfaces import IProductSeriesSet
+from canonical.launchpad.interfaces import IProductSet
 from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
 from canonical.launchpad.interfaces import IProductSet
 from canonical.lp.dbschema import RevisionControlSystems
@@ -38,19 +38,19 @@ class TestDeleteImport(TestCase):
         # We need to be a members of vcs-imports or admin to use deleteImport.
         login('david.allouche@canonical.com')
 
-        series = getUtility(IProductSeriesSet)[3]
+        # evolution/trunk is a commonly used series in unit tests of the code
+        # import system.
+        series = getUtility(IProductSet)['evolution'].getSeries('trunk')
+        self.failIf(series.importstatus is None)
 
         # Ideally, we woud implement a realistic scenario to set this
         # attribute, but it would be too complicated for the purpose of this
         # simple test.
         removeSecurityProxy(series).datepublishedsync = UTC_NOW
-        self.failIf(series.datepublishedsync is None,
-            'series.datepublishesync is %r' % (series.datepublishedsync))
 
         series.deleteImport()
         self.failUnless(series.datepublishedsync is None,
             'series.datepublishesync is %r' % (series.datepublishedsync))
-        self.assertEqual(series.datepublishedsync, None)
 
 
 class TestImportUpdated(ImportdTestCase):
