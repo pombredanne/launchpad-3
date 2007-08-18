@@ -79,9 +79,9 @@ location as it is (which is Ubuntu, no package):
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/bugs/+filebug'
-    >>> [ tag.renderContents().strip() for tag in
-    ...      find_tags_by_class(user_browser.contents, 'message') ]
-    ['No similar bugs were found.']
+    >>> print find_main_content(user_browser.contents).renderContents()
+    <...
+    No similar bug reports were found...
 
 Changing the bug location to a project, without choosing a specific
 project, will fail form validation, where previously this caused an
@@ -92,10 +92,12 @@ OOPS.
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/bugs/+filebug'
+    >>> print find_main_content(user_browser.contents).renderContents()
+    <...
+    No similar bug reports were found...
     >>> tags = find_tags_by_class(user_browser.contents, 'message')
     >>> for tag in tags:
     ...     print tag.renderContents()
-    No similar bugs were found.
     There is 1 error.
     Required input is missing.
 
