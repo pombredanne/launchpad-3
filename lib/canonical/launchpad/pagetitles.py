@@ -149,6 +149,13 @@ def branch_index(context, view):
     else:
         return smartquote('"%s" branch in Launchpad') % (context.displayname)
 
+branch_landing_candidates = ContextDisplayName(smartquote(
+    'Landing candidates for "%s"'))
+
+branchmergeproposal_edit = 'Edit branch merge proposal'
+
+branch_register_merge_proposal = 'Register branch merge proposal'
+
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
 
