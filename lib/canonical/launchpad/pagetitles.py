@@ -101,7 +101,7 @@ class ContextBugId(SubstitutionHelper):
 
 archive_admin = ContextTitle('Administer %s')
 
-archive_activate = 'Activate PPA'
+archive_activate = 'Activate Personal Package Archive'
 
 archive_builds = ContextTitle('Builds for %s')
 
@@ -134,6 +134,8 @@ bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
 branch_associations = ContextDisplayName(smartquote(
     '"%s" branch associations'))
+
+branch_delete = ContextDisplayName(smartquote('Delete branch "%s"'))
 
 branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
 
@@ -252,15 +254,17 @@ bugtarget_filebug_search = bugtarget_filebug_advanced
 
 bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
-bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_choose_affected_product = LaunchbagBugID(
+    'Bug #%d - Record as affecting another project')
 
 bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()
 
-bugtask_requestfix = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_requestfix = LaunchbagBugID(
+    'Bug #%d - Record as affecting another distribution/package')
 
-bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Confirm project')
 
 bugtask_view = BugTaskPageTitle()
 

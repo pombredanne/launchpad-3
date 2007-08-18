@@ -50,6 +50,9 @@ class Snapshot:
 
         for name in names:
             value = getattr(ob, name, _marker)
+            if value is _marker:
+                raise AssertionError("Attribute %s not in object %r"
+                                     % (name, ob))
             if ISelectResults.providedBy(value):
                 # SQLMultipleJoin and SQLRelatedJoin return
                 # SelectResults, which doesn't really help the Snapshot

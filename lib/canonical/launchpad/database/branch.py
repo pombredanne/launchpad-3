@@ -1,7 +1,10 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
+__all__ = [
+    'Branch',
+    'BranchSet',
+    ]
 
 import re
 
@@ -24,13 +27,12 @@ from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
     BranchLifecycleStatus, BranchType, BranchVisibilityRule,
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchSet, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
-from canonical.lp.dbschema import BranchRelationships
 
 
 class Branch(SQLBase):
@@ -81,11 +83,6 @@ class Branch(SQLBase):
             ''' % sqlvalues(self),
             prejoins=['revision'], orderBy='-sequence')
 
-    subjectRelations = SQLMultipleJoin(
-        'BranchRelationship', joinColumn='subject')
-    objectRelations = SQLMultipleJoin(
-        'BranchRelationship', joinColumn='object')
-
     subscriptions = SQLMultipleJoin(
         'BranchSubscription', joinColumn='branch', orderBy='id')
     subscribers = SQLRelatedJoin(
@@ -105,30 +102,30 @@ class Branch(SQLBase):
 
     @property
     def related_bugs(self):
-        """See IBranch."""
+        """See `IBranch`."""
         return [bug_branch.bug for bug_branch in self.bug_branches]
 
     @property
     def warehouse_url(self):
-        """See IBranch."""
+        """See `IBranch`."""
         root = config.supermirror.warehouse_root_url
         return "%s%08x" % (root, self.id)
 
     @property
     def product_name(self):
-        """See IBranch."""
+        """See `IBranch`."""
         if self.product is None:
             return '+junk'
         return self.product.name
 
     @property
     def unique_name(self):
-        """See IBranch."""
+        """See `IBranch`."""
         return u'~%s/%s/%s' % (self.owner.name, self.product_name, self.name)
 
     @property
     def displayname(self):
-        """See IBranch."""
+        """See `IBranch`."""
         if self.title:
             return self.title
         else:
@@ -136,7 +133,7 @@ class Branch(SQLBase):
 
     @property
     def sort_key(self):
-        """See IBranch."""
+        """See `IBranch`."""
         if self.product is None:
             product = None
         else:
@@ -151,11 +148,11 @@ class Branch(SQLBase):
         return (product, status, author, name, owner)
 
     def latest_revisions(self, quantity=10):
-        """See IBranch."""
+        """See `IBranch`."""
         return self.revision_history.limit(quantity)
 
     def revisions_since(self, timestamp):
-        """See IBranch."""
+        """See `IBranch`."""
         return BranchRevision.select(
             'Revision.id=BranchRevision.revision AND '
             'BranchRevision.branch = %d AND '
@@ -165,15 +162,39 @@ class Branch(SQLBase):
             orderBy='-sequence',
             clauseTables=['Revision'])
 
-    def createRelationship(self, branch, relationship):
-        BranchRelationship(subject=self, object=branch, label=relationship)
+    def canBeDeleted(self):
+        """See `IBranch`."""
+        # XXX: TimPenhey 2007-07-30
+        # ManifestEntries are deliberately being ignored here.
+        # They are part of HCT which is in active rot, and should
+        # be removed.
 
-    def getRelations(self):
-        return tuple(self.subjectRelations) + tuple(self.objectRelations)
+        # CodeImportSet imported here to avoid circular imports.
+        from canonical.launchpad.database.codeimport import CodeImportSet
+        code_import = CodeImportSet().getByBranch(self)
+        if (code_import is not None or
+            self.revision_history.count() > 0 or
+            self.subscriptions.count() > 0 or
+            self.bug_branches.count() > 0 or
+            self.spec_links.count() > 0 or
+            self.associatedProductSeries().count() > 0):
+            # Can't delete if the branch is associated with anything.
+            return False
+        else:
+            return True
+
+    def associatedProductSeries(self):
+        """See `IBranch`."""
+        # Imported here to avoid circular import.
+        from canonical.launchpad.database.productseries import ProductSeries
+        return ProductSeries.select("""
+            ProductSeries.user_branch = %s OR
+            ProductSeries.import_branch = %s
+            """ % sqlvalues(self, self))
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines):
-        """See IBranch."""
+        """See `IBranch`."""
         # If the person is already subscribed, update the subscription with
         # the specified notification details.
         subscription = self.getSubscription(person)
@@ -188,7 +209,7 @@ class Branch(SQLBase):
         return subscription
 
     def getSubscription(self, person):
-        """See IBranch."""
+        """See `IBranch`."""
         if person is None:
             return None
         subscription = BranchSubscription.selectOneBy(
@@ -196,41 +217,41 @@ class Branch(SQLBase):
         return subscription
 
     def hasSubscription(self, person):
-        """See IBranch."""
+        """See `IBranch`."""
         return self.getSubscription(person) is not None
 
     def unsubscribe(self, person):
-        """See IBranch."""
+        """See `IBranch`."""
         subscription = self.getSubscription(person)
         assert subscription is not None, "User is not subscribed."
         BranchSubscription.delete(subscription.id)
 
     def getBranchRevision(self, sequence):
-        """See IBranch.getBranchRevision()"""
+        """See `IBranch`."""
         assert sequence is not None, \
                "Only use this to fetch revisions from mainline history."
         return BranchRevision.selectOneBy(branch=self, sequence=sequence)
 
     def createBranchRevision(self, sequence, revision):
-        """See IBranch.createBranchRevision()"""
+        """See `IBranch`."""
         return BranchRevision(
             branch=self, sequence=sequence, revision=revision)
 
     def getTipRevision(self):
-        """See IBranch"""
+        """See `IBranch`."""
         tip_revision_id = self.last_scanned_id
         if tip_revision_id is None:
             return None
         return Revision.selectOneBy(revision_id=tip_revision_id)
 
     def updateScannedDetails(self, revision_id, revision_count):
-        """See IBranch."""
+        """See `IBranch`."""
         self.last_scanned = UTC_NOW
         self.last_scanned_id = revision_id
         self.revision_count = revision_count
 
     def getNotificationRecipients(self):
-        """See IBranch."""
+        """See `IBranch`."""
         recipients = NotificationRecipientSet()
         for subscription in self.subscriptions:
             if subscription.person.isTeam():
@@ -241,7 +262,7 @@ class Branch(SQLBase):
         return recipients
 
     def getScannerData(self):
-        """See IBranch."""
+        """See `IBranch`."""
         cur = cursor()
         cur.execute("""
             SELECT BranchRevision.id, BranchRevision.sequence,
@@ -460,6 +481,14 @@ class BranchSet:
                 BranchSubscriptionDiffSize.NODIFF)
 
         return branch
+
+    def delete(self, branch):
+        """See `IBranchSet`."""
+        if branch.canBeDeleted():
+            Branch.delete(branch.id)
+        else:
+            raise CannotDeleteBranch(
+                "Cannot delete branch: %s" % branch.unique_name)
 
     def getByUrl(self, url, default=None):
         """See `IBranchSet`."""
@@ -846,59 +875,3 @@ class BranchSet:
         return self.getHostedPullQueue().union(
             self.getMirroredPullQueue()).union(
             self.getImportedPullQueue()).orderBy('last_mirror_attempt')
-
-
-class BranchRelationship(SQLBase):
-    """A relationship between branches.
-
-    e.g. "subject is a debianization-branch-of object"
-    """
-
-    _table = 'BranchRelationship'
-    subject = ForeignKey(foreignKey='Branch', dbName='subject', notNull=True),
-    label = IntCol(dbName='label', notNull=True),
-    object = ForeignKey(foreignKey='Branch', dbName='object', notNull=True),
-
-    def _get_src(self):
-        return self.subject
-    def _set_src(self, value):
-        self.subject = value
-
-    def _get_dst(self):
-        return self.object
-    def _set_dst(self, value):
-        self.object = value
-
-    def _get_labelText(self):
-        return BranchRelationships.items[self.label]
-
-    def nameSelector(self, sourcepackage=None, selected=None):
-        # XXX SteveAlexander 2005-04-22: 
-        # Let's get HTML out of the database code.
-        html = '<select name="binarypackagename">\n'
-        if not sourcepackage:
-            # Return nothing for an empty query.
-            binpkgs = []
-        else:
-            binpkgs = self._table.select("""
-                binarypackagename.id = binarypackage.binarypackagename AND
-                binarypackage.build = build.id AND
-                build.sourcepackagerelease = sourcepackagerelease.id AND
-                sourcepackagerelease.sourcepackage = %s"""
-                % sqlvalues(sourcepackage),
-                clauseTables = ['binarypackagename', 'binarypackage',
-                                'build', 'sourcepackagerelease']
-                )
-        for pkg in binpkgs:
-            html = html + '<option value="' + pkg.name + '"'
-            if pkg.name==selected: html = html + ' selected'
-            html = html + '>' + pkg.name + '</option>\n'
-        html = html + '</select>\n'
-        return html
-
-
-class BranchLabel(SQLBase):
-    _table = 'BranchLabel'
-
-    label = ForeignKey(foreignKey='Label', dbName='label', notNull=True)
-    branch = ForeignKey(foreignKey='Branch', dbName='branch', notNull=True)
