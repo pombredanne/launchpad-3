@@ -929,6 +929,7 @@ k            </description>
              default="sftp://%s@bazaar.launchpad.net" />
         <key name="host_key_pair_path" datatype="string" />
         <key name="branches_root" datatype="string" />
+        <key name="banner" datatype="string" />
         <key name="port" datatype="string" default="tcp:5022" />
         <key name="launch" datatype="boolean" required="no" default="no" />
         <key name="spew" datatype="boolean" required="no" default="no" />
@@ -968,6 +969,21 @@ k            </description>
              default="http://ppa.launchpad.dev">
             <description>
                 External base URL for PPAs.
+            </description>
+        </key>
+    </sectiontype>
+
+    <sectiontype name="archivepublisher">
+        <key name="root" datatype="string" required="no"
+            default="/var/tmp/archive/">
+            <description>
+                Base directory for distribution archives.
+            </description>
+        </key>
+        <key name="base_url" datatype="string" required="no"
+            default="http://launchpad.dev">
+            <description>
+                External base URL for distribution archives.
             </description>
         </key>
     </sectiontype>
@@ -1038,6 +1054,8 @@ k            </description>
         <section name="*" type="personalpackagearchive"
             attribute="personalpackagearchive" />
         <section name="*" type="mailman" attribute="mailman" />
+        <section name="*" type="archivepublisher" 
+            attribute="archivepublisher" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file

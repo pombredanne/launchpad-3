@@ -697,6 +697,13 @@ First a couple helpers.
 
 
 First publish the distro carefully, to get everything in place.
+Before this can happen we need to set up some dummy librarian files for
+files that are published in the sample data.
+
+  >>> fillLibrarianFile(66)
+  >>> fillLibrarianFile(67)
+  >>> fillLibrarianFile(68)
+  >>> fillLibrarianFile(70)
 
   >>> (result, stdout, stderr) = run_publish_distro(["-C"])
   >>> result

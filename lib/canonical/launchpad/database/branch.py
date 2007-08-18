@@ -28,7 +28,10 @@ from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchType, BranchVisibilityRule,
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchSet, ILaunchpadCelebrities, NotFoundError)
+    IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal,
+    NotFoundError)
+from canonical.launchpad.database.branchmergeproposal import (
+    BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
@@ -97,6 +100,68 @@ class Branch(SQLBase):
         orderBy='id')
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
+
+    landing_targets = SQLMultipleJoin(
+        'BranchMergeProposal', joinColumn='source_branch')
+
+    @property
+    def landing_candidates(self):
+        """See `IBranch`."""
+        return BranchMergeProposal.selectBy(
+            target_branch=self, date_merged=None)
+
+    @property
+    def dependent_branches(self):
+        """See `IBranch`."""
+        return BranchMergeProposal.selectBy(
+            dependent_branch=self, date_merged=None)
+
+    def addLandingTarget(self, registrant, target_branch,
+                         dependent_branch=None, whiteboard=None,
+                         date_created=None):
+        """See `IBranch`."""
+        if self.product is None:
+            raise InvalidBranchMergeProposal(
+                'Junk branches cannot be used as source branches.')
+        if not IBranch.providedBy(target_branch):
+            raise InvalidBranchMergeProposal(
+                'Target branch must implement IBranch.')
+        if self == target_branch:
+            raise InvalidBranchMergeProposal(
+                'Source and target branches must be different.')
+        if self.product != target_branch.product:
+            raise InvalidBranchMergeProposal(
+                'The source branch and target branch must be branches of the '
+                'same project.')
+        if dependent_branch is not None:
+            if not IBranch.providedBy(dependent_branch):
+                raise InvalidBranchMergeProposal(
+                    'Dependent branch must implement IBranch.')
+            if self.product != dependent_branch.product:
+                raise InvalidBranchMergeProposal(
+                    'The source branch and dependent branch must be branches '
+                    'of the same project.')
+            if self == dependent_branch:
+                raise InvalidBranchMergeProposal(
+                    'Source and dependent branches must be different.')
+            if target_branch == dependent_branch:
+                raise InvalidBranchMergeProposal(
+                    'Target and dependent branches must be different.')
+
+        target = BranchMergeProposal.selectOneBy(
+            source_branch=self, target_branch=target_branch, date_merged=None)
+        if target is not None:
+            raise InvalidBranchMergeProposal(
+                'There is already a branch merge proposal registered for '
+                'branch %s to land on %s'
+                % (self.unique_name, target_branch.unique_name))
+
+        if date_created is None:
+            date_created = UTC_NOW
+        return BranchMergeProposal(
+            registrant=registrant, source_branch=self,
+            target_branch=target_branch, dependent_branch=dependent_branch,
+            whiteboard=whiteboard, date_created=date_created)
 
     mirror_request_time = UtcDateTimeCol(default=None)
 

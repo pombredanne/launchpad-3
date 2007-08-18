@@ -63,12 +63,12 @@ class IArchive(IHasOwner):
         'The size of binaries published in the context archive.')
     estimated_size = Attribute('Estimated archive size.')
 
-    def getPubConfig(distribution):
+    def getPubConfig():
         """Return an overridden Publisher Configuration instance.
 
         The original publisher configuration based on the distribution is
         modified according local context, it basically fixes the archive
-        paths to cope with personal archives publication workflow.
+        paths to cope with non-primary and PPA archives publication workflow.
         """
 
     def getPublishedSources():
