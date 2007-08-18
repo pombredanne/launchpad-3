@@ -764,6 +764,8 @@ COMMENT ON COLUMN SourcePackageRelease.dsc_maintainer_rfc822 IS 'The original ma
 COMMENT ON COLUMN SourcePackageRelease.dsc_standards_version IS 'DSC standards version (such as "3.6.2", "3.5.9", etc) used to build this source.';
 COMMENT ON COLUMN SourcePackageRelease.dsc_format IS 'DSC format version (such as "1.0").';
 COMMENT ON COLUMN SourcePackageRelease.dsc_binaries IS 'DSC binary line, claimed binary-names produce by this source.';
+COMMENT ON COLUMN SourcePackageRelease.copyright IS 'The copyright associated with this sourcepackage. Often in the case of debian packages and will be found after the installation in /usr/share/doc/<binarypackagename>/copyright';
+
 
 -- SecureBinaryPackagePublishingHistory
 COMMENT ON TABLE SecureBinaryPackagePublishingHistory IS 'PackagePublishingHistory: The history of a BinaryPackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
@@ -1050,8 +1052,6 @@ COMMENT ON COLUMN BinaryPackageRelease.replaces IS 'The list of packages this bi
 COMMENT ON COLUMN BinaryPackageRelease.provides IS 'The list of virtual packages (or real packages under some circumstances) which this binarypackage provides.';
 COMMENT ON COLUMN BinaryPackageRelease.essential IS 'Whether or not this binarypackage is essential to the smooth operation of a base system';
 COMMENT ON COLUMN BinaryPackageRelease.installedsize IS 'What the installed size of the binarypackage is. This is represented as a number of kilobytes of storage.';
-COMMENT ON COLUMN BinaryPackageRelease.copyright IS 'The copyright associated with this binarypackage. Often in the case of debian packages this is found in /usr/share/doc/<binarypackagename>/copyright';
-COMMENT ON COLUMN BinaryPackageRelease.licence IS 'The licence that this binarypackage is under.';
 
 
 -- BinaryPackageFile

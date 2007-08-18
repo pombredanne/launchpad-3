@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-series">
   <h2>Releases of <span tal:replace="context/displayname">Ubuntu</span></h2>
   <div class="portletBody portletContent">
 

@@ -55,10 +55,23 @@ def main():
     # Update comments.
     apply_other(con, 'comments.sql')
 
+    invalidate_cached_translation_exports(con)
+
     # Commit changes
     if options.commit:
         log.debug("Committing changes")
         con.commit()
+
+
+def invalidate_cached_translation_exports(con):
+    """Invalidate all valid cached translation exports.
+
+    This is useful to be sure that code fixes for the export code will be
+    applied always, even for files that didn't get translation updates.
+    """
+    log.info("Invalidating translation exports cached")
+    cur = con.cursor()
+    cur.execute("UPDATE POFile SET exportfile=NULL")
 
 
 def applied_patches(con):
@@ -106,7 +119,7 @@ def apply_other(con, script):
     if options.commit and options.partial:
         log.debug("Committing changes")
         con.commit()
-    
+
 
 if __name__ == '__main__':
     parser = OptionParser()
