@@ -36,7 +36,7 @@ the branch:
 
   >>> anon_browser.open(branchurl + '/.bzr/branch/location')
   >>> anon_browser.contents
-  'http://bazaar.launchpad.net/~name12/gnome-terminal/main'
+  'http://bazaar.launchpad.dev/~name12/gnome-terminal/main'
 
 
 Product Series Branch
@@ -48,7 +48,7 @@ reference is provided for product series too:
   >>> anon_browser.open('http://launchpad.dev/'
   ...                   'evolution/trunk/.bzr/branch/location')
   >>> anon_browser.contents
-  'http://bazaar.launchpad.net/~vcs-imports/evolution/main'
+  'http://bazaar.launchpad.dev/~vcs-imports/evolution/main'
 
 
 However, if a product series has no branch associated with it, we get
@@ -71,7 +71,7 @@ development focus:
   >>> anon_browser.open('http://launchpad.dev/'
   ...                   'evolution/.bzr/branch/location')
   >>> anon_browser.contents
-  'http://bazaar.launchpad.net/~vcs-imports/evolution/main'
+  'http://bazaar.launchpad.dev/~vcs-imports/evolution/main'
 
 
 However, if the development focus of a product has no branch
