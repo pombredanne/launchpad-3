@@ -1,5 +1,5 @@
 <tal:subs define="subscriptions context/subscriptions">
-  <div tal:condition="subscriptions" class="portlet">
+  <div class="portlet" id="portlet-subscribers" tal:condition="subscriptions">
     <h2>Subscribers</h2>
     <div class="portletBody">
       <tal:comment replace="nothing">
