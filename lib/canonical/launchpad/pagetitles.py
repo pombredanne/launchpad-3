@@ -251,15 +251,17 @@ bugtarget_filebug_search = bugtarget_filebug_advanced
 
 bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
-bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_choose_affected_product = LaunchbagBugID(
+    'Bug #%d - Record as affecting another project')
 
 bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()
 
-bugtask_requestfix = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_requestfix = LaunchbagBugID(
+    'Bug #%d - Record as affecting another distribution/package')
 
-bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Confirm project')
 
 bugtask_view = BugTaskPageTitle()
 
@@ -556,7 +558,12 @@ launchpadstatisticset_index = 'Launchpad statistics'
 loginservice_email_sent = 'Launchpad Login Service - Email sent'
 
 def loginservice_authorize(context, view):
-    return 'Authenticate to %s' % view.rp_info['title']
+    rpconfig = view.rpconfig
+    if rpconfig is None:
+        displayname = view.openid_request.trust_root
+    else:
+        displayname = rpconfig.displayname
+    return 'Authenticate to %s' % displayname
 
 loginservice_login = 'Launchpad Login Service'
 
