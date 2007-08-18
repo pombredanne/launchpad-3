@@ -35,6 +35,8 @@ class POTMsgSet(SQLBase):
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
 
+    has_cached_msgid_plural = False
+
     @property
     def msgid(self):
         """See IPOTMsgSet."""
@@ -43,6 +45,11 @@ class POTMsgSet(SQLBase):
     @property
     def msgid_plural(self):
         """See IPOTMsgSet."""
+        if self.has_cached_msgid_plural:
+            return self.cached_msgid_plural
+
+        self.cached_msgid_plural = None
+
         plural = POMsgID.selectOne('''
             POMsgIDSighting.potmsgset = %s AND
             POMsgIDSighting.pomsgid = POMsgID.id AND
@@ -51,9 +58,10 @@ class POTMsgSet(SQLBase):
             ''' % sqlvalues(self),
             clauseTables=['POMsgIDSighting'])
         if plural is not None:
-            return plural.msgid
-        else:
-            return None
+            self.cached_msgid_plural = plural.msgid
+
+        self.has_cached_msgid_plural = True
+        return self.cached_msgid_plural
 
     @property
     def singular_text(self):
@@ -221,6 +229,10 @@ class POTMsgSet(SQLBase):
         if pluralForm == TranslationConstants.SINGULAR_FORM:
             # Update direct link to the singular form.
             self.primemsgid_ = messageID
+        elif pluralForm == TranslationConstants.PLURAL_FORM:
+            # We may have had this cached, and it just changed.  Don't bother
+            # updating cached value, just note we need to re-fetch it.
+            self.has_cached_msgid_plural = False
 
         if existing is None:
             return POMsgIDSighting(

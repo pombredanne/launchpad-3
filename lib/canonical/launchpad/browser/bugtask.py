@@ -38,10 +38,8 @@ from operator import attrgetter
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
-    IInputWidget, IDisplayWidget, InputErrors, WidgetsError, ConversionError)
-from zope.app.form.utility import (
-    setUpWidget, setUpWidgets, setUpDisplayWidgets, getWidgetsData,
-    applyWidgetsChanges)
+    IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
+from zope.app.form.utility import setUpWidget, setUpWidgets
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
 from zope.formlib import form
@@ -58,8 +56,9 @@ from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, GetitemNavigation, LaunchpadFormView,
-    LaunchpadView, Navigation, redirection, stepthrough)
+    action, custom_widget, canonical_url, GetitemNavigation,
+    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
+    redirection, stepthrough)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
     IBug, IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
@@ -86,7 +85,6 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
@@ -96,7 +94,7 @@ from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
-    AssigneeDisplayWidget, BugTaskBugWatchWidget,
+    AssigneeDisplayWidget, BugTaskAssigneeWidget, BugTaskBugWatchWidget,
     BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
@@ -689,113 +687,53 @@ class BugTaskPortletView:
             if task.id is not self.context.id]
 
 
-class BugTaskEditView(GeneralFormView):
+class BugTaskEditView(LaunchpadEditFormView):
     """The view class used for the task +editstatus page."""
 
-    _missing_value = object()
+    schema = IBugTask
 
-    def __init__(self, context, request):
-        self.prefix = self._getPrefix(context)
-        GeneralFormView.__init__(self, context, request)
+    # The field names that we use by default. This list will be mutated
+    # depending on the current context and the permissions of the user viewing
+    # the form.
+    default_field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
+                           'product', 'sourcepackagename', 'status',
+                           'statusexplanation']
+    custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
+    custom_widget('bugwatch', BugTaskBugWatchWidget)
+    custom_widget('assignee', BugTaskAssigneeWidget)
 
-    def _getPrefix(self, bugtask):
-        """Return a prefix that can be used for this form.
+    @cachedproperty
+    def field_names(self):
+        field_names = list(self.default_field_names)
 
-        It's constructed by using the names of the bugtask's target, to
-        ensure that it's unique within the context of a bug. This is
-        needed in order to included multiple edit forms on the bug page,
-        while still keeping the field ids unique.
-        """
-        parts = []
-        if IUpstreamBugTask.providedBy(bugtask):
-            parts.append(bugtask.product.name)
-        elif IProductSeriesBugTask.providedBy(bugtask):
-            parts.append(bugtask.productseries.name)
-            parts.append(bugtask.productseries.product.name)
-        elif IDistroBugTask.providedBy(bugtask):
-            parts.append(bugtask.distribution.name)
-            if bugtask.sourcepackagename is not None:
-                parts.append(bugtask.sourcepackagename.name)
-        elif IDistroSeriesBugTask.providedBy(bugtask):
-            parts.append(bugtask.distroseries.distribution.name)
-            parts.append(bugtask.distroseries.name)
-            if bugtask.sourcepackagename is not None:
-                parts.append(bugtask.sourcepackagename.name)
-        else:
-            raise AssertionError("Unknown IBugTask: %r" % bugtask)
-        return '_'.join(parts)
+        # The fields that we present to the users change based upon the
+        # current context and the user's permissions, so we update field_names
+        # with any fields that may need to be added.
+        for field in self.editable_field_names:
+            if field not in field_names:
+                field_names.append(field)
 
-    def _setUpWidgets(self):
-        """Set up a combination of display and edit widgets.
+        return field_names
 
-        Set up the widgets depending on if it's a remote bug task, where
-        only the bug watch should be editable, or if it's a normal
-        bug task, where everything should be editable except for the bug
-        watch.
-        """
-        editable_field_names = self._getEditableFieldNames()
-        read_only_field_names = self._getReadOnlyFieldNames()
-
-        if 'status' in editable_field_names:
-            # Display different options depending on the logged-in
-            # user by creating a vocab at request time.
-            if self.user is None:
-                status_noshow = list(BugTaskStatus.items)
-            else:
-                status_noshow = [BugTaskStatus.UNKNOWN]
-                status_noshow.extend(
-                    status for status in BugTaskStatus.items
-                    if not self.context.canTransitionToStatus(
-                        status, self.user))
-            if self.context.status in status_noshow:
-                # The user has to be able to see the current value.
-                status_noshow.remove(self.context.status)
-            status_vocab_factory = vocab_factory(
-                BugTaskStatus, noshow=status_noshow)
-            status_field = Choice(
-                __name__='status',
-                title=self.schema['status'].title,
-                vocabulary=status_vocab_factory(self.context))
-            setUpWidget(self, 'status', status_field, IInputWidget,
-                        value=self.context.status)
-
+    @cachedproperty
+    def editable_field_names(self):
+        """Return the names of fields the user has permission to edit."""
         if self.context.target_uses_malone:
-            self.bugwatch_widget = None
-        else:
-            self.bugwatch_widget = CustomWidgetFactory(BugTaskBugWatchWidget)
-            if self.context.bugwatch is not None:
-                self.assignee_widget = CustomWidgetFactory(
-                    AssigneeDisplayWidget)
-
-        if 'sourcepackagename' in editable_field_names:
-            self.sourcepackagename_widget = CustomWidgetFactory(
-                BugTaskSourcePackageNameWidget)
-        for db_item_field in ['status', 'importance']:
-            if db_item_field in read_only_field_names:
-                display_widget = CustomWidgetFactory(DBItemDisplayWidget)
-                setattr(self, '%s_widget' % db_item_field, display_widget)
-        setUpWidgets(
-            self, self.schema, IInputWidget, names=editable_field_names,
-            initial=self.initial_values, prefix=self.prefix)
-        setUpDisplayWidgets(
-            self, self.schema, names=read_only_field_names, prefix=self.prefix)
-
-        self.fieldNames = editable_field_names
-
-    def _getEditableFieldNames(self):
-        """Return the names of fields the user has perms to edit."""
-        if self.context.target_uses_malone:
-            # Don't edit self.fieldNames directly, because it's shared by all
+            # Don't edit self.field_names directly, because it's shared by all
             # BugTaskEditView instances.
-            editable_field_names = list(self.fieldNames)
-            editable_field_names.remove('bugwatch')
+            editable_field_names = list(self.default_field_names)
 
-            # XXX: Brad Bollenbach 2006-09-29 bug=63000:
-            # Permission checking doesn't belong here.
-            if not self.userCanEditMilestone():
+            if 'bugwatch' in editable_field_names:
+                editable_field_names.remove('bugwatch')
+
+            # XXX, Brad Bollenbach, 2006-09-29: Permission checking
+            # doesn't belong here! See https://launchpad.net/bugs/63000
+            if (not self.userCanEditMilestone() and
+                'milestone' in editable_field_names):
                 editable_field_names.remove("milestone")
 
-            if not self.userCanEditImportance():
+            if (not self.userCanEditImportance() and
+                'importance' in editable_field_names):
                 editable_field_names.remove("importance")
         else:
             editable_field_names = ['bugwatch']
@@ -809,10 +747,110 @@ class BugTaskEditView(GeneralFormView):
                 editable_field_names += ['sourcepackagename']
             if self.context.bugwatch is None:
                 editable_field_names += ['status', 'assignee']
-                if self.userCanEditImportance():
+                if ('importance' in self.default_field_names
+                    and self.userCanEditImportance()):
                     editable_field_names += ["importance"]
 
         return editable_field_names
+
+    @property
+    def next_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        field_values = {}
+        for name in self.field_names:
+            field_values[name] = getattr(self.context, name)
+
+        return field_values
+
+    @property
+    def prefix(self):
+        """Return a prefix that can be used for this form.
+
+        The prefix is constructed using the name of the bugtask's target so as
+        to ensure that it's unique within the context of a bug. This is needed
+        in order to included multiple edit forms on the bug page, while still
+        keeping the field ids unique.
+        """
+        parts = []
+        if IUpstreamBugTask.providedBy(self.context):
+            parts.append(self.context.product.name)
+
+        elif IProductSeriesBugTask.providedBy(self.context):
+            parts.append(self.context.productseries.name)
+            parts.append(self.context.productseries.product.name)
+
+        elif IDistroBugTask.providedBy(self.context):
+            parts.append(self.context.distribution.name)
+            if self.context.sourcepackagename is not None:
+                parts.append(self.context.sourcepackagename.name)
+
+        elif IDistroSeriesBugTask.providedBy(self.context):
+            parts.append(self.context.distroseries.distribution.name)
+            parts.append(self.context.distroseries.name)
+
+            if self.context.sourcepackagename is not None:
+                parts.append(self.context.sourcepackagename.name)
+
+        else:
+            raise AssertionError("Unknown IBugTask: %r" % self.context)
+        return '_'.join(parts)
+
+    def setUpFields(self):
+        """Sets up the fields for the bug task edit form.
+
+        See `LaunchpadFormView`.
+        """
+        super(BugTaskEditView, self).setUpFields()
+        read_only_field_names = self._getReadOnlyFieldNames()
+
+        # The status field is a special case because we alter the vocabulary
+        # it uses based on the permissions of the user viewing form.
+        if 'status' in self.editable_field_names:
+            if self.user is None:
+                status_noshow = list(BugTaskStatus.items)
+            else:
+                status_noshow = [BugTaskStatus.UNKNOWN]
+                status_noshow.extend(
+                    status for status in BugTaskStatus.items
+                    if not self.context.canTransitionToStatus(
+                        status, self.user))
+
+            if self.context.status in status_noshow:
+                # The user has to be able to see the current value.
+                status_noshow.remove(self.context.status)
+
+            status_vocab_factory = vocab_factory(
+                BugTaskStatus, noshow=status_noshow)
+            status_field = Choice(
+                __name__='status',
+                title=self.schema['status'].title,
+                vocabulary=status_vocab_factory(self.context))
+
+            self.form_fields = self.form_fields.omit('status')
+            self.form_fields += form.Fields(status_field)
+
+        for field in read_only_field_names:
+            self.form_fields[field].for_display = True
+
+        # In cases where the status or importance fields are read only we give
+        # them a custom widget so that they are rendered correctly.
+        for field in ['status', 'importance']:
+            if field in read_only_field_names:
+                self.form_fields[field].custom_widget = CustomWidgetFactory(
+                    DBItemDisplayWidget)
+
+        if self.context.target_uses_malone:
+            self.form_fields = self.form_fields.omit('bugwatch')
+
+        elif (self.context.bugwatch is not None and
+            self.form_fields.get('assignee', False)):
+            self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
+                AssigneeDisplayWidget)
 
     def _getReadOnlyFieldNames(self):
         """Return the names of fields that will be rendered read only."""
@@ -825,22 +863,12 @@ class BugTaskEditView(GeneralFormView):
             if not self.userCanEditImportance():
                 read_only_field_names.append("importance")
         else:
-            editable_field_names = self._getEditableFieldNames()
+            editable_field_names = self.editable_field_names
             read_only_field_names = [
-                field_name for field_name in self.fieldNames
+                field_name for field_name in self.field_names
                 if field_name not in editable_field_names]
 
         return read_only_field_names
-
-    def getErrorMessage(self):
-        if not self.errors:
-            return ""
-        text = ("There %s with the information you entered. "
-                "Please fix %s and try again.")
-        count = len(self.errors)
-        if count == 1:
-            return text % ("is a problem", "it")
-        return text % ("are %d problems" % count, "them")
 
     def userCanEditMilestone(self):
         """Can the user edit the Milestone field?
@@ -850,8 +878,7 @@ class BugTaskEditView(GeneralFormView):
         product_or_distro = self._getProductOrDistro()
 
         return (
-            ("milestone" in self.fieldNames) and (
-                (product_or_distro.bugcontact and
+            ((product_or_distro.bugcontact and
                  self.user and
                  self.user.inTeam(product_or_distro.bugcontact)) or
                 check_permission("launchpad.Edit", product_or_distro)))
@@ -864,8 +891,7 @@ class BugTaskEditView(GeneralFormView):
         product_or_distro = self._getProductOrDistro()
 
         return (
-            ("importance" in self.fieldNames) and (
-                (product_or_distro.bugcontact and
+            ((product_or_distro.bugcontact and
                  self.user and
                  self.user.inTeam(product_or_distro.bugcontact)) or
                 check_permission("launchpad.Edit", product_or_distro)))
@@ -882,17 +908,8 @@ class BugTaskEditView(GeneralFormView):
         else:
             return bugtask.distroseries.distribution
 
-    @property
-    def initial_values(self):
-        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
-        field_values = {}
-        for name in self.fieldNames:
-            field_values[name] = getattr(self.context, name)
-
-        return field_values
-
     def validate(self, data):
-        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
+        """See `LaunchpadFormView`."""
         bugtask = self.context
         if bugtask.distroseries is not None:
             distro = bugtask.distroseries.distribution
@@ -900,35 +917,31 @@ class BugTaskEditView(GeneralFormView):
             distro = bugtask.distribution
         sourcename = bugtask.sourcepackagename
         product = bugtask.product
-        # XXX: kiko 2007-03-26:
-        # This set of try/except blocks is to ensure that the
-        # widget gets the correct error message assigned to it. It's
-        # rather unfortunate that this is done this way but we need to
-        # convert over to a LaunchpadFormView to fix this the right way.
-        # It would also fix, incidentally, the fact that this hook is
-        # only called after all widget errors are solved (which causes
-        # the errors here to be hidden until widget errors are solved).
-        if distro is not None and sourcename != data['sourcepackagename']:
+
+        if distro is not None and sourcename != data.get('sourcepackagename'):
             try:
                 validate_distrotask(
-                    bugtask.bug, distro, data['sourcepackagename'])
+                    bugtask.bug, distro, data.get('sourcepackagename'))
             except LaunchpadValidationError, error:
-                self.sourcepackagename_widget._error = ConversionError(
-                    str(error))
-                raise WidgetsError(error)
-        if (product is not None and
-            'product' in data and product != data['product']):
+                self.setFieldError('sourcepackagename', str(error))
+
+        if (product is not None and 'product' in data and
+            product != data.get('product')):
             try:
-                valid_upstreamtask(bugtask.bug, data['product'])
+                valid_upstreamtask(bugtask.bug, data.get('product'))
             except WidgetsError, errors:
-                self.product_widget._error = ConversionError(str(errors.args[0]))
-                raise errors
+                self.setFieldError('product', errors.args[0])
 
-        return data
+    def updateContextFromData(self, data, context=None):
+        """Updates the context object using the submitted form data.
 
-    def process(self):
-        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
-        bugtask = self.context
+        This method overrides that of LaunchpadEditFormView because of the
+        fairly involved thread of logic behind updating some BugTask
+        attributes, in particular the status, assignee and bugwatch fields.
+        """
+        if context is None:
+            context = self.context
+        bugtask = context
 
         if self.request.form.get('subscribe', False):
             bugtask.bug.subscribe(self.user)
@@ -938,8 +951,9 @@ class BugTaskEditView(GeneralFormView):
         # Save the field names we extract from the form in a separate
         # list, because we modify this list of names later if the
         # bugtask is reassigned to a different product.
-        field_names = list(self.fieldNames)
-        new_values = getWidgetsData(self, self.schema, field_names)
+        field_names = data.keys()
+        new_values = data.copy()
+        data_to_apply = data.copy()
 
         bugtask_before_modification = Snapshot(
             bugtask, providing=providedBy(bugtask))
@@ -953,47 +967,70 @@ class BugTaskEditView(GeneralFormView):
         if (IUpstreamBugTask.providedBy(bugtask) and
             (bugtask.product != new_values.get("product")) and
             'milestone' in field_names):
-            # We *clear* the milestone value if one was already set. We *ignore*
+            # We clear the milestone value if one was already set. We ignore
             # the milestone value if it was currently None, and the user tried
             # to set a milestone value while also changing the product. This
             # allows us to provide slightly clearer feedback messages.
             if bugtask.milestone:
                 milestone_cleared = bugtask.milestone
-            else:
-                if self.milestone_widget.getInputValue() is not None:
-                    milestone_ignored = True
+            elif new_values.get('milestone') is not None:
+                milestone_ignored = True
 
             bugtask.milestone = None
             # Remove the "milestone" field from the list of fields
             # whose changes we want to apply, because we don't want
             # the form machinery to try and set this value back to
             # what it was!
-            field_names.remove("milestone")
+            del data_to_apply["milestone"]
 
         # We special case setting assignee and status, because there's
         # a workflow associated with changes to these fields.
-        field_names_to_apply = list(field_names)
-        if "assignee" in field_names_to_apply:
-            field_names_to_apply.remove("assignee")
-        if "status" in field_names_to_apply:
-            field_names_to_apply.remove("status")
+        if "assignee" in data_to_apply:
+            del data_to_apply["assignee"]
+        if "status" in data_to_apply:
+            del data_to_apply["status"]
 
-        changed = applyWidgetsChanges(
-            self, self.schema, target=bugtask,
-            names=field_names_to_apply)
+        # We grab the comment_on_change field before we update bugtask so as
+        # to avoid problems accessing the field if the user has changed the
+        # product of the BugTask.
+        comment_on_change = self.request.form.get(
+            "%s.comment_on_change" % self.prefix)
 
-        new_status = new_values.pop("status", self._missing_value)
-        new_assignee = new_values.pop("assignee", self._missing_value)
+        changed = form.applyChanges(
+            bugtask, self.form_fields, data_to_apply, self.adapters)
+
+        # Now that we've updated the bugtask we can add messages about
+        # milestone changes, if there were any.
+        if milestone_cleared:
+            self.request.response.addWarningNotification(
+                "The %s milestone setting has been removed because "
+                "you reassigned the bug to %s." % (
+                    milestone_cleared.displayname,
+                    bugtask.bugtargetdisplayname))
+        elif milestone_ignored:
+            self.request.response.addWarningNotification(
+                "The milestone setting was ignored because "
+                "you reassigned the bug to %s." % 
+                bugtask.bugtargetdisplayname)
+
+        if comment_on_change:
+            bugtask.bug.newMessage(
+                owner=getUtility(ILaunchBag).user,
+                subject=bugtask.bug.followup_subject(),
+                content=comment_on_change)
+
         # Set the "changed" flag properly, just in case status and/or assignee
         # happen to be the only values that changed. We explicitly verify that
         # we got a new status and/or assignee, because our test suite doesn't
         # always pass all form values.
-        if ((new_status is not self._missing_value) and
+        new_status = new_values.pop("status", False)
+        new_assignee = new_values.pop("assignee", False)
+        if ((new_status is not False) and
             (bugtask.status != new_status)):
             changed = True
             bugtask.transitionToStatus(new_status, self.user)
 
-        if ((new_assignee is not self._missing_value) and
+        if ((new_assignee is not False) and
             (bugtask.assignee != new_assignee)):
             changed = True
             bugtask.transitionToAssignee(new_assignee)
@@ -1016,35 +1053,15 @@ class BugTaskEditView(GeneralFormView):
                 bugtask.importance = BugTaskImportance.UNKNOWN
                 bugtask.transitionToAssignee(None)
 
-        if milestone_cleared:
-            self.request.response.addWarningNotification(
-                "The %s milestone setting has been removed because "
-                "you reassigned the bug to %s." % (
-                    milestone_cleared.displayname,
-                    bugtask.bugtargetdisplayname))
-        elif milestone_ignored:
-            self.request.response.addWarningNotification(
-                "The milestone setting was ignored because "
-                "you reassigned the bug to %s." % bugtask.bugtargetdisplayname)
-
-        comment_on_change = self.request.form.get(
-            "%s.comment_on_change" % self.prefix)
-
-        # The statusexplanation field is being display as a "Comment on most
-        # recent change" field now, so set it to the current change comment if
-        # there is one, otherwise clear it out.
-        if comment_on_change:
-            # Add the change comment as a comment on the bug.
-            bugtask.bug.newMessage(
-                owner=getUtility(ILaunchBag).user,
-                subject=bugtask.bug.followup_subject(),
-                content=comment_on_change)
-
-            bugtask.statusexplanation = comment_on_change
-        else:
-            bugtask.statusexplanation = ""
-
         if changed:
+            # We only set the statusexplanation field to the value of the
+            # change comment if the BugTask has actually been changed in some
+            # way. Otherwise, we just leave it as a comment on the bug.
+            if comment_on_change:
+                bugtask.statusexplanation = comment_on_change
+            else:
+                bugtask.statusexplanation = ""
+
             notify(
                 SQLObjectModifiedEvent(
                     object=bugtask,
@@ -1053,17 +1070,23 @@ class BugTaskEditView(GeneralFormView):
 
         if bugtask.sourcepackagename is not None:
             real_package_name = bugtask.sourcepackagename.name
+
+            # We get entered_package_name directly from the form here, since
+            # validating the sourcepackagename field mutates its value in to
+            # the one already in real_package_name, which makes our comparison
+            # of the two below useless.
             entered_package_name = self.request.form.get(
-                self.sourcepackagename_widget.name)
+                self.widgets['sourcepackagename'].name)
+
             if real_package_name != entered_package_name:
                 # The user entered a binary package name which got
                 # mapped to a source package.
                 self.request.response.addNotification(
                     "'%(entered_package)s' is a binary package. This bug has"
                     " been assigned to its source package '%(real_package)s'"
-                    " instead.",
-                    entered_package=entered_package_name,
-                    real_package=real_package_name)
+                    " instead." %
+                    {'entered_package': entered_package_name,
+                     'real_package': real_package_name})
 
         if (bugtask_before_modification.sourcepackagename !=
             bugtask.sourcepackagename):
@@ -1073,9 +1096,9 @@ class BugTaskEditView(GeneralFormView):
                 "The bug contacts for %s have been subscribed to this bug." % (
                     bugtask.bugtargetdisplayname))
 
-    def nextURL(self):
-        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
-        return canonical_url(self.context)
+    @action('Save Changes', name='save')
+    def save_action(self, action, data):
+        self.updateContextFromData(data)
 
 
 class BugTaskStatusView(LaunchpadView):
@@ -1120,7 +1143,7 @@ class BugTaskListingView(LaunchpadView):
         bugtask = self.context
 
         if INullBugTask.providedBy(bugtask):
-            return u"Not reported in %s" % bugtask.targetname
+            return u"Not reported in %s" % bugtask.bugtargetname
 
         assignee = bugtask.assignee
         status = bugtask.status
@@ -1653,6 +1676,10 @@ class BugTaskSearchListingView(LaunchpadFormView):
         """Should the assignee widget be shown on the advanced search page?"""
         return True
 
+    def shouldShowCommenterWidget(self):
+        """Should the commenter widget be shown on the advanced search page?"""
+        return True
+
     def shouldShowComponentWidget(self):
         """Should the component widget be shown on the advanced search page?"""
         context = self.context
@@ -1661,6 +1688,10 @@ class BugTaskSearchListingView(LaunchpadFormView):
              context.currentseries is not None) or
             IDistroSeries.providedBy(context) or
             ISourcePackage.providedBy(context))
+
+    def shouldShowContactWidget(self):
+        """Should the contact widget be shown on the advanced search page?"""
+        return True
 
     def shouldShowNoPackageWidget(self):
         """Should the widget to filter on bugs with no package be shown?
@@ -1684,6 +1715,10 @@ class BugTaskSearchListingView(LaunchpadFormView):
             IDistroSeries.providedBy(self.context) or
             IProduct.providedBy(self.context) and self.context.serieses or
             IProductSeries.providedBy(self.context))
+
+    def shouldShowSubscriberWidget(self):
+        """Should the subscriber widget be shown on the advanced search page?"""
+        return True
 
     def shouldShowUpstreamStatusBox(self):
         """Should the upstream status filtering widgets be shown?"""
@@ -1788,7 +1823,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
             "There's no person with the name or email address '%s'.")
 
         for name in ('assignee', 'bug_reporter', 'bug_contact',
-                     'bug_commenter'):
+                     'bug_commenter', 'subscriber'):
             if self.getWidgetError(name):
                 self.setFieldError(
                     name, error_message %
@@ -1856,7 +1891,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
         params.resolved_upstream = True
         fixed_elsewhere = self.context.searchTasks(params)
         search_url = (
-            "%s/+bugs?field.status_upstream=resolved_upstream" % 
+            "%s/+bugs?field.status_upstream=resolved_upstream" %
                 canonical_url(self.context))
         return dict(count=fixed_elsewhere.count(), url=search_url)
 
@@ -2120,7 +2155,8 @@ class BugTaskTableRowView(LaunchpadView):
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     """Search all bug reports."""
 
-    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
     schema = IFrontPageBugTaskSearch
     custom_widget('scope', ProjectScopeWidget)
 

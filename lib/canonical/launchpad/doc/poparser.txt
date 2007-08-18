@@ -39,6 +39,32 @@ And a msgctxt followed by msgctxt is caught as well.
   ...
   TranslationFormatSyntaxError:...
 
+When a string is followed by non-string, non-space data, it is caught
+as an error.
+
+  >>> parser = POParser()
+  >>> parser.write('msgid ""\nmsgstr "something"\n'
+  ...              '"foo"  whatever\n')
+  Traceback (most recent call last):
+  ...
+  TranslationFormatSyntaxError:...extra content found after string...
+
+Unrecognized escape sequences are caught as well.
+
+  >>> parser = POParser()
+  >>> parser.write('msgid "\!"\nmsgstr ""\n')
+  Traceback (most recent call last):
+  ...
+  TranslationFormatSyntaxError:...unknown escape sequence...
+
+Unclosed strings (missing closing quotes) are caught.
+
+  >>> parser = POParser()
+  >>> parser.write('msgid ""\nmsgstr "\n')
+  Traceback (most recent call last):
+  ...
+  TranslationFormatSyntaxError:...string not terminated...
+
 == POHeader ==
 
 A POHeader is a representation of a special message that all .po files have.
