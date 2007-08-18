@@ -11,3 +11,43 @@
     </tal:not-junk>
   </div>
 </metal:branch-link>
+
+<metal:landing-candidate define-macro="landing-candidate">
+
+      <tal:target replace="structure mergeproposal/source_branch/fmt:link" />
+      <tal:show-registrant condition="mergeproposal/show_registrant">
+        registered by
+        <tal:registrant replace="structure mergeproposal/registrant/fmt:link"/>
+      </tal:show-registrant>
+      <a tal:condition="mergeproposal/required:launchpad.Edit"
+         tal:attributes="href mergeproposal/fmt:url">
+        <img alt="" src="/@@/edit"/>
+      </a>
+
+      <div style="padding-left: 3em">
+        <div tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
+          The whiteboard.
+        </div>
+        <div tal:condition="mergeproposal/date_merged" class="branchstatusMERGED">
+          Merged
+          <tal:merged replace="mergeproposal/date_merged/fmt:approximatedate">
+            2007-06-04
+          </tal:merged>
+          <tal:have-revno condition="mergeproposal/merged_revno">
+            as revision <tal:revno replace="mergeproposal/merged_revno"/>
+          </tal:have-revno>
+        </div>
+        <div tal:repeat="bug mergeproposal/source_branch/related_bugs">
+          <img src="/@@/bug" alt="" />
+          <a tal:attributes="href bug/fmt:url"
+             tal:content="bug/title" />
+        </div>
+        <div tal:repeat="spec_link mergeproposal/source_branch/spec_links">
+          <img src="/@@/blueprint"
+               tal:replace="structure spec_link/specification/image:icon" />
+          <a tal:attributes="href spec_link/specification/fmt:url"
+             tal:content="spec_link/specification/title" />
+        </div>
+      </div>
+
+</metal:landing-candidate>
