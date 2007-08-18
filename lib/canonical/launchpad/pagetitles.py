@@ -558,7 +558,12 @@ launchpadstatisticset_index = 'Launchpad statistics'
 loginservice_email_sent = 'Launchpad Login Service - Email sent'
 
 def loginservice_authorize(context, view):
-    return 'Authenticate to %s' % view.rp_info['title']
+    rpconfig = view.rpconfig
+    if rpconfig is None:
+        displayname = view.openid_request.trust_root
+    else:
+        displayname = rpconfig.displayname
+    return 'Authenticate to %s' % displayname
 
 loginservice_login = 'Launchpad Login Service'
 
