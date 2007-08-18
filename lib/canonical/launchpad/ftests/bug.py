@@ -57,8 +57,10 @@ def print_bugs_list(content, list_id):
     becomes more elaborate then this function will be the place to
     cope with it.
     """
-    bugs_list = find_tag_by_id(content, list_id)
-    print extract_text(bugs_list)
+    bugs_list = find_tag_by_id(content, list_id).findAll(
+        None, {'class': 'similar-bug'})
+    for node in bugs_list:
+        print extract_text(node)
 
 
 def print_bugtasks(text):

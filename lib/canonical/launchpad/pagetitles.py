@@ -149,6 +149,13 @@ def branch_index(context, view):
     else:
         return smartquote('"%s" branch in Launchpad') % (context.displayname)
 
+branch_landing_candidates = ContextDisplayName(smartquote(
+    'Landing candidates for "%s"'))
+
+branchmergeproposal_edit = 'Edit branch merge proposal'
+
+branch_register_merge_proposal = 'Register branch merge proposal'
+
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
 
@@ -560,7 +567,12 @@ launchpadstatisticset_index = 'Launchpad statistics'
 loginservice_email_sent = 'Launchpad Login Service - Email sent'
 
 def loginservice_authorize(context, view):
-    return 'Authenticate to %s' % view.rp_info['title']
+    rpconfig = view.rpconfig
+    if rpconfig is None:
+        displayname = view.openid_request.trust_root
+    else:
+        displayname = rpconfig.displayname
+    return 'Authenticate to %s' % displayname
 
 loginservice_login = 'Launchpad Login Service'
 

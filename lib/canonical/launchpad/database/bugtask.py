@@ -1137,10 +1137,11 @@ class BugTaskSet:
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
             SourcePackagePublishingHistory.distrorelease = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.component IN %s AND
             SourcePackagePublishingHistory.status = %s
-            """ % sqlvalues(distroseries, distroseries.main_archive,
+            """ % sqlvalues(distroseries,
+                            distroseries.distribution.all_distro_archive_ids,
                             component_ids,
                             PackagePublishingStatus.PUBLISHED)])
 
