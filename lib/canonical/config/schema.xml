@@ -927,6 +927,7 @@ k            </description>
              default="sftp://%s@bazaar.launchpad.net" />
         <key name="host_key_pair_path" datatype="string" />
         <key name="branches_root" datatype="string" />
+        <key name="banner" datatype="string" />
         <key name="port" datatype="string" default="tcp:5022" />
         <key name="launch" datatype="boolean" required="no" default="no" />
         <key name="spew" datatype="boolean" required="no" default="no" />
