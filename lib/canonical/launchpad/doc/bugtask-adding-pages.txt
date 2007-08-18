@@ -206,12 +206,6 @@ be created:
     Evolution
     Mozilla Firefox
 
-The button includes the product name.
-
-    >>> for action in add_task_view.actions:
-    ...     print action.label
-    Indicate bug in Evolution
-
 This worked without any problems since Evolution does use Malone as its
 offical bug tracker.
 
