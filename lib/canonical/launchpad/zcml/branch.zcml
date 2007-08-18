@@ -58,6 +58,9 @@
         <browser:page
             name="+associations"
             template="../templates/branch-associations.pt" />
+        <browser:page
+            name="+landing-candidates"
+            template="../templates/branch-landing-candidates.pt" />
     </browser:pages>
 
   <browser:pages
@@ -140,6 +143,14 @@
       facet="branches"
       permission="launchpad.AnyPerson"
       template="../templates/branch-subscription.pt" />
+
+  <browser:page
+      name="+register-merge"
+      for="canonical.launchpad.interfaces.IBranch"
+      class="canonical.launchpad.browser.RegisterBranchMergeProposalView"
+      facet="branches"
+      permission="launchpad.AnyPerson"
+      template="../templates/branch-register-merge-proposal.pt" />
 
   <browser:page
     name="+addsubscriber"

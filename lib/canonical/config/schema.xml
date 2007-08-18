@@ -971,6 +971,21 @@ k            </description>
         </key>
     </sectiontype>
 
+    <sectiontype name="archivepublisher">
+        <key name="root" datatype="string" required="no"
+            default="/var/tmp/archive/">
+            <description>
+                Base directory for distribution archives.
+            </description>
+        </key>
+        <key name="base_url" datatype="string" required="no"
+            default="http://launchpad.dev">
+            <description>
+                External base URL for distribution archives.
+            </description>
+        </key>
+    </sectiontype>
+
     <sectiontype name="mailman-build"
                  prefix="canonical.launchpad.mailman.config">
         <key name="build"           datatype="boolean"      default="false" />
@@ -1037,6 +1052,8 @@ k            </description>
         <section name="*" type="personalpackagearchive"
             attribute="personalpackagearchive" />
         <section name="*" type="mailman" attribute="mailman" />
+        <section name="*" type="archivepublisher" 
+            attribute="archivepublisher" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file
