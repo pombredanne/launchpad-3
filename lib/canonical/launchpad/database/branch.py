@@ -301,6 +301,8 @@ class Branch(SQLBase):
 
     def mirrorComplete(self, last_revision_id):
         """See `IBranch`."""
+        assert self.last_mirror_attempt != None, (
+            "startMirroring must be called before mirrorComplete.")
         self.last_mirrored = self.last_mirror_attempt
         self.mirror_failures = 0
         self.mirror_status_message = None
