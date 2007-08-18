@@ -303,13 +303,14 @@ class DatabaseLayer(BaseLayer):
         # Ensure that the database is connectable. Because we might have
         # just created it, keep trying for a few seconds incase PostgreSQL
         # is taking its time getting its house in order.
-        for count in range(0,10):
+        attempts = 60
+        for count in range(0, attempts):
             try:
                 cls.connect().close()
             except psycopg.Error:
-                if count == 9:
+                if count == attempts - 1:
                     raise
-                time.sleep(1)
+                time.sleep(0.5)
             else:
                 break
 

@@ -61,13 +61,15 @@
     <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/lpmenu.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
+    <script type="text/javascript"
+        tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
     <script type="text/javascript">
       function onLoadFunction() {
         lpmenu.initialize(['menuroot'], '/', 'menupreload',
                            [], '1.3em', 16, true);
         sortables_init();
         initHelpPanel();
-        initPortlets();
+        PortletManager.initialize(cookie_scope);
       }
       registerLaunchpadFunction(onLoadFunction);
     </script>

@@ -1,4 +1,8 @@
-<div class="portlet" tal:condition="view/getLatestBranches">
+<div
+  tal:condition="view/getLatestBranches"
+  class="portlet"
+  id="portlet-latest-branches"
+>
   <h2>Latest branches</h2>
   <div class="portletBody portletContent">
     <ul class="branch">

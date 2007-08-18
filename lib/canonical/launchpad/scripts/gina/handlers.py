@@ -17,8 +17,6 @@ __all__ = [
 
 import os
 import re
-import tempfile
-import shutil
 
 from sqlobject import SQLObjectNotFound, SQLObjectMoreThanOneResultError
 
@@ -38,8 +36,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina.library import getLibraryAlias
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
-    urgencymap, prioritymap, get_dsc_path, licence_cache, read_dsc,
-    PoolFileNotFound)
+    urgencymap, prioritymap, get_dsc_path, PoolFileNotFound)
 
 from canonical.launchpad.database import (Distribution, DistroSeries,
     DistroArchSeries,Processor, SourcePackageName, SourcePackageRelease,
@@ -556,28 +553,29 @@ class SourcePackageHandler:
         maintainer_line = "%s <%s>" % (displayname, emailaddress)
         name = self.ensureSourcePackageName(src.package)
         spr = SourcePackageRelease(
-                                   section=sectionID,
-                                   creator=maintainer.id,
-                                   component=componentID,
-                                   sourcepackagename=name.id,
-                                   maintainer=maintainer.id,
-                                   dscsigningkey=key,
-                                   manifest=None,
-                                   urgency=urgencymap[src.urgency],
-                                   dateuploaded=src.date_uploaded,
-                                   dsc=src.dsc,
-                                   version=src.version,
-                                   changelog=src.changelog,
-                                   builddepends=src.build_depends,
-                                   builddependsindep=src.build_depends_indep,
-                                   architecturehintlist=src.architecture,
-                                   format=SourcePackageFormat.DPKG,
-                                   uploaddistroseries=distroseries.id,
-                                   dsc_format=src.format,
-                                   dsc_maintainer_rfc822=maintainer_line,
-                                   dsc_standards_version=src.standards_version,
-                                   dsc_binaries=" ".join(src.binaries),
-                                   upload_archive=distroseries.main_archive)
+            section=sectionID,
+            creator=maintainer.id,
+            component=componentID,
+            sourcepackagename=name.id,
+            maintainer=maintainer.id,
+            dscsigningkey=key,
+            manifest=None,
+            urgency=urgencymap[src.urgency],
+            dateuploaded=src.date_uploaded,
+            dsc=src.dsc,
+            copyright=src.copyright,
+            version=src.version,
+            changelog=src.changelog,
+            builddepends=src.build_depends,
+            builddependsindep=src.build_depends_indep,
+            architecturehintlist=src.architecture,
+            format=SourcePackageFormat.DPKG,
+            uploaddistroseries=distroseries.id,
+            dsc_format=src.format,
+            dsc_maintainer_rfc822=maintainer_line,
+            dsc_standards_version=src.standards_version,
+            dsc_binaries=" ".join(src.binaries),
+            upload_archive=distroseries.main_archive)
         log.info('Source Package Release %s (%s) created' %
                  (name.name, src.version))
 
@@ -710,43 +708,6 @@ class BinaryPackageHandler:
                      distroseries.distribution.name))
         return bpr
 
-    def readLicence(self, bin_name, src_name, version, component):
-        licence = self.readLicenceCached(bin_name, src_name, version)
-        if licence:
-            return licence
-
-        # XXX kiko 2005-11-03: Untested
-        # Couldn't find the licence in the cache; let's trigger a
-        # read_dsc to see if we can find it.
-        try:
-            tempdir = tempfile.mkdtemp()
-            cwd = os.getcwd()
-            os.chdir(tempdir)
-            try:
-                # Read the DSC and ensure the licence_cache is set
-                read_dsc(src_name, version, component, self.archive_root)
-            finally:
-                os.chdir(cwd)
-            shutil.rmtree(tempdir)
-        except PoolFileNotFound:
-            log.warn("While groping for a copyright file for %s, could "
-                     "not even find the source package for %s (%s) in "
-                     "the archive. Dropped copyright." %
-                     (bin_name, src_name, version))
-            licence = None
-        else:
-            licence = self.readLicenceCached(bin_name, src_name, version)
-
-        return licence
-
-    def readLicenceCached(self, bin_name, src_name, version):
-        licence = licence_cache.get((src_name, version, bin_name), None)
-        if licence is None:
-            # No binarypackage-specific licence, so let's get the
-            # main one (if it's there)
-            licence = licence_cache.get((src_name, version, None), None)
-        return licence
-
     def createBinaryPackage(self, bin, srcpkg, distroarchinfo, archtag):
         """Create a new binarypackage."""
         fdir, fname = os.path.split(bin.filename)
@@ -759,10 +720,6 @@ class BinaryPackageHandler:
 
         bin_name = getUtility(IBinaryPackageNameSet).ensure(bin.package)
         build = self.ensureBuild(bin, srcpkg, distroarchinfo, archtag)
-
-        licence = self.readLicence(bin.package,
-                                   srcpkg.sourcepackagename.name,
-                                   srcpkg.version, srcpkg.component.name)
 
         # Create the binarypackage entry on lp db.
         binpkg = BinaryPackageRelease(
@@ -784,9 +741,7 @@ class BinaryPackageHandler:
             provides = bin.provides,
             essential = bin.essential,
             installedsize = bin.installed_size,
-            licence = licence,
             architecturespecific = architecturespecific,
-            copyright = None,
             )
         log.info('Binary Package Release %s (%s) created' %
                  (bin_name.name, bin.version))
