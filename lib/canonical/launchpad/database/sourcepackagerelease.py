@@ -30,13 +30,14 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
-    ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
-    BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
+    BugTaskSearchParams, ILaunchpadCelebrities, ISourcePackageRelease,
+    ITranslationImportQueue, UNRESOLVED_BUGTASK_STATUSES
     )
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
+from canonical.launchpad.scripts.queue import QueueActionError
 
 
 class SourcePackageRelease(SQLBase):
@@ -164,7 +165,7 @@ class SourcePackageRelease(SQLBase):
             # imports us, so avoid circular import
             from canonical.launchpad.database.sourcepackage import \
                  SourcePackage
-            # Only process main archive to skip PPA publishings.
+            # Only process main archives to skip PPA publishings.
             if publishing.archive.purpose == ArchivePurpose.PPA:
                 continue
             sp = SourcePackage(self.sourcepackagename,
@@ -225,12 +226,14 @@ class SourcePackageRelease(SQLBase):
             BinaryPackagePublishingHistory.distroarchrelease =
                DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %d AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                BinaryPackageRelease.id AND
             BinaryPackageRelease.build = Build.id AND
             Build.sourcepackagerelease = %d
-            """ % (distroseries, distroseries.main_archive, self),
+            """ % (distroseries,
+                   distroseries.distribution.all_distro_archive_ids,
+                   self),
             clauseTables=clauseTables))
 
         return archSerieses
@@ -308,6 +311,14 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         if component is not None:
             self.component = component
+            # See if the new component requires a new archive:
+            distribution = self.uploaddistroseries.distribution
+            new_archive = distribution.getArchiveByComponent(component.name)
+            if new_archive is not None:
+                self.upload_archive = new_archive
+            else:
+                raise QueueActionError(
+                    "New component '%s' requires a non-existent archive.")
         if section is not None:
             self.section = section
         if urgency is not None:

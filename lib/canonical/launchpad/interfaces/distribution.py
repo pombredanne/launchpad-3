@@ -14,9 +14,6 @@ from zope.schema import (
 from zope.interface import (
     Interface, Attribute)
 
-from canonical.launchpad.interfaces.milestone import IMilestone
-
-
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Title, Summary, Description)
@@ -195,6 +192,21 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     def all_distro_archives():
         """Return all non-PPA archives."""
 
+    def all_distro_archive_ids():
+        """Return the IDs of all the non-PPA archives.
+
+        This method is useful for calls to sqlvalues since it doesn't work
+        with a SelectResults object.
+        """
+
+    def archiveIdList(archive=None):
+        """Return a list of archive IDs suitable for sqlvalues() or quote().
+
+        If the archive param is supplied, just its ID will be returned in
+        a list of one item.  If it is not supplied, return a list of
+        all the IDs for all the archives for the distribution.
+        """
+
     def __getitem__(name):
         """Returns a DistroSeries that matches name, or raises and
         exception if none exists."""
@@ -314,7 +326,14 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     def getPendingPublicationPPAs(distribution=None):
         """Return only pending publication PPAs in this distribution."""
 
+    def getArchiveByComponent(component_name):
+        """Return the archive most appropriate for the component name.
 
+        Where different components may imply a different archive (e.g.
+        commercial), this method will return the archive for that component.
+
+        If the component_name supplied is unknown, None is returned.
+        """
 
 
 class IDistributionSet(Interface):
