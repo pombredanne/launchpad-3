@@ -26,10 +26,12 @@
     </label>
   </th>
   <td class="icon left right">
-    <img tal:condition="context/potmsgset/is_translation_credit" src="/@@/locked"
-        alt="This message is handled automatically by Launchpad."
-        title="This message is handled automatically by Launchpad." />
-
+    <img
+      tal:condition="context/potmsgset/is_translation_credit"
+      src="/@@/read-only"
+      alt="This message is handled automatically by Launchpad."
+      title="This message is handled automatically by Launchpad."
+    />
     <tal:form-writeable condition="view/form_is_writeable">
       <a href=""
          tal:condition="not:context/potmsgset/is_translation_credit"
