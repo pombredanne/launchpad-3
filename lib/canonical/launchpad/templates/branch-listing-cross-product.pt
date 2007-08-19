@@ -1,0 +1,16 @@
+<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="bazaar">
+  <body>
+
+<h1 metal:fill-slot="heading">Code in branches</h1>
+
+<div metal:fill-slot="main"
+     tal:define="branches view/branches">
+
+  <h2><tal:heading replace="view/page_title"/></h2>
+
+  <tal:branchlisting content="structure branches/@@+branch-listing" />
+
+</div>
+
+  </body>
+</html>

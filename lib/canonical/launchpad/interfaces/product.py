@@ -341,8 +341,18 @@ class IProductSet(Interface):
         Return the default value if there is no such product.
         """
 
-    def getProductsWithBranches():
-        """Return an iterator over all products that have branches."""
+    def getProductsWithBranches(num_products=None):
+        """Return an iterator over all products that have branches.
+
+        If num_products is not None, then the first `num_products` are
+        returned.
+        """
+
+    def getProductsWithUserDevelopmentBranches():
+        """Return products that have a user branch for the development series.
+
+        A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
+        """
 
     def getProductsWithUserDevelopmentBranches():
         """Return products that have a user branch for the development series.
