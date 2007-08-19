@@ -32,6 +32,7 @@ class XpiMessage:
     def __init__(self):
         self.msgid = None
         self.msgid_plural = None
+        self.msgctxt = None
         self.translations = []
         self.comment = None
         self.source_comment = None
