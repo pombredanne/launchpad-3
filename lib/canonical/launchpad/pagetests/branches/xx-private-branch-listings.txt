@@ -232,8 +232,8 @@ Now link to a private branch.
     >>> branch_table = find_tag_by_id(
     ...     landscape_dev_browser.contents, 'bug_branch_details')
     >>> print extract_text(branch_table)
-    Related Branch    Developer             Revision Hint
-    Fix In Progress   Landscape Developers
+    Related branch    Developer             Status for this bug
+    Landscape trunk   Landscape Developers  Fix In Progress
 
 Since the link is to a private branch, the entire table is not
 visible to a user that isn't able to see the branch itself.

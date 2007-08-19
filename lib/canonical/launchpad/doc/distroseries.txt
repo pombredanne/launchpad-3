@@ -1145,8 +1145,9 @@ Each element is an IDistroSeriesSourcePackageRelease instance:
 Also, empty results (caused obviously by lack of sample data or very
 earlier development state of a distroseries) are possible:
 
-  >>> breezy_autotest = ubuntu['breezy-autotest']
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+  >>> breezy_autotest = ubuntutest['breezy-autotest']
   >>> latest_uploads = breezy_autotest.getLatestUploads()
 
-  >>> len(latest_uploads) == 0
-  True
+  >>> len(latest_uploads)
+  0

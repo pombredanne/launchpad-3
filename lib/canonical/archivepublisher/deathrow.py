@@ -4,8 +4,12 @@ Processes removals of packages that are scheduled for deletion.
 """
 
 import datetime
+import logging
 import pytz
 import os
+
+from canonical.archivepublisher.config import LucilleConfigError
+from canonical.archivepublisher.diskpool import DiskPool
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
@@ -16,10 +20,47 @@ from canonical.launchpad.interfaces import NotInPool
 from canonical.lp.dbschema import PackagePublishingStatus
 
 
+def getDeathRow(archive, log, pool_root_override):
+    """Return a Deathrow object for the archive supplied.
+
+    :param archive: Use the publisher config for this archive to derive the
+                    DeathRow object.
+    :param log: Use this logger for script debug logging.
+    :param pool_root_override: Use this pool root for the archive instead of
+                               its publisher configured value.
+    """
+    log.debug("Grab Lucille config.")
+    try:
+        pubconf = archive.getPubConfig()
+    except LucilleConfigError, info:
+        log.error(info)
+        raise
+
+    if pool_root_override is not None:
+        pool_root = pool_root_override
+    else:
+        pool_root = pubconf.poolroot
+
+    log.debug("Preparing on-disk pool representation.")
+    dp = DiskPool(pool_root, pubconf.temproot,
+        logging.getLogger("DiskPool"))
+    # Set the diskpool's log level to INFO to suppress debug output
+    dp.logger.setLevel(20)
+
+    log.debug("Preparing death row.")
+    return DeathRow(archive, dp, log)
+
+
 class DeathRow:
-    """A Distribution Archive Removal Processor."""
-    def __init__(self, distribution, diskpool, logger):
-        self.distribution = distribution
+    """A Distribution Archive Removal Processor.
+
+    DeathRow will remove archive files from disk if they are marked for
+    removal in the publisher tables, and if they are no longer referenced
+    by other packages.
+    """
+    def __init__(self, archive, diskpool, logger):
+        self.archive = archive
+        self.distribution = archive.distribution
         self.diskpool = diskpool
         self._removeFile = diskpool.removeFile
         self.logger = logger
@@ -56,7 +97,8 @@ class DeathRow:
                  SourcePackageFilePublishing.sourcepackagepublishing AND
             SourcePackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
-                            self.distribution, self.distribution.main_archive,
+                            self.distribution,
+                            self.archive,
                             UTC_NOW),
             clauseTables=['SourcePackagePublishingHistory'],
             orderBy="id")
@@ -69,7 +111,8 @@ class DeathRow:
                  BinaryPackageFilePublishing.binarypackagepublishing AND
             BinaryPackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
-                            self.distribution, self.distribution.main_archive,
+                            self.distribution,
+                            self.archive,
                             UTC_NOW),
             clauseTables=['BinaryPackagePublishingHistory'],
             orderBy="id")
