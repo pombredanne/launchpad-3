@@ -10,7 +10,8 @@ the Subscribe someone else page.
     >>> admin_browser.getControl('Change').click()
 
     >>> admin_browser.open('http://bugs.launchpad.dev/jokosher/+bug/12/+secrecy')
-    >>> admin_browser.getControl('Keep bug confidential').selected = True
+    >>> admin_browser.getControl(
+    ...     'This bug report should be private').selected = True
     >>> admin_browser.getControl('Change').click()
     
     >>> admin_browser.open('http://bugs.launchpad.dev/jokosher/+bug/12/+choose-affected-product')
@@ -19,7 +20,7 @@ the Subscribe someone else page.
 
     >>> print admin_browser.contents
     <!DOCTYPE...
-    ...This is a confidential bug...Foo Bar...won't be notified...
+    ...This is a private bug...Foo Bar...won&rsquo;t be notified...
 
     >>> admin_browser.getLink('additional contacts').click()
     >>> 'Page not found' not in admin_browser.contents
