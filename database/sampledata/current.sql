@@ -594,6 +594,7 @@ INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) 
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (20, 37, 1, 8);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (21, 56, 1, 6);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (22, 40, 1, 7);
+INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (25, 70, 1, 9);
 
 
 ALTER TABLE binarypackagefile ENABLE TRIGGER ALL;
@@ -607,6 +608,7 @@ INSERT INTO binarypackagename (id, name) VALUES (13, 'pmount');
 INSERT INTO binarypackagename (id, name) VALUES (14, 'linux-2.6.12');
 INSERT INTO binarypackagename (id, name) VALUES (15, 'at');
 INSERT INTO binarypackagename (id, name) VALUES (16, 'cdrkit');
+INSERT INTO binarypackagename (id, name) VALUES (17, 'commercialpackage');
 
 
 ALTER TABLE binarypackagename ENABLE TRIGGER ALL;
@@ -626,6 +628,7 @@ INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, descr
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated) VALUES (22, 8, '1.0', 'ff from iceweasel', 'iceweasel huh ?', 23, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, true, NULL, '2006-04-11 12:50:10.878712');
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated) VALUES (23, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 27, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2007-07-24 17:50:10.878712');
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated) VALUES (24, 8, '1.0', 'ff from iceweasel', 'iceweasel huh ?', 28, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, true, NULL, '2006-08-10 12:50:10.878712');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated) VALUES (25, 17, '1.0-1', 'Stuff for testing', ' This package is simply used for testing soyuz', 29, 1, 5, 7, 20, '', '', '', '', '', '', '', false, 8, true, NULL, '2007-08-09 21:54:18.456616');
 
 
 ALTER TABLE binarypackagerelease ENABLE TRIGGER ALL;
@@ -1114,6 +1117,7 @@ INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, da
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (26, '2007-07-08 00:00:00', 1, 1, 2, '2007-07-08 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 9);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (27, '2007-07-24 00:00:00', 1, 1, 1, '2007-07-24 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 9);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (28, '2007-08-10 00:00:00', 3, 12, 1, '2007-08-10 00:00:13', '00:00:13', 1, 1, 14, 0, NULL, 9);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (29, '2007-08-09 21:54:18.553132', 1, 8, 1, '2007-08-09 23:59:59', NULL, NULL, NULL, 36, 0, NULL, 12);
 
 
 ALTER TABLE build ENABLE TRIGGER ALL;
@@ -1173,8 +1177,8 @@ ALTER TABLE calendarsubscription ENABLE TRIGGER ALL;
 
 ALTER TABLE codeimport DISABLE TRIGGER ALL;
 
-INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, svn_branch_url, cvs_root, cvs_module, review_status, date_last_successful) VALUES (1, 75, '2007-06-25 20:04:04.226605', 52, 2, 'http://svn.example.org/svnroot/gnome-terminal/trunk', NULL, NULL, 20, NULL);
-INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, svn_branch_url, cvs_root, cvs_module, review_status, date_last_successful) VALUES (2, 76, '2007-06-25 20:04:04.379285', 52, 1, NULL, ':pserver:anonymous@anoncvs.example.org:/cvs/gnome', 'evolution', 1, NULL);
+INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, svn_branch_url, cvs_root, cvs_module, review_status, date_last_successful, assignee, update_interval, "owner") VALUES (1, 75, '2007-06-25 20:04:04.226605', 52, 2, 'http://svn.example.org/svnroot/gnome-terminal/trunk', NULL, NULL, 20, NULL, NULL, NULL, 52);
+INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, svn_branch_url, cvs_root, cvs_module, review_status, date_last_successful, assignee, update_interval, "owner") VALUES (2, 76, '2007-06-25 20:04:04.379285', 52, 1, NULL, ':pserver:anonymous@anoncvs.example.org:/cvs/gnome', 'evolution', 1, NULL, NULL, NULL, 52);
 
 
 ALTER TABLE codeimport ENABLE TRIGGER ALL;
@@ -1638,6 +1642,7 @@ INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename,
  -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300');
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog) VALUES (9, 1, 22, 'linux-source-2.6.15', '', '', '', NULL, NULL);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog) VALUES (10, 1, 23, 'foobar', '', '', '', NULL, NULL);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog) VALUES (11, 1, 27, 'commercialpackage', '', '', '', NULL, NULL);
 
 
 ALTER TABLE distributionsourcepackagecache ENABLE TRIGGER ALL;
@@ -1800,6 +1805,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (61, '
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (62, 'no-team-memberships@test.com', 243602, 4, '2007-02-19 11:17:57.755666');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (63, 'one-membership@test.com', 243603, 4, '2007-02-21 10:53:59.700105');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (64, 'beta-admin@launchpad.net', 68, 4, '2007-01-31 06:56:25.096519');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (66, 'launchpad@julian-edwards.com', 243606, 1, '2007-08-09 21:25:37.832976');
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -2805,6 +2811,12 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (60, 60, 'es.po', 'application/x-po', NULL, '2007-01-03 17:26:27.288968');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (61, 61, 'language-pack-ar_1.0.dsc', 'application/dsc', NULL, '2007-02-15 14:26:27.288968');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (62, 62, 'iceweasel-1.0.dsc', 'application/dsc', NULL, '2007-05-14 23:21:11.121446');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (65, 65, 'commercialpackage_1.0-1_source.changes', 'text/plain', NULL, '2007-08-09 21:25:37.832976');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (66, 66, 'commercialpackage_1.0.orig.tar.gz', 'application/gzipped-tar', NULL, '2007-08-09 21:25:37.832976');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (67, 67, 'commercialpackage_1.0-1.diff.gz', 'application/gzipped-patch', NULL, '2007-08-09 21:25:37.832976');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (68, 68, 'commercialpackage_1.0-1.dsc', 'text/x-debian-source-package', NULL, '2007-08-09 21:25:37.832976');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (69, 69, 'commercialpackage_1.0-1_i386.changes', 'text/plain', NULL, '2007-08-09 21:54:18.456616');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (70, 70, 'commercialpackage_1.0-1_i386.deb', 'application/x-debian-package', NULL, '2007-08-09 21:54:18.456616');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -2870,6 +2882,12 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (60, '2007-01-03 17:26:27.288968', NULL, 11793, 'df3a6670671781d5e08d7795ca1ada776815d87f', false, 'e8120781cd606202fd259a4f0d4585bb');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (61, '2007-02-15 14:26:27.288968', NULL, 100, 'df3a6670671781d5e08d7795ca1ada776815d87f', false, 'e8120781cd606202fd259a4f0d4585bb');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (62, '2007-05-14 23:21:11.121446', NULL, 123, 'd06b970f258e57547ef1104fba3499eb4ab43ff6', false, '767e1635f55ff5e833410523decec438');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (65, '2007-08-09 21:25:37.832976', NULL, 958, 'df4adf483eb24fec455e8411ca3dceb0bee51b44', false, 'b85b447f88c326c4124f0554e175097f');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (66, '2007-08-09 21:25:37.832976', NULL, 179, '3e00fea68e91f6e03de6333b4c8e60c2ce441926', false, 'f27fb7494c5afbb0fb10b78d16f7da37');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (67, '2007-08-09 21:25:37.832976', NULL, 610, '01bedc249af59cb80abb40b4898eced10f5d5e20', false, '7d6fa416334c6da3b954bf9ebff6e9ae');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (68, '2007-08-09 21:25:37.832976', NULL, 567, 'b5aeb55faeb86a1d8c1a93dd58131b387a604c5a', false, '95f2b067e046d73f4e93eca44c034b97');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (69, '2007-08-09 21:54:18.456616', NULL, 749, '0526ef40da99af5c1c97c91f9aca77e7ae564838', false, '8afa3dbc21b2dcdad7f31ab28c041ad9');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (70, '2007-08-09 21:54:18.456616', NULL, 652, '0ce85c0cf331d05f76aa4977c43e87e9ffbd0480', false, '05a37db4ba50ba5f28650ee74b450c2c');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -3397,6 +3415,8 @@ INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_
 INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (10, 1, 10, 40, 1, '2006-10-16 18:31:43.526624', NULL, 1);
 INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (11, 3, 1, 0, 52, '2006-11-14 18:39:27.186515', NULL, 1);
 INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (12, 1, 10, 30, 1, '2007-02-15 14:39:27.186515', NULL, 1);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (13, 3, 10, 0, 65, '2007-08-09 21:25:37.832976', NULL, 12);
+INSERT INTO packageupload (id, status, distrorelease, pocket, changesfile, date_created, signing_key, archive) VALUES (14, 3, 10, 0, 69, '2007-08-09 21:54:18.456616', NULL, 12);
 
 
 ALTER TABLE packageupload ENABLE TRIGGER ALL;
@@ -3406,6 +3426,7 @@ ALTER TABLE packageuploadbuild DISABLE TRIGGER ALL;
 
 INSERT INTO packageuploadbuild (id, packageupload, build, date_created) VALUES (1, 1, 18, '2006-10-16 18:31:43.529327');
 INSERT INTO packageuploadbuild (id, packageupload, build, date_created) VALUES (2, 2, 19, '2006-10-16 18:31:43.530599');
+INSERT INTO packageuploadbuild (id, packageupload, build, date_created) VALUES (3, 14, 27, '2007-08-09 21:54:18.456616');
 
 
 ALTER TABLE packageuploadbuild ENABLE TRIGGER ALL;
@@ -3430,6 +3451,7 @@ INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_c
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (4, 9, 31, '2006-10-16 18:31:43.538319');
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (5, 11, 14, '2006-11-14 18:40:09.479212');
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (6, 12, 34, '2007-02-15 14:40:09.479212');
+INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (7, 13, 36, '2007-08-09 21:25:37.832976');
 
 
 ALTER TABLE packageuploadsource ENABLE TRIGGER ALL;
@@ -3524,6 +3546,7 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates) VALUES (243602, 'No Team Memberships', 'PlPmrpS1styVUEK/lGn72zqxYYeZcLqKD3b5oD4/C6AyntMMFvSacw==', NULL, NULL, 'no-team-memberships', NULL, NULL, NULL, NULL, 1, NULL, '2007-02-19 11:17:57.755666', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'no-team-memberships_oid', NULL, 20, 0, NULL, NULL, 1, true);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates) VALUES (243603, 'One Membership', '52kdKnxgzc0LWK2ltsED9SeqQcjZgDAj+wWlaRotx3BvsXJCH0AUdQ==', NULL, NULL, 'one-membership', NULL, NULL, NULL, NULL, 1, NULL, '2007-02-21 10:53:59.700105', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'one-membership_oid', NULL, 20, 0, NULL, NULL, 1, true);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates) VALUES (243604, 'Simple Team', NULL, 243603, 'This team should have only one member, the "One Membership" user.', 'simple-team', NULL, NULL, NULL, NULL, 3, NULL, '2007-02-21 10:55:03.899255', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'simple-team_oid', NULL, 10, 0, NULL, NULL, 1, true);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates) VALUES (243606, 'Julian Edwards', NULL, NULL, NULL, 'launchpad-julian-edwards', NULL, NULL, NULL, NULL, 1, NULL, '2007-08-09 21:25:37.832976', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 7, 'when the commercialpackage_1.0-1 package was uploaded to breezy-autotest/RELEASE', NULL, NULL, 10, 'neMCQNd', NULL, 10, 9, NULL, NULL, 1, true);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -6451,225 +6474,225 @@ ALTER TABLE potemplatename ENABLE TRIGGER ALL;
 
 ALTER TABLE potmsgset DISABLE TRIGGER ALL;
 
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (1, 1, 1, 1, '', 'a11y/addressbook/ea-addressbook-view.c:94
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (1, 1, 1, 1, '', 'a11y/addressbook/ea-addressbook-view.c:94
 a11y/addressbook/ea-addressbook-view.c:103
-a11y/addressbook/ea-minicard-view.c:119', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (2, 2, 2, 1, '', 'a11y/addressbook/ea-minicard-view.c:101', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (3, 3, 3, 1, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (4, 4, 4, 1, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (5, 5, 5, 1, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (6, 6, 6, 1, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (7, 7, 7, 1, '', 'a11y/addressbook/ea-minicard-view.c:105', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (8, 8, 8, 1, '', 'a11y/addressbook/ea-minicard.c:166', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (9, 9, 9, 1, '', 'addressbook/addressbook-errors.xml.h:2', 'addressbook:ldap-init primary', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (10, 10, 10, 1, '', 'addressbook/addressbook-errors.xml.h:4', 'addressbook:ldap-init secondary', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (11, 11, 11, 1, '', 'addressbook/addressbook-errors.xml.h:6', 'addressbook:ldap-auth primary', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (12, 12, 12, 1, '', 'addressbook/addressbook-errors.xml.h:8', 'addressbook:ldap-auth secondary', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (13, 13, 13, 1, '', 'addressbook/gui/component/addressbook-migrate.c:124
-calendar/gui/migration.c:188 mail/em-migrate.c:1201', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (14, 14, 14, 1, '', 'addressbook/gui/component/addressbook-migrate.c:1123', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (15, 15, 15, 1, '', 'addressbook/gui/widgets/e-addressbook-model.c:151', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (16, 17, 16, 1, '', 'addressbook/gui/widgets/eab-gui-util.c:275', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (17, 19, 17, 1, '', 'addressbook/gui/widgets/foo.c:345', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (18, 21, 18, 1, ' start po-group: common', 'encfs/FileUtils.cpp:1044', 'xgroup(common)', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (19, 22, 19, 1, '', 'encfs/main.cpp:340', 'xgroup(usage)', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (20, 23, 20, 1, '', 'encfs/FileUtils.cpp:535', 'xgroup(setup)', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (21, 24, 0, 1, '', 'encfs/encfsctl.cpp:346', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (22, 26, 22, 1, '', 'modules/aggregator.module:15', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (23, 27, 0, 1, NULL, 'foo.c:123', 'This is a comment...', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (24, 28, 1, 3, '', 'src/netapplet.c:131', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (25, 29, 2, 3, '', 'src/netapplet.c:133', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (26, 30, 3, 3, '', 'src/netapplet.c:135', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (27, 31, 4, 3, '', 'src/netapplet.c:139', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (28, 32, 5, 3, '', 'src/netapplet.c:141', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (29, 33, 6, 3, '', 'src/netapplet.c:291 src/netapplet.c:312', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (30, 34, 7, 3, '', 'src/netapplet.c:359', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (31, 35, 8, 3, '', 'src/netapplet.c:391', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (32, 36, 9, 3, '', 'src/netapplet.c:410', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (33, 37, 10, 3, '', 'src/netapplet.c:427', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (34, 38, 11, 3, '', 'src/netapplet.c:479', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (35, 39, 12, 3, '', 'src/netapplet.c:496', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (36, 40, 13, 3, '', 'src/netapplet.c:732', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (37, 41, 14, 3, '', 'src/netapplet.c:747', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (38, 42, 15, 3, '', 'src/netapplet.c:768', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (39, 43, 16, 3, '', 'src/netapplet.c:870', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (40, 44, 17, 3, '', 'src/netapplet.c:955', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (41, 45, 18, 3, '', 'src/netapplet.c:958', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (42, 46, 19, 3, '', 'src/netapplet.c:970', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (43, 47, 20, 3, '', 'src/netapplet.c:1015', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (44, 48, 21, 3, '', 'src/netapplet.c:1018', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (45, 49, 22, 3, '', 'src/netapplet.c:1021', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (46, 50, 23, 3, '', 'src/netapplet.c:1032', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (47, 51, 24, 3, '', 'src/netapplet.c:1072', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (48, 52, 25, 3, '', 'src/netapplet.c:1082', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (49, 53, 26, 3, '', 'src/netapplet.c:1093', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (50, 54, 27, 3, '', 'src/netapplet.c:1526', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (51, 55, 28, 3, '', 'src/netapplet.glade.h:1', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (52, 56, 29, 3, '', 'src/netapplet.glade.h:2', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (53, 57, 30, 3, '', 'src/netapplet.glade.h:3', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (54, 58, 31, 3, '', 'src/netapplet.glade.h:4', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (55, 59, 32, 3, '', 'src/netapplet.glade.h:5', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (56, 60, 33, 3, '', 'src/netapplet.glade.h:6', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (57, 61, 34, 3, '', 'src/netapplet.glade.h:7', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (58, 62, 35, 3, '', 'src/netapplet.glade.h:8', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (59, 63, 36, 3, '', 'src/netapplet.glade.h:9', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (60, 64, 37, 3, '', 'src/netapplet.glade.h:10', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (61, 65, 38, 3, '', 'src/netapplet.glade.h:11', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (62, 66, 39, 3, '', 'src/netapplet.glade.h:12', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (63, 67, 40, 3, '', 'src/netapplet.glade.h:13', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (64, 68, 41, 3, '', 'src/netapplet.glade.h:14', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (65, 69, 42, 3, '', 'src/netapplet.glade.h:15', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (66, 70, 43, 3, '', 'src/netapplet.glade.h:16', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (67, 71, 1, 2, '', 'pmount.c:50', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (68, 72, 2, 2, '', 'pmount.c:57', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (69, 73, 3, 2, '', 'pmount.c:64', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (70, 74, 4, 2, '', 'pmount.c:67', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (71, 75, 5, 2, '', 'pmount.c:120', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (72, 76, 6, 2, '', 'pmount.c:126', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (73, 77, 7, 2, '', 'pmount.c:130', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (74, 78, 8, 2, '', 'pmount.c:134', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (75, 79, 9, 2, '', 'pmount.c:141', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (76, 80, 10, 2, '', 'pmount.c:171 pumount.c:98', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (77, 81, 11, 2, '', 'pmount.c:176 pmount.c:270', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (78, 82, 12, 2, '', 'pmount.c:212', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (79, 83, 13, 2, '', 'pmount.c:218', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (80, 84, 14, 2, '', 'pmount.c:242', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (81, 85, 15, 2, '', 'pmount.c:258 pumount.c:124', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (82, 86, 16, 2, '', 'pmount.c:274', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (83, 87, 17, 2, '', 'pmount.c:347', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (84, 88, 18, 2, '', 'pmount.c:361', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (85, 89, 19, 2, '', 'pmount.c:401', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (86, 90, 20, 2, '', 'pmount.c:417', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (87, 91, 21, 2, '', 'pmount.c:509 pumount.c:181', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (88, 92, 22, 2, '', 'pmount.c:542 pumount.c:201', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (89, 93, 23, 2, '', 'pmount.c:580', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (90, 94, 24, 2, '', 'pmount.c:589 pumount.c:237', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (91, 95, 25, 2, '', 'pmount.c:595 pumount.c:243', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (92, 96, 26, 2, '', 'pmount.c:635', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (93, 97, 27, 2, '', 'pmount.c:656', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (94, 98, 28, 2, '', 'pmount-hal.c:29', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (95, 99, 29, 2, '', 'pmount-hal.c:140', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (96, 100, 30, 2, '', 'pmount-hal.c:169', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (97, 101, 31, 2, '', 'pmount-hal.c:175', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (98, 102, 32, 2, '', 'pmount-hal.c:182', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (99, 103, 33, 2, '', 'policy.c:79', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (100, 104, 34, 2, '', 'policy.c:90', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (101, 105, 35, 2, '', 'policy.c:97', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (102, 106, 36, 2, '', 'policy.c:128', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (103, 107, 37, 2, '', 'policy.c:228', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (104, 108, 38, 2, '', 'policy.c:233', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (105, 109, 39, 2, '', 'policy.c:251 policy.c:307', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (106, 110, 40, 2, '', 'policy.c:338', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (107, 111, 41, 2, '', 'policy.c:340', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (108, 112, 42, 2, '', 'policy.c:342', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (109, 113, 43, 2, '', 'policy.c:378', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (110, 114, 44, 2, '', 'policy.c:393', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (111, 115, 45, 2, '', 'policy.c:411', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (112, 116, 46, 2, '', 'policy.c:413', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (113, 117, 47, 2, '', 'pumount.c:42', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (114, 118, 48, 2, '', 'pumount.c:72', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (115, 119, 49, 2, '', 'pumount.c:78', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (116, 120, 50, 2, '', 'pumount.c:108 pumount.c:136', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (117, 121, 51, 2, '', 'pumount.c:140', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (118, 122, 52, 2, '', 'pumount.c:148', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (119, 123, 53, 2, '', 'utils.c:51', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (120, 124, 54, 2, '', 'utils.c:107', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (121, 125, 55, 2, '', 'utils.c:122', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (122, 126, 56, 2, '', 'utils.c:129', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (123, 127, 57, 2, '', 'utils.c:149', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (124, 128, 58, 2, '', 'utils.c:158', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (125, 129, 59, 2, '', 'utils.c:210', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (126, 130, 60, 2, '', 'utils.c:252', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (127, 131, 61, 2, '', 'utils.c:261', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (128, 132, 62, 2, '', 'utils.c:270', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (129, 133, 63, 2, '', 'utils.c:279', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (130, 1, 1, 4, '', 'a11y/addressbook/ea-addressbook-view.c:94
+a11y/addressbook/ea-minicard-view.c:119', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (2, 2, 2, 1, '', 'a11y/addressbook/ea-minicard-view.c:101', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (3, 3, 3, 1, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (4, 4, 4, 1, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (5, 5, 5, 1, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (6, 6, 6, 1, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (7, 7, 7, 1, '', 'a11y/addressbook/ea-minicard-view.c:105', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (8, 8, 8, 1, '', 'a11y/addressbook/ea-minicard.c:166', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (9, 9, 9, 1, '', 'addressbook/addressbook-errors.xml.h:2', 'addressbook:ldap-init primary', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (10, 10, 10, 1, '', 'addressbook/addressbook-errors.xml.h:4', 'addressbook:ldap-init secondary', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (11, 11, 11, 1, '', 'addressbook/addressbook-errors.xml.h:6', 'addressbook:ldap-auth primary', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (12, 12, 12, 1, '', 'addressbook/addressbook-errors.xml.h:8', 'addressbook:ldap-auth secondary', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (13, 13, 13, 1, '', 'addressbook/gui/component/addressbook-migrate.c:124
+calendar/gui/migration.c:188 mail/em-migrate.c:1201', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (14, 14, 14, 1, '', 'addressbook/gui/component/addressbook-migrate.c:1123', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (15, 15, 15, 1, '', 'addressbook/gui/widgets/e-addressbook-model.c:151', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (16, 17, 16, 1, '', 'addressbook/gui/widgets/eab-gui-util.c:275', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (17, 19, 17, 1, '', 'addressbook/gui/widgets/foo.c:345', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (18, 21, 18, 1, ' start po-group: common', 'encfs/FileUtils.cpp:1044', 'xgroup(common)', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (19, 22, 19, 1, '', 'encfs/main.cpp:340', 'xgroup(usage)', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (20, 23, 20, 1, '', 'encfs/FileUtils.cpp:535', 'xgroup(setup)', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (21, 24, 0, 1, '', 'encfs/encfsctl.cpp:346', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (22, 26, 22, 1, '', 'modules/aggregator.module:15', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (23, 27, 0, 1, NULL, 'foo.c:123', 'This is a comment...', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (24, 28, 1, 3, '', 'src/netapplet.c:131', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (25, 29, 2, 3, '', 'src/netapplet.c:133', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (26, 30, 3, 3, '', 'src/netapplet.c:135', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (27, 31, 4, 3, '', 'src/netapplet.c:139', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (28, 32, 5, 3, '', 'src/netapplet.c:141', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (29, 33, 6, 3, '', 'src/netapplet.c:291 src/netapplet.c:312', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (30, 34, 7, 3, '', 'src/netapplet.c:359', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (31, 35, 8, 3, '', 'src/netapplet.c:391', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (32, 36, 9, 3, '', 'src/netapplet.c:410', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (33, 37, 10, 3, '', 'src/netapplet.c:427', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (34, 38, 11, 3, '', 'src/netapplet.c:479', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (35, 39, 12, 3, '', 'src/netapplet.c:496', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (36, 40, 13, 3, '', 'src/netapplet.c:732', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (37, 41, 14, 3, '', 'src/netapplet.c:747', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (38, 42, 15, 3, '', 'src/netapplet.c:768', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (39, 43, 16, 3, '', 'src/netapplet.c:870', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (40, 44, 17, 3, '', 'src/netapplet.c:955', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (41, 45, 18, 3, '', 'src/netapplet.c:958', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (42, 46, 19, 3, '', 'src/netapplet.c:970', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (43, 47, 20, 3, '', 'src/netapplet.c:1015', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (44, 48, 21, 3, '', 'src/netapplet.c:1018', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (45, 49, 22, 3, '', 'src/netapplet.c:1021', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (46, 50, 23, 3, '', 'src/netapplet.c:1032', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (47, 51, 24, 3, '', 'src/netapplet.c:1072', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (48, 52, 25, 3, '', 'src/netapplet.c:1082', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (49, 53, 26, 3, '', 'src/netapplet.c:1093', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (50, 54, 27, 3, '', 'src/netapplet.c:1526', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (51, 55, 28, 3, '', 'src/netapplet.glade.h:1', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (52, 56, 29, 3, '', 'src/netapplet.glade.h:2', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (53, 57, 30, 3, '', 'src/netapplet.glade.h:3', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (54, 58, 31, 3, '', 'src/netapplet.glade.h:4', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (55, 59, 32, 3, '', 'src/netapplet.glade.h:5', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (56, 60, 33, 3, '', 'src/netapplet.glade.h:6', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (57, 61, 34, 3, '', 'src/netapplet.glade.h:7', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (58, 62, 35, 3, '', 'src/netapplet.glade.h:8', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (59, 63, 36, 3, '', 'src/netapplet.glade.h:9', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (60, 64, 37, 3, '', 'src/netapplet.glade.h:10', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (61, 65, 38, 3, '', 'src/netapplet.glade.h:11', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (62, 66, 39, 3, '', 'src/netapplet.glade.h:12', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (63, 67, 40, 3, '', 'src/netapplet.glade.h:13', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (64, 68, 41, 3, '', 'src/netapplet.glade.h:14', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (65, 69, 42, 3, '', 'src/netapplet.glade.h:15', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (66, 70, 43, 3, '', 'src/netapplet.glade.h:16', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (67, 71, 1, 2, '', 'pmount.c:50', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (68, 72, 2, 2, '', 'pmount.c:57', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (69, 73, 3, 2, '', 'pmount.c:64', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (70, 74, 4, 2, '', 'pmount.c:67', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (71, 75, 5, 2, '', 'pmount.c:120', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (72, 76, 6, 2, '', 'pmount.c:126', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (73, 77, 7, 2, '', 'pmount.c:130', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (74, 78, 8, 2, '', 'pmount.c:134', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (75, 79, 9, 2, '', 'pmount.c:141', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (76, 80, 10, 2, '', 'pmount.c:171 pumount.c:98', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (77, 81, 11, 2, '', 'pmount.c:176 pmount.c:270', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (78, 82, 12, 2, '', 'pmount.c:212', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (79, 83, 13, 2, '', 'pmount.c:218', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (80, 84, 14, 2, '', 'pmount.c:242', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (81, 85, 15, 2, '', 'pmount.c:258 pumount.c:124', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (82, 86, 16, 2, '', 'pmount.c:274', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (83, 87, 17, 2, '', 'pmount.c:347', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (84, 88, 18, 2, '', 'pmount.c:361', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (85, 89, 19, 2, '', 'pmount.c:401', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (86, 90, 20, 2, '', 'pmount.c:417', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (87, 91, 21, 2, '', 'pmount.c:509 pumount.c:181', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (88, 92, 22, 2, '', 'pmount.c:542 pumount.c:201', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (89, 93, 23, 2, '', 'pmount.c:580', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (90, 94, 24, 2, '', 'pmount.c:589 pumount.c:237', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (91, 95, 25, 2, '', 'pmount.c:595 pumount.c:243', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (92, 96, 26, 2, '', 'pmount.c:635', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (93, 97, 27, 2, '', 'pmount.c:656', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (94, 98, 28, 2, '', 'pmount-hal.c:29', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (95, 99, 29, 2, '', 'pmount-hal.c:140', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (96, 100, 30, 2, '', 'pmount-hal.c:169', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (97, 101, 31, 2, '', 'pmount-hal.c:175', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (98, 102, 32, 2, '', 'pmount-hal.c:182', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (99, 103, 33, 2, '', 'policy.c:79', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (100, 104, 34, 2, '', 'policy.c:90', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (101, 105, 35, 2, '', 'policy.c:97', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (102, 106, 36, 2, '', 'policy.c:128', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (103, 107, 37, 2, '', 'policy.c:228', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (104, 108, 38, 2, '', 'policy.c:233', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (105, 109, 39, 2, '', 'policy.c:251 policy.c:307', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (106, 110, 40, 2, '', 'policy.c:338', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (107, 111, 41, 2, '', 'policy.c:340', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (108, 112, 42, 2, '', 'policy.c:342', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (109, 113, 43, 2, '', 'policy.c:378', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (110, 114, 44, 2, '', 'policy.c:393', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (111, 115, 45, 2, '', 'policy.c:411', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (112, 116, 46, 2, '', 'policy.c:413', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (113, 117, 47, 2, '', 'pumount.c:42', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (114, 118, 48, 2, '', 'pumount.c:72', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (115, 119, 49, 2, '', 'pumount.c:78', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (116, 120, 50, 2, '', 'pumount.c:108 pumount.c:136', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (117, 121, 51, 2, '', 'pumount.c:140', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (118, 122, 52, 2, '', 'pumount.c:148', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (119, 123, 53, 2, '', 'utils.c:51', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (120, 124, 54, 2, '', 'utils.c:107', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (121, 125, 55, 2, '', 'utils.c:122', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (122, 126, 56, 2, '', 'utils.c:129', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (123, 127, 57, 2, '', 'utils.c:149', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (124, 128, 58, 2, '', 'utils.c:158', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (125, 129, 59, 2, '', 'utils.c:210', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (126, 130, 60, 2, '', 'utils.c:252', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (127, 131, 61, 2, '', 'utils.c:261', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (128, 132, 62, 2, '', 'utils.c:270', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (129, 133, 63, 2, '', 'utils.c:279', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (130, 1, 1, 4, '', 'a11y/addressbook/ea-addressbook-view.c:94
 a11y/addressbook/ea-addressbook-view.c:103
-a11y/addressbook/ea-minicard-view.c:119', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (131, 2, 2, 4, '', 'a11y/addressbook/ea-minicard-view.c:101', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (132, 3, 3, 4, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (133, 4, 4, 4, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (134, 5, 5, 4, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (135, 6, 6, 4, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (136, 7, 7, 4, '', 'a11y/addressbook/ea-minicard-view.c:105', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (137, 8, 8, 4, '', 'a11y/addressbook/ea-minicard.c:166', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (138, 9, 9, 4, '', 'addressbook/addressbook-errors.xml.h:2', 'addressbook:ldap-init primary', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (139, 10, 10, 4, '', 'addressbook/addressbook-errors.xml.h:4', 'addressbook:ldap-init secondary', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (140, 11, 11, 4, '', 'addressbook/addressbook-errors.xml.h:6', 'addressbook:ldap-auth primary', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (141, 12, 12, 4, '', 'addressbook/addressbook-errors.xml.h:8', 'addressbook:ldap-auth secondary', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (142, 13, 13, 4, '', 'addressbook/gui/component/addressbook-migrate.c:124
-calendar/gui/migration.c:188 mail/em-migrate.c:1201', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (143, 14, 14, 4, '', 'addressbook/gui/component/addressbook-migrate.c:1123', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (144, 15, 15, 4, '', 'addressbook/gui/widgets/e-addressbook-model.c:151', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (145, 17, 16, 4, '', 'addressbook/gui/widgets/eab-gui-util.c:275', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (146, 19, 17, 4, '', 'addressbook/gui/widgets/foo.c:345', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (147, 21, 18, 4, ' start po-group: common', 'encfs/FileUtils.cpp:1044', 'xgroup(common)', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (148, 22, 19, 4, '', 'encfs/main.cpp:340', 'xgroup(usage)', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (149, 23, 20, 4, '', 'encfs/FileUtils.cpp:535', 'xgroup(setup)', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (150, 24, 21, 4, '', 'encfs/encfsctl.cpp:346', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (151, 26, 22, 4, '', 'modules/aggregator.module:15', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (152, 134, 1, 5, '', '../mozilla-browser.templates:3', 'Type: note
-Description', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (153, 135, 2, 5, '', '../mozilla-browser.templates:3', 'Type: note
-Description', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (154, 136, 3, 5, '', '../mozilla-browser.templates:3', 'Type: note
-Description', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (155, 137, 4, 5, '', '../mozilla-browser.templates:11', 'Type: select
-Choices', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (156, 138, 5, 5, '', '../mozilla-browser.templates:13', 'Type: select
-Description', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (157, 139, 6, 5, '', '../mozilla-browser.templates:13', 'Type: select
-Description', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (158, 140, 7, 5, '', '../mozilla-browser.templates:24', 'Type: boolean
-Description', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (159, 141, 8, 5, '', '../mozilla-browser.templates:24', 'Type: boolean
-Description', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (160, 142, 9, 5, '', '../mozilla-browser.templates:24', 'Type: boolean
-Description', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (161, 27, 0, 4, NULL, 'foo.c:123', 'This is a comment...', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (162, 143, 0, 5, NULL, '', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (163, 144, 0, 5, NULL, '', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (164, 145, 0, 5, NULL, '', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (165, 146, 23, 1, '', 'lib/getopt.c:629 lib/getopt.c:641', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (166, 147, 1, 7, '', 'test_browserwidget.py:34', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (167, 147, 1, 8, '', 'test_browserwidget.py:34', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (168, 148, 1, 6, '', 'Wammu/Main.py:469', '', 'python-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (169, 149, 2, 6, '', 'Wammu/Error.py:82', '', 'python-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (170, 150, 3, 6, '', 'Wammu/PhoneSearch.py:127 Wammu/PhoneSearch.py:157', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (171, 151, 4, 6, '', 'Wammu/Data.py:652', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (172, 152, 5, 6, '', 'Wammu/Main.py:276', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (173, 153, 6, 6, '', '', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (174, 154, 7, 6, '', '', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (175, 155, 8, 6, '', '', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (176, 1, 1, 9, '', 'a11y/addressbook/ea-addressbook-view.c:94
+a11y/addressbook/ea-minicard-view.c:119', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (131, 2, 2, 4, '', 'a11y/addressbook/ea-minicard-view.c:101', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (132, 3, 3, 4, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (133, 4, 4, 4, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (134, 5, 5, 4, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (135, 6, 6, 4, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (136, 7, 7, 4, '', 'a11y/addressbook/ea-minicard-view.c:105', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (137, 8, 8, 4, '', 'a11y/addressbook/ea-minicard.c:166', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (138, 9, 9, 4, '', 'addressbook/addressbook-errors.xml.h:2', 'addressbook:ldap-init primary', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (139, 10, 10, 4, '', 'addressbook/addressbook-errors.xml.h:4', 'addressbook:ldap-init secondary', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (140, 11, 11, 4, '', 'addressbook/addressbook-errors.xml.h:6', 'addressbook:ldap-auth primary', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (141, 12, 12, 4, '', 'addressbook/addressbook-errors.xml.h:8', 'addressbook:ldap-auth secondary', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (142, 13, 13, 4, '', 'addressbook/gui/component/addressbook-migrate.c:124
+calendar/gui/migration.c:188 mail/em-migrate.c:1201', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (143, 14, 14, 4, '', 'addressbook/gui/component/addressbook-migrate.c:1123', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (144, 15, 15, 4, '', 'addressbook/gui/widgets/e-addressbook-model.c:151', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (145, 17, 16, 4, '', 'addressbook/gui/widgets/eab-gui-util.c:275', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (146, 19, 17, 4, '', 'addressbook/gui/widgets/foo.c:345', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (147, 21, 18, 4, ' start po-group: common', 'encfs/FileUtils.cpp:1044', 'xgroup(common)', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (148, 22, 19, 4, '', 'encfs/main.cpp:340', 'xgroup(usage)', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (149, 23, 20, 4, '', 'encfs/FileUtils.cpp:535', 'xgroup(setup)', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (150, 24, 21, 4, '', 'encfs/encfsctl.cpp:346', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (151, 26, 22, 4, '', 'modules/aggregator.module:15', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (152, 134, 1, 5, '', '../mozilla-browser.templates:3', 'Type: note
+Description', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (153, 135, 2, 5, '', '../mozilla-browser.templates:3', 'Type: note
+Description', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (154, 136, 3, 5, '', '../mozilla-browser.templates:3', 'Type: note
+Description', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (155, 137, 4, 5, '', '../mozilla-browser.templates:11', 'Type: select
+Choices', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (156, 138, 5, 5, '', '../mozilla-browser.templates:13', 'Type: select
+Description', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (157, 139, 6, 5, '', '../mozilla-browser.templates:13', 'Type: select
+Description', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (158, 140, 7, 5, '', '../mozilla-browser.templates:24', 'Type: boolean
+Description', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (159, 141, 8, 5, '', '../mozilla-browser.templates:24', 'Type: boolean
+Description', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (160, 142, 9, 5, '', '../mozilla-browser.templates:24', 'Type: boolean
+Description', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (161, 27, 0, 4, NULL, 'foo.c:123', 'This is a comment...', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (162, 143, 0, 5, NULL, '', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (163, 144, 0, 5, NULL, '', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (164, 145, 0, 5, NULL, '', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (165, 146, 23, 1, '', 'lib/getopt.c:629 lib/getopt.c:641', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (166, 147, 1, 7, '', 'test_browserwidget.py:34', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (167, 147, 1, 8, '', 'test_browserwidget.py:34', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (168, 148, 1, 6, '', 'Wammu/Main.py:469', '', 'python-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (169, 149, 2, 6, '', 'Wammu/Error.py:82', '', 'python-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (170, 150, 3, 6, '', 'Wammu/PhoneSearch.py:127 Wammu/PhoneSearch.py:157', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (171, 151, 4, 6, '', 'Wammu/Data.py:652', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (172, 152, 5, 6, '', 'Wammu/Main.py:276', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (173, 153, 6, 6, '', '', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (174, 154, 7, 6, '', '', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (175, 155, 8, 6, '', '', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (176, 1, 1, 9, '', 'a11y/addressbook/ea-addressbook-view.c:94
 a11y/addressbook/ea-addressbook-view.c:103
-a11y/addressbook/ea-minicard-view.c:119', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (177, 2, 2, 9, '', 'a11y/addressbook/ea-minicard-view.c:101', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (178, 3, 3, 9, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (179, 4, 4, 9, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (180, 5, 5, 9, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (181, 6, 6, 9, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (182, 7, 7, 9, '', 'a11y/addressbook/ea-minicard-view.c:105', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (183, 8, 8, 9, '', 'a11y/addressbook/ea-minicard.c:166', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (184, 9, 9, 9, '', 'addressbook/addressbook-errors.xml.h:2', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (185, 10, 10, 9, '', 'addressbook/addressbook-errors.xml.h:4', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (186, 11, 11, 9, '', 'addressbook/addressbook-errors.xml.h:6', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (187, 12, 12, 9, '', 'addressbook/addressbook-errors.xml.h:8', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (188, 13, 13, 9, '', 'addressbook/gui/component/addressbook-migrate.c:124
-calendar/gui/migration.c:188 mail/em-migrate.c:1201', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (189, 14, 14, 9, '', 'addressbook/gui/component/addressbook-migrate.c:1123', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (190, 15, 15, 9, '', 'addressbook/gui/widgets/e-addressbook-model.c:151', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (191, 17, 16, 9, '', 'addressbook/gui/widgets/eab-gui-util.c:275', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (192, 19, 17, 9, '', 'addressbook/gui/widgets/foo.c:345', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (193, 21, 18, 9, '', 'encfs/FileUtils.cpp:1044', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (194, 22, 19, 9, '', 'encfs/main.cpp:340', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (195, 23, 20, 9, '', 'encfs/FileUtils.cpp:535', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (196, 24, 21, 9, '', 'encfs/encfsctl.cpp:346', '', 'c-format', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (197, 26, 22, 9, '', 'modules/aggregator.module:15', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (198, 147, 1, 10, '', 'test_browserwidget.py:34', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (199, 156, 2, 10, '', '', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (200, 157, 3, 10, '', '', '', '', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (201, 158, 4, 10, '', '', '', '', NULL);
+a11y/addressbook/ea-minicard-view.c:119', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (177, 2, 2, 9, '', 'a11y/addressbook/ea-minicard-view.c:101', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (178, 3, 3, 9, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (179, 4, 4, 9, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (180, 5, 5, 9, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (181, 6, 6, 9, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (182, 7, 7, 9, '', 'a11y/addressbook/ea-minicard-view.c:105', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (183, 8, 8, 9, '', 'a11y/addressbook/ea-minicard.c:166', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (184, 9, 9, 9, '', 'addressbook/addressbook-errors.xml.h:2', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (185, 10, 10, 9, '', 'addressbook/addressbook-errors.xml.h:4', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (186, 11, 11, 9, '', 'addressbook/addressbook-errors.xml.h:6', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (187, 12, 12, 9, '', 'addressbook/addressbook-errors.xml.h:8', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (188, 13, 13, 9, '', 'addressbook/gui/component/addressbook-migrate.c:124
+calendar/gui/migration.c:188 mail/em-migrate.c:1201', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (189, 14, 14, 9, '', 'addressbook/gui/component/addressbook-migrate.c:1123', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (190, 15, 15, 9, '', 'addressbook/gui/widgets/e-addressbook-model.c:151', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (191, 17, 16, 9, '', 'addressbook/gui/widgets/eab-gui-util.c:275', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (192, 19, 17, 9, '', 'addressbook/gui/widgets/foo.c:345', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (193, 21, 18, 9, '', 'encfs/FileUtils.cpp:1044', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (194, 22, 19, 9, '', 'encfs/main.cpp:340', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (195, 23, 20, 9, '', 'encfs/FileUtils.cpp:535', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (196, 24, 21, 9, '', 'encfs/encfsctl.cpp:346', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (197, 26, 22, 9, '', 'modules/aggregator.module:15', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (198, 147, 1, 10, '', 'test_browserwidget.py:34', '', '', NULL, 'Something');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (199, 156, 2, 10, '', '', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (200, 157, 3, 10, '', '', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (201, 158, 4, 10, '', '', '', '', NULL, NULL);
 
 
 ALTER TABLE potmsgset ENABLE TRIGGER ALL;
@@ -8748,6 +8771,7 @@ INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, dist
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (28, 23, 1, 2, 1, 1, 40, '2007-07-10 13:00:00', '2007-07-10 13:00:01', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (29, 23, 12, 2, 1, 1, 40, '2007-07-10 13:00:00', '2007-07-10 13:00:01', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (30, 24, 12, 2, 1, 1, 40, '2007-08-10 13:00:00', '2007-08-10 13:00:01', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
+INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (31, 25, 8, 2, 5, 7, 20, '2007-08-09 21:55:39.561526', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 12);
 
 
 ALTER TABLE securebinarypackagepublishinghistory ENABLE TRIGGER ALL;
@@ -8781,6 +8805,7 @@ INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, dist
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (27, 33, 10, 2, 1, 3, '2007-07-09 13:44:00.10654', '2007-07-09 14:14:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (28, 35, 1, 2, 1, 3, '2007-07-09 12:00:00', '2007-07-09 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (29, 20, 1, 2, 1, 3, '2007-07-09 12:00:00', '2007-07-09 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 9);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted, archive) VALUES (30, 36, 10, 2, 5, 7, '2007-08-09 21:28:12.106187', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL, 12);
 
 
 ALTER TABLE securesourcepackagepublishinghistory ENABLE TRIGGER ALL;
@@ -8879,6 +8904,7 @@ INSERT INTO sourcepackagename (id, name) VALUES (23, 'foobar');
 INSERT INTO sourcepackagename (id, name) VALUES (24, 'cdrkit');
 INSERT INTO sourcepackagename (id, name) VALUES (25, 'language-pack-de');
 INSERT INTO sourcepackagename (id, name) VALUES (26, 'iceweasel');
+INSERT INTO sourcepackagename (id, name) VALUES (27, 'commercialpackage');
 
 
 ALTER TABLE sourcepackagename ENABLE TRIGGER ALL;
@@ -8927,6 +8953,30 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive) VALUES (33, 1, '1.0', '2006-12-01 13:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, NULL, 16, 24, 10, 1, NULL, NULL, NULL, NULL, 1);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive) VALUES (34, 1, '1.0', '2007-02-15 14:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 29, NULL, 16, 25, 10, 1, NULL, NULL, NULL, NULL, 1);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive) VALUES (35, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, NULL, 16, 26, 1, 1, NULL, NULL, NULL, NULL, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive) VALUES (36, 243606, '1.0-1', '2007-08-09 21:25:37.832976', 1, NULL, 5, 'commercialpackage (1.0-1) breezy; urgency=low
+
+  * Initial version
+
+ -- Julian Edwards <launchpad@julian-edwards.com>   Thu, 16 Feb 2006 15:34:09 +0000', '', '', 'any', '-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.0
+Source: commercialpackage
+Version: 1.0-1
+Binary: commercialpackage
+Maintainer: Julian Edwards <launchpad@julian-edwards.com>
+Architecture: any
+Standards-Version: 3.6.2
+Files: 
+ f27fb7494c5afbb0fb10b78d16f7da37 179 commercialpackage_1.0.orig.tar.gz
+ 7d6fa416334c6da3b954bf9ebff6e9ae 610 commercialpackage_1.0-1.diff.gz
+
+Version: GnuPG v1.4.6 (GNU/Linux)
+
+iD8DBQFGtzTjWhGlTF8G/HcRAtFsAJ4hHyKhOnsUOQDI+SAk000DmFAnUgCcC84J
+3F4bEPeRcnUjCFI/hjR0kxg=
+=Tjln
+', 7, NULL, 243606, 27, 10, 1, 'Julian Edwards <launchpad@julian-edwards.com>', '3.6.2', '1.0', 'commercialpackage', 12);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;
@@ -8945,6 +8995,9 @@ INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetyp
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (34, 61, 3, 9);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (35, 3, 1, 10);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (35, 62, 3, 11);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (36, 66, 4, 12);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (36, 67, 5, 13);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (36, 68, 3, 14);
 
 
 ALTER TABLE sourcepackagereleasefile ENABLE TRIGGER ALL;
@@ -9582,6 +9635,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (135, 32, 69);
 INSERT INTO teamparticipation (id, team, person) VALUES (136, 17, 69);
 INSERT INTO teamparticipation (id, team, person) VALUES (137, 32, 68);
 INSERT INTO teamparticipation (id, team, person) VALUES (138, 17, 68);
+INSERT INTO teamparticipation (id, team, person) VALUES (140, 243606, 243606);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -9784,6 +9838,7 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (53, 65, 'https://wiki.
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (54, 66, 'https://wiki.ubuntu.com/', 'DiogoMatsubara');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (55, 243602, 'https://wiki.ubuntu.com/', 'NoTeamMemberships');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (56, 243603, 'https://wiki.ubuntu.com/', 'OneMembership');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (58, 243606, 'https://wiki.ubuntu.com/', 'JulianEdwards');
 
 
 ALTER TABLE wikiname ENABLE TRIGGER ALL;

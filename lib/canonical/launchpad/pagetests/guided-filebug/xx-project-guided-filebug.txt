@@ -222,7 +222,7 @@ The user will also be presented with a link to the product's overview page:
 If we set up an external bug tracker for Testy Product, this will be reflected
 in the Test Group's filebug page.
 
-    >>> admin_browser.open('http://launchpad.dev/testy/+launchpad')
+    >>> admin_browser.open('http://launchpad.dev/testy/+edit')
     >>> admin_browser.getControl(name='field.bugtracker').value = ['external']
     >>> admin_browser.getControl(
     ...     name='field.bugtracker.bugtracker').value = ['3']

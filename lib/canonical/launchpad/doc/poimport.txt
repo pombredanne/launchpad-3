@@ -37,26 +37,7 @@ what email has been sent, to whom, and what the body of the message contains:
 
 Here's a fake logger to capture any errors that happen.
 
-    >>> class FakeLogger:
-    ...     def message(self, prefix, *stuff, **kw):
-    ...         print prefix, ' '.join(stuff)
-    ...
-    ...         if 'exc_info' in kw:
-    ...             import sys
-    ...             import traceback
-    ...             exception = traceback.format_exception(*sys.exc_info())
-    ...             for thing in exception:
-    ...                 for line in thing.splitlines():
-    ...                     self.log(line)
-    ...
-    ...     def log(self, *stuff, **kw):
-    ...         self.message('log>', *stuff, **kw)
-    ...
-    ...     def warning(self, *stuff, **kw):
-    ...         self.message('WARNING', *stuff, **kw)
-    ...
-    ...     def info(self, *stuff, **kw):
-    ...         self.message('INFO', *stuff, **kw)
+    >>> from canonical.launchpad.scripts import FakeLogger
 
 Login as an admin to be able to do changes to the import queue.
 

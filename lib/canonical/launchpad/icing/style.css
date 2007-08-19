@@ -145,9 +145,19 @@ input, select, textarea {
 input[type="text"], input[type="submit"], input[type="reset"], textarea {
   font-size: 1em; /* Forces a readable font size in Safari */
 }
+button, input[type="button"], input[type="file"], input[type="password"],
+input[type="submit"], input[type="text"], select, textarea {
+  margin-right: 0.5em;
+}
 input.urlTextType {width: 100%;}
 .fieldRequired, .fieldOptional {color: #999;}
 .formHelp {margin-bottom: 1em;}
+/* Hack to add breathing room to bug status forms: */
+table.listing div.field>table {margin-top: 0.5em;}
+table.listing div.field>label, table.listing div.field>div>label,
+table.listing div.actions {
+  display: block; margin-top: 1em;
+}
 textarea {width: 100%;}
 table.form {width: 100%;}
 
@@ -957,7 +967,7 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 
 #application-footer strong {font-weight: normal;}
 
-.description, .report, .boardComment {font-size: 1.125em;}
+.description {font-size: 1.125em;}
 /* person/project/bug descriptions, bug comments */
 .report h2 {font-size: 1.4em;}
 .boardComment {border: 1px solid #ddd; margin: 1em 0 1.5em;}
@@ -1337,12 +1347,12 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
   color: #3840be;
 }
 
-.questionstatusOPEN      {color: black;}
-.questionstatusNEEDSINFO {color: black;}
-.questionstatusANSWERED  {color: green;}
-.questionstatusSOLVED    {color: green;}
-.questionstatusEXPIRED   {color: red;}
-.questionstatusINVALID   {color: red;}
+.questionstatusOPEN      {color: #000;} /* black */
+.questionstatusNEEDSINFO {color: #930;} /* brown */
+.questionstatusANSWERED  {color: #363;} /* grey-green */
+.questionstatusSOLVED    {color: #090;} /* green */
+.questionstatusEXPIRED   {color: #666;} /* dark grey */
+.questionstatusINVALID   {color: #c00;} /* red */
 
 
 /* --- Other --- */

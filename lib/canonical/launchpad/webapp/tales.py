@@ -671,6 +671,37 @@ class PersonFormatterAPI(ObjectFormatterAPI):
             url, image_html, person.browsername)
 
 
+class BranchFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IPerson objects to a formatted string."""
+
+    implements(ITraversable)
+
+    allowed_names = set([
+        'url',
+        ])
+
+    def traverse(self, name, furtherPath):
+        if name == 'link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.link(extra_path)
+        elif name in self.allowed_names:
+            return getattr(self, name)()
+        else:
+            raise TraversalError, name
+
+    def link(self, extra_path):
+        """Return an HTML link to the person's page containing an icon
+        followed by the person's name.
+        """
+        branch = self._context
+        url = canonical_url(branch)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        return '<a href="%s"><img src="/@@/branch" alt=""/>&nbsp;%s</a>' % (
+            url, branch.displayname)
+
+
 class NumberFormatterAPI:
     """Adapter for converting numbers to formatted strings."""
 

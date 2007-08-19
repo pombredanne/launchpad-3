@@ -115,3 +115,77 @@ file is available:
   </p>
   </div>
 
+
+= DistroArchSeries Commercial Binary Package Pages =
+
+Binary commercial packages in Launchpad differ from regular packages by two 
+things:
+1. Their component is 'commercial'
+2. Their archive is the commercial archive, rather than the primary archive.
+
+Their page functionality is identical to regular packages, which is described
+in the previous section of this page.
+
+
+  >>> browser.open(
+  ...     'http://launchpad.dev/ubuntu/breezy-autotest/i386/commercialpackage')
+
+This page provides the publishing history of this BinaryPackage within
+this architecture:
+
+  >>> print extract_text(find_tag_by_id(browser.contents, 'publishings'))
+  breezy-autotest i386 Release:
+  Published version 1.0-1 in component commercial and section devel
+
+It also provides a link to the currently published version:
+  >>> browser.getLink("1.0-1").click()
+  >>> browser.url
+  'http://launchpad.dev/ubuntu/breezy-autotest/i386/commercialpackage/1.0-1'
+
+
+A BinaryPackageRelease once published in a DistroArchSeries is
+represented by a DistroArchSeriesBinaryPackageRelease and easily
+reached by traversing a DistroArchSeriesBinaryPackage instance with a
+valid version, like:
+
+$LP/ubuntu/$DISTRORELEASE/$ARCHTAG/$BINARYNAME/$VERSION
+
+It's also reachable in a more natural way, starting from distribution page:
+
+  >>> browser.open('http://launchpad.dev/ubuntu')
+
+Then we get to the DistroSeries page:
+
+browser.getLink(url='/ubuntu/breezy-autotest').click()
+  >>> browser.getLink('6.6.6 (Breezy Badger Autotest)').click()
+
+Then the DistroArchSeries page:
+
+browser.getLink(url='/ubuntu/breezy-autotest/i386').click()
+  >>> browser.getLink('breezy-autotest i386 (official)').click()
+
+Now we are able to use the search box in this page:
+
+  >>> browser.getControl(name="text", index=1).value = "commercialpackage"
+  >>> browser.getControl("Search Packages").click()
+
+Click on the wanted name to get on the DistroArchSeriesBinaryPackageRelease:
+
+  >>> browser.getLink("commercialpackage").click()
+  >>> browser.url
+  'http://launchpad.dev/ubuntu/breezy-autotest/i386/commercialpackage/1.0-1'
+
+This page represents an IDistroArchSeriesBinaryPackageRelease and is
+able to point the user to the IDistroSeriesSourcePackageRelease which
+originated itself:
+
+  >>> print extract_text(find_tag_by_id(browser.contents, 'source'))
+  commercialpackage 1.0-1 (source) in Test Distro
+
+Also provide a section with the contained files, including respective
+librarian URL and size:
+
+  >>> print extract_text(find_tag_by_id(browser.contents, 'files'))
+  commercialpackage_1.0-1_i386.deb
+  (652 bytes)
+
