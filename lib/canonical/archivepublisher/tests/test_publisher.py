@@ -69,6 +69,41 @@ class TestPublisher(TestNativePublishingBase):
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(open(foo_path).read().strip(), 'Hello world')
 
+    def testPublishCommercial(self):
+        """Test that a commercial package is published to the right place."""
+        from canonical.archivepublisher.publishing import Publisher
+        archive = self.ubuntutest.getArchiveByComponent('commercial')
+        config = removeSecurityProxy(archive.getPubConfig())
+        config.setupArchiveDirs()
+        disk_pool = DiskPool(config.poolroot, config.temproot, self.logger)
+        publisher = Publisher(
+            self.logger, config, disk_pool, archive)
+        pub_source = self.getPubSource(archive=archive,
+            filecontent="I am commercial")
+
+        publisher.A_publish(False)
+
+        # Did the file get published in the right place?
+        self.assertEqual(config.poolroot, 
+            "/var/tmp/archive/ubuntutest-commercial/pool")
+        foo_path = "%s/main/f/foo/foo.dsc" % config.poolroot
+        self.assertEqual(open(foo_path).read().strip(), "I am commercial")
+
+        # Check that the index is in the right place.
+        publisher.C_writeIndexes(False)
+        self.assertEqual(config.distsroot, 
+            "/var/tmp/archive/ubuntutest-commercial/dists")
+        index_path = os.path.join(
+            config.distsroot, 'breezy-autotest', 'commercial', 'source',
+            'Sources.gz')
+        self.assertTrue(open(index_path))
+
+        # Check the release file is in the right place.
+        publisher.D_writeReleaseFiles(False)
+        release_file = os.path.join(
+            config.distsroot, 'breezy-autotest', 'Release')
+        self.assertTrue(open(release_file))
+
     def testPublishingSpecificDistroSeries(self):
         """Test the publishing procedure with the suite argument.
 
@@ -260,6 +295,18 @@ class TestPublisher(TestNativePublishingBase):
         self.assertEqual(
             [('breezy-autotest', PackagePublishingPocket.RELEASE)],
             distro_publisher.allowed_suites)
+
+        # Check that the commercial archive is built in a different directory
+        # to the primary archive.
+        commercial_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntutest, ArchivePurpose.COMMERCIAL)
+        distro_publisher = getPublisher(
+            commercial_archive, allowed_suites, self.logger, distsroot)
+        self.assertEqual(commercial_archive, distro_publisher.archive)
+        self.assertEqual('/var/tmp/archive/ubuntutest-commercial/dists',
+            distro_publisher._config.distsroot)
+        self.assertEqual('/var/tmp/archive/ubuntutest-commercial/pool',
+            distro_publisher._config.poolroot)
 
         # lets setup an Archive Publisher
         cprov = getUtility(IPersonSet).getByName('cprov')
