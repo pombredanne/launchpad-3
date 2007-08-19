@@ -166,6 +166,11 @@ class Branch(SQLBase):
     mirror_request_time = UtcDateTimeCol(default=None)
 
     @property
+    def code_is_browseable(self):
+        """See `IBranch`."""
+        return self.revision_count > 0 and not self.private
+
+    @property
     def related_bugs(self):
         """See `IBranch`."""
         return [bug_branch.bug for bug_branch in self.bug_branches]

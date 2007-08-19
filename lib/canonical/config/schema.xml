@@ -211,6 +211,17 @@ k            </description>
             </description>
             <example>http://bazaar.launchpad.net/</example>
         </key>
+        <key name="smartserver_root" datatype="canonical.config.urlbase"
+            default="bzr+ssh://bazaar.launchpad.net/">
+            <description>
+                The prefix of the URL for the codehosting smart server.
+                This value is usually not meaningful to change, so it should
+                generally not be set explicitly so the default value is used.
+
+                This should end with a slash.
+            </description>
+            <example>bzr+ssh://bazaar.launchpad.net/</example>
+        </key>
         <key name="bzr_imports_root_url" datatype="canonical.config.urlbase"
             default="http://escudero.ubuntu.com:680/">
             <description>

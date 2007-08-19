@@ -26,7 +26,7 @@ Lets look at the link for one of the registered branches:
     >>> print link.text
     Browse code
     >>> print link.url
-    http://codebrowse.launchpad.net/~name12/firefox/main
+    http://codebrowse.launchpad.dev/~name12/firefox/main
     >>> print link.enabled
     False
 
@@ -45,7 +45,7 @@ When the branch is published by the branch puller, last_mirrored_id is
 set to a non-NULL value.  When this occurs, the browse link is
 enabled:
 
-    >>> branch.last_mirrored_id = 'foo'
+    >>> branch.revision_count = 42
     >>> link = getBrowseLink(branch)
     >>> print link.enabled
     True
