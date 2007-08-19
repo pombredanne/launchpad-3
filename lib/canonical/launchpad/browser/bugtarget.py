@@ -180,6 +180,10 @@ class FileBugViewBase(LaunchpadFormView):
 
         return {'packagename': self.context.name}
 
+    def isPrivate(self):
+        """Whether bug reports on this target are private by default."""
+        return IProduct.providedBy(self.context) and self.context.private_bugs
+
     def contextIsProduct(self):
         return IProduct.providedBy(self.context)
 

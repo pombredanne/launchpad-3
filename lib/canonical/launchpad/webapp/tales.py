@@ -512,7 +512,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         badges = ''
         if self._context.bug.private:
             badges += self.icon_template % (
-                "private", "Private","/@@/locked")
+                "private", "Private","/@@/private")
 
         if self._context.bug.mentoring_offers.count() > 0:
             badges += self.icon_template % (
@@ -1755,3 +1755,11 @@ class GotoStructuralObject:
             return None
         return headercontext
 
+    @property
+    def immediate_object_is_private(self):
+        try:
+            headercontext, adapter = nearest_context_with_adapter(
+                self.use_context, IStructuralHeaderPresentation)
+        except NoCanonicalUrl:
+            return False
+        return adapter.isPrivate()
