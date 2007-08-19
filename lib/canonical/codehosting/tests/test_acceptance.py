@@ -446,6 +446,7 @@ class SmartserverTests(SSHTestCase):
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.getDatabaseBranch(person_name, product_name, branch_name)
         branch.branch_type = BranchType.MIRRORED
+        branch.url = "http://example.com/smartservertest/branch"
         LaunchpadZopelessTestSetup().txn.commit()
         return ro_branch_url
 
