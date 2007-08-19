@@ -277,3 +277,40 @@ branches.
     ...     'http://blueprints.launchpad.dev/kubuntu/+spec/krunch-desktop-plan')
     >>> print find_portlet(anon_browser.contents, 'Branches')
     None
+
+
+== Branches set as primary branches for product series ==
+
+When a branch is set as the user branch for product series, the details
+must be visible to those that are entitled to see it, but hidden from
+those who shouldn't be able to see it.
+
+    >>> admin_browser.open('http://launchpad.dev/landscape/trunk')
+    >>> admin_browser.getLink('Change details').click()
+    >>> admin_browser.getControl('Branch').value = (
+    ...     '~landscape-developers/landscape/trunk')
+    >>> admin_browser.getControl('Change').click()
+
+Since the admin user is able to see all private branches the branch details
+are shown.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'branch-details'))
+    Landscape trunk - Sample Person
+
+Landscape developers can see it.
+
+    >>> landscape_dev_browser.open('http://launchpad.dev/landscape/trunk')
+    >>> print extract_text(find_tag_by_id(
+    ...     landscape_dev_browser.contents, 'branch-details'))
+    Landscape trunk - Sample Person
+
+But normal people can't.
+
+    >>> anon_browser.open('http://launchpad.dev/landscape/trunk')
+    >>> print extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'branch-details'))
+    No revision control details recorded for trunk.
+    If upstream is maintained in CVS or SVN, you can
+    specify the location of the upstream branch to
+    import it as a Bazaar branch.
