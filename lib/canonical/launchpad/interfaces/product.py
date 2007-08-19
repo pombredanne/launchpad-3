@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'IProduct',
     'IProductSet',
-    'IProductLaunchpadUsageForm',
     ]
 
 from zope.schema import Bool, Choice, Int, Text, TextLine
@@ -223,28 +222,21 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         project bug tracker instead.
         """
 
-    bugtracker = Choice(title=_('Bug Tracker'), required=False,
-        vocabulary='BugTracker',
-        description=_(
-            "The external bug tracker this project uses, if it is not "
-            "Launchpad."))
+    bugtracker = ProductBugTracker(
+        title=_('Bugs are tracked'),
+        vocabulary="BugTracker")
 
-    official_answers = Bool(title=_('Uses Answers Officially'),
-        required=True, description=_('Check this box to indicate that this '
-            'project officially uses Launchpad for community support.'))
+    official_answers = Bool(
+        title=_('Let people use Launchpad Answers to ask questions'),
+        required=True)
 
-    official_malone = Bool(title=_('Uses Bugs Officially'),
-        required=True, description=_('Check this box to indicate that '
-        'this application officially uses Launchpad for bug tracking '
-        'upstream. This will remove the caution presented when people '
-        'file bugs on the project here in Launchpad.'
-        ))
+    official_malone = Bool(
+        title=_('Bugs in this project are tracked in Launchpad'),
+        required=True)
 
-    official_rosetta = Bool(title=_('Uses Translations Officially'),
-        required=True, description=_('Check this box to indicate that '
-        'this application officially uses Launchpad for upstream '
-        'translation. This will remove the caution presented when '
-        'people contribute translations for the project in Launchpad.'))
+    official_rosetta = Bool(
+        title=_('Translations for this project are done in Launchpad'),
+        required=True)
 
     sourcepackages = Attribute(_("List of packages for this product"))
 
@@ -426,14 +418,3 @@ class IProductSet(Interface):
         """Return the number of projects that have branches associated with
         them.
         """
-
-
-class IProductLaunchpadUsageForm(Interface):
-    """Form for indicating whether Rosetta, Answers, or Bugs is used."""
-
-    official_rosetta = IProduct['official_rosetta']
-    official_answers = IProduct['official_answers']
-    bugtracker = ProductBugTracker(
-        title=_('Bug Tracker'),
-        description=_('Where are bugs primarily tracked?'),
-        vocabulary="BugTracker")
