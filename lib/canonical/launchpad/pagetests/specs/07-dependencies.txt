@@ -188,4 +188,4 @@ The blueprint was linked successfully, and it appears in the dependency
 image map.
 
   >>> find_tag_by_id(admin_browser.contents, 'deptree')
-  <...A blueprint for a distro...Another blueprint for a distro...>
+  <...A blueprint for a distro...>
