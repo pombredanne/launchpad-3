@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'CommandRunner',
     'CommandRunnerError',
+    'QueueActionError',
     'name_queue_map'
     ]
 
@@ -849,6 +850,17 @@ class QueueActionOverride(QueueAction):
                                         priority=priority)
                         # break loop, just in case
                         break
+                # See if the new component requires a new archive on the build:
+                if component:
+                    distribution = (
+                        build.build.distroarchseries.distroseries.distribution)
+                    new_archive = distribution.getArchiveByComponent(
+                        self.component_name)
+                    if (new_archive != build.build.archive):
+                        raise QueueActionError(
+                            "Overriding component to '%s' failed because it "
+                            "would require a new archive."
+                            % self.component_name)
                 self.displayInfo(queue_item, only=binary.name)
 
         not_overridden = set(self.package_names) - set(overridden)

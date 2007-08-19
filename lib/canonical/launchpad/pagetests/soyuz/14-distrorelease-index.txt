@@ -45,6 +45,6 @@ Empty results are also presented properly (even if they are quite rare
 in production environment):
 
   >>> anon_browser.open(
-  ...     "http://launchpad.dev/ubuntu/breezy-autotest/+latest-uploads")
+  ...     "http://launchpad.dev/ubuntutest/breezy-autotest/+latest-uploads")
   >>> "<ul" in anon_browser.contents
   False
