@@ -42,7 +42,7 @@ Nothing to do
 The no-operation use case:
 
   >>> dp = DiskPool(pool_path, temp_path, MockLogger())
-  >>> dr = DeathRow(distro, dp, MockLogger())
+  >>> dr = DeathRow(distro.main_archive, dp, MockLogger())
   >>> dr.reap(dry_run=True)
   DEBUG: 0 Sources
   DEBUG: 0 Binaries
@@ -125,7 +125,7 @@ Flush our these updates and kick the DeathRow processor again.
 
   >>> flush_database_updates()
   >>> dp = DiskPool(pool_path, temp_path, MockLogger())
-  >>> dr = DeathRow(distro, dp, MockLogger())
+  >>> dr = DeathRow(distro.main_archive, dp, MockLogger())
   >>> dr.reap(dry_run=True)
   DEBUG: 2 Sources
   DEBUG: 2 Binaries

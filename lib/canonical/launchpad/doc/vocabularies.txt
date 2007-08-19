@@ -560,7 +560,7 @@ All the binary packages in Launchpad.
 
     >>> bpn_vocabulary = vocabulary_registry.get(None, 'BinaryPackageName')
     >>> len(bpn_vocabulary)
-    6
+    7
 
     >>> bpn_terms = bpn_vocabulary.searchForTerms("mozilla")
     >>> len(bpn_terms)
@@ -575,7 +575,7 @@ All the source packages in Launchpad.
 
     >>> spn_vocabulary = vocabulary_registry.get(None, 'SourcePackageName')
     >>> len(spn_vocabulary)
-    16
+    17
 
     >>> spn_terms = spn_vocabulary.searchForTerms("mozilla")
     >>> len(spn_terms)
@@ -592,7 +592,7 @@ All the source packages in Launchpad.
 
 === LanguageVocabulary ===
 
-All the languages known by Launchpad
+All the languages known by Launchpad.
 
     >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> language_set = getUtility(ILanguageSet)
@@ -621,6 +621,68 @@ All the languages known by Launchpad
     pt_BR Portuguese (Brazil) (pt_BR) Portuguese (Brazil) (pt_BR)
 
     >>> language_vocabulary.getTermByToken('foo')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+
+=== TranslatableLanguageVocabulary ===
+
+All the translatable languages known by Launchpad. English is not
+a translatable language.
+
+The languages in this vocabulary are the same as LanguageVocabulary,
+save for the absence of English. The vocabulary will behave identical
+to LanguageVocabulary in tests when the language is not English.
+
+    >>> translatable_language_vocabulary = vocabulary_registry.get(
+    ...     None, 'TranslatableLanguage')
+
+    >>> es = language_set['es']
+    >>> term = translatable_language_vocabulary.getTerm(es)
+    >>> print term.token, term.value.displayname, term.title
+    es Spanish (es) Spanish (es)
+
+    >>> pt_BR = language_set['pt_BR']
+    >>> term = translatable_language_vocabulary.getTerm(pt_BR)
+    >>> print term.token, term.value.displayname, term.title
+    pt_BR Portuguese (Brazil) (pt_BR) Portuguese (Brazil) (pt_BR)
+
+    >>> term = translatable_language_vocabulary.getTermByToken('es')
+    >>> print term.token, term.value.displayname, term.title
+    es Spanish (es) Spanish (es)
+
+    >>> term = translatable_language_vocabulary.getTermByToken('pt_BR')
+    >>> print term.token, term.value.displayname, term.title
+    pt_BR Portuguese (Brazil) (pt_BR) Portuguese (Brazil) (pt_BR)
+
+    >>> translatable_language_vocabulary.getTermByToken('foo')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+English is not in TranslatableLanguageVocabulary. The vocabulary will
+return a LookupError when it is passed the English.
+
+    >>> translatable_languages = set(
+    ...     t.token for t in translatable_language_vocabulary)
+    >>> languages = set(l.token for l in language_vocabulary)
+    >>> difference = list(languages - translatable_languages)
+    >>> len(difference)
+    1
+    >>> difference
+    ['en']
+
+    >>> english = language_set['en']
+    >>> english in translatable_language_vocabulary
+    False
+
+    >>> translatable_language_vocabulary.getTerm(english)
+    Traceback (most recent call last):
+    ...
+    LookupError:...    
+    
+    >>> translatable_language_vocabulary.getTermByToken('en')
     Traceback (most recent call last):
     ...
     LookupError:...

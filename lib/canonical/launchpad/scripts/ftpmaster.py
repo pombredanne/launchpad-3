@@ -108,7 +108,7 @@ class ArchiveOverrider:
         if self.component_name:
             valid_components = dict(
                 [(component.name, component)
-                 for component in self.distroseries.components])
+                 for component in self.distroseries.upload_components])
             if self.component_name not in valid_components:
                 raise ArchiveOverriderError(
                     "%s is not a valid component for %s/%s."

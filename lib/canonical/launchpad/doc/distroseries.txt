@@ -313,7 +313,7 @@ distroseries (bumby.
 the SPR returns all build records for it.
 
    >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
-   3
+   4
 
 == Translatable Packages and Packaging ==
 
@@ -1145,8 +1145,9 @@ Each element is a IDistroSeriesSourcePackageRelease instance:
 Also, empty results (caused obviously by lack of sample data or very
 earlier development state of a distroseries) are possible:
 
-  >>> breezy_autotest = ubuntu['breezy-autotest']
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+  >>> breezy_autotest = ubuntutest['breezy-autotest']
   >>> last_uploads = breezy_autotest.getLastUploads()
 
-  >>> len(last_uploads) == 0
-  True
+  >>> len(last_uploads)
+  0

@@ -64,7 +64,7 @@ button:
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.actions.save"
   ... 
   ... Save Changes
   ... -----------------------------19759086281403130373932339922--
@@ -137,7 +137,7 @@ But, you can also assign the task to another person, of course:
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.actions.save"
   ... 
   ... Save Changes
   ... -----------------------------19759086281403130373932339922--
@@ -210,7 +210,7 @@ Lastly, the widget also allows you to simply assign the task to nobody
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.actions.save"
   ... 
   ... Save Changes
   ... -----------------------------19759086281403130373932339922--

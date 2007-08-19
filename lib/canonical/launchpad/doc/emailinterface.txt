@@ -755,9 +755,10 @@ tag $tag
 ^^^^^^^^
 
 The 'tag' command assigns a tag to a bug. Using this command we will add the
-tags foo and bar to the bug.
+tags foo and bar to the bug. Adding a single tag multiple times should
+only result in the tag showing up once on the bug.
 
-    >>> submit_commands(bug_four, 'tag foo bar')
+    >>> submit_commands(bug_four, 'tag foo bar foo bar')
     >>> for tag in bug_four.tags:
     ...     print tag
     bar
