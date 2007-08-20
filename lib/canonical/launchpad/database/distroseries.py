@@ -992,7 +992,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return Milestone(name=name, dateexpected=dateexpected,
             distribution=self.distribution, distroseries=self)
 
-    def getLastUploads(self):
+    def getLatestUploads(self):
         """See IDistroSeries."""
         query = """
         sourcepackagerelease.id=packageuploadsource.sourcepackagerelease

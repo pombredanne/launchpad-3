@@ -485,6 +485,13 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         now = datetime.now(pytz.timezone('UTC'))
         return now - timestamp
 
+    @property
+    def user_branch_visible(self):
+        """Can the logged in user see the user branch."""
+        branch = self.context.user_branch
+        return (branch is not None and
+                check_permission('launchpad.View', branch))
+
 
 class ProductSeriesEditView(LaunchpadEditFormView):
 

@@ -458,7 +458,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self.dateprocessapproved = None
         self.datesyncapproved = None
         self.datelastsynced = None
-        self.date_published_sync = None
+        self.datepublishedsync = None
         self.syncinterval = None
         self.datestarted = None
         self.datefinished = None

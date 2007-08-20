@@ -317,3 +317,35 @@ We can also find all the products that have branches.
     iso-codes
     landscape
     thunderbird
+
+Only products that have "active" branches are returned in the query.
+Branches that are either Merged or Abandoned are not considered active.
+
+By marking all of Thunderbird's branches as Abandoned, thunderbird will
+no longer appear in the result set.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchLifecycleStatus, IBranchSet)
+    >>> thunderbird_branches = getUtility(IBranchSet).getBranchesForProduct(
+    ...     product=productset.getByName('thunderbird'),
+    ...     lifecycle_statuses=None)
+    >>> for branch in thunderbird_branches:
+    ...     branch.lifecycle_status = BranchLifecycleStatus.ABANDONED
+    >>> flush_database_updates()
+
+    >>> for product in productset.getProductsWithBranches():
+    ...     print product.name
+    evolution
+    firefox
+    gnome-terminal
+    iso-codes
+    landscape
+
+The getProductsWithBranches method takes an optional parameter that limits
+the number of products returned.
+
+    >>> for product in productset.getProductsWithBranches(3):
+    ...     print product.name
+    evolution
+    firefox
+    gnome-terminal

@@ -1135,18 +1135,18 @@ driver. Here, we expect the driver to be the owner of the distribution
  ...     print d.name
  sabdfl
 
-== Last Uploads ==
+== Lastest Uploads ==
 
-IDistroSeries provides the 'getLastUpload' method which returns a
-list of last 5 (five) IDistroSeriesSourcePackageRelease (IDRSPR)
+IDistroSeries provides the 'getLatestUpload' method which returns a
+list of the last 5 (five) IDistroSeriesSourcePackageRelease (IDRSPR)
 uploaded and published in its context.
 
   >>> warty = ubuntu['warty']
-  >>> last_uploads = warty.getLastUploads()
+  >>> latest_uploads = warty.getLatestUploads()
 
-Each element is a IDistroSeriesSourcePackageRelease instance:
+Each element is an IDistroSeriesSourcePackageRelease instance:
 
-  >>> for upload in last_uploads:
+  >>> for upload in latest_uploads:
   ...     print upload.name, upload.version
   mozilla-firefox 0.9
 
@@ -1155,7 +1155,7 @@ earlier development state of a distroseries) are possible:
 
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']
-  >>> last_uploads = breezy_autotest.getLastUploads()
+  >>> latest_uploads = breezy_autotest.getLatestUploads()
 
-  >>> len(last_uploads)
+  >>> len(latest_uploads)
   0
