@@ -145,14 +145,24 @@
       />
   </browser:pages>
 
-    <browser:page
-        for="canonical.launchpad.interfaces.IProduct"
-        name="+download"
-        class="canonical.launchpad.browser.ProductDownloadFilesView"
-        permission="zope.Public"
-        facet="overview"
-        template="../templates/product-files.pt"
-        />
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    name="+download"
+    class="canonical.launchpad.browser.ProductDownloadFilesView"
+    permission="zope.Public"
+    facet="overview"
+    template="../templates/product-files.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IProduct"

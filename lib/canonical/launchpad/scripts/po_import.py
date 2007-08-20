@@ -41,8 +41,8 @@ class ImportProcess:
         # Get the list of each product or distroseries with pending imports.
         # We'll serve these queues in turn, one request each, until either the
         # queue is drained or our time is up.
-        importqueues = (
-            translation_import_queue.getPillarObjectsWithApprovedImports() )
+        importqueues = translation_import_queue.getPillarObjectsWithImports(
+            RosettaImportStatus.APPROVED)
 
         if not importqueues:
             self.logger.info("No requests pending.")
@@ -117,7 +117,8 @@ class ImportProcess:
                     self.ztm.begin()
             # Refresh the list of objects with pending imports.
             importqueues = (
-                translation_import_queue.getPillarObjectsWithApprovedImports())
+                translation_import_queue.getPillarObjectsWithImports(
+                    RosettaImportStatus.APPROVED))
 
         if not importqueues:
             self.logger.info("Import requests completed.")

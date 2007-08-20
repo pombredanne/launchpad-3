@@ -20,7 +20,8 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistroSeries, IDistroSeriesSet, IDistributionSet)
+    ...     IDistroSeries, IDistroSeriesSet, IDistributionSet,
+    ...     IHasTranslationImports)
     >>> distroseriesset = getUtility(IDistroSeriesSet)
 
 To retrieve a specific release of a distribution, use IDistroSeriesSet.get:
@@ -62,6 +63,13 @@ We verify that a distroseries does in fact fully provide IDistroSeries:
     >>> verifyObject(IDistroSeries, warty)
     True
     >>> IDistroSeries.providedBy(warty)
+    True
+
+And IHasTranslationImports:
+
+    >>> verifyObject(IHasTranslationImports, warty)
+    True
+    >>> IHasTranslationImports.providedBy(warty)
     True
 
 To search the set of IDistroSeriess, use IDistroSeriesSet.search:

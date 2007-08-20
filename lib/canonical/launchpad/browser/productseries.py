@@ -239,7 +239,11 @@ class ProductSeriesTranslationMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'translations'
-    links = ['translationupload', ]
+    links = ['translationupload', 'imports']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
 
     def translationupload(self):
         text = 'Upload translations'
@@ -405,9 +409,8 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
             self.request.response.addInfoNotification(
                 'Thank you for your upload. The file content will be'
                 ' reviewed soon by an admin and then imported into Launchpad.'
-                ' You can track its status from the <a href="%s">Translation'
-                ' Import Queue</a>' %
-                    canonical_url(translation_import_queue_set))
+                ' You can track its status from the <a href="%s/+imports">'
+                'Translation Import Queue</a>' % canonical_url(self.context))
 
         elif is_tar_filename(filename):
             # Add the whole tarball to the import queue.
@@ -420,9 +423,9 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
                     'Thank you for your upload. %d files from the tarball'
                     ' will be reviewed soon by an admin and then imported'
                     ' into Launchpad. You can track its status from the'
-                    ' <a href="%s">Translation Import Queue</a>' % (
+                    ' <a href="%s/+imports">Translation Import Queue</a>' % (
                         num,
-                        canonical_url(translation_import_queue_set)))
+                        canonical_url(self.context)))
             else:
                 self.request.response.addWarningNotification(
                     "Nothing has happened. The tarball you uploaded does not"
