@@ -1,0 +1,33 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad"
+>
+  <body>
+
+<metal:leftportlets fill-slot="portlets">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<style metal:fill-slot="head_epilogue" type="text/css">
+  div.indented {padding-left: 2em}
+</style>
+
+<div metal:fill-slot="main">
+
+  <tal:branch-link define="branch context">
+    <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
+  </tal:branch-link>
+  <h1>Branch landing candidates</h1>
+
+    <div tal:repeat="mergeproposal view/landing_candidates">
+      <metal:landing-candidate use-macro="context/@@+macros/landing-candidate"/>
+    </div>
+
+</div>
+
+</body>
+</html>
+<!-- 1-0 done -->

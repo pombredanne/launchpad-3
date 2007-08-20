@@ -12,7 +12,7 @@ So, he looks for the 'Your preferred languages' portlet for the
 'Select Languages...' link, and clicks on that which will take him to
 his +editlanguages page.
 
-    >>> portlet = find_portlet(browser.contents, 'Your preferred languages')
+    >>> portlet = find_portlet(browser.contents, 'Your languages')
     >>> print extract_text(portlet.find('ul'))
     Catalan
     Spanish
@@ -59,7 +59,7 @@ displays his translatable languages.
     #>>> browser.url
     #'http://launchpad.dev/translations/+about'
     >>> browser.open('http://launchpad.dev/translations/+about')
-    >>> portlet = find_portlet(browser.contents, 'Your preferred languages')
+    >>> portlet = find_portlet(browser.contents, 'Your languages')
     >>> print extract_text(portlet.find('ul'))
     Catalan
     Welsh
@@ -79,7 +79,7 @@ Serbia (194.247.192.33), to test country detection.  Proxies add
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.addHeader('Accept-Language', 'pt_br, Espa\xf1ol')
     >>> browser.open('http://launchpad.dev/~name12/+editlanguages')
-    >>> portlet = find_tag_by_id(browser.contents, 'browser-languages')
+    >>> portlet = find_tag_by_id(browser.contents, 'portlet-browser-languages')
     >>> print extract_text(portlet)
     Your browser languages
     Portuguese (Brazil)

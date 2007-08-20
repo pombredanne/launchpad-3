@@ -360,15 +360,6 @@
     template="../templates/product-translators.pt"
     />
 
-  <browser:page
-    name="+launchpad"
-    for="canonical.launchpad.interfaces.IProduct"
-    class="canonical.launchpad.browser.ProductLaunchpadUsageEditView"
-    facet="overview"
-    permission="launchpad.Edit"
-    template="../templates/object-launchpadusage.pt"
-    />
-
   <browser:addform
     name="+linkbounty"
     for="canonical.launchpad.interfaces.IProduct"

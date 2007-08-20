@@ -53,6 +53,7 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
+    DEFAULT_BRANCH_STATUS_IN_LISTING,
     BranchType,
     ICalendarOwner,
     IFAQTarget,
@@ -642,11 +643,17 @@ class ProductSet:
             return default
         return product
 
-    def getProductsWithBranches(self):
+    def getProductsWithBranches(self, num_products=None):
         """See `IProductSet`."""
-        return Product.select(
-            'Product.id in (select distinct(product) from Branch)',
+        results = Product.select('''
+            Product.id in (
+                select distinct(product) from Branch
+                where lifecycle_status in %s)
+            ''' % sqlvalues(DEFAULT_BRANCH_STATUS_IN_LISTING),
             orderBy='name')
+        if num_products is not None:
+            results = results.limit(num_products)
+        return results
 
     def getProductsWithUserDevelopmentBranches(self):
         """See `IProductSet`."""
