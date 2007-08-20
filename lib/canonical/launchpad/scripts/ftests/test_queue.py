@@ -10,18 +10,19 @@ from unittest import TestCase, TestLoader
 from sha import sha
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPackageUploadSet)
+    IArchiveSet, IDistributionSet, IPackageUploadSet)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
 from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket,
+    ArchivePurpose, PackagePublishingStatus, PackagePublishingPocket,
     PackageUploadStatus, DistroSeriesStatus)
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.librarian.utils import filechunks
@@ -507,6 +508,55 @@ class TestQueueTool(TestQueueBase):
                 self.assertEqual('editors', 
                     source.sourcepackagerelease.section.name)
 
+    def testOverrideSourceWithArchiveChange(self):
+        """Check if the archive changes as necessary on a source override.
+
+        When overriding the component, the archive may change, so we check
+        that here.
+        """
+        # Set up.
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        breezy_autotest = ubuntu['breezy-autotest']
+
+        # Test that it changes to commercial when required.
+        queue_action = self.execute_command('override source alsa-utils',
+            component_name='commercial')
+        self.assertEqual(1, queue_action.items_size)
+        [queue_item] = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name="alsa-utils")
+        [source] = queue_item.sources
+        self.assertEqual(source.sourcepackagerelease.upload_archive.purpose,
+            ArchivePurpose.COMMERCIAL)
+
+        # Test that it changes back to primary when required.
+        queue_action = self.execute_command('override source alsa-utils',
+            component_name='main')
+        self.assertEqual(1, queue_action.items_size)
+        [queue_item] = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name="alsa-utils")
+        [source] = queue_item.sources
+        self.assertEqual(source.sourcepackagerelease.upload_archive.purpose,
+            ArchivePurpose.PRIMARY)
+
+    def testOverrideSourceWithNonexistentArchiveChange(self):
+        """Check that overriding to a non-existent archive fails properly.
+
+        When overriding the component, the archive may change to a
+        non-existent one so ensure if fails.
+        """
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        proxied_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            ubuntu, ArchivePurpose.COMMERCIAL)
+        comm_archive = removeSecurityProxy(proxied_archive)
+        comm_archive.purpose = ArchivePurpose.EMBARGOED
+        LaunchpadZopelessLayer.txn.commit()
+        self.assertRaises(CommandRunnerError,
+                          self.execute_command, 
+                          'override source alsa-utils',
+                          component_name='commercial')
+
     def testOverrideBinary(self):
         """Check if overriding binaries works.
 
@@ -553,6 +603,19 @@ class TestQueueTool(TestQueueBase):
         self.assertRaises(
             CommandRunnerError, self.execute_command, 'override binary 1',
             component_name='multiverse')
+
+    def testOverrideBinaryWithArchiveChange(self):
+        """Check if archive changes are disallowed for binary overrides.
+
+        When overriding the component, the archive may change, so we check
+        that here and make sure it's disallowed.
+        """
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+        # Test that it changes to commercial when required.
+        self.assertRaises(
+            CommandRunnerError, self.execute_command, 'override binary pmount',
+            component_name='commercial')
 
 
 class TestQueueToolInJail(TestQueueBase):

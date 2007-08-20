@@ -81,7 +81,7 @@ class MilestoneContextMenu(ContextMenu):
 class MilestoneView(LaunchpadView):
 
     # Listify and cache the specifications and bugtasks to avoid making
-    # the same query over and over again when evaluting in the template.
+    # the same query over and over again when evaluating in the template.
     @cachedproperty
     def specifications(self):
         return list(self.context.specifications)
@@ -90,9 +90,22 @@ class MilestoneView(LaunchpadView):
     def bugtasks(self):
         user = getUtility(ILaunchBag).user
         params = BugTaskSearchParams(user, milestone=self.context,
-                    orderby=['-importance', 'datecreated', 'id'])
-        tasks = getUtility(IBugTaskSet).search(params) 
-        return list(tasks)
+                    orderby=['-importance', 'datecreated', 'id'],
+                    omit_dupes=True)
+        tasks = getUtility(IBugTaskSet).search(params)
+        # Bug tasks that are explicitly targeted to a development focus series
+        # exist in a conjoined master-slave relationship. To prevent such bugs
+        # from appearing twice in the listing, we remove all bug tasks with a
+        # conjoined master:
+        return [task for task in tasks if task.conjoined_master is None]
+
+    @property
+    def is_project_milestone(self):
+        """Check, if the current milestone is a project milestone.
+
+        Return true, if the current milestone is a project milestone,
+        else return False."""
+        return IProjectMilestone.providedBy(self.context)
 
 
 class MilestoneAddView:
