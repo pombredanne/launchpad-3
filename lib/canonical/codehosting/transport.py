@@ -6,7 +6,8 @@ __metaclass__ = type
 __all__ = ['branch_id_to_path', 'LaunchpadServer', 'LaunchpadTransport',
            'UntranslatablePath']
 
-from bzrlib.errors import BzrError, NoSuchFile, TransportNotPossible
+from bzrlib.errors import (
+    BzrError, InProcessTransport, NoSuchFile, TransportNotPossible)
 from bzrlib import urlutils
 from bzrlib.transport import (
     get_transport,
@@ -169,8 +170,13 @@ class LaunchpadServer(Server):
                 raise NoSuchFile(
                     "+junk is only allowed under user directories, not team "
                     "directories.")
-        return self.authserver.createBranch(
+        branch_id, permissions = self.authserver.getBranchInformation(
             self.user_id, user, product, branch)
+        if branch_id != '':
+            return branch_id
+        else:
+            return self.authserver.createBranch(
+                self.user_id, user, product, branch)
 
     def _translate_path(self, virtual_path):
         """Translate a virtual path into an internal branch id, permissions and
@@ -272,6 +278,11 @@ class LaunchpadTransport(Transport):
     def __init__(self, server, url):
         self.server = server
         Transport.__init__(self, url)
+
+    def external_url(self):
+        # There's no real external URL to this transport. It's heavily
+        # dependent on the process.
+        raise InProcessTransport(self)
 
     def _abspath(self, relpath):
         """Return the absolute path to `relpath` without the schema."""

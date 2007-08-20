@@ -10,6 +10,7 @@ __all__ = [
     'logger',
     'log',
     'db_options',
+    'FakeLogger',
     ]
 
 import os
@@ -33,7 +34,7 @@ from canonical import lp
 from canonical.config import config
 
 from canonical.launchpad.scripts.logger import (
-        logger_options, logger, log
+        logger_options, logger, log, FakeLogger
         )
 
 # XXX StuartBishop 2005-06-02: 
