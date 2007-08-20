@@ -26,21 +26,25 @@
           tal:attributes="title context/bug/datecreated/fmt:datetime"
           tal:content="context/bug/datecreated/fmt:displaydate" />
         by <tal:reporter replace="structure context/bug/owner/fmt:link" />
-        <strong tal:condition="context/bug/security_related"
-        >- security vulnerability</strong>
       </div>
       <div id="bug-properties" style="float: right;">
         <img
           tal:condition="context/bug/security_related"
-          alt=""
-          src="/@@/warning-large"
+          alt="(Security vulnerability)"
+          src="/@@/security-large"
+          title="This bug report is about a security vulnerability"
         />
-        <img src="/@@/locked-large" title="Private"
-             tal:condition="context/bug/private" />
-        <img src="/@@/mentoring-large" title="Mentoring available"
+        <img src="/@@/mentoring-large" title="(Mentoring available)"
              tal:condition="context/bug/mentoring_offers/count" />
-        <img src="/@@/branch-large" title="Branch available"
+        <img src="/@@/branch-large" title="(Branch available)"
              tal:condition="context/bug/bug_branches/count" />
+        <img
+          tal:condition="context/bug/private"
+          alt="(Private)"
+          id="privatebadge"
+          src="/@@/private-large"
+          title="This bug report is private"
+        />
       </div>
       <h1 style="clear: left;" tal:content="context/bug/title">Bug summary</h1>
 
@@ -63,12 +67,17 @@
        >2 duplicates</tal:num-dupes>
     </p>
 
-  <p tal:condition="context/bug/duplicateof" class="informational message">
-    This report is a duplicate of
-    <a tal:attributes="href context/bug/duplicateof/fmt:url;
-                       title context/bug/duplicateof/title"
-       tal:content="string:bug #${context/bug/duplicateof/id}">bug 42</a>
-  </p>
+  <tal:duplicate-of define="duplicateof context/bug/duplicateof"
+                    condition="duplicateof">
+    <p class="informational message">
+      This report is a duplicate of
+      <a tal:condition="duplicateof/required:launchpad.View"
+         tal:attributes="href duplicateof/fmt:url; title duplicateof/title"
+         tal:content="string:bug #${duplicateof/id}">bug #42</a>
+      <span tal:condition="not:duplicateof/required:launchpad.View"
+            tal:replace="string:bug #${duplicateof/id}" />
+    </p>
+  </tal:duplicate-of>
 
       <form
         tal:condition="not:view/isReportedInContext"
@@ -106,19 +115,27 @@
         <table class="listing" id="bug_branch_details">
           <thead>
             <tr>
-              <th>Related Branch</th> <th>Developer</th> <th>Revision Hint</th>
+              <th>Related branch</th>
+              <th>Developer</th>
+              <th>Status for this bug</th>
             </tr>
           </thead>
           <tbody>
             <tr tal:repeat="bug_branch bug_branches">
+              <td>
+                <img alt="" src="/@@/branch" />
+                <a
+                  tal:attributes="href bug_branch/branch/fmt:url"
+                  tal:content="bug_branch/branch/displayname"
+                >Integration branch</a>
+              </td>
+              <td tal:content="structure bug_branch/branch/owner/fmt:link" />
               <td>
                 <a
                   tal:attributes="href string:${bug_branch/fmt:url}/+status"
                   tal:content="bug_branch/status/title"
                 >Under Development</a>
               </td>
-              <td tal:content="bug_branch/branch/owner/displayname"></td>
-              <td tal:content="bug_branch/revision_hint"></td>
               </tr>
           </tbody>
         </table>

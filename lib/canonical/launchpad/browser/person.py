@@ -609,33 +609,45 @@ class PersonBugsMenu(ApplicationMenu):
              'subscribedbugs', 'relatedbugs', 'softwarebugs', 'mentoring']
 
     def relatedbugs(self):
-        text = 'List related bugs'
-        return Link('', text, icon='bugs')
-
+        text = 'List all related bugs'
+        summary = ('Lists all bug reports which %s reported, is assigned to, '
+                   'or is subscribed to.' % self.context.displayname)
+        return Link('', text, summary=summary)
+        
     def assignedbugs(self):
         text = 'List assigned bugs'
-        return Link('+assignedbugs', text, icon='bugs')
+        summary = 'Lists bugs assigned to %s.' % self.context.displayname
+        return Link('+assignedbugs', text, summary=summary)
 
     def softwarebugs(self):
-        text = 'Package reports'
-        return Link('+packagebugs', text, icon='bugs')
+        text = 'Show package report'
+        summary = 'A summary report for packages where %s is a bug contact.' % \
+            self.context.displayname
+        return Link('+packagebugs', text, summary=summary)
 
     def reportedbugs(self):
         text = 'List reported bugs'
-        return Link('+reportedbugs', text, icon='bugs')
+        summary = 'Lists bugs reported by %s.' % self.context.displayname
+        return Link('+reportedbugs', text, summary=summary)
 
     def subscribedbugs(self):
         text = 'List subscribed bugs'
-        return Link('+subscribedbugs', text, icon='bugs')
+        summary = 'Lists bug reports %s is subscribed to.' % \
+            self.context.displayname
+        return Link('+subscribedbugs', text, summary=summary)
 
     def mentoring(self):
         text = 'Mentoring offered'
+        summary = 'Lists bugs for which %s has offered to mentor someone.' % \
+            self.context.displayname
         enabled = self.context.mentoring_offers
-        return Link('+mentoring', text, enabled=enabled, icon='info')
+        return Link('+mentoring', text, enabled=enabled, summary=summary)
 
     def commentedbugs(self):
         text = 'List commented bugs'
-        return Link('+commentedbugs', text, icon='bugs')
+        summary = 'Lists bug reports on which %s has commented.' % \
+            self.context.displayname
+        return Link('+commentedbugs', text, summary=summary)
 
 
 class PersonSpecsMenu(ApplicationMenu):
@@ -743,7 +755,7 @@ class CommonMenuLinks:
     @enabled_with_permission('launchpad.Edit')
     def activate_ppa(self):
         target = "+activate-ppa"
-        text = 'Activate PPA'
+        text = 'Activate Personal Package Archive'
         summary = ('Acknowledge terms of service for Launchpad Personal '
                    'Package Archive.')
         enable_link = (self.context.archive is None)
@@ -751,7 +763,7 @@ class CommonMenuLinks:
 
     def show_ppa(self):
         target = '+archive'
-        text = 'Show PPA'
+        text = 'Show Personal Package Archive'
         summary = 'Browse Personal Package Archive packages.'
         enable_link = (self.context.archive is not None)
         return Link(target, text, summary, icon='info', enabled=enable_link)

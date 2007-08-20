@@ -50,8 +50,6 @@ existing builds that are in sampledata!
   ...   provides=None,
   ...   essential=False,
   ...   installedsize=0,
-  ...   copyright=None,
-  ...   licence=None,
   ...   architecturespecific=False)
 
   >>> pe = SecureBinaryPackagePublishingHistory(
@@ -89,8 +87,6 @@ existing builds that are in sampledata!
   ...   provides=None,
   ...   essential=False,
   ...   installedsize=0,
-  ...   copyright=None,
-  ...   licence=None,
   ...   architecturespecific=False)
 
   >>> pe = SecureBinaryPackagePublishingHistory(

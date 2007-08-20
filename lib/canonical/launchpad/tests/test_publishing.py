@@ -103,6 +103,7 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             architecturehintlist=architecturehintlist,
             changelog=None,
             dsc=None,
+            copyright='placeholder ...',
             dscsigningkey=self.signingkey,
             manifest=None,
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
@@ -174,8 +175,6 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             provides=provides,
             essential=False,
             installedsize=100,
-            copyright='Foo Foundation',
-            licence='RMS will not like this',
             architecturespecific=False
             )
 

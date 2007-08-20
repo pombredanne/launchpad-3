@@ -1,5 +1,5 @@
 <tal:blocked_specs define="blocked_specs context/blocked_specs">
-  <div tal:condition="blocked_specs" class="portlet">
+  <div class="portlet" id="portlet-blocked" tal:condition="blocked_specs">
 
     <h2>Blocks</h2>
 

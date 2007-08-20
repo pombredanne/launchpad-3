@@ -48,7 +48,8 @@ queue:
   ...     pmount_sourcepackagename, "0.9.7-2ubuntu2", dapper.owner,
   ...     None, None, 'i386', Component.get(1), dapper.owner,
   ...     SourcePackageUrgency.LOW, None, None, GPGKey.get(1), Section.get(1),
-  ...     Manifest.get(1), None, None, None, None, dapper.main_archive)
+  ...     Manifest.get(1), None, None, None, None,
+  ...     dapper.main_archive, 'copyright ?!')
 
   >>> publishing_history = SecureSourcePackagePublishingHistory(
   ...     distroseries=dapper.id,
@@ -177,8 +178,8 @@ But an upload to the UPDATE pocket will add items to the import queue:
 
 == Translations from PPA build ==
 
-For now we simply ignore translations for other archive than the
-Distribution main_archive (PPAs).
+For now we simply ignore translations for archives other than the
+Distribution archives (i.e. PPAs).
 
   >>> from canonical.launchpad.interfaces import (
   ...    IPersonSet, IArchiveSet)
