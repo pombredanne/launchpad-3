@@ -47,7 +47,7 @@
       <tbody>
         <tr tal:repeat="spec specs">
           <td>
-            <span class="sortkey" tal:content="spec/priority/sortkey" />
+            <span class="sortkey" tal:content="spec/priority" />
             <span tal:content="spec/priority/title"
                   tal:attributes="
                   class string:specpriority${spec/priority/name}">High</span>
