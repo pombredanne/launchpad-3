@@ -1007,3 +1007,11 @@ review.
     >>> print entry3.status.name
     NEEDS_REVIEW
 
+
+== addOrUpdateEntry() ==
+
+addOrUpdateEntry adds a new entry to the import queue.
+
+
+
+
