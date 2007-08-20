@@ -15,6 +15,7 @@ from datetime import datetime
 from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.lp import decorates
 
 from canonical.launchpad.interfaces import (
@@ -80,19 +81,25 @@ class BazaarApplicationView(LaunchpadView):
     def recently_changed_branches(self):
         """Return the five most recently changed branches."""
         return list(getUtility(IBranchSet).getRecentlyChangedBranches(
-            5, self.user))
+            5, visible_by_user=self.user))
 
     @cachedproperty
     def recently_imported_branches(self):
         """Return the five most recently imported branches."""
         return list(getUtility(IBranchSet).getRecentlyImportedBranches(
-            5, self.user))
+            5, visible_by_user=self.user))
 
     @cachedproperty
     def recently_registered_branches(self):
         """Return the five most recently registered branches."""
         return list(getUtility(IBranchSet).getRecentlyRegisteredBranches(
-            5, self.user))
+            5, visible_by_user=self.user))
+
+    @cachedproperty
+    def short_product_tag_cloud(self):
+        """Show a preview of the product tag cloud."""
+        return BazaarProductView().products(
+            num_products=config.launchpad.code_homepage_product_cloud_size)
 
 
 class BazaarApplicationNavigation(Navigation):
@@ -164,7 +171,7 @@ class ProductInfo:
 class BazaarProductView:
     """Browser class for products gettable with Bazaar."""
 
-    def products(self):
+    def products(self, num_products=None):
         # XXX: TimPenhey 2007-02-26
         # sabdfl really wants a page that has all the products with code
         # on it.  I feel that at some stage it will just look too cumbersome,
@@ -175,8 +182,9 @@ class BazaarProductView:
         # sub-second, and the query to get the branch count and last commit
         # time runs in approximately 50ms on a vacuumed branch table.
         product_set = getUtility(IProductSet)
-        products = shortlist(product_set.getProductsWithBranches(),
+        products = shortlist(product_set.getProductsWithBranches(num_products),
                              2000, hardlimit=3000)
+
         # Any product that has a defined user branch for the development
         # product series is shown in another colour.  Given the above
         # query, all the products will be in the cache anyway.
@@ -184,8 +192,8 @@ class BazaarProductView:
             [product.id for product in
              product_set.getProductsWithUserDevelopmentBranches()])
 
-        branchset = getUtility(IBranchSet)
-        branch_summaries = branchset.getActiveUserBranchSummaryForProducts(
+        branch_set = getUtility(IBranchSet)
+        branch_summaries = branch_set.getActiveUserBranchSummaryForProducts(
             products)
         # Choose appropriate branch counts so we have an evenish distribution.
         counts = sorted([
@@ -225,4 +233,3 @@ class BazaarProductView:
                 product, num_branches, branch_size, elapsed, important))
 
         return items
-

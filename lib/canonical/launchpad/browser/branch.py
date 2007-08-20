@@ -61,6 +61,9 @@ def quote(text):
 class BranchSOP(StructuralObjectPresentation):
     """Provides the structural heading for `IBranch`."""
 
+    def isPrivate(self):
+        return self.context.private
+
     def getMainHeading(self):
         """See `IStructuralHeaderPresentation`."""
         return self.context.owner.browsername
@@ -132,7 +135,8 @@ class BranchContextMenu(ContextMenu):
     def browse(self):
         text = 'Browse code'
         # Only enable the link if we've ever mirrored the branch.
-        enabled = self.context.last_mirrored_id is not None
+        # Don't enable if the branch is private.
+        enabled = self.context.code_is_browseable
         url = config.launchpad.codebrowse_root + self.context.unique_name
         return Link(url, text, icon='info', enabled=enabled)
 
@@ -211,7 +215,12 @@ class BranchView(LaunchpadView):
 
     def supermirror_url(self):
         """Public URL of the branch on the Supermirror."""
-        return config.launchpad.supermirror_root + self.context.unique_name
+        # Private branches are not available through anonymous http,
+        # so an appropriate bzr+ssh url should be shown.
+        if self.context.private:
+            return config.launchpad.smartserver_root + self.context.unique_name
+        else:
+            return config.launchpad.supermirror_root + self.context.unique_name
 
     def edit_link_url(self):
         """Target URL of the Edit link used in the actions portlet."""
@@ -266,6 +275,46 @@ class BranchView(LaunchpadView):
         """Is the branch going to be mirrored in the future?"""
         return (not self.mirror_disabled()
                 and self.context.mirror_request_time > datetime.now(pytz.UTC))
+
+    @cachedproperty
+    def landing_targets(self):
+        """Return a decorated filtered list of landing targets."""
+        targets = []
+        targets_added = set()
+        for proposal in self.context.landing_targets:
+            # Only show the must recent proposal for any given target.
+            target_id = proposal.target_branch.id
+            if target_id in targets_added:
+                continue
+            targets.append(DecoratedMergeProposal(proposal))
+            targets_added.add(target_id)
+        return targets
+
+    @cachedproperty
+    def latest_landing_candidates(self):
+        """Return a decorated filtered list of landing candidates."""
+        # Only show the most recent 5 landing_candidates
+        candidates = self.context.landing_candidates[:5]
+        return [DecoratedMergeProposal(proposal) for proposal in candidates]
+
+    @cachedproperty
+    def landing_candidates(self):
+        """Return a decorated list of landing candidates."""
+        candidates = self.context.landing_candidates
+        return [DecoratedMergeProposal(proposal) for proposal in candidates]
+
+
+class DecoratedMergeProposal:
+    """Provide some additional functionality to a normal branch merge proposal.
+    """
+    decorates(IBranchMergeProposal)
+
+    def __init__(self, context):
+        self.context = context
+
+    def show_registrant(self):
+        """Show the registrant if it was not the branch owner."""
+        return self.context.registrant != self.source_branch.owner
 
     @cachedproperty
     def landing_targets(self):

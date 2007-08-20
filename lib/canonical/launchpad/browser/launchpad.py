@@ -70,6 +70,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot,
     ILaunchpadStatisticSet,
     ILoginTokenSet,
+    IMailingListApplication,
     IMaloneApplication,
     IMentoringOfferSet,
     IPersonSet,
@@ -436,6 +437,7 @@ class LaunchpadRootNavigation(Navigation):
         'distros': IDistributionSet,
         'karmaaction': IKarmaActionSet,
         '+languages': ILanguageSet,
+        'mailinglists': IMailingListApplication,
         '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,
         'potemplatenames': IPOTemplateNameSet,
@@ -833,6 +835,9 @@ class StructuralHeaderPresentation:
 
     def __init__(self, context):
         self.context = context
+
+    def isPrivate(self):
+        return False
 
     def getIntroHeading(self):
         return None
