@@ -369,7 +369,8 @@
   </div>
   </tal:valid-person-or-team>
 
-  <div id="not-lp-user" condition="not: context/is_valid_person_or_team">
+  <div id="not-lp-user-or-team"
+       tal:condition="not: context/is_valid_person_or_team">
     <tal:noaccount tal:condition="context/account_status/enumvalue:NOACCOUNT">
       <p><span tal:replace="context/browsername" /> does not use Launchpad.
         <tal:block condition="context/creation_comment">

@@ -14,10 +14,15 @@
 
 <div metal:fill-slot="main">
 
-  <div style="float: right" id="branch-badges">
-    <img src="/@@/locked-large" title="Private"
-         tal:condition="context/private" />
-  </div>
+      <div style="float: right">
+        <img
+          tal:condition="context/private"
+          alt="(Private branch)"
+          id="privatebadge"
+          src="/@@/private-large"
+          title="This branch is private"
+        />
+      </div>
 
   <h1>
     <img src="/@@/branch-large" alt="" />
@@ -46,14 +51,15 @@
           </td>
         </tr>
       </tal:not-junk-branch>
-    <tal:mirrored-branch tal:condition="context/url">
+    <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
       <tal:comment condition="nothing">
         <!-- This is a mirror branch, display two URLs -->
       </tal:comment>
         <tr><th>Location:</th><td tal:content="context/url" /></tr>
         <tr><th>Mirror:</th><td tal:content="view/supermirror_url" /></tr>
     </tal:mirrored-branch>
-    <tal:hosted-or-imported-branch tal:condition="not:context/url">
+    <tal:hosted-or-imported-branch 
+        tal:condition="not: context/branch_type/enumvalue:MIRRORED">
       <tal:comment condition="nothing">
         <!-- This is a hosted or import branch, one URL -->
       </tal:comment>
@@ -172,8 +178,73 @@
     </div>
   </tal:whiteboard>
 
+  <tal:landing-targets condition="view/landing_targets">
+    <h2>Landing Targets</h2>
+    <div id="landing-targets">
+    <div tal:repeat="mergeproposal view/landing_targets">
+      <tal:target replace="structure mergeproposal/target_branch/fmt:link" />
+      <tal:show-registrant condition="mergeproposal/show_registrant">
+        registered by
+        <tal:registrant replace="structure mergeproposal/registrant/fmt:link"/>
+      </tal:show-registrant>
+      <a tal:condition="mergeproposal/required:launchpad.Edit"
+         tal:attributes="href mergeproposal/fmt:url">
+        <img alt="" src="/@@/edit"/>
+      </a>
+
+      <div style="padding-left: 3em">
+        <div tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
+          The whiteboard.
+        </div>
+        <div tal:condition="mergeproposal/dependent_branch">
+          Dependent on
+          <tal:dependent replace="structure mergeproposal/dependent_branch/fmt:link" />
+        </div>
+        <div tal:condition="mergeproposal/date_merged" class="branchstatusMERGED">
+          Merged
+          <tal:merged replace="mergeproposal/date_merged/fmt:approximatedate">
+            2007-06-04
+          </tal:merged>
+          <tal:have-revno condition="mergeproposal/merged_revno">
+            as revision <tal:revno replace="mergeproposal/merged_revno"/>
+          </tal:have-revno>
+        </div>
+      </div>
+    </div>
+    </div>
+  </tal:landing-targets>
+
+  <tal:dependent-branches condition="context/dependent_branches">
+    <h2>Dependent Branches</h2>
+    <div id="dependent-branches">
+    <div tal:repeat="mergeproposal context/dependent_branches">
+      <tal:source replace="structure mergeproposal/source_branch/fmt:link" />
+      <a tal:condition="mergeproposal/required:launchpad.Edit"
+         tal:attributes="href mergeproposal/fmt:url">
+        <img alt="" src="/@@/edit"/>
+      </a>
+
+      <div style="padding-left: 3em">
+        <div tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
+          The whiteboard.
+        </div>
+      </div>
+    </div>
+    </div>
+  </tal:dependent-branches>
+
+  <tal:landing-candidates condition="view/latest_landing_candidates">
+    <h2>Landing Candidates</h2>
+    <div id="landing-candidates">
+    <div tal:repeat="mergeproposal view/latest_landing_candidates">
+      <metal:landing-candidate use-macro="context/@@+macros/landing-candidate"/>
+    </div>
+    </div>
+  </tal:landing-candidates>
+
   <h2 style="clear: both;">Recent revisions</h2>
 
+  <div id="recent-revisions">
   <p tal:condition="not:context/revision_count">
     <tal:not-mirrored condition="not:context/last_mirrored">
       <tal:mirror condition="context/url">
@@ -224,6 +295,7 @@
     </li>
   </ol>
   </tal:history-available>
+  </div>
 
   <tal:related-bugs condition="context/related_bugs">
     <h2>Related Bugs</h2>

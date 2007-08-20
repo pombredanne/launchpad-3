@@ -203,17 +203,20 @@ class PgTestSetup(object):
         try:
             con.set_isolation_level(0)
             cur = con.cursor()
-            for counter in range(0,100):
+            attempts = 60
+            for counter in range(0, attempts):
                 try:
                     cur.execute(
                         "CREATE DATABASE %s TEMPLATE=%s ENCODING='UNICODE'" % (
                             self.dbname, self.template))
                     break
                 except psycopg.ProgrammingError, x:
+                    if counter == attempts - 1:
+                        raise
                     x = str(x)
                     if 'being accessed by other users' not in x:
                         raise
-                time.sleep(0.1)
+                time.sleep(0.5)
             ConnectionWrapper.committed = False
             ConnectionWrapper.dirty = False
             PgTestSetup._last_db = (self.template, self.dbname)
