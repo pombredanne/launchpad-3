@@ -1010,8 +1010,60 @@ review.
 
 == addOrUpdateEntry() ==
 
-addOrUpdateEntry adds a new entry to the import queue.
+addOrUpdateEntry adds a new entry to the import queue so we can handle it
+later with poimport script.
 
+    >>> from canonical.launchpad.components.poexport import (
+    ...     RosettaWriteTarFile)
+    >>> from canonical.launchpad.interfaces import IPOTemplateSet
+    >>> potemplate_set = getUtility(IPOTemplateSet)
+    >>> potemplate_subset = potemplate_set.getSubset(
+    ...     productseries=evolution_productseries)
+    >>> man_template = potemplate_subset.getPOTemplateByName('man')
+    >>> evolution_22_template = potemplate_subset.getPOTemplateByName(
+    ...     'evolution-2.2')
 
+We get a sample tarball to be uploaded into the system.
 
+    >>> test_tar_content = {
+    ...     'foo.pot': 'Foo template',
+    ...     'es.po': 'Spanish translation',
+    ...     'fr.po': 'French translation',
+    ...     }
+    >>> tarfile_content = RosettaWriteTarFile.files_to_string(
+    ...     test_tar_content)
+    >>> is_published = True
 
+Current entries in the queue are:
+
+    >>> translationimportqueue.entryCount()
+    8
+
+Attach the sample tarball to the 'man' template in evolution product. There
+will be three new entries from the tarball.
+
+    >>> translationimportqueue.addOrUpdateEntriesFromTarball(
+    ...     tarfile_content, is_published, rosetta_expert,
+    ...     productseries=evolution_productseries, potemplate=man_template)
+    3
+
+And the number of entries in the queue increases in three entries.
+
+    >>> translationimportqueue.entryCount()
+    11
+
+Now, attaching the same layout to a different template for the same product,
+we get again three more entries.
+
+    >>> translationimportqueue.addOrUpdateEntriesFromTarball(
+    ...     tarfile_content, is_published, rosetta_expert,
+    ...     productseries=evolution_productseries,
+    ...     potemplate=evolution_22_template)
+    3
+
+And the import queue gets three new entries too. This part of the test is
+important to prevent problems like bug #133611, in which case were not getting
+the extra three entries.
+
+    >>> translationimportqueue.entryCount()
+    14
