@@ -47,7 +47,6 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import alsoProvides, implements
-from zope.app.form.interfaces import WidgetsError
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -65,7 +64,6 @@ from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.launchpad import (
@@ -86,8 +84,6 @@ from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces import ITeam
 
 
 class ProductNavigation(
@@ -362,7 +358,11 @@ class ProductTranslationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'translations'
-    links = ['translators', 'edit']
+    links = ['translators', 'edit', 'imports']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
 
     def translators(self):
         text = 'Change translators'
@@ -1024,10 +1024,10 @@ class ProductReassignmentView(ObjectReassignmentView):
 
         """
         import_queue = getUtility(ITranslationImportQueue)
+        for entry in import_queue.getAllEntries(target=product):
+            if entry.importer == oldOwner:
+                entry.importer = newOwner
         for series in product.serieses:
-            for entry in import_queue.getEntryByProductSeries(series):
-                if entry.importer == oldOwner:
-                    entry.importer = newOwner
             if series.owner == oldOwner:
                 series.owner = newOwner
         for release in product.releases:

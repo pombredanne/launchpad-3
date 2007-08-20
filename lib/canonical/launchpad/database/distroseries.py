@@ -28,17 +28,16 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    ArchivePurpose, DistroSeriesStatus, 
-    PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus, RosettaImportStatus, SpecificationFilter,
+    ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket,
+    PackagePublishingStatus, PackageUploadStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationSort,
     SpecificationImplementationStatus)
 
 from canonical.launchpad.interfaces import (
     IArchiveSet, IBinaryPackageName, IBuildSet, IDistroSeries, IDistroSeriesSet,
-    IHasBuildRecords, IHasQueueItems, IHasTranslationImports,
-    ILibraryFileAliasSet, IPublishedPackageSet, IPublishing, ISourcePackage,
-    ISourcePackageName, ISourcePackageNameSet, NotFoundError)
+    IHasBuildRecords, IHasQueueItems, ILibraryFileAliasSet,
+    IPublishedPackageSet, IPublishing, ISourcePackage, ISourcePackageName,
+    ISourcePackageNameSet, NotFoundError)
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -75,15 +74,15 @@ from canonical.launchpad.database.specification import (
 from canonical.launchpad.database.queue import (
     PackageUpload, PackageUploadQueue)
 from canonical.launchpad.database.translationimportqueue import (
-    TranslationImportQueueEntry)
+    HasTranslationImportsMixin)
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.helpers import shortlist
 
 
-class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
+class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
+                   HasTranslationImportsMixin):
     """A particular series of a distribution."""
-    implements(IDistroSeries, IHasBuildRecords, IHasQueueItems, IPublishing,
-               IHasTranslationImports)
+    implements(IDistroSeries, IHasBuildRecords, IHasQueueItems, IPublishing)
 
     _table = 'DistroRelease'
     _defaultOrder = ['distribution', 'version']
@@ -1939,17 +1938,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     @property
     def main_archive(self):
         return self.distribution.main_archive
-
-    def getFirstEntryToImport(self):
-        """See IHasTranslationImports."""
-        if self.defer_translation_imports:
-            return None
-        else:
-            return TranslationImportQueueEntry.selectFirstBy(
-                status=RosettaImportStatus.APPROVED,
-                distroseries=self,
-                orderBy=['dateimported'])
-
 
 
 class DistroSeriesSet:
