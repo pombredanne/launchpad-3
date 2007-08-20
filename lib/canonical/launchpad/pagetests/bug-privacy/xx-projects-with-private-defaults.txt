@@ -1,7 +1,5 @@
-Selecting the private_bugs checkbox on a product's +review page
-will force bugs reported on that product to be private. (We will
-demonstrate using the advanced filebug form, to skip searching for
-dupes.)
+If the private_bugs checkbox on a project's +review page is checked, bugs
+reported about that project will be private by default.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
@@ -11,7 +9,21 @@ dupes.)
     >>> admin_browser.getControl(name="field.private_bugs").value = True
     >>> admin_browser.getControl("Change").click()
 
+That they will be private is shown using Launchpad's standard "private" style.
+
+    >>> user_browser.open("http://launchpad.dev/redfish/+filebug")
+    >>> print find_tag_by_id(user_browser.contents, 'privatestyle')
+    <style...</style>
+    >>> print find_tag_by_id(user_browser.contents, 'privatebadge')
+    <img...private...>
+
+And the same on the "advanced" bug-reporting page.
+
     >>> user_browser.open("http://launchpad.dev/redfish/+filebug-advanced")
+    >>> print find_tag_by_id(user_browser.contents, 'privatestyle')
+    <style...</style>
+    >>> print find_tag_by_id(user_browser.contents, 'privatebadge')
+    <img...private...>
 
     >>> user_browser.getControl(name="field.title").value = "a test summary"
     >>> user_browser.getControl(name="field.comment").value = (

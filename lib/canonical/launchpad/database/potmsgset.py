@@ -24,6 +24,7 @@ class POTMsgSet(SQLBase):
 
     _table = 'POTMsgSet'
 
+    context = StringCol(dbName='context', notNull=False)
     primemsgid_ = ForeignKey(foreignKey='POMsgID', dbName='primemsgid',
         notNull=True)
     sequence = IntCol(dbName='sequence', notNull=True)

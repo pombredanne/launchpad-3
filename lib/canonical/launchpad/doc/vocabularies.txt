@@ -770,7 +770,7 @@ The BranchVocabulary recognises both unique names and URLs as tokens:
     >>> term.value == branch
     True
     >>> term = branch_vocabulary.getTermByToken(
-    ...     'http://bazaar.launchpad.net/~name12/gnome-terminal/main/')
+    ...     'http://bazaar.launchpad.dev/~name12/gnome-terminal/main/')
     >>> term.value == branch
     True
     >>> term = branch_vocabulary.getTermByToken(
