@@ -540,7 +540,7 @@ class POFile(SQLBase, POFileMixIn):
         return POMsgSet.selectOneBy(
             potmsgset=potmsgset, pofile=self)
 
-    def getPOMsgSet(self, key, only_current=False):
+    def getPOMsgSet(self, key, only_current=False, context=None):
         """See `IPOFile`."""
         query = 'potemplate = %d' % self.potemplate.id
         if only_current:
@@ -559,8 +559,13 @@ class POFile(SQLBase, POFileMixIn):
 
         # Find a message set with the given message ID.
 
+        if context is not None:
+            query += ' AND context=%s' % sqlvalues(context)
+        else:
+            query += ' AND context IS NULL'
+
         potmsgset = POTMsgSet.selectOne(query +
-            (' AND primemsgid = %d' % pomsgid.id))
+            (' AND primemsgid = %s' % sqlvalues(pomsgid)))
 
         if potmsgset is None:
             # There is no IPOTMsgSet for this id.
@@ -861,16 +866,6 @@ class POFile(SQLBase, POFileMixIn):
             potmsgset=potmsgset,
             language=self.language)
         return pomsgset
-
-    def createMessageSetFromText(self, text):
-        """See `IPOFile`."""
-        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
-            text, only_current=False)
-
-        if potmsgset is None:
-            potmsgset = self.potemplate.createMessageSetFromText(text)
-
-        return self.createMessageSetFromMessageSet(potmsgset)
 
     def updateHeader(self, new_header):
         """See `IPOFile`."""
@@ -1279,9 +1274,9 @@ class DummyPOFile(POFileMixIn):
 
         return DummyPOMsgSet(self, potmsgset)
 
-    def getPOMsgSet(self, key, only_current=False):
+    def getPOMsgSet(self, key, only_current=False, context=None):
         """See `IPOFile`."""
-        query = 'potemplate = %d' % self.potemplate.id
+        query = 'potemplate = %s' % sqlvalues(self.potemplate)
         if only_current:
             query += ' AND sequence > 0'
 
@@ -1296,8 +1291,13 @@ class DummyPOFile(POFileMixIn):
 
             # Find a message set with the given message ID.
 
+            if context is not None:
+                query += ' AND context=%s' % sqlvalues(context)
+            else:
+                query += ' AND context IS NULL'
+
             potmsgset = POTMsgSet.selectOne(query +
-                (' AND primemsgid = %d' % pomsgid.id))
+                (' AND primemsgid = %s' % sqlvalues(pomsgid)))
 
         if potmsgset is None:
             # There is no IPOTMsgSet for this id.
@@ -1411,10 +1411,6 @@ class DummyPOFile(POFileMixIn):
         raise NotImplementedError
 
     def createMessageSetFromMessageSet(self, potmsgset):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
-    def createMessageSetFromText(self, text):
         """See `IPOFile`."""
         raise NotImplementedError
 

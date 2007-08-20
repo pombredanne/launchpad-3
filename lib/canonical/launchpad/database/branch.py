@@ -166,6 +166,11 @@ class Branch(SQLBase):
     mirror_request_time = UtcDateTimeCol(default=None)
 
     @property
+    def code_is_browseable(self):
+        """See `IBranch`."""
+        return self.revision_count > 0 and not self.private
+
+    @property
     def related_bugs(self):
         """See `IBranch`."""
         return [bug_branch.bug for bug_branch in self.bug_branches]
@@ -595,7 +600,7 @@ class BranchSet:
             return branch
 
     def getBranchesToScan(self):
-        """See IBranchSet.getBranchesToScan()"""
+        """See `IBranchSet`"""
         # Return branches where the scanned and mirrored IDs don't match.
         # Branches with a NULL last_mirrored_id have never been
         # successfully mirrored so there is no point scanning them.
@@ -646,41 +651,61 @@ class BranchSet:
                                'last_commit' : last_commit}
         return result
 
-    def getRecentlyChangedBranches(self, branch_count, visible_by_user=None):
+    def getRecentlyChangedBranches(
+        self, branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
         """See `IBranchSet`."""
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
-            Branch.last_scanned IS NOT NULL
-            AND Branch.owner <> %d
+            Branch.branch_type <> %s AND
+            Branch.last_scanned IS NOT NULL %s
             '''
-            % vcs_imports.id)
-        return Branch.select(
+            % (quote(BranchType.IMPORTED), lifecycle_clause))
+        results = Branch.select(
             self._generateBranchClause(query, visible_by_user),
-            limit=branch_count,
             orderBy=['-last_scanned', '-id'],
             prejoins=['author', 'product'])
+        if branch_count is not None:
+            results = results.limit(branch_count)
+        return results
 
-    def getRecentlyImportedBranches(self, branch_count, visible_by_user=None):
+    def getRecentlyImportedBranches(
+        self, branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
         """See `IBranchSet`."""
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
-            Branch.last_scanned IS NOT NULL
-            AND Branch.owner = %d
+            Branch.branch_type = %s AND
+            Branch.last_scanned IS NOT NULL %s
             '''
-            % vcs_imports.id)
-        return Branch.select(
+            % (quote(BranchType.IMPORTED), lifecycle_clause))
+        results = Branch.select(
             self._generateBranchClause(query, visible_by_user),
-            limit=branch_count,
             orderBy=['-last_scanned', '-id'],
             prejoins=['author', 'product'])
+        if branch_count is not None:
+            results = results.limit(branch_count)
+        return results
 
-    def getRecentlyRegisteredBranches(self, branch_count, visible_by_user=None):
+    def getRecentlyRegisteredBranches(
+        self, branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
         """See `IBranchSet`."""
-        return Branch.select(
-            self._generateBranchClause('', visible_by_user),
-            limit=branch_count,
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+        # Since the lifecycle_clause may or may not contain anything,
+        # we need something that is valid if the lifecycle clause starts
+        # with 'AND', so we choose true.
+        query = 'true %s' % lifecycle_clause
+        results = Branch.select(
+            self._generateBranchClause(query, visible_by_user),
             orderBy=['-date_created', '-id'],
             prejoins=['author', 'product'])
+        if branch_count is not None:
+            results = results.limit(branch_count)
+        return results
 
     def getLastCommitForBranches(self, branches):
         """Return a map of branch id to last commit time."""

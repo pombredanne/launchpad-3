@@ -149,6 +149,9 @@ def branch_index(context, view):
     else:
         return smartquote('"%s" branch in Launchpad') % (context.displayname)
 
+def branch_listing_cross_product(context, view):
+    return view.page_title
+
 branch_landing_candidates = ContextDisplayName(smartquote(
     'Landing candidates for "%s"'))
 
@@ -496,6 +499,8 @@ def hasspecifications_specs(context, view):
         return "Blueprints for %s" % context.title
 
 hassprints_sprints = ContextTitle("Events related to %s")
+
+hastranslationimports_index = 'Translation import queue'
 
 karmaaction_index = 'Karma actions'
 
