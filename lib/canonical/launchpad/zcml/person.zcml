@@ -31,6 +31,7 @@
   <content class="canonical.launchpad.database.Person">
     <allow interface="canonical.launchpad.interfaces.IPerson" />
     <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <require
       permission="launchpad.Edit"
       set_schema="canonical.launchpad.interfaces.IPerson"
@@ -50,7 +51,7 @@
     module="canonical.launchpad.browser.person"
     classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
         PersonSpecsMenu TeamBugsMenu TeamSpecsMenu PersonBranchesMenu
-        PersonSetFacets PersonSetContextMenu"
+        PersonSetFacets PersonSetContextMenu PersonTranslationsMenu"
     />
 
   <browser:url
@@ -235,6 +236,16 @@
     class="canonical.launchpad.browser.PersonTranslationView"
     permission="zope.Public"
     template="../templates/person-translations.pt" 
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
   <browser:page

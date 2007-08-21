@@ -170,8 +170,8 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         Return True if the upload is allowed and False if denied.
         """
 
-    def getLastUploads():
-        """Return the last five source uploads for this DistroSeries.
+    def getLatestUploads():
+        """Return the latest five source uploads for this DistroSeries.
 
         It returns a list containing up to five elements as
         IDistroSeriesSourcePackageRelease instances

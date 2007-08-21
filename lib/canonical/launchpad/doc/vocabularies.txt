@@ -560,7 +560,7 @@ All the binary packages in Launchpad.
 
     >>> bpn_vocabulary = vocabulary_registry.get(None, 'BinaryPackageName')
     >>> len(bpn_vocabulary)
-    6
+    7
 
     >>> bpn_terms = bpn_vocabulary.searchForTerms("mozilla")
     >>> len(bpn_terms)
@@ -575,7 +575,7 @@ All the source packages in Launchpad.
 
     >>> spn_vocabulary = vocabulary_registry.get(None, 'SourcePackageName')
     >>> len(spn_vocabulary)
-    16
+    17
 
     >>> spn_terms = spn_vocabulary.searchForTerms("mozilla")
     >>> len(spn_terms)
@@ -770,7 +770,7 @@ The BranchVocabulary recognises both unique names and URLs as tokens:
     >>> term.value == branch
     True
     >>> term = branch_vocabulary.getTermByToken(
-    ...     'http://bazaar.launchpad.net/~name12/gnome-terminal/main/')
+    ...     'http://bazaar.launchpad.dev/~name12/gnome-terminal/main/')
     >>> term.value == branch
     True
     >>> term = branch_vocabulary.getTermByToken(

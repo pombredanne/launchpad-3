@@ -10,7 +10,7 @@ to be used for non-script stuff.
 __metaclass__ = type
 
 # Don't import stuff from this module. Import it from canonical.scripts
-__all__ = ['log', 'logger', 'logger_options']
+__all__ = ['log', 'logger', 'logger_options', 'FakeLogger']
 
 import logging
 import re
@@ -28,6 +28,30 @@ from zope.component import getUtility
 from canonical.base import base
 from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
 from canonical.config import config
+
+
+class FakeLogger:
+    """Emulates a proper logger, just printing everything out to stdout.
+    Used exclusively in doc tests."""
+    def message(self, prefix, *stuff, **kw):
+        print prefix, ' '.join(stuff)
+
+        if 'exc_info' in kw:
+            import sys
+            import traceback
+            exception = traceback.format_exception(*sys.exc_info())
+            for thing in exception:
+                for line in thing.splitlines():
+                    self.log(line)
+
+    def log(self, *stuff, **kw):
+        self.message('log>', *stuff, **kw)
+
+    def warning(self, *stuff, **kw):
+        self.message('WARNING', *stuff, **kw)
+
+    def info(self, *stuff, **kw):
+        self.message('INFO', *stuff, **kw)
 
 class LibrarianFormatter(logging.Formatter):
     """A logging.Formatter that stores tracebacks in the Librarian and emits

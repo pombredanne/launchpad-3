@@ -34,7 +34,7 @@ first we'll register a couple of bugs for the Mozilla Firefox product:
     >>> browser.getLink('Report a bug').click()
     >>> browser.getLink('complicated bug filing form').click()
     >>> print extract_text(find_main_content(browser.contents))
-    Report a new bug...
+    Report a bug...
     >>> report_bug_url = browser.url
 
     >>> browser.getControl('Summary').value = 'Test Bug 1'

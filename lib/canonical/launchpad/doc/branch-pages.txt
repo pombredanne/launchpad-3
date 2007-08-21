@@ -17,7 +17,7 @@ Each branch is associated to an URL on the Supermirror, that includes the name
 of the owner and product of the branch.
 
 >>> gterm_dev_view.supermirror_url()
-u'http://bazaar.launchpad.net/~name12/gnome-terminal/main'
+u'http://bazaar.launchpad.dev/~name12/gnome-terminal/main'
 
 == Contextual branch views ==
 
@@ -160,7 +160,7 @@ True
 ...     if branch.bugbranches:
 ...         bugs = [bugbranch.bug.id for bugbranch in branch.bugbranches]
 ...     print branch.unique_name, bugs
-...                              
+...
 ~name12/firefox/main [4, 5]
 ~sabdfl/firefox/release--0.9.1 []
 ~sabdfl/firefox/release-0.8 []

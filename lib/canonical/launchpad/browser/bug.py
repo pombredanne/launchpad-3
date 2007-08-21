@@ -150,7 +150,7 @@ class BugContextMenu(ContextMenu):
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
-        text = 'Visibility/security'
+        text = 'Set privacy/security'
         return Link('+secrecy', text, icon='edit')
 
     def markduplicate(self):
@@ -158,7 +158,7 @@ class BugContextMenu(ContextMenu):
         return Link('+duplicate', text, icon='edit')
 
     def addupstream(self):
-        text = 'Also affects upstream'
+        text = 'Also affects project'
         return Link('+choose-affected-product', text, icon='add')
 
     def adddistro(self):
@@ -407,7 +407,7 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
 
     schema = IUpstreamBugTask
     field_names = ['product']
-    label = u"Add affected project to bug"
+    label = u"Record as affecting another project"
 
     def _getUpstream(self, distro_package):
         """Return the upstream if there is a packaging link."""
@@ -704,15 +704,14 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         notify(SQLObjectCreatedEvent(self.taskadded))
         self.next_url = canonical_url(self.taskadded)
 
-    @action('Yes, request fix anyway', name='confirm',
-            condition=actionIsAvailable)
+    @action('Yes, Add Anyway', name='confirm', condition=actionIsAvailable)
     def confirm_action(self, action, data):
         self.continue_action.success(data)
 
 
 class BugAlsoReportInDistributionView(BugAlsoReportInView):
 
-    label = "Add affected source package to bug"
+    label = "Also affects distribution/package",
     target_field_names = ('distribution', 'sourcepackagename')
 
     def render(self):
@@ -733,11 +732,9 @@ class BugAlsoReportInDistributionView(BugAlsoReportInView):
 
 class BugAlsoReportInUpstreamView(BugAlsoReportInView):
 
-    label = "Add affected project to bug"
+    label = "Confirm project"
     target_field_names = ('product',)
-
-    def getMainActionLabel(self, product):
-        return u'Indicate bug in %s' % cgi.escape(product.displayname)
+    main_action_label = u'Add to Bug Report'
 
     def render(self):
         # It's not possible to enter the product on this page, so
@@ -768,7 +765,7 @@ class BugAlsoReportInUpstreamView(BugAlsoReportInView):
         # action", so we need to assign it to itself in order for the
         # label change to stick around.
         self.main_action = self.main_action
-        self.main_action.label = self.getMainActionLabel(product)
+        self.main_action.label = self.main_action_label
         # See note in BugAlsoReportInDistributionView.render.
         self.actions = [self.main_action]
         return super(BugAlsoReportInUpstreamView, self).render()
@@ -835,13 +832,10 @@ class BugAlsoReportInUpstreamWithBugTrackerCreationView(
         BugAlsoReportInWithBugTrackerCreationMixinView,
         BugAlsoReportInUpstreamView):
 
+    main_action_label = u'Register Bug Tracker and Add to Bug Report'
     # Need to define this here because we may call this view manually.
     template = ViewPageTemplateFile(
         '../templates/bugtask-requestfix-upstream.pt')
-
-    def getMainActionLabel(self, product):
-        return (u'Register Bug Tracker and Indicate bug in %s'
-                % cgi.escape(product.displayname))
 
     def render(self):
         self._action_url = ("%s/+add-affected-product-with-bugtracker"
