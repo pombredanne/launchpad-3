@@ -52,34 +52,66 @@ class Archive(SQLBase):
     @property
     def title(self):
         """See `IArchive`."""
-        if self.owner is not None:
+        if self.purpose == ArchivePurpose.PPA:
             return 'Personal Package Archive for %s' % self.owner.displayname
-        return '%s main archive' % self.distribution.title
+        return '%s for %s' % (self.purpose.title, self.distribution.title)
 
     @property
     def archive_url(self):
         """See `IArchive`."""
-        return urlappend(
-            config.personalpackagearchive.base_url, self.owner.name)
+        archive_postfixes = {
+            ArchivePurpose.PRIMARY : '',
+            ArchivePurpose.COMMERCIAL : '-commercial',
+        }
+
+        if self.purpose == ArchivePurpose.PPA:
+            return urlappend(
+                config.personalpackagearchive.base_url, 
+                self.owner.name + '/' + self.distribution.name)
+
+        try:
+            postfix = archive_postfixes[self.purpose]
+        except KeyError:
+            raise AssertionError("archive_url unknown for purpose: %s" %
+                self.purpose)
+        return urlappend(config.archivepublisher.base_url,
+            self.distribution.name + postfix)
 
     def getPubConfig(self):
         """See `IArchive`."""
         pubconf = PubConfig(self.distribution)
 
         if self.purpose == ArchivePurpose.PRIMARY:
-            return pubconf
+            pass
+        elif self.purpose == ArchivePurpose.PPA:
+            pubconf.distroroot = config.personalpackagearchive.root
+            pubconf.archiveroot = os.path.join(
+                pubconf.distroroot, self.owner.name, self.distribution.name)
+            pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
+            pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
+            pubconf.overrideroot = None
+            pubconf.cacheroot = None
+            pubconf.miscroot = None
+        elif self.purpose == ArchivePurpose.COMMERCIAL:
+            # Reset the list of components to commercial only.  This prevents
+            # any publisher runs from generating components not related to
+            # the commercial archive.
+            for distroseries in pubconf._distroserieses.keys():
+                pubconf._distroserieses[
+                    distroseries]['components'] = ['commercial']
 
-        pubconf.distroroot = config.personalpackagearchive.root
-
-        pubconf.archiveroot = os.path.join(
-            pubconf.distroroot, self.owner.name, self.distribution.name)
-
-        pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
-        pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
-
-        pubconf.overrideroot = None
-        pubconf.cacheroot = None
-        pubconf.miscroot = None
+            pubconf.distroroot = config.archivepublisher.root
+            pubconf.archiveroot = os.path.join(pubconf.distroroot,
+                self.distribution.name + '-commercial')
+            pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
+            pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
+            pubconf.overrideroot = None
+            pubconf.cacheroot = None
+            pubconf.miscroot = None
+        else:
+            raise AssertionError(
+                "Unknown archive purpose %s when getting publisher config.",
+                self.purpose)
 
         return pubconf
 
@@ -228,6 +260,7 @@ class ArchiveSet:
         return Archive.get(archive_id)
 
     def getByDistroPurpose(self, distribution, purpose):
+        """See `IArchiveSet`."""
         return Archive.selectOneBy(distribution=distribution, purpose=purpose)
 
     def new(self, distribution=None, purpose=None, owner=None,
@@ -244,10 +277,15 @@ class ArchiveSet:
 
     def ensure(self, owner, distribution, purpose):
         """See `IArchiveSet`."""
-        archive = owner.archive
-        if archive is None:
-            archive = self.new(
-                distribution=distribution, purpose=purpose, owner=owner)
+        if owner is not None:
+            archive = owner.archive
+            if archive is None:
+                archive = self.new(distribution=distribution, purpose=purpose,
+                                   owner=owner)
+        else:
+            archive = self.getByDistroPurpose(distribution, purpose)
+            if archive is None:
+                archive = self.new(distribution, purpose)
         return archive
 
     def __iter__(self):

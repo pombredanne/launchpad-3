@@ -91,8 +91,10 @@ def _is_sensitive(request, name):
     if name == 'HTTP_COOKIE':
         return True
 
-    # Allow remaining UPPERCASE names and remaining form variables
-    if name == upper_name or name in request.form:
+    # Allow remaining UPPERCASE names and remaining form variables.  Note that
+    # XMLRPC requests won't have a form attribute.
+    form = getattr(request, 'form', [])
+    if name == upper_name or name in form:
         return False
 
     # Block everything else

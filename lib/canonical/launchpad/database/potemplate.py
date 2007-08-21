@@ -261,11 +261,15 @@ class POTemplate(SQLBase, RosettaStats):
                 sourcepackagename=self.sourcepackagename)
         raise AssertionError('Unknown POTemplate translation target')
 
-    def getPOTMsgSetByMsgIDText(self, key, only_current=False):
-        """See IPOTemplate."""
+    def getPOTMsgSetByMsgIDText(self, key, only_current=False, context=None):
+        """See `IPOTemplate`."""
         query = 'potemplate = %s' % sqlvalues(self.id)
         if only_current:
             query += ' AND sequence > 0'
+        if context is not None:
+            query += ' AND context=%s' % sqlvalues(context)
+        else:
+            query += ' AND context IS NULL'
 
         # Find a message ID with the given text.
         try:
@@ -397,10 +401,11 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             pofile.rosettaCount()
 
-    def hasMessageID(self, messageID):
+    def hasMessageID(self, messageID, context=None):
         """See IPOTemplate."""
-        results = POTMsgSet.selectBy(potemplate=self, primemsgid_=messageID)
-        return results.count() > 0
+        results = POTMsgSet.selectBy(potemplate=self, primemsgid_=messageID,
+                                     context=context)
+        return bool(results)
 
     def hasPluralMessage(self):
         """See IPOTemplate."""
@@ -516,9 +521,10 @@ class POTemplate(SQLBase, RosettaStats):
             inlastrevision=True,
             pluralform=0)
 
-    def createMessageSetFromMessageID(self, messageID):
+    def createMessageSetFromMessageID(self, messageID, context=None):
         """See IPOTemplate."""
         messageSet = POTMsgSet(
+            context=context,
             primemsgid_=messageID,
             sequence=0,
             potemplate=self,
@@ -529,7 +535,7 @@ class POTemplate(SQLBase, RosettaStats):
         self.createMessageIDSighting(messageSet, messageID)
         return messageSet
 
-    def createMessageSetFromText(self, text):
+    def createMessageSetFromText(self, text, context=None):
         """See IPOTemplate."""
         try:
             messageID = POMsgID.byMsgid(text)
@@ -539,11 +545,11 @@ class POTemplate(SQLBase, RosettaStats):
             # with the given text in this template.
             messageID = POMsgID(msgid=text)
         else:
-            assert not self.hasMessageID(messageID), (
+            assert not self.hasMessageID(messageID, context), (
                 "There is already a message set for this template, file and"
-                " primary msgid")
+                " primary msgid and context '%r'" % context)
 
-        return self.createMessageSetFromMessageID(messageID)
+        return self.createMessageSetFromMessageID(messageID, context)
 
     def invalidateCache(self):
         """See IPOTemplate."""

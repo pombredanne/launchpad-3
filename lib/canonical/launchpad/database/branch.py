@@ -28,7 +28,10 @@ from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchType, BranchVisibilityRule,
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchSet, ILaunchpadCelebrities, NotFoundError)
+    IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal,
+    NotFoundError)
+from canonical.launchpad.database.branchmergeproposal import (
+    BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
@@ -98,7 +101,74 @@ class Branch(SQLBase):
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
+    landing_targets = SQLMultipleJoin(
+        'BranchMergeProposal', joinColumn='source_branch')
+
+    @property
+    def landing_candidates(self):
+        """See `IBranch`."""
+        return BranchMergeProposal.selectBy(
+            target_branch=self, date_merged=None)
+
+    @property
+    def dependent_branches(self):
+        """See `IBranch`."""
+        return BranchMergeProposal.selectBy(
+            dependent_branch=self, date_merged=None)
+
+    def addLandingTarget(self, registrant, target_branch,
+                         dependent_branch=None, whiteboard=None,
+                         date_created=None):
+        """See `IBranch`."""
+        if self.product is None:
+            raise InvalidBranchMergeProposal(
+                'Junk branches cannot be used as source branches.')
+        if not IBranch.providedBy(target_branch):
+            raise InvalidBranchMergeProposal(
+                'Target branch must implement IBranch.')
+        if self == target_branch:
+            raise InvalidBranchMergeProposal(
+                'Source and target branches must be different.')
+        if self.product != target_branch.product:
+            raise InvalidBranchMergeProposal(
+                'The source branch and target branch must be branches of the '
+                'same project.')
+        if dependent_branch is not None:
+            if not IBranch.providedBy(dependent_branch):
+                raise InvalidBranchMergeProposal(
+                    'Dependent branch must implement IBranch.')
+            if self.product != dependent_branch.product:
+                raise InvalidBranchMergeProposal(
+                    'The source branch and dependent branch must be branches '
+                    'of the same project.')
+            if self == dependent_branch:
+                raise InvalidBranchMergeProposal(
+                    'Source and dependent branches must be different.')
+            if target_branch == dependent_branch:
+                raise InvalidBranchMergeProposal(
+                    'Target and dependent branches must be different.')
+
+        target = BranchMergeProposal.selectOneBy(
+            source_branch=self, target_branch=target_branch, date_merged=None)
+        if target is not None:
+            raise InvalidBranchMergeProposal(
+                'There is already a branch merge proposal registered for '
+                'branch %s to land on %s'
+                % (self.unique_name, target_branch.unique_name))
+
+        if date_created is None:
+            date_created = UTC_NOW
+        return BranchMergeProposal(
+            registrant=registrant, source_branch=self,
+            target_branch=target_branch, dependent_branch=dependent_branch,
+            whiteboard=whiteboard, date_created=date_created)
+
     mirror_request_time = UtcDateTimeCol(default=None)
+
+    @property
+    def code_is_browseable(self):
+        """See `IBranch`."""
+        return self.revision_count > 0 and not self.private
 
     @property
     def related_bugs(self):
@@ -530,7 +600,7 @@ class BranchSet:
             return branch
 
     def getBranchesToScan(self):
-        """See IBranchSet.getBranchesToScan()"""
+        """See `IBranchSet`"""
         # Return branches where the scanned and mirrored IDs don't match.
         # Branches with a NULL last_mirrored_id have never been
         # successfully mirrored so there is no point scanning them.
@@ -581,41 +651,61 @@ class BranchSet:
                                'last_commit' : last_commit}
         return result
 
-    def getRecentlyChangedBranches(self, branch_count, visible_by_user=None):
+    def getRecentlyChangedBranches(
+        self, branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
         """See `IBranchSet`."""
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
-            Branch.last_scanned IS NOT NULL
-            AND Branch.owner <> %d
+            Branch.branch_type <> %s AND
+            Branch.last_scanned IS NOT NULL %s
             '''
-            % vcs_imports.id)
-        return Branch.select(
+            % (quote(BranchType.IMPORTED), lifecycle_clause))
+        results = Branch.select(
             self._generateBranchClause(query, visible_by_user),
-            limit=branch_count,
             orderBy=['-last_scanned', '-id'],
             prejoins=['author', 'product'])
+        if branch_count is not None:
+            results = results.limit(branch_count)
+        return results
 
-    def getRecentlyImportedBranches(self, branch_count, visible_by_user=None):
+    def getRecentlyImportedBranches(
+        self, branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
         """See `IBranchSet`."""
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
-            Branch.last_scanned IS NOT NULL
-            AND Branch.owner = %d
+            Branch.branch_type = %s AND
+            Branch.last_scanned IS NOT NULL %s
             '''
-            % vcs_imports.id)
-        return Branch.select(
+            % (quote(BranchType.IMPORTED), lifecycle_clause))
+        results = Branch.select(
             self._generateBranchClause(query, visible_by_user),
-            limit=branch_count,
             orderBy=['-last_scanned', '-id'],
             prejoins=['author', 'product'])
+        if branch_count is not None:
+            results = results.limit(branch_count)
+        return results
 
-    def getRecentlyRegisteredBranches(self, branch_count, visible_by_user=None):
+    def getRecentlyRegisteredBranches(
+        self, branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
         """See `IBranchSet`."""
-        return Branch.select(
-            self._generateBranchClause('', visible_by_user),
-            limit=branch_count,
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+        # Since the lifecycle_clause may or may not contain anything,
+        # we need something that is valid if the lifecycle clause starts
+        # with 'AND', so we choose true.
+        query = 'true %s' % lifecycle_clause
+        results = Branch.select(
+            self._generateBranchClause(query, visible_by_user),
             orderBy=['-date_created', '-id'],
             prejoins=['author', 'product'])
+        if branch_count is not None:
+            results = results.limit(branch_count)
+        return results
 
     def getLastCommitForBranches(self, branches):
         """Return a map of branch id to last commit time."""
