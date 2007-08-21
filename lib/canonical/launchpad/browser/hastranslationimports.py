@@ -252,7 +252,7 @@ class HasTranslationImportsView(LaunchpadFormView):
             elif '/' in target:
                 # It's a distroseries, for them we have
                 # 'distribution.name/distroseries.name' to identify it.
-                distribution_name, distroseries_name = target.split('/')
+                distribution_name, distroseries_name = target.split('/', 1)
                 pillar = pillar_name_set.getByName(distribution_name)
                 if IDistribution.providedBy(pillar):
                     target = pillar.getSeries(distroseries_name)
