@@ -408,6 +408,15 @@ k            </description>
             </description>
         </key>
 
+        <key name="componentoverride" datatype="string" required="no">
+            <description>
+                If specified, override packages' components to this value.
+                This only affects the publisher tables and may also override
+                the archive according to the existing component/archive
+                overriding rules.
+            </description>
+        </key>
+
         <key name="katie_dbname" datatype="string" required="no">
             <description>
                 The Katie database that should be used to extract extra

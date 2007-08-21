@@ -297,8 +297,9 @@ We check that the source package publishing override facility works:
     >>> for pub in SSPPH.selectBy(
     ...     sourcepackagereleaseID=db1.id, orderBy='distrorelease'):
     ...     print pub.distroseries.name, pub.section.name
-    hoary libs
-    breezy oldlibs
+    ...     print pub.archive.purpose.name
+    hoary libs PRIMARY
+    breezy oldlibs PRIMARY
 
 We should have one entry for each package listed in Sources that was
 successfully processed.
@@ -413,8 +414,9 @@ We check that the binary package publishing override facility works:
     >>> for pub in SecureBinaryPackagePublishingHistory.selectBy(
     ...     binarypackagereleaseID=db1.id, orderBy='distroarchrelease'):
     ...     print pub.distroarchseries.distroseries.name, pub.priority
-    hoary Required
-    breezy Optional
+    ...     print pub.archive.purpose.name
+    hoary Required PRIMARY
+    breezy Optional PRIMARY
 
 XXX: test package with invalid source version
 XXX: test package with maintainer with non-ascii name
@@ -583,6 +585,51 @@ that's what overrides actually do.
     ...                         orderBy=["-datecreated"])[0]
     >>> print ac_pub.component.name
     universe
+
+
+=== Commercial archive import ===
+
+Importing the commercial archive requires overriding the component to
+"commercial", which also makes the archive on any publishing records the
+commercial archive.
+
+First get a count of the number of existing commercial publishings for
+both source and binary:
+
+    >>> comm_archive = ubuntu.getArchiveByComponent('commercial')
+    >>> hoary = ubuntu['hoary']
+    >>> hoary_i386 = hoary['i386']
+    >>> SSPPH.select("""distrorelease = %s AND
+    ...                 archive = %s""" %
+    ...                 sqlvalues(hoary, comm_archive)).count()
+    0
+
+    >>> SBPPH.select("""distroarchrelease = %s AND
+    ...                 archive = %s""" %
+    ...                 sqlvalues(hoary_i386, comm_archive)).count()
+    0
+
+As can be seen, the existing count is zero.  Now run gina to import packages 
+and convert them to commercial:
+
+    >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q', 'commercial']
+    >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
+    >>> proc.wait()
+    0
+    >>> transaction.commit()
+
+There will now be a number of publishings in the commercial archive:
+
+    >>> SSPPH.select("""distrorelease = %s AND
+    ...                 archive = %s""" %
+    ...                 sqlvalues(hoary, comm_archive)).count()
+    11
+
+    >>> SBPPH.select("""distroarchrelease = %s AND
+    ...                 archive = %s""" %
+    ...                 sqlvalues(hoary_i386, comm_archive)).count()
+    24
+
 
 === Other tests ===
 

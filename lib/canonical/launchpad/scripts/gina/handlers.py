@@ -108,9 +108,10 @@ class ImporterHandler:
     This class is used to handle the import process.
     """
     def __init__(self, ztm, distro_name, distroseries_name, dry_run,
-                 ktdb, archive_root, keyrings, pocket):
+                 ktdb, archive_root, keyrings, pocket, component_override):
         self.dry_run = dry_run
         self.pocket = pocket
+        self.component_override = component_override
         self.ztm = ztm
 
         self.distro = self._get_distro(distro_name)
@@ -121,11 +122,12 @@ class ImporterHandler:
         self.imported_bins = {}
 
         self.sphandler = SourcePackageHandler(ktdb, archive_root, keyrings,
-                                              pocket)
+                                              pocket, component_override)
         self.bphandler = BinaryPackageHandler(self.sphandler, archive_root,
                                               pocket)
 
-        self.sppublisher = SourcePackagePublisher(self.distroseries, pocket)
+        self.sppublisher = SourcePackagePublisher(
+            self.distroseries, pocket, self.component_override)
         # This is initialized in ensure_archinfo
         self.bppublishers = {}
 
@@ -164,7 +166,8 @@ class ImporterHandler:
         info = {'distroarchseries': dar, 'processor': processor}
         self.archinfo[archtag] = info
 
-        self.bppublishers[archtag] = BinaryPackagePublisher(dar, self.pocket)
+        self.bppublishers[archtag] = BinaryPackagePublisher(
+            dar, self.pocket, self.component_override)
         self.imported_bins[archtag] = []
 
     #
@@ -350,6 +353,7 @@ class DistroHandler:
         # database queries over and over again.
         self.compcache = {} 
         self.sectcache = {}
+        self.archivecache = {}
 
     def getComponentByName(self, component):
         """Returns a component object by its name."""
@@ -378,6 +382,17 @@ class DistroHandler:
         self.sectcache[section] = ret
         return ret
 
+    def getArchiveByDistroComponent(self, distribution, component):
+        """Return an archive appropriate for the distro and component."""
+        # It's safe to ignore distribution in the cache because it won't
+        # change over the course of the lifetime of the script run.
+        if component in self.archivecache:
+            return self.archivecache[component]
+
+        ret = distribution.getArchiveByComponent(component.name)
+        self.archivecache[component] = ret
+        return ret
+
 
 class SourcePackageHandler:
     """SourcePackageRelease Handler class
@@ -385,12 +400,14 @@ class SourcePackageHandler:
     This class has methods to make the sourcepackagerelease access
     on the launchpad db a little easier.
     """
-    def __init__(self, KTDB, archive_root, keyrings, pocket):
+    def __init__(self, KTDB, archive_root, keyrings, pocket,
+                 component_override):
         self.distro_handler = DistroHandler()
         self.ktdb = KTDB
         self.archive_root = archive_root
         self.keyrings = keyrings
         self.pocket = pocket
+        self.component_override = component_override
 
     def ensureSourcePackageName(self, name):
         return SourcePackageName.ensure(name)
@@ -438,7 +455,8 @@ class SourcePackageHandler:
         # the binary import is started. Thusly since this source is
         # being imported "late" in the process, we publish it immediately
         # to make sure it doesn't get lost.
-        SourcePackagePublisher(distroseries, self.pocket).publish(spr, sp_data)
+        SourcePackagePublisher(distroseries, self.pocket,
+                               self.component_override).publish(spr, sp_data)
         return spr
 
     def _getSourcePackageDataFromDSC(self, sp_name, sp_version,
@@ -594,10 +612,11 @@ class SourcePackageHandler:
 class SourcePackagePublisher:
     """Class to handle the sourcepackagerelease publishing process."""
 
-    def __init__(self, distroseries, pocket):
+    def __init__(self, distroseries, pocket, component_override):
         # Get the distroseries where the sprelease will be published.
         self.distroseries = distroseries
         self.pocket = pocket
+        self.component_override = component_override
         self.distro_handler = DistroHandler()
 
     def publish(self, sourcepackagerelease, spdata):
@@ -605,7 +624,16 @@ class SourcePackagePublisher:
         # Check if the sprelease is already published and if so, just
         # report it.
 
-        component = self.distro_handler.getComponentByName(spdata.component)
+        if self.component_override:
+            component = self.distro_handler.getComponentByName(
+                self.component_override)
+            log.info('Overriding source %s component' %
+                sourcepackagerelease.sourcepackagename.name)
+        else:
+            component = self.distro_handler.getComponentByName(
+                spdata.component)
+        archive = self.distro_handler.getArchiveByDistroComponent(
+            self.distroseries.distribution, component)
         section = self.distro_handler.ensureSection(spdata.section)
 
         source_publishinghistory = self._checkPublishing(sourcepackagerelease)
@@ -631,7 +659,7 @@ class SourcePackagePublisher:
             datecreated=UTC_NOW,
             datepublished=UTC_NOW,
             pocket=self.pocket,
-            archive=self.distroseries.main_archive
+            archive=archive
             )
         log.info('Source package %s (%s) published' % (
             entry.sourcepackagerelease.sourcepackagename.name,
@@ -818,9 +846,10 @@ class BinaryPackageHandler:
 
 class BinaryPackagePublisher:
     """Binarypackage publisher class."""
-    def __init__(self, distroarchseries, pocket):
+    def __init__(self, distroarchseries, pocket, component_override):
         self.distroarchseries = distroarchseries
         self.pocket = pocket
+        self.component_override = component_override
         self.distro_handler = DistroHandler()
 
     def publish(self, binarypackage, bpdata):
@@ -829,7 +858,16 @@ class BinaryPackagePublisher:
         # binary package release: the data represents data from /this
         # specific distroseries/, whereas the package represents data
         # from when it was first built.
-        component = self.distro_handler.getComponentByName(bpdata.component)
+        if self.component_override is not None:
+            component = self.distro_handler.getComponentByName(
+                self.component_override)
+            log.info('Overriding binary %s component' %
+                binarypackage.binarypackagename.name)
+        else:
+            component = self.distro_handler.getComponentByName(
+                bpdata.component)
+        archive = self.distro_handler.getArchiveByDistroComponent(
+            self.distroarchseries.distroseries.distribution, component)
         section = self.distro_handler.ensureSection(bpdata.section)
         priority = prioritymap[bpdata.priority]
 
@@ -864,7 +902,7 @@ class BinaryPackagePublisher:
             supersededby = None,
             datemadepending = None,
             dateremoved = None,
-            archive=self.distroarchseries.main_archive
+            archive=archive
             )
 
         log.info('BinaryPackage %s-%s published into %s.' % (
