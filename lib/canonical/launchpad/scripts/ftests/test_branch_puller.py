@@ -17,8 +17,6 @@ from bzrlib.branch import Branch
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.urlutils import local_path_from_url
 
-from twisted.application import strports
-
 from zope.component import getUtility
 
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
@@ -30,15 +28,8 @@ from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.testing import LaunchpadZopelessLayer
 
 
-def _getPort():
-    portDescription = config.authserver.port
-    kind, args, kwargs = strports.parse(portDescription, None)
-    assert kind == 'TCP'
-    return int(args[0])
-
-
 class TestBranchPuller(TestCaseWithTransport):
-    """Acceptance tests for the branch puller.
+    """Integration tests for the branch puller.
 
     These tests actually run the supermirror-pull.py script. Instead of
     checking specific behaviour, these tests help ensure that all of the
@@ -74,7 +65,7 @@ class TestBranchPuller(TestCaseWithTransport):
         """Assert that the command ran successfully.
 
         'Successfully' means that it's return code was 0 and it printed nothing
-        to stdout.
+        to stdout or stderr.
         """
         message = '\n'.join(
             ['Command: %r' % (command,),
@@ -86,6 +77,7 @@ class TestBranchPuller(TestCaseWithTransport):
              stderr])
         self.assertEqual(0, retcode, message)
         self.assertEqual('', stdout)
+        self.assertEqual('', stderr)
 
     def createTemporaryBazaarBranchAndTree(self):
         """Create a local branch with one revision, return the working tree."""
@@ -139,14 +131,14 @@ class TestBranchPuller(TestCaseWithTransport):
         return getUtility(IBranchSet).get(branch_id)
 
     def getHostedPath(self, branch):
+        """Return the path of 'branch' in the upload area."""
         return os.path.join(
-            config.codehosting.branches_root,
-            split_branch_id(branch.id))
+            config.codehosting.branches_root, split_branch_id(branch.id))
 
     def getMirroredPath(self, branch):
+        """Return the path of 'branch' in the supermirror area."""
         return os.path.join(
-            config.supermirror.branchesdest,
-            split_branch_id(branch.id))
+            config.supermirror.branchesdest, split_branch_id(branch.id))
 
     def makeCleanDirectory(self, path):
         """Guarantee an empty branch upload area."""
@@ -155,6 +147,10 @@ class TestBranchPuller(TestCaseWithTransport):
         os.makedirs(path)
 
     def pushToBranch(self, branch):
+        """Push a trivial Bazaar branch to a given Launchpad branch.
+
+        :param branch: A Launchpad Branch object.
+        """
         hosted_path = self.getHostedPath(branch)
         tree = self.createTemporaryBazaarBranchAndTree()
         out, err = self.run_bzr(
@@ -174,12 +170,19 @@ class TestBranchPuller(TestCaseWithTransport):
         return process.returncode, output, error
 
     def runPuller(self, branch_type):
+        """Run the puller script for the given branch type.
+
+        :param branch_type: One of 'upload', 'mirror' or 'import'
+        :return: Tuple of command, retcode, output, error. 'command' is the
+            executed command as a list, retcode is the process's return code,
+            output and error are strings contain the output of the process to
+            stdout and stderr respectively.
+        """
         command = [
             sys.executable, os.path.join(self._puller_script), '-q',
             branch_type]
         retcode, output, error = self.runSubprocess(command)
-        self.assertRanSuccessfully(command, retcode, output, error)
-        return error
+        return command, retcode, output, error
 
     def test_fixture(self):
         """Confirm the fixture is set up correctly.
@@ -189,16 +192,14 @@ class TestBranchPuller(TestCaseWithTransport):
         """
         self.assertEqual([], os.listdir(config.codehosting.branches_root))
         self.assertEqual([], os.listdir(config.supermirror.branchesdest))
-        server = xmlrpclib.Server('http://localhost:%s/branch/' % _getPort())
+        server = xmlrpclib.Server(config.supermirror.authserver_url)
         self.assertEqual([], server.getBranchPullQueue())
         self.failUnless(
             os.path.isfile(self._puller_script),
             "%s doesn't exist" % (self._puller_script,))
 
     def test_mirrorABranch(self):
-        """Push to a Launchpad branch, request a mirror, then run the mirror
-        script.
-        """
+        """Run the puller on a populated pull queue."""
         # XXX: JonathanLange 2007-08-21, This test will fail if run by itself,
         # due to an unidentified bug in bzrlib.trace, possibly related to bug
         # 124849.
@@ -206,18 +207,16 @@ class TestBranchPuller(TestCaseWithTransport):
         self.pushToBranch(branch)
         branch.requestMirror()
         LaunchpadZopelessLayer.txn.commit()
-        script_output = self.runPuller('upload')
-        self.assertEqual('', script_output)
+        command, retcode, output, error = self.runPuller('upload')
+        self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(branch)
 
     def test_mirrorEmpty(self):
-        """The puller script runs without output when there are no branches to
-        mirror.
-        """
-        script_output = self.runPuller("upload")
-        self.assertEqual('', script_output)
+        """Run the puller on an empty pull queue."""
+        command, retcode, output, error = self.runPuller("upload")
+        self.assertRanSuccessfully(command, retcode, output, error)
 
-    # Variations
+    # Possible tests to add:
     # - branch already exists in new location
     # - private branches
     # - mirrored branches?
@@ -225,6 +224,8 @@ class TestBranchPuller(TestCaseWithTransport):
     # - branch doesn't exist in fs?
     # - different branch exists in new location
     # - running puller while another puller is running
+    # - expected output on non-quiet runs
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
