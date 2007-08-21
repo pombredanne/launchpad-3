@@ -36,7 +36,6 @@ def clear_cache():
 PENDING = PackagePublishingStatus.PENDING
 PUBLISHED = PackagePublishingStatus.PUBLISHED
 SUPERSEDED = PackagePublishingStatus.SUPERSEDED
-PENDINGREMOVAL = PackagePublishingStatus.PENDINGREMOVAL
 
 # Ugly, but works
 apt_pkg.InitSystem()
@@ -202,13 +201,9 @@ class Dominator:
         have no binaries in this distroseries which are published or
         superseded
 
-        When a package is considered for death row its status in the
-        publishing table is set to PENDINGREMOVAL and the
-        datemadepending is set to now.
-
-        The package is then given a scheduled deletion date of now
-        plus the defined stay of execution time provided in the
-        configuration parameter.
+        When a package is considered for death row it is given a
+        'scheduled deletion date' of now plus the defined 'stay of execution'
+        time provided in the configuration parameter.
         """
 
         self.debug("Beginning superseded processing...")
@@ -241,9 +236,10 @@ class Dominator:
                            (binpkg_release.binarypackagename.name,
                             binpkg_release.version,
                             pub_record.distroarchseries.architecturetag))
-                pub_record.status = PENDINGREMOVAL
                 pub_record.scheduleddeletiondate = (
                     UTC_NOW + timedelta(days=conf.stayofexecution))
+                # XXX cprov 20070820: it is useless, since it's always equals
+                # to scheduleddeletiondate - quarantine.
                 pub_record.datemadepending = UTC_NOW
 
         for pub_record in source_records:
@@ -300,10 +296,11 @@ class Dominator:
                     "%s/%s (%s) source has been judged eligible for removal" %
                            (srcpkg_release.sourcepackagename.name,
                             srcpkg_release.version, pub_record.id))
-                pub_record.status = PENDINGREMOVAL
-                pub_record.datemadepending = UTC_NOW
                 pub_record.scheduleddeletiondate = (
                     UTC_NOW + timedelta(days=conf.stayofexecution))
+                # XXX cprov 20070820: it is useless, since it's always equals
+                # to scheduleddeletiondate - quarantine.
+                pub_record.datemadepending = UTC_NOW
 
     def judgeAndDominate(self, dr, pocket, config, do_clear_cache=True):
         """Perform the domination and superseding calculations

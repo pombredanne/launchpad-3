@@ -443,7 +443,8 @@ class TestPublisher(TestNativePublishingBase):
         """Test the careful domination procedure.
 
         Check if it works on a development series.
-        A SUPERSEDED published source should be moved to PENDINGREMOVAL.
+        A SUPERSEDED published source should have its scheduleddeletiondate
+        set.
         """
         from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
@@ -452,6 +453,7 @@ class TestPublisher(TestNativePublishingBase):
 
         pub_source = self.getPubSource(
             status=PackagePublishingStatus.SUPERSEDED)
+        self.assertTrue(pub_source.scheduleddeletiondate is None)
 
         publisher.B_dominate(True)
         self.layer.txn.commit()
@@ -465,13 +467,16 @@ class TestPublisher(TestNativePublishingBase):
 
         # Publishing record got scheduled for removal
         self.assertEqual(
-            pub_source.status, PackagePublishingStatus.PENDINGREMOVAL)
+            pub_source.status, PackagePublishingStatus.SUPERSEDED)
+        self.assertTrue(pub_source.scheduleddeletiondate is not None)
+
 
     def testCarefulDominationOnObsoleteSeries(self):
         """Test the careful domination procedure.
 
         Check if it works on a obsolete series.
-        A SUPERSEDED published source should be moved to PENDINGREMOVAL.
+        A SUPERSEDED published source should be have its scheduleddeletiondate
+        set.
         """
         from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
@@ -483,6 +488,7 @@ class TestPublisher(TestNativePublishingBase):
 
         pub_source = self.getPubSource(
             status=PackagePublishingStatus.SUPERSEDED)
+        self.assertTrue(pub_source.scheduleddeletiondate is None)
 
         publisher.B_dominate(True)
         self.layer.txn.commit()
@@ -494,7 +500,8 @@ class TestPublisher(TestNativePublishingBase):
 
         # Publishing record got scheduled for removal.
         self.assertEqual(
-            pub_source.status, PackagePublishingStatus.PENDINGREMOVAL)
+            pub_source.status, PackagePublishingStatus.SUPERSEDED)
+        self.assertTrue(pub_source.scheduleddeletiondate is not None)
 
     def assertReleaseFileRequested(self, publisher, suite_name,
                                    component_name, arch_name):

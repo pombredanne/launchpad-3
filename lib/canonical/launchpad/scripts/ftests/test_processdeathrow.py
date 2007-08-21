@@ -37,9 +37,8 @@ class TestProcessDeathRow(TestCase):
         args = [sys.executable, script, "-v", "-d", "ubuntutest",
                 "-p", self.test_folder]
         args.extend(extra_args)
-        process = subprocess.Popen(args,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
+        process = subprocess.Popen(
+            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         return (process.returncode, stdout, stderr)
 
@@ -58,8 +57,7 @@ class TestProcessDeathRow(TestCase):
 
         # Set up the related publishing records so that death row processing
         # will want to delete the file. We do this by locating all publishing
-        # records for our package in ubuntutest and setting them all to
-        # PENDINGREMOVAL.
+        # records for our package in ubuntutest and mark them for REMOVAL.
         ubuntutest = getUtility(IDistributionSet)["ubuntutest"]
         ut_alsautils = ubuntutest.getSourcePackage("alsa-utils")
         ut_alsautils_109a4 = ut_alsautils.getVersion("1.0.9a-4")
@@ -73,10 +71,8 @@ class TestProcessDeathRow(TestCase):
             # These are spph (view) records, we need to grab the matching
             # sspphs (actual table) records in order to update them.
             sspph = SecureSourcePackagePublishingHistory.get(pubrec.id)
-            sspph.status = PackagePublishingStatus.PENDINGREMOVAL
             sspph.dateremoved = None
             sspph.scheduledremovaldate = datetime.datetime(1999, 1, 1)
-
             self.pubrec_ids.append(pubrec.id)
 
         # Commit so script can see our publishing record changes.
@@ -93,7 +89,8 @@ class TestProcessDeathRow(TestCase):
         for pubrec_id in self.pubrec_ids:
             sspph = SecureSourcePackagePublishingHistory.get(pubrec_id)
             self.assertEqual(
-                sspph.status, PackagePublishingStatus.PENDINGREMOVAL)
+                sspph.status, PackagePublishingStatus.SUPERSEDED)
+            self.assertTrue(sspph.dateremoved is None)
 
     def testWetRun(self):
         """Test we do delete the file and change the db in wet run mode."""
@@ -102,8 +99,8 @@ class TestProcessDeathRow(TestCase):
         for pubrec_id in self.pubrec_ids:
             sspph = SecureSourcePackagePublishingHistory.get(pubrec_id)
             self.assertEqual(
-                sspph.status, PackagePublishingStatus.REMOVED)
-
+                sspph.status, PackagePublishingStatus.SUPERSEDED)
+            self.assertTrue(sspph.dateremoved is not None)
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

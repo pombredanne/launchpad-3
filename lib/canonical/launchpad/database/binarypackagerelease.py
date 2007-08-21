@@ -222,11 +222,10 @@ class BinaryPackageReleaseSet:
         DistroArchRelease.distrorelease = %s AND
         BinaryPackageRelease.binarypackagename =
            BinaryPackageName.id AND
-        BinaryPackagePublishingHistory.status != %s
+        BinaryPackagePublishingHistory.dateremoved is NULL
         """ % sqlvalues([archive.id for archive in
-                            distroseries.distribution.all_distro_archives],
-                        distroseries,
-                        dbschema.PackagePublishingStatus.REMOVED)
+                         distroseries.distribution.all_distro_archives],
+                        distroseries)
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
                         'BinaryPackageRelease', 'BinaryPackageName']

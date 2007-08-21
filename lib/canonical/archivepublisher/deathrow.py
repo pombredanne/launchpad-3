@@ -71,7 +71,7 @@ class DeathRow:
     def reap(self, dry_run=False):
         """Reap packages that should be removed from the distribution.
 
-        Looks through all packages that are in PENDINGREMOVAL status and
+        Looks through all packages that are in SUPERSEDED status and
         have scheduleddeletiondate is in the past, try to remove their
         files from the archive pool (which may be impossible if they are
         used by other packages which are published), and mark them as
@@ -97,8 +97,11 @@ class DeathRow:
             sourcepackagefilepublishing.archive = %s AND
             SourcePackagePublishingHistory.id =
                  SourcePackageFilePublishing.sourcepackagepublishing AND
+            SourcePackagePublishingHistory.dateremoved is NULL AND
+            SourcePackagePublishingHistory.scheduleddeletiondate
+                 is not NULL AND
             SourcePackagePublishingHistory.scheduleddeletiondate <= %s
-            """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
+            """ % sqlvalues(PackagePublishingStatus.SUPERSEDED,
                             self.archive, UTC_NOW),
             clauseTables=['SourcePackagePublishingHistory'],
             orderBy="id")
@@ -110,8 +113,11 @@ class DeathRow:
             binarypackagefilepublishing.archive = %s AND
             BinaryPackagePublishingHistory.id =
                  BinaryPackageFilePublishing.binarypackagepublishing AND
+            BinaryPackagePublishingHistory.dateremoved is NULL AND
+            BinaryPackagePublishingHistory.scheduleddeletiondate
+                 is not NULL AND
             BinaryPackagePublishingHistory.scheduleddeletiondate <= %s
-            """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
+            """ % sqlvalues(PackagePublishingStatus.SUPERSEDED,
                             self.archive, UTC_NOW),
             clauseTables=['BinaryPackagePublishingHistory'],
             orderBy="id")
@@ -135,24 +141,22 @@ class DeathRow:
         if ISecureSourcePackagePublishingHistory.implementedBy(
             publication_class):
             clauses.append("""
-                SecureSourcePackagePublishingHistory.status != %s AND
                 SecureSourcePackagePublishingHistory.archive = %s AND
+                SecureSourcePackagePublishingHistory.dateremoved is NULL AND
                 SecureSourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageReleaseFile.sourcepackagerelease AND
                 SourcePackageReleaseFile.libraryfile = LibraryFileAlias.id
-            """ % sqlvalues(PackagePublishingStatus.REMOVED,
-                            self.distribution.main_archive))
+            """ % sqlvalues(self.archive))
             clauseTables.append('SourcePackageReleaseFile')
         elif ISecureBinaryPackagePublishingHistory.implementedBy(
             publication_class):
             clauses.append("""
-                SecureBinaryPackagePublishingHistory.status != %s AND
                 SecureBinaryPackagePublishingHistory.archive = %s AND
+                SecureBinaryPackagePublishingHistory.dateremoved is NULL AND
                 SecureBinaryPackagePublishingHistory.binarypackagerelease =
                     BinaryPackageFile.binarypackagerelease AND
                 BinaryPackageFile.libraryfile = LibraryFileAlias.id
-            """ % sqlvalues(PackagePublishingStatus.REMOVED,
-                            self.distribution.main_archive))
+            """ % sqlvalues(self.archive))
             clauseTables.append('BinaryPackageFile')
         else:
             raise AssertionError("%r is not supported." % publication_class)
@@ -170,7 +174,7 @@ class DeathRow:
         right_now = datetime.datetime.now(pytz.timezone('UTC'))
         for pub in all_publications:
             # Deny removal if any reference is still active.
-            if (pub.status != PackagePublishingStatus.PENDINGREMOVAL):
+            if (pub.status != PackagePublishingStatus.SUPERSEDED):
                 return False
             # Deny removal if any reference is still in 'quarantine'.
             # See PubConfig.pendingremovalduration value.
@@ -251,6 +255,5 @@ class DeathRow:
         self.logger.debug("Marking %s condemned packages as removed." %
                           len(condemned_records))
         for record in condemned_records:
-            record.status = PackagePublishingStatus.REMOVED
             record.dateremoved = UTC_NOW
 
