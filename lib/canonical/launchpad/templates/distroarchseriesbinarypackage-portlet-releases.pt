@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-releases">
   <h2>Package releases</h2>
   <div class="portletBody portletContent">
     <ul>

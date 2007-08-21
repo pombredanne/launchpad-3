@@ -9,23 +9,18 @@ __all__ = [
     'TranslationsMixin'
     ]
 
-import httplib
-
-from canonical.config import config
-
 from zope.component import getUtility
 
+from canonical.cachedproperty import cachedproperty
+from canonical.config import config
+from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IRequestPreferredLanguages, ICountry, ILaunchpadCelebrities,
     IRosettaApplication, ILanguageSet, ILaunchpadRoot,
-    IProductSet, ITranslationImportQueue)
-from canonical.launchpad import helpers
-import canonical.launchpad.layers
-from canonical.launchpad.webapp import (
-    Navigation, redirection, stepto, canonical_url)
+    IProductSet)
+from canonical.launchpad.layers import TranslationsLayer
+from canonical.launchpad.webapp import Navigation, stepto, canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator
-
-from canonical.cachedproperty import cachedproperty
 
 
 class TranslationsMixin:
@@ -97,7 +92,7 @@ class RosettaApplicationNavigation(Navigation):
 
     usedfor = IRosettaApplication
 
-    newlayer = canonical.launchpad.layers.TranslationsLayer
+    newlayer = TranslationsLayer
 
     @stepto('groups')
     def redirect_groups(self):
@@ -108,8 +103,12 @@ class RosettaApplicationNavigation(Navigation):
             target_url + '+groups', status=301)
 
     @stepto('imports')
-    def imports(self):
-        return getUtility(ITranslationImportQueue)
+    def redirect_imports(self):
+        """Redirect /translations/imports to Translations root site."""
+        target_url = canonical_url(
+            getUtility(ILaunchpadRoot), rootsite='translations')
+        return self.redirectSubTree(
+            target_url + '+imports', status=301)
 
     @stepto('projects')
     def projects(self):

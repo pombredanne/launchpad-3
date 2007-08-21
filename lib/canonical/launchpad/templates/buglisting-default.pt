@@ -13,7 +13,7 @@
             <span tal:replace="context/displayname">project displayname</span>.
             <br />
             You need to <a href="+newproduct">register another project that is
-            part of <tal:project replace="context/displayname" /></a>or
+            part of <tal:project replace="context/displayname" /></a> or
             associate an existing project with it.
           </p>
         </tal:block>

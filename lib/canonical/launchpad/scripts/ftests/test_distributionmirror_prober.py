@@ -364,6 +364,7 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TwistedTestCase):
             u'http://%s:%s/timeout' % (host, self.port))
         return self.assertFailure(d, ConnectionSkipped)
 
+
 class TestMultiLock(TestCase):
 
     def setUp(self):

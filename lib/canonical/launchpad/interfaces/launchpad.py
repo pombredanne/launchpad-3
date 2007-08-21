@@ -371,8 +371,10 @@ class IHasDateCreated(Interface):
 
 
 class IStructuralHeaderPresentation(Interface):
-    """Adapter that defines how a structural object is presented in the UI
-    as a heading."""
+    """Adapter for common aspects of a structural object's presentation."""
+
+    def isPrivate():
+        """Whether read access to the object is restricted."""
 
     def getIntroHeading():
         """Any heading introduction needed (e.g. "Ubuntu source package:")."""
@@ -382,7 +384,7 @@ class IStructuralHeaderPresentation(Interface):
 
 
 class IStructuralObjectPresentation(IStructuralHeaderPresentation):
-    """Adapter that defines how a structural object is presented in the UI."""
+    """Adapter for less common aspects of a structural object's presentation."""
 
     def listChildren(num):
         """List up to num children.  Return empty string for none of these"""
