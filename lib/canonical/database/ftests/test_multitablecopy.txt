@@ -558,7 +558,7 @@ exclusive upper-bound id of the batch being poured.
 
     >>> copier = MultiTableCopy(
     ...     'test', ['textual', 'numeric'], minimum_batch_size=1)
-    >>> copier.extract('textual', prepare_batch=textual_callback)
+    >>> copier.extract('textual', batch_pouring_callback=textual_callback)
 
 It follows that the callback is tied to a specific table.  We can register
 other callbacks on other tables.
@@ -570,7 +570,8 @@ other callbacks on other tables.
     ...         holding_table, source_table)
 
     >>> copier.extract(
-    ...     'numeric', joins=['textual'], prepare_batch=numeric_callback)
+    ...     'numeric', joins=['textual'],
+    ...     batch_pouring_callback=numeric_callback)
 
 The callbacks are called only while pouring, once per batch.
 
