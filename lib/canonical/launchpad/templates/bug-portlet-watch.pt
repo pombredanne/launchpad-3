@@ -1,4 +1,5 @@
-<div class="portlet" tal:condition="context/watches"
+<div class="portlet" id="portlet-watches"
+     tal:condition="context/watches"
      tal:define="current_task view/currentBugTask;
                  url current_task/fmt:url">
   <h2>Remote bug watches</h2>
