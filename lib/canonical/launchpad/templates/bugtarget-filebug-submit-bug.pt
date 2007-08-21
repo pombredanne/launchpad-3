@@ -177,7 +177,7 @@
             hideElement('bug_reporting_form');
           }
 
-          // Disable "Subscribe to This Bug" button to avoid accidental use.
+          // Disable "Subscribe to This Bug Report" to avoid accidental use.
           $('field.actions.this_is_my_bug').disabled = no_radiobtn.checked;
         }
 

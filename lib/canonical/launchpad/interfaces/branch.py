@@ -123,6 +123,13 @@ class BranchType(DBEnumeratedType):
         control system into bzr and are made available through the supermirror.
         """)
 
+    REMOTE = DBItem(4, """
+        Remote
+
+        Remote branches are those that are registered in Launchpad
+        with an external location, but are not to be mirrored.
+        """)
+
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.NEW,
