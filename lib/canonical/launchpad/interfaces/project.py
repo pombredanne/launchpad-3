@@ -23,7 +23,8 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.pillar import PillarNameField
-from canonical.launchpad.interfaces.specification import IHasSpecifications
+from canonical.launchpad.interfaces.specificationtarget import (
+    IHasSpecifications)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)

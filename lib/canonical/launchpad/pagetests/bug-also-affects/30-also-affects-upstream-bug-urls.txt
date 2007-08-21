@@ -80,7 +80,7 @@ registered in Launchpad, the user will be prompted to register it first.
 Now the user confirms he wants us to register the bug tracker for him and we
 do that before creating the new bug watch.
 
-    >>> user_browser.getControl('Yes, Register Bug Tracker').click()
+    >>> user_browser.getControl('Register Bug Tracker').click()
 
 The bugtracker is now registered, the bug watch is linked, and we're
 redirected to the bug's page.

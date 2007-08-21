@@ -255,33 +255,31 @@
     <browser:page
         name="+add-affected-product"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.BugAlsoReportInView"
-        permission="launchpad.AnyPerson"
-        attribute="render_upstreamtask">
+        class="canonical.launchpad.browser.bug.BugAlsoReportInUpstreamView"
+        template="../templates/bugtask-requestfix-upstream.pt"
+        permission="launchpad.AnyPerson">
     </browser:page>
 
     <browser:page
         name="+distrotask"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.BugAlsoReportInView"
+        class="canonical.launchpad.browser.bug.BugAlsoReportInDistributionView"
+        template="../templates/bugtask-requestfix.pt"
         permission="launchpad.AnyPerson"
-        attribute="render_distrotask"
         />
 
     <browser:page
         name="+add-affected-product-with-bugtracker"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.BugAlsoReportInWithBugTrackerCreationView"
-        permission="launchpad.AnyPerson"
-        attribute="render_upstreamtask">
+        class="canonical.launchpad.browser.bug.BugAlsoReportInUpstreamWithBugTrackerCreationView"
+        permission="launchpad.AnyPerson">
     </browser:page>
 
     <browser:page
         name="+add-affected-distro-with-bugtracker"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.BugAlsoReportInWithBugTrackerCreationView"
-        permission="launchpad.AnyPerson"
-        attribute="render_distrotask">
+        class="canonical.launchpad.browser.bug.BugAlsoReportInDistributionWithBugTrackerCreationView"
+        permission="launchpad.AnyPerson">
     </browser:page>
 
     <browser:page
