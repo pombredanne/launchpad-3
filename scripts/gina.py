@@ -161,8 +161,8 @@ def run_gina(options, ztm, target_section):
         sys.exit(1)
 
     if component_override:
-        valid_components = [component.name for component in
-            getUtility(IComponentSet)]
+        valid_components = [
+            component.name for component in getUtility(IComponentSet)]
         if component_override not in valid_components:
             log.error("Could not find component %s" % component_override)
             sys.exit(1)
