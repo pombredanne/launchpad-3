@@ -512,7 +512,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         badges = ''
         if self._context.bug.private:
             badges += self.icon_template % (
-                "private", "Private","/@@/locked")
+                "private", "Private","/@@/private")
 
         if self._context.bug.mentoring_offers.count() > 0:
             badges += self.icon_template % (
@@ -668,6 +668,37 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         image_html = ObjectImageDisplayAPI(person).icon()
         return '<a href="%s">%s&nbsp;%s</a>' % (
             url, image_html, person.browsername)
+
+
+class BranchFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IPerson objects to a formatted string."""
+
+    implements(ITraversable)
+
+    allowed_names = set([
+        'url',
+        ])
+
+    def traverse(self, name, furtherPath):
+        if name == 'link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.link(extra_path)
+        elif name in self.allowed_names:
+            return getattr(self, name)()
+        else:
+            raise TraversalError, name
+
+    def link(self, extra_path):
+        """Return an HTML link to the person's page containing an icon
+        followed by the person's name.
+        """
+        branch = self._context
+        url = canonical_url(branch)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        return '<a href="%s"><img src="/@@/branch" alt=""/>&nbsp;%s</a>' % (
+            url, branch.displayname)
 
 
 class NumberFormatterAPI:
@@ -1724,3 +1755,11 @@ class GotoStructuralObject:
             return None
         return headercontext
 
+    @property
+    def immediate_object_is_private(self):
+        try:
+            headercontext, adapter = nearest_context_with_adapter(
+                self.use_context, IStructuralHeaderPresentation)
+        except NoCanonicalUrl:
+            return False
+        return adapter.isPrivate()
