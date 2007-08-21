@@ -31,7 +31,7 @@ echo -n "Running germinate... "
 cd $GERMINATEROOT
 
 # Clean up temporary files
-rm -f germinate.output ALL ALL.sources UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-*
+rm -f germinate.output ALL ALL.sources UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-* GOBUNTU-*
 rm -f all_* all.sources_*
 
 # Grab a local copy of Sources files
