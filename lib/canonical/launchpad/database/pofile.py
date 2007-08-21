@@ -464,6 +464,10 @@ class POFile(SQLBase, POFileMixIn):
             if text is not None:
                 emails.append(text)
 
+            # Add two empty email fields to make formatting nicer.
+            # See bug #133764 for details.
+            emails.extend([u'',u''])
+
             for contributor in self.contributors:
                 preferred_email = contributor.preferredemail
                 if (contributor.hide_email_addresses or
@@ -476,6 +480,10 @@ class POFile(SQLBase, POFileMixIn):
             names = []
             if text is not None:
                 names.append(text)
+            # Add an empty name as a separator, and 'Launchpad
+            # Contributions' header; see bug #133764 for details.
+            names.extend([u'',
+                          u'Launchpad Contributions:'])
             names.extend([
                 contributor.displayname
                 for contributor in self.contributors])
