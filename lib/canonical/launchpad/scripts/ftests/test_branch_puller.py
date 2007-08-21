@@ -13,15 +13,20 @@ import sys
 import unittest
 import xmlrpclib
 
-from bzrlib.tests import TestCase
+from bzrlib.branch import Branch
+from bzrlib.tests import TestCaseWithTransport
+from bzrlib.urlutils import local_path_from_url
 
 from twisted.application import strports
+
+from zope.component import getUtility
 
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.interfaces import BranchType, IBranchSet
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -32,7 +37,7 @@ def _getPort():
     return int(args[0])
 
 
-class TestBranchPuller(TestCase):
+class TestBranchPuller(TestCaseWithTransport):
     """Acceptance tests for the branch puller.
 
     These tests actually run the supermirror-pull.py script. Instead of
@@ -43,7 +48,7 @@ class TestBranchPuller(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCase.setUp(self)
+        TestCaseWithTransport.setUp(self)
         self._puller_script = os.path.join(
             config.root, 'cronscripts', 'supermirror-pull.py')
         self.makeCleanDirectory(config.codehosting.branches_root)
@@ -53,11 +58,43 @@ class TestBranchPuller(TestCase):
         authserver_tac.setUp()
         self.addCleanup(authserver_tac.tearDown)
 
-    def makeCleanDirectory(self, path):
-        """Guarantee an empty branch upload area."""
-        if os.path.exists(path):
-            shutil.rmtree(path)
-        os.makedirs(path)
+    def assertMirrored(self, branch):
+        """Assert that 'branch' was mirrored succesfully."""
+        self.assertEqual(branch.last_mirror_attempt, branch.last_mirrored)
+        self.assertEqual(0, branch.mirror_failures)
+        self.assertEqual(None, branch.mirror_status_message)
+        hosted_branch = Branch.open(self.getHostedPath(branch))
+        mirrored_branch = Branch.open(self.getMirroredPath(branch))
+        self.assertEqual(
+            hosted_branch.last_revision(), branch.last_mirrored_id)
+        self.assertEqual(
+            hosted_branch.last_revision(), mirrored_branch.last_revision())
+
+    def assertRanSuccessfully(self, command, retcode, stdout, stderr):
+        """Assert that the command ran successfully.
+
+        'Successfully' means that it's return code was 0 and it printed nothing
+        to stdout.
+        """
+        message = '\n'.join(
+            ['Command: %r' % (command,),
+             'Return code: %s' % retcode,
+             'Output:',
+             stdout,
+             '',
+             'Error:',
+             stderr])
+        self.assertEqual(0, retcode, message)
+        self.assertEqual('', stdout)
+
+    def createTemporaryBazaarBranchAndTree(self):
+        """Create a local branch with one revision, return the working tree."""
+        tree = self.make_branch_and_tree('.')
+        self.local_branch = tree.branch
+        self.build_tree(['foo'])
+        tree.add('foo')
+        tree.commit('Added foo', rev_id='rev1')
+        return tree
 
     def emptyPullQueue(self):
         """Make sure there are no branches to pull."""
@@ -85,40 +122,64 @@ class TestBranchPuller(TestCase):
             % sqlvalues(BranchType.IMPORTED))
         LaunchpadZopelessLayer.txn.commit()
 
+    # XXX: JonathanLange 2007-08-20, Copied from test_branchset and
+    # subsequently modified. Fix by providing standardised codehosting test
+    # base class in well-known location.
+    def getArbitraryBranch(self, branch_type=None):
+        """Return an arbitrary branch."""
+        id_query = "SELECT id FROM Branch %s ORDER BY random() LIMIT 1"
+        if branch_type is None:
+            id_query = id_query % ''
+        else:
+            id_query = id_query % (
+                "WHERE branch_type = %s" % sqlvalues(branch_type))
+        cur = cursor()
+        cur.execute(id_query)
+        [branch_id] = cur.fetchone()
+        return getUtility(IBranchSet).get(branch_id)
+
+    def getHostedPath(self, branch):
+        return os.path.join(
+            config.codehosting.branches_root,
+            split_branch_id(branch.id))
+
+    def getMirroredPath(self, branch):
+        return os.path.join(
+            config.supermirror.branchesdest,
+            split_branch_id(branch.id))
+
+    def makeCleanDirectory(self, path):
+        """Guarantee an empty branch upload area."""
+        if os.path.exists(path):
+            shutil.rmtree(path)
+        os.makedirs(path)
+
+    def pushToBranch(self, branch):
+        hosted_path = self.getHostedPath(branch)
+        tree = self.createTemporaryBazaarBranchAndTree()
+        out, err = self.run_bzr(
+            ['push', '--create-prefix', '-d',
+             local_path_from_url(tree.branch.base), hosted_path], retcode=None)
+        # We want to be sure that a new branch was indeed created.
+        self.assertEqual("Created new branch.\n", err)
+
     def runSubprocess(self, command):
         """Run the given command in a subprocess.
 
         :param command: A command and arguments given as a list.
         :return: retcode, stdout, stderr
         """
-        print command
         process = Popen(command, stdout=PIPE, stderr=PIPE)
         output, error = process.communicate()
         return process.returncode, output, error
 
     def runPuller(self, branch_type):
         command = [
-            sys.executable, os.path.join(self._puller_script), branch_type]
+            sys.executable, os.path.join(self._puller_script), '-q',
+            branch_type]
         retcode, output, error = self.runSubprocess(command)
         self.assertRanSuccessfully(command, retcode, output, error)
-        return output
-
-    def assertRanSuccessfully(self, command, retcode, stdout, stderr):
-        """Assert that the command ran successfully.
-
-        'Successfully' means that it's return code was 0 and it printed nothing
-        to stderr.
-        """
-        message = '\n'.join(
-            ['Command: %r' % (command,),
-             'Return code: %s' % retcode,
-             'Output:',
-             stdout,
-             '',
-             'Error:',
-             stderr])
-        self.assertEqual(0, retcode, message)
-        self.assertEqual('', stderr, message)
+        return error
 
     def test_fixture(self):
         """Confirm the fixture is set up correctly.
@@ -134,14 +195,27 @@ class TestBranchPuller(TestCase):
             os.path.isfile(self._puller_script),
             "%s doesn't exist" % (self._puller_script,))
 
-    def test_mirror_empty(self):
-        """Push a branch up to Launchpad and mirror it."""
-        self.runPuller("upload")
-        
-    # Need
-    # - upload a branch
-    # - mirror it
-    # - check that the branch is in the new location
+    def test_mirrorABranch(self):
+        """Push to a Launchpad branch, request a mirror, then run the mirror
+        script.
+        """
+        # XXX: JonathanLange 2007-08-21, This test will fail if run by itself,
+        # due to an unidentified bug in bzrlib.trace, possibly related to bug
+        # 124849.
+        branch = self.getArbitraryBranch(BranchType.HOSTED)
+        self.pushToBranch(branch)
+        branch.requestMirror()
+        LaunchpadZopelessLayer.txn.commit()
+        script_output = self.runPuller('upload')
+        self.assertEqual('', script_output)
+        self.assertMirrored(branch)
+
+    def test_mirrorEmpty(self):
+        """The puller script runs without output when there are no branches to
+        mirror.
+        """
+        script_output = self.runPuller("upload")
+        self.assertEqual('', script_output)
 
     # Variations
     # - branch already exists in new location
