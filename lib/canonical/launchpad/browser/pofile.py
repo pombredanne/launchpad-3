@@ -205,8 +205,8 @@ class POFileUploadView(POFileView):
         self.request.response.addInfoNotification(
             'Thank you for your upload. The translation content will be'
             ' imported soon into Launchpad. You can track its status from the'
-            ' <a href="%s">Translation Import Queue</a>' %
-                canonical_url(translation_import_queue))
+            ' <a href="%s/+imports">Translation Import Queue</a>' %
+                canonical_url(self.context.potemplate.translationtarget))
 
 
 class POFileTranslateView(BaseTranslationView):
