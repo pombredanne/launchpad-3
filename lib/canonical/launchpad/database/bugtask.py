@@ -1470,51 +1470,36 @@ class BugTaskSet:
         list because they can only be expired by calling the master bugtask's
         transitionToStatus() method.
         """
-        common_contraints = dict(status_assignee_age="""
-            BugTask.status = %s
-            AND BugTask.assignee IS NULL
-            AND BugTask.bugwatch IS NULL
-            AND BugTask.date_incomplete < (
-                current_timestamp -interval '%s days')
-            """ % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old))
         all_bugtasks = BugTask.select("""
             BugTask.id IN (
                 SELECT BugTask.id
                 FROM BugTask
-                    INNER JOIN Distribution
-                        ON BugTask.distribution = Distribution.id
-                WHERE
-                    %(status_assignee_age)s
+                LEFT OUTER JOIN Distribution
+                    ON distribution = Distribution.id
                     AND Distribution.official_malone IS TRUE
-                UNION
-                SELECT BugTask.id
-                FROM BugTask
-                    INNER JOIN Product
-                        ON BugTask.product = Product.id
-                WHERE
-                    %(status_assignee_age)s
+                LEFT OUTER JOIN DistroRelease
+                    ON distrorelease = Distrorelease.id
+                    AND DistroRelease.distribution IN (
+                        SELECT id FROM Distribution
+                        WHERE official_malone IS TRUE)
+                LEFT OUTER JOIN Product
+                    ON product = Product.id
                     AND Product.official_malone IS TRUE
-                UNION
-                SELECT BugTask.id
-                FROM BugTask 
-                    INNER JOIN DistroRelease
-                        ON BugTask.distrorelease = DistroRelease.id
-                    INNER JOIN Distribution
-                        ON DistroRelease.distribution = Distribution.id
+                LEFT OUTER JOIN ProductSeries
+                    ON productseries = ProductSeries.id
+                    AND ProductSeries.product IN (
+                        SELECT id FROM Product WHERE official_malone IS TRUE)
                 WHERE
-                    %(status_assignee_age)s
-                    AND Distribution.official_malone IS TRUE
-                UNION
-                SELECT BugTask.id
-                FROM BugTask 
-                    INNER JOIN ProductSeries
-                        ON BugTask.productseries = ProductSeries.id
-                    INNER JOIN Product
-                        ON ProductSeries.product = Product.id
-                WHERE
-                    %(status_assignee_age)s
-                    AND Product.official_malone IS TRUE
-            )""" % common_contraints)
+                    (Distribution.id IS NOT NULL
+                     OR DistroRelease.id IS NOT NULL
+                     OR Product.id IS NOT NULL
+                     OR ProductSeries.id IS NOT NULL)
+                    AND BugTask.status = %s
+                    AND BugTask.assignee IS NULL
+                    AND BugTask.bugwatch IS NULL
+                    AND BugTask.date_confirmed < current_timestamp
+                        - interval '%s days'
+            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old))
         bugtasks = []
         for bugtask in all_bugtasks:
             if bugtask.conjoined_master is None:
