@@ -923,37 +923,9 @@ class BranchSet:
             limit=quantity,
             orderBy=['-date_created', '-id'])
 
-    def getHostedPullQueue(self):
+    def getPullQueue(self, branch_type):
         """See `IBranchSet`."""
         return Branch.select(
-            AND(Branch.q.branch_type == BranchType.HOSTED,
+            AND(Branch.q.branch_type == branch_type,
                 Branch.q.mirror_request_time < UTC_NOW),
-            prejoins=['owner', 'product'])
-
-    def getMirroredPullQueue(self):
-        """See `IBranchSet`."""
-        # The mirroring interval is 6 hours. we think this is a safe balance
-        # between frequency of mirroring and not hammering servers with
-        # requests to check whether mirror branches are up to date.
-        return Branch.select(
-            AND(Branch.q.branch_type == BranchType.MIRRORED,
-                Branch.q.mirror_request_time < UTC_NOW),
-            prejoins=['owner', 'product'])
-
-    def getImportedPullQueue(self):
-        """See `IBranchSet`."""
-        return Branch.select(
-            AND(Branch.q.branch_type == BranchType.IMPORTED,
-                Branch.q.mirror_request_time < UTC_NOW),
-            prejoins=['owner', 'product'])
-
-    def getPullQueue(self):
-        """See `IBranchSet`."""
-        # The following types of branches are included in the queue:
-        # - any branches which have not yet been mirrored
-        # - any branches that were last mirrored over 6 hours ago
-        # - any hosted branches which have requested that they be mirrored
-        # - any import branches which have been synced since their last mirror
-        return self.getHostedPullQueue().union(
-            self.getMirroredPullQueue()).union(
-            self.getImportedPullQueue()).orderBy('mirror_request_time')
+            prejoins=['owner', 'product']).orderBy('mirror_request_time')

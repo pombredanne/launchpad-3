@@ -434,6 +434,7 @@ class DatabaseBranchDetailsStorage:
             `url` is the URL to pull from and `unique_name` is the
             `unique_name` property without the initial '~'.
         """
+        branch = removeSecurityProxy(branch)
         return (branch.id, branch.getPullURL(), branch.unique_name[1:])
 
     def getBranchPullQueue(self, branch_type):
@@ -448,20 +449,9 @@ class DatabaseBranchDetailsStorage:
 
         See `IBranchDetailsStorage`.
         """
-        branch_set = getUtility(IBranchSet)
-        if branch_type == 'HOSTED':
-            branches = branch_set.getHostedPullQueue()
-        elif branch_type == 'MIRRORED':
-            branches = branch_set.getMirroredPullQueue()
-        elif branch_type == 'IMPORTED':
-            branches = branch_set.getImportedPullQueue()
-        else:
-            # XXX: JonathanLange 2007-08-22, This should be a specific
-            # exception, not an AssertionError.
-            raise AssertionError("Unknown branch type: %r" % (branch_type,))
-        return [
-            self._getBranchPullInfo(removeSecurityProxy(branch))
-            for branch in branches]
+        branch_type = BranchType.items[branch_type]
+        branches = getUtility(IBranchSet).getPullQueue(branch_type)
+        return [self._getBranchPullInfo(branch) for branch in branches]
 
     def startMirroring(self, branchID):
         """See `IBranchDetailsStorage`."""

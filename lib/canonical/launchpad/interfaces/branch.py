@@ -785,17 +785,8 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
-    def getHostedPullQueue():
-        """Return the queue of hosted branches to mirror using the puller."""
-
-    def getMirroredPullQueue():
-        """Return the queue of mirrored branches to mirror using the puller."""
-
-    def getImportedPullQueue():
-        """Return the queue of imported branches to mirror using the puller."""
-
-    def getPullQueue():
-        """Return the entire queue of branches to mirror using the puller."""
+    def getPullQueue(branch_type):
+        """Return a queue of branches to mirror using the puller."""
 
 
 class IBranchDelta(Interface):
