@@ -57,14 +57,6 @@ class DatabaseTest(unittest.TestCase):
         setSecurityPolicy(self._old_policy)
         super(DatabaseTest, self).tearDown()
 
-    def isBranchInPullQueue(self, branch_id):
-        """Whether the branch with this id is present in the pull queue."""
-        storage = DatabaseBranchDetailsStorage(None)
-        results = storage._getBranchPullQueueInteraction(None)
-        return branch_id in (
-            result_branch_id
-            for result_branch_id, result_pull_url, unique_name in results)
-
     def getMirrorRequestTime(self, branch_id):
         """Return the value of mirror_request_time for the branch with the
         given id.
@@ -778,6 +770,41 @@ class BranchDetailsStorageTest(DatabaseTest):
         self.assertEqual(row[0], row[1])
         self.assertEqual(row[2], 0)
 
+    def test_recordSuccess(self):
+        # recordSuccess must insert the given data into BranchActivity.
+        started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
+        completed = datetime.datetime(2007, 07, 05, 19, 34, 24, tzinfo=UTC)
+        started_tuple = tuple(started.utctimetuple())
+        completed_tuple = tuple(completed.utctimetuple())
+        success = self.storage._recordSuccessInteraction(
+            'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
+        self.assertEqual(success, True, '_recordSuccessInteraction failed')
+
+        self.cursor.execute("""
+            SELECT name, hostname, date_started, date_completed
+                FROM ScriptActivity where name = 'test-recordsuccess'""")
+        row = self.cursor.fetchone()
+        self.assertEqual(row[0], 'test-recordsuccess')
+        self.assertEqual(row[1], 'vostok')
+        self.assertEqual(row[2], started.replace(tzinfo=None))
+        self.assertEqual(row[3], completed.replace(tzinfo=None))
+
+
+class BranchPullQueueTest(DatabaseTest):
+    """Tests for the pull queue methods of `IBranchDetailsStorage`."""
+
+    def setUp(self):
+        super(BranchPullQueueTest, self).setUp()
+        self.storage = DatabaseBranchDetailsStorage(None)
+
+    def isBranchInPullQueue(self, branch_id):
+        """Whether the branch with this id is present in the pull queue."""
+        storage = DatabaseBranchDetailsStorage(None)
+        results = storage._getBranchPullQueueInteraction(None)
+        return branch_id in (
+            result_branch_id
+            for result_branch_id, result_pull_url, unique_name in results)
+
     def test_requested_hosted_branches(self):
         # Hosted branches that HAVE had a mirror requested should be in
         # the branch queue
@@ -808,25 +835,6 @@ class BranchDetailsStorageTest(DatabaseTest):
 
         self.failIf(self.isBranchInPullQueue(25),
                     "Shouldn't be in queue until mirror requested")
-
-    def test_recordSuccess(self):
-        # recordSuccess must insert the given data into BranchActivity.
-        started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
-        completed = datetime.datetime(2007, 07, 05, 19, 34, 24, tzinfo=UTC)
-        started_tuple = tuple(started.utctimetuple())
-        completed_tuple = tuple(completed.utctimetuple())
-        success = self.storage._recordSuccessInteraction(
-            'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
-        self.assertEqual(success, True, '_recordSuccessInteraction failed')
-
-        self.cursor.execute("""
-            SELECT name, hostname, date_started, date_completed
-                FROM ScriptActivity where name = 'test-recordsuccess'""")
-        row = self.cursor.fetchone()
-        self.assertEqual(row[0], 'test-recordsuccess')
-        self.assertEqual(row[1], 'vostok')
-        self.assertEqual(row[2], started.replace(tzinfo=None))
-        self.assertEqual(row[3], completed.replace(tzinfo=None))
 
     def test_getBranchPullQueue(self):
         # Set up the database so the vcs-import branch will appear in the queue.
