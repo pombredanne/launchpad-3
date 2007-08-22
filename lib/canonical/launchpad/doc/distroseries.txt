@@ -652,7 +652,7 @@ We can see now that the changes are detected.
     --- expected
     +++ actual
     <BLANKLINE>
-    @@ -29,11 +29,11 @@
+    @@ -30,11 +30,11 @@
     <BLANKLINE>
      #: a11y/addressbook/ea-addressbook-view.c:103
      #: a11y/addressbook/ea-minicard-view.c:119
@@ -667,7 +667,7 @@ We can see now that the changes are detected.
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
      #, fuzzy
-    @@ -42,7 +42,7 @@
+    @@ -43,7 +43,7 @@
     <BLANKLINE>
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
@@ -690,7 +690,7 @@ Now, we should have only the update from Humpy as a difference
     --- expected
     +++ actual
     <BLANKLINE>
-    @@ -33,7 +33,7 @@
+    @@ -34,7 +34,7 @@
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:101
      msgid "current addressbook folder"
