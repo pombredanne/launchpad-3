@@ -171,6 +171,7 @@ class TestMirroring(TestCase):
         """Completing the mirror removes the branch from the pull queue."""
         branch = self.getArbitraryBranch()
         branch.requestMirror()
+        branch.startMirroring()
         branch.mirrorComplete('rev1')
         self.assertEqual([], list(self.branch_set.getPullQueue()))
 
@@ -178,6 +179,7 @@ class TestMirroring(TestCase):
         """Mirroring hosted branches resets their mirror request times."""
         branch = self.getArbitraryBranch(BranchType.HOSTED)
         branch.requestMirror()
+        branch.startMirroring()
         branch.mirrorComplete('rev1')
         self.assertEqual(None, branch.mirror_request_time)
 
@@ -185,6 +187,7 @@ class TestMirroring(TestCase):
         """Mirroring hosted branches resets their mirror request times."""
         branch = self.getArbitraryBranch(BranchType.IMPORTED)
         branch.requestMirror()
+        branch.startMirroring()
         branch.mirrorComplete('rev1')
         self.assertEqual(None, branch.mirror_request_time)
 
@@ -195,6 +198,7 @@ class TestMirroring(TestCase):
         before_request = self.getNow()
         branch = self.getArbitraryBranch(BranchType.MIRRORED)
         branch.requestMirror()
+        branch.startMirroring()
         branch.mirrorComplete('rev1')
         after_request = self.getNow()
         self.assertBetween(
