@@ -710,7 +710,7 @@ class BugAlsoReportInDistributionView(BugAlsoReportInView):
 
     def render(self):
         # Override self.actions here to make sure the page is rendered with
-        # only one button but can still accept submissions coming from users
+        # only one button but can still process submissions coming from users
         # clicking on other buttons. Note that any other buttons have to be
         # hardcoded in the page template (like we do with the button for
         # confirm_action) to be shown.
@@ -808,20 +808,15 @@ class BugAlsoReportInWithBugTrackerCreationMixinView:
         assert bug_url is not None and len(bug_url) != 0
         bug_url = bug_url.strip()
         try:
-            tracker, bug = getUtility(IBugWatchSet).extractBugTrackerAndBug(
-                bug_url)
+            getUtility(IBugWatchSet).extractBugTrackerAndBug(bug_url)
         except NoBugTrackerFound, error:
             getUtility(IBugTrackerSet).ensureBugTracker(
                 error.base_url, self.user, error.bugtracker_type)
-            tracker, bug = getUtility(IBugWatchSet).extractBugTrackerAndBug(
-                bug_url)
         # We could create the bugtask/bugwatch by instantiating a new
         # BugAlsoReportIn*View and passing our newly created tracker to it,
         # but that view does lots of validation which is also needed here
         # so it's better to make our subclasses inherit from that view as
         # well, to take advantage of the validation done there.
-        self.extracted_bugtracker = tracker
-        self.extracted_bug = bug
         self.continue_action.success(data)
 
 
