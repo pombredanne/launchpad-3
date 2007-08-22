@@ -53,6 +53,7 @@
                   class string:specpriority${spec/priority/name}">High</span>
           </td>
           <td tal:condition="view/is_project_milestone">
+              <span class="sortkey" tal:content="spec/product/displayname" />
               <a tal:attributes="href spec/milestone/fmt:url"
                  tal:content="spec/product/displayname" />
           </td>
@@ -113,6 +114,7 @@
             </a>
           </td>
           <td tal:condition="view/is_project_milestone">
+            <span class="sortkey" tal:content="bugtask/product/displayname" />
             <a tal:attributes="href bugtask/milestone/fmt:url"
                tal:content="bugtask/product/displayname" />
           </td>
