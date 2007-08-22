@@ -491,7 +491,6 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
     should_ask_for_confirmation = False
     extracted_bug = None
     extracted_bugtracker = None
-    need_bugtracker_creation = False
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
@@ -519,28 +518,6 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             self.widgets[field_name]
             for field_name in self.field_names
             if field_name not in self.target_field_names]
-
-    def _extractBugtrackerAndBug(self):
-        if not self._bug_url:
-            return
-        bug_url = self._bug_url.strip()
-        try:
-            self.extracted_bugtracker, self.extracted_bug = (
-                getUtility(IBugWatchSet).extractBugTrackerAndBug(bug_url))
-        except NoBugTrackerFound:
-            self.need_bugtracker_creation = True
-        except UnrecognizedBugTrackerURL:
-            # Do nothing as the widget validation will fail and render an
-            # error message to the user.
-            pass
-
-    @property
-    def _bug_url(self):
-        """Return the value of field.bug_url on the request's form.
-
-        Return an empty string if that field is not present in the request.
-        """
-        return self.request.form.get('field.bug_url', '')
 
     def getBugTargetName(self):
         """Return the name of the fix target.
@@ -646,22 +623,30 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         Only one of product and distribution may be not None, and
         if distribution is None, sourcepackagename has to be None.
         """
-        self._extractBugtrackerAndBug()
-        if self.need_bugtracker_creation:
-            # Delegate to another view which will ask the user if (s)he wants
-            # to create the bugtracker now.
-            self.request.response.addWarningNotification(
-                "The bugtracker with the given URL is not registered in "
-                "Launchpad. Do you want to register it now?")
-            if list(self.target_field_names) == ['product']:
-                return BugAlsoReportInUpstreamWithBugTrackerCreationView(
-                    self.context, self.request)()
-            else:
-                return BugAlsoReportInDistributionWithBugTrackerCreationView(
-                    self.context, self.request)()
-
+        bug_url = self.request.form.get('field.bug_url', '')
         if self.should_ask_for_confirmation:
-            return
+            assert not bug_url, ("We should only ask for confirmation when "
+                                 "a bug url is not provided")
+            return None
+
+        if bug_url:
+            bug_url = bug_url.strip()
+            try:
+                self.extracted_bugtracker, self.extracted_bug = (
+                    getUtility(IBugWatchSet).extractBugTrackerAndBug(bug_url))
+            except NoBugTrackerFound:
+                # Delegate to another view which will ask the user if (s)he
+                # wants to create the bugtracker now.
+                self.request.response.addWarningNotification(
+                    "The bugtracker with the given URL is not registered in "
+                    "Launchpad. Do you want to register it now?")
+                if list(self.target_field_names) == ['product']:
+                    return BugAlsoReportInUpstreamWithBugTrackerCreationView(
+                        self.context, self.request)()
+                else:
+                    return (
+                        BugAlsoReportInDistributionWithBugTrackerCreationView(
+                            self.context, self.request)())
 
         product = data.get('product')
         distribution = data.get('distribution')
@@ -815,6 +800,11 @@ class BugAlsoReportInWithBugTrackerCreationMixinView:
             raise AssertionError(
                 "UnrecognizedBugTrackerURL errors must have been caught by "
                 "the widget's validation.")
+        # We could create the bugtask/bugwatch by instantiating a new
+        # BugAlsoReportInXXXView and passing our newly created tracker to it,
+        # but that view also does lots of validation which is also needed here
+        # so it's better to ask our subclasses to inherit from that view as
+        # well as this one.
         self.extracted_bugtracker = tracker
         self.extracted_bug = bug
         self.continue_action.success(data)
