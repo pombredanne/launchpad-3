@@ -782,9 +782,9 @@ class BugAlsoReportInWithBugTrackerCreationMixinView:
     tracker, perform the registration and call BugAlsoReportInView's
     continue_action method to create the new bugtask/bugwatch.
 
-    NOTE: Since we want this view's action_url property in any subclass, it
-          should either come first than any other view defining that in the
-          inheritance list or you'll need to redefine it in your subclass.
+    NOTE: Since we want any subclass which doesn't define an action_url
+          property to use this view's one, it must always come first than
+          any other view defining that property in the inheritance list.
     """
 
     _action_url = None
@@ -816,10 +816,10 @@ class BugAlsoReportInWithBugTrackerCreationMixinView:
             tracker, bug = getUtility(IBugWatchSet).extractBugTrackerAndBug(
                 bug_url)
         # We could create the bugtask/bugwatch by instantiating a new
-        # BugAlsoReportInXXXView and passing our newly created tracker to it,
-        # but that view also does lots of validation which is also needed here
-        # so it's better to ask our subclasses to inherit from that view as
-        # well as this one.
+        # BugAlsoReportIn*View and passing our newly created tracker to it,
+        # but that view does lots of validation which is also needed here
+        # so it's better to make our subclasses inherit from that view as
+        # well, to take advantage of the validation done there.
         self.extracted_bugtracker = tracker
         self.extracted_bug = bug
         self.continue_action.success(data)
@@ -829,7 +829,7 @@ class BugAlsoReportInDistributionWithBugTrackerCreationView(
         BugAlsoReportInWithBugTrackerCreationMixinView,
         BugAlsoReportInDistributionView):
 
-    # Need to define this here because we may call this view manually.
+    # Need to define this here because we may render this view manually.
     template = ViewPageTemplateFile('../templates/bugtask-requestfix.pt')
 
     def render(self):
@@ -848,7 +848,7 @@ class BugAlsoReportInUpstreamWithBugTrackerCreationView(
         BugAlsoReportInWithBugTrackerCreationMixinView,
         BugAlsoReportInUpstreamView):
 
-    # Need to define this here because we may call this view manually.
+    # Need to define this here because we may render this view manually.
     template = ViewPageTemplateFile(
         '../templates/bugtask-requestfix-upstream.pt')
 
