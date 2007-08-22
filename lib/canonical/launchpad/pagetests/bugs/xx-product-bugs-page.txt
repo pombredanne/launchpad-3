@@ -80,3 +80,7 @@ There's also portlets for easy searching by tags and filters.
     Critical
     ...
 
+    >>> anon_browser.getLink('Critical').click()
+    >>> print_bugtasks(anon_browser.contents)
+    5 Firefox install instructions should be complete
+      Critical New
