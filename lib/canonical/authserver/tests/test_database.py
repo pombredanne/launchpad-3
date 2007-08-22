@@ -584,21 +584,6 @@ class HostedBranchStorageTest(DatabaseTest):
 
         self.assertEqual(None, self.getMirrorRequestTime(25))
 
-    def test_requested_hosted_branches(self):
-        # Hosted branches that HAVE had a mirror requested should be in
-        # the branch queue
-
-        # Mark 25 (a hosted branch) as recently mirrored.
-        storage = DatabaseBranchDetailsStorage(None)
-        storage._startMirroringInteraction(25)
-        storage._mirrorCompleteInteraction(25, 'rev-1')
-
-        # Request a mirror
-        storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(25)
-
-        self.failUnless(self.isBranchInPullQueue(25), "Should be in queue")
-
 
 class UserDetailsStorageV2Test(DatabaseTest):
     """Test the implementation of `IUserDetailsStorageV2`."""
@@ -792,6 +777,21 @@ class BranchDetailsStorageTest(DatabaseTest):
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[0], row[1])
         self.assertEqual(row[2], 0)
+
+    def test_requested_hosted_branches(self):
+        # Hosted branches that HAVE had a mirror requested should be in
+        # the branch queue
+
+        # Mark 25 (a hosted branch) as recently mirrored.
+        storage = DatabaseBranchDetailsStorage(None)
+        storage._startMirroringInteraction(25)
+        storage._mirrorCompleteInteraction(25, 'rev-1')
+
+        # Request a mirror
+        storage = DatabaseUserDetailsStorageV2(None)
+        storage._requestMirrorInteraction(25)
+
+        self.failUnless(self.isBranchInPullQueue(25), "Should be in queue")
 
     def test_unrequested_hosted_branches(self):
         # Hosted branches that haven't had a mirror requested should NOT be
