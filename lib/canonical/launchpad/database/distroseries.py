@@ -1360,9 +1360,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # _copy_active_translations() method.  Because it only deals with the
         # case where "self" is a new series without any existing translations
         # attached, it can afford to be much more cavalier with ACID
-        # considerations than the other case can.  Still, it may be possible
-        # in the future to optimize _copyActiveTranslationsAsUpdate() (the
-        # other of the two cases) using a similar trick.
+        # considerations than the other case can.
 
         # Copying happens in two phases:
         #

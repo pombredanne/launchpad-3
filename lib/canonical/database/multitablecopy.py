@@ -22,11 +22,14 @@ class PouringLoop:
     """
     implements(ITunableLoop)
 
-    def __init__(self, from_table, to_table, transaction_manager, logger):
+    def __init__(self, from_table, to_table, transaction_manager, logger,
+        batch_pouring_callback=None):
+
         self.from_table = str(from_table)
         self.to_table = str(to_table)
         self.transaction_manager = transaction_manager
         self.logger = logger
+        self.batch_pouring_callback = batch_pouring_callback
         self.cur = cursor()
 
         self.cur.execute("SELECT min(id), max(id) FROM %s" % from_table)
@@ -41,10 +44,13 @@ class PouringLoop:
                          % (self.highest_id + 1 - self.lowest_id))
 
     def isDone(self):
+        """See `ITunableLoop`."""
         return self.lowest_id is None or self.lowest_id > self.highest_id
 
     def __call__(self, batch_size):
-        """Loop body: pour rows with ids up to "next" over to to_table."""
+        """See `ITunableLoop`.
+
+        Loop body: pour rows with ids up to "next" over to to_table."""
         batch_size = int(batch_size)
 
         # Figure out what id lies exactly batch_size rows ahead.
@@ -81,13 +87,16 @@ class PouringLoop:
         self._commit()
 
     def _commit(self):
+        """Commit ongoing transaction, start a new one."""
         self.transaction_manager.commit()
         self.transaction_manager.begin()
         self.cur = cursor()
 
     def prepareBatch(self, from_table, to_table, batch_size, begin_id, end_id):
-        pass
-
+        """If batch_pouring_callback is defined, call it."""
+        if self.batch_pouring_callback is not None:
+            self.batch_pouring_callback(
+                from_table, to_table, batch_size, begin_id, end_id)
 
 class MultiTableCopy:
     """Copy interlinked data spanning multiple tables in a coherent fashion.
@@ -176,8 +185,6 @@ class MultiTableCopy:
     that rows that the data refers to by foreign keys must not be deleted
     while the multi-table copy is running, for instance.
     """
-    # XXX: JeroenVermeulen 2007-05-24: More quoting, fewer assumptions!
-    # XXX: JeroenVermeulen 2007-07-06: Test case for inert_where feature
 
     def __init__(self, name, tables, seconds_per_batch=2.0,
             minimum_batch_size=500, restartable=True, logger=None):
@@ -215,7 +222,7 @@ class MultiTableCopy:
         self.minimum_batch_size = minimum_batch_size
         self.last_extracted_table = None
         self.restartable = restartable
-        self.prepare_functions = {}
+        self.batch_pouring_callbacks = {}
         if logger is not None:
             self.logger = logger
         else:
@@ -254,7 +261,7 @@ class MultiTableCopy:
         return foreign_key
 
     def extract(self, source_table, joins=None, where_clause=None,
-        id_sequence=None, inert_where=None, prepare_batch=None,
+        id_sequence=None, inert_where=None, batch_pouring_callback=None,
         external_joins=None):
         """Extract (selected) rows from source_table into a holding table.
 
@@ -300,17 +307,17 @@ class MultiTableCopy:
             no access to any tables other than the newly created holding
             table.  The clause can reference the holding table under the name
             "holding."  Any foreign keys from `joins` will still contain the
-            values they had in `source-table`, but for each "x" of these
+            values they had in `source_table`, but for each "x" of these
             foreign keys, the holding table will have a column "new_x" that
             holds the redirected foreign key.
-        :param prepare_batch: a callback that is called before each batch of
-            rows is poured, within the same transaction that pours those rows.
-            It takes as arguments the holding table's name; the source table's
-            name; current batch size; the id of the first row being poured;
-            and the id where the batch stops.  The "end id" is exclusive, so a
-            row with that id is not copied (and in fact may not even exist).
-            The time spent by `prepare_batch` is counted as part of the
-            batch's processing time.
+        :param batch_pouring_callback: a callback that is called before each
+            batch of rows is poured, within the same transaction that pours
+            those rows.  It takes as arguments the holding table's name; the
+            source table's name; current batch size; the id of the first row
+            being poured; and the id where the batch stops.  The "end id" is
+            exclusive, so a row with that id is not copied (and in fact may
+            not even exist).  The time spent by `batch_ouring_callback` is
+            counted as part of the batch's processing time.
         :param external_joins: a list of tables to join into the extraction
             query, so that the extraction condition can select on them.  Each
             entry must be a string either simply naming a table ("Person"), or
@@ -328,8 +335,9 @@ class MultiTableCopy:
         if joins is None:
             joins = []
 
-        if prepare_batch is not None:
-            self.prepare_functions[source_table] = prepare_batch
+        if batch_pouring_callback is not None:
+            callbacks = self.batch_pouring_callbacks
+            callbacks[source_table] = batch_pouring_callback
 
         if external_joins is None:
             external_joins = []
@@ -583,9 +591,8 @@ class MultiTableCopy:
         # five seconds or so each; we aim for four just to be sure.
 
         pourer = PouringLoop(
-            holding_table, table, transaction_manager, self.logger)
-        if self.prepare_functions.get(table):
-            pourer.prepareBatch = self.prepare_functions[table]
+            holding_table, table, transaction_manager, self.logger,
+            self.batch_pouring_callbacks.get(table))
         LoopTuner(
             pourer, self.seconds_per_batch, self.minimum_batch_size).run()
 

@@ -229,6 +229,36 @@ from numeric that referred to it into a holding table for numeric.
     14  lots
 
 
+== Trivial Extraction ==
+
+We saw earlier that you must extract tables in the same order in which you
+announce them when you create the MultiTableCopy object, and not skip any.
+
+If it should ever prove necessary to skip extracting a table, just perform the
+extraction but in such a way that no actual rows are extracted.  To do that,
+pass a where_clause argument of "false":
+
+    >>> copier = MultiTableCopy('test', ['textual', 'numeric'])
+    >>> copier.extract('textual', where_clause='false')
+    >>> cur = cursor()
+    >>> cur.execute(
+    ...     "SELECT count(*) FROM %s" % copier.getHoldingTableName('textual'))
+    >>> print cur.fetchone()[0]
+    0
+
+After that, the table has been extracted and you can merrily proceed.  Of
+course, if any of the other tables contain foreign keys referring to the
+skipped table, they will not have any rows extracted either.
+
+    >>> copier.extract('numeric', joins=['textual'])
+
+    >>> cur.execute(
+    ...     "SELECT count(*) FROM %s" % copier.getHoldingTableName('numeric'))
+    >>> print cur.fetchone()[0]
+    0
+
+    >>> copier.dropHoldingTables()
+
 == Recovery ==
 
 We may get interrupted while going through the multi-table copy.  In that case,
@@ -558,7 +588,7 @@ exclusive upper-bound id of the batch being poured.
 
     >>> copier = MultiTableCopy(
     ...     'test', ['textual', 'numeric'], minimum_batch_size=1)
-    >>> copier.extract('textual', prepare_batch=textual_callback)
+    >>> copier.extract('textual', batch_pouring_callback=textual_callback)
 
 It follows that the callback is tied to a specific table.  We can register
 other callbacks on other tables.
@@ -570,7 +600,8 @@ other callbacks on other tables.
     ...         holding_table, source_table)
 
     >>> copier.extract(
-    ...     'numeric', joins=['textual'], prepare_batch=numeric_callback)
+    ...     'numeric', joins=['textual'],
+    ...     batch_pouring_callback=numeric_callback)
 
 The callbacks are called only while pouring, once per batch.
 
