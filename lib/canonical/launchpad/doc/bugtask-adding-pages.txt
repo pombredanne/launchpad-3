@@ -177,7 +177,7 @@ display the error message.
     >>> form = {'field.product': 'no-such-product'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+add-affected-product', form)
-    >>> add_task_view.render_upstreamtask()
+    >>> add_task_view()
     u''
     >>> add_task_view.request.response.getHeader('Location')
     'http://.../+choose-affected-product?field.product=no-such-product'
@@ -185,7 +185,7 @@ display the error message.
     >>> form = {'field.product': 'firefox'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+add-affected-product', form)
-    >>> add_task_view.render_upstreamtask()
+    >>> add_task_view()
     u''
     >>> add_task_view.request.response.getHeader('Location')
     'http://.../+choose-affected-product?field.product=firefox'
@@ -197,7 +197,7 @@ be created:
     ...     'field.actions.request_fix': '', 'field.product': 'evolution'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+add-affected-product', form, method='POST')
-    >>> add_task_view.render_upstreamtask()
+    >>> add_task_view()
     SQLObjectCreatedEvent: <BugTask at ...>
     u''
 
@@ -219,7 +219,7 @@ as smoothly as above.
     >>> form['field.product'] = u'alsa-utils'
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+add-affected-product', form, method='POST')
-    >>> add_task_view.render_upstreamtask()
+    >>> add_task_view()
     u''
 
     >>> for bugtask in bug_four.bugtasks:
@@ -233,7 +233,7 @@ notification is displayed asking the user for confirmation.
 
     >>> len(add_task_view.errors)
     0
-    >>> add_task_view._confirm_new_task
+    >>> add_task_view.should_ask_for_confirmation
     True
     >>> len(add_task_view.notifications)
     1
@@ -246,10 +246,10 @@ If the user confirms, a bugtask will be added to the bug.
     >>> form['field.actions.confirm'] = u''
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+add-affected-product', form, method='POST')
-    >>> add_task_view.render_upstreamtask()
+    >>> add_task_view()
     SQLObjectCreatedEvent: <BugTask at ...>
     u''
-    >>> add_task_view._confirm_new_task
+    >>> add_task_view.should_ask_for_confirmation
     False
     >>> add_task_view.next_url is not None
     True
@@ -280,10 +280,10 @@ URL. If we don't enter a valid URL, we get an error message.
     >>> form['field.bug_url'] = u'not-a-url'
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+add-affected-product', form, method='POST')
-    >>> add_task_view.render_upstreamtask()
+    >>> add_task_view()
     u''
     >>> print add_task_view.getWidgetError('bug_url')
-    Launchpad doesn't know what kind of bug tracker this URL is pointing at.
+    Launchpad does not recognize the bug tracker at this URL.
 
 Note that this caused the transaction to be aborted, thus the bugtasks
 that got added earlier are now gone:
@@ -299,12 +299,12 @@ without any confirmation needee:
     ...     u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84')
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+add-affected-product', form, method='POST')
-    >>> add_task_view.render_upstreamtask()
+    >>> add_task_view()
     SQLObjectCreatedEvent: <BugWatch at ...>
     SQLObjectCreatedEvent: <BugTask at ...>
     u''
 
-    >>> add_task_view._confirm_new_task
+    >>> add_task_view.should_ask_for_confirmation
     False
 
     >>> for bugtask in bug_four.bugtasks:
@@ -342,7 +342,7 @@ its display name is returned:
     >>> form['field.product'] = u'alsa-utils'
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+add-affected-product', form, method='POST')
-    >>> add_task_view.render_upstreamtask()
+    >>> add_task_view()
     u''
     >>> add_task_view.getBugTargetName()
     u'alsa-utils'
@@ -355,7 +355,7 @@ name is returned.
     >>> form['field.sourcepackagename'] = u'evolution'
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+distrotask', form, method='POST')
-    >>> add_task_view.render_distrotask()
+    >>> add_task_view()
     u''
     >>> add_task_view.getBugTargetName()
     u'Debian'
