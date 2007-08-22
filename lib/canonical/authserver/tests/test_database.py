@@ -832,7 +832,7 @@ class BranchDetailsStorageTest(DatabaseTest):
         # Set up the database so the vcs-import branch will appear in the queue.
         transaction.begin()
         self.setSeriesDateLastSynced(3, now_minus='1 second')
-        self.setBranchLastMirrorAttempt(14, now_minus='1 day')
+        self.setMirrorRequestTime(14, UTC_NOW)
         self.setMirrorRequestTime(25, UTC_NOW)
         self.setMirrorRequestTime(15, UTC_NOW)
         transaction.commit()
