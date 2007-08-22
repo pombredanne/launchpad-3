@@ -333,8 +333,8 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
             self.request.response.addInfoNotification(
                 'Thank you for your upload. The file content will be imported'
                 ' soon into Launchpad. You can track its status from the'
-                ' <a href="%s">Translation Import Queue</a>' %
-                    canonical_url(translation_import_queue))
+                ' <a href="%s/+imports">Translation Import Queue</a>' %
+                    canonical_url(self.context.translationtarget))
 
         elif helpers.is_tar_filename(filename):
             # Add the whole tarball to the import queue.
@@ -349,8 +349,9 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                 self.request.response.addInfoNotification(
                     'Thank you for your upload. %d files from the tarball'
                     ' will be imported soon into Launchpad. You can track its'
-                    ' status from the <a href="%s">Translation Import Queue'
-                    '</a>' % (num, canonical_url(translation_import_queue)
+                    ' status from the <a href="%s/+imports">Translation'
+                    ' Import Queue<a>' % (
+                        num, canonical_url(self.context.translationtarget)
                         )
                     )
             else:

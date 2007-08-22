@@ -14,6 +14,7 @@ from sha import sha
 import stat
 import tempfile
 
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
@@ -21,7 +22,7 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
-from canonical.launchpad.interfaces import pocketsuffix
+from canonical.launchpad.interfaces import IComponentSet, pocketsuffix
 from canonical.librarian.client import LibrarianClient
 from canonical.lp.dbschema import (
     ArchivePurpose, PackagePublishingPocket, PackagePublishingStatus)
@@ -97,16 +98,15 @@ def _getDiskPool(pubconf, log):
 
     return dp
 
-
 def getPublisher(archive, allowed_suites, log, distsroot=None):
     """Return an initialised Publisher instance for the given context.
 
     The callsites can override the location where the archive indexes will
     be stored via 'distroot' argument.
     """
-    if archive.purpose == ArchivePurpose.PRIMARY:
-        log.debug("Finding configuration for %s main_archive."
-                  % archive.distribution.name)
+    if archive.purpose != ArchivePurpose.PPA:
+        log.debug("Finding configuration for %s %s."
+                  % (archive.distribution.name, archive.title))
     else:
         log.debug("Finding configuration for '%s' PPA."
                   % archive.owner.name)
@@ -211,7 +211,7 @@ class Publisher(object):
                                    (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        distroseries.main_archive.id == self.archive.id):
+                        self.archive.purpose != ArchivePurpose.PPA):
                         # We're not doing a full run and the
                         # distroseries is now 'stable': if we try to
                         # write a release file for it, we're doing
@@ -239,11 +239,16 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        distroseries.main_archive.id == self.archive.id):
+                        self.archive.purpose != ArchivePurpose.PPA):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
                             "Oops, indexing stable distroseries.")
-                for component in distroseries.components:
+                # Retrieve components from the publisher config because
+                # it gets overridden in IArchive.getPubConfig to set the
+                # correct components for the archive being used.
+                for component_name in self._config.componentsForSeries(
+                        distroseries.name):
+                    component = getUtility(IComponentSet)[component_name]
                     self._writeComponentIndexes(
                         distroseries, pocket, component)
 
@@ -264,7 +269,7 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        distroseries.main_archive == self.archive):
+                        self.archive.purpose != ArchivePurpose.PPA):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
                             "Oops, indexing stable distroseries.")
@@ -434,8 +439,8 @@ class Publisher(object):
 
         full_name = distroseries.name + pocketsuffix[pocket]
 
-        # XXX cprov 2007-07-11: it will be affected by CommercialRepo changes.
-        if self.archive == self.distro.main_archive:
+        # Only the primary archive has uncompressed and bz2 archives.
+        if self.archive.purpose == ArchivePurpose.PRIMARY:
             index_suffixes = ('', '.gz', '.bz2')
         else:
             index_suffixes = ('.gz',)
@@ -448,7 +453,8 @@ class Publisher(object):
             clean_architecture = architecture[7:]
             file_stub = "Packages"
 
-            if self.archive == self.distro.main_archive:
+            # Only the primary archive has debian-installer.
+            if self.archive.purpose == ArchivePurpose.PRIMARY:
                 # Set up the debian-installer paths for main_archive.
                 # d-i paths are nested inside the component.
                 di_path = os.path.join(

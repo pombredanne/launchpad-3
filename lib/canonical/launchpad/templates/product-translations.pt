@@ -14,7 +14,6 @@
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-preflangs" />
-  <div tal:replace="structure context/@@+portlet-translatables" />
 </metal:rightportlets>
 
     <metal:heading fill-slot="pageheading">
@@ -37,6 +36,7 @@
           &#8220;<span tal:replace="target/displayname">main</span>&#8221;.
         </p>
         <div tal:replace="structure target/@@+potlist" />
+        <div tal:replace="structure context/@@+portlet-translatables" />
       </tal:translatable>
       <tal:untranslatable condition="not: context/primary_translatable">
         <tal:registrantoradmin condition="context/required:launchpad.Edit">

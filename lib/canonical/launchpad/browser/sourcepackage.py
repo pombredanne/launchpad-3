@@ -11,23 +11,12 @@ __all__ = [
     'SourcePackageView',
     ]
 
-# Python standard library imports
-import cgi
-import re
 from apt_pkg import ParseSrcDepends
-
 from zope.component import getUtility
 from zope.app.form.interfaces import IInputWidget
 from zope.app import zapi
 
-from canonical.lp.dbschema import PackagePublishingPocket
-
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import (
-    IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -36,10 +25,15 @@ from canonical.launchpad.browser.packagerelationship import (
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from canonical.launchpad.browser.rosetta import TranslationsMixin
-
+from canonical.launchpad.interfaces import (
+    IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
     GetitemNavigation, stepto, redirection)
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
+from canonical.lp.dbschema import PackagePublishingPocket
 
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -138,7 +132,11 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'translations'
-    links = ['help', 'templates']
+    links = ['help', 'templates', 'imports']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
 
     def help(self):
         return Link('+translate', 'How you can help', icon='info')

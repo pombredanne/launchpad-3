@@ -30,7 +30,7 @@ Useful properties:
   u'Personal Package Archive for Celso Providelo'
 
   >>> cprov_archive.archive_url
-  u'http://ppa.launchpad.dev/cprov'
+  u'http://ppa.launchpad.dev/cprov/ubuntu'
 
 
 == Published Source and Binary Lookup ==
@@ -208,7 +208,6 @@ IArchive has a method to provide a modified Publisher Configuration (see
 lib/archivepublisher/config.py), which provides the right paths for its
 publication according to the given distribution:
 
-
   >>> # cprov 20061127: We should *never* be able to change a PPA
   >>> # distribution, however 'ubuntu' is not prepared for publication, thus
   >>> # we have to override the PPA to 'ubuntutest' in order to perform the
@@ -301,6 +300,33 @@ and an ArchivePurpose:
   ...     ubuntutest, ArchivePurpose.COMMERCIAL)
   >>> commercial_archive.description
   u'Commercial archive'
+
+
+IArchive.archive_url will return a URL for the archive that the builder can
+use to retrieve files from it.
+
+  >>> commercial_archive.archive_url
+  u'http://launchpad.dev/ubuntutest-commercial'
+
+  >>> sandbox_archive.archive_url
+  u'http://ppa.launchpad.dev/name16/ubuntu'
+
+  >>> getUtility(IArchiveSet).getByDistroPurpose(
+  ...     ubuntutest, ArchivePurpose.PRIMARY).archive_url
+  u'http://launchpad.dev/ubuntutest'
+
+
+The publisher config for COMMERCIAL contains only 'commercial' in its
+components.  This prevents non-commercial being published in the commercial
+archive.
+
+  >>> comm_pubconf = removeSecurityProxy(
+  ...     commercial_archive.getPubConfig())
+  >>> for distroseries in comm_pubconf._distroserieses.keys():
+  ...     print set(comm_pubconf._distroserieses[distroseries]['components'])
+  set(['commercial'])
+  set(['commercial'])
+
 
 Iteration over the own utility is performed against all archives,
 including the *main_archives*:

@@ -503,9 +503,9 @@ class BuildSet:
             DistroArchRelease.distrorelease = DistroRelease.id AND
             DistroRelease.distribution = Distribution.id AND
             Distribution.id = Archive.distribution AND
-            Archive.purpose = %s AND
+            Archive.purpose != %s AND
             Archive.id = Build.archive
-            """ % quote(ArchivePurpose.PRIMARY))
+            """ % quote(ArchivePurpose.PPA))
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,
