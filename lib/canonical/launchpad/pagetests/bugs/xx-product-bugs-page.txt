@@ -66,11 +66,19 @@ There's also portlets for easy searching by tags and filters.
     doc
     layout-test
 
+
+They are there to provide easy navigation for bugs with a certain
+tag...
+
+
     >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> anon_browser.getLink('layout-test').click()
     >>> print_bugtasks(anon_browser.contents)
     4  Reflow problems with complex page layouts
        Medium New
+
+
+... and for bugs with a certain status, importance, etc.
 
     >>> anon_browser.goBack()
     >>> filter_portlet = find_portlet(anon_browser.contents, 'Filters')
