@@ -91,6 +91,7 @@ class IVPOExport(Interface):
     activesubmission = Attribute(
         "See IPOSubmission.id and IPOSubmission.active")
 
+    context = Attribute("See IPOTMsgSet.context")
     msgid = Attribute("See IPOMsgID.pomsgid")
 
     translation = Attribute("See IPOTranslation.translation")

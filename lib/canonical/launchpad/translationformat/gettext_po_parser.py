@@ -364,7 +364,6 @@ class PoParser(object):
 
     def __init__(self):
         self._translation_file = None
-        self._messageids = {}
         self._lineno = 0
 
     def _decode(self):
@@ -486,7 +485,10 @@ class PoParser(object):
 
     def _storeCurrentMessage(self):
         if self._message is not None:
-            if self._messageids.has_key(self._message.msgid):
+            msgkey = self._message.msgid
+            if self._message.context is not None:
+                msgkey = '%s\2%s' % (self._message.context, msgkey)
+            if self._messageids.has_key(msgkey):
                 # We use '%r' instead of '%d' because there are situations
                 # when it returns an "<unprintable instance object>". You can
                 # see more details on bug #2896
@@ -505,7 +507,7 @@ class PoParser(object):
                     self._message.addTranslation(index, u'')
 
             self._translation_file.messages.append(self._message)
-            self._messageids[self._message.msgid] = True
+            self._messageids[msgkey] = True
             self._message = None
 
     def _parseHeader(self):
@@ -719,6 +721,8 @@ class PoParser(object):
         if self._section is None:
             # There is nothing to dump.
             return
+        elif self._section == 'msgctxt':
+            self._message.context = self._parsed_content
         elif self._section == 'msgid':
             self._message.msgid = self._parsed_content
         elif self._section == 'msgid_plural':
@@ -729,7 +733,7 @@ class PoParser(object):
             self._message.addTranslation(
                 self._plural_case, self._parsed_content)
         else:
-            raise AssertionError('Unknown section %s' % self.section)
+            raise AssertionError('Unknown section %s' % self._section)
 
         self._parsed_content = u''
 
@@ -747,9 +751,9 @@ class PoParser(object):
             return
 
         # If we get a comment line after a msgstr or a line starting with
-        # msgid, this is a new entry.
-        if ((l.startswith('#') or l.startswith('msgid')) and
-            self._section == 'msgstr'):
+        # msgid or msgctxt, this is a new entry.
+        if ((l.startswith('#') or l.startswith('msgid') or
+             l.startswith('msgctxt')) and self._section == 'msgstr'):
             if self._message is None:
                 # first entry - do nothing.
                 pass
@@ -795,16 +799,25 @@ class PoParser(object):
             self._message.comment += l[1:] + '\n'
             return
 
-        # Now we are in a msgid section, output previous section
+        # Now we are in a msgctxt or msgid section, output previous section
         if l.startswith('msgid_plural'):
             if self._section != 'msgid':
                 raise TranslationFormatSyntaxError(line_number=self._lineno)
             self._dumpCurrentSection()
             self._section = 'msgid_plural'
             l = l[len('msgid_plural'):]
+        elif l.startswith('msgctxt'):
+            if (self._section is not None and
+                (self._section == 'msgctxt' or
+                 self._section.startswith('msgid'))):
+                raise TranslationFormatSyntaxError(line_number=self._lineno)
+            self._section = 'msgctxt'
+            l = l[len('msgctxt'):]
         elif l.startswith('msgid'):
             if self._section is not None and self._section.startswith('msgid'):
                 raise TranslationFormatSyntaxError(line_number=self._lineno)
+            if self._section is not None:
+                self._dumpCurrentSection()
             self._section = 'msgid'
             l = l[len('msgid'):]
             self._plural_case = None
@@ -849,7 +862,7 @@ class PoParser(object):
 
         l = self._parseQuotedString(l)
 
-        if self._section in ('msgid', 'msgid_plural', 'msgstr'):
+        if self._section in ('msgctxt', 'msgid', 'msgid_plural', 'msgstr'):
             self._parsed_content += l
         else:
             raise TranslationFormatSyntaxError(

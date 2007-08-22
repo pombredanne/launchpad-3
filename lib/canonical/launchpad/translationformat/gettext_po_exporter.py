@@ -302,12 +302,16 @@ def msgid_text_representation(translation_message, wrap_width):
         msgids exported.
     :param wrap_width: The width where the text should be wrapped.
     """
-    text = wrap_text(translation_message.msgid, u'msgid', wrap_width)
+    text = []
+    if translation_message.context is not None:
+        text.extend(
+            wrap_text(translation_message.context, u'msgctxt', wrap_width))
+    text.extend(wrap_text(translation_message.msgid, u'msgid', wrap_width))
     if translation_message.msgid_plural:
         text.extend(
             wrap_text(
-                translation_message.msgid_plural, u'msgid_plural', wrap_width)
-            )
+                translation_message.msgid_plural, u'msgid_plural',
+                wrap_width))
     if translation_message.is_obsolete:
         text = ['#~ ' + l for l in text]
 
@@ -389,6 +393,14 @@ def export_translation_message(translation_message, wrap_width=77):
     >>> export_translation_message(translation_message)
     u'msgid "\\tServer name: %s"\nmsgstr ""'
 
+    You can have context on messages.
+
+    >>> translation_message = TranslationMessage()
+    >>> translation_message.context = u'bla'
+    >>> translation_message.msgid = u'foo'
+    >>> translation_message.addTranslation(
+    ...     TranslationConstants.SINGULAR_FORM, u'bar')
+    u'msgctxt "bla"\nmsgid "foo"\nmsgstr "bar"'
     '''
     return u'\n'.join([
         comments_text_representation(translation_message),
@@ -422,6 +434,8 @@ class GettextPoExporter:
             translation_file.header.getRawContent())
         header_translation_message.comment = (
             translation_file.header.comment)
+        if translation_file.is_template:
+            header_translation_message.flags.update(['fuzzy'])
         return header_translation_message
 
     def exportTranslationMessage(self, translation_message):

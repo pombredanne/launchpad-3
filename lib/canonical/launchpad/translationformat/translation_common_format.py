@@ -33,6 +33,7 @@ class TranslationMessage:
     def __init__(self):
         self.msgid = None
         self.msgid_plural = None
+        self.context = None
         self._translations = []
         self.comment = u''
         self.source_comment = u''

@@ -1,7 +1,7 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Text, TextLine
+from zope.schema import Bool, Datetime, Int, Text, TextLine
 
 __metaclass__ = type
 
@@ -52,7 +52,7 @@ class ITranslationHeader(Interface):
     language_team = Attribute(
         "String noting the language team in charge of this translation.")
 
-    has_plural_forms = Attribute("Whether this file contains plural forms.")
+    has_plural_forms = Bool(title=u'Whether this file contains plural forms.')
 
     number_plural_forms = Int(title=u'Number of plural forms.')
 
@@ -98,6 +98,9 @@ class ITranslationHeader(Interface):
 
 class ITranslationMessage(Interface):
     """Translation message interface."""
+
+    msgctxt = Attribute(
+        "The msgctxt of the message (as unicode).")
 
     msgid = Attribute(
         "The msgid of the message (as unicode).")

@@ -1,4 +1,4 @@
-<div class="portlet" tal:condition="context/cves"
+<div class="portlet" id="portlet-cve" tal:condition="context/cves"
      tal:define="current_task view/currentBugTask;
                  url current_task/fmt:url">
   <h2>

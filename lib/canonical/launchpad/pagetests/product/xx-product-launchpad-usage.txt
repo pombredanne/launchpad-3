@@ -1,7 +1,7 @@
-= Distribution Launchpad usage =
+= Product Launchpad usage =
 
 The launchpad usage flags (whether the product uses Bugs, Answers or
-Translations officially) are controlled by the +launchpad page. 
+Translations officially) are found on the +edit page. 
 
     >>> anon_browser.open('http://launchpad.dev/firefox')
     >>> print anon_browser.title
@@ -21,11 +21,11 @@ Translations officially) are controlled by the +launchpad page.
 
 Only the product registrant and the admins have access to this page. 
 
-    >>> anon_browser.getLink('Define Launchpad usage')
+    >>> anon_browser.getLink('Change details')
     Traceback (most recent call last):
       ...
     LinkNotFound...    
-    >>> anon_browser.open('http://launchpad.dev/ubuntu/+launchpad')
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/+edit')
     Traceback (most recent call last):
       ...
     Unauthorized...
@@ -36,21 +36,23 @@ so let's use Sample Person, the registrant of Firefox..
     >>> registrant_browser.addHeader(
     ...     'Authorization', 'Basic test@canonical.com:test')
     >>> registrant_browser.open('http://launchpad.dev/firefox')
-    >>> registrant_browser.getLink('Define Launchpad usage').click()
+    >>> registrant_browser.getLink('Change details').click()
     >>> registrant_browser.url
-    'http://launchpad.dev/firefox/+launchpad'
+    'http://launchpad.dev/firefox/+edit'
 
 Firefox is currently marked as using Bugs. Let's specify that it
 doesn't use any bug tracker at all.
 
-    >>> registrant_browser.getControl('Uses Translations Officially').selected
+    >>> registrant_browser.getControl(
+    ...     'Translations for this project are done in Launchpad').selected
     False
-    >>> registrant_browser.getControl('Uses Answers Officially').selected
+    >>> registrant_browser.getControl(
+    ...     'Let people use Launchpad Answers to ask questions').selected
     True
     >>> registrant_browser.getControl(
-    ...     'Bugs are tracked in Launchpad').selected
+    ...     'In Launchpad').selected
     True
-    >>> registrant_browser.getControl('No bug tracker').selected = True
+    >>> registrant_browser.getControl('Somewhere else').selected = True
 
     >>> registrant_browser.getControl('Change').click()
 
@@ -71,10 +73,11 @@ tracker, not even Launchpad.
 
 Now let's go back and choose to use a specific bug tracker.
 
-    >>> registrant_browser.getLink('Define Launchpad usage').click()
-    >>> registrant_browser.getControl('No bug tracker').selected
+    >>> registrant_browser.getLink('Change details').click()
+    >>> registrant_browser.getControl('Somewhere else').selected
     True
-    >>> registrant_browser.getControl('External bug tracker').selected = True
+    >>> registrant_browser.getControl(
+    ...     'In a registered bug tracker:').selected = True
     >>> registrant_browser.getControl(
     ...     name='field.bugtracker.bugtracker').displayValue = [
     ...         'GnomeGBug GTracker']
@@ -93,11 +96,10 @@ Now let's go back and choose to use a specific bug tracker.
   
 Let's reset it to the way it was before.
 
-    >>> registrant_browser.getLink('Define Launchpad usage').click()
-    >>> registrant_browser.getControl('External bug tracker').selected
+    >>> registrant_browser.getLink('Change details').click()
+    >>> registrant_browser.getControl('In a registered bug tracker:').selected
     True
-    >>> registrant_browser.getControl(
-    ...     'Bugs are tracked in Launchpad').selected = True
+    >>> registrant_browser.getControl('In Launchpad').selected = True
     >>> registrant_browser.getControl('Change').click()
     >>> content = find_main_content(registrant_browser.contents)
     >>> status_label = content.find('th', text='Status:')

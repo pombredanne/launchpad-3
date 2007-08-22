@@ -117,11 +117,12 @@ class IPOFile(IRosettaStats):
     def getHeader():
         """Return an ITranslationHeader representing its header."""
 
-    def getPOMsgSet(msgid_text, only_current=False):
+    def getPOMsgSet(msgid_text, only_current=False, context=None):
         """Return the IPOMsgSet in this IPOFile by msgid_text or None.
 
         :param msgid_text: is an unicode string.
         :param only_current: Whether we should look only on current entries.
+        :param context: Disambiguating context for the message set.
         """
 
     def getPOMsgSetFromPOTMsgSet(potmsgset, only_current=False):
@@ -248,15 +249,6 @@ class IPOFile(IRosettaStats):
 
     def createMessageSetFromMessageSet(potmsgset):
         """Creates in the database a new message set.
-
-        Returns the newly created message set.
-        """
-
-    def createMessageSetFromText(text):
-        """Creates in the database a new message set.
-
-        Similar to createMessageSetFromMessageSet, but takes a text object
-        (unicode or string) rather than a POT message Set.
 
         Returns the newly created message set.
         """

@@ -189,13 +189,14 @@ class TranslationImporter:
                 continue
 
             # Add the msgid.
-            potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(message.msgid)
+            potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
+                message.msgid, context=message.context)
 
             if potmsgset is None:
                 # It's the first time we see this msgid, we need to create the
                 # IPOTMsgSet for it.
                 potmsgset = self.potemplate.createMessageSetFromText(
-                    message.msgid)
+                    message.msgid, context=message.context)
             else:
                 # Note that we saw it.
                 potmsgset.makeMessageIDSighting(

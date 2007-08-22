@@ -185,7 +185,7 @@ class IPOTemplate(IRosettaStats):
     def getHeader():
         """Return an ITranslationHeader representing its header."""
 
-    def getPOTMsgSetByMsgIDText(msgidtext, only_current=False):
+    def getPOTMsgSetByMsgIDText(msgidtext, only_current=False, context=None):
         """Return the IPOTMesgSet indexed by msgidtext from this template.
 
         If the key is a string or a unicode object, returns the
@@ -193,6 +193,9 @@ class IPOTemplate(IRosettaStats):
         with the given text.
 
         If only_current is True, then get only current message sets.
+
+        If context is not None, look for a message set with that context
+        value.
 
         If no IPOTMsgSet is found, return None.
         """
@@ -253,9 +256,9 @@ class IPOTemplate(IRosettaStats):
         Return None if there is no such POFile.
         """
 
-    def hasMessageID(msgid):
+    def hasMessageID(msgid, context=None):
         """Check whether a message set with the given message ID exists within
-        this template."""
+        this template with given context."""
 
     def hasPluralMessage():
         """Test whether this template has any message sets which are plural
@@ -300,7 +303,7 @@ class IPOTemplate(IRosettaStats):
         variant.
         """
 
-    def createMessageSetFromMessageID(msgid):
+    def createMessageSetFromMessageID(msgid, context=None):
         """Creates in the database a new message set.
 
         As a side-effect, creates a message ID sighting in the database for the
@@ -309,11 +312,12 @@ class IPOTemplate(IRosettaStats):
         Returns the newly created message set.
         """
 
-    def createMessageSetFromText(text):
+    def createMessageSetFromText(text, context=None):
         """Creates in the database a new message set.
 
         Similar to createMessageSetFromMessageID, but takes a text object
-        (unicode or string) rather than a message ID.
+        (unicode or string) along with textual context, rather than a
+        message ID.
 
         Returns the newly created message set.
         """

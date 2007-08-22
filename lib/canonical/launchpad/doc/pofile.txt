@@ -477,7 +477,8 @@ Now, just to be sure that this entry doesn't exist yet:
 
 Is time to create it.
 
-  >>> pomsgset = pofile_sr.createMessageSetFromText(msgid)
+  >>> potmsgset = pofile_sr.potemplate.getPOTMsgSetByMsgIDText(msgid)
+  >>> pomsgset = pofile_sr.createMessageSetFromMessageSet(potmsgset)
 
 As we can see, is the msgid we were looking for.
 

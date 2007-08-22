@@ -1,5 +1,5 @@
 <tal:spec_deps define="dependencies context/dependencies">
-  <div tal:condition="dependencies" class="portlet">
+  <div class="portlet" id="portlet-depends" tal:condition="dependencies">
 
     <h2>Depends</h2>
 

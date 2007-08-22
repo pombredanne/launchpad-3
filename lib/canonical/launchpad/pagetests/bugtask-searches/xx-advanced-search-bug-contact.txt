@@ -15,11 +15,10 @@ displayed.
     ...     print message.renderContents()
     There's no person with the name or email address 'non-existent'.
 
-Entering an existing person shows all bugs that or on packages or
-products that person is a bug contact for. Since we're in the ubuntu
-context, only bugs on Ubuntu packages will be returned. In Ubuntu Foo
-Bar is a bug contact for mozilla-firefox and pmount, but there aren't
-any bugs open on pmount.
+Entering an existing person shows all bugs for packages or products that the
+person is a bug contact for. Since we're in the ubuntu context, only bugs for
+Ubuntu packages will be returned. In Ubuntu Foo Bar is a bug contact for
+mozilla-firefox and pmount, but there aren't any bugs open for pmount.
 
     >>> anon_browser.getControl('Bug contact').value = 'foo.bar@canonical.com'
     >>> anon_browser.getControl('Search', index=0).click()

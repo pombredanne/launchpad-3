@@ -21,6 +21,45 @@ We should be completely sure that a .po file with an empty header is reported.
   ...
   TranslationFormatSyntaxError:...
 
+PO files with context after msgids are reported as broken.
+
+  >>> parser.parse('msgid ""\nmsgstr ""\n'
+  ...              'msgid "blah"\nmsgctxt "foo"\nmsgstr "bar"\n')
+  Traceback (most recent call last):
+  ...
+  TranslationFormatSyntaxError:...
+
+And a msgctxt followed by msgctxt is caught as well.
+
+  >>> parser.parse('msgid ""\nmsgstr ""\n'
+  ...              'msgctxt "foo"\nmsgctxt "foo1"\n'
+  ...              'msgid "blah"\nmsgstr "bar"\n')
+  Traceback (most recent call last):
+  ...
+  TranslationFormatSyntaxError:...
+
+When a string is followed by non-string, non-space data, it is caught
+as an error.
+
+  >>> parser.parse('msgid ""\nmsgstr "something"\n'
+  ...              '"foo"  whatever\n')
+  Traceback (most recent call last):
+  ...
+  TranslationFormatSyntaxError:...extra content found after string...
+
+Unrecognized escape sequences are caught as well.
+
+  >>> parser.parse('msgid "\!"\nmsgstr ""\n')
+  Traceback (most recent call last):
+  ...
+  TranslationFormatSyntaxError:...unknown escape sequence...
+
+Unclosed strings (missing closing quotes) are caught.
+
+  >>> parser.parse('msgid ""\nmsgstr "\n')
+  Traceback (most recent call last):
+  ...
+  TranslationFormatSyntaxError:...string not terminated...
 
 == PoHeader ==
 
