@@ -11,7 +11,7 @@ import pytz
 
 from twisted.application import strports
 from canonical.authserver.interfaces import WRITABLE
-from canonical.authserver.ftests.harness import AuthserverTacTestSetup
+from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.launchpad.ftests.harness import (
     LaunchpadTestCase, LaunchpadTestSetup)
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor

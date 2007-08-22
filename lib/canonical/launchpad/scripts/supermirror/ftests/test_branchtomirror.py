@@ -33,7 +33,7 @@ from canonical.launchpad.scripts.supermirror.ftests import createbranch
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror, BadUrlSsh, BadUrlLaunchpad)
 from canonical.authserver.client.branchstatus import BranchStatusClient
-from canonical.authserver.ftests.harness import AuthserverTacTestSetup
+from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.testing import LaunchpadFunctionalLayer, reset_logging
 
 
