@@ -16,6 +16,8 @@ import unittest
 
 import transaction
 
+from bzrlib.tests import TestCase as BzrlibTestCase
+
 from zope.component import getUtility
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 
@@ -105,19 +107,20 @@ class ServerTestCase(TrialTestCase):
         return self.server.getTransport(relpath)
 
 
-class BranchTestCase(unittest.TestCase):
+class BranchTestCase(BzrlibTestCase):
     """Base class for tests that do a lot of things with branches."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        self._old_policy = getSecurityPolicy()
-        setSecurityPolicy(LaunchpadSecurityPolicy)
+        BzrlibTestCase.setUp(self)
         self.cursor = cursor()
         self.branch_set = getUtility(IBranchSet)
 
-    def tearDown(self):
-        setSecurityPolicy(self._old_policy)
+    def restrictSecurityPolicy(self):
+        old_policy = getSecurityPolicy()
+        setSecurityPolicy(LaunchpadSecurityPolicy)
+        self.addCleanup(lambda: setSecurityPolicy(self._old_policy))
 
     def emptyPullQueues(self):
         transaction.begin()
