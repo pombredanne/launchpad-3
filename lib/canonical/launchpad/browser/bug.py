@@ -53,7 +53,6 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask,
     NoBugTrackerFound,
     NotFoundError,
-    UnrecognizedBugTrackerURL,
     validate_new_distrotask,
     valid_upstreamtask,
     )
@@ -816,10 +815,6 @@ class BugAlsoReportInWithBugTrackerCreationMixinView:
                 error.base_url, self.user, error.bugtracker_type)
             tracker, bug = getUtility(IBugWatchSet).extractBugTrackerAndBug(
                 bug_url)
-        except UnrecognizedBugTrackerURL:
-            raise AssertionError(
-                "UnrecognizedBugTrackerURL errors must have been caught by "
-                "the widget's validation.")
         # We could create the bugtask/bugwatch by instantiating a new
         # BugAlsoReportInXXXView and passing our newly created tracker to it,
         # but that view also does lots of validation which is also needed here
