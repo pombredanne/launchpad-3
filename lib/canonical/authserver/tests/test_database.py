@@ -847,13 +847,14 @@ class BranchPullQueueTest(BranchTestCase):
         self.assertBranchQueues([], [], [branch])
 
     # TODO:
-    # - Move pull URL logic into Branch
     # - Use getattr() magic plus a decorator to dispatch based on branch type.
     # - Test order of branches in queue.
     # - Test the whole authserver
     # - Remove the general pull queue method
     # - Change the puller to pass through branch type
     # - Possibly change the puller script arguments to match branch type names.
+    # - Better exception for getBranchPullQueue when branch type is
+    #   unrecognized.
 
 
 def test_suite():

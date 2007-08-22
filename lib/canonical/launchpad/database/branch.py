@@ -8,6 +8,7 @@ __all__ = [
 
 from datetime import datetime, timedelta
 import re
+import os
 
 import pytz
 
@@ -39,6 +40,8 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
+from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 
 
 class Branch(SQLBase):
@@ -357,6 +360,24 @@ class Branch(SQLBase):
             if sequence is not None:
                 history.append(revision_id)
         return ancestry, history, branch_revision_map
+
+    def getPullURL(self):
+        """See `IBranch`."""
+        if self.branch_type == BranchType.MIRRORED:
+            # This is a pull branch, hosted externally.
+            return self.url
+        elif self.branch_type == BranchType.IMPORTED:
+            # This is an import branch, imported into bzr from
+            # another RCS system such as CVS.
+            prefix = config.launchpad.bzr_imports_root_url
+            return urlappend(prefix, '%08x' % self.id)
+        elif self.branch_type == BranchType.HOSTED:
+            # This is a push branch, hosted on the supermirror
+            # (pushed there by users via SFTP).
+            prefix = config.codehosting.branches_root
+            return os.path.join(prefix, split_branch_id(self.id))
+        else:
+            raise AssertionError("No pull URL for %r" % (self,))
 
     def requestMirror(self):
         """See `IBranch`."""

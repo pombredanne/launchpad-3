@@ -10,7 +10,6 @@ __all__ = [
 
 import datetime
 import pytz
-import os
 
 import transaction
 
@@ -20,14 +19,11 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
-from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchType, IBranchSet, IPersonSet, IProductSet)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.database.sqlbase import clear_current_connection_cache
-from canonical.config import config
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
@@ -438,20 +434,7 @@ class DatabaseBranchDetailsStorage:
             `url` is the URL to pull from and `unique_name` is the
             `unique_name` property without the initial '~'.
         """
-        if branch.branch_type == BranchType.MIRRORED:
-            # This is a pull branch, hosted externally.
-            pull_url = branch.url
-        elif branch.branch_type == BranchType.IMPORTED:
-            # This is an import branch, imported into bzr from
-            # another RCS system such as CVS.
-            prefix = config.launchpad.bzr_imports_root_url
-            pull_url = urlappend(prefix, '%08x' % branch.id)
-        else:
-            # This is a push branch, hosted on the supermirror
-            # (pushed there by users via SFTP).
-            prefix = config.codehosting.branches_root
-            pull_url = os.path.join(prefix, split_branch_id(branch.id))
-        return (branch.id, pull_url, branch.unique_name[1:])
+        return (branch.id, branch.getPullURL(), branch.unique_name[1:])
 
     def getBranchPullQueue(self, branch_type):
         """See `IBranchDetailsStorage`."""

@@ -482,6 +482,9 @@ class IBranch(IHasOwner):
                the corresponding BranchRevision rows for this branch.
         """
 
+    def getPullURL():
+        """Return the URL used to pull the branch into the mirror area."""
+
     def requestMirror():
         """Request that this branch be mirrored on the next run of the branch
         puller.
