@@ -10,8 +10,7 @@ import time
 from zope.interface import implements
 
 from canonical.database import postgresql
-from canonical.database.sqlbase import (
-    cursor, quote, quoteIdentifier, sqlvalues)
+from canonical.database.sqlbase import (cursor, quote, quoteIdentifier)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
 
