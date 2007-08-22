@@ -14,6 +14,15 @@ import signal
 import threading
 import unittest
 
+import transaction
+
+from zope.component import getUtility
+from zope.security.management import getSecurityPolicy, setSecurityPolicy
+
+from canonical.database.sqlbase import cursor, sqlvalues
+from canonical.launchpad.interfaces import IBranchSet
+from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.testing import LaunchpadFunctionalLayer
 from canonical.tests.test_twisted import TwistedTestCase
 
 from twisted.internet import defer, threads
@@ -95,6 +104,39 @@ class ServerTestCase(TrialTestCase):
     def getTransport(self, relpath=None):
         return self.server.getTransport(relpath)
 
+
+class BranchTestCase(unittest.TestCase):
+    """Base class for tests that do a lot of things with branches."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        self._old_policy = getSecurityPolicy()
+        setSecurityPolicy(LaunchpadSecurityPolicy)
+        self.cursor = cursor()
+        self.branch_set = getUtility(IBranchSet)
+
+    def tearDown(self):
+        setSecurityPolicy(self._old_policy)
+
+    def emptyPullQueues(self):
+        transaction.begin()
+        self.cursor.execute("UPDATE Branch SET mirror_request_time = NULL")
+        transaction.commit()
+
+    def findArbitraryBranch(self, branch_type=None):
+        """Return an arbitrary branch that already exists."""
+        id_query = "SELECT id FROM Branch %s ORDER BY random() LIMIT 1"
+        if branch_type is None:
+            id_query = id_query % ''
+        else:
+            id_query = id_query % (
+                "WHERE branch_type = %s" % sqlvalues(branch_type))
+        cur = cursor()
+        cur.execute(id_query)
+        [branch_id] = cur.fetchone()
+        return self.branch_set.get(branch_id)
+    
 
 def deferToThread(f):
     """Run the given callable in a separate thread and return a Deferred which
