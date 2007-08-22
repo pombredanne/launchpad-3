@@ -496,8 +496,6 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
     available_action_names = None
     target_field_names = ()
     should_ask_for_confirmation = False
-    extracted_bug = None
-    extracted_bugtracker = None
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
@@ -636,17 +634,19 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                                  "a bug url is not provided")
             return None
 
+        extracted_bug = None
+        extracted_bugtracker = None
         if bug_url:
             bug_url = bug_url.strip()
             try:
-                self.extracted_bugtracker, self.extracted_bug = (
-                    getUtility(IBugWatchSet).extractBugTrackerAndBug(bug_url))
+                extracted_bugtracker, extracted_bug = getUtility(
+                    IBugWatchSet).extractBugTrackerAndBug(bug_url)
             except NoBugTrackerFound:
                 # Delegate to another view which will ask the user if (s)he
                 # wants to create the bugtracker now.
                 self.request.response.addWarningNotification(
                     "The bugtracker with the given URL is not registered in "
-                    "Launchpad. Do you want to register it now?")
+                    "Launchpad. Would you like to register it now?")
                 if list(self.target_field_names) == ['product']:
                     return BugAlsoReportInUpstreamWithBugTrackerCreationView(
                         self.context, self.request)()
@@ -674,15 +674,15 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             product=product,
             distribution=distribution, sourcepackagename=sourcepackagename)
 
-        if self.extracted_bug:
-            assert self.extracted_bugtracker is not None, (
+        if extracted_bug:
+            assert extracted_bugtracker is not None, (
                 "validate() should have ensured that bugtracker is not None.")
             # Make sure that we don't add duplicate bug watches.
             bug_watch = self.taskadded.bug.getBugWatch(
-                self.extracted_bugtracker, self.extracted_bug)
+                extracted_bugtracker, extracted_bug)
             if bug_watch is None:
                 bug_watch = self.taskadded.bug.addWatch(
-                    self.extracted_bugtracker, self.extracted_bug, self.user)
+                    extracted_bugtracker, extracted_bug, self.user)
                 notify(SQLObjectCreatedEvent(bug_watch))
             if not target.official_malone:
                 self.taskadded.bugwatch = bug_watch

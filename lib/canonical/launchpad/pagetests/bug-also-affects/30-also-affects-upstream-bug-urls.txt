@@ -74,8 +74,8 @@ registered in Launchpad, the user will be prompted to register it first.
     'http://bugs.launchpad.dev/firefox/+bug/4/+add-affected-product'
 
     >>> print get_feedback_messages(user_browser)
-    [u'The bugtracker with the given URL is not registered in Launchpad. Do
-     you want to register it now?']
+    [u'The bugtracker with the given URL is not registered in Launchpad.
+     Would you like to register it now?']
 
 Now the user confirms he wants us to register the bug tracker for him and we
 do that before creating the new bug watch.
