@@ -846,51 +846,14 @@ class BranchPullQueueTest(BranchTestCase):
         transaction.commit()
         self.assertBranchQueues([], [], [branch])
 
-#     def test_getBranchPullQueueNoLinkedProduct(self):
-#         # If a branch doesn't have an associated product the unique name
-#         # returned should have +junk in the product segment. See
-#         # Branch.unique_name for precedent.
-#         transaction.begin()
-#         self.setMirrorRequestTime(3, UTC_NOW)
-#         transaction.commit()
-
-#         results = self.storage._getBranchPullQueueInteraction(None)
-
-#         # The first item in the row is the id.
-#         results_dict = dict((row[0], row) for row in results)
-
-#         # branch 3 is a branch without a product.
-#         branch_id, url, unique_name = results_dict[3]
-#         self.assertEqual(unique_name, 'spiv/+junk/trunk')
-
-#     def test_getBranchPullQueueOrdering(self):
-#         # Rows are ordered so that ones with older mirror_request_times are
-#         # listed earlier.
-#         transaction.begin()
-
-#         # Set last_mirror_attempt on 10 rows, with distinct values.
-#         expected_branch_ids = range(25, 15, -1)
-#         for branch_id in expected_branch_ids:
-#             # The higher the ID, the older the branch, so the earlier it should
-#             # appear in the queue.
-#             self.cursor.execute("""
-#                 UPDATE Branch
-#                 SET mirror_request_time = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-#                                            - interval '%d hours')
-#                 WHERE id = %d"""
-#                 % (branch_id, branch_id))
-#         transaction.commit()
-
-#         # Call getBranchPullQueue
-#         results = self.storage._getBranchPullQueueInteraction(None)
-
-#         # Get the branch IDs from the results for the branches we modified:
-#         observed_branch_ids = [
-#             row[0] for row in results if row[0] in expected_branch_ids]
-
-#         # All 10 branches should be in the list in order of descending
-#         # ID due to the last_mirror_attempt values.
-#         self.assertEqual(expected_branch_ids, observed_branch_ids)
+    # TODO:
+    # - Move pull URL logic into Branch
+    # - Use getattr() magic plus a decorator to dispatch based on branch type.
+    # - Test order of branches in queue.
+    # - Test the whole authserver
+    # - Remove the general pull queue method
+    # - Change the puller to pass through branch type
+    # - Possibly change the puller script arguments to match branch type names.
 
 
 def test_suite():
