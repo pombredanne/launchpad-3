@@ -480,7 +480,15 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
 
 
 class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
-    """View class for reporting a bug in other contexts."""
+    """View class for reporting a bug in other contexts.
+
+    In this view the user specifies the URL for the remote bug and we create
+    the new bugtask/bugwatch.
+    
+    If the bugtracker on the given URL is not registered in Launchpad, we
+    delegate its creation to another view. This other view is then responsible
+    for calling back this view's @action method to create the bugtask/bugwatch.
+    """
 
     schema = IAddBugTaskForm
     custom_widget('bug_url', StrippedTextWidget, displayWidth=50)
@@ -696,6 +704,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
 
 
 class BugAlsoReportInDistributionView(BugAlsoReportInView):
+    """Specialized BugAlsoReportInView for reporting a bug in a distro."""
 
     label = "Also affects distribution/package"
     target_field_names = ('distribution', 'sourcepackagename')
@@ -717,6 +726,7 @@ class BugAlsoReportInDistributionView(BugAlsoReportInView):
 
 
 class BugAlsoReportInUpstreamView(BugAlsoReportInView):
+    """Specialized BugAlsoReportInView for reporting a bug in an upstream."""
 
     label = "Confirm project"
     target_field_names = ('product',)
@@ -730,7 +740,7 @@ class BugAlsoReportInUpstreamView(BugAlsoReportInView):
 
     # XXX: Need to redefine this action here as well to make sure it's
     # included in this class' actions attribute. This is a bug in zope3's
-    # @action decorator.
+    # @action decorator. -- Guilherme Salgado, 2007-08-22
     @action('Yes, Add Anyway', name='confirm',
             condition=BugAlsoReportInView.actionIsAvailable)
     def confirm_action(self, action, data):
@@ -767,6 +777,16 @@ class BugAlsoReportInUpstreamView(BugAlsoReportInView):
 
 
 class BugAlsoReportInWithBugTrackerCreationMixinView:
+    """A view to be used in conjunction with BugAlsoReportInView.
+
+    This view will ask the user if he really wants to register the new bug
+    tracker, perform the registration and call BugAlsoReportInView's
+    continue_action method to create the new bugtask/bugwatch.
+
+    NOTE: Since we want this view's action_url property in any subclass, it
+          should either come first than any other view defining that in the
+          inheritance list or you'll need to redefine it in your subclass.
+    """
 
     _action_url = None
 
