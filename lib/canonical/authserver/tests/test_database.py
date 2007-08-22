@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import os
 import unittest
 import datetime
 
@@ -15,12 +16,14 @@ from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.tests.helpers import BranchTestCase
+from canonical.config import config
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.interfaces import (
     BranchType, EmailAddressStatus, IBranchSet, IEmailAddressSet, IPersonSet,
     IProductSet, IWikiNameSet)
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 
@@ -802,84 +805,46 @@ class BranchPullQueueTest(BranchTestCase):
         self.emptyPullQueues()
         self.storage = DatabaseBranchDetailsStorage(None)
 
+    def assertBranchQueues(self, hosted, mirrored, imported):
+        login(ANONYMOUS)
+        self.assertEqual(
+            map(self.storage._getBranchPullInfo, hosted),
+            self.storage._getBranchPullQueueInteraction('HOSTED'))
+        login(ANONYMOUS)
+        self.assertEqual(
+            map(self.storage._getBranchPullInfo, mirrored),
+            self.storage._getBranchPullQueueInteraction('MIRRORED'))
+        login(ANONYMOUS)
+        self.assertEqual(
+            map(self.storage._getBranchPullInfo, imported),
+            self.storage._getBranchPullQueueInteraction('IMPORTED'))
+
     def test_pullQueuesEmpty(self):
         """getBranchPullQueue returns an empty list when there are no branches
         to pull.
         """
-        self.assertEqual(
-            [], self.storage._getBranchPullQueueInteraction('hosted'))
-        self.assertEqual(
-            [], self.storage._getBranchPullQueueInteraction('mirrored'))
-        self.assertEqual(
-            [], self.storage._getBranchPullQueueInteraction('imported'))
+        self.assertBranchQueues([], [], [])
 
-#     def isBranchInPullQueue(self, branch_id):
-#         """Whether the branch with this id is present in the pull queue."""
-#         storage = DatabaseBranchDetailsStorage(None)
-#         results = storage._getBranchPullQueueInteraction(None)
-#         return branch_id in (
-#             result_branch_id
-#             for result_branch_id, result_pull_url, unique_name in results)
+    def test_requestMirrorPutsBranchInQueue_hosted(self):
+        transaction.begin()
+        branch = self.findArbitraryBranch(BranchType.HOSTED)
+        branch.requestMirror()
+        transaction.commit()
+        self.assertBranchQueues([branch], [], [])
 
-#     def test_requested_hosted_branches(self):
-#         # Hosted branches that HAVE had a mirror requested should be in
-#         # the branch queue
+    def test_requestMirrorPutsBranchInQueue_mirrored(self):
+        transaction.begin()
+        branch = self.findArbitraryBranch(BranchType.MIRRORED)
+        branch.requestMirror()
+        transaction.commit()
+        self.assertBranchQueues([], [branch], [])
 
-#         # Mark 25 (a hosted branch) as recently mirrored.
-#         storage = DatabaseBranchDetailsStorage(None)
-#         storage._startMirroringInteraction(25)
-#         storage._mirrorCompleteInteraction(25, 'rev-1')
-
-#         # Request a mirror
-#         storage = DatabaseUserDetailsStorageV2(None)
-#         storage._requestMirrorInteraction(25)
-
-#         self.failUnless(self.isBranchInPullQueue(25), "Should be in queue")
-
-#     def test_unrequested_hosted_branches(self):
-#         # Hosted branches that haven't had a mirror requested should NOT be
-#         # included in the branch queue
-
-#         # Branch 25 is a hosted branch.
-#         # Double check that its mirror_request_time is NULL. The sample data
-#         # should guarantee this.
-#         self.assertEqual(None, self.getMirrorRequestTime(25))
-
-#         # Mark 25 as recently mirrored.
-#         self.storage._startMirroringInteraction(25)
-#         self.storage._mirrorCompleteInteraction(25, 'rev-1')
-
-#         self.failIf(self.isBranchInPullQueue(25),
-#                     "Shouldn't be in queue until mirror requested")
-
-#     def test_getBranchPullQueue(self):
-#         # Set up the database so the vcs-import branch will appear in the queue.
-#         transaction.begin()
-#         self.setSeriesDateLastSynced(3, now_minus='1 second')
-#         self.setMirrorRequestTime(14, UTC_NOW)
-#         self.setMirrorRequestTime(25, UTC_NOW)
-#         self.setMirrorRequestTime(15, UTC_NOW)
-#         transaction.commit()
-
-#         results = self.storage._getBranchPullQueueInteraction(None)
-
-#         # The first item in the row is the id.
-#         results_dict = dict((row[0], row) for row in results)
-
-#         # We verify that a selection of expected branches are included
-#         # in the results, each triggering a different pull_url algorithm.
-#         #   a vcs-imports branch:
-#         self.assertEqual(results_dict[14],
-#                          (14, 'http://escudero.ubuntu.com:680/0000000e',
-#                           u'vcs-imports/evolution/main'))
-#         #   a pull branch:
-#         self.assertEqual(results_dict[15],
-#                          (15, 'http://example.com/gnome-terminal/main',
-#                           u'name12/gnome-terminal/main'))
-#         #   a hosted SFTP push branch:
-#         self.assertEqual(results_dict[25],
-#                          (25, '/tmp/sftp-test/branches/00/00/00/19',
-#                           u'name12/gnome-terminal/pushed'))
+    def test_requestMirrorPutsBranchInQueue_imported(self):
+        transaction.begin()
+        branch = self.findArbitraryBranch(BranchType.IMPORTED)
+        branch.requestMirror()
+        transaction.commit()
+        self.assertBranchQueues([], [], [branch])
 
 #     def test_getBranchPullQueueNoLinkedProduct(self):
 #         # If a branch doesn't have an associated product the unique name

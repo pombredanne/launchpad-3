@@ -465,7 +465,15 @@ class DatabaseBranchDetailsStorage:
 
         See `IBranchDetailsStorage`.
         """
-        branches = getUtility(IBranchSet).getPullQueue()
+        branch_set = getUtility(IBranchSet)
+        if branch_type == 'HOSTED':
+            branches = branch_set.getHostedPullQueue()
+        elif branch_type == 'MIRRORED':
+            branches = branch_set.getMirroredPullQueue()
+        elif branch_type == 'IMPORTED':
+            branches = branch_set.getImportedPullQueue()
+        else:
+            raise AssertionError("Unknown branch type: %r" % (branch_type,))
         return [
             self._getBranchPullInfo(removeSecurityProxy(branch))
             for branch in branches]

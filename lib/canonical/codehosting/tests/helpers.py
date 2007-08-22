@@ -120,7 +120,7 @@ class BranchTestCase(BzrlibTestCase):
     def restrictSecurityPolicy(self):
         old_policy = getSecurityPolicy()
         setSecurityPolicy(LaunchpadSecurityPolicy)
-        self.addCleanup(lambda: setSecurityPolicy(self._old_policy))
+        self.addCleanup(lambda: setSecurityPolicy(old_policy))
 
     def emptyPullQueues(self):
         transaction.begin()
