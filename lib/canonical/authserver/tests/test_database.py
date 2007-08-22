@@ -59,7 +59,7 @@ class DatabaseTest(unittest.TestCase):
     def isBranchInPullQueue(self, branch_id):
         """Whether the branch with this id is present in the pull queue."""
         storage = DatabaseBranchDetailsStorage(None)
-        results = storage._getBranchPullQueueInteraction()
+        results = storage._getBranchPullQueueInteraction(None)
         return branch_id in (
             result_branch_id
             for result_branch_id, result_pull_url, unique_name in results)
@@ -861,7 +861,7 @@ class BranchDetailsStorageTest(DatabaseTest):
         self.setBranchLastMirrorAttempt(14, now_minus='1 day')
         transaction.commit()
 
-        results = self.storage._getBranchPullQueueInteraction()
+        results = self.storage._getBranchPullQueueInteraction(None)
 
         # The first item in the row is the id.
         results_dict = dict((row[0], row) for row in results)
@@ -890,7 +890,7 @@ class BranchDetailsStorageTest(DatabaseTest):
         self.setBranchLastMirrorAttempt(14, now_minus='1 day')
         transaction.commit()
 
-        results = self.storage._getBranchPullQueueInteraction()
+        results = self.storage._getBranchPullQueueInteraction(None)
 
         # The first item in the row is the id.
         results_dict = dict((row[0], row) for row in results)
@@ -921,7 +921,7 @@ class BranchDetailsStorageTest(DatabaseTest):
         transaction.commit()
 
         # Call getBranchPullQueue
-        results = self.storage._getBranchPullQueueInteraction()
+        results = self.storage._getBranchPullQueueInteraction(None)
 
         # Get the branch IDs from the results for the branches we modified:
         branches = [row[0] for row in results if row[0] in range(16, 26)]

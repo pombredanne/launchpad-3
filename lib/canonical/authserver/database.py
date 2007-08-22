@@ -453,12 +453,14 @@ class DatabaseBranchDetailsStorage:
             pull_url = os.path.join(prefix, split_branch_id(branch.id))
         return (branch.id, pull_url, branch.unique_name[1:])
 
-    def getBranchPullQueue(self, branch_type=None):
+    def getBranchPullQueue(self, branch_type):
         """See `IBranchDetailsStorage`."""
-        return deferToThread(self._getBranchPullQueueInteraction)
+        if branch_type == '':
+            branch_type = None
+        return deferToThread(self._getBranchPullQueueInteraction, branch_type)
 
     @read_only_transaction
-    def _getBranchPullQueueInteraction(self):
+    def _getBranchPullQueueInteraction(self, branch_type):
         """The synchronous implementation for `getBranchPullQueue`.
 
         See `IBranchDetailsStorage`.
