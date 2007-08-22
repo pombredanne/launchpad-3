@@ -453,7 +453,7 @@ class DatabaseBranchDetailsStorage:
             pull_url = os.path.join(prefix, split_branch_id(branch.id))
         return (branch.id, pull_url, branch.unique_name[1:])
 
-    def getBranchPullQueue(self):
+    def getBranchPullQueue(self, branch_type=None):
         """See `IBranchDetailsStorage`."""
         return deferToThread(self._getBranchPullQueueInteraction)
 
