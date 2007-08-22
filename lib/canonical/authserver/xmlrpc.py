@@ -126,7 +126,7 @@ class BranchDetailsResource(xmlrpc.XMLRPC):
 
     def xmlrpc_getBranchPullQueue(self, branch_type):
         if self.debug:
-            print 'getBranchPullQueue()'
+            print 'getBranchPullQueue(%r)' % (branch_type,)
         d = self.storage.getBranchPullQueue(branch_type)
         if self.debug:
             def printresult(result):

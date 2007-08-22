@@ -473,6 +473,8 @@ class DatabaseBranchDetailsStorage:
         elif branch_type == 'IMPORTED':
             branches = branch_set.getImportedPullQueue()
         else:
+            # XXX: JonathanLange 2007-08-22, This should be a specific
+            # exception, not an AssertionError.
             raise AssertionError("Unknown branch type: %r" % (branch_type,))
         return [
             self._getBranchPullInfo(removeSecurityProxy(branch))

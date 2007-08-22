@@ -198,7 +198,7 @@ class BranchAPITestCase(LaunchpadTestCase):
         LaunchpadTestCase.tearDown(self)
 
     def testGetBranchPullQueue(self):
-        results = self.server.getBranchPullQueue('')
+        results = self.server.getBranchPullQueue('MIRRORED')
         # Check whether one of the expected branches is in the results:
         self.assertTrue(
             [15, 'http://example.com/gnome-terminal/main',
