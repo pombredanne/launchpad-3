@@ -293,7 +293,8 @@ class MaloneView(LaunchpadFormView):
             self.user, status=BugTaskStatus.FIXRELEASED,
             orderby='-date_closed')
         fixed_bugtasks = getUtility(IBugTaskSet).search(search_params)
-        # XXX: We might end up returning less than :limit: bugs, but in
+        # XXX: Bjorn Tillenius 2006-12-13:
+        #      We might end up returning less than :limit: bugs, but in
         #      most cases we won't, and '4*limit' is here to prevent
         #      this page from timing out in production. Later I'll fix
         #      this properly by selecting bugs instead of bugtasks.
@@ -711,7 +712,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
 
 class BugAlsoReportInDistributionView(BugAlsoReportInView):
 
-    label = "Also affects distribution/package",
+    label = "Also affects distribution/package"
     target_field_names = ('distribution', 'sourcepackagename')
 
     def render(self):
@@ -734,7 +735,21 @@ class BugAlsoReportInUpstreamView(BugAlsoReportInView):
 
     label = "Confirm project"
     target_field_names = ('product',)
-    main_action_label = u'Add to Bug Report'
+
+    # Redefine this action here as we want a different label.
+    @action(u'Add to Bug Report', name='request_fix',
+            condition=BugAlsoReportInView.actionIsAvailable)
+    def continue_action(self, action, data):
+        return super(
+            BugAlsoReportInUpstreamView, self).continue_action.success(data)
+
+    # XXX: Need to redefine this action here as well to make sure it's
+    # included in this class' actions attribute. This is a bug in zope3's
+    # @action decorator.
+    @action('Yes, Add Anyway', name='confirm',
+            condition=BugAlsoReportInView.actionIsAvailable)
+    def confirm_action(self, action, data):
+        self.continue_action.success(data)
 
     def render(self):
         # It's not possible to enter the product on this page, so
@@ -761,11 +776,6 @@ class BugAlsoReportInUpstreamView(BugAlsoReportInView):
                     canonical_url(self.context),
                     urllib.quote(product_name)))
             return u''
-        # self.continue_action is a descriptor that returns a "bound
-        # action", so we need to assign it to itself in order for the
-        # label change to stick around.
-        self.main_action = self.main_action
-        self.main_action.label = self.main_action_label
         # See note in BugAlsoReportInDistributionView.render.
         self.actions = [self.main_action]
         return super(BugAlsoReportInUpstreamView, self).render()
@@ -787,7 +797,8 @@ class BugAlsoReportInWithBugTrackerCreationMixinView:
     def action_url(self):
         return self._action_url
     
-    @action('Register Bug Tracker', name='register_tracker')
+    @action('Register Bug Tracker and Add to Bug Report',
+            name='register_tracker')
     def create_task_and_bugtracker_action(self, action, data):
         bug_url = data.get('bug_url')
         assert bug_url is not None and len(bug_url) != 0
@@ -832,7 +843,6 @@ class BugAlsoReportInUpstreamWithBugTrackerCreationView(
         BugAlsoReportInWithBugTrackerCreationMixinView,
         BugAlsoReportInUpstreamView):
 
-    main_action_label = u'Register Bug Tracker and Add to Bug Report'
     # Need to define this here because we may call this view manually.
     template = ViewPageTemplateFile(
         '../templates/bugtask-requestfix-upstream.pt')
