@@ -1497,7 +1497,7 @@ class BugTaskSet:
                     AND BugTask.status = %s
                     AND BugTask.assignee IS NULL
                     AND BugTask.bugwatch IS NULL
-                    AND BugTask.date_confirmed < current_timestamp
+                    AND BugTask.date_incomplete < current_timestamp
                         - interval '%s days'
             )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old))
         bugtasks = []
