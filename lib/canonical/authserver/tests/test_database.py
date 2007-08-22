@@ -14,6 +14,7 @@ from zope.interface.verify import verifyObject
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
@@ -76,6 +77,12 @@ class DatabaseTest(unittest.TestCase):
             % sqlvalues(branch_id))
         [mirror_request_time] = self.cursor.fetchone()
         return mirror_request_time
+
+    def setMirrorRequestTime(self, branch_id, mirror_request_time):
+        """Set mirror_request_time on the branch with the given id."""
+        self.cursor.execute(
+            "UPDATE Branch SET mirror_request_time = %s WHERE id = %s"
+            % sqlvalues(mirror_request_time, branch_id))
 
     def setSeriesDateLastSynced(self, series_id, value=None, now_minus=None):
         """Helper to set the datelastsynced of a ProductSeries.
@@ -547,7 +554,7 @@ class HostedBranchStorageTest(DatabaseTest):
         # current time.
         hosted_branch_id = 25
         # make sure the sample data is sane
-        self.assertEqual(self.getMirrorRequestTime(hosted_branch_id), None)
+        self.assertEqual(None, self.getMirrorRequestTime(hosted_branch_id))
 
         cur = cursor()
         cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
@@ -574,23 +581,6 @@ class HostedBranchStorageTest(DatabaseTest):
         cur = cursor()
         storage._startMirroringInteraction(25)
         storage._mirrorCompleteInteraction(25, 'rev-1')
-
-        self.assertEqual(None, self.getMirrorRequestTime(25))
-
-    def test_mirrorFailed_resets_mirror_request(self):
-        # After failing to mirror a branch, mirror_request_time for that branch
-        # should be set to NULL.
-
-        # Request that 25 (a hosted branch) be mirrored. This sets
-        # mirror_request_time.
-        storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(25)
-
-        # Simulate successfully mirroring branch 25
-        storage = DatabaseBranchDetailsStorage(None)
-        cur = cursor()
-        storage._startMirroringInteraction(25)
-        storage._mirrorFailedInteraction(25, 'failed')
 
         self.assertEqual(None, self.getMirrorRequestTime(25))
 
@@ -819,22 +809,6 @@ class BranchDetailsStorageTest(DatabaseTest):
         self.failIf(self.isBranchInPullQueue(25),
                     "Shouldn't be in queue until mirror requested")
 
-    def test_mirror_stale_hosted_branches(self):
-        # Hosted branches which haven't been mirrored for a whole day should be
-        # mirrored even if they haven't asked for it.
-
-        # Branch 25 is a hosted branch, hasn't been mirrored for over 1 day
-        # and has not had a mirror requested
-        self.failUnless(self.isBranchInPullQueue(25))
-
-        # Mark 25 as recently mirrored.
-        self.storage._startMirroringInteraction(25)
-        self.storage._mirrorCompleteInteraction(25, 'rev-1')
-
-        # 25 should only be in the pull queue if a mirror has been requested
-        self.failIf(self.isBranchInPullQueue(25),
-                    "hosted branch no longer in pull list")
-
     def test_recordSuccess(self):
         # recordSuccess must insert the given data into BranchActivity.
         started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
@@ -859,6 +833,8 @@ class BranchDetailsStorageTest(DatabaseTest):
         transaction.begin()
         self.setSeriesDateLastSynced(3, now_minus='1 second')
         self.setBranchLastMirrorAttempt(14, now_minus='1 day')
+        self.setMirrorRequestTime(25, UTC_NOW)
+        self.setMirrorRequestTime(15, UTC_NOW)
         transaction.commit()
 
         results = self.storage._getBranchPullQueueInteraction(None)
@@ -886,8 +862,7 @@ class BranchDetailsStorageTest(DatabaseTest):
         # returned should have +junk in the product segment. See
         # Branch.unique_name for precedent.
         transaction.begin()
-        self.setSeriesDateLastSynced(3, now_minus='1 second')
-        self.setBranchLastMirrorAttempt(14, now_minus='1 day')
+        self.setMirrorRequestTime(3, UTC_NOW)
         transaction.commit()
 
         results = self.storage._getBranchPullQueueInteraction(None)
@@ -900,124 +875,33 @@ class BranchDetailsStorageTest(DatabaseTest):
         self.assertEqual(unique_name, 'spiv/+junk/trunk')
 
     def test_getBranchPullQueueOrdering(self):
-        # Test that rows where last_mirror_attempt IS NULL are listed first, and
-        # then that rows are ordered so that older last_mirror_attempts are
+        # Rows are ordered so that ones with older mirror_request_times are
         # listed earlier.
-
         transaction.begin()
-        # Clear last_mirror_attempt on all rows
-        self.cursor.execute("UPDATE Branch SET last_mirror_attempt = NULL")
 
         # Set last_mirror_attempt on 10 rows, with distinct values.
-        for branchID in range(16, 26):
+        expected_branch_ids = range(25, 15, -1)
+        for branch_id in expected_branch_ids:
             # The higher the ID, the older the branch, so the earlier it should
             # appear in the queue.
             self.cursor.execute("""
                 UPDATE Branch
-                SET last_mirror_attempt = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-                                           - interval '%d days')
+                SET mirror_request_time = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                                           - interval '%d hours')
                 WHERE id = %d"""
-                % (branchID, branchID))
+                % (branch_id, branch_id))
         transaction.commit()
 
         # Call getBranchPullQueue
         results = self.storage._getBranchPullQueueInteraction(None)
 
         # Get the branch IDs from the results for the branches we modified:
-        branches = [row[0] for row in results if row[0] in range(16, 26)]
+        observed_branch_ids = [
+            row[0] for row in results if row[0] in expected_branch_ids]
 
         # All 10 branches should be in the list in order of descending
         # ID due to the last_mirror_attempt values.
-        self.assertEqual(list(reversed(branches)), range(16, 26))
-
-    def test_import_branches_only_listed_when_due(self):
-        # Import branches (branches owned by vcs-imports) are only listed when
-        # they are due for remirroring, i.e. when they have been successfully
-        # synced since the last mirroring attempt.
-
-        # Mirroring should normally never fail, but we still use the mirroring
-        # attempt value so in case of an internal network failure, the system
-        # does not get saturated with repeated failures to mirror import
-        # branches.
-
-        # Branch 14 is an imported branch.
-        # It is attached to the import in ProductSeries 3.
-        self.cursor.execute("""
-            SELECT Person.name, ProductSeries.id FROM Branch
-            JOIN Person ON Branch.owner = Person.id
-            JOIN ProductSeries ON Branch.id = ProductSeries.import_branch
-            WHERE Branch.id = 14""")
-        rows = self.cursor.fetchall()
-        self.assertEqual(1, len(rows))
-        [[owner_name, series_id]] = rows
-        self.assertEqual('vcs-imports', owner_name)
-        self.assertEqual(3, series_id)
-
-        # Mark ProductSeries 3 as never successfully synced, and branch 14 as
-        # never mirrored.
-        transaction.begin()
-        self.setSeriesDateLastSynced(3, 'NULL')
-        self.setBranchLastMirrorAttempt(14, 'NULL')
-        transaction.commit()
-
-        # Since the import was never successful, the branch should not be in
-        # the pull queue.
-        self.failIf(self.isBranchInPullQueue(14),
-            "incomplete import branch in pull queue.")
-
-        # Mark ProductSeries 3 as just synced, and branch 14 as never mirrored.
-        self.setSeriesDateLastSynced(3, now_minus='1 second')
-        self.setBranchLastMirrorAttempt(14, 'NULL')
-        transaction.commit()
-
-        # We have a new import! We must mirror it as soon as possible.
-        self.failUnless(self.isBranchInPullQueue(14),
-            "new import branch not in pull queue.")
-
-        # Mark ProductSeries 3 as synced, and branch 14 as more recently
-        # mirrored. Use a last_mirror_attempt older than a day to make sure
-        # that we are no exercising the 'one mirror per day' logic.
-        self.setSeriesDateLastSynced(3, now_minus='1 day 15 minutes')
-        self.setBranchLastMirrorAttempt(14, now_minus='1 day 10 minutes')
-        transaction.commit()
-
-        # Since the the import was not successfully synced since the last
-        # mirror, we do not have anything new to mirror.
-        self.failIf(self.isBranchInPullQueue(14),
-            "not recently synced import branch in pull queue.")
-
-        # Mark ProductSeries 3 as synced recently, and branch 13 as last
-        # mirrored before this sync.
-        self.setSeriesDateLastSynced(3, now_minus='1 second')
-        self.setBranchLastMirrorAttempt(14, now_minus='1 day')
-        transaction.commit()
-
-        # The import was updated since the last mirror attempt. There might be
-        # new revisions to mirror.
-        self.failUnless(self.isBranchInPullQueue(14),
-            "recently synced import branch not in pull queue.")
-
-        # During the transition period where the branch puller is aware of
-        # series.datelastynced, but importd does not yet record it, we will
-        # have NULL datelastsynced, and non-null last_mirror_attempt for
-        # existing imports. In those cases, we fall back to the old logic of
-        # mirroring once a day.
-
-        # Set a NULL datelastsynced in ProductSeries 3, and mark Branch 14 as
-        # mirrored more than 1 day ago.
-        self.setSeriesDateLastSynced(3, 'NULL')
-        self.setBranchLastMirrorAttempt(14, now_minus='1 day 1 minute')
-        transaction.commit()
-        self.failUnless(self.isBranchInPullQueue(14),
-            "import branch last mirrored >1 day ago not in pull queue.")
-
-        # Set a NULL datelastsynced in ProductSeries 3, and mark Branch 14 as
-        # mirrored recently.
-        self.setSeriesDateLastSynced(3, 'NULL')
-        self.setBranchLastMirrorAttempt(14, now_minus='5 minutes')
-        transaction.commit()
-        self.failIf(self.isBranchInPullQueue(14),
-            "import branch mirrored <1 day ago in pull queue.")
+        self.assertEqual(expected_branch_ids, observed_branch_ids)
 
 
 def test_suite():
