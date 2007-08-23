@@ -1469,7 +1469,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """Receive active, updated translations from parent series."""
         full_name = "%s_%s" % (self.distribution.name, self.name)
         tables = ['POFile', 'POMsgSet', 'POSubmission']
-        copier = MultiTableCopy(full_name, tables, restartable=False)
+        copier = MultiTableCopy(
+            full_name, tables, restartable=False, logger=logger)
 
         drop_tables(cursor(), [
             'temp_equiv_template', 'temp_equiv_potmsgset',
@@ -1576,7 +1577,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             'POFile',
             where_clause="potemplate = temp_equiv_template.id",
             inert_where=pofiles_inert_where,
-            prepare_batch=prepare_pofile_batch,
+            batch_pouring_callback=prepare_pofile_batch,
             external_joins=['temp_equiv_template'])
         cur = cursor()
 
@@ -1677,7 +1678,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         copier.extract(
             'POMsgSet', joins=['POFile'], inert_where=pomsgset_inert_where,
-            prepare_batch=prepare_pomsgset_batch)
+            batch_pouring_callback=prepare_pomsgset_batch)
         cur = cursor()
 
         # Set potmsgset to point to equivalent POTMsgSet in copy's POFile.
@@ -1855,7 +1856,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             'POSubmission', joins=['POMsgSet'],
             where_clause="active AND NOT published AND pms.iscomplete",
             external_joins=['POMsgSet pms'],
-            prepare_batch=prepare_posubmission_batch, inert_where=have_better)
+            batch_pouring_callback=prepare_posubmission_batch,
+            inert_where=have_better)
         cur = cursor()
 
         # Update existing incomplete POMsgSets that need not be replaced by
@@ -1896,11 +1898,57 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # Update the statistics cache for every POFile we touched.
         logging.info("Updating POFile's statistics")
-        # XXX: Jeroen Vermeulen 2007-08-10: Use LoopTuner!
-        affected_pofiles = POFile.select(
-            "id IN (SELECT id FROM temp_changed_pofiles)")
-        for pofile in affected_pofiles:
-            pofile.updateStatistics()
+
+        class UpdatePOFileStats:
+            """Update statistics of affected `POFiles`, using `LoopTuner`.
+
+            This action modifies the `POFile` table and could run for some
+            time.  Break the work into brief chunks to avoid locking out other
+            client processes.
+            """
+            implements(ITunableLoop)
+
+            def __init__(self, transaction):
+                """See `ITunableLoop`."""
+                self.transaction = transaction
+                cur = cursor()
+                cur.execute("SELECT id FROM temp_changed_pofiles ORDER BY id")
+                self.pofile_ids = cur
+                self.done = False
+
+            def isDone(self):
+                """See `ITunableLoop`."""
+                return self.done
+
+            def __call__(self, batch_size):
+                """See `ITunableLoop`."""
+                cur = cursor()
+                cur.execute("""
+                    SELECT max(id) FROM (
+                        SELECT id
+                        FROM temp_changed_pofiles
+                        ORDER BY id
+                        LIMIT %s) AS id""" % quote(int(batch_size)))
+                max_id, = cur.fetchone()
+                if max_id is None:
+                    self.done = True
+                    return
+
+                pofiles = POFile.select("""
+                    id IN (
+                        SELECT id
+                        FROM temp_changed_pofiles
+                        WHERE id <= %s)""" % quote(max_id))
+
+                for pofile in pofiles:
+                    pofile.updateStatistics()
+
+                cur.execute("DELETE FROM temp_changed_pofiles WHERE id <= %s"
+                            % quote(max_id))
+                self.transaction.commit()
+                self.transaction.begin()
+
+        LoopTuner(UpdatePOFileStats(transaction), 1).run()
 
         # Clean up after ourselves, in case we get called again this session.
         drop_tables(cursor(), [
@@ -1937,7 +1985,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ]
 
         full_name = "%s_%s" % (self.distribution.name, self.name)
-        copier = MultiTableCopy(full_name, translation_tables)
+        copier = MultiTableCopy(full_name, translation_tables, logger=logger)
 
         if len(self.potemplates) == 0:
             # We're a new distroseries; copy from scratch
