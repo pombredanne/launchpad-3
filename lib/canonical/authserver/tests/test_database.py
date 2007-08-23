@@ -847,7 +847,6 @@ class BranchPullQueueTest(BranchTestCase):
         self.assertBranchQueues([], [], [branch])
 
     # TODO:
-    # - Test order of branches in queue.
     # - Change the puller to pass through branch type
     # - Possibly change the puller script arguments to match branch type names.
     # - Better exception for getBranchPullQueue when branch type is

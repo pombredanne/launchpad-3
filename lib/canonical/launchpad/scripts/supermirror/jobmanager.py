@@ -35,24 +35,22 @@ class JobManager:
             self.branches_to_mirror.pop(0).mirror(logger)
         logger.info('Mirroring complete')
 
-
-    def addBranches(self, branch_status_client):
-        """Queue branches from the list provided by the branch status client
-
-        The BranchStatusClient.getBranchPullQueue() method returns a
-        list of (branch_id, url) pairs.  Each pair is converted to a
-        BranchToMirror object and added to the branches_to_mirror
-        list.
-        """
-        branches_to_pull = branch_status_client.getBranchPullQueue()
+    def _getBranchToMirror(self, branch_status_client, branch_id, branch_src,
+                           unique_name):
         destination = config.supermirror.branchesdest
+        branch_src = branch_src.strip()
+        path = branchtarget(branch_id)
+        branch_dest = os.path.join(destination, path)
+        return BranchToMirror(
+            branch_src, branch_dest, branch_status_client, branch_id,
+            unique_name)
+        
+    def addBranches(self, branch_status_client):
+        """Queue branches from the list given by the branch status client."""
+        branches_to_pull = branch_status_client.getBranchPullQueue()
         for branch_id, branch_src, unique_name in branches_to_pull:
-            branch_src = branch_src.strip()
-            path = branchtarget(branch_id)
-            branch_dest = os.path.join(destination, path)
-            branch = BranchToMirror(
-                branch_src, branch_dest, branch_status_client, branch_id,
-                unique_name)
+            branch = self._getBranchToMirror(
+                branch_status_client, branch_id, branch_src, unique_name)
             self.add(branch)
 
     def lock(self):
@@ -85,6 +83,14 @@ class UploadJobManager(JobManager):
         JobManager.__init__(self)
         self.lockfilename = '/var/lock/launchpad-branch-puller-upload.lock'
 
+    def addBranches(self, branch_status_client):
+        """Queue branches from the list given by the branch status client."""
+        branches_to_pull = branch_status_client.getBranchPullQueue()
+        for branch_id, branch_src, unique_name in branches_to_pull:
+            branch = self._getBranchToMirror(
+                branch_status_client, branch_id, branch_src, unique_name)
+            self.add(branch)
+
     def add(self, branch_to_mirror):
         """Add a branch to mirror, only if it is an upload branch."""
         if branch_to_mirror.isUploadBranch():
@@ -104,6 +110,14 @@ class ImportJobManager(JobManager):
         JobManager.__init__(self)
         self.lockfilename = '/var/lock/launchpad-branch-puller-import.lock'
 
+    def addBranches(self, branch_status_client):
+        """Queue branches from the list given by the branch status client."""
+        branches_to_pull = branch_status_client.getBranchPullQueue()
+        for branch_id, branch_src, unique_name in branches_to_pull:
+            branch = self._getBranchToMirror(
+                branch_status_client, branch_id, branch_src, unique_name)
+            self.add(branch)
+
     def add(self, branch_to_mirror):
         """Add a branch to mirror, only if it is an import branch."""
         if branch_to_mirror.isImportBranch():
@@ -122,6 +136,14 @@ class MirrorJobManager(JobManager):
     def __init__(self):
         JobManager.__init__(self)
         self.lockfilename = '/var/lock/launchpad-branch-puller-mirror.lock'
+
+    def addBranches(self, branch_status_client):
+        """Queue branches from the list given by the branch status client."""
+        branches_to_pull = branch_status_client.getBranchPullQueue()
+        for branch_id, branch_src, unique_name in branches_to_pull:
+            branch = self._getBranchToMirror(
+                branch_status_client, branch_id, branch_src, unique_name)
+            self.add(branch)
 
     def add(self, branch_to_mirror):
         """Add a branch to mirror, only if it is an external branch."""
