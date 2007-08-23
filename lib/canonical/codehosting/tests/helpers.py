@@ -20,6 +20,7 @@ from bzrlib.tests import TestCase as BzrlibTestCase
 
 from zope.component import getUtility
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
+from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.interfaces import IBranchSet
@@ -120,6 +121,11 @@ class BranchTestCase(BzrlibTestCase):
     def restrictSecurityPolicy(self):
         old_policy = getSecurityPolicy()
         setSecurityPolicy(LaunchpadSecurityPolicy)
+        self.addCleanup(lambda: setSecurityPolicy(old_policy))
+
+    def relaxSecurityPolicy(self):
+        old_policy = getSecurityPolicy()
+        setSecurityPolicy(PermissiveSecurityPolicy)
         self.addCleanup(lambda: setSecurityPolicy(old_policy))
 
     def emptyPullQueues(self):

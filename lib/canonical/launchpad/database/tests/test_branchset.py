@@ -101,9 +101,13 @@ class TestBranchSet(TestCase):
 
 
 class TestMirroring(BranchTestCase):
+    """Tests for mirroring methods of a branch."""
 
     def setUp(self):
         BranchTestCase.setUp(self)
+        # All of the mirroring methods are run on branches outside of the
+        # security proxy.
+        self.relaxSecurityPolicy()
         login(ANONYMOUS)
         self.emptyPullQueues()
 
@@ -151,7 +155,8 @@ class TestMirroring(BranchTestCase):
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
-        self.assertEqual([], list(self.branch_set.getPullQueue()))
+        self.assertEqual(
+            [], list(self.branch_set.getPullQueue(branch.branch_type)))
 
     def test_mirroringResetsMirrorRequestForHostedBranches(self):
         """Mirroring hosted branches resets their mirror request times."""
@@ -215,7 +220,10 @@ class TestMirroring(BranchTestCase):
 
     def test_pullQueueEmpty(self):
         """Branches with no mirror_request_time are not in the pull queue."""
-        self.assertEqual([], list(self.branch_set.getPullQueue()))
+        for branch_type in (BranchType.HOSTED, BranchType.MIRRORED,
+                            BranchType.IMPORTED):
+            self.assertEqual(
+                [], list(self.branch_set.getPullQueue(branch_type)))
 
     def test_pastMirrorRequestTimeInQueue(self):
         """Branches with mirror_request_time in the past are mirrored."""
@@ -226,7 +234,8 @@ class TestMirroring(BranchTestCase):
         transaction.commit()
         self.assertEqual(
             [branch_id],
-            [branch.id for branch in self.branch_set.getPullQueue()])
+            [branch.id
+             for branch in self.branch_set.getPullQueue(branch.branch_type)])
 
     def test_futureMirrorRequestTimeInQueue(self):
         """Branches with mirror_request_time in the future are not mirrored."""
@@ -236,7 +245,8 @@ class TestMirroring(BranchTestCase):
         branch.mirror_request_time = tomorrow
         branch.syncUpdate()
         transaction.commit()
-        self.assertEqual([], list(self.branch_set.getPullQueue()))
+        self.assertEqual(
+            [], list(self.branch_set.getPullQueue(branch.branch_type)))
 
 
 class BranchVisibilityPolicyTestCase(TestCase):
