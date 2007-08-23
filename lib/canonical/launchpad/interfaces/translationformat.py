@@ -186,6 +186,9 @@ class ITranslationHeader(IMapping):
 class ITranslationMessage(Interface):
     """Translation message interface."""
 
+    msgctxt = Attribute(
+        "The msgctxt of the message (as unicode).")
+
     msgid = Attribute(
         "The msgid of the message (as unicode).")
 

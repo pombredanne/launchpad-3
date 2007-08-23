@@ -248,7 +248,11 @@ class DistroSeriesTranslationsMenu(ApplicationMenu):
 
     usedfor = IDistroSeries
     facet = 'translations'
-    links = ['admin']
+    links = ['admin', 'imports']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def admin(self):
