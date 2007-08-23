@@ -294,28 +294,37 @@ class Publisher(object):
                        % (suite_name, component.name))
 
         self.log.debug("Generating Sources")
+        temp_index_gz = tempfile.mktemp(prefix='source-index_')
+        source_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, 'wb'))
         temp_index = tempfile.mktemp(prefix='source-index_')
-        source_index = gzip.GzipFile(fileobj=open(temp_index, 'wb'))
+        source_index = open(temp_index, 'wb')
 
         for spp in distroseries.getSourcePackagePublishing(
             PackagePublishingStatus.PUBLISHED, pocket=pocket,
             component=component, archive=self.archive):
             source_index.write(spp.getIndexStanza().encode('utf8'))
             source_index.write('\n\n')
+            source_index_gz.write(spp.getIndexStanza().encode('utf8'))
+            source_index_gz.write('\n\n')
         source_index.close()
+        source_index_gz.close()
 
         source_index_basepath = os.path.join(
             self._config.distsroot, suite_name, component.name, 'source')
         if not os.path.exists(source_index_basepath):
             os.makedirs(source_index_basepath)
-        source_index_path = os.path.join(source_index_basepath, "Sources.gz")
+        source_index_gz_path = os.path.join(source_index_basepath, "Sources.gz")
+        source_index_path = os.path.join(source_index_basepath, "Sources")
 
-        # move the the archive index file to the right place.
+        # Move the the archive index files to the right place.
         os.rename(temp_index, source_index_path)
+        os.rename(temp_index_gz, source_index_gz_path)
 
-        # make the files group writable
+        # Make the files group writable.
         mode = stat.S_IMODE(os.stat(source_index_path).st_mode)
         os.chmod(source_index_path, mode | stat.S_IWGRP)
+        mode = stat.S_IMODE(os.stat(source_index_gz_path).st_mode)
+        os.chmod(source_index_gz_path, mode | stat.S_IWGRP)
 
         for arch in distroseries.architectures:
             arch_path = 'binary-%s' % arch.architecturetag
@@ -452,6 +461,10 @@ class Publisher(object):
         # Only the primary archive has uncompressed and bz2 archives.
         if self.archive.purpose == ArchivePurpose.PRIMARY:
             index_suffixes = ('', '.gz', '.bz2')
+        elif self.archive.purpose == ArchivePurpose.COMMERCIAL:
+            # The commercial archive needs uncompressed files for
+            # compatibility with signed Release files.
+            index_suffixes = ('', '.gz')
         else:
             index_suffixes = ('.gz',)
 

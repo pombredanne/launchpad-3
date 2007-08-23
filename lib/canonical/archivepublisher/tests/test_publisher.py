@@ -375,10 +375,20 @@ class TestPublisher(TestNativePublishingBase):
         self.layer.txn.commit()
         archive_publisher.C_writeIndexes(False)
 
-        index_path = os.path.join(
+        # A compressed and incompressed sources file is written;
+        # ensure that they are the same after uncompressing the former.
+        index_gz_path = os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest', 'main',
             'source', 'Sources.gz')
-        index_contents = gzip.GzipFile(filename=index_path).read().splitlines()
+        index_path = os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest', 'main',
+            'source', 'Sources')
+        index_gz_contents = gzip.GzipFile(
+            filename=index_gz_path).read().splitlines()
+        index_file = open(index_path,'r')
+        index_contents = index_file.read().splitlines()
+        index_file.close()
+        self.assertEqual(index_gz_contents, index_contents)
 
         self.assertEqual(
             ['Package: foo',
@@ -644,6 +654,36 @@ class TestPublisher(TestNativePublishingBase):
             first_sha256_line,
             (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
              '8d106a6338              114 main/source/Release'))
+
+    def testReleaseFileForCommercial(self):
+        """Test Release file writing for Commercial archives.
+
+        Signed Release files must reference an uncompressed Sources and
+        Packages file.
+        """
+        from canonical.archivepublisher.publishing import getPublisher
+        archive = self.ubuntutest.getArchiveByComponent('commercial')
+        allowed_suites = []
+        publisher = getPublisher(archive, allowed_suites, self.logger)
+
+        pub_source = self.getPubSource(
+            filecontent='Hello world', archive=archive)
+
+        publisher.A_publish(False)
+        publisher.C_writeIndexes(False)
+        publisher.D_writeReleaseFiles(False)
+
+        release_file = os.path.join(
+            publisher._config.distsroot, 'breezy-autotest', 'Release')
+        release_contents = open(release_file).read().splitlines()
+
+        # The Release file must also contain lines ending in "Packages",
+        # "Packages.gz", "Sources" and "Sources.gz".
+        stringified_contents = "\n".join(release_contents)
+        self.assertTrue('Packages.gz\n' in stringified_contents)
+        self.assertTrue('Packages\n' in stringified_contents)
+        self.assertTrue('Sources.gz\n' in stringified_contents)
+        self.assertTrue('Sources\n' in stringified_contents)
 
 
 def test_suite():
