@@ -22,6 +22,8 @@ fi
 
 
 export LPCONFIG=production
+export http_proxy=http://squid.internal:3128/
+export ftp_proxy=http://squid.internal:3128/
 
 LOCK=/var/lock/launchpad_mirror_prober.lock
 lockfile -r0 -l 259200 $LOCK
