@@ -846,12 +846,6 @@ class BranchPullQueueTest(BranchTestCase):
         transaction.commit()
         self.assertBranchQueues([], [], [branch])
 
-    # TODO:
-    # - Change the puller to pass through branch type
-    # - Possibly change the puller script arguments to match branch type names.
-    # - Better exception for getBranchPullQueue when branch type is
-    #   unrecognized.
-
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
