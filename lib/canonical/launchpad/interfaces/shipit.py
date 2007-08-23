@@ -8,7 +8,7 @@ __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'SOFT_MAX_SHIPPINGRUN_SIZE', 'ShipItConstants',
            'IShippingRequestUser', 'MAX_CDS_FOR_UNTRUSTED_PEOPLE',
            'ShipItDistroSeries', 'ShipItArchitecture', 'ShipItFlavour',
-           'ShippingService', 'ShippingRequestStatus']
+           'ShippingService', 'ShippingRequestStatus', 'ShippingRequestType']
 
 from zope.schema import Bool, Choice, Int, Datetime, TextLine
 from zope.interface import Interface, Attribute, implements
@@ -140,6 +140,23 @@ class ShipItArchitecture(DBEnumeratedType):
         Mac
 
         PowerPC processors.
+        """)
+
+
+class ShippingRequestType(DBEnumeratedType):
+    """The type of a ShippingRequest."""
+
+    CUSTOM = DBItem(1, """
+        Custom
+
+        A request in which the recipient specified how many CDs they want.
+        """)
+
+    STANDARD = DBItem(2, """
+        Standard
+
+        A request in which the recipient chose the number of CDs from one of
+        our predefined options.
         """)
 
 

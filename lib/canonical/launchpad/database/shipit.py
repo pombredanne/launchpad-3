@@ -43,7 +43,7 @@ from canonical.launchpad.interfaces import (
     IShipItReport, IShipItReportSet, ShipItConstants, ILibraryFileAliasSet,
     SOFT_MAX_SHIPPINGRUN_SIZE, MAX_CDS_FOR_UNTRUSTED_PEOPLE,
     ShipItDistroSeries, ShipItArchitecture, ShipItFlavour,
-    ShippingService, ShippingRequestStatus)
+    ShippingService, ShippingRequestStatus, ShippingRequestType)
 from canonical.launchpad.database.country import Country
 
 
@@ -65,6 +65,7 @@ class ShippingRequest(SQLBase):
     shockandawe = ForeignKey(dbName='shockandawe', foreignKey='ShockAndAwe',
                              default=None)
 
+    type = EnumCol(enum=ShippingRequestType, default=None)
     status = EnumCol(
         enum=ShippingRequestStatus, notNull=True,
         default=ShippingRequestStatus.PENDING)
