@@ -40,8 +40,8 @@ if __name__ == '__main__':
     username, password = read_auth_file(auth_file)
     auth = make_basic_auth_header(username, password)
     response = https_post_form_with_auth(paste_host, paste_path, form, auth)
-    if response.status == httplib.FOUND:
-      location = response.getheader('Location')
+    location = response.getheader('Location')
+    if location:
       print urljoin('https://' + paste_host, location)
     else:
       print 'Unexpected response:\n%s' % response.getheaders()
