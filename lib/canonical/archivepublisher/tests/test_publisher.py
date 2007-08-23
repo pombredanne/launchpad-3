@@ -394,10 +394,20 @@ class TestPublisher(TestNativePublishingBase):
              ''],
             index_contents)
 
-        index_path = os.path.join(
+        # A compressed and an uncompressed Packages file is written;
+        # ensure that they are the same after uncompressing the former.
+        index_gz_path = os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest', 'main',
             'binary-i386', 'Packages.gz')
-        index_contents = gzip.GzipFile(filename=index_path).read().splitlines()
+        index_path = os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest', 'main',
+            'binary-i386', 'Packages')
+        index_gz_contents = gzip.GzipFile(
+            filename=index_gz_path).read().splitlines()
+        index_file = open(index_path,'r')
+        index_contents = index_file.read().splitlines()
+        index_file.close()
+        self.assertEqual(index_gz_contents, index_contents)
 
         self.assertEqual(
             ['Package: foo-bin',

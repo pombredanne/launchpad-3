@@ -322,29 +322,39 @@ class Publisher(object):
             self.log.debug("Generating Packages for %s" % arch_path)
 
             temp_prefix = '%s-index_' % arch_path
+            temp_index_gz = tempfile.mktemp(prefix=temp_prefix)
             temp_index = tempfile.mktemp(prefix=temp_prefix)
-            package_index = gzip.GzipFile(fileobj=open(temp_index, "wb"))
+            package_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, "wb"))
+            package_index = open(temp_index, "wb")
 
             for bpp in distroseries.getBinaryPackagePublishing(
                 archtag=arch.architecturetag, pocket=pocket,
                 component=component, archive=self.archive):
                 package_index.write(bpp.getIndexStanza().encode('utf-8'))
                 package_index.write('\n\n')
+                package_index_gz.write(bpp.getIndexStanza().encode('utf-8'))
+                package_index_gz.write('\n\n')
             package_index.close()
+            package_index_gz.close()
 
             package_index_basepath = os.path.join(
                 self._config.distsroot, suite_name, component.name, arch_path)
             if not os.path.exists(package_index_basepath):
                 os.makedirs(package_index_basepath)
-            package_index_path = os.path.join(
+            package_index_gz_path = os.path.join(
                 package_index_basepath, "Packages.gz")
+            package_index_path = os.path.join(
+                package_index_basepath, "Packages")
 
-            # move the the archive index file to the right place.
+            # Move the the archive index files to the right place.
             os.rename(temp_index, package_index_path)
+            os.rename(temp_index_gz, package_index_gz_path)
 
-            # make the files group writable
+            # Make the files group writable.
             mode = stat.S_IMODE(os.stat(package_index_path).st_mode)
             os.chmod(package_index_path, mode | stat.S_IWGRP)
+            mode = stat.S_IMODE(os.stat(package_index_gz_path).st_mode)
+            os.chmod(package_index_gz_path, mode | stat.S_IWGRP)
 
         # Inject static requests for Release files into self.apt_handler
         # in a way which works for NoMoreAptFtpArchive without changing
