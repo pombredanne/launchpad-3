@@ -66,6 +66,8 @@ We can also see how many translatables it has:
 
     >>> len(evo.translatable_series)
     1
+    >>> print evo.translatable_series[0].displayname
+    trunk
 
 But for a52dec, where we have no translatable series or Ubuntu package, the
 primary_translatable is nonexistent:
@@ -355,9 +357,9 @@ the number of products returned.
 
 == Primary translatable ==
 
-Primary translatable series in a product should follow branch development
-is focused on.  To be able to do changes, we need log in as a translations
-administrator.
+Primary translatable series in a product should follow series where
+development is focused on.  To be able to do changes to facilitate
+testing this, we need to log in as a translations administrator.
 
     >>> login('carlos@canonical.com')
     >>> translations_admin = getUtility(IPersonSet).getByEmail(
@@ -373,6 +375,10 @@ POTemplateNameSet:
 Firefox has two serieses, but no translatable series either:
 
     >>> firefox = productset.getByName('firefox')
+    >>> for firefoxseries in firefox.serieses:
+    ...     print firefoxseries.displayname, firefoxseries.potemplates
+    1.0 []
+    trunk []
     >>> print firefox.primary_translatable
     None
 
@@ -401,7 +407,7 @@ The primary_translatable now points at firefox 1.0:
     1.0
 
 If we associate a potemplate with Firefox trunk, it will become the primary
-translatable because it's a branch with development focus.
+translatable because it's a series with development focus.
 
     >>> potemplatesubset = potemplate_set.getSubset(
     ...     productseries=firefox_trunk)
