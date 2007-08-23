@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # This script runs the mirror prober scripts as the
-# launchpad user every two hours. Typically the output
+# launchpad user. Typically the output
 # will be sent to an email address for inspection.
 
 # Only run this script on forster
