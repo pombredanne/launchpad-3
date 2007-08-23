@@ -18,11 +18,9 @@ class JobManager:
     branches.
     """
 
-    def __init__(self, branch_type=None):
+    def __init__(self, branch_type):
         self.branches_to_mirror = []
         self.actualLock = None
-        if branch_type is None:
-            branch_type = BranchType.HOSTED
         self.branch_type = branch_type
         self.name = 'branch-puller-%s' % branch_type.name.lower()
         self.lockfilename = '/var/lock/launchpad-%s.lock' % self.name
