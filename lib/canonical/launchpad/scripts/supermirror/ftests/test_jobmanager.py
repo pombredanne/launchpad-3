@@ -84,7 +84,6 @@ class TestJobManager(unittest.TestCase):
             os.unlink(self.masterlock)
 
     def testImportAddBranches(self):
-        # ImportJobManager.addBranches only considers import branches.
         client = self.makeFakeClient(
             [], [],
             [(14, 'http://escudero.ubuntu.com:680/0000000e',
@@ -98,7 +97,6 @@ class TestJobManager(unittest.TestCase):
         self.assertEqual(import_manager.branches_to_mirror, [expected_branch])
 
     def testUploadAddBranches(self):
-        # UploadJobManager.addBranches only considers upload branches.
         client = self.makeFakeClient(
             [(25, '/tmp/sftp-test/branches/00/00/00/19', u'name12//pushed')],
             [], [])
@@ -111,7 +109,6 @@ class TestJobManager(unittest.TestCase):
         self.assertEqual(upload_manager.branches_to_mirror, [expected_branch])
 
     def testMirrorAddBranches(self):
-        # MirrorJobManager.addBranches only considers mirror branches.
         client = self.makeFakeClient(
             [],
             [(15, 'http://example.com/gnome-terminal/main', u'name12//main')],

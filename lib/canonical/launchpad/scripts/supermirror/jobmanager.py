@@ -67,39 +67,6 @@ class JobManager:
             self.name, socket.gethostname(), date_started, date_completed)
 
 
-class UploadJobManager(JobManager):
-    """Manage mirroring of upload branches.
-
-    UploadJobManager is responsible for the mirroring of branches that were
-    uploaded to the bazaar.launchpad.net SFTP server.
-    """
-
-    def __init__(self):
-        JobManager.__init__(self, BranchType.HOSTED)
-
-
-class ImportJobManager(JobManager):
-    """Manage mirroring of import branches.
-
-    ImportJobManager is responsible for the mirroring of branches produced by
-    the VCS imports system.
-    """
-
-    def __init__(self):
-        JobManager.__init__(self, BranchType.IMPORTED)
-
-
-class MirrorJobManager(JobManager):
-    """Manage mirroring of external branches.
-
-    MirrorJobManager is responsible for the mirroring of branches hosted on the
-    internet.
-    """
-
-    def __init__(self):
-        JobManager.__init__(self, BranchType.MIRRORED)
-
-
 class LockError(StandardError):
 
     def __init__(self, lockfilename):
