@@ -9,6 +9,7 @@ Let's find a build that produced some binaries:
   >>> browser.open("http://launchpad.dev/ubuntu/+builds")
   >>> browser.getControl(name="build_state").value = ['built']
   >>> browser.getControl("Update").click()
+  >>> browser.getLink("Next").click()
   >>> browser.getLink(
   ...     'i386 build of mozilla-firefox 0.9 in ubuntu '
   ...     'warty RELEASE').click()

@@ -1,5 +1,4 @@
-
-<div class="portlet">
+<div class="portlet" id="portlet-about">
   <h2>What&#8217;s this all about?</h2>
   <div class="portletBody portletContent">
     <img src="/@@/info" />

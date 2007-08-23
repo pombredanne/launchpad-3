@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-latest-versions">
   <h2>Latest versions</h2>
     <div class="portletBody portletContent">
     <ul tal:define="lastversions view/lastversions" tal:condition="lastversions">

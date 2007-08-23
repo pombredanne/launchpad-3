@@ -39,8 +39,10 @@ We need the right POMsgSet. We'll get the PO File, then, create the needed
 po msgset there.
 
   >>> upstream_pofile = upstream_evo.newPOFile('ca')
-  >>> upstream_pomsgset = upstream_pofile.createMessageSetFromText(
+  >>> upstream_potmsgset = upstream_evo.getPOTMsgSetByMsgIDText(
   ...     u'evolution addressbook')
+  >>> upstream_pomsgset = upstream_pofile.createMessageSetFromMessageSet(
+  ...     upstream_potmsgset)
   >>> print upstream_pomsgset.language.code
   ca
 
