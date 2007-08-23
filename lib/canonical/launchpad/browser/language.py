@@ -18,14 +18,20 @@ import operator
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib import form
+from zope.schema import Choice, List
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     ILanguageSet, ILanguage, NotFoundError)
+from canonical.launchpad.database import Country
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, LaunchpadFormView,
     LaunchpadEditFormView, action, canonical_url, ContextMenu,
-    enabled_with_permission, Link)
+    enabled_with_permission, Link, custom_widget)
+
+from canonical.widgets import LabeledMultiCheckBoxWidget
 
 
 class LanguageSetNavigation(GetitemNavigation):
@@ -142,8 +148,50 @@ class LanguageAdminView(LaunchpadEditFormView):
     """Handle an admin form submission."""
     schema = ILanguage
 
+    custom_widget('country', LabeledMultiCheckBoxWidget,
+                  orientation='vertical')
+
     field_names = ['code', 'englishname', 'nativename', 'pluralforms',
                    'pluralexpression', 'visible', 'direction']
+
+    def setUpFields(self):
+        LaunchpadFormView.setUpFields(self)
+        self.form_fields = self.form_fields + self.createCountryField()
+
+    @property
+    def all_countries(self):
+        return list(Country.select(orderBy='name'))
+
+    @property
+    def initial_values(self):
+        """Override this in your subclass if you want any widgets to have
+        initial values.
+        """
+        return {'country': list(self.context.countries)}
+
+    def createCountryField(self):
+        """Create a field to choose a set of countries.
+
+        Create a specialized vocabulary based on the user's preferred
+        languages. If the user is anonymous, the languages submited in the
+        browser's request will be used.
+        """
+        countries = self.all_countries
+        terms = []
+        for country in countries:
+            terms.append(SimpleTerm(country, country.iso3166code2,
+                                    country.name))
+        return form.Fields(
+            List(__name__='country',
+                 title=_(u'Spoken in'),
+                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
+                 required=False,
+                 default=list(self.context.countries),
+                 description=_(
+                     u'The countries this language is officially spoken in.')),
+            name='country',
+            custom_widget=self.custom_widgets['country'],
+            render_context=self.render_context)
 
     def initialize(self):
         LaunchpadEditFormView.initialize(self)
@@ -159,6 +207,14 @@ class LanguageAdminView(LaunchpadEditFormView):
 
     @action("Admin Language", name="admin")
     def admin_action(self, action, data):
+        countries = data['country']
+        for country in self.context.countries:
+            if country not in countries:
+                self.context.removeCountry(country)
+        for country in countries:
+            if country not in self.context.countries:
+                self.context.addCountry(country)
+        del data['country']
         self.updateContextFromData(data)
 
     def validate(self, data):
