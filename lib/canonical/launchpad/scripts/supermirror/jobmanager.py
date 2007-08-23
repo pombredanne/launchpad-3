@@ -8,6 +8,7 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)
+from canonical.launchpad.interfaces import BranchType
 
 
 class JobManager:
@@ -17,12 +18,14 @@ class JobManager:
     branches.
     """
 
-    name = 'branch-puller'
-
-    def __init__(self):
+    def __init__(self, branch_type=None):
         self.branches_to_mirror = []
         self.actualLock = None
-        self.lockfilename = None
+        if branch_type is None:
+            branch_type = BranchType.HOSTED
+        self.branch_type = branch_type
+        self.name = 'branch-puller-%s' % branch_type.name.lower()
+        self.lockfilename = '/var/lock/launchpad-%s.lock' % self.name
 
     def add(self, branch_to_mirror):
         """Add a branch to mirror to the JobManager."""
@@ -35,22 +38,18 @@ class JobManager:
             self.branches_to_mirror.pop(0).mirror(logger)
         logger.info('Mirroring complete')
 
-    def _getBranchToMirror(self, branch_status_client, branch_id, branch_src,
-                           unique_name):
-        destination = config.supermirror.branchesdest
-        branch_src = branch_src.strip()
-        path = branchtarget(branch_id)
-        branch_dest = os.path.join(destination, path)
-        return BranchToMirror(
-            branch_src, branch_dest, branch_status_client, branch_id,
-            unique_name)
-        
     def addBranches(self, branch_status_client):
         """Queue branches from the list given by the branch status client."""
-        branches_to_pull = branch_status_client.getBranchPullQueue()
+        branches_to_pull = branch_status_client.getBranchPullQueue(
+            self.branch_type.name)
+        destination = config.supermirror.branchesdest
         for branch_id, branch_src, unique_name in branches_to_pull:
-            branch = self._getBranchToMirror(
-                branch_status_client, branch_id, branch_src, unique_name)
+            branch_src = branch_src.strip()
+            path = branchtarget(branch_id)
+            branch_dest = os.path.join(destination, path)
+            branch = BranchToMirror(
+                branch_src, branch_dest, branch_status_client, branch_id,
+                unique_name)
             self.add(branch)
 
     def lock(self):
@@ -77,24 +76,8 @@ class UploadJobManager(JobManager):
     uploaded to the bazaar.launchpad.net SFTP server.
     """
 
-    name = 'branch-puller-upload'
-
     def __init__(self):
-        JobManager.__init__(self)
-        self.lockfilename = '/var/lock/launchpad-branch-puller-upload.lock'
-
-    def addBranches(self, branch_status_client):
-        """Queue branches from the list given by the branch status client."""
-        branches_to_pull = branch_status_client.getBranchPullQueue()
-        for branch_id, branch_src, unique_name in branches_to_pull:
-            branch = self._getBranchToMirror(
-                branch_status_client, branch_id, branch_src, unique_name)
-            self.add(branch)
-
-    def add(self, branch_to_mirror):
-        """Add a branch to mirror, only if it is an upload branch."""
-        if branch_to_mirror.isUploadBranch():
-            JobManager.add(self, branch_to_mirror)
+        JobManager.__init__(self, BranchType.HOSTED)
 
 
 class ImportJobManager(JobManager):
@@ -104,24 +87,8 @@ class ImportJobManager(JobManager):
     the VCS imports system.
     """
 
-    name = 'branch-puller-import'
-
     def __init__(self):
-        JobManager.__init__(self)
-        self.lockfilename = '/var/lock/launchpad-branch-puller-import.lock'
-
-    def addBranches(self, branch_status_client):
-        """Queue branches from the list given by the branch status client."""
-        branches_to_pull = branch_status_client.getBranchPullQueue()
-        for branch_id, branch_src, unique_name in branches_to_pull:
-            branch = self._getBranchToMirror(
-                branch_status_client, branch_id, branch_src, unique_name)
-            self.add(branch)
-
-    def add(self, branch_to_mirror):
-        """Add a branch to mirror, only if it is an import branch."""
-        if branch_to_mirror.isImportBranch():
-            JobManager.add(self, branch_to_mirror)
+        JobManager.__init__(self, BranchType.IMPORTED)
 
 
 class MirrorJobManager(JobManager):
@@ -131,24 +98,8 @@ class MirrorJobManager(JobManager):
     internet.
     """
 
-    name = 'branch-puller-mirror'
-
     def __init__(self):
-        JobManager.__init__(self)
-        self.lockfilename = '/var/lock/launchpad-branch-puller-mirror.lock'
-
-    def addBranches(self, branch_status_client):
-        """Queue branches from the list given by the branch status client."""
-        branches_to_pull = branch_status_client.getBranchPullQueue()
-        for branch_id, branch_src, unique_name in branches_to_pull:
-            branch = self._getBranchToMirror(
-                branch_status_client, branch_id, branch_src, unique_name)
-            self.add(branch)
-
-    def add(self, branch_to_mirror):
-        """Add a branch to mirror, only if it is an external branch."""
-        if branch_to_mirror.isMirrorBranch():
-            JobManager.add(self, branch_to_mirror)
+        JobManager.__init__(self, BranchType.MIRRORED)
 
 
 class LockError(StandardError):

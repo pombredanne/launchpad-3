@@ -28,8 +28,12 @@ class TestJobManager(unittest.TestCase):
     def tearDown(self):
         reset_logging()
 
+    def makeFakeClient(self, hosted, mirrored, imported):
+        return FakeBranchStatusClient(
+            {'HOSTED': hosted, 'MIRRORED': mirrored, 'IMPORTED': imported})
+
     def testEmptyAddBranches(self):
-        fakeclient = FakeBranchStatusClient([])
+        fakeclient = self.makeFakeClient([], [], [])
         manager = jobmanager.JobManager()
         manager.addBranches(fakeclient)
         self.assertEqual([], manager.branches_to_mirror)
@@ -39,9 +43,8 @@ class TestJobManager(unittest.TestCase):
         expected_branch = BranchToMirror(
             'managersingle', config.supermirror.branchesdest + '/00/00/00/00',
             None, None, None)
-        fakeclient = FakeBranchStatusClient([
-            (0, 'managersingle', u'name//trunk'),
-            ])
+        fakeclient = self.makeFakeClient(
+            [(0, 'managersingle', u'name//trunk')], [], [])
         manager = jobmanager.JobManager()
         manager.addBranches(fakeclient)
         self.assertEqual([expected_branch], manager.branches_to_mirror)
@@ -84,16 +87,15 @@ class TestJobManagerSubclasses(unittest.TestCase):
     """Test that the JobManager subclasses behave correctly."""
 
     def setUp(self):
-        sample_branches = [
-            # import branch
-            (14, 'http://escudero.ubuntu.com:680/0000000e',
-             'vcs-imports//main'),
-            # mirror branch
-            (15, 'http://example.com/gnome-terminal/main', u'name12//main'),
-            # upload branch
-            (25, '/tmp/sftp-test/branches/00/00/00/19', u'name12//pushed'),
-            ]
-        self.client = FakeBranchStatusClient(sample_branches)
+        self.client = self.makeFakeClient(
+            [(25, '/tmp/sftp-test/branches/00/00/00/19', u'name12//pushed')],
+            [(15, 'http://example.com/gnome-terminal/main', u'name12//main')],
+            [(14, 'http://escudero.ubuntu.com:680/0000000e',
+              'vcs-imports//main')])
+
+    def makeFakeClient(self, hosted, mirrored, imported):
+        return FakeBranchStatusClient(
+            {'HOSTED': hosted, 'MIRRORED': mirrored, 'IMPORTED': imported})
 
     def testImportAddBranches(self):
         # ImportJobManager.addBranches only considers import branches.
@@ -210,11 +212,11 @@ class TestJobManagerInLaunchpad(unittest.TestCase):
 class FakeBranchStatusClient:
     """A dummy branch status client implementation for testing getBranches()"""
 
-    def __init__(self, branches_to_pull):
-        self.branches_to_pull = branches_to_pull
+    def __init__(self, branch_queues):
+        self.branch_queues = branch_queues
 
-    def getBranchPullQueue(self):
-        return self.branches_to_pull
+    def getBranchPullQueue(self, branch_type):
+        return self.branch_queues[branch_type]
 
 
 def test_suite():
