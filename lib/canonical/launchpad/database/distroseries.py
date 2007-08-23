@@ -1717,8 +1717,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Where corresponding POMsgSets already exist but are not complete,
         # and parent's version is complete, update review-related status.
         class UpdatePOMsgSets:
-            """Loop body for LoopTuner: update incomplete POMsgSets in child.
-            """
+            """Tunable loop: update incomplete `POMsgSet`s in child."""
             implements(ITunableLoop)
 
             def __init__(self, holding_table, transaction_manager):
@@ -1770,7 +1769,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     FROM %s original, temp_inert_pomsgsets
                     WHERE
                         original.id = temp_inert_pomsgsets.id AND
-                        original.new_id = target.id AND
                         target.id = original.new_id AND
                         original.iscomplete AND
                         NOT target.iscomplete AND
@@ -1804,6 +1802,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 "holding.id >= %s AND holding.id < %s"
                 % sqlvalues(start_id, end_id))
             cur = cursor()
+
+            # Don't pour POSubmissions whose POMsgSets have disappeared.
             cur.execute("""
                 DELETE FROM %s AS holding
                 WHERE %s AND
@@ -1813,6 +1813,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                         WHERE holding.pomsgset = POMsgSet.id
                         )
                 """ % (holding_table, batch_clause))
+
+            # Don't pour POSubmissions for which the child already has a
+            # better replacement.
             cur.execute("""
                 DELETE FROM %s AS holding
                 USING POSubmission better
@@ -1821,6 +1824,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     holding.pluralform = better.pluralform AND
                     holding.potranslation = better.potranslation
                 """ % (holding_table, batch_clause))
+
+            # Deactivate POSubmissions we're about to replace with better ones
+            # from the parent.
             cur.execute("""
                 UPDATE POSubmission AS ps
                 SET active = false
