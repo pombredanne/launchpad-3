@@ -827,30 +827,27 @@ class BranchPullQueueTest(BranchTestCase):
 
     def test_requestMirrorPutsBranchInQueue_hosted(self):
         transaction.begin()
-        branch = self.findArbitraryBranch(BranchType.HOSTED)
+        branch = self.makeBranch(BranchType.HOSTED)
         branch.requestMirror()
         transaction.commit()
         self.assertBranchQueues([branch], [], [])
 
     def test_requestMirrorPutsBranchInQueue_mirrored(self):
         transaction.begin()
-        branch = self.findArbitraryBranch(BranchType.MIRRORED)
+        branch = self.makeBranch(BranchType.MIRRORED)
         branch.requestMirror()
         transaction.commit()
         self.assertBranchQueues([], [branch], [])
 
     def test_requestMirrorPutsBranchInQueue_imported(self):
         transaction.begin()
-        branch = self.findArbitraryBranch(BranchType.IMPORTED)
+        branch = self.makeBranch(BranchType.IMPORTED)
         branch.requestMirror()
         transaction.commit()
         self.assertBranchQueues([], [], [branch])
 
     # TODO:
-    # - Use getattr() magic plus a decorator to dispatch based on branch type.
     # - Test order of branches in queue.
-    # - Test the whole authserver
-    # - Remove the general pull queue method
     # - Change the puller to pass through branch type
     # - Possibly change the puller script arguments to match branch type names.
     # - Better exception for getBranchPullQueue when branch type is

@@ -23,7 +23,8 @@ from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.launchpad.interfaces import IBranchSet
+from canonical.launchpad.interfaces import (
+    BranchType, IBranchSet, IPersonSet, IProductSet, PersonCreationRationale)
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.tests.test_twisted import TwistedTestCase
@@ -115,36 +116,75 @@ class BranchTestCase(BzrlibTestCase):
 
     def setUp(self):
         BzrlibTestCase.setUp(self)
+        self._integer = 0
         self.cursor = cursor()
         self.branch_set = getUtility(IBranchSet)
-
-    def restrictSecurityPolicy(self):
-        old_policy = getSecurityPolicy()
-        setSecurityPolicy(LaunchpadSecurityPolicy)
-        self.addCleanup(lambda: setSecurityPolicy(old_policy))
-
-    def relaxSecurityPolicy(self):
-        old_policy = getSecurityPolicy()
-        setSecurityPolicy(PermissiveSecurityPolicy)
-        self.addCleanup(lambda: setSecurityPolicy(old_policy))
 
     def emptyPullQueues(self):
         transaction.begin()
         self.cursor.execute("UPDATE Branch SET mirror_request_time = NULL")
         transaction.commit()
 
-    def findArbitraryBranch(self, branch_type=None):
-        """Return an arbitrary branch that already exists."""
-        id_query = "SELECT id FROM Branch %s ORDER BY random() LIMIT 1"
+    def getUniqueInteger(self):
+        self._integer += 1
+        return self._integer
+
+    def getUniqueString(self, prefix=None):
+        if prefix is None:
+            prefix = self.id().split('.')[-1]
+        return "%s%s" % (prefix, self.getUniqueInteger())
+
+    def getUniqueURL(self):
+        return 'http://%s.com/%s' % (
+            self.getUniqueString(), self.getUniqueString())
+
+    def makePerson(self):
+        email = self.getUniqueString('email')
+        name = self.getUniqueString('person-name')
+        return getUtility(IPersonSet).createPersonAndEmail(
+            email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
+
+    def makeProduct(self):
+        owner = self.makePerson()
+        return getUtility(IProductSet).createProduct(
+            owner, self.getUniqueString('product-name'),
+            self.getUniqueString('displayname'),
+            self.getUniqueString('title'),
+            self.getUniqueString('summary'),
+            self.getUniqueString('description'))
+
+    def makeBranch(self, branch_type=None):
         if branch_type is None:
-            id_query = id_query % ''
-        else:
-            id_query = id_query % (
-                "WHERE branch_type = %s" % sqlvalues(branch_type))
-        cur = cursor()
-        cur.execute(id_query)
-        [branch_id] = cur.fetchone()
-        return self.branch_set.get(branch_id)
+            branch_type = BranchType.HOSTED
+        return getattr(self, 'makeBranch_%s' % branch_type.name)()
+
+    def makeBranch_HOSTED(self):
+        owner = self.makePerson()
+        return self.branch_set.new(
+            BranchType.HOSTED, self.getUniqueString('branch'), owner, owner,
+            self.makeProduct(), None)
+
+    def makeBranch_MIRRORED(self):
+        owner = self.makePerson()
+        return self.branch_set.new(
+            BranchType.MIRRORED, self.getUniqueString('branch'), owner, owner,
+            self.makeProduct(), self.getUniqueURL())
+
+    def makeBranch_IMPORTED(self):
+        owner = self.makePerson()
+        return self.branch_set.new(
+            BranchType.IMPORTED, self.getUniqueString('branch'), owner, owner,
+            self.makeProduct(), None)
+
+    def relaxSecurityPolicy(self):
+        old_policy = getSecurityPolicy()
+        setSecurityPolicy(PermissiveSecurityPolicy)
+        self.addCleanup(lambda: setSecurityPolicy(old_policy))
+
+    def restrictSecurityPolicy(self):
+        old_policy = getSecurityPolicy()
+        setSecurityPolicy(LaunchpadSecurityPolicy)
+        self.addCleanup(lambda: setSecurityPolicy(old_policy))
     
 
 def deferToThread(f):

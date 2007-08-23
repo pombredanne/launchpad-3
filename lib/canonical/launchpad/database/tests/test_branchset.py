@@ -105,9 +105,6 @@ class TestMirroring(BranchTestCase):
 
     def setUp(self):
         BranchTestCase.setUp(self)
-        # All of the mirroring methods are run on branches outside of the
-        # security proxy.
-        self.relaxSecurityPolicy()
         login(ANONYMOUS)
         self.emptyPullQueues()
 
@@ -127,7 +124,7 @@ class TestMirroring(BranchTestCase):
 
     def test_requestMirror(self):
         """requestMirror sets the mirror request time to 'now'."""
-        branch = self.findArbitraryBranch()
+        branch = self.makeBranch()
         branch.requestMirror()
         self.assertEqual(UTC_NOW, branch.mirror_request_time)
 
@@ -138,7 +135,7 @@ class TestMirroring(BranchTestCase):
         """
         # We run these in separate transactions so as to have the times set to
         # different values. This is closer to what happens in production.
-        branch = self.findArbitraryBranch()
+        branch = self.makeBranch()
         branch.startMirroring()
         transaction.commit()
         branch.requestMirror()
@@ -151,7 +148,7 @@ class TestMirroring(BranchTestCase):
 
     def test_mirrorCompleteRemovesFromPullQueue(self):
         """Completing the mirror removes the branch from the pull queue."""
-        branch = self.findArbitraryBranch()
+        branch = self.makeBranch()
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
@@ -160,7 +157,7 @@ class TestMirroring(BranchTestCase):
 
     def test_mirroringResetsMirrorRequestForHostedBranches(self):
         """Mirroring hosted branches resets their mirror request times."""
-        branch = self.findArbitraryBranch(BranchType.HOSTED)
+        branch = self.makeBranch(BranchType.HOSTED)
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
@@ -168,7 +165,7 @@ class TestMirroring(BranchTestCase):
 
     def test_mirroringResetsMirrorRequestForImportedBranches(self):
         """Mirroring hosted branches resets their mirror request times."""
-        branch = self.findArbitraryBranch(BranchType.IMPORTED)
+        branch = self.makeBranch(BranchType.IMPORTED)
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
@@ -179,7 +176,7 @@ class TestMirroring(BranchTestCase):
         hours in the future.
         """
         before_request = self.getNow()
-        branch = self.findArbitraryBranch(BranchType.MIRRORED)
+        branch = self.makeBranch(BranchType.MIRRORED)
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
@@ -190,7 +187,7 @@ class TestMirroring(BranchTestCase):
 
     def test_mirrorFailureResetsMirrorRequestForHostedBranches(self):
         before_request = self.getNow()
-        branch = self.findArbitraryBranch(BranchType.HOSTED)
+        branch = self.makeBranch(BranchType.HOSTED)
         branch.requestMirror()
         branch.mirrorFailed('No particular reason')
         after_request = self.getNow()
@@ -200,7 +197,7 @@ class TestMirroring(BranchTestCase):
 
     def test_mirrorFailureResetsMirrorRequestForImportedBranches(self):
         before_request = self.getNow()
-        branch = self.findArbitraryBranch(BranchType.IMPORTED)
+        branch = self.makeBranch(BranchType.IMPORTED)
         branch.requestMirror()
         branch.mirrorFailed('No particular reason')
         after_request = self.getNow()
@@ -210,7 +207,7 @@ class TestMirroring(BranchTestCase):
 
     def test_mirrorFailureResetsMirrorRequestForMirroredBranches(self):
         before_request = self.getNow()
-        branch = self.findArbitraryBranch(BranchType.MIRRORED)
+        branch = self.makeBranch(BranchType.MIRRORED)
         branch.requestMirror()
         branch.mirrorFailed('No particular reason')
         after_request = self.getNow()
@@ -220,15 +217,14 @@ class TestMirroring(BranchTestCase):
 
     def test_pullQueueEmpty(self):
         """Branches with no mirror_request_time are not in the pull queue."""
-        for branch_type in (BranchType.HOSTED, BranchType.MIRRORED,
-                            BranchType.IMPORTED):
+        for branch_type in BranchType.items:
             self.assertEqual(
                 [], list(self.branch_set.getPullQueue(branch_type)))
 
     def test_pastMirrorRequestTimeInQueue(self):
         """Branches with mirror_request_time in the past are mirrored."""
         transaction.begin()
-        branch = self.findArbitraryBranch()
+        branch = self.makeBranch()
         branch.requestMirror()
         branch_id = branch.id
         transaction.commit()
@@ -240,13 +236,25 @@ class TestMirroring(BranchTestCase):
     def test_futureMirrorRequestTimeInQueue(self):
         """Branches with mirror_request_time in the future are not mirrored."""
         transaction.begin()
-        branch = removeSecurityProxy(self.findArbitraryBranch())
+        branch = removeSecurityProxy(self.makeBranch())
         tomorrow = self.getNow() + timedelta(1)
         branch.mirror_request_time = tomorrow
         branch.syncUpdate()
         transaction.commit()
         self.assertEqual(
             [], list(self.branch_set.getPullQueue(branch.branch_type)))
+
+    def test_pullQueueOrder(self):
+        """Pull queue has the oldest mirror request times first."""
+        branches = []
+        for i in range(3):
+            branch = removeSecurityProxy(self.makeBranch(BranchType.HOSTED))
+            branch.mirror_request_time = self.getNow() - timedelta(hours=i+1)
+            branch.sync()
+            branches.append(branch)
+        self.assertEqual(
+            list(reversed(branches)),
+            list(self.branch_set.getPullQueue(BranchType.HOSTED)))
 
 
 class BranchVisibilityPolicyTestCase(TestCase):
