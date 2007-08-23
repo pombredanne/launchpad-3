@@ -48,6 +48,7 @@ __all__ = [
     'SpecificationDependenciesVocabulary',
     'SpecificationDepCandidatesVocabulary',
     'SprintVocabulary',
+    'TranslatableLanguageVocabulary',
     'TranslationGroupVocabulary',
     'UserTeamsParticipationVocabulary',
     'ValidPersonOrTeamVocabulary',
@@ -89,7 +90,7 @@ from canonical.launchpad.interfaces import (
 
 
 class BasePersonVocabulary:
-    """This is a base class to be used by all different Person Vocabularies."""
+    """This is a base class used by all different Person Vocabularies."""
 
     _table = Person
 
@@ -243,7 +244,7 @@ class FAQVocabulary:
     def __contains__(self, value):
         """See `IVocabulary`."""
         if not IFAQ.providedBy(value):
-           return False
+            return False
         return self.context.getFAQ(value.id) is not None
 
     def getTerm(self, value):
@@ -274,6 +275,7 @@ class FAQVocabulary:
 
 
 class LanguageVocabulary(SQLObjectVocabularyBase):
+    """All the languages known by Launchpad."""
 
     _table = Language
     _orderBy = 'englishname'
@@ -292,6 +294,34 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
         except SQLObjectNotFound:
             raise LookupError(token)
         return self.getTerm(found_language)
+
+
+class TranslatableLanguageVocabulary(LanguageVocabulary):
+    """All the translatable languages known by Launchpad.
+    
+    English is not a translatable language. It is excluded from the terms.
+    """
+
+    def __contains__(self, language):
+        """See `IVocabulary`."""
+        if language.code == 'en':
+            return False
+        return super(
+            TranslatableLanguageVocabulary, self).__contains__(language)
+
+    def __iter__(self):
+        """See `IVocabulary`."""
+        languages = self._table.select(
+            "Language.code != 'en'", orderBy=self._orderBy)
+        for language in languages:
+            yield self.toTerm(language)
+
+    def getTermByToken(self, token):
+        """See `IVocabulary`."""
+        if token == 'en':
+            raise LookupError(token)
+        return super(
+            TranslatableLanguageVocabulary, self).getTermByToken(token)
 
 
 class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
@@ -527,7 +557,8 @@ class ValidPersonOrTeamVocabulary(
 
         if not text:
             query = 'Person.id = ValidPersonOrTeamCache.id' + extra_clause
-            return Person.select(query, clauseTables=['ValidPersonOrTeamCache'])
+            return Person.select(
+                query, clauseTables=['ValidPersonOrTeamCache'])
 
         name_match_query = """
             Person.id = ValidPersonOrTeamCache.id
@@ -696,7 +727,7 @@ def person_team_participations_vocabulary_factory(context):
     participate in.
     """
     assert context is not None
-    person= IPerson(context)
+    person = IPerson(context)
     return SimpleVocabulary([
         SimpleTerm(team, team.name, title=team.displayname)
         for team in person.teams_participated_in])
@@ -838,7 +869,7 @@ class FilteredDistroSeriesVocabulary(SQLObjectVocabularyBase):
             distribution = launchbag.distribution
             serieses = self._table.selectBy(
                 distributionID=distribution.id, **kw)
-            for series in sorted(serieses, key=lambda x: x.sortkey):
+            for series in sorted(serieses, key=attrgetter('sortkey')):
                 yield self.toTerm(series)
 
 
@@ -961,7 +992,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             # ensure that the +editstatus page doesn't break.
             visible_milestones.append(milestone_context.milestone)
 
-        for ms in sorted(visible_milestones, key=lambda m: m.displayname):
+        for ms in sorted(visible_milestones, key=attrgetter('displayname')):
             yield self.toTerm(ms)
 
 
@@ -984,7 +1015,8 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
             target = distribution
 
         if target is not None:
-            for spec in sorted(target.specifications(), key=lambda a: a.title):
+            for spec in sorted(
+                target.specifications(), key=attrgetter('title')):
                 # we will not show the current specification in the
                 # launchbag
                 if spec == launchbag.specification:
@@ -1010,7 +1042,8 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
         curr_spec = launchbag.specification
 
         if curr_spec is not None:
-            for spec in sorted(curr_spec.dependencies, key=lambda a: a.title):
+            for spec in sorted(
+                curr_spec.dependencies, key=attrgetter('title')):
                 yield SimpleTerm(spec, spec.name, spec.title)
 
 class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
@@ -1034,7 +1067,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         speclist = shortlist(specs, 100)
         return [spec for spec in speclist
                 if (spec != self.context and
-                    spec.product == self.context.product
+                    spec.target == self.context.target
                     and spec not in self.context.all_blocked)]
 
     def _doSearch(self, query):
@@ -1072,7 +1105,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
                                  candidate_specs)
 
     def _all_specs(self):
-        return self._filter_specs(self.context.product.specifications())
+        return self._filter_specs(self.context.target.specifications())
     
     def __iter__(self):
         return (self.toTerm(spec) for spec in self._all_specs())
@@ -1169,7 +1202,8 @@ class DistributionUsingMaloneVocabulary:
         return SimpleTerm(obj, obj.name, obj.displayname)
 
     def getTermByToken(self, token):
-        found_dist = Distribution.selectOneBy(name=token, official_malone=True)
+        found_dist = Distribution.selectOneBy(
+            name=token, official_malone=True)
         if found_dist is None:
             raise LookupError(token)
         return self.getTerm(found_dist)
@@ -1185,7 +1219,7 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
         serieses = self._table.select(
             DistroSeries.q.distributionID==Distribution.q.id,
             orderBy=self._orderBy, clauseTables=self._clauseTables)
-        for series in sorted(serieses, key=lambda x: x.sortkey):
+        for series in sorted(serieses, key=attrgetter('sortkey')):
             yield self.toTerm(series)
 
     def toTerm(self, obj):
@@ -1297,7 +1331,8 @@ class BugNominatableSeriesVocabularyBase(NamedSQLObjectVocabulary):
         raise NotImplementedError
 
 
-class BugNominatableProductSeriesVocabulary(BugNominatableSeriesVocabularyBase):
+class BugNominatableProductSeriesVocabulary(
+    BugNominatableSeriesVocabularyBase):
     """The product series for which a bug can be nominated."""
 
     _table = ProductSeries
@@ -1315,7 +1350,8 @@ class BugNominatableProductSeriesVocabulary(BugNominatableSeriesVocabularyBase):
         return self.product.getSeries(name)
 
 
-class BugNominatableDistroSeriesVocabulary(BugNominatableSeriesVocabularyBase):
+class BugNominatableDistroSeriesVocabulary(
+    BugNominatableSeriesVocabularyBase):
     """The distribution series for which a bug can be nominated."""
 
     _table = DistroSeries

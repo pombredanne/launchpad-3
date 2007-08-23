@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-details">
   <h2 tal:content="context/title">Release series details</h2>
 
   <div class="portletBody portletContent">

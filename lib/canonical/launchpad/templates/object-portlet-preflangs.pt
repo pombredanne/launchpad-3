@@ -1,6 +1,6 @@
-<div class="portlet">
+<div class="portlet" id="portlet-preferred-langs">
 
-  <h2>Your preferred languages</h2>
+  <h2>Your languages</h2>
 
   <div class="portletBody">
 
