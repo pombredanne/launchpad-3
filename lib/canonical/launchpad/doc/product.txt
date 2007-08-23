@@ -64,10 +64,8 @@ translatable for that product:
 
 We can also see how many translatables it has:
 
-    >>> len(evo.translatable_series)
-    1
-    >>> print evo.translatable_series[0].displayname
-    trunk
+    >>> print [series.displayname for series in evo.translatable_series]
+    [u'trunk']
 
 But for a52dec, where we have no translatable series or Ubuntu package, the
 primary_translatable is nonexistent:
