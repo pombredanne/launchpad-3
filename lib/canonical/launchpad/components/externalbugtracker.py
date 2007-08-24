@@ -122,10 +122,16 @@ class ExternalBugTracker:
             #      It might be better to do this synchronously for the sake of
             #      handling timeouts nicely and suchlike.
             for bug_id in bug_ids:
-                self.bugs[bug_id] = self.getRemoteBug(bug_id)
+                bug_id, remote_bug = self.getRemoteBug(bug_id)
+                self.bugs[bug_id] = remote_bug
 
     def getRemoteBug(self, bug_id):
-        """Retrieve and return a single bug from the remote database."""
+        """Retrieve and return a single bug from the remote database.
+
+        The bug is returned as a tuple in the form (id, bug). This ensures
+        that bug ids are formatted correctly for the current
+        ExternalBugTracker.
+        """
         raise NotImplementedError(self.getRemoteBug)
 
     def getRemoteBugBatch(self, bug_ids):
