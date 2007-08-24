@@ -159,21 +159,20 @@ class LanguageAdminView(LaunchpadEditFormView):
 
     @property
     def all_countries(self):
+        """Return a list of all countries sorted by name."""
         return list(getUtility(ICountrySet))
 
     @property
     def initial_values(self):
-        """Override this in your subclass if you want any widgets to have
-        initial values.
+        """Default to countries a language is currently set as being spoken in.
         """
         return {'country': list(self.context.countries)}
 
     def createCountryField(self):
         """Create a field to choose a set of countries.
 
-        Create a specialized vocabulary based on the user's preferred
-        languages. If the user is anonymous, the languages submited in the
-        browser's request will be used.
+        Create a specialized vocabulary based on countries this language
+        is spoken in.
         """
         countries = self.all_countries
         terms = []
@@ -206,6 +205,8 @@ class LanguageAdminView(LaunchpadEditFormView):
 
     @action("Admin Language", name="admin")
     def admin_action(self, action, data):
+        # We are special-casing country handling, since this has to
+        # modify a different (`SpokenIn`) table
         countries = data['country']
         for country in self.context.countries:
             if country not in countries:
@@ -214,6 +215,7 @@ class LanguageAdminView(LaunchpadEditFormView):
             if country not in self.context.countries:
                 self.context.addCountry(country)
         del data['country']
+
         self.updateContextFromData(data)
 
     def validate(self, data):
