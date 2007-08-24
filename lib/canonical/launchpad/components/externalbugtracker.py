@@ -114,6 +114,7 @@ class ExternalBugTracker:
 
         It's optional to override this method.
         """
+        self.bugs = {}
         if len(bug_ids) > self.batch_query_threshold:
             self.bugs = self.getRemoteBugBatch(bug_ids)
         else:
