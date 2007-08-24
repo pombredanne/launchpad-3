@@ -506,6 +506,31 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Expected email containing 'OK: foocomm_1.0-2_i386.deb', got:\n%s"
             % raw_msg)
 
+    def testCommercialUploadPockets(self):
+        """Test commercial upload pockets.
+
+        Commercial uploads must be targeted to the RELEASE pocket only
+        """
+        self.setupBreezy()
+        self.layer.txn.commit()
+
+        # Set up the uploadprocessor with appropriate options and logger.
+        self.options.context = 'insecure'
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload a package for Breezy.
+        upload_dir = self.queueUpload("foocomm_1.0-1_updates")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check it is rejected.
+        expect_msg = "Commercial uploads must be for the RELEASE pocket."
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            expect_msg in raw_msg,
+            "Expected email with %s, got:\n%s" % (expect_msg, raw_msg))
+
+
 class TestUploadProcessorPPA(TestUploadProcessorBase):
     """Functional tests for uploadprocessor.py in PPA operation."""
 

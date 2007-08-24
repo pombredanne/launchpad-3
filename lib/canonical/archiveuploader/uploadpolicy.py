@@ -12,7 +12,7 @@ from canonical.archiveuploader.nascentuploadfile import UploadError
 from canonical.launchpad.interfaces import (
     IDistributionSet, ILaunchpadCelebrities)
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, DistroSeriesStatus)
+    ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket)
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
@@ -119,6 +119,11 @@ class AbstractUploadPolicy:
             if self.pocket != PackagePublishingPocket.RELEASE:
                 upload.reject(
                     "PPA uploads must be for the RELEASE pocket.")
+        elif (self.archive.purpose == ArchivePurpose.COMMERCIAL and
+              self.pocket != PackagePublishingPocket.RELEASE):
+              # Commercial uploads can only go to the release pocket.
+              upload.reject(
+                "Commercial uploads must be for the RELEASE pocket.")
         else:
             # XXX julian 2005-05-29 bug=117557:
             # This is a greasy hack until bug #117557 is fixed.
