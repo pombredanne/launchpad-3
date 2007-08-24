@@ -142,7 +142,84 @@ ALTER TABLE BugNomination
     ADD CONSTRAINT bugnomination__distroseries__fk
         FOREIGN KEY (distroseries) REFERENCES DistroSeries;
 
-\d BugNomination
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 21, 0);
+-- BugTask
+ALTER TABLE BugTask RENAME COLUMN distrorelease TO distroseries;
+ALTER TABLE bugtask_product_key RENAME TO bugtask__product__bug__key;
+ALTER TABLE bugtask_assignee_idx RENAME TO bugtask__assignee__idx;
+ALTER TABLE bugtask_bug_idx RENAME TO bugtask__bug__idx;
+ALTER TABLE bugtask_datecreated_idx RENAME TO bugtask__datecreated__idx;
+ALTER TABLE bugtask_distribution_and_sourcepackagename_idx
+    RENAME TO bugtask__distribution__sourcepackagename__idx;
+DROP INDEX bugtask_distribution_idx;
+ALTER TABLE bugtask_distrorelease_and_sourcepackagename_idx
+    RENAME TO bugtask__distroseries__sourcepackagename__idx;
+DROP INDEX bugtask_distrorelease_idx;
+ALTER TABLE bugtask_milestone_idx RENAME TO bugtask__milestone__idx;
+ALTER TABLE bugtask_owner_idx RENAME TO bugtask__owner__idx;
+DROP INDEX bugtask_sourcepackagename_idx;
+CREATE INDEX bugtask__sourcepackagename__idx ON BugTask(sourcepackagename)
+    WHERE sourcepackagename IS NOT NULL;
+DROP INDEX bugtask_binarypackagename_idx;
+CREATE INDEX bugtask__binarypackagename__idx ON BugTask(binarypackagename)
+    WHERE binarypackagename IS NOT NULL;
+
+ALTER TABLE BugTask
+    DROP CONSTRAINT bugtask_binarypackagename_fk,
+    ADD CONSTRAINT bugtask__binarypackagename__fk
+        FOREIGN KEY (binarypackagename) REFERENCES BinaryPackageName,
+    DROP CONSTRAINT bugtask_bug_fk,
+    ADD CONSTRAINT bugtask__bug__fk
+        FOREIGN KEY (bug) REFERENCES Bug,
+    DROP CONSTRAINT bugtask_bugwatch_fk,
+    ADD CONSTRAINT bugtask__bugwatch__fk
+        FOREIGN KEY (bugwatch) REFERENCES BugWatch,
+    DROP CONSTRAINT bugtask_distribution_fk,
+    ADD CONSTRAINT bugtask__distribution__fk
+        FOREIGN KEY (distribution) REFERENCES Distribution,
+    DROP CONSTRAINT bugtask_distribution_milestone_fk,
+    ADD CONSTRAINT bugtask__distribution__milestone__fk FOREIGN KEY (
+        distribution, milestone) REFERENCES Milestone(distribution, id),
+    DROP CONSTRAINT bugtask_distrorelease_fk,
+    ADD CONSTRAINT bugtask__distroseries__fk
+        FOREIGN KEY (distroseries) REFERENCES DistroSeries,
+    DROP CONSTRAINT bugtask_owner_fk,
+    ADD CONSTRAINT bugtask__owner__fk FOREIGN KEY (owner) REFERENCES Person,
+    DROP CONSTRAINT bugtask_person_fk,
+    ADD CONSTRAINT bugtask__assignee__fk
+        FOREIGN KEY (assignee) REFERENCES Person,
+    DROP CONSTRAINT bugtask_product_fk,
+    ADD CONSTRAINT bugtask__product__fk
+        FOREIGN KEY (product) REFERENCES Product,
+    DROP CONSTRAINT bugtask_product_milestone_fk,
+    ADD CONSTRAINT bugtask__product__milestone__fk
+        FOREIGN KEY (product, milestone) REFERENCES Milestone(product, id),
+    DROP CONSTRAINT bugtask_productseries_fk,
+    ADD CONSTRAINT bugtask__productseries__fk
+        FOREIGN KEY (productseries) REFERENCES ProductSeries,
+    DROP CONSTRAINT bugtask_sourcepackagename_fk,
+    ADD CONSTRAINT bugtask__sourcepackagename__fk
+        FOREIGN KEY (sourcepackagename) REFERENCES SourcepackageName;
+
+
+-- ComponentSelection
+
+ALTER TABLE ComponentSelection RENAME COLUMN distrorelease TO distroseries;
+DROP INDEX componentselection__distrorelease__component__uniq;
+ALTER TABLE ComponentSelection
+    ADD CONSTRAINT componentselection__distroseries__component__key
+        UNIQUE (distroseries, component),
+    DROP CONSTRAINT "$1",
+    ADD CONSTRAINT componentselection__distroseries__fk
+        FOREIGN KEY (distroseries) REFERENCES DistroSeries,
+    DROP CONSTRAINT "$2",
+    ADD CONSTRAINT componentselection__component__fk
+        FOREIGN KEY (component) REFERENCES Component;
+
+
+-- DevelopmentManifest
+
+\d DevelopmentManifest
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
 ABORT;
