@@ -706,6 +706,17 @@ class PersonSpecsMenu(ApplicationMenu):
         return Link('+roadmap', text, summary, icon='info')
 
 
+class PersonTranslationsMenu(ApplicationMenu):
+
+    usedfor = IPerson
+    facet = 'translations'
+    links = ['imports']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
+
+
 class TeamSpecsMenu(PersonSpecsMenu):
 
     usedfor = ITeam
@@ -969,7 +980,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+editlanguages'
         text = 'Set preferred languages'
         return Link(target, text, icon='edit')
-        
+
     def joinleave(self):
         team = self.context
         enabled = True
