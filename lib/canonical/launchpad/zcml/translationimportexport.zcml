@@ -18,6 +18,12 @@
     </content>
 
     <content
+        class="canonical.launchpad.translationformat.kde_po_importer.KdePoImporter">
+        <allow
+          interface="canonical.launchpad.interfaces.ITranslationFormatImporter" />
+    </content>
+
+    <content
         class="canonical.launchpad.translationformat.mozilla_xpi_importer.MozillaXpiImporter">
         <allow
           interface="canonical.launchpad.interfaces.ITranslationFormatImporter" />

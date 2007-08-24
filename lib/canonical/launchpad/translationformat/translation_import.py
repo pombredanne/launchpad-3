@@ -18,6 +18,8 @@ from canonical.launchpad.interfaces import (
     IPersonSet, ITranslationImporter, NotExportedFromLaunchpad,
     OldTranslationImported, PersonCreationRationale, TranslationConflict,
     TranslationConstants)
+from canonical.launchpad.translationformat.kde_po_importer import (
+    KdePoImporter)
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPoImporter)
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
@@ -27,6 +29,7 @@ from canonical.lp.dbschema import (
     RosettaImportStatus, TranslationFileFormat)
 
 importers = {
+    TranslationFileFormat.KDEPO: KdePoImporter(),
     TranslationFileFormat.PO: GettextPoImporter(),
     TranslationFileFormat.XPI: MozillaXpiImporter(),
     }
