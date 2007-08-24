@@ -853,7 +853,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         # Calculate the number of published plural forms.
         # Since every POFile may have its own plural expression, it's possible
         # for submissions to have plural-form numbers that the language itself
-        # does not define.  That's fine, and it's useful for some corner
+        # does not define.  That's fine, and people have used it for some edge
         # cases, but they must not count towards the msgset's completeness.
         published_count = 0
         for (plural, published) in self.published_submissions.items():
