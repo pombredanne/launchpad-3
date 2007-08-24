@@ -1,11 +1,13 @@
 Here is the tale of languages. We will see how to create, find and
 edit them.
 
-Launchpad has a main page.
+Launchpad Translations has a main page.
 
-From there, we can find the link to add new languages
+  >>> admin_browser.open('http://translations.launchpad.dev/')
 
-  >>> admin_browser.open('http://translations.launchpad.dev/+languages')
+There we can find a link to browse and manage languages.
+
+  >>> admin_browser.getLink('18 languages').click()
   >>> print admin_browser.url
   http://translations.launchpad.dev/+languages
 
