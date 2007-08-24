@@ -173,6 +173,9 @@ An admin, though, will see the link and will be able to edit it.
   on
   >>> print admin_browser.getControl('Text direction').value
   ['Left to Right']
+  >>> spokenin_control = admin_browser.getControl(name='field.country')
+  >>> print [country for country in spokenin_control.value]
+  ['AR', 'BO', 'CL', 'CO', 'CR', 'DO', 'EC', 'SV', 'GT', 'HN', 'MX', 'NI', 'PA', 'PY', 'PE', 'PR', 'ES', 'US', 'UY', 'VE']
 
 Changing values and submitting the form will allow the admin to change values.
 
@@ -193,6 +196,9 @@ Changing values to correct content works:
 
   >>> admin_browser.getControl('ISO 639').value = 'bars'
   >>> admin_browser.getControl('English name').value = 'Changed field'
+  >>> spokenin_control = admin_browser.getControl(name='field.country')
+  >>> spokenin_control.getControl('Argentina').selected = False
+  >>> spokenin_control.getControl('France').selected = True
   >>> admin_browser.getControl('Admin Language').click()
   >>> print admin_browser.url
   http://translations.launchpad.dev/+languages/bars
@@ -206,6 +212,9 @@ And we can validate it:
   bars
   >>> print admin_browser.getControl('English name').value
   Changed field
+  >>> spokenin_control = admin_browser.getControl(name='field.country')
+  >>> print [country for country in spokenin_control.value]
+  ['BO', 'CL', 'CO', 'CR', 'DO', 'EC', 'SV', 'FR', 'GT', 'HN', 'MX', 'NI', 'PA', 'PY', 'PE', 'PR', 'ES', 'US', 'UY', 'VE']
 
 That was a renaming action, which means that language code 'es' doesn't
 exist anymore.

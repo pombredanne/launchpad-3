@@ -24,8 +24,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    ILanguageSet, ILanguage, NotFoundError)
-from canonical.launchpad.database import Country
+    ILanguageSet, ILanguage, ICountrySet, NotFoundError)
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, LaunchpadFormView,
     LaunchpadEditFormView, action, canonical_url, ContextMenu,
@@ -160,7 +159,7 @@ class LanguageAdminView(LaunchpadEditFormView):
 
     @property
     def all_countries(self):
-        return list(Country.select(orderBy='name'))
+        return list(getUtility(ICountrySet))
 
     @property
     def initial_values(self):

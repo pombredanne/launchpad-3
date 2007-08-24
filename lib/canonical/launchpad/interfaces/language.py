@@ -55,6 +55,16 @@ class ILanguage(Interface):
         title=u'A list of Countries where this language is spoken in.',
         required=True)
 
+    def addCountry(country):
+        """Adds a country language is spoken in.
+
+        Provided by SQLObject."""
+
+    def removeCountry(country):
+        """Removes a country language is spoken in.
+
+        Provided by SQLObject."""
+
     visible = Bool(
         title=u'Visible',
         description=(
@@ -87,12 +97,6 @@ class ILanguage(Interface):
                u' in HTML files.'),
         required=True,
         readonly=True)
-
-    def addCountry(country):
-        """Adds a country language is spoken in."""
-
-    def removeCountry(country):
-        """Removes a country language is spoken in."""
 
 class ILanguageSet(Interface):
     """The collection of languages."""
