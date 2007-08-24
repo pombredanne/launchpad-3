@@ -82,6 +82,19 @@ If we initialise with a different set of keys we overwrite the first set:
     [6, 7, 8, 9, 10, 11, 12]
 
 
+== Invalid Bugs ==
+
+Some Trac instances don't specificy a status field in their CSV exports. To
+deal with this, our Trac instance will simply return UNKNOWN_REMOTE_STATUS
+when it encounters such an instance. We can demonstrate this with a simple
+invalid bug:
+
+    >>> invalid_bug = {'id': 1, 'description': 'This bug has no status'}
+    >>> trac.bugs = {invalid_bug['id']: invalid_bug}
+    >>> trac.getRemoteStatus(invalid_bug['id'])
+    'UNKNOWN'
+
+
 == Updating Bug Watches ==
 
 First, we create some bug watches to test with:

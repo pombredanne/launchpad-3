@@ -863,7 +863,11 @@ class Trac(ExternalBugTracker):
             remote_bug['resolution'] not in ['', '--', None]):
             return remote_bug['resolution']
         else:
-            return remote_bug['status']
+            # Some Trac instances don't include the bug status in their CSV
+            # exports. In those cases we acknowledge that the bug exists but
+            # simply return UNKNOWN_REMOTE_STATUS. Otherwise we return the
+            # status specified in the CSV export.
+            return remote_bug.get('status', UNKNOWN_REMOTE_STATUS)
 
     def convertRemoteStatus(self, remote_status):
         """See IExternalBugTracker"""
