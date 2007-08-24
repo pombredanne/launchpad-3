@@ -118,7 +118,8 @@ class ExternalBugTracker:
             self.bugs = self.getRemoteBugBatch(bug_ids)
         else:
             # XXX: 2007-08-24 Graham Binns
-            #      It might be better to do this synchronously.
+            #      It might be better to do this synchronously for the sake of
+            #      handling timeouts nicely and suchlike.
             self.bugs = [self.getRemoteBug(bug_id) for bug_id in bug_ids]
 
     def getRemoteBug(self, bug_id):
