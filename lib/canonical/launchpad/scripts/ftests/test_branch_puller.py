@@ -92,7 +92,7 @@ class TestBranchPuller(TestCaseWithTransport):
         """Make sure there are no branches to pull."""
         # XXX: JonathanLange 2007-08-20, When the mirror-request branch lands,
         # all of these queries will collapse to 'UPDATE Branch SET
-        # mirror_request_time = NULL'.
+        # mirror_request_time = NULL'. See bug 74031.
         LaunchpadZopelessLayer.txn.begin()
         cursor().execute("""
             UPDATE Branch
@@ -188,7 +188,7 @@ class TestBranchPuller(TestCaseWithTransport):
         """Confirm the fixture is set up correctly.
 
         We want the branch upload area and the supermirror destination area to
-        both be empty. We also want the branch pull queue to be empty. This all
+        both be empty. We also want the branch pull queue to be empty.
         """
         self.assertEqual([], os.listdir(config.codehosting.branches_root))
         self.assertEqual([], os.listdir(config.supermirror.branchesdest))
