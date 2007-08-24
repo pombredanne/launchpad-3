@@ -851,7 +851,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         pluralforms = self.pluralforms
 
         # Calculate the number of published plural forms.
-        # XXX: JeroenVermeulen 2007-06-10: Why the cap on pluralform?
+        # Since every POFile may have its own plural expression, it's possible
+        # for submissions to have plural-form numbers that the language itself
+        # does not define.  That's fine, and it's useful for some corner
+        # cases, but they must not count towards the msgset's completeness.
         published_count = 0
         for (plural, published) in self.published_submissions.items():
             if plural < pluralforms and published.id is not None:
@@ -864,7 +867,6 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             self.publishedfuzzy = False
 
         # Calculate the number of active plural forms.
-        # XXX: JeroenVermeulen 2007-06-10: Why the cap on pluralform?
         active_count = 0
         for (plural, active) in self.active_submissions.items():
             if plural < pluralforms and active.id is not None:
