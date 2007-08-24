@@ -9,7 +9,7 @@ PO files.
 See IPOTemplateExporter and IDistroSeriesPOExporter.
 """
 
-# XXX
+# XXX Dafydd Harries 2005-04-07:
 # A note about tarballs, StringIO and unicode. SQLObject returns unicode
 # values for columns which are declared as StringCol. We have to be careful
 # not to pass unicode instances to the tarfile module, because when the
@@ -18,7 +18,6 @@ See IPOTemplateExporter and IDistroSeriesPOExporter.
 # buffers. This is why the tarball code is sprinkled with ".encode('ascii')".
 # If we get separate StringCol and UnicodeCol column types, we won't need this
 # any longer.
-#  -- Dafydd Harries, 2005/04/07.
 
 __metaclass__ = type
 
@@ -182,6 +181,7 @@ class OutputMsgSet:
 
     def __init__(self, pofile):
         self.pofile = pofile
+        self.context = None
         self.msgids = []
         self.msgstrs = []
         self.flags = []
@@ -189,6 +189,12 @@ class OutputMsgSet:
         self.commenttext = ''
         self.sourcecomment = ''
         self.filereferences = ''
+
+    def set_context(self, context):
+        """Set context for this message set.
+
+        This corresponds to 'msgctxt' keyword in the exported PO file."""
+        self.context = context
 
     def add_msgid(self, msgid):
         """Add a message ID to this message set."""
@@ -246,6 +252,7 @@ class OutputMsgSet:
             msgstrPlurals = None
 
         message = POMessage(
+            msgctxt=self.context,
             msgid=self.msgids[0],
             msgid_plural=msgidPlural,
             msgstr=msgstr,
@@ -516,6 +523,9 @@ def export_rows(rows, pofile_output, force_utf8=False):
                 continue
 
             msgset = OutputMsgSet(exported_file)
+            if row.context is not None:
+                msgset.set_context(row.context)
+
             if row.isfuzzy is not None:
                 msgset.fuzzy = row.isfuzzy
 
@@ -690,6 +700,8 @@ def export_pot_rows(rows, pofile_output, force_utf8=False):
                 continue
 
             msgset = OutputMsgSet(exported_file)
+            if row.context is not None:
+                msgset.set_context(row.context)
 
             msgset.sequence = row.sequence
             msgset.obsolete = False

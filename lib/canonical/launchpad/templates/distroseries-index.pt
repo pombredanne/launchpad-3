@@ -51,8 +51,8 @@
       <div class="left">
         <div
           class="section"
-          tal:condition="context/getLastUploads"
-          tal:content="structure context/@@+latest-uploads"
+          tal:condition="context/getLatestUploads"
+          tal:content="structure context/@@+portlet-latestuploads"
         />
         <div class="section" tal:condition="context/architectures">
           <h2>Architectures</h2>

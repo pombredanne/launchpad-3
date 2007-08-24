@@ -42,8 +42,10 @@ Nothing to do
 The no-operation use case:
 
   >>> dp = DiskPool(pool_path, temp_path, MockLogger())
-  >>> dr = DeathRow(distro, dp, MockLogger())
+  >>> dr = DeathRow(distro.main_archive, dp, MockLogger())
   >>> dr.reap(dry_run=True)
+  DEBUG: 0 Sources
+  DEBUG: 0 Binaries
   INFO: Removing 0 files marked for reaping
   INFO: Total bytes freed: 0
   DEBUG: Marking 0 condemned packages as removed.
@@ -92,67 +94,80 @@ deleted yet.
 
 Knock off some binaries as well:
 
-  >>> pub = SBPPH.get(19)
-  >>> print pub.dateremoved
-  None
-  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
-  >>> pub.scheduleddeletiondate = old_date
-
   >>> pub = SBPPH.get(17)
   >>> print pub.dateremoved
   None
   >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
   >>> pub.scheduleddeletiondate = old_date
 
-As above, both 19 and 21 refer to the same pmount binaries, and since 21
-is not to be removed, we won't try and remove its files:
-
   >>> pub = SBPPH.get(19)
-  >>> print [f.libraryfile.filename
-  ...        for f in pub.binarypackagerelease.files]
-  [u'pmount_1.9-1_all.deb']
+  >>> print pub.dateremoved
+  None
+  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
+  >>> pub.scheduleddeletiondate = old_date
+
+As above, both 19 and 21 binary publication refer to the same pmount
+binaries, and since 21 is not to be removed, 19 is supposed to be left
+alone too:
+
   >>> pub = SBPPH.get(21)
   >>> print [f.libraryfile.filename
   ...        for f in pub.binarypackagerelease.files]
   [u'pmount_1.9-1_all.deb']
 
+  >>> pub = SBPPH.get(19)
+  >>> print [f.libraryfile.filename
+  ...        for f in pub.binarypackagerelease.files]
+  [u'pmount_1.9-1_all.deb']
+
+
 Flush our these updates and kick the DeathRow processor again.
 
   >>> flush_database_updates()
   >>> dp = DiskPool(pool_path, temp_path, MockLogger())
-  >>> dr = DeathRow(distro, dp, MockLogger())
+  >>> dr = DeathRow(distro.main_archive, dp, MockLogger())
   >>> dr.reap(dry_run=True)
+  DEBUG: 2 Sources
+  DEBUG: 2 Binaries
   INFO: Removing 2 files marked for reaping
   DEBUG: (Not really!) removing main linux-source-2.6.15/linux-2.6.12_2.6.12.20_i386.deb
   DEBUG: File to remove main linux-source-2.6.15/linux-2.6.12_2.6.12.20_i386.deb is not in pool, skipping
   DEBUG: (Not really!) removing main alsa-utils/alsa-utils_1.0.9a-4.dsc
   DEBUG: File to remove main alsa-utils/alsa-utils_1.0.9a-4.dsc is not in pool, skipping
   INFO: Total bytes freed: 0
-  DEBUG: Marking 4 condemned packages as removed.
+  DEBUG: Marking 2 condemned packages as removed.
 
 Note that while we are in dry run mode, the database queries are
 actually executed; the process-death-row script however does not commit
 the transaction when that flag is set.
 
-Look at the results of our actions. Two packages removed and the date
-removed properly set up:
+Look at the results of our actions. Two packages removed (one source
+and one binary) and the date removed properly set up:
 
-  >>> pub = SSPPH.get(15)
-  >>> pub.status == PackagePublishingStatus.REMOVED
-  True
-  >>> pub.dateremoved
-  CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-  >>> pub = SSPPH.get(12)
-  >>> pub.status == PackagePublishingStatus.REMOVED
-  True
-  >>> pub.dateremoved
+  >>> source_pub = SSPPH.get(15)
+  >>> source_pub.status.name
+  'REMOVED'
+  >>> source_pub.dateremoved
   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
-Publication 20 of course is left alone:
+  >>> binary_pub = SBPPH.get(17)
+  >>> binary_pub.status.name
+  'REMOVED'
+  >>> binary_pub.dateremoved
+  CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+
+Source publication 20 (has a future 'scheduled deletion date') and
+binary publication 19 (file hold by another active publication), of
+course are left alone:
 
   >>> pub = SSPPH.get(20)
-  >>> pub.status == PackagePublishingStatus.REMOVED
-  False
+  >>> pub.status.name != PackagePublishingStatus.REMOVED
+  True
+
+  >>> pub = SBPPH.get(19)
+  >>> pub.status != PackagePublishingStatus.REMOVED
+  True
+
 
 Package Removal (simulated real run)
 ====================================
@@ -166,13 +181,15 @@ Test that bytes freed computing is handled correctly:
   >>> pub = SSPPH.get(2)
   >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
   >>> pub.scheduleddeletiondate = old_date
-  >>> pub = SBPPH.get(21)
+  >>> pub = SBPPH.get(24)
   >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
   >>> pub.scheduleddeletiondate = old_date
   >>> flush_database_updates()
   >>> dr.reap()
+  DEBUG: 2 Sources
+  DEBUG: 2 Binaries
   INFO: Removing 2 files marked for reaping
-  DEBUG: (Not really!) removing main pmount/pmount_1.9-1_all.deb
+  DEBUG: (Not really!) removing main cdrkit/foobar_1.0_all.deb
   DEBUG: (Not really!) removing main evolution/evolution-1.0.tar.gz
   INFO: Total bytes freed: 10
   DEBUG: Marking 2 condemned packages as removed.
@@ -188,6 +205,8 @@ Test that random exceptions are handled correctly:
   >>> pub.scheduleddeletiondate = old_date
   >>> flush_database_updates()
   >>> dr.reap()
+  DEBUG: 2 Sources
+  DEBUG: 1 Binaries
   INFO: Removing 1 files marked for reaping
   DEBUG: (Not really!) removing main alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc
   EXC: Removing file main alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc generated exception, continuing

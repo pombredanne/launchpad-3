@@ -7,11 +7,11 @@
 # Note that http/ftp proxies are needed by the product 
 # release finder
 
-# Only run this script on gangotri
+# Only run this script on forster
 THISHOST=`uname -n`
-if [ "gangotri" != "$THISHOST" ]
+if [ "forster" != "$THISHOST" ]
 then
-        echo "This script must be run on gangotri."
+        echo "This script must be run on forster."
         exit 1
 fi
 
@@ -24,7 +24,7 @@ then
 fi
 
 
-export LPCONFIG=lpnet1
+export LPCONFIG=production
 export http_proxy=http://squid.internal:3128/
 export ftp_proxy=http://squid.internal:3128/
 
@@ -59,20 +59,11 @@ python update-bugtask-targetnamecaches.py -q
 echo == Expiring questions `date` ==
 python expire-questions.py
 
-echo == Updating bug watches `date` ==
-python checkwatches.py
-
 echo == Product Release Finder `date` ==
 python product-release-finder.py -q
 
-echo '== Distribution mirror prober (archive)' `date` ==
-# Force because we know we are only running this once a day
-python distributionmirror-prober.py --content-type=archive --force --no-owner-notification
-
-echo '== Distribution mirror prober (release)' `date` ==
-# Force beause we know we are only running this once a day
-python distributionmirror-prober.py --content-type=cdimage --force --no-owner-notification
-
+echo == Updating bug watches `date` ==
+LPCONFIG=production LP_DBUSER=checkwatches python checkwatches.py
 
 rm -f $LOCK
 

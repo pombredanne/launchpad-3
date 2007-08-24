@@ -15,15 +15,16 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-        IPersonSet, ITranslationImporter, NotExportedFromLaunchpad,
-        OldTranslationImported, TranslationConflict, TranslationConstants)
+    IPersonSet, ITranslationImporter, NotExportedFromLaunchpad,
+    OldTranslationImported, PersonCreationRationale, TranslationConflict,
+    TranslationConstants)
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPoImporter)
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     MozillaXpiImporter)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
-    PersonCreationRationale, RosettaImportStatus, TranslationFileFormat)
+    RosettaImportStatus, TranslationFileFormat)
 
 importers = {
     TranslationFileFormat.PO: GettextPoImporter(),
@@ -183,13 +184,14 @@ class TranslationImporter:
                 continue
 
             # Add the msgid.
-            potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(message.msgid)
+            potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
+                message.msgid, context=message.msgctxt)
 
             if potmsgset is None:
                 # It's the first time we see this msgid, we need to create the
                 # IPOTMsgSet for it.
                 potmsgset = self.potemplate.createMessageSetFromText(
-                    message.msgid)
+                    message.msgid, context=message.msgctxt)
             else:
                 # Note that we saw it.
                 potmsgset.makeMessageIDSighting(
@@ -207,11 +209,11 @@ class TranslationImporter:
                     # template, that's broken and not usual, so we raise an
                     # exception to log the issue. It needs to be fixed
                     # manually in the imported translation file.
-                    # XXX CarlosPerelloMarin 20070423: Gettext doesn't allow
-                    # two plural messages with the same msgid but different
-                    # msgid_plural so I think is safe enough to just go ahead
-                    # and import this translation here but setting the fuzzy
-                    # flag. See bug #109393 for more info.
+                    # XXX CarlosPerelloMarin 2007-04-23 bug=109393:
+                    # Gettext doesn't allow two plural messages with the
+                    # same msgid but different msgid_plural so I think is
+                    # safe enough to just go ahead and import this translation
+                    # here but setting the fuzzy flag.
                     pomsgset = potmsgset.getPOMsgSet(
                         self.pofile.language.code, self.pofile.variant)
                     if pomsgset is None:

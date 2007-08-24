@@ -16,9 +16,9 @@ from persistent import IPersistent
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
-# XXX These import shims are actually necessary if we don't go over the
+# XXX kiko 2007-02-08: 
+# These import shims are actually necessary if we don't go over the
 # entire codebase and fix where the import should come from.
-#   -- kiko, 2007-02-08
 from canonical.launchpad.webapp.interfaces import (
     NotFoundError, ILaunchpadRoot, ILaunchBag, IOpenLaunchBag, IBreadcrumb,
     IBasicLaunchpadRequest, IAfterTraverseEvent, AfterTraverseEvent,
@@ -371,8 +371,10 @@ class IHasDateCreated(Interface):
 
 
 class IStructuralHeaderPresentation(Interface):
-    """Adapter that defines how a structural object is presented in the UI
-    as a heading."""
+    """Adapter for common aspects of a structural object's presentation."""
+
+    def isPrivate():
+        """Whether read access to the object is restricted."""
 
     def getIntroHeading():
         """Any heading introduction needed (e.g. "Ubuntu source package:")."""
@@ -382,7 +384,7 @@ class IStructuralHeaderPresentation(Interface):
 
 
 class IStructuralObjectPresentation(IStructuralHeaderPresentation):
-    """Adapter that defines how a structural object is presented in the UI."""
+    """Adapter for less common aspects of a structural object's presentation."""
 
     def listChildren(num):
         """List up to num children.  Return empty string for none of these"""

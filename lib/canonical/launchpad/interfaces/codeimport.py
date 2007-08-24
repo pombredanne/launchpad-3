@@ -6,13 +6,11 @@ __metaclass__ = type
 
 __all__ = [
     'ICodeImport',
-    'ICodeImportMachine',
-    'ICodeImportMachineSet',
     'ICodeImportSet',
     ]
 
-from zope.interface import Interface
-from zope.schema import Datetime, Choice, Int, TextLine, Bool
+from zope.interface import Attribute, Interface
+from zope.schema import Datetime, Choice, Int, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
@@ -28,10 +26,11 @@ class ICodeImport(Interface):
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
 
-    # XXX: branch should really be readonly, but there is a corner case of the
+    # XXX DavidAllouche 2007-07-04: 
+    # Branch should really be readonly, but there is a corner case of the
     # code-import-sync script where we have a need to change it. The readonly
-    # parameter should be set back to True after the transition to the new code
-    # import system is complete. -- DavidAllouche 2007-07-04.
+    # parameter should be set back to True after the transition to the new
+    # code import system is complete.
     branch = Choice(
         title=_('Branch'), required=True, readonly=False, vocabulary='Branch',
         description=_("The Bazaar branch produced by the import system."))
@@ -39,7 +38,17 @@ class ICodeImport(Interface):
     registrant = Choice(
         title=_('Registrant'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam',
-        description=_("The Person who requested this import."))
+        description=_("The person who initially requested this import."))
+
+    owner = Choice(
+        title=_('Owner'), required=True, readonly=False,
+        vocabulary='ValidPersonOrTeam',
+        description=_("The community contact for this import."))
+
+    assignee = Choice(
+        title=_('Assignee'), required=False, readonly=False,
+        vocabulary='ValidPersonOrTeam',
+        description=_("The person in charge of handling this import."))
 
     product = Choice(
         title=_("Project"), required=True,
@@ -77,12 +86,16 @@ class ICodeImport(Interface):
         constraint=validate_cvs_root,
         description=_("The CVSROOT. "
             "Example: :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome"))
+
     cvs_module = TextLine(title=_("Module"), required=False,
         constraint=validate_cvs_module,
         description=_("The path to import within the repository."
             " Usually, it is the name of the project."))
 
     date_last_successful = Datetime(title=_("Last successful"), required=False)
+    update_interval = Attribute(_("The time between automatic updates of this"
+        " import. If unspecified, the import will be updated at a default"
+        " interval selected by Launcphad administrators."))
 
 
 class ICodeImportSet(Interface):
@@ -92,9 +105,10 @@ class ICodeImportSet(Interface):
             cvs_root=None, cvs_module=None):
         """Create a new CodeImport."""
 
-    # XXX: newWithId is only needed for code-import-sync-script. This method
+    # XXX DavidAllouche 2007-07-05: 
+    # newWithId is only needed for code-import-sync-script. This method
     # should be removed after the transition to the new code import system is
-    # complete. -- DavidAllouche 2007-07-05
+    # complete.
 
     def newWithId(id, registrant, branch, rcs_type, svn_branch_url=None,
             cvs_root=None, cvs_module=None):
@@ -120,32 +134,4 @@ class ICodeImportSet(Interface):
 
         :param review_status: An entry from the `CodeImportReviewStatus`
                               schema.
-        """
-
-
-class ICodeImportMachine(Interface):
-    """A machine that can perform imports."""
-
-    id = Int(readonly=True, required=True)
-    date_created = Datetime(
-        title=_("Date Created"), required=True, readonly=True)
-    hostname = TextLine(
-        title=_('Host name'), required=True,
-        description=_('The hostname of the machine.'))
-    online = Bool(
-        title=_('Online'), required=True,
-        description=_('Is the machine currently online?'))
-
-
-class ICodeImportMachineSet(Interface):
-    """The set of machines that can perform imports."""
-
-    def getAll():
-        """Return an iterable of all code machines."""
-
-    def getByHostname(hostname):
-        """Retrieve the code import machine for a hostname.
-
-        Returns a `ICodeImportMachine` provider or ``None`` if no such machine
-        is present.
         """

@@ -50,11 +50,12 @@ from canonical.launchpad.interfaces import (
     NoBugTrackerFound,
     NotFoundError,
     UnrecognizedBugTrackerURL,
-    valid_distrotask,
+    validate_new_distrotask,
     valid_upstreamtask,
     )
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.validators import LaunchpadValidationError
 
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
@@ -107,11 +108,9 @@ class BugSetNavigation(Navigation):
 
     usedfor = IBugSet
 
-    # XXX
+    # XXX Daf 2006-02-01 bug=30238:
     # The browser:page declaration should be sufficient, but the traversal
     # takes priority. This is a workaround.
-    # https://launchpad.net/products/launchpad/+bug/30238
-    # -- Daf 2006/02/01
 
     @stepthrough('+text')
     def text(self, name):
@@ -147,7 +146,7 @@ class BugContextMenu(ContextMenu):
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
-        text = 'Visibility/security'
+        text = 'Set privacy/security'
         return Link('+secrecy', text, icon='edit')
 
     def markduplicate(self):
@@ -155,7 +154,7 @@ class BugContextMenu(ContextMenu):
         return Link('+duplicate', text, icon='edit')
 
     def addupstream(self):
-        text = 'Also affects upstream'
+        text = 'Also affects project'
         return Link('+choose-affected-product', text, icon='add')
 
     def adddistro(self):
@@ -289,15 +288,15 @@ class MaloneView(LaunchpadFormView):
         search_params = BugTaskSearchParams(
             self.user, status=BugTaskStatus.FIXRELEASED,
             orderby='-date_closed')
-        fixed_bugtasks = getUtility(IBugTaskSet).search(search_params) 
-        # XXX: We might end up returning less than :limit: bugs, but in
+        fixed_bugtasks = getUtility(IBugTaskSet).search(search_params)
+        # XXX: Bjorn Tillenius 2006-12-13:
+        #      We might end up returning less than :limit: bugs, but in
         #      most cases we won't, and '4*limit' is here to prevent
         #      this page from timing out in production. Later I'll fix
         #      this properly by selecting bugs instead of bugtasks.
         #      If fixed_bugtasks isn't sliced, it will take a long time
         #      to iterate over it, even over just 10, because
         #      Transaction.iterSelect() listifies the result.
-        #      -- Bjorn Tillenius, 2006-12-13
         for bugtask in fixed_bugtasks[:4*limit]:
             if bugtask.bug not in fixed_bugs:
                 fixed_bugs.append(bugtask.bug)
@@ -405,7 +404,7 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
 
     schema = IUpstreamBugTask
     field_names = ['product']
-    label = u"Add affected project to bug"
+    label = u"Record as affecting another project"
 
     def _getUpstream(self, distro_package):
         """Return the upstream if there is a packaging link."""
@@ -435,7 +434,7 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
                         ' <a href="%(package_url)s/+edit-packaging">updating'
                         ' the packaging information for'
                         ' %(full_package_name)s</a>.',
-                        full_package_name=bugtask.targetname,
+                        full_package_name=bugtask.bugtargetdisplayname,
                         package_url=canonical_url(sourcepackage))
             else:
                 try:
@@ -509,7 +508,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             if field_name not in target_field_names]
 
     def render_upstreamtask(self):
-        self.setUpLabelAndWidgets("Add affected project to bug", ['product'])
+        self.setUpLabelAndWidgets("Confirm project", ['product'])
         self.index = self.upstream_page
 
         # It's not possible to enter the product on this page, so
@@ -540,13 +539,12 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         # action", so we need to assign it to itself in order for the
         # label change to stick around.
         self.continue_action = self.continue_action
-        self.continue_action.label = (
-            u'Indicate bug in %s' % cgi.escape(product.displayname))
+        self.continue_action.label = (u'Add to Bug Report')
         return self.render()
 
     def render_distrotask(self):
         self.setUpLabelAndWidgets(
-            "Add affected source package to bug",
+            "Also affects distribution/package",
             ['distribution', 'sourcepackagename'])
         for bugtask in IBug(self.context).bugtasks:
             if (IDistributionSourcePackage.providedBy(bugtask.target) and
@@ -603,13 +601,10 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                         cgi.escape(filebug_url, quote=True)))
             else:
                 try:
-                    valid_distrotask(
-                        self.context.bug, distribution, sourcepackagename,
-                        on_create=True)
-                except WidgetsError, errors:
-                    for error in errors:
-                        self.setFieldError(
-                            'sourcepackagename', error.snippet())
+                    validate_new_distrotask(
+                        self.context.bug, distribution, sourcepackagename)
+                except LaunchpadValidationError, error:
+                    self.setFieldError('sourcepackagename', error.snippet())
         else:
             # Validation failed for either the product or distribution,
             # no point in trying to validate further.
@@ -639,9 +634,9 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                 self.extracted_bugtracker, self.extracted_bug = (
                     bugwatch_set.extractBugTrackerAndBug(bug_url))
             except NoBugTrackerFound, error:
-                # XXX: The user should be able to press a button here in
+                # XXX: Bjorn Tillenius 2006-09-26:
+                #      The user should be able to press a button here in
                 #      order to register the tracker.
-                #      -- Bjorn Tillenius, 2006-09-26
                 self.setFieldError(
                     'bug_url',
                     "The bug tracker at %s isn't registered in Launchpad."
@@ -669,9 +664,10 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                 '<input style="font-size: smaller" type="submit"'
                 ' value="%s" name="%s" />' % (
                     confirm_action.label, confirm_action.__name__))
-            #XXX: This text should be re-written to be more compact. I'm not
+            #XXX: Bjorn Tillenius 2006-09-13:
+            #     This text should be re-written to be more compact. I'm not
             #     doing it now, though, since it might go away completely
-            #     soon. -- Bjorn Tillenius, 2006-09-13
+            #     soon.
             self.notifications.append(
                 "%s doesn't use Launchpad as its bug tracker. If you don't add"
                 " a bug watch now you have to keep track of the status"
@@ -733,7 +729,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         notify(SQLObjectCreatedEvent(taskadded))
         self.next_url = canonical_url(taskadded)
 
-    @action('Yes, request fix anyway', name='confirm')
+    @action('Yes, Add Anyway', name='confirm')
     def confirm_action(self, action, data):
         self.continue_action.success(data)
 
@@ -799,7 +795,7 @@ class BugEditView(BugEditViewBase):
             self.notifications.append(
                 'The tag "%s" hasn\'t yet been used by %s before.'
                 ' Is this a new tag? %s' % (
-                    new_tag, bugtarget.bugtargetname, confirm_button))
+                    new_tag, bugtarget.bugtargetdisplayname, confirm_button))
             self._confirm_new_tags = True
 
     @action('Change', name='change')
@@ -910,7 +906,7 @@ class BugTextView(LaunchpadView):
 
     def bugtask_text(self, task):
         text = []
-        text.append('task: %s' % task.targetname)
+        text.append('task: %s' % task.bugtargetname)
         text.append('status: %s' % task.status.title)
         text.append('reporter: %s' % self.person_text(task.owner))
 

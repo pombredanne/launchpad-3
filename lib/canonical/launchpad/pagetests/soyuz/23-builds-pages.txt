@@ -16,15 +16,14 @@ according the selected buildstate, by default All
   ...     by state and "mismatch" if the page, erroneously,  provide only
   ...     part of the required arguments to enable filter by name.
   ...     """
-  ...     assert find_tag_by_id(contents, 'build_state') is not None
   ...     assert '<input type="submit" value="Update" />' in contents
   ...
-  ...     field_present = find_tag_by_id(contents, 'build_text')
-  ...     label_present = "with names containing:" in contents
+  ...     field_state = find_tag_by_id(contents, 'build_state') is not None
+  ...     field_name = find_tag_by_id(contents, 'build_text') is not None
   ...
-  ...     if label_present and field_present:
+  ...     if field_state and field_name:
   ...         return "State and Name present"
-  ...     elif not label_present and not field_present:
+  ...     elif field_state and not field_name :
   ...         return "State present, Name not present"
   ...     else:
   ...         return "mismatch"
@@ -60,6 +59,13 @@ For Builder, same as Distribution:
   >>> print check_builds_options(browser.contents)
   State and Name present
 
+For Archive (PPA), same as Distribution:
+
+  >>> browser.open("http://launchpad.dev/~cprov/+archive")
+  >>> browser.getLink("View build records").click()
+  >>> print check_builds_options(browser.contents)
+  State and Name present
+
 For SourcePackage, it's only possible to filter by state.
 
   >>> browser.open(
@@ -67,7 +73,6 @@ For SourcePackage, it's only possible to filter by state.
   >>> browser.getLink("Show builds").click()
   >>> print check_builds_options(browser.contents)
   State present, Name not present
-
 
 Check the contents of the distro builds list page.
 
@@ -85,6 +90,8 @@ initialised' one (fix bug #52704)
   >>> print find_tags_by_class(browser.contents, 'builds_list')[0].renderContents()
   <BLANKLINE>
   ...
+  ...FULLYBUILT...
+  ...i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE...
   ...FAILEDTOUPLOAD...
   ...i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE...
   ...FAILEDTOBUILD...
@@ -93,14 +100,14 @@ initialised' one (fix bug #52704)
   ...i386 build of foobar 1.0 in ubuntu warty RELEASE...
   ...NEEDSBUILD...
   ...i386 build of at 0.00 in ubuntu warty RELEASE...
-  ...SUPERSEDED...
-  ...i386 build of at 0.00 in ubuntu warty RELEASE...
 
   # We had too many results. Some of them are on the second batch.
   >>> browser.getLink("Next").click()
   >>> print find_tags_by_class(browser.contents, 'builds_list')[0].renderContents()
   <BLANKLINE>
   ...
+  ...SUPERSEDED...
+  ...i386 build of at 0.00 in ubuntu warty RELEASE...
   ...SUPERSEDED...
   ...i386 build of linux-source-2.6.15 2.6.15.3 in ubuntu warty RELEASE...
   ...SUPERSEDED...
@@ -115,18 +122,13 @@ initialised' one (fix bug #52704)
   ...2006-02-28...
   ...six minutes...see the log...
 
-  >>> browser.getControl(name="build_state").value = ['built']
-  >>> browser.getControl("Update").click()
-  >>> browser.contents
-  '...i386 build of mozilla-firefox 0.9 in ubuntu warty...'
-
 Check the results of some searches on build state.
 
   >>> browser.getControl(name="build_state").value = ['built']
   >>> browser.getControl("Update").click()
   >>> browser.contents
-  '...i386 build of pmount 0.1-1 in ubuntu hoary...
-  ...i386 build of mozilla-firefox 0.9 in ubuntu warty...'
+  '...i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE...
+  ...i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest...'
 
   >>> browser.getControl(name="build_state").value = ['depwait']
   >>> browser.getControl("Update").click()
@@ -186,3 +188,21 @@ doesn't have any builds.
   '...No builds for Debian GNU/Linux...'
 
 
+== Commercial builds ==
+
+Builds of commercial packages show up on the builds page as any other package
+from the primary archive.
+
+  >>> browser.open(
+  ...    "http://launchpad.dev/ubuntu//+builds?build_text="
+  ...    "commercialpackage&build_state=built")
+  >>> print extract_text(find_tags_by_class(browser.contents, 'listing')[0])
+  i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
+  ...
+
+And also on the distro series builds page:
+
+  >>> browser.open("http://launchpad.dev/ubuntu/breezy-autotest/+builds?build_text=commercialpackage&build_state=built")
+  >>> print extract_text(find_tags_by_class(browser.contents, 'listing')[0])
+  i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
+  ...

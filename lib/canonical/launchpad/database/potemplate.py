@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+"""SQLObject implementation of POTemplate classes."""
 
 __metaclass__ = type
 __all__ = [
@@ -260,11 +261,15 @@ class POTemplate(SQLBase, RosettaStats):
                 sourcepackagename=self.sourcepackagename)
         raise AssertionError('Unknown POTemplate translation target')
 
-    def getPOTMsgSetByMsgIDText(self, key, only_current=False):
-        """See IPOTemplate."""
+    def getPOTMsgSetByMsgIDText(self, key, only_current=False, context=None):
+        """See `IPOTemplate`."""
         query = 'potemplate = %s' % sqlvalues(self.id)
         if only_current:
             query += ' AND sequence > 0'
+        if context is not None:
+            query += ' AND context=%s' % sqlvalues(context)
+        else:
+            query += ' AND context IS NULL'
 
         # Find a message ID with the given text.
         try:
@@ -327,6 +332,7 @@ class POTemplate(SQLBase, RosettaStats):
     def languages(self):
         """See IPOTemplate."""
         return Language.select("POFile.language = Language.id AND "
+                               "Language.code != 'en' AND "
                                "POFile.potemplate = %d AND "
                                "POFile.variant IS NULL" % self.id,
                                clauseTables=['POFile', 'Language'],
@@ -395,10 +401,11 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             pofile.rosettaCount()
 
-    def hasMessageID(self, messageID):
+    def hasMessageID(self, messageID, context=None):
         """See IPOTemplate."""
-        results = POTMsgSet.selectBy(potemplate=self, primemsgid_=messageID)
-        return results.count() > 0
+        results = POTMsgSet.selectBy(potemplate=self, primemsgid_=messageID,
+                                     context=context)
+        return bool(results)
 
     def hasPluralMessage(self):
         """See IPOTemplate."""
@@ -514,9 +521,10 @@ class POTemplate(SQLBase, RosettaStats):
             inlastrevision=True,
             pluralform=0)
 
-    def createMessageSetFromMessageID(self, messageID):
+    def createMessageSetFromMessageID(self, messageID, context=None):
         """See IPOTemplate."""
         messageSet = POTMsgSet(
+            context=context,
             primemsgid_=messageID,
             sequence=0,
             potemplate=self,
@@ -527,7 +535,7 @@ class POTemplate(SQLBase, RosettaStats):
         self.createMessageIDSighting(messageSet, messageID)
         return messageSet
 
-    def createMessageSetFromText(self, text):
+    def createMessageSetFromText(self, text, context=None):
         """See IPOTemplate."""
         try:
             messageID = POMsgID.byMsgid(text)
@@ -537,11 +545,11 @@ class POTemplate(SQLBase, RosettaStats):
             # with the given text in this template.
             messageID = POMsgID(msgid=text)
         else:
-            assert not self.hasMessageID(messageID), (
+            assert not self.hasMessageID(messageID, context), (
                 "There is already a message set for this template, file and"
-                " primary msgid")
+                " primary msgid and context '%r'" % context)
 
-        return self.createMessageSetFromMessageID(messageID)
+        return self.createMessageSetFromMessageID(messageID, context)
 
     def invalidateCache(self):
         """See IPOTemplate."""
@@ -568,7 +576,6 @@ class POTemplate(SQLBase, RosettaStats):
 
         subject = 'Translation template import - %s' % self.displayname
         template_mail = 'poimport-template-confirmation.txt'
-        import_rejected = False
         try:
             translation_importer.importFile(entry_to_import, logger)
         except (TranslationFormatSyntaxError,
@@ -576,9 +583,9 @@ class POTemplate(SQLBase, RosettaStats):
             if logger:
                 logger.warning(
                     'We got an error importing %s', self.title, exc_info=1)
-            template_mail = 'poimport-syntax-error.txt'
             subject = 'Import problem - %s' % self.displayname
-            import_rejected = True
+            template_mail = 'poimport-syntax-error.txt'
+            entry_to_import.status = RosettaImportStatus.FAILED
 
         replacements = {
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
@@ -601,9 +608,8 @@ class POTemplate(SQLBase, RosettaStats):
             subject,
             MailWrapper().format(message))
 
-        if import_rejected:
+        if entry_to_import.status == RosettaImportStatus.FAILED:
             # Give up on this file.
-            entry_to_import.status = RosettaImportStatus.FAILED
             return
 
         # The import has been done, we mark it that way.

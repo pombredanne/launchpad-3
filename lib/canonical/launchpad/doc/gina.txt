@@ -190,8 +190,12 @@ Check that x11proto-damage has its Build-Depends-Indep value correctly set:
     >>> n = SourcePackageName.selectOneBy(name="x11proto-damage")
     >>> x11p = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...                                         version="6.8.99.7-2")
+
     >>> print x11p.builddependsindep
     debhelper (>= 4.0.0)
+
+Check if the changelog message was stored correcly:
+
     >>> print x11p.changelog
     x11proto-damage (6.8.99.7-2) breezy; urgency=low
     <BLANKLINE>
@@ -199,9 +203,19 @@ Check that x11proto-damage has its Build-Depends-Indep value correctly set:
       * Add dependency on x11proto-fixes-dev.
     <BLANKLINE>
      -- Daniel Stone <daniel.stone@ubuntu.com>  Mon, 11 Jul 2005 19:11:11 +1000
+
     >>> from canonical.lp.dbschema import SourcePackageUrgency
     >>> x11p.urgency == SourcePackageUrgency.LOW
     True
+
+Same for the copyright:
+
+    >>> print x11p.copyright
+    $Id: COPYING,v 1.2 2003/11/05 05:39:58 keithp Exp $
+    <BLANKLINE>
+    Copyright ... 2003 Keith Packard
+    ...
+    PERFORMANCE OF THIS SOFTWARE.
 
 Check that the dsc on the libcap package is correct, and that we
 only imported one:
@@ -341,31 +355,24 @@ priority was correctly munged to "extra":
     >>> print ed.build.processor.name
     386
     >>> print ed.build.buildstate
-    1
+    Successfully built
     >>> print ed.build.distroarchseries.processorfamily.name
     x86
     >>> print ed.build.distroarchseries.architecturetag
     i386
     >>> print ed.priority
-    10
+    Extra
     >>> print ed.section.name
     editors
     >>> print ed.summary
     The classic unix line editor.
-    >>> print ed.licence
-    This is Debian GNU's prepackaged version of the FSF's GNU ed
-    utility.  The classic unix line editor, ed is a line-oriented text
-    editor.  It is used to create, display, modify and otherwise
-    ...
-    except that this permission notice may be stated in a translation approved
-    by the Foundation.
 
 We now check if the Breezy publication record has the correct priority:
 
     >>> ed_pub = SBPPH.selectOneBy(binarypackagereleaseID=ed.id,
     ...                            distroarchseriesID=breezy_i386.id)
     >>> print ed_pub.priority
-    30
+    Standard
 
 Check binary package libgjc-dev in Breezy. Its version number must differ from
 its source version number.
@@ -388,7 +395,7 @@ Check if the udeb was properly parsed and identified:
     >>> print ac.version
     0.1.5
     >>> print ac.priority
-    30
+    Standard
     >>> print ac.section.name
     debian-installer
     >>> print ac.build.sourcepackagerelease.version
@@ -406,8 +413,8 @@ We check that the binary package publishing override facility works:
     >>> for pub in SecureBinaryPackagePublishingHistory.selectBy(
     ...     binarypackagereleaseID=db1.id, orderBy='distroarchrelease'):
     ...     print pub.distroarchseries.distroseries.name, pub.priority
-    hoary 50
-    breezy 20
+    hoary Required
+    breezy Optional
 
 XXX: test package with invalid source version
 XXX: test package with maintainer with non-ascii name
@@ -544,11 +551,12 @@ Check that the overrides we did were correctly issued. We can't use selectOneBy
 because, of course, there may be multiple rows published for that package --
 that's what overrides actually do.
 
+    >>> from canonical.database.sqlbase import sqlvalues
     >>> from canonical.lp.dbschema import PackagePublishingStatus
     >>> x11_pub = SSPPH.select("""sourcepackagerelease = %s
     ...                           AND distrorelease = %s
     ...                           AND status in (%s, %s)""" %
-    ...                         (x11p.id, breezy.id,
+    ...                         sqlvalues(x11p, breezy,
     ...                          PackagePublishingStatus.PUBLISHED,
     ...                          PackagePublishingStatus.PENDING),
     ...                          orderBy=["-datecreated"])[0]
@@ -557,19 +565,19 @@ that's what overrides actually do.
     >>> ed_pub = SBPPH.select("""binarypackagerelease = %s
     ...                           AND distroarchrelease = %s
     ...                           AND status in (%s, %s)""" %
-    ...                         (ed.id, breezy_i386.id,
+    ...                         sqlvalues(ed, breezy_i386,
     ...                          PackagePublishingStatus.PUBLISHED,
     ...                          PackagePublishingStatus.PENDING),
     ...                          orderBy=["-datecreated"])[0]
     >>> print ed_pub.priority
-    10
+    Extra
     >>> n = SourcePackageName.selectOneBy(name="archive-copier")
     >>> ac = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...         version="0.3.6")
     >>> ac_pub = SSPPH.select("""sourcepackagerelease = %s
     ...                          AND distrorelease = %s
     ...                          AND status in (%s, %s)""" %
-    ...                        (ac.id, breezy.id,
+    ...                        sqlvalues(ac, breezy,
     ...                         PackagePublishingStatus.PUBLISHED,
     ...                         PackagePublishingStatus.PENDING),
     ...                         orderBy=["-datecreated"])[0]

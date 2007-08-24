@@ -48,7 +48,7 @@ to retrieve files from the slave. Verify it works...
   >>> hw_str == helloworld
   True
 
-# XXX cprov 20050630
+# XXX cprov 2005-06-30
 # As soon as we have better control of the environment we can try to
 # simulate the some certified build job, maybe the historical 'at'
 # that build even 'under the water'.

@@ -20,12 +20,10 @@ __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'LaunchpadScriptLayer', 'PageTestLayer',
-    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer',
-    'BzrlibZopelessLayer', 'BzrlibLayer'
+    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer'
     ]
 
-import shutil
-import sys
+import socket
 import time
 from urllib import urlopen
 
@@ -35,8 +33,6 @@ from zope.component import getUtility, getGlobalSiteManager
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
-
-from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 
 from canonical.config import config
 from canonical.database.sqlbase import ZopelessTransactionManager
@@ -92,9 +88,9 @@ class BaseLayer:
     test isolation checks to ensure that tests to not leave global
     resources in a mess.
 
-    XXX: Unit tests (tests with no layer) will not get this checks.
-    The Z3 test runner should be updated so that a layer can be specified
-    to use for unit tests. -- StuartBishop 20060712
+    XXX: StuartBishop 2006-07-12: Unit tests (tests with no layer) will not
+    get this checks. The Z3 test runner should be updated so that a layer
+    can be specified to use for unit tests.
     """
     # Set to True when we are running tests in this layer.
     isSetUp = False
@@ -233,6 +229,9 @@ class LibrarianLayer(BaseLayer):
     # Flag maintaining state of hide()/reveal() calls
     _hidden = False
 
+    # Fake upload socket used when the librarian is hidden
+    _fake_upload_socket = None
+
     @classmethod
     @profiled
     def hide(cls):
@@ -243,7 +242,17 @@ class LibrarianLayer(BaseLayer):
         looks for the Librarian server on the wrong port.
         """
         cls._hidden = True
-        config.librarian.upload_port = 58091
+        if cls._fake_upload_socket is None:
+            # Bind to a socket, but don't listen to it.  This way we
+            # guarantee that connections to the given port will fail.
+            cls._fake_upload_socket = socket.socket(
+                socket.AF_INET, socket.SOCK_STREAM)
+            assert config.librarian.upload_host == 'localhost', (
+                'Can only hide librarian if it is running locally')
+            cls._fake_upload_socket.bind(('127.0.0.1', 0))
+
+        host, port = cls._fake_upload_socket.getsockname()
+        config.librarian.upload_port = port
 
     @classmethod
     @profiled
@@ -294,13 +303,14 @@ class DatabaseLayer(BaseLayer):
         # Ensure that the database is connectable. Because we might have
         # just created it, keep trying for a few seconds incase PostgreSQL
         # is taking its time getting its house in order.
-        for count in range(0,10):
+        attempts = 60
+        for count in range(0, attempts):
             try:
                 cls.connect().close()
             except psycopg.Error:
-                if count == 9:
+                if count == attempts - 1:
                     raise
-                time.sleep(1)
+                time.sleep(0.5)
             else:
                 break
 
@@ -532,9 +542,9 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
     def setUp(cls):
         # Make a TestMailBox available
         # This is registered via ZCML in the LaunchpadFunctionalLayer
-        # XXX flacoste 2006/10/25 This should be configured from ZCML
-        # but execute_zcml_for_scripts() doesn't cannot support a different
-        # testing configuration (bug #68189).
+        # XXX flacoste 2006-10-25 bug=68189: This should be configured
+        # from ZCML but execute_zcml_for_scripts() doesn't cannot support
+        # a different testing configuration.
         getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
 
     @classmethod
@@ -604,15 +614,15 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
 
 class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     """Testing layer for scripts using the main Launchpad database adapter"""
-    
+
     @classmethod
     @profiled
     def setUp(cls):
         # Make a TestMailBox available
         # This is registered via ZCML in the LaunchpadFunctionalLayer
-        # XXX flacoste 2006/10/25 This should be configured from ZCML
-        # but execute_zcml_for_scripts() doesn't cannot support a different
-        # testing configuration (bug #68189).
+        # XXX flacoste 2006-10-25 bug=68189: This should be configured from
+        # ZCML but execute_zcml_for_scripts() doesn't cannot support a
+        # different testing configuration.
         getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
 
     @classmethod
@@ -726,40 +736,3 @@ class TwistedLayer(LaunchpadZopelessLayer):
             if pool is not None:
                 reactor.threadpool.stop()
                 reactor.threadpool = None
-
-
-class BzrlibLayer(BaseLayer):
-    """Clean up the test directory created by TestCaseInTempDir tests."""
-
-    @classmethod
-    @profiled
-    def setUp(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        # Remove the test directory created by TestCaseInTempDir.
-        # Copied from bzrlib.tests.TextTestRunner.run.
-        test_root = TestCaseInTempDir.TEST_ROOT
-        if test_root is not None:
-            test_root = test_root.encode(sys.getfilesystemencoding())
-            shutil.rmtree(test_root)
-        TestCaseWithMemoryTransport.TEST_ROOT = None
-
-
-    @classmethod
-    @profiled
-    def testSetUp(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def testTearDown(cls):
-        pass
-
-
-# XXX: JonathanLange 2007-06-13, It seems that this layer behaves erroneously
-# if it is a subclass of (LaunchpadZopelessLayer, BzrlibLayer).
-class BzrlibZopelessLayer(BzrlibLayer, LaunchpadZopelessLayer):
-    """Clean up the test directory created by TestCaseInTempDir tests."""

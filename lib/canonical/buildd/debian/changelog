@@ -1,3 +1,12 @@
+launchpad-buildd (36) dapper; urgency=low
+
+  * changing override-sources to replace current sources.list with
+    the content sent by buildmaster instead of prepend. It will allow
+    us to cope more easily with SoyuzArchive implementation (COMMERCIAL,
+    EMBARGOED, PPA)
+
+ -- Celso Providelo <cprov@canonical.com>  Thu, 7 Aug 2007 14:10:26 -0300
+
 launchpad-buildd (35) unstable; urgency=low
 
   * including previous code changes (32 & 33).

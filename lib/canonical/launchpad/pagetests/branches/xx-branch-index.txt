@@ -99,7 +99,7 @@ This link can be followed to the bug's details page.
 
   >>> browser.getLink('bug 1').click()
   >>> print browser.title
-  Bug #1 in firefox (upstream)...
+  Bug #1 in Mozilla Firefox...
 
 
 == Unscanned branches ==
@@ -162,3 +162,68 @@ context object that all the tabs apply to.
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, "structuralobjectheading"))
     Sample Person
+
+
+== Codebrowse link ==
+
+The codebrowse link only appears for branches that have revisions.
+
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, "recent-revisions"))
+    This branch is empty.
+    >>> browser.getLink('Browse code')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Sample Person's junk branch has some revisions, so the 'Browse code'
+link is shown.
+
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/+junk/junk.dev')
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, "recent-revisions"))
+    By foo... fix bug in bar...
+    >>> print browser.getLink('Browse code').url
+    http://codebrowse.launchpad.dev/~name12/+junk/junk.dev
+
+If the branch is private, the browse code link is not shown.
+In order to see the private branch, we need to log in as a user that
+is able to see the branch.
+
+    >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~landscape-developers/landscape/trunk')
+    >>> browser.getLink('Browse code')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+
+== Hosted location ==
+
+In the details table there is a link to the branch location on the supermirror.
+
+For public branches this shows links to the codehosting using http, whereas
+private branches show bzr+ssh as they are not available over anonymous
+http, and anyone who can see the branch is able to access it using bzr+ssh.
+
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'branch-details-table'))
+    These URLs are intended for use with the Bazaar version control system.
+    ...
+    Hosted on Launchpad:
+    bzr+ssh://bazaar.launchpad.dev/~landscape-developers/landscape/trunk
+
+Public branches use http.
+
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'branch-details-table'))
+    These URLs are intended for use with the Bazaar version control system.
+    ...
+    Hosted on Launchpad:
+    http://bazaar.launchpad.dev/~name12/gnome-terminal/scanned

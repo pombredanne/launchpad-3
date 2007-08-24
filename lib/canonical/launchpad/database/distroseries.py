@@ -28,17 +28,16 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    ArchivePurpose, DistroSeriesStatus, 
-    PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus, RosettaImportStatus, SpecificationFilter,
+    ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket,
+    PackagePublishingStatus, PackageUploadStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationSort,
     SpecificationImplementationStatus)
 
 from canonical.launchpad.interfaces import (
-    IBinaryPackageName, IBuildSet, IDistroSeries, IDistroSeriesSet,
-    IHasBuildRecords, IHasQueueItems, IHasTranslationImports,
-    ILibraryFileAliasSet, IPublishedPackageSet, IPublishing, ISourcePackage,
-    ISourcePackageName, ISourcePackageNameSet, NotFoundError)
+    IArchiveSet, IBinaryPackageName, IBuildSet, IDistroSeries, IDistroSeriesSet,
+    IHasBuildRecords, IHasQueueItems, ILibraryFileAliasSet,
+    IPublishedPackageSet, IPublishing, ISourcePackage, ISourcePackageName,
+    ISourcePackageNameSet, NotFoundError)
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -75,15 +74,15 @@ from canonical.launchpad.database.specification import (
 from canonical.launchpad.database.queue import (
     PackageUpload, PackageUploadQueue)
 from canonical.launchpad.database.translationimportqueue import (
-    TranslationImportQueueEntry)
+    HasTranslationImportsMixin)
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.helpers import shortlist
 
 
-class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
+class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
+                   HasTranslationImportsMixin):
     """A particular series of a distribution."""
-    implements(IDistroSeries, IHasBuildRecords, IHasQueueItems, IPublishing,
-               IHasTranslationImports)
+    implements(IDistroSeries, IHasBuildRecords, IHasQueueItems, IPublishing)
 
     _table = 'DistroRelease'
     _defaultOrder = ['distribution', 'version']
@@ -273,16 +272,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # first update the source package count
         query = """
             SourcePackagePublishingHistory.distrorelease = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.status = %s AND
             SourcePackagePublishingHistory.pocket = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(self, self.main_archive,
-                            PackagePublishingStatus.PUBLISHED,
-                            PackagePublishingPocket.RELEASE)
+            """ % sqlvalues(
+                    self,
+                    self.distribution.all_distro_archive_ids,
+                    PackagePublishingStatus.PUBLISHED,
+                    PackagePublishingPocket.RELEASE)
         self.sourcecount = SourcePackageName.select(
             query, distinct=True,
             clauseTables=['SourcePackageRelease',
@@ -302,11 +303,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
-            BinaryPackagePublishingHistory.archive = %s
+            BinaryPackagePublishingHistory.archive IN %s
             """ % sqlvalues(
-                PackagePublishingStatus.PUBLISHED,
-                PackagePublishingPocket.RELEASE,
-                self, self.main_archive)
+                    PackagePublishingStatus.PUBLISHED,
+                    PackagePublishingPocket.RELEASE,
+                    self,
+                    self.distribution.all_distro_archive_ids)
         ret = BinaryPackageName.select(
             query, distinct=True, clauseTables=clauseTables).count()
         self.binarycount = ret
@@ -316,8 +318,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         """See IDistroSeries."""
         return self.architectures.count()
 
-    # XXX: this is expensive and shouldn't be a property
-    #   -- kiko, 2006-06-14
+    # XXX kiko 2006-06-14: This is expensive and shouldn't be a property.
     @property
     def potemplates(self):
         result = POTemplate.selectBy(distroseries=self)
@@ -325,8 +326,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         return sorted(
             result, key=lambda x: (-x.priority, x.potemplatename.name))
 
-    # XXX: this is expensive and shouldn't be a property
-    #   -- kiko, 2006-06-14
+    # XXX kiko 2006-06-14: This is expensive and shouldn't be a property.
     @property
     def currentpotemplates(self):
         result = POTemplate.selectBy(distroseries=self, iscurrent=True)
@@ -341,6 +341,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     @property
     def bugtargetname(self):
+        """See IBugTarget."""
+        return self.fullseriesname
+        # XXX mpt 2007-07-10 bugs 113258, 113262:
+        # The distribution's and series' names should be used instead
+        # of fullseriesname.
+
+    @property
+    def bugtargetdisplayname(self):
         """See IBugTarget."""
         return self.fullseriesname
 
@@ -405,7 +413,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.definition_status', 'Specification.name']
+            order = ['-priority', 'Specification.definition_status',
+                     'Specification.name']
         elif sort == SpecificationSort.DATE:
             # we are showing specs for a GOAL, so under some circumstances
             # we care about the order in which the specs were nominated for
@@ -498,11 +507,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     def updateStatistics(self, ztm):
         """See IDistroSeries."""
         # first find the set of all languages for which we have pofiles in
-        # the distribution
+        # the distribution that are visible and not English
         langidset = set(
             language.id for language in Language.select('''
                 Language.visible = TRUE AND
                 Language.id = POFile.language AND
+                Language.code != 'en' AND
                 POFile.potemplate = POTemplate.id AND
                 POTemplate.distrorelease = %s AND
                 POTemplate.iscurrent = TRUE
@@ -599,10 +609,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                              pocket=None, include_pending=False,
                              exclude_pocket=None, archive=None):
         """See IDistroSeries."""
-        # XXX cprov 20060213: we need a standard and easy API, no need
+        # XXX cprov 2006-02-13 bug 31317:
+        # We need a standard and easy API, no need
         # to support multiple type arguments, only string name should be
         # the best choice in here, the call site will be clearer.
-        # bug # 31317
         if ISourcePackage.providedBy(sourcepackage_or_name):
             spn = sourcepackage_or_name.name
         elif ISourcePackageName.providedBy(sourcepackage_or_name):
@@ -636,9 +646,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             queries.append("status=%s" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED))
 
-        if archive is None:
-            archive = self.main_archive
-        queries.append("archive=%s" % sqlvalues(archive))
+        archives = self.distribution.archiveIdList(archive)
+        queries.append("archive IN %s" % sqlvalues(archives))
 
         published = SourcePackagePublishingHistory.select(
             " AND ".join(queries), clauseTables = ['SourcePackageRelease'])
@@ -668,8 +677,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             sqlvalues(self)]
         main_clauses.append(
             'Archive.id=SourcePackagePublishingHistory.archive')
-        main_clauses.append('Archive.purpose=%s' % 
-            sqlvalues(ArchivePurpose.PRIMARY))
+        main_clauses.append('Archive.purpose!=%s' % 
+            sqlvalues(ArchivePurpose.PPA))
         main_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
         if not self.isUnstable():
             main_clauses.append(
@@ -693,8 +702,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     def getSourcePackagePublishing(self, status, pocket, component=None,
                                    archive=None):
         """See IDistroSeries."""
-        if archive is None:
-            archive = self.main_archive
+        archives = self.distribution.archiveIdList(archive)
 
         clause = """
             SourcePackagePublishingHistory.sourcepackagerelease=
@@ -702,10 +710,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             SourcePackageRelease.sourcepackagename=
                 SourcePackageName.id AND
             SourcePackagePublishingHistory.distrorelease=%s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.status=%s AND
             SourcePackagePublishingHistory.pocket=%s
-            """ %  sqlvalues(self, archive, status, pocket)
+            """ %  sqlvalues(self, archives, status, pocket)
 
         if component:
             clause += (
@@ -723,8 +731,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         self, name=None, version=None, archtag=None, sourcename=None,
         orderBy=None, pocket=None, component=None, archive=None):
         """See IDistroSeries."""
-        if archive is None:
-            archive = self.main_archive
+        archives = self.distribution.archiveIdList(archive)
 
         query = ["""
         BinaryPackagePublishingHistory.binarypackagerelease =
@@ -740,9 +747,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         SourcePackageRelease.sourcepackagename =
             SourcePackageName.id AND
         DistroArchRelease.distrorelease = %s AND
-        BinaryPackagePublishingHistory.archive = %s AND
+        BinaryPackagePublishingHistory.archive IN %s AND
         BinaryPackagePublishingHistory.status = %s
-        """ % sqlvalues(self, archive, PackagePublishingStatus.PUBLISHED)]
+        """ % sqlvalues(self, archives, PackagePublishingStatus.PUBLISHED)]
 
         if name:
             query.append('BinaryPackageName.name = %s' % sqlvalues(name))
@@ -756,7 +763,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                       % sqlvalues(archtag))
 
         if sourcename:
-            query.append('SourcePackageName.name = %s' % sqlvalues(sourcename))
+            query.append(
+                'SourcePackageName.name = %s' % sqlvalues(sourcename))
 
         if pocket:
             query.append(
@@ -781,7 +789,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def publishedBinaryPackages(self, component=None):
         """See IDistroSeries."""
-        # XXX sabdfl 04/07/05 this can become a utility when that works
+        # XXX sabdfl 2005-07-04: This can become a utility when that works
         # this is used by the debbugs import process, mkdebwatches
         pubpkgset = getUtility(IPublishedPackageSet)
         result = pubpkgset.query(distroseries=self, component=component)
@@ -801,7 +809,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         builddependsindep, architecturehintlist, component, creator,
         urgency, changelog, dsc, dscsigningkey, section, manifest,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-        dsc_binaries, archive, dateuploaded=DEFAULT):
+        dsc_binaries, archive, copyright, dateuploaded=DEFAULT):
         """See IDistroSeries."""
         return SourcePackageRelease(
             uploaddistroseries=self, sourcepackagename=sourcepackagename,
@@ -811,7 +819,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             creator=creator, urgency=urgency, changelog=changelog, dsc=dsc,
             dscsigningkey=dscsigningkey, section=section, manifest=manifest,
             dsc_maintainer_rfc822=dsc_maintainer_rfc822, dsc_format=dsc_format,
-            dsc_standards_version=dsc_standards_version,
+            dsc_standards_version=dsc_standards_version, copyright=copyright,
             dsc_binaries=dsc_binaries, upload_archive=archive)
 
     def getComponentByName(self, name):
@@ -842,14 +850,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             BinaryPackagePublishingHistory.status != %s
             """ % sqlvalues(
-                self, self.main_archive, PackagePublishingStatus.REMOVED),
+                    self,
+                    self.distribution.all_distro_archive_ids,
+                    PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchRelease',
@@ -871,14 +881,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(self, self.main_archive,
-                            PackagePublishingStatus.REMOVED),
+            """ % sqlvalues(
+                    self,
+                    self.distribution.all_distro_archive_ids,
+                    PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchRelease',
@@ -908,10 +920,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(binarypackagename, self, self.main_archive,
-                            PackagePublishingStatus.REMOVED),
+            """ % sqlvalues(
+                    binarypackagename,
+                    self,
+                    self.distribution.all_distro_archive_ids,
+                    PackagePublishingStatus.REMOVED),
             orderBy='-datecreated',
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchRelease'],
@@ -977,7 +992,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         return Milestone(name=name, dateexpected=dateexpected,
             distribution=self.distribution, distroseries=self)
 
-    def getLastUploads(self):
+    def getLatestUploads(self):
         """See IDistroSeries."""
         query = """
         sourcepackagerelease.id=packageuploadsource.sourcepackagerelease
@@ -985,8 +1000,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         AND packageuploadsource.packageupload=packageupload.id
         AND packageupload.status=%s
         AND packageupload.distrorelease=%s
-        AND packageupload.archive=%s
-        """ % sqlvalues(PackageUploadStatus.DONE, self, self.main_archive)
+        AND packageupload.archive IN %s
+        """ % sqlvalues(
+                PackageUploadStatus.DONE,
+                self,
+                self.distribution.all_distro_archive_ids)
 
         last_uploads = SourcePackageRelease.select(
             query, limit=5, prejoins=['sourcepackagename'],
@@ -1031,12 +1049,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             packageupload.distrorelease = %s""" % sqlvalues(self)]
 
         # Restrict result to given archives.
-        archives = []
-        if archive is None:
-            archives = [archive.id for archive in 
-                self.distribution.all_distro_archives]
-        else:
-            archives = [archive.id]
+        archives = self.distribution.archiveIdList(archive)
 
         default_clauses.append("""
         packageupload.archive IN %s""" % sqlvalues(archives))
@@ -1048,9 +1061,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             default_clauses.append("""
             packageupload.pocket IN %s""" % sqlvalues(pocket))
 
-        # XXX cprov 20060606: We may reorganise this code, creating
-        # some new methods provided by IPackageUploadSet, as:
-        # getByStatus and getByName.
+        # XXX cprov 2006-06-06:
+        # We may reorganise this code, creating some new methods provided
+        # by IPackageUploadSet, as: getByStatus and getByName.
         if not status:
             assert not version and not exact_match
             return PackageUpload.select(
@@ -1099,7 +1112,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # attempt to exact or similar names in builds, sources and custom
         if exact_match:
-            source_where_clauses.append("sourcepackagename.name = '%s'" % name)
+            source_where_clauses.append(
+                "sourcepackagename.name = '%s'" % name)
             build_where_clauses.append("binarypackagename.name = '%s'" % name)
             custom_where_clauses.append(
                 "libraryfilealias.filename='%s'" % name)
@@ -1189,28 +1203,30 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def initialiseFromParent(self):
         """See IDistroSeries."""
-        archive = self.main_archive
+        archives = self.distribution.all_distro_archive_ids
         assert self.parentseries is not None, "Parent series must be present"
-        assert SourcePackagePublishingHistory.selectBy(
-            distroseries=self, archive=archive).count() == 0, \
-            "Source Publishing must be empty"
+        assert SourcePackagePublishingHistory.select("""
+            Distrorelease = %s AND
+            Archive IN %s""" % sqlvalues(self.id, archives)).count() == 0, (
+            "Source Publishing must be empty")
         for arch in self.architectures:
-            assert BinaryPackagePublishingHistory.selectBy(
-                distroarchseries=arch, archive=archive).count() == 0, \
-                "Binary Publishing must be empty"
+            assert BinaryPackagePublishingHistory.select("""
+            Distroarchrelease = %s AND
+            Archive IN %s""" % sqlvalues(arch, archives)).count() == 0, (
+                "Binary Publishing must be empty")
             try:
                 parent_arch = self.parentseries[arch.architecturetag]
-                assert parent_arch.processorfamily == arch.processorfamily, \
-                       "The arch tags must match the processor families."
+                assert parent_arch.processorfamily == arch.processorfamily, (
+                       "The arch tags must match the processor families.")
             except KeyError:
                 raise AssertionError("Parent series lacks %s" % (
                     arch.architecturetag))
-        assert self.nominatedarchindep is not None, \
-               "Must have a nominated archindep architecture."
-        assert self.components.count() == 0, \
-               "Component selections must be empty."
-        assert self.sections.count() == 0, \
-               "Section selections must be empty."
+        assert self.nominatedarchindep is not None, (
+               "Must have a nominated archindep architecture.")
+        assert self.components.count() == 0, (
+               "Component selections must be empty.")
+        assert self.sections.count() == 0, (
+               "Section selections must be empty.")
 
         # MAINTAINER: dsilvers: 20051031
         # Here we go underneath the SQLObject caching layers in order to
@@ -1252,27 +1268,38 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         We copy all PENDING and PUBLISHED records as PENDING into our own
         publishing records.
 
-        We copy only the RELEASE pocket.
+        We copy only the RELEASE pocket in the PRIMARY and COMMERCIAL
+        archives.
         """
-        cur.execute('''
-            INSERT INTO SecureBinaryPackagePublishingHistory (
-                binarypackagerelease, distroarchrelease, status,
-                component, section, priority, archive, datecreated,
-                datepublished, pocket, embargo)
-            SELECT bpph.binarypackagerelease, %s as distroarchrelease,
-                   bpph.status, bpph.component, bpph.section, bpph.priority,
-                   %s as archive, %s as datecreated, %s as datepublished,
-                   %s as pocket, false as embargo
-            FROM BinaryPackagePublishingHistory AS bpph
-            WHERE bpph.distroarchrelease = %s AND bpph.status in (%s, %s) AND
-                  bpph.pocket = %s and bpph.archive = %s
-            ''' % sqlvalues(arch.id, self.main_archive, UTC_NOW, UTC_NOW,
-                            PackagePublishingPocket.RELEASE,
-                            parent_arch.id,
-                            PackagePublishingStatus.PENDING,
-                            PackagePublishingStatus.PUBLISHED,
-                            PackagePublishingPocket.RELEASE,
-                            self.parentseries.main_archive))
+        archive_set = getUtility(IArchiveSet)
+        for archive in self.parentseries.distribution.all_distro_archives:
+            # We only want to copy PRIMARY and COMMERCIAL archives.
+            if archive.purpose not in (
+                    ArchivePurpose.PRIMARY, ArchivePurpose.COMMERCIAL):
+                continue
+            target_archive = archive_set.ensure(
+                distribution=self.distribution, purpose=archive.purpose,
+                owner=None)
+            cur.execute('''
+                INSERT INTO SecureBinaryPackagePublishingHistory (
+                    binarypackagerelease, distroarchrelease, status,
+                    component, section, priority, archive, datecreated,
+                    datepublished, pocket, embargo)
+                SELECT bpph.binarypackagerelease, %s as distroarchrelease,
+                       bpph.status, bpph.component, bpph.section, bpph.priority,
+                       %s as archive, %s as datecreated, %s as datepublished,
+                       %s as pocket, false as embargo
+                FROM BinaryPackagePublishingHistory AS bpph
+                WHERE bpph.distroarchrelease = %s AND bpph.status in (%s, %s)
+                AND
+                    bpph.pocket = %s and bpph.archive = %s
+                ''' % sqlvalues(arch.id, target_archive, UTC_NOW, UTC_NOW,
+                                PackagePublishingPocket.RELEASE,
+                                parent_arch.id,
+                                PackagePublishingStatus.PENDING,
+                                PackagePublishingStatus.PUBLISHED,
+                                PackagePublishingPocket.RELEASE,
+                                archive))
 
     def _copy_source_publishing_records(self, cur):
         """Copy the source publishing records from our parent distro series.
@@ -1280,26 +1307,37 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         We copy all PENDING and PUBLISHED records as PENDING into our own
         publishing records.
 
-        We copy only the RELEASE pocket.
+        We copy only the RELEASE pocket in the PRIMARY and COMMERCIAL
+        archives.
         """
-        cur.execute('''
-            INSERT INTO SecureSourcePackagePublishingHistory (
-                sourcepackagerelease, distrorelease, status, component,
-                section, archive, datecreated, datepublished, pocket, embargo)
-            SELECT spph.sourcepackagerelease, %s as distrorelease,
-                   spph.status, spph.component, spph.section, %s as archive,
-                   %s as datecreated, %s as datepublished,
-                   %s as pocket, false as embargo
-            FROM SourcePackagePublishingHistory AS spph
-            WHERE spph.distrorelease = %s AND spph.status in (%s, %s) AND
-                  spph.pocket = %s and spph.archive = %s
-            ''' % sqlvalues(self.id, self.main_archive, UTC_NOW, UTC_NOW,
-                            PackagePublishingPocket.RELEASE,
-                            self.parentseries.id,
-                            PackagePublishingStatus.PENDING,
-                            PackagePublishingStatus.PUBLISHED,
-                            PackagePublishingPocket.RELEASE,
-                            self.parentseries.main_archive))
+        archive_set = getUtility(IArchiveSet)
+        for archive in self.parentseries.distribution.all_distro_archives:
+            # We only want to copy PRIMARY and COMMERCIAL archives.
+            if archive.purpose not in (
+                    ArchivePurpose.PRIMARY, ArchivePurpose.COMMERCIAL):
+                continue
+            target_archive = archive_set.ensure(
+                distribution=self.distribution, purpose=archive.purpose,
+                owner=None)
+            cur.execute('''
+                INSERT INTO SecureSourcePackagePublishingHistory (
+                    sourcepackagerelease, distrorelease, status, component,
+                    section, archive, datecreated, datepublished, pocket, 
+                    embargo)
+                SELECT spph.sourcepackagerelease, %s as distrorelease,
+                       spph.status, spph.component, spph.section, %s as archive,
+                       %s as datecreated, %s as datepublished,
+                       %s as pocket, false as embargo
+                FROM SourcePackagePublishingHistory AS spph
+                WHERE spph.distrorelease = %s AND spph.status in (%s, %s) AND
+                      spph.pocket = %s and spph.archive = %s
+                ''' % sqlvalues(self.id, target_archive, UTC_NOW, UTC_NOW,
+                                PackagePublishingPocket.RELEASE,
+                                self.parentseries.id,
+                                PackagePublishingStatus.PENDING,
+                                PackagePublishingStatus.PUBLISHED,
+                                PackagePublishingPocket.RELEASE,
+                                archive))
 
     def _copy_component_and_section_selections(self, cur):
         """Copy the section and component selections from the parent distro
@@ -1318,7 +1356,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             FROM SectionSelection AS ss WHERE ss.distrorelease = %s
             ''' % sqlvalues(self.id, self.parentseries.id))
 
-    def _copyActiveTranslationsToNewRelease(self, ztm, copier):
+    def _copyActiveTranslationsToNewRelease(self, ztm, copier, logger):
         """We're a new series; inherit translations from parent.
 
         This method uses MultiTableCopy to copy data.
@@ -1338,6 +1376,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         already in the process of being copied back to its origin table.  In
         that case the sensible thing to do is probably to continue copying it.
         """
+        logger.info(
+            "Populating blank distroseries %s with translations from %s." %
+            sqlvalues(self, self.parent))
 
         # This method was extracted as one of two cases from a huge
         # _copy_active_translations() method.  Because it only deals with the
@@ -1350,10 +1391,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # Copying happens in two phases:
         #
         # 1. Extraction phase--for every table involved (which we'll call a
-        # "source table" here), we create a "holding table."  We fill that with
-        # all rows from the source table that we want to copy from the parent
-        # series.  We make some changes to the copied rows, such as making
-        # them belong to ourselves instead of our parent series.
+        # "source table" here), we create a "holding table."  We fill that
+        # with all rows from the source table that we want to copy from the
+        # parent series.  We make some changes to the copied rows, such as
+        # making them belong to ourselves instead of our parent series.
         #
         # The first phase does not modify any tables that other clients may
         # want to use, avoiding locking problems.
@@ -1366,26 +1407,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # a time, then performing an intermediate commit.  This avoids holding
         # too many locks for too long and disrupting regular database service.
 
-        if not self.hide_all_translations:
-            raise AssertionError("""
-_copyActiveTranslationsToNewRelease: hide_all_translations not set!
+        assert self.hide_all_translations, (
+            "hide_all_translations not set!"
+            " That would allow users to see and modify incomplete"
+            " translation state.")
 
-Attempted to populate translations for new distroseries while its
-translations are visible.  That would allow users to see and modify incomplete
-translation state.
-""")
-
-        if not self.defer_translation_imports:
-            raise AssertionError("""
-_copyActiveTranslationsToNewRelease: defer_translation_imports not set!
-
-Attempted to populate translations for new distroseries while translation
-import queue is enabled. That would corrupt our translation data mixing
-new imports with the information being copied.
-""")
+        assert self.defer_translation_imports, (
+            "defer_translation_imports not set!"
+            " That would corrupt translation data mixing new imports"
+            " with the information being copied.")
 
         # Clean up any remains from a previous run.  If we got here, that
-        # means those remains are not salvagable.
+        # means that any such remains are unsalvagable.
         copier.dropHoldingTables()
 
         # Copy relevant POTemplates from existing series into a holding
@@ -1430,27 +1463,29 @@ new imports with the information being copied.
         # Now pour the holding tables back into the originals
         copier.pour(ztm)
 
-    def _copyActiveTranslationsAsUpdate(self):
+    def _copyActiveTranslationsAsUpdate(self, logger):
         """Receive active, updated translations from parent series."""
-
         # This method was extracted as one of two cases from a huge
         # _copy_active_translations() method.  It's likely to cause problems
         # to other users while running, locking them out of the database
         # during its potentially huge updates.  We should see if we can batch
         # it into smaller chunks in order to reduce lock pressure.
 
-        # XXX: JeroenVermeulen 2007-05-03, This method should become
+        # XXX: JeroenVermeulen 2007-05-03: This method should become
         # unnecessary once the "translation multicast" spec is implemented:
         # https://launchpad.canonical.com/MulticastTranslations
 
         # The left outer join that obtains pf2 ensures that we only do the
         # copying for POFiles whose POTemplates don't have any POFiles yet.
 
-        # XXX: JeroenVermeulen 2007-04-27, We must be careful when batching
+        # XXX: JeroenVermeulen 2007-04-27: We must be careful when batching
         # this statement.  After one POFile is copied, pt2 will have a POFile
         # attached and its other POFiles will no longer qualify for copying.
 
-        logging.info('Filling POFile table...')
+        logger.info("Updating distroseries %s with translations from %s" %
+                    sqlvalues(self, self.parent))
+
+        logger.info('Filling POFile table...')
         cur = cursor()
         cur.execute('''
             INSERT INTO POFile (
@@ -1766,7 +1801,7 @@ new imports with the information being copied.
             pofile = POFile.get(pofile_id)
             pofile.updateStatistics()
 
-    def _copy_active_translations(self, ztm):
+    def _copy_active_translations(self, ztm, logger):
         """Copy active translations from the parent into this one.
 
         This method is used in two scenarios: when a new distribution series
@@ -1798,20 +1833,23 @@ new imports with the information being copied.
 
         if len(self.potemplates) == 0:
             # We're a new distroseries; copy from scratch
-            self._copyActiveTranslationsToNewRelease(ztm, copier)
+            self._copyActiveTranslationsToNewRelease(ztm, copier, logger)
         elif copier.needsRecovery():
             # Recover data from previous, abortive run
+            logger.info("A copy was already running.  Resuming...")
             copier.pour(ztm)
         else:
             # Incremental copy of updates from parent distroseries
-            self._copyActiveTranslationsAsUpdate()
+            self._copyActiveTranslationsAsUpdate(logger)
 
-    def copyMissingTranslationsFromParent(self, ztm):
+    def copyMissingTranslationsFromParent(self, ztm, logger=None):
         """See IDistroSeries."""
+        if logger is None:
+            logger = logging
         flush_database_updates()
         flush_database_caches()
         # Request the translation copy.
-        self._copy_active_translations(ztm)
+        self._copy_active_translations(ztm, logger)
 
     def getPendingPublications(self, archive, pocket, is_careful):
         """See IPublishing."""
@@ -1833,7 +1871,7 @@ new imports with the information being copied.
         # Exclude RELEASE pocket if the distroseries was already released,
         # since it should not change for main archive.
         # We allow RELEASE uploads for PPAs.
-        if not self.isUnstable() and self.main_archive == archive:
+        if not self.isUnstable() and archive.purpose != ArchivePurpose.PPA:
             queries.append(
             'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
@@ -1856,7 +1894,8 @@ new imports with the information being copied.
 
         # propagate publication request to each distroarchseries.
         for dar in self.architectures:
-            more_dirt = dar.publish(diskpool, log, archive, pocket, is_careful)
+            more_dirt = dar.publish(
+                diskpool, log, archive, pocket, is_careful)
             dirty_pockets.update(more_dirt)
 
         return dirty_pockets
@@ -1868,7 +1907,7 @@ new imports with the information being copied.
             return True
 
         # PPA allows everything (aka Hotel California).
-        if publication.archive != self.main_archive:
+        if publication.archive.purpose == ArchivePurpose.PPA:
             return True
 
         # FROZEN state also allow all pockets to be published.
@@ -1899,17 +1938,6 @@ new imports with the information being copied.
     @property
     def main_archive(self):
         return self.distribution.main_archive
-
-    def getFirstEntryToImport(self):
-        """See IHasTranslationImports."""
-        if self.defer_translation_imports:
-            return None
-        else:
-            return TranslationImportQueueEntry.selectFirstBy(
-                status=RosettaImportStatus.APPROVED,
-                distroseries=self,
-                orderBy=['dateimported'])
-
 
 
 class DistroSeriesSet:
@@ -1961,8 +1989,8 @@ class DistroSeriesSet:
         else:
             return DistroSeries.select(where_clause)
 
-    def new(self, distribution, name, displayname, title, summary, description,
-            version, parentseries, owner):
+    def new(self, distribution, name, displayname, title, summary,
+            description, version, parentseries, owner):
         """See IDistroSeriesSet."""
         return DistroSeries(
             distribution=distribution,

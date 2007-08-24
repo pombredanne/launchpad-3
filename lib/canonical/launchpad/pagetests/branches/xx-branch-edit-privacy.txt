@@ -1,6 +1,6 @@
-= Editing branch privacy =
+= Changing branch privacy =
 
-The control over which users can have private branches is controlled by
+Which users can have private branches is controlled by
 the branch visibility policy (see doc/branch-visibility-policy.txt).
 This controls the initial visibility of branches created by users
 in particular namespaces, either their own or teams that the user is
@@ -31,7 +31,7 @@ Allow the Warty Security Team to have private firefox branches.
     >>> admin_browser.open('http://launchpad.dev/firefox/+branchvisibility')
     >>> admin_browser.getLink('Customise policy for Mozilla Firefox').click()
     >>> admin_browser.getControl('Team').value = 'name20'
-    >>> admin_browser.getControl('Rule').value = ['Private']
+    >>> admin_browser.getControl('Rule').value = ['PRIVATE']
     >>> admin_browser.getControl('Set team policy').click()
 
 Now Sample Person, who is a member of the Warty Security Team should be
@@ -42,27 +42,24 @@ able to mark the branch as private.
     >>> browser.getControl('Keep branch confidential').selected = True
     >>> browser.getControl('Change Branch').click()
 
-Since the branch is now private, there will be a big padlock shown
-on the right hand side of the main view.
+Since the branch is now private, it will have the standard Launchpad
+presentation for private things.
 
-    >>> div = find_tag_by_id(browser.contents, 'branch-badges')
-    >>> print div
-    <div style="float: right" id="branch-badges">
-      <img src="/@@/locked-large" title="Private" />
-    </div>
+    >>> print find_tag_by_id(browser.contents, 'privatestyle')
+    <style...</style>
+    >>> print find_tag_by_id(browser.contents, 'privatebadge')
+    <img...private...>
 
-Sample Person can also change the branch from private back to public.
+If Sample Person changes the branch from private back to public, the page
+reverts to its normal presentation.
 
     >>> browser.getLink('Change branch details').click()
     >>> browser.getControl('Keep branch confidential').selected = False
     >>> browser.getControl('Change Branch').click()
-
-The padlock indicator will now not be shown.
-
-    >>> div = find_tag_by_id(browser.contents, 'branch-badges')
-    >>> print div
-    <div style="float: right" id="branch-badges">
-    </div>
+    >>> print find_tag_by_id(browser.contents, 'privatestyle')
+    None
+    >>> print find_tag_by_id(browser.contents, 'privatebadge')
+    None
 
 
 == Private Only branches ==
@@ -72,7 +69,7 @@ a public branch private, but not vice versa.
 
     >>> admin_browser.getLink('Set policy for a team').click()
     >>> admin_browser.getControl('Team').value = 'name20'
-    >>> admin_browser.getControl('Rule').value = ['Private only']
+    >>> admin_browser.getControl('Rule').value = ['PRIVATE_ONLY']
     >>> admin_browser.getControl('Set team policy').click()
 
 Mark the public branch private.
@@ -81,13 +78,12 @@ Mark the public branch private.
     >>> browser.getControl('Keep branch confidential').selected = True
     >>> browser.getControl('Change Branch').click()
 
-The branch is now private, so the padlock is shown.
+The branch is now private, so it assumes the standard private presentation.
 
-    >>> div = find_tag_by_id(browser.contents, 'branch-badges')
-    >>> print div
-    <div style="float: right" id="branch-badges">
-      <img src="/@@/locked-large" title="Private" />
-    </div>
+    >>> print find_tag_by_id(browser.contents, 'privatestyle')
+    <style...</style>
+    >>> print find_tag_by_id(browser.contents, 'privatebadge')
+    <img...private...>
 
 However when the user now looks to edit the branch details, there
 is no option to mark the branch as public.

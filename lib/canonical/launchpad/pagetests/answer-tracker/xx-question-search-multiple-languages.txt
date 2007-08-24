@@ -182,7 +182,7 @@ Catalan questions, so no Catalan checkbox is displayed.
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+questions')
     >>> language_control = browser.getControl(name='field.language')
     >>> for label in sorted(language_control.displayOptions):
-    ...     # print the label without the leading non-breaking space.
+    ...     # Print the label without the leading non-breaking space.
     ...     label[1:]
     'English (en)'
     'Spanish (es)'
@@ -226,7 +226,7 @@ English, and can use it to locate English questions.
     >>> daf_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
     >>> language_control = daf_browser.getControl(name='field.language')
     >>> for label in language_control.displayOptions:
-    ...     # print the label without the leading non-breaking space.
+    ...     # Print the label without the leading non-breaking space.
     ...     label[1:]
     'English (en)'
 
@@ -263,7 +263,7 @@ showing no questions when there could be in other languages.)
 
 == Questions by language ==
 
-When unsolved questions are in languages that no answer contacts
+When open questions are in languages that no answer contacts
 speak, the project questions page displays links to see those 
 questions. Each link is to a page that displays the questions
 for a specific language. No Privileges Person is looking for a
@@ -279,7 +279,7 @@ questions going unanswered.
     >>> user_browser.open('http://answers.launchpad.dev/firefox')
     >>> paragraph = find_main_content(user_browser.contents).find('p')
     >>> print extract_text(paragraph)
-    Mozilla Firefox has unsolved questions in the following languages:
+    Mozilla Firefox has unanswered questions in the following languages:
     1 in Portuguese (Brazil). Can you help?
 
 No Privileges Person follows the 'Portuguese (Brazil)' link to view
@@ -296,7 +296,9 @@ the preceding page.
     >>> print language_field.type
     hidden
 
-    >>> user_browser.getControl(name='field.status').value
+    >>> labels = user_browser.getControl(name='field.status').displayValue
+    >>> # Print the label without the leading non-breaking space.
+    >>> [label[1:] for label in labels]
     ['Open']
 
     >>> content = find_main_content(user_browser.contents)

@@ -52,6 +52,12 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     @stepthrough('+lang')
     def traverse_lang(self, langcode):
+        """Retrieve the DistroSeriesLanguage or a dummy if one it is None."""
+        # We do not want users to see the 'en' potemplate because
+        # we store the messages we want to translate as English.
+        if langcode == 'en':
+            raise NotFoundError(langcode)
+
         langset = getUtility(ILanguageSet)
         try:
             lang = langset[langcode]
@@ -66,13 +72,14 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
             # generate a dummy one so users have a chance to get to it in the
             # navigation and start adding translations for it.
             distroserieslangset = getUtility(IDistroSeriesLanguageSet)
-            distroserieslang = distroserieslangset.getDummy(self.context, lang)
+            distroserieslang = distroserieslangset.getDummy(
+                self.context, lang)
 
         if (self.context.hide_all_translations and
             not check_permission('launchpad.Admin', distroserieslang)):
             raise TranslationUnavailable(
-                'Translation updates are in progress.  Only administrators may view'
-                ' translations for this distribution series.')
+                'Translation updates are in progress.  Only administrators '
+                'may view translations for this distribution series.')
 
         return distroserieslang
 
@@ -101,14 +108,14 @@ class DistroSeriesSOP(StructuralObjectPresentation):
         return self.context.fullseriesname
 
     def listChildren(self, num):
-        # XXX mpt 20061004: list architectures, alphabetically
+        # XXX mpt 2006-10-04: list architectures, alphabetically
         return []
 
     def countChildren(self):
         return 0
 
     def listAltChildren(self, num):
-        # XXX mpt 20061004: list series, most recent first
+        # XXX mpt 2006-10-04: list series, most recent first
         return None
 
     def countAltChildren(self):
@@ -197,7 +204,7 @@ class DistroSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistroSeries
     facet = 'specifications'
-    links = ['roadmap', 'table', 'setgoals', 'listdeclined',]
+    links = ['listall', 'roadmap', 'table', 'setgoals', 'listdeclined', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -231,12 +238,21 @@ class DistroSeriesSpecificationsMenu(ApplicationMenu):
         summary = 'Show the sequence in which specs should be implemented'
         return Link('+roadmap', text, icon='info')
 
+    def new(self):
+        text = 'Register a blueprint'
+        summary = 'Register a new blueprint for %s' % self.context.title
+        return Link('+addspec', text, summary, icon='add')
+
 
 class DistroSeriesTranslationsMenu(ApplicationMenu):
 
     usedfor = IDistroSeries
     facet = 'translations'
-    links = ['admin']
+    links = ['admin', 'imports']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def admin(self):
@@ -277,7 +293,8 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         """
         distroserieslangs = []
         for language in self.translatable_languages:
-            distroserieslang = self.context.getDistroSeriesLanguageOrDummy(language)
+            distroserieslang = self.context.getDistroSeriesLanguageOrDummy(
+                language)
             distroserieslangs.append(distroserieslang)
         return distroserieslangs
 
@@ -307,7 +324,8 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         distroserieslangset = getUtility(IDistroSeriesLanguageSet)
         for lang in self.translatable_languages:
             if lang not in existing_languages:
-                distroserieslang = distroserieslangset.getDummy(self.context, lang)
+                distroserieslang = distroserieslangset.getDummy(
+                    self.context, lang)
                 distroserieslangs.append(distroserieslang)
 
         return sorted(distroserieslangs, key=lambda a: a.language.englishname)

@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-details">
 
   <h2><span tal:replace="context/title">Milestone title</span> details</h2>
 

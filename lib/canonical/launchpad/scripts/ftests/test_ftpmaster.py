@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from unittest import TestCase, TestLoader
+from unittest import TestLoader
 import shutil
 import subprocess
 import os
@@ -14,6 +14,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
+from canonical.launchpad.database.component import ComponentSelection
 from canonical.launchpad.interfaces import (
     IDistributionSet, IComponentSet, ISectionSet)
 from canonical.launchpad.scripts.ftpmaster import (
@@ -22,7 +23,7 @@ from canonical.launchpad.scripts.ftpmaster import (
 from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingPriority)
 
-# XXX cprov 20060515: {create, remove}TestArchive functions should be
+# XXX cprov 2006-05-15: {create, remove}TestArchive functions should be
 # moved to the publisher test domain as soon as we have it.
 def createTestArchive():
     """Creates a fresh test archive based on sampledata."""
@@ -74,6 +75,15 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         self.hoary = self.ubuntu['hoary']
         self.component_main = getUtility(IComponentSet)['main']
         self.section_base = getUtility(ISectionSet)['base']
+
+        # Allow commercial in warty and hoary.
+        commercial_component = getUtility(IComponentSet)['commercial']
+        self.ubuntu_warty = self.ubuntu['warty']
+        self.ubuntu_hoary = self.ubuntu['hoary']
+        ComponentSelection(distroseries=self.ubuntu_warty, 
+                           component=commercial_component)
+        ComponentSelection(distroseries=self.ubuntu_hoary, 
+                           component=commercial_component)
 
     def test_initialize_success(self):
         """Test ArchiveOverrider initialization process.
@@ -169,9 +179,10 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         It split suite name into 'distroseries' and 'pocket' attributes after
         initialize().
         """
-        # XXX cprov 20060424: change-override API doesn't handle pockets
+        # XXX cprov 2006-04-24: change-override API doesn't handle pockets
         # properly yet. It may need a deep redesign on how we model the
-        # packages meta-classes (SourcePackage, DistributionSourcePackage, etc)
+        # packages meta-classes (SourcePackage, DistributionSourcePackage,
+        # etc)
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
             component_name='main', section_name='base', priority_name='extra')
@@ -238,6 +249,22 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Priority to: 'EXTRA'\n"
             "INFO: 'mozilla-firefox/main/base' source overridden")
 
+    def test_processSourceChange_with_changed_archive(self):
+        """Check processSourceChange method call with an archive change.
+
+        Changing the component to 'commercial' will result in the archive
+        changing on the publishing record.  This is disallowed.
+        """
+        # Apply the override.
+        changer = ArchiveOverrider(
+            self.log, distro_name='ubuntu', suite='warty',
+            component_name='commercial', section_name='base', 
+            priority_name='extra')
+        changer.initialize()
+        self.assertRaises(
+            ArchiveOverriderError, changer.processSourceChange,
+            'mozilla-firefox')
+
     def test_processSourceChange_error(self):
         """processSourceChange warns the user about an unpublished source.
 
@@ -255,6 +282,60 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Priority to: 'EXTRA'\n"
             "ERROR: 'mozilla-firefox' source isn't published in hoary")
 
+    def test_processBinaryChange_success(self):
+        """Check if processBinaryChange() picks the correct binary.
+
+        It simply wraps changeOverride method on
+        IDistroArchSeriesBinaryPackage, which is already tested in place.
+        Inspect the log messages, check if the correct binary was picked
+        and correct argument was passed.
+        """
+        changer = ArchiveOverrider(
+            self.log, distro_name='ubuntu', suite='hoary',
+            component_name='main', section_name='base', priority_name='extra')
+        changer.initialize()
+        changer.processBinaryChange('pmount')
+        self.assertEqual(
+            self.log.read(),
+            "INFO: Override Component to: 'main'\n"
+            "INFO: Override Section to: 'base'\n"
+            "INFO: Override Priority to: 'EXTRA'\n"
+            "INFO: 'pmount/main/base/EXTRA' binary overridden in hoary/hppa\n"
+            "INFO: 'pmount/universe/editors/IMPORTANT' binary "
+                "overridden in hoary/i386")
+
+    def test_processBinaryChange_with_changed_archive(self):
+        """Check processBinaryChange method call with an archive change.
+
+        Changing the component to 'commercial' will result in the archive
+        changing.  This is disallowed.
+        """
+        # Apply the override.
+        changer = ArchiveOverrider(
+            self.log, distro_name='ubuntu', suite='hoary',
+            component_name='commercial', section_name='base',
+            priority_name='extra')
+        changer.initialize()
+        self.assertRaises(
+            ArchiveOverriderError, changer.processBinaryChange, 'pmount')
+
+    def test_processBinaryChange_error(self):
+        """processBinaryChange warns the user about an unpublished binary.
+
+        Inspect the log messages.
+        """
+        changer = ArchiveOverrider(
+            self.log, distro_name='ubuntu', suite='warty',
+            component_name='main', section_name='base', priority_name='extra')
+        changer.initialize()
+        changer.processBinaryChange('evolution')
+        self.assertEqual(
+            self.log.read(),
+            "INFO: Override Component to: 'main'\n"
+            "INFO: Override Section to: 'base'\n"
+            "INFO: Override Priority to: 'EXTRA'\n"
+            "ERROR: 'evolution' binary not found.")
+
     def test_processChildrenChange_success(self):
         """processChildrenChanges, modify the source and its binary children.
 
@@ -263,8 +344,9 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         Inspect the log and to ensure we are passing correct arguments and
         picking the correct source.
         """
-        # XXX cprov 20060424: this test needs to be extended to check the
-        # behaviour when there are published binaries (needs richer sampledata)
+        # XXX cprov 2006-04-24: this test needs to be extended to check the
+        # behaviour when there are published binaries (needs richer
+        # sampledata)
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
             component_name='main', section_name='base',

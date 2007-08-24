@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """This module is used by the Launchpad webapp to determine titles for pages.
 
@@ -40,7 +40,7 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IMaloneApplication, IPerson)
+    ILaunchBag, IMaloneApplication, IPerson, IStructuralObjectPresentation)
 from canonical.launchpad.webapp import smartquote
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
@@ -49,8 +49,9 @@ DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 class BugTaskPageTitle:
     def __call__(self, context, view):
-        return smartquote('Bug #%d in %s: "%s"') % (
-            context.bug.id, context.targetname, context.bug.title)
+        return smartquote('%s: "%s"') % (
+            IStructuralObjectPresentation(context).getMainHeading(),
+            context.bug.title)
 
 
 class SubstitutionHelper:
@@ -98,6 +99,16 @@ class ContextBugId(SubstitutionHelper):
 
 # Functions and strings used as the titles of pages.
 
+archive_admin = ContextTitle('Administer %s')
+
+archive_activate = 'Activate Personal Package Archive'
+
+archive_builds = ContextTitle('Builds for %s')
+
+archive_edit = ContextTitle('Edit %s')
+
+archive_index = ContextTitle('%s')
+
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
 bazaar_index = 'Launchpad Code'
@@ -124,6 +135,8 @@ bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 branch_associations = ContextDisplayName(smartquote(
     '"%s" branch associations'))
 
+branch_delete = ContextDisplayName(smartquote('Delete branch "%s"'))
+
 branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
 
 branch_edit_subscription = ContextDisplayName(smartquote(
@@ -135,6 +148,16 @@ def branch_index(context, view):
             context.displayname, context.author.title)
     else:
         return smartquote('"%s" branch in Launchpad') % (context.displayname)
+
+def branch_listing_cross_product(context, view):
+    return view.page_title
+
+branch_landing_candidates = ContextDisplayName(smartquote(
+    'Landing candidates for "%s"'))
+
+branchmergeproposal_edit = 'Edit branch merge proposal'
+
+branch_register_merge_proposal = 'Register branch merge proposal'
 
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
@@ -205,7 +228,7 @@ def buglisting_embedded_advanced_search(context, view):
 
 def bugnomination_edit(context, view):
     return 'Manage nomination for bug #%d in %s' % (
-        context.bug.id, context.target.bugtargetname)
+        context.bug.id, context.target.bugtargetdisplayname)
 
 def bugwatch_editform(context, view):
     return 'Bug #%d - Edit external bug watch (%s in %s)' % (
@@ -238,15 +261,17 @@ bugtarget_filebug_search = bugtarget_filebug_advanced
 
 bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
-bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_choose_affected_product = LaunchbagBugID(
+    'Bug #%d - Record as affecting another project')
 
 bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()
 
-bugtask_requestfix = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_requestfix = LaunchbagBugID(
+    'Bug #%d - Record as affecting another distribution/package')
 
-bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Confirm project')
 
 bugtask_view = BugTaskPageTitle()
 
@@ -382,6 +407,8 @@ distribution_builds = ContextTitle('%s builds')
 
 distribution_uploadadmin = ContextTitle('Change Upload Manager for %s')
 
+distribution_ppa_list = ContextTitle('%s Personal Package Archives')
+
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
@@ -473,6 +500,8 @@ def hasspecifications_specs(context, view):
 
 hassprints_sprints = ContextTitle("Events related to %s")
 
+hastranslationimports_index = 'Translation import queue'
+
 karmaaction_index = 'Karma actions'
 
 karmaaction_edit = 'Edit karma action'
@@ -509,9 +538,9 @@ template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 
 # launchpad_js is standard javascript
 
-# XXX: The general form is a fallback form; I'm not sure why it is
+# XXX: kiko 2005-09-29:
+# The general form is a fallback form; I'm not sure why it is
 # needed, nor why it needs a pagetitle, but I can't debug this today.
-#   -- kiko, 2005-09-29
 launchpad_generalform = "Launchpad - General Form (Should Not Be Displayed)"
 
 launchpad_legal = 'Launchpad legalese'
@@ -541,7 +570,12 @@ launchpadstatisticset_index = 'Launchpad statistics'
 loginservice_email_sent = 'Launchpad Login Service - Email sent'
 
 def loginservice_authorize(context, view):
-    return 'Authenticate to %s' % view.rp_info['title']
+    rpconfig = view.rpconfig
+    if rpconfig is None:
+        displayname = view.openid_request.trust_root
+    else:
+        displayname = rpconfig.displayname
+    return 'Authenticate to %s' % displayname
 
 loginservice_login = 'Launchpad Login Service'
 
@@ -689,6 +723,8 @@ person_changepassword = 'Change your password'
 
 person_claim = 'Claim account'
 
+person_deactivate_account = 'Deactivate your Launchpad account'
+
 person_codesofconduct = ContextDisplayName(smartquote("%s's code of conduct signatures"))
 
 person_edit = ContextDisplayName(smartquote("%s's details"))
@@ -801,8 +837,6 @@ potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
 
 potemplatenames_index = 'Template names in Launchpad'
 
-ppa_list = 'Personal Package Archive List'
-
 product_add = 'Register a project in Launchpad'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
@@ -847,6 +881,8 @@ productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
 products_index = 'Projects registered in Launchpad'
+
+productseries_export = ContextTitle('Download translations for "%s"')
 
 productseries_index = ContextTitle('Overview of %s')
 

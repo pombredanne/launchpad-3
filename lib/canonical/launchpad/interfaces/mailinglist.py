@@ -5,14 +5,108 @@
 __metaclass__ = type
 __all__ = [
     'IMailingList',
+    'IMailingListApplication',
     'IMailingListSet',
+    'IRequestedMailingListAPI',
+    'MailingListStatus',
     ]
 
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Int, Object, Set, Text
+from zope.schema import Choice, Datetime, Object, Set, Text
 
 from canonical.launchpad import _
+from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from canonical.lazr.enum import DBEnumeratedType, DBItem
+
+
+class IMailingListApplication(ILaunchpadApplication):
+    """Mailing lists application root."""
+
+
+class MailingListStatus(DBEnumeratedType):
+    """Team mailing list status.
+
+    Team mailing lists can be in one of several states, which this class
+    tracks.  A team owner first requests that a mailing list be created for
+    their team; this is called registering the list.  This request will then
+    be either approved or declined by a Launchpad administrator.
+
+    If a list request is approved, its creation will be requested of Mailman,
+    but it takes time for Mailman to act on this request.  During this time,
+    the state of the list is 'constructing'.  Mailman will then either succeed
+    or fail to create the list.  If it succeeds, the list is active until such
+    time as the team owner requests that the list be made inactive.
+    """
+
+    REGISTERED = DBItem(1, """
+        Registered; request creation
+
+        The team owner has requested that the mailing list for their team be
+        created.
+        """)
+
+    APPROVED = DBItem(2, """
+        Approved
+
+        A Launchpad administrator has approved the request to create the team
+        mailing list.
+        """)
+
+    DECLINED = DBItem(3, """
+        Declined
+
+        A Launchpad administrator has declined the request to create the team
+        mailing list.
+        """)
+
+    CONSTRUCTING = DBItem(4, """
+        Constructing
+
+        Mailman is in the process of constructing a mailing list that has been
+        approved for creation.
+        """)
+
+    ACTIVE = DBItem(5, """
+        Active
+
+        Mailman has successfully created the mailing list, and it is now
+        active.
+        """)
+
+    FAILED = DBItem(6, """
+        Failed
+
+        Mailman was unsuccessful in creating the mailing list.
+        """)
+
+    INACTIVE = DBItem(7, """
+        Inactive
+
+        A previously active mailing lit has been made inactive by its team
+        owner.
+        """)
+
+    MODIFIED = DBItem(8, """
+        Modified
+
+        An active mailing list has been modified and this modification needs
+        to be communicated to Mailman.
+        """)
+
+    UPDATING = DBItem(9, """
+        Updating
+
+        A modified mailing list is being updated by Mailman.
+        """)
+
+    DEACTIVATING = DBItem(10, """
+        Deactivating
+
+        The mailing list has been flagged for deactivation by the team owner.
+        Mailman will be informed of this and will take the necessary actions
+        to deactive the list.
+        """)
 
 
 class IMailingList(Interface):
@@ -101,6 +195,16 @@ class IMailingList(Interface):
             mailing list is not `MailingListStatus.APPROVED`.
         """
 
+    def startUpdating():
+        """Set the status to the `MailingListStatus.UPDATING` state.
+
+        This state change happens when Mailman pulls the list of modified
+        mailing lists and begins updating them.
+
+        :raises AssertionError: When prior to updating, the status if the
+            mailing list is not `MailingListStatus.MODIFIED`.
+        """
+
     def transitionToStatus(target_state):
         """Transition the list's state after a remote action has taken place.
 
@@ -177,3 +281,49 @@ class IMailingListSet(Interface):
             'All mailing lists with status `MailingListStatus.DEACTIVATING`.'),
         value_type=Object(schema=IMailingList),
         readonly=True)
+
+
+class IRequestedMailingListAPI(Interface):
+    """XMLRPC API that Mailman polls for mailing list actions."""
+
+    def getPendingActions():
+        """Return all pending mailing list actions.
+
+        In addition, any mailing list for which there are actions pending will
+        have their states transitioned to the next node in the workflow.  For
+        example, an APPROVED mailing list will be transitioned to
+        CONSTRUCTING, and a MODIFIED mailing list will be transitioned to
+        UPDATING.
+
+        :return: A dictionary with keys being the action names and values
+            being a sequence of values describing the details of each action.
+
+        Actions are strings, with the following valid values:
+
+        * 'create'     -- create the named team mailing list
+        * 'deactivate' -- deactivate the named team mailing list
+        * 'modify'     -- modify an existing team mailing list
+
+        For the 'deactivate' action, the value items are just the team name
+        for the list being deactivated.  For the 'create' and 'modify'
+        actions, the value items are 2-tuples where the first item is the team
+        name and the second item is a dictionary of the list attributes to
+        modify, for example 'welcome_message'.
+
+        There will be at most one action per team.
+        """
+
+    def reportStatus(statuses):
+        """Report the status of mailing list actions.
+
+        When Mailman processes the actions requested in getPendingActions(),
+        it will report the status of those actions back to Launchpad.
+
+        In addition, any mailing list for which a status is being reported
+        will have its state transitioned to the next node in the workflow.
+        For example, a CONSTRUCTING or UPDATING mailing list will be
+        transitioned to ACTIVE or FAILED depending on the status.
+
+        :param statuses: A dictionary mapping team names to result strings.
+            The result strings may be either 'success' or 'failure'.
+        """

@@ -18,8 +18,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IMailingList, IMailingListSet)
-from canonical.lp.dbschema import MailingListStatus
+    ILaunchpadCelebrities, IMailingList, IMailingListSet, MailingListStatus)
 
 
 class MailingList(SQLBase):
@@ -46,7 +45,7 @@ class MailingList(SQLBase):
 
     date_activated = UtcDateTimeCol(notNull=True, default=None)
 
-    status = EnumCol(schema=MailingListStatus,
+    status = EnumCol(enum=MailingListStatus,
                      default=MailingListStatus.REGISTERED)
 
     welcome_message_text = StringCol(default=None)
@@ -80,6 +79,12 @@ class MailingList(SQLBase):
             'Only approved mailing lists may be constructed')
         self.status = MailingListStatus.CONSTRUCTING
 
+    def startUpdating(self):
+        """See `IMailingList`."""
+        assert self.status == MailingListStatus.MODIFIED, (
+            'Only modified mailing lists may be updated')
+        self.status = MailingListStatus.UPDATING
+
     def transitionToStatus(self, target_state):
         """See `IMailingList`."""
         # State: From CONSTRUCTING to either ACTIVE or FAILED
@@ -87,8 +92,8 @@ class MailingList(SQLBase):
             assert target_state in (MailingListStatus.ACTIVE,
                                     MailingListStatus.FAILED), (
                 'target_state result must be active or failed')
-        # State: From MODIFIED to either ACTIVE or FAILED
-        elif self.status == MailingListStatus.MODIFIED:
+        # State: From UPDATING to either ACTIVE or FAILED
+        elif self.status == MailingListStatus.UPDATING:
             assert target_state in (MailingListStatus.ACTIVE,
                                     MailingListStatus.FAILED), (
                 'target_state result must be active or failed')

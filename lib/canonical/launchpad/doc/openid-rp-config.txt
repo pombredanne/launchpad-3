@@ -1,0 +1,129 @@
+= OpenID Relying Party Configurations =
+
+Launchpad can store information about OpenID relying parties in order
+to provide a better user experience when using Launchpad to log in.
+This includes:
+
+ * Providing a human readable name for the relying party, so we don't
+   have to display the raw URL to the user.
+
+ * Providing a logo image to display on the log in page.
+
+ * Specify what fields may be disclosed to the RP via OpenID Simple
+   Registration protocol.
+
+ * What person creation rationale should be used for accounts created
+   while signining in to the RP.
+
+
+== Creating OpenIDRPConfigs ==
+
+Configurations are created using the IOpenIDRPConfigSet utility:
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IOpenIDRPConfigSet
+    >>> login(ANONYMOUS)
+    >>> rpconfig = getUtility(IOpenIDRPConfigSet).new(
+    ...     trust_root='http://*.example.com/',
+    ...     displayname='Example RP',
+    ...     description='Example RP description',
+    ...     allowed_sreg=['fullname', 'nickname'])
+
+The resulting object implements the IOpenIDRPConfig interface:
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import IOpenIDRPConfig
+
+    >>> verifyObject(IOpenIDRPConfig, rpconfig)
+    True
+
+The utility itself implements IOpenIDRPConfigSet:
+
+    >>> verifyObject(IOpenIDRPConfigSet, getUtility(IOpenIDRPConfigSet))
+    True
+
+
+== Modifying OpenIDRPConfig objects ==
+
+OpenIDRPConfig objects may only be modified by an administrator:
+
+    >>> rpconfig.displayname = 'New title'
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<OpenIDRPConfig at ...>, 'displayname', 'launchpad.Admin')
+    >>> login('foo.bar@canonical.com')
+    >>> rpconfig.displayname = 'New title'
+    >>> print rpconfig.displayname
+    New title
+
+The allowed simple registration fields attribute sorts the field names
+to normalise the result:
+
+    >>> rpconfig.allowed_sreg = ['fullname', 'email']
+    >>> print rpconfig.allowed_sreg
+    [u'email', u'fullname']
+
+
+== Searching for OpenIDRPConfig objects ==
+
+An RP config can be looked up by its ID using the get() method of the
+IOpenIDRPConfigSet:
+
+    >>> rpconfig2 = getUtility(IOpenIDRPConfigSet).get(rpconfig.id)
+    >>> print rpconfig2.trust_root
+    http://*.example.com/
+    >>> rpconfig2.id == rpconfig.id
+    True
+
+The get() method will return None for an unknown ID:
+
+    >>> print getUtility(IOpenIDRPConfigSet).get(-42)
+    None
+
+It is also possible to look up RP configs by their trust root:
+
+    >>> rpconfig3 = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+    ...     'http://*.example.com/')
+    >>> print rpconfig3.trust_root
+    http://*.example.com/
+    >>> rpconfig3.id == rpconfig.id
+    True
+
+The getByTrustRoot() method will return None for an unknown trust
+root:
+
+    >>> print getUtility(IOpenIDRPConfigSet).getByTrustRoot('http://unknown')
+    None
+
+
+== Listing all OpenIDRPConfig objects ==
+
+The getAll() method of the IOpenIDRPConfigSet will return a result set
+containing all OpenIDRP's.
+
+    >>> configs = getUtility(IOpenIDRPConfigSet).getAll()
+    >>> rpconfig in configs
+    True
+
+
+== Destroying OpenIDRPConfig objects ==
+
+RP configs can be removed using the destroySelf() method, which is
+only available to administrators:
+
+    >>> login(ANONYMOUS)
+    >>> rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+    ...     'http://*.example.com/')
+    >>> rpconfig.destroySelf()
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<OpenIDRPConfig at ...>, 'destroySelf', 'launchpad.Admin')
+
+The same method succeeds when run as an administrator.  Afterwards,
+attempts to get the RP config fail:
+
+    >>> login('foo.bar@canonical.com')
+    >>> rpconfig.destroySelf()
+    >>> print getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+    ...     'http://*.example.com/')
+    None

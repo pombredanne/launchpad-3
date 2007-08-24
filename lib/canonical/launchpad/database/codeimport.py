@@ -6,12 +6,10 @@ __metaclass__ = type
 
 __all__ = [
     'CodeImport',
-    'CodeImportMachine',
-    'CodeImportMachineSet',
     'CodeImportSet',
     ]
 
-from sqlobject import BoolCol, ForeignKey, StringCol, SQLObjectNotFound
+from sqlobject import ForeignKey, IntervalCol, StringCol, SQLObjectNotFound
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -22,8 +20,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (cursor, SQLBase, sqlvalues)
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
-    ICodeImport, ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet,
-    ILaunchpadCelebrities, NotFoundError)
+    ICodeImport, ICodeImportSet, ILaunchpadCelebrities, NotFoundError)
 from canonical.lp.dbschema import (
     CodeImportReviewStatus, RevisionControlSystems)
 
@@ -39,6 +36,9 @@ class CodeImport(SQLBase):
                         notNull=True)
     registrant = ForeignKey(dbName='registrant', foreignKey='Person',
                             notNull=True)
+    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    assignee = ForeignKey(dbName='assignee', foreignKey='Person',
+                          notNull=False, default=None)
 
     @property
     def product(self):
@@ -55,11 +55,15 @@ class CodeImport(SQLBase):
 
     rcs_type = EnumCol(schema=RevisionControlSystems,
         notNull=False, default=None)
+
     cvs_root = StringCol(default=None)
+
     cvs_module = StringCol(default=None)
+
     svn_branch_url = StringCol(default=None)
 
     date_last_successful = UtcDateTimeCol(default=None)
+    update_interval = IntervalCol(default=None)
 
 
 class CodeImportSet:
@@ -81,13 +85,15 @@ class CodeImportSet:
             raise AssertionError(
                 "Don't know how to sanity check source details for unknown "
                 "rcs_type %s"%rcs_type)
-        return CodeImport(registrant=registrant, branch=branch,
+        return CodeImport(
+            registrant=registrant, owner=registrant, branch=branch,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
 
-    # XXX: newWithId is only needed for code-import-sync-script. This method
+    # XXX: DavidAllouche 2007-07-05:
+    # newWithId is only needed for code-import-sync-script. This method
     # should be removed after the transition to the new code import system is
-    # complete. -- DavidAllouche 2007-07-05
+    # complete.
 
     def newWithId(self, id, registrant, branch, rcs_type, svn_branch_url=None,
             cvs_root=None, cvs_module=None):
@@ -109,7 +115,8 @@ class CodeImportSet:
                 SELECT last_value from codeimport_id_seq)));"""
             % sqlvalues(id))
         assert len(cur.fetchall()) == 1
-        return CodeImport(id=id, registrant=registrant, branch=branch,
+        return CodeImport(
+            id=id, registrant=registrant, owner=registrant, branch=branch,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
 
@@ -135,27 +142,3 @@ class CodeImportSet:
     def search(self, review_status):
         """See `ICodeImportSet`."""
         return CodeImport.selectBy(review_status=review_status.value)
-
-
-class CodeImportMachine(SQLBase):
-    """See `ICodeImportMachine`."""
-
-    implements(ICodeImportMachine)
-
-    date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    hostname = StringCol(default=None)
-    online = BoolCol(default=False)
-
-
-class CodeImportMachineSet(object):
-    """See `ICodeImportMachineSet`."""
-
-    implements(ICodeImportMachineSet)
-
-    def getAll(self):
-        """See `ICodeImportMachineSet`."""
-        return CodeImportMachine.select()
-
-    def getByHostname(self, hostname):
-        """See `ICodeImportMachineSet`."""
-        return CodeImportMachine.selectOneBy(hostname=hostname)

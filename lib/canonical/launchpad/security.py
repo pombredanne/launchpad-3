@@ -7,7 +7,7 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
-# XXX: thumper 2007-05-25
+# XXX: thumper 2007-05-25:
 # This import should really be tidied up. Made into alphabetical
 # order ideally.
 from canonical.launchpad.interfaces import (
@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import (
     IProductSeries, IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet,
     ISourcePackage, ILaunchpadCelebrities, IDistroSeries, IBugTracker,
     IBugAttachment, IPoll, IPollSubset, IPollOption, IProductRelease,
-    IQuestion, IQuestionTarget,
+    IBranchMergeProposal, IQuestion, IQuestionTarget,
     IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
     IShippingRun, ISpecification, ITranslationImportQueueEntry,
@@ -731,9 +731,8 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     usedfor = IPOTemplate
 
 
-# XXX: Carlos Perello Marin 2005-05-24: This should be using
-# SuperSpecialPermissions when implemented.
-# See: https://launchpad.ubuntu.com/malone/bugs/753/
+# XXX: Carlos Perello Marin 2005-05-24 bug=753: 
+# This should be using SuperSpecialPermissions when implemented.
 class AddPOTemplate(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Append'
     usedfor = IProductSeries
@@ -779,16 +778,14 @@ class EditTranslationGroupSet(OnlyRosettaExpertsAndAdmins):
     usedfor = ITranslationGroupSet
 
 
-# XXX: Carlos Perello Marin 2005-05-24: This should be using
-# SuperSpecialPermissions when implemented.
-# See: https://launchpad.ubuntu.com/malone/bugs/753/
+# XXX: Carlos Perello Marin 2005-05-24 bug=753: 
+# This should be using SuperSpecialPermissions when implemented.
 class ListProductPOTemplateNames(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = IProduct
 
-# XXX: Carlos Perello Marin 2005-05-24: This should be using
-# SuperSpecialPermissions when implemented.
-# See: https://launchpad.ubuntu.com/malone/bugs/753/
+# XXX: Carlos Perello Marin 2005-05-24 bug=753: 
+# This should be using SuperSpecialPermissions when implemented.
 class ListSourcePackagePOTemplateNames(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ISourcePackage
@@ -876,11 +873,12 @@ class AdminByBuilddAdmin(AuthorizationBase):
     permission = 'launchpad.Admin'
 
     def checkAuthenticated(self, user):
-        """Allow only admins and members of buildd_admin team"""
+        """Allow admins and buildd_admins."""
         lp_admin = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(lp_admin):
+            return True
         buildd_admin = getUtility(ILaunchpadCelebrities).buildd_admin
-        return (user.inTeam(buildd_admin) or
-                user.inTeam(lp_admin))
+        return user.inTeam(buildd_admin)
 
 
 class AdminBuilderSet(AdminByBuilddAdmin):
@@ -891,7 +889,7 @@ class AdminBuilder(AdminByBuilddAdmin):
     usedfor = IBuilder
 
 
-# XXX cprov 20060731: As soon as we have external builders, as presumed
+# XXX cprov 2006-07-31: As soon as we have external builders, as presumed
 # in the original plan, we should grant some rights to the owners and
 # that's what Edit is for.
 class EditBuilder(AdminByBuilddAdmin):
@@ -901,6 +899,21 @@ class EditBuilder(AdminByBuilddAdmin):
 
 class AdminBuildRecord(AdminByBuilddAdmin):
     usedfor = IBuild
+
+
+class EditBuildRecord(AdminByBuilddAdmin):
+    permission = 'launchpad.Edit'
+    usedfor = IBuild
+
+    def checkAuthenticated(self, user):
+        """Allow only BuilddAdmins and PPA owner."""
+        if AdminByBuilddAdmin.checkAuthenticated(self, user):
+            return True
+
+        if self.obj.archive.owner and user.inTeam(self.obj.archive.owner):
+            return True
+
+        return False
 
 
 class AdminQuestion(AdminByAdminsTeam):
@@ -1031,6 +1044,26 @@ class BranchSubscriptionEdit(AuthorizationBase):
         """
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.person) or user.inTeam(admins)
+
+
+class BranchMergeProposalEdit(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IBranchMergeProposal
+
+    def checkAuthenticated(self, user):
+        """Is the user able to edit the branch merge request?
+
+        The user is able to edit if they are:
+          * the registrant of the merge proposal
+          * the owner of the source_branch
+          * the owner of the target_branch
+          * an administrator
+        """
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.registrant) or
+                user.inTeam(self.obj.source_branch.owner) or
+                user.inTeam(self.obj.target_branch.owner) or
+                user.inTeam(admins))
 
 
 class ViewEntitlement(AuthorizationBase):

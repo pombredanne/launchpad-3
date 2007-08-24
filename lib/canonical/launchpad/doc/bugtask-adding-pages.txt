@@ -202,15 +202,9 @@ be created:
     u''
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.targetname
-    evolution (upstream)
-    firefox (upstream)
-
-The button includes the product name.
-
-    >>> for action in add_task_view.actions:
-    ...     print action.label
-    Indicate bug in Evolution
+    ...     print bugtask.bugtargetdisplayname
+    Evolution
+    Mozilla Firefox
 
 This worked without any problems since Evolution does use Malone as its
 offical bug tracker.
@@ -229,9 +223,9 @@ as smoothly as above.
     u''
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.targetname
-    evolution (upstream)
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Evolution
+    Mozilla Firefox
 
 As you can see no ALSA was added to the bug. In order to add such a
 task, a user has to confirm that he indeed wants to add the task. A
@@ -261,10 +255,10 @@ If the user confirms, a bugtask will be added to the bug.
     True
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.targetname
-    alsa-utils (upstream)
-    evolution (upstream)
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    alsa-utils
+    Evolution
+    Mozilla Firefox
 
 But since no bug watch was specified, the status and importance
 are set to the default values.
@@ -314,9 +308,9 @@ without any confirmation needee:
     False
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.targetname
-    alsa-utils (upstream)
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    alsa-utils
+    Mozilla Firefox
 
     >>> for bugwatch in bug_four.watches:
     ...     print "%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug)
@@ -327,8 +321,8 @@ attribute got initialised to Unknown. The bugtask will be synced with
 the bug watch's status later.
 
     >>> alsa_task = bug_four.bugtasks[0]
-    >>> alsa_task.targetname
-    u'alsa-utils (upstream)'
+    >>> alsa_task.bugtargetname
+    u'alsa-utils'
     >>> alsa_task.product.official_malone
     False
     >>> alsa_task.bugwatch == bug_four.watches[0]
@@ -367,3 +361,26 @@ name is returned.
     u'Debian'
 
     >>> on_created_listener.unregister()
+
+
+IAddBugTaskForm Interface Definition
+------------------------------------
+
+IAddBugTaskForm, which is used as the schema for the views tested above, has
+some attributes which are identical to those of IUpstreamBugTask and
+IDistroBugTask. However, we must ensure that IAddBugTask defines its own
+attributes rather than borrowing those of IUpstreamBugTask and IDistroBugTask,
+since doing so has produced OOPSes (bug 129406).
+
+    >>> from canonical.launchpad.interfaces.bugtask import (
+    ...     IAddBugTaskForm, IDistroBugTask, IUpstreamBugTask)
+    >>> IAddBugTaskForm['product'] is IUpstreamBugTask['product']
+    False
+
+    >>> IAddBugTaskForm['distribution'] is IDistroBugTask['distribution']
+    False
+
+    >>> (IAddBugTaskForm['sourcepackagename'] is
+    ...     IDistroBugTask['sourcepackagename'])
+    False
+
