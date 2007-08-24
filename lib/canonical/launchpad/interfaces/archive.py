@@ -91,7 +91,7 @@ class IPPAActivateForm(Interface):
         description=_(
         "A short description of contents and goals of this PPA. This text "
         "will be presented in the PPA page and will also allow other users "
-        "to find your PPA int their searches. URLs are allowed and will "
+        "to find your PPA in their searches. URLs are allowed and will "
         "be rendered as links."))
 
     accepted = Bool(
