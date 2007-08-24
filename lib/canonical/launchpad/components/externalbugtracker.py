@@ -104,6 +104,7 @@ class ExternalBugTracker:
     """Base class for an external bug tracker."""
 
     implements(IExternalBugtracker)
+    batch_query_threshold = 10
 
     def urlopen(self, request, data=None):
         return urllib2.urlopen(request, data)
@@ -113,6 +114,20 @@ class ExternalBugTracker:
 
         It's optional to override this method.
         """
+        if len(bug_ids) > self.batch_query_threshold:
+            self.bugs = self.getRemoteBugBatch(bug_ids)
+        else:
+            # XXX: 2007-08-24 Graham Binns
+            #      It might be better to do this synchronously.
+            self.bugs = [self.getRemoteBug(bug_id) for bug_id in bug_ids]
+
+    def getRemoteBug(self, bug_id):
+        """Retrieve and return a single bug from the remote database."""
+        raise NotImplementedError(self.getRemoteBug)
+
+    def getRemoteBugBatch(self, bug_ids):
+        """Retrieve and return a set of bugs from the remote database."""
+        raise NotImplementedError(self.getRemoteBugBatch)
 
     def getRemoteStatus(self, bug_id):
         """Return the remote status for the given bug id.
@@ -464,6 +479,13 @@ class DebBugs(ExternalBugTracker):
             self.debbugs_db_archive = debbugs.Database(self.db_location,
                                                        self.debbugs_pl,
                                                        subdir="archive")
+
+    def initializeRemoteBugDB(self, bug_ids):
+        """See `ExternalBugTracker`.
+
+        This method is overridden (and left empty) here to avoid breakage when
+        the continuous bug-watch checking spec is implemented.
+        """
 
     @property
     def baseurl(self):
