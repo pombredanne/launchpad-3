@@ -253,9 +253,11 @@ class DistroArchSeries(SQLBase):
         # restrict to a specific pocket.
         queries.append('pocket = %s' % sqlvalues(pocket))
 
-        # exclude RELEASE pocket if the distroseries was already released,
+        # Exclude RELEASE pocket if the distroseries was already released,
         # since it should not change.
+        # The exception is PPA and COMMERCIAL which are allowed to do this.
         if (not self.distroseries.isUnstable() and
+            archive.purpose != ArchivePurpose.COMMERCIAL and
             archive.purpose != ArchivePurpose.PPA):
             queries.append(
             'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
