@@ -850,7 +850,7 @@ class Trac(ExternalBugTracker):
             bug_id = int(bug_id)
         except ValueError:
             raise InvalidBugId(
-                "bug_id must be convertable an integer: %s" + str(bug_id))
+                "bug_id must be convertable an integer: %s" % str(bug_id))
 
         try:
             remote_bug = self.bugs[bug_id]
