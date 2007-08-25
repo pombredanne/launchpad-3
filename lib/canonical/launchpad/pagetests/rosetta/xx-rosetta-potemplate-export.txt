@@ -32,9 +32,9 @@ If we POST without the appropriate format included, we tell the user off:
   >>> browser.getControl('Format:').clear() 
   >>> browser.getControl('Request Download').click()
 
-  >>> for tag in find_tags_by_class(browser.contents, 'error'):
-  ...     print tag
-  <div class="error message">Please select a valid format for download.</div>
+  >>> for message in get_feedback_messages(browser):
+  ...     print message
+  Please select a valid format for download.
 
 If we choose 'Selected files' but don't select any PO file, we should receive
 a nice error message.
@@ -43,9 +43,9 @@ a nice error message.
   >>> browser.getControl('Format:').value = ['PO']
   >>> browser.getControl('Request Download').click()
 
-  >>> for tag in find_tags_by_class(browser.contents, 'error'):
-  ...     print tag
-  <div class="error message">Please select at least one pofile or the PO template.</div>
+  >>> for message in get_feedback_messages(browser):
+  ...     print message
+  Please select at least one translation or template.
 
 If we POST the page with valid data, it should add the request to the queue.
 Note that when we choose 'Everything', one request for the PO template is
@@ -58,9 +58,9 @@ added to the export queue and individual requests are added for the PO files.
   >>> browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2'
 
-  >>> for tag in find_tags_by_class(browser.contents, 'informational'):
-  ...     print tag
-  <div class="informational message">Your request has been received. Expect to receive an email shortly.</div>
+  >>> for message in get_feedback_messages(browser):
+  ...     print message
+  Your request has been received. Expect to receive an email shortly.
 
 We can also request only the PO Template. By doing this we're basically adding
 a duplicate request for the PO template to the export queue.
@@ -75,7 +75,7 @@ This is a no-op: (See bug https://launchpad.net/rosetta/+bug/1558)
   >>> browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2'
 
-  >>> for tag in find_tags_by_class(browser.contents, 'informational'):
-  ...     print tag
-  <div class="informational message">Your request has been received. Expect to receive an email shortly.</div>
+  >>> for message in get_feedback_messages(browser):
+  ...     print message
+  Your request has been received. Expect to receive an email shortly.
 
