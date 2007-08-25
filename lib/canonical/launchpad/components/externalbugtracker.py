@@ -808,10 +808,9 @@ class Trac(ExternalBugTracker):
         BugTrackerConnectError will be raised.
         """
         self.bugs = {}
-        # When there aren't more than batch_query_threshold bugs to update we
+        # When there are less than batch_query_threshold bugs to update we
         # make one request per bug id to the remote bug tracker, providing it
-        # supports CSV exports per-ticket. This will give us a CSV export of
-        # the ticket we ask for.  If the Trac instance doesn't support
+        # supports CSV exports per-ticket. If the Trac instance doesn't support
         # exports-per-ticket we fail over to using the batch export method for
         # retrieving bug statuses.
         if (len(bug_ids) < self.batch_query_threshold and
