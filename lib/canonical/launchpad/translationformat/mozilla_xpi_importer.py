@@ -405,8 +405,7 @@ class MozillaXpiImporter:
         self.messages = []
         self.last_translator_text = None
 
-    @property
-    def format(self):
+    def format(self, content):
         """See `ITranslationFormatImporter`."""
         return TranslationFileFormat.XPI
 

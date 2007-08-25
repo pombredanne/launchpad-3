@@ -80,10 +80,11 @@ class ITranslationImporter(Interface):
     file_extensions_with_importer = Attribute(
         "List of file extension we have imports for.")
 
-    def getTranslationFileFormatByFileExtension(file_extension):
+    def getTranslationFileFormatByFileExtension(file_extension, content):
         """Return the translation file format for given file_extension.
 
         :param file_extension: File extension.
+        :param content: File contents.
         :return: None if there is no handler for that file_extension.
         """
 

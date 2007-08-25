@@ -31,8 +31,7 @@ class GettextPoImporter:
         self.header = None
         self.messages = []
 
-    @property
-    def format(self):
+    def format(self, content):
         """See `ITranslationFormatImporter`."""
         return TranslationFileFormat.PO
 

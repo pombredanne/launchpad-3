@@ -30,7 +30,6 @@ from canonical.lp.dbschema import (
 
 importers = {
     TranslationFileFormat.KDEPO: KdePoImporter(),
-    TranslationFileFormat.PO: GettextPoImporter(),
     TranslationFileFormat.XPI: MozillaXpiImporter(),
     }
 
@@ -82,11 +81,11 @@ class TranslationImporter:
 
         return sorted(file_extensions)
 
-    def getTranslationFileFormatByFileExtension(self, file_extension):
+    def getTranslationFileFormatByFileExtension(self, file_extension, content):
         """See `ITranslationImporter`."""
         for importer in importers.itervalues():
             if file_extension in importer.file_extensions:
-                return importer.format
+                return importer.format(content)
 
         return None
 

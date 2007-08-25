@@ -560,12 +560,13 @@ class TranslationImportQueue:
         root, ext = os.path.splitext(filename)
         translation_importer = getUtility(ITranslationImporter)
         if format is None:
-            # Get it based on the file extension.
+            # Get it based on the file extension and file content.
             format = (
                 translation_importer.getTranslationFileFormatByFileExtension(
-                    ext))
+                    ext, content))
         format_importer = translation_importer.getTranslationFormatImporter(
             format)
+
         # Upload the file into librarian.
         size = len(content)
         file = StringIO(content)
@@ -620,7 +621,6 @@ class TranslationImportQueue:
 
             entry.date_status_changed = UTC_NOW
             entry.sync()
-            return entry
         else:
             # It's a new row.
             entry = TranslationImportQueueEntry(path=path, content=alias,
@@ -628,7 +628,8 @@ class TranslationImportQueue:
                 distroseries=distroseries, productseries=productseries,
                 is_published=is_published, potemplate=potemplate,
                 pofile=pofile, format=format)
-            return entry
+
+        return entry
 
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
