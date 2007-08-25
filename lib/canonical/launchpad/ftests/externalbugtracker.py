@@ -178,13 +178,19 @@ class TestMantis(Mantis):
 class TestTrac(Trac):
     """Trac ExternalBugTracker for testing purposes.
 
-    It overrides urlopen, so that access to a real Trac instance isn't needed.
-    Also, it overrides the default batch_query_threshold for the sake of
-    making test data sane.
+    It overrides urlopen, so that access to a real Trac instance isn't needed,
+    and supportsSingleExports so that the tests don't fail due to the lack of
+    a network connection. Also, it overrides the default batch_query_threshold
+    for the sake of making test data sane.
     """
 
     batch_query_threshold = 10.
+    supports_single_exports = True
     trace_calls = False
+
+    def supportsSingleExports(self):
+        """See `Trac`."""
+        return self.supports_single_exports
 
     def urlopen(self, url):
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
