@@ -809,16 +809,14 @@ class Trac(ExternalBugTracker):
         BugTrackerConnectError will be raised.
         """
         self.bugs = {}
+        # When there aren't more than batch_query_threshold bugs to update we
+        # make one request per bug id to the remote bug tracker, providing it
+        # supports CSV exports per-ticket. This will give us a CSV export of
+        # the ticket we ask for.  If the Trac instance doesn't support
+        # exports-per-ticket we fail over to using the batch export method for
+        # retrieving bug statuses.
         if (len(bug_ids) < self.batch_query_threshold and
             self.supportsSingleExports()):
-            # When there aren't more than batch_query_threshold bugs to update
-            # we make one request per bug id to the remote bug tracker, which
-            # (providing it's a reasonably up-to-date Trac instance) will give
-            # us a CSV export of the ticket we ask for. If it doesn't, we can
-            # safely assume that it either doesn't support this functionality
-            # or has this functionality deliberately disabled; either way
-            # there is little
-            # we can do about it.
             for bug_id in bug_ids:
                 # If we can't get the remote bug for any reason a
                 # BugTrackerConnectError will be raised at this point.
@@ -835,10 +833,8 @@ class Trac(ExternalBugTracker):
                 reader = csv.DictReader(csv_data)
                 self.bugs[bug_id] = reader.next()
 
-        # Trac offers two ways for us to get bug details from them in CSV
-        # format: individually or in groups. For large lists of bug ids we get
-        # them as a batch from the remote bug tracker so as to avoid
-        # effectively DOSing it.
+        # For large lists of bug ids we retrieve bug statuses as a batch from
+        # the remote bug tracker so as to avoid effectively DOSing it.
         else:
             id_string = '&'.join(['id=%s' % id for id in bug_ids])
             query_url = "%s/%s" % (self.baseurl, self.batch_url % id_string)
