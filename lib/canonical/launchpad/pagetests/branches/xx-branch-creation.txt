@@ -1,0 +1,19 @@
+= Creating branches =
+
+In the past, there were two very distinct ways of creating branches
+in Launchpad.  The first was to use the UI, and the other was to
+push the branch to Launchpad.  The first method only created MIRRORED
+branches, and the second only HOSTED.
+
+Many users were confused with this, and tried to create HOSTED branches
+using the user interface.  Now they can.
+
+
+== Creating a hosted branch ==
+
+    >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> browser.open('http://code.launchpad.dev/launchpad')
+    >>> browser.getLink('Register branch').click()
+
+
+
