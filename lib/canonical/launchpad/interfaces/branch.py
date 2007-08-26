@@ -125,7 +125,6 @@ class BranchType(DBEnumeratedType):
         control system into bzr and are made available through the supermirror.
         """)
 
-<<<<<<< TREE
     REMOTE = DBItem(4, """
         Remote
 
@@ -138,15 +137,6 @@ class UICreatableBranchType(EnumeratedType):
     """The types of branches that can be created through the web UI."""
     use_template(BranchType, exclude='IMPORTED')
 
-=======
-    REMOTE = DBItem(4, """
-        Remote
-
-        Remote branches are those that are registered in Launchpad
-        with an external location, but are not to be mirrored.
-        """)
-
->>>>>>> MERGE-SOURCE
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.NEW,
