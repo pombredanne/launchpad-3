@@ -55,7 +55,7 @@
 
         <tal:similar-bugs condition="view/contextUsesMalone">
 
-          <ul id="similar-bugs" style="list-style: none; margin-left: 0">
+          <ul id="similar-bugs" style="list-style: none; margin-left: 0; margin-bottom: 0">
             <li tal:repeat="bug view/similar_bugs"
                 tal:attributes="title bug/description/fmt:shorten/500"
                 title="bug description goes here" class="similar-bug">
@@ -113,7 +113,7 @@
           <p tal:define="error_message view/widget_errors/bug_already_reported_as|nothing"
              tal:condition="error_message" tal:content="error_message" class="error message" />
 
-          <div class="actions" style="margin-top: 0.5em; margin-bottom: 1em">
+          <div class="actions" style="margin-top: 0.5em; margin-bottom: 2em; margin-left: 2em">
             <input tal:replace="structure view/this_is_my_bug_action/render" />
           </div>
 
@@ -177,7 +177,7 @@
             hideElement('bug_reporting_form');
           }
 
-          // Disable "Subscribe to This Bug" button to avoid accidental use.
+          // Disable "Subscribe to This Bug Report" to avoid accidental use.
           $('field.actions.this_is_my_bug').disabled = no_radiobtn.checked;
         }
 

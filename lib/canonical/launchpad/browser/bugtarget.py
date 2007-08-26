@@ -430,7 +430,7 @@ class FileBugViewBase(LaunchpadFormView):
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 
-    @action("Subscribe to This Bug", name="this_is_my_bug",
+    @action("Subscribe to This Bug Report", name="this_is_my_bug",
             failure=handleSubmitBugFailure)
     def this_is_my_bug_action(self, action, data):
         """Subscribe to the bug suggested."""
@@ -1012,8 +1012,7 @@ class BugTargetBugTagsView(LaunchpadView):
     def _getSearchURL(self, tag):
         """Return the search URL for the tag."""
         # Use path_only here to reduce the size of the rendered page.
-        return "%s?field.tag=%s" % (
-            self.request.getURL(path_only=True), urllib.quote(tag))
+        return "+bugs?field.tag=%s" % urllib.quote(tag)
 
     def getUsedBugTagsWithURLs(self):
         """Return the bug tags and their search URLs."""
