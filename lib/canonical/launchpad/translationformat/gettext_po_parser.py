@@ -49,6 +49,7 @@ class POMessage(object):
 
     def __init__(self, **kw):
         self._check(**kw)
+        self.msgctxt = kw.get('msgctxt', None)
         self.msgid = kw.get('msgid', '')
         self.msgid_plural = kw.get('msgid_plural', '')
         self.msgstr = kw.get('msgstr', '')
@@ -149,6 +150,11 @@ class POMessage(object):
         >>> unicode(POMessage(msgid="\tServer name: %s", msgstr=""))
         u'msgid "\\tServer name: %s"\nmsgstr ""'
 
+        You can have context on messages.
+
+        >>> unicode(POMessage(msgctxt="bla", msgid="foo", msgstr="bar"))
+        u'msgctxt "bla"\nmsgid "foo"\nmsgstr "bar"'
+
         '''
         return '\n'.join([
             self._comments_representation(),
@@ -190,7 +196,11 @@ class POMessage(object):
         return u'\n'.join(text)
 
     def _msgids_representation(self, wrap_width):
-        text = self._wrap(self.msgid, u'msgid', wrap_width)
+        if self.msgctxt is not None:
+            text = self._wrap(self.msgctxt, u'msgctxt', wrap_width)
+            text.extend(self._wrap(self.msgid, u'msgid', wrap_width))
+        else:
+            text = self._wrap(self.msgid, u'msgid', wrap_width)
         if self.msgid_plural:
             text.extend(
                 self._wrap(self.msgid_plural, u'msgid_plural', wrap_width))
@@ -442,7 +452,8 @@ class POHeader(dict, POMessage):
             # Remove any previous dict entry.
             dict.__delitem__(self, key)
 
-        for attr in ('msgid_plural', 'msgstr_plurals', 'file_references'):
+        for attr in ('msgctxt', 'msgid_plural', 'msgstr_plurals',
+                     'file_references'):
             if getattr(self, attr):
                 logging.warning(POSyntaxWarning(
                     msg='PO file header entry should have no %s' % attr))
@@ -804,6 +815,7 @@ class POParser(object):
 
     def _make_dataholder(self):
         self._partial_transl = {}
+        self._partial_transl['msgctxt'] = None
         self._partial_transl['msgid'] = ''
         self._partial_transl['msgid_plural'] = ''
         self._partial_transl['msgstr'] = ''
@@ -817,7 +829,12 @@ class POParser(object):
 
     def append(self):
         if self._partial_transl:
-            if self._messageids.has_key(self._partial_transl['msgid']):
+            msgkey = self._partial_transl['msgid']
+            if self._partial_transl['msgctxt'] is not None:
+                # msgctxt is internally split from msgid with \2 in
+                # gettext MO files, so this guarantees that it will be unique
+                msgkey = self._partial_transl['msgctxt'] + '\2' + msgkey
+            if msgkey in self._messageids:
                 lineno = self._partial_transl['_lineno']
                 # XXX kiko 2005-10-06 bug=2896: I changed the exception
                 # below to use %r because the original %d returned
@@ -834,7 +851,7 @@ class POParser(object):
                     e.line_number = self._partial_transl['_lineno']
                 raise
             self.messages.append(transl)
-            self._messageids[self._partial_transl['msgid']] = True
+            self._messageids[msgkey] = True
         self._partial_transl = None
 
     def _make_header(self):
@@ -1048,12 +1065,10 @@ class POParser(object):
 
         if not l:
             return
-        # If we get a comment line after a msgstr or a line starting with
-        # msgid, this is a new entry
-        # l.startswith('msgid') is needed because not all msgid/msgstr
-        # pairs have a leading comment
-        if ((l.startswith('#') or l.startswith('msgid')) and
-            self._section == 'msgstr'):
+        # A new entry starts either with a comment (#...), "msgctxt" or
+        # "msgid" keywords
+        if ((l.startswith('#') or l.startswith('msgid') or
+             l.startswith('msgctxt')) and (self._section == 'msgstr')):
             if self._partial_transl is None:
                 # first entry - do nothing
                 pass
@@ -1091,6 +1106,13 @@ class POParser(object):
                 raise TranslationFormatSyntaxError(line_number=self._lineno)
             self._section = 'msgid_plural'
             l = l[12:]
+        elif l.startswith('msgctxt'):
+            if self._section and (self._section == 'msgctxt'
+                                  or self._section.startswith('msgid')):
+                raise TranslationFormatSyntaxError(line_number=self._lineno)
+            self._section = 'msgctxt'
+            self._partial_transl['msgctxt'] = ''
+            l = l[7:]
         elif l.startswith('msgid'):
             if self._section and self._section.startswith('msgid'):
                 raise TranslationFormatSyntaxError(line_number=self._lineno)
@@ -1134,6 +1156,8 @@ class POParser(object):
             self._partial_transl['msgid'] += l
         elif self._section == 'msgid_plural':
             self._partial_transl['msgid_plural'] += l
+        elif self._section == 'msgctxt':
+            self._partial_transl['msgctxt'] += l
         elif self._section == 'msgstr':
             if self._plural_case is None:
                 self._partial_transl['msgstr'] += l

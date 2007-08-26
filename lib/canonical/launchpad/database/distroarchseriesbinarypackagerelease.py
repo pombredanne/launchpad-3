@@ -23,6 +23,7 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
+from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 
 class DistroArchSeriesBinaryPackageRelease:
 
@@ -83,10 +84,11 @@ class DistroArchSeriesBinaryPackageRelease:
 
     def _latest_publishing_record(self, status=None):
         query = ("binarypackagerelease = %s AND distroarchrelease = %s "
-                 "AND archive = %s"
-                 % sqlvalues(self.binarypackagerelease,
-                             self.distroarchseries,
-                             self.distroarchseries.main_archive))
+                 "AND archive IN %s"
+                 % sqlvalues(
+                    self.binarypackagerelease,
+                    self.distroarchseries,
+                    self.distribution.all_distro_archive_ids))
         if status is not None:
             query += " AND status = %s" % sqlvalues(status)
 
@@ -98,11 +100,12 @@ class DistroArchSeriesBinaryPackageRelease:
         """See IDistroArchSeriesBinaryPackage."""
         return BinaryPackagePublishingHistory.select("""
             distroarchrelease = %s AND
-            archive = %s AND
+            archive IN %s AND
             binarypackagerelease = %s
-            """ % sqlvalues(self.distroarchseries,
-                            self.distroarchseries.main_archive,
-                            self.binarypackagerelease),
+            """ % sqlvalues(
+                    self.distroarchseries,
+                    self.distribution.all_distro_archive_ids,
+                    self.binarypackagerelease),
             orderBy='-datecreated')
 
     @property
@@ -219,16 +222,6 @@ class DistroArchSeriesBinaryPackageRelease:
         return self.binarypackagerelease.installedsize
 
     @property
-    def copyright(self):
-        """See IBinaryPackageRelease."""
-        return self.binarypackagerelease.copyright
-
-    @property
-    def licence(self):
-        """See IBinaryPackageRelease."""
-        return self.binarypackagerelease.licence
-
-    @property
     def architecturespecific(self):
         """See IBinaryPackageRelease."""
         return self.binarypackagerelease.architecturespecific
@@ -289,6 +282,14 @@ class DistroArchSeriesBinaryPackageRelease:
             new_section == current.section and
             new_priority == current.priority):
             return
+
+        # See if the archive has changed by virtue of the component changing:
+        new_archive = self.distribution.getArchiveByComponent(
+            new_component.name)
+        if new_archive != None and new_archive != current.archive:
+            raise ArchiveOverriderError(
+                "Overriding component to '%s' failed because it would "
+                "require a new archive." % new_component.name)
 
         # Append the modified package publishing entry
         SecureBinaryPackagePublishingHistory(

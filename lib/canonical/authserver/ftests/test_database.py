@@ -613,7 +613,6 @@ class HostedBranchStorageTest(DatabaseTest):
 
         # Mark 25 (a hosted branch) as recently mirrored.
         storage = DatabaseBranchDetailsStorage(None)
-        cur = cursor()
         storage._startMirroringInteraction(25)
         storage._mirrorCompleteInteraction(25, 'rev-1')
 

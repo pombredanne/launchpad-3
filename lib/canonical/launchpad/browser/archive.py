@@ -124,8 +124,8 @@ class ArchiveActivateView(LaunchpadFormView):
     @action(_("Activate"), name="activate")
     def action_save(self, action, data):
         """Activate PPA and moves to its page."""
-        ppa = getUtility(IArchiveSet).new(
-            owner=self.context, purpose=ArchivePurpose.PPA,
+        ppa = getUtility(IArchiveSet).ensure(
+            owner=self.context, distribution=None, purpose=ArchivePurpose.PPA,
             description=data['description'])
         self.next_url = canonical_url(ppa)
 
