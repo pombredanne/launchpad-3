@@ -484,7 +484,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
     In this view the user specifies the URL for the remote bug and we create
     the new bugtask/bugwatch.
     
-    If the bugtracker on the given URL is not registered in Launchpad, we
+    If the bugtracker in the given URL is not registered in Launchpad, we
     delegate its creation to another view. This other view is then responsible
     for calling back this view's @action method to create the bugtask/bugwatch.
     """
@@ -492,7 +492,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
     schema = IAddBugTaskForm
     custom_widget('bug_url', StrippedTextWidget, displayWidth=50)
 
-    taskadded = None
+    task_added = None
     available_action_names = None
     target_field_names = ()
     should_ask_for_confirmation = False
@@ -651,6 +651,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                     return BugAlsoReportInUpstreamWithBugTrackerCreationView(
                         self.context, self.request)()
                 else:
+                    assert 'distribution' in self.target_field_names
                     return (
                         BugAlsoReportInDistributionWithBugTrackerCreationView(
                             self.context, self.request)())
@@ -668,7 +669,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                 'validate() should ensure that a product or distribution'
                 ' is present')
 
-        self.taskadded = getUtility(IBugTaskSet).createTask(
+        self.task_added = getUtility(IBugTaskSet).createTask(
             self.context.bug,
             getUtility(ILaunchBag).user,
             product=product,
@@ -678,24 +679,24 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             assert extracted_bugtracker is not None, (
                 "validate() should have ensured that bugtracker is not None.")
             # Make sure that we don't add duplicate bug watches.
-            bug_watch = self.taskadded.bug.getBugWatch(
+            bug_watch = self.task_added.bug.getBugWatch(
                 extracted_bugtracker, extracted_bug)
             if bug_watch is None:
-                bug_watch = self.taskadded.bug.addWatch(
+                bug_watch = self.task_added.bug.addWatch(
                     extracted_bugtracker, extracted_bug, self.user)
                 notify(SQLObjectCreatedEvent(bug_watch))
             if not target.official_malone:
-                self.taskadded.bugwatch = bug_watch
+                self.task_added.bugwatch = bug_watch
 
-        if not target.official_malone and self.taskadded.bugwatch is not None:
+        if not target.official_malone and self.task_added.bugwatch is not None:
             # A remote bug task gets its status from a bug watch, so we want
             # its status/importance to be UNKNOWN when created.
-            self.taskadded.transitionToStatus(
+            self.task_added.transitionToStatus(
                 BugTaskStatus.UNKNOWN, self.user)
-            self.taskadded.importance = BugTaskImportance.UNKNOWN
+            self.task_added.importance = BugTaskImportance.UNKNOWN
 
-        notify(SQLObjectCreatedEvent(self.taskadded))
-        self.next_url = canonical_url(self.taskadded)
+        notify(SQLObjectCreatedEvent(self.task_added))
+        self.next_url = canonical_url(self.task_added)
 
     @action('Yes, Add Anyway', name='confirm', condition=actionIsAvailable)
     def confirm_action(self, action, data):
@@ -834,9 +835,9 @@ class BugAlsoReportInDistributionWithBugTrackerCreationView(
             return super(BugAlsoReportInDistributionWithBugTrackerCreationView,
                          self).render()
         else:
-            assert self.taskadded is not None, (
+            assert self.task_added is not None, (
                 "New bugtask should have been created at this point")
-            self.request.response.redirect(canonical_url(self.taskadded))
+            self.request.response.redirect(canonical_url(self.task_added))
 
 
 class BugAlsoReportInUpstreamWithBugTrackerCreationView(
@@ -854,9 +855,9 @@ class BugAlsoReportInUpstreamWithBugTrackerCreationView(
             return super(BugAlsoReportInUpstreamWithBugTrackerCreationView,
                          self).render()
         else:
-            assert self.taskadded is not None, (
+            assert self.task_added is not None, (
                 "New bugtask should have been created at this point")
-            self.request.response.redirect(canonical_url(self.taskadded))
+            self.request.response.redirect(canonical_url(self.task_added))
 
 
 class BugEditViewBase(LaunchpadEditFormView):
