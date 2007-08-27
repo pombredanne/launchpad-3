@@ -8,7 +8,6 @@ __all__ = [
     'LoginStatus',
     'MaintenanceMessage',
     'MenuBox',
-    'RosettaContextMenu',
     'MaloneContextMenu',
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
@@ -26,7 +25,6 @@ __all__ = [
     ]
 
 import cgi
-from cookielib import domain_match
 import errno
 import urllib
 import os
@@ -50,7 +48,6 @@ from zope.security.proxy import isinstance as zope_isinstance
 from BeautifulSoup import BeautifulStoneSoup, Comment
 
 import canonical.launchpad.layers
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
@@ -72,6 +69,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot,
     ILaunchpadStatisticSet,
     ILoginTokenSet,
+    IMailingListApplication,
     IMaloneApplication,
     IMentoringOfferSet,
     IPersonSet,
@@ -319,36 +317,6 @@ class MaloneContextMenu(ContextMenu):
         return Link('cve/', text, icon='cve')
 
 
-class RosettaContextMenu(ContextMenu):
-    # XXX mpt 2006-03-27: No longer visible on Translations front page.
-    usedfor = IRosettaApplication
-    links = ['about', 'preferences', 'import_queue', 'translation_groups']
-
-    def about(self):
-        text = 'About Launchpad Translations'
-        rosetta_application = getUtility(IRosettaApplication)
-        url = '/'.join([canonical_url(rosetta_application), '+about'])
-        return Link(url, text)
-
-    def preferences(self):
-        text = 'Translation preferences'
-        rosetta_application = getUtility(IRosettaApplication)
-        url = '/'.join([canonical_url(rosetta_application), 'prefs'])
-        return Link(url, text)
-
-    def import_queue(self):
-        text = 'Import queue'
-        import_queue = getUtility(ITranslationImportQueue)
-        url = canonical_url(import_queue)
-        return Link(url, text)
-
-    def translation_groups(self):
-        text = 'Translation groups'
-        translation_group_set = getUtility(ITranslationGroupSet)
-        url = canonical_url(translation_group_set)
-        return Link(url, text)
-
-
 class LoginStatus:
 
     def __init__(self, context, request):
@@ -443,7 +411,9 @@ class LaunchpadRootNavigation(Navigation):
         'codeofconduct': ICodeOfConductSet,
         'distros': IDistributionSet,
         'karmaaction': IKarmaActionSet,
+        '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
+        'mailinglists': IMailingListApplication,
         '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,
         'potemplatenames': IPOTemplateNameSet,
@@ -576,49 +546,6 @@ class SoftTimeoutView(LaunchpadView):
 
 class LaunchpadRootIndexView(LaunchpadView):
     """An view for the default view of the LaunchpadRoot."""
-
-    def _getCookieParams(self):
-        """Return a string containing the 'domain' and 'secure' parameters."""
-        params = '; Path=/'
-        # XXX: jamesh 2007-02-06:
-        # This code to select the cookie domain comes from webapp/session.py
-        # It should probably be factored out.
-        uri = URI(self.request.getURL())
-        if uri.scheme == 'https':
-            params += '; Secure'
-        for domain in config.launchpad.cookie_domains:
-            assert not domain.startswith('.'), \
-                   "domain should not start with '.'"
-            dotted_domain = '.' + domain
-            if (domain_match(uri.host, domain) or
-                domain_match(uri.host, dotted_domain)):
-                params += '; Domain=%s' % dotted_domain
-                break
-        return params
-
-    def getInhibitRedirectScript(self):
-        """Returns a Javascript function that inhibits redirection."""
-        return '''
-        function inhibit_beta_redirect() {
-            var expire = new Date()
-            expire.setTime(expire.getTime() + 2 * 60 * 60 * 1000)
-            document.cookie = ('inhibit_beta_redirect=1%s; Expires=' +
-                               expire.toGMTString())
-            alert('You will not be redirected to the beta site for 2 hours');
-            return false;
-        }''' % self._getCookieParams()
-
-    def getEnableRedirectScript(self):
-        """Returns a Javascript function that enables beta redireciton."""
-        return '''
-        function enable_beta_redirect() {
-            var expire = new Date()
-            expire.setTime(expire.getTime() + 1000)
-            document.cookie = ('inhibit_beta_redirect=0%s; Expires=' +
-                               expire.toGMTString())
-            alert('Redirection to the beta site has been enabled');
-            return false;
-        }''' % self._getCookieParams()
 
     def isRedirectInhibited(self):
         """Returns True if redirection has been inhibited."""
@@ -884,6 +811,9 @@ class StructuralHeaderPresentation:
 
     def __init__(self, context):
         self.context = context
+
+    def isPrivate(self):
+        return False
 
     def getIntroHeading(self):
         return None

@@ -207,14 +207,25 @@ class BranchAPITestCase(LaunchpadTestCase):
 
     def testStartMirroring(self):
         self.server.startMirroring(18)
+        # The branch puller script will pull private branches. We need to
+        # confirm that it can do so without triggering Zope security
+        # restrictions.
+        # Branch 29 is a private branch in the sample data.
+        self.server.startMirroring(29)
 
     def testMirrorComplete(self):
+        self.server.startMirroring(18)
         self.server.mirrorComplete(18, 'rev-1')
+        # See comment in testStartMirroring.
+        self.server.startMirroring(29)
+        self.server.mirrorComplete(29, 'rev-1')
 
     def testMirrorFailedUnicode(self):
         # Ensure that a unicode doesn't cause mirrorFailed to raise an
         # exception.
         self.server.mirrorFailed(18, u'it broke\N{INTERROBANG}')
+        # See comment in testStartMirroring.
+        self.server.mirrorFailed(29, u'it broke\N{INTERROBANG}')
 
     def testRecordSuccess(self):
         started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)

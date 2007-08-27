@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """This module is used by the Launchpad webapp to determine titles for pages.
 
@@ -101,7 +101,7 @@ class ContextBugId(SubstitutionHelper):
 
 archive_admin = ContextTitle('Administer %s')
 
-archive_activate = 'Activate PPA'
+archive_activate = 'Activate Personal Package Archive'
 
 archive_builds = ContextTitle('Builds for %s')
 
@@ -135,6 +135,8 @@ bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 branch_associations = ContextDisplayName(smartquote(
     '"%s" branch associations'))
 
+branch_delete = ContextDisplayName(smartquote('Delete branch "%s"'))
+
 branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
 
 branch_edit_subscription = ContextDisplayName(smartquote(
@@ -146,6 +148,16 @@ def branch_index(context, view):
             context.displayname, context.author.title)
     else:
         return smartquote('"%s" branch in Launchpad') % (context.displayname)
+
+def branch_listing_cross_product(context, view):
+    return view.page_title
+
+branch_landing_candidates = ContextDisplayName(smartquote(
+    'Landing candidates for "%s"'))
+
+branchmergeproposal_edit = 'Edit branch merge proposal'
+
+branch_register_merge_proposal = 'Register branch merge proposal'
 
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
@@ -249,15 +261,17 @@ bugtarget_filebug_search = bugtarget_filebug_advanced
 
 bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
-bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_choose_affected_product = LaunchbagBugID(
+    'Bug #%d - Record as affecting another project')
 
 bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()
 
-bugtask_requestfix = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_requestfix = LaunchbagBugID(
+    'Bug #%d - Record as affecting another distribution/package')
 
-bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Confirm project')
 
 bugtask_view = BugTaskPageTitle()
 
@@ -486,6 +500,8 @@ def hasspecifications_specs(context, view):
 
 hassprints_sprints = ContextTitle("Events related to %s")
 
+hastranslationimports_index = 'Translation import queue'
+
 karmaaction_index = 'Karma actions'
 
 karmaaction_edit = 'Edit karma action'
@@ -554,7 +570,12 @@ launchpadstatisticset_index = 'Launchpad statistics'
 loginservice_email_sent = 'Launchpad Login Service - Email sent'
 
 def loginservice_authorize(context, view):
-    return 'Authenticate to %s' % view.rp_info['title']
+    rpconfig = view.rpconfig
+    if rpconfig is None:
+        displayname = view.openid_request.trust_root
+    else:
+        displayname = rpconfig.displayname
+    return 'Authenticate to %s' % displayname
 
 loginservice_login = 'Launchpad Login Service'
 
@@ -860,6 +881,8 @@ productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
 products_index = 'Projects registered in Launchpad'
+
+productseries_export = ContextTitle('Download translations for "%s"')
 
 productseries_index = ContextTitle('Overview of %s')
 

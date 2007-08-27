@@ -63,12 +63,12 @@ class IArchive(IHasOwner):
         'The size of binaries published in the context archive.')
     estimated_size = Attribute('Estimated archive size.')
 
-    def getPubConfig(distribution):
+    def getPubConfig():
         """Return an overridden Publisher Configuration instance.
 
         The original publisher configuration based on the distribution is
         modified according local context, it basically fixes the archive
-        paths to cope with personal archives publication workflow.
+        paths to cope with non-primary and PPA archives publication workflow.
         """
 
     def getPublishedSources():
@@ -91,7 +91,7 @@ class IPPAActivateForm(Interface):
         description=_(
         "A short description of contents and goals of this PPA. This text "
         "will be presented in the PPA page and will also allow other users "
-        "to find your PPA int their searches. URLs are allowed and will "
+        "to find your PPA in their searches. URLs are allowed and will "
         "be rendered as links."))
 
     accepted = Bool(
@@ -110,8 +110,8 @@ class IArchiveSet(Interface):
         If purpose is ArchivePurpose.PPA, owner must be set.
         """
 
-    def ensure(owner, distribution, purpose):
-        """Ensure the owner has an valid archive."""
+    def ensure(owner, distribution, purpose, description):
+        """Ensure the owner has a valid archive."""
 
     def get(archive_id):
         """Return the IArchive with the given archive_id."""

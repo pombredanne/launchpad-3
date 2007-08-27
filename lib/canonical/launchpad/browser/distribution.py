@@ -11,7 +11,7 @@ __all__ = [
     'DistributionFacets',
     'DistributionSpecificationsMenu',
     'DistributionView',
-    'DistributionPPAView',
+    'DistributionPPASearchView',
     'DistributionAllPackagesView',
     'DistributionBrandingView',
     'DistributionEditView',
@@ -369,7 +369,11 @@ class DistributionTranslationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'translations'
-    links = ['edit']
+    links = ['edit', 'imports']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
 
     def edit(self):
         text = 'Change translators'
@@ -440,12 +444,21 @@ class DistributionView(BuildRecordsView):
                       reverse=True)
 
 
-class DistributionPPAView(LaunchpadView):
+class DistributionPPASearchView(LaunchpadView):
+    """Search PPAs belonging to the Distribution in question."""
 
     def initialize(self):
-        """Setup a batched `IArchive` list."""
-        self.name_filter = self.request.get('name_filter', None)
-        ppas = self.context.searchPPAs(text=self.name_filter)
+        self.name_filter = self.request.get('name_filter')
+        self.show_inactive = self.request.get('show_inactive')
+
+        # Preserve self.show_inactive state because it's used in the
+        # template and build a boolean field to be passed for
+        # searchPPAs.
+        show_inactive = (self.show_inactive == 'on')
+
+        ppas = self.context.searchPPAs(
+            text=self.name_filter, show_inactive=show_inactive)
+
         self.batchnav = BatchNavigator(ppas, self.request)
         self.search_results = self.batchnav.currentBatch()
 

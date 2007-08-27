@@ -17,7 +17,7 @@
       <th>Affects</th>
       <th>Status</th>
       <th>Importance</th>
-      <th>Assigned To</th>
+      <th>Assigned to</th>
       <th></th>
     </tr>
   </thead>
@@ -37,16 +37,16 @@
   <span style="white-space: nowrap">
       <img src="/@@/add" alt="+" />
       <a tal:attributes="href string:${current_bugtask/fmt:url}/+choose-affected-product"
-         title="Mark this bug as occurring upstream">
-        Upstream&hellip;
+         title="Record this bug as occurring in another project">
+        Project&hellip;
       </a>
   </span>
 
   <span style="white-space: nowrap">
       <img src="/@@/add" alt="+" />
       <a tal:attributes="href string:${current_bugtask/fmt:url}/+distrotask"
-         title="Mark this bug as occurring in a distro package">
-        Distribution&hellip;
+         title="Record this bug as occurring in another distribution and/or package">
+        Distribution/Package&hellip;
       </a>
   </span>
 
