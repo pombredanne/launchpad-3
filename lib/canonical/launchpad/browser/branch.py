@@ -491,13 +491,19 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     def getProduct(self, data):
         """A method that is overridden in the derived classes."""
-        return data['product']
+        return data.get('product')
 
     def validate(self, data):
-        self.validate_branch_name(
-            self.user, self.getProduct(data), data['name'])
+        product = self.getProduct(data)
+        if product in not None and 'name' in data:
+            self.validate_branch_name(self.user, product, data['name'])
 
-        branch_type = data['branch_type']
+        branch_type = data.get('branch_type')
+        # If branch_type failed to validate, then the rest of the method
+        # doesn't make any sense.
+        if branch_type is None:
+            return
+
         # If the branch is a MIRRORED branch, then the url
         # must be supplied, and if HOSTED the url must *not*
         # be supplied.

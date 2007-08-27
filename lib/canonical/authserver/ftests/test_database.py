@@ -513,8 +513,7 @@ class HostedBranchStorageTest(DatabaseTest):
         self.assertEqual(READ_ONLY, permissions)
 
     def test_getBranchInformation_remote(self):
-        # Remote branches cannot be accessed to by the smartserver or SFTP
-        # server.
+        # Remote branches are not accessible by the smartserver or SFTP server.
         no_priv = getUtility(IPersonSet).getByName('no-priv')
         firefox = getUtility(IProductSet).getByName('firefox')
         branch = getUtility(IBranchSet).new(

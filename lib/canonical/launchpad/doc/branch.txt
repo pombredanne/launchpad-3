@@ -61,10 +61,10 @@ Imported branches are those where a bazaar branch is built from a CVS or
 Subversion repository.  Imported branches have to be requested and go
 through a testing and verification process.
 
-Remote branches are registered in Launchpad but can be neither pushed to
-or pulled from.  Effectively remote branches are a placeholder where branches
-can be linked to bugs and blueprints but no actual revisions for the
-remote branches are stored in Launchpad.
+Remote branches are registered in Launchpad, but the branch is not stored in
+the Launchpad codehosting service, and as such are not accessible using the
+anonymous http access, nor through the Launchpad SFTP or smart server.  The
+remote branches can still be linked to bugs and blueprints.
 
 
 == Creating branches ==
@@ -84,7 +84,7 @@ utility.
     >>> print branchset.get(-1)
     None
 
-A branch is retrievable via BranchSet's __getitem__ 
+A branch is retrievable via BranchSet's __getitem__
 
     >>> branchset[24].name
     u'launchpad'
