@@ -107,8 +107,13 @@ class MilestoneView(LaunchpadView):
         user = getUtility(ILaunchBag).user
         params = BugTaskSearchParams(user, milestone=self.context,
                     orderby=['-importance', 'datecreated', 'id'],
-                    omit_dupes=True, omit_targeted=True)
-        return list(getUtility(IBugTaskSet).search(params))
+                    omit_dupes=True)
+        tasks = getUtility(IBugTaskSet).search(params)
+        # XXX kiko 2007-08-27: Doing this in the callsite is
+        # particularly annoying, but it's not easy to do the filtering
+        # in BugTaskSet.search() unfortunately. Can we find a good way
+        # of filtering conjoined in database queries?
+        return [task for task in tasks if task.conjoined_master is None]
 
     @property
     def is_project_milestone(self):

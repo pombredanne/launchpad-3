@@ -73,11 +73,11 @@ You can set flags to omit duplicates:
     >>> sans_dupes.count() < firefox_public_bugs
     True
 
-and also conjoined bugs:
+and also series-targeted bugs:
 
-    >>> no_conjoined = BugTaskSearchParams(user=None, omit_targeted=True)
-    >>> sans_conjoined = ubuntu.searchTasks(no_conjoined)
-    >>> sans_conjoined.count() < ubuntu_bugs
+    >>> no_targeted = BugTaskSearchParams(user=None, omit_targeted=True)
+    >>> sans_targeted = ubuntu.searchTasks(no_targeted)
+    >>> sans_targeted.count() < ubuntu_bugs
     True
 
 === Product bug contact ===
