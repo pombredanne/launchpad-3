@@ -86,6 +86,22 @@ class MilestoneView(LaunchpadView):
     def specifications(self):
         return list(self.context.specifications)
 
+    @property
+    def bugtask_count_text(self):
+        count = len(self.bugtasks)
+        if count == 1:
+            return "1 bug"
+        else:
+            return "%s bugs" % count
+
+    @property
+    def specification_count_text(self):
+        count = len(self.specifications)
+        if count == 1:
+            return "1 specification"
+        else:
+            return "%s specifications" % count
+
     @cachedproperty
     def bugtasks(self):
         user = getUtility(ILaunchBag).user
