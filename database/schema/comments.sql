@@ -806,7 +806,7 @@ COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargolifted IS 'The dat
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.archive IS 'Target archive for this publishing record.';
 COMMENT ON VIEW BinaryPackagePublishingHistory IS 'View on SecureBinaryPackagePublishingHistory that restricts access to embargoed entries';
 
-COMMENT ON VIEW PublishedPackageView IS
+COMMENT ON VIEW PublishedPackage IS
     'A very large view that brings together all the information about
     packages that are currently being published within a distribution. This
     view was designed for the page which shows packages published in the

@@ -19,6 +19,7 @@ class IPublishedPackage(Interface):
     been published in a distribution."""
 
     id = Attribute("The id of the packagepublishing record")
+    archive = Attribute("The archive where the package is published.")
     distribution = Attribute("The distribution id")
     distroarchseries = Attribute("The distroarchseries.")
     distroseries = Attribute("The distribution series id")
