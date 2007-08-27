@@ -11,9 +11,82 @@ using the user interface.  Now they can.
 
 == Creating a hosted branch ==
 
+Hosted branches use Launchpad as their primary location.
+
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
-    >>> browser.open('http://code.launchpad.dev/launchpad')
+    >>> browser.open('http://code.launchpad.dev/redfish')
     >>> browser.getLink('Register branch').click()
 
+    >>> browser.getControl('Branch Type').displayValue = ['Hosted']
+    >>> browser.getControl('Name').value = 'hosted-branch'
+
+Branch URLs are not valid for hosted branches.
+
+    >>> browser.getControl('Branch URL').value = (
+    ...     'http://example.com/hosted-branch')
+    >>> browser.getControl('Add Branch').click()
+    >>> for message in get_feedback_messages(browser):
+    ...     print message
+    There is 1 error.
+    Branch URLs cannot be set for Hosted branches.
+
+    >>> browser.getControl('Branch URL').value = ''
+    >>> browser.getControl('Add Branch').click()
+
+    >>> def print_details_table(browser):
+    ...     table = find_tag_by_id(browser.contents, 'branch-details-table')
+    ...     for row in table.findAll('tr'):
+    ...         print extract_text(row)
+    >>> print_details_table(browser)
+    Project: Redfish
+    Hosted on Launchpad:
+       http://bazaar.launchpad.dev/~name12/redfish/hosted-branch
 
 
+== Creating a mirrored branch ==
+
+Mirrored branches are primarily hosted outside of Launchpad, and Launchpad
+mirrors the branch.
+
+    >>> browser.open('http://code.launchpad.dev/redfish')
+    >>> browser.getLink('Register branch').click()
+
+    >>> browser.getControl('Branch Type').displayValue = ['Mirrored']
+    >>> browser.getControl('Name').value = 'mirrored-branch'
+
+Branch URLs are required for mirrored branches.
+
+    >>> browser.getControl('Add Branch').click()
+    >>> for message in get_feedback_messages(browser):
+    ...     print message
+    There is 1 error.
+    Branch URLs are required for Mirrored branches.
+
+    >>> browser.getControl('Branch URL').value = (
+    ...     'http://example.com/mirrored-branch')
+    >>> browser.getControl('Add Branch').click()
+
+    >>> print_details_table(browser)
+    Project: Redfish
+    Location: http://example.com/mirrored-branch
+    Mirror:  http://bazaar.launchpad.dev/~name12/redfish/mirrored-branch
+
+
+== Creating a remote branch ==
+
+The contents of Remote branches are not accessible through Launchpad.
+
+    >>> browser.open('http://code.launchpad.dev/redfish')
+    >>> browser.getLink('Register branch').click()
+
+    >>> browser.getControl('Branch Type').displayValue = ['Remote']
+    >>> browser.getControl('Name').value = 'remote-branch'
+
+A remote branch may have a URL, but doesn't have to.
+
+    >>> browser.getControl('Branch URL').value = (
+    ...     'http://example.com/remote-branch')
+    >>> browser.getControl('Add Branch').click()
+    >>> print_details_table(browser)
+    Project: Redfish
+    Location: http://example.com/remote-branch
