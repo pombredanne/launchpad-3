@@ -92,7 +92,7 @@ class MilestoneView(LaunchpadView):
         if count == 1:
             return "1 bug"
         else:
-            return "%s bugs" % count
+            return "%d bugs" % count
 
     @property
     def specification_count_text(self):
@@ -100,7 +100,7 @@ class MilestoneView(LaunchpadView):
         if count == 1:
             return "1 specification"
         else:
-            return "%s specifications" % count
+            return "%d specifications" % count
 
     @cachedproperty
     def bugtasks(self):
