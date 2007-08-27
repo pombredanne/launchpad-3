@@ -5,12 +5,10 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 import os
-import sys
 import tempfile
 
 from zope.component import getUtility
 
-from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts.ftpmaster import (
@@ -73,7 +71,7 @@ class TestChrootManager(TestCase):
 
         chroot_manager.add()
         self.assertEqual(
-            ["LibraryFileAlias: 63, 5 bytes, 5088e6471ab02d4268002f529a02621c",
+            ["LibraryFileAlias: 71, 5 bytes, 5088e6471ab02d4268002f529a02621c",
              "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'"
              "/SECURITY (1) added."], chroot_manager._messages)
 
@@ -106,7 +104,7 @@ class TestChrootManager(TestCase):
 
         chroot_manager.update()
         self.assertEqual(
-            ["LibraryFileAlias: 63, 6 bytes, a4cd43e083161afcdf26f4324024d8ef",
+            ["LibraryFileAlias: 71, 6 bytes, a4cd43e083161afcdf26f4324024d8ef",
              "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/"
              "SECURITY (1) updated."], chroot_manager._messages)
 

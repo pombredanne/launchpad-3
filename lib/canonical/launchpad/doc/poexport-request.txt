@@ -1,5 +1,4 @@
-Rosetta PO Export Request Queue
--------------------------------
+= Rosetta PO Export Request Queue =
 
 The queue of export requests is served by a cron script. Let's check if it can
 serve those requests properly.
@@ -34,14 +33,15 @@ Here's somebody to make a request.
   >>> from canonical.launchpad.database import Person
   >>> person = Person.get(1)
 
-Here's the stuff they're going to request.
+
+== Requesting PO files ==
+
+Our user requests the Catalan and Czech translations of a template.
 
   >>> from canonical.launchpad.database import POTemplate
   >>> potemplate = POTemplate.get(2)
   >>> ca = potemplate.getPOFileByLang('ca')
   >>> cs = potemplate.getPOFileByLang('cs')
-
-And here's them making the request.
 
   >>> request_set = getUtility(IPOExportRequestSet)
   >>> request_set.addRequest(person, None, [ca, cs])
@@ -62,7 +62,7 @@ We need to make sure the Librarian data has settled into place.
   >>> import transaction
   >>> transaction.commit()
 
-Let's read our mail.
+The user receives a confirmation email.
 
   >>> def print_mail_body(body):
   ...     lines = body[body.index('\n\n')+2:].split('\n')
@@ -76,15 +76,15 @@ Let's read our mail.
   >>> to_addrs
   ['mark@hbd.com']
   >>> print_mail_body(body)
-  > 
+  >
   > Hello Mark Shuttleworth,
-  > 
+  >
   > The files you requested from Rosetta are ready for download
   > from the following location:
-  > 
+  >
   >     http://localhost:58000/.../rosetta-pmount.tar.gz
 
-The mail has a URL in it.
+The email contains a URL linking to where the exported file can be downloaded.
 
   >>> import re
 
@@ -104,6 +104,9 @@ Let's download it and make sure the contents look ok.
   rosetta-pmount/
   rosetta-pmount/ca.po
   rosetta-pmount/cs.po
+
+
+== Requesting MO files ==
 
 Let's try requesting an export in MO format:
 
@@ -168,12 +171,16 @@ Let's test the .mo compilation.
   ...
   MOCompilationError: ...
 
+
+== Cron script ==
+
 Finally, the code should work when executed from the script. This is a good
 way that the user used by the script has the needed rights to use the
 database.
 
-To go thru all code paths, the export should have requests for distributions
-and products.
+The queue can contain requests for translations from both distributions and
+products.  Each request may request a template, or a list of templates, or
+just PO files.
 
   # We need to request again some files.
   >>> ca.potemplate.distroseries is None
@@ -185,9 +192,12 @@ and products.
   >>> product_template.productseries is None
   False
   >>> request_set.addRequest(person, product_template)
+  >>> alsa_template = POTemplate.selectOneBy(path='po/alsa-utils.pot')
+  >>> netapplet_template = POTemplate.selectOneBy(path='po/netapplet.pot')
+  >>> request_set.addRequest(person, [alsa_template, netapplet_template])
   >>> transaction.commit()
 
-And run the script.
+The script is run.
 
   >>> import subprocess
   >>> import sys
@@ -199,11 +209,14 @@ And run the script.
   >>> (output, empty) = process.communicate()
   >>> print output
   INFO    creating lockfile
+  DEBUG   Exporting objects for Mark Shuttleworth, related to template
+  evolution-2.2 in Evolution trunk
   DEBUG   Exporting objects for Mark Shuttleworth, related to template pmount
   in Ubuntu Hoary package "pmount"
   DEBUG   Exporting objects for Mark Shuttleworth, related to template
-  evolution-2.2 in Evolution trunk
+  netapplet in NetApplet trunk
+  DEBUG   Exporting objects for Mark Shuttleworth, related to template
+  alsa-utils in alsa-utils trunk
   DEBUG   Removing lock file: /var/lock/launchpad-rosetta-export-queue.lock
   <BLANKLINE>
-
 

@@ -168,8 +168,8 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         Return True if the upload is allowed and False if denied.
         """
 
-    def getLastUploads():
-        """Return the last five source uploads for this DistroSeries.
+    def getLatestUploads():
+        """Return the latest five source uploads for this DistroSeries.
 
         It returns a list containing up to five elements as
         IDistroSeriesSourcePackageRelease instances
@@ -274,9 +274,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def createUploadedSourcePackageRelease(
         sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator, urgency,
-        changelog, dsc, dscsigningkey, section, manifest,
-        dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-        dsc_binaries, archive, dateuploaded=None):
+        changelog, dsc, dscsigningkey, section, manifest, dsc_maintainer_rfc822,
+        dsc_standards_version, dsc_format, dsc_binaries, archive, copyright,
+        dateuploaded=None):
         """Create an uploads SourcePackageRelease
 
         Set this distroseries set to be the uploadeddistroseries.
@@ -295,6 +295,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
          * manifest: IManifest
          * dscsigningkey: IGPGKey used to sign the DSC file
          * dsc: string, original content of the dsc file
+         * copyright: string, the original debian/copyright content
          * changelog: string, changelog extracted from the changesfile
          * architecturehintlist: string, DSC architectures
          * builddepends: string, DSC build dependencies

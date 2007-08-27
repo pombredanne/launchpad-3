@@ -11,7 +11,7 @@ the URL of the remote bug.
 
     >>> user_browser.getControl('URL').value = (
     ...     u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=42')
-    >>> user_browser.getControl('Indicate bug in GNOME Terminal').click()
+    >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/gnome-terminal/+bug/4'
 
@@ -32,7 +32,7 @@ base URL is HTTP.
 
     >>> user_browser.getControl('URL').value = (
     ...     u'https://bugzilla.gnome.org/bugs/show_bug.cgi?id=84')
-    >>> user_browser.getControl('Indicate bug').click()
+    >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/netapplet/+bug/4'
 
@@ -56,7 +56,7 @@ tracker type it is), an error message is displayed.
     'http://bugs.launchpad.dev/firefox/+bug/4/+add-affected-product?field.product=alsa-utils'
 
     >>> user_browser.getControl('URL').value = u'http://bugs.unknown/42'
-    >>> user_browser.getControl('Indicate bug in alsa-utils').click()
+    >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/4/+add-affected-product'
 
@@ -69,7 +69,7 @@ If the URL can be recognised as a valid bug URL, but no such tracker is
 registered in Launchpad, the user will be prompted to register it first.
 
     >>> user_browser.getControl('URL').value = u"http://new.trac/ticket/42"
-    >>> user_browser.getControl('Indicate bug in alsa-utils').click()
+    >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/4/+add-affected-product'
 
@@ -100,7 +100,7 @@ time.
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.getControl('URL').value = (
     ...     u"http://new.trac/ticket/42")
-    >>> user_browser.getControl('Indicate bug in alsa-utils').click()
+    >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/alsa-utils/+bug/4'
 

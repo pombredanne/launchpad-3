@@ -59,18 +59,25 @@ Now perform an OpenID authentication request:
 
 == Behaviour for known trust roots ==
 
-Now we'll do the same thing, but with the trust root added to
-KNOWN_TRUST_ROOTS.
+Now we'll do the same thing, but with a Relying Party configuration
+registered for the trust root.
 
 Note that we don't grant this trust root access to the user's country
 so it is ommitted from the OpenID response.  Similarly, we allow
 access to the user's time zone but it is not sent because it hasn't
 been requested.
 
-    >>> from canonical.launchpad.browser.openidserver import KNOWN_TRUST_ROOTS
-    >>> KNOWN_TRUST_ROOTS['http://launchpad.dev/+openid-consumer'] = dict(
-    ...     title='Test RP', logo=None, reason=None,
-    ...     sreg=['fullname', 'nickname', 'email', 'timezone'])
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import IOpenIDRPConfigSet
+
+    >>> login('foo.bar@canonical.com')
+    >>> rpconfig = getUtility(IOpenIDRPConfigSet).new(
+    ...     trust_root='http://launchpad.dev/+openid-consumer',
+    ...     displayname='Test RP', description='A test RP',
+    ...     allowed_sreg=['fullname', 'nickname', 'email', 'timezone'])
+    >>> logout()
+
     >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> sabdfl_browser.getControl('Sign In', index=0).click()
     >>> print sabdfl_browser.url
@@ -91,5 +98,10 @@ been requested.
 
 == Cleanup ==
 
-    >>> del KNOWN_TRUST_ROOTS['http://launchpad.dev/+openid-consumer']
+    >>> login('foo.bar@canonical.com')
+    >>> rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+    ...     'http://launchpad.dev/+openid-consumer')
+    >>> rpconfig.destroySelf()
+    >>> logout()
+
     >>> uninstall_consumer()

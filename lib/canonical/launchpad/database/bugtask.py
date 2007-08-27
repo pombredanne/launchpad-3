@@ -27,6 +27,8 @@ from zope.component import getUtility
 from zope.interface import implements, alsoProvides
 from zope.security.proxy import isinstance as zope_isinstance
 
+from canonical.config import config
+
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -1069,7 +1071,7 @@ class BugTaskSet:
                 # product.
                 extra_clauses.append("BugTask.product IS NOT null")
             else:
-                where_cond = search_value_to_where_condition(arg_value)
+                where_cond = search_value_to_where_condition(params.milestone)
             extra_clauses.append("BugTask.milestone %s" % where_cond)
 
         if params.project:
@@ -1137,10 +1139,11 @@ class BugTaskSet:
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
             SourcePackagePublishingHistory.distrorelease = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.component IN %s AND
             SourcePackagePublishingHistory.status = %s
-            """ % sqlvalues(distroseries, distroseries.main_archive,
+            """ % sqlvalues(distroseries,
+                            distroseries.distribution.all_distro_archive_ids,
                             component_ids,
                             PackagePublishingStatus.PUBLISHED)])
 
@@ -1330,12 +1333,16 @@ class BugTaskSet:
                 AND BugMessage.message = Message.id
                 AND Message.id = MessageChunk.message
                 AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
-        return """
-            ((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s) OR (%s))
-            OR (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))
-            """ % (
-                searchtext_quoted, searchtext_quoted, comment_clause,
-                searchtext_like_quoted)
+        text_search_clauses = [
+            "Bug.fti @@ ftq(%s)" % searchtext_quoted,
+            "BugTask.fti @@ ftq(%s)" % searchtext_quoted,
+            "BugTask.targetnamecache ILIKE '%%' || %s || '%%'" % (
+                searchtext_like_quoted)]
+        # Due to performance problems, whether to search in comments is
+        # controlled by a config option.
+        if config.malone.search_comments:
+            text_search_clauses.append(comment_clause)
+        return "(%s)" % " OR ".join(text_search_clauses)
 
     def _buildFastSearchTextClause(self, params):
         """Build the clause to use for the fast_searchtext criteria."""

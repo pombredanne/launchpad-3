@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'IProduct',
     'IProductSet',
-    'IProductLaunchpadUsageForm',
     ]
 
 from zope.schema import Bool, Choice, Int, Text, TextLine
@@ -17,9 +16,10 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, ProductBugTracker, Summary, Title, URIField)
 from canonical.launchpad.interfaces import (
-    IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
-    ISpecificationTarget, IHasSecurityContact, IKarmaContext,
-    PillarNameField, IHasLogo, IHasMugshot, IHasIcon, IHasBranchVisibilityPolicy)
+    IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy, IHasDrivers,
+    IHasIcon, IHasLogo, IHasMilestones, IHasMugshot, IHasOwner,
+    IHasSecurityContact, IKarmaContext, ISpecificationTarget,
+    PillarNameField)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
@@ -36,10 +36,11 @@ class ProductNameField(PillarNameField):
         return IProduct
 
 
-class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-               ISpecificationTarget, IHasSecurityContact, IKarmaContext,
-               IHasSprints, IHasMentoringOffers, IHasLogo, IHasMugshot,
-               IHasIcon, IHasBranchVisibilityPolicy, IHasTranslationGroup):
+class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
+               IHasDrivers, IHasIcon, IHasLogo, IHasMentoringOffers,
+               IHasMilestones, IHasMugshot, IHasOwner, IHasSecurityContact,
+               IHasSprints, IHasTranslationGroup, IKarmaContext,
+               ISpecificationTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -220,29 +221,22 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         If the product doesn't have a bug tracker specified, return the
         project bug tracker instead.
         """
-        
-    bugtracker = Choice(title=_('Bug Tracker'), required=False,
-        vocabulary='BugTracker',
-        description=_(
-            "The external bug tracker this project uses, if it is not "
-            "Launchpad."))
-            
-    official_answers = Bool(title=_('Uses Answers Officially'), 
-        required=True, description=_('Check this box to indicate that this '
-            'project officially uses Launchpad for community support.'))
-            
-    official_malone = Bool(title=_('Uses Bugs Officially'),
-        required=True, description=_('Check this box to indicate that '
-        'this application officially uses Launchpad for bug tracking '
-        'upstream. This will remove the caution presented when people '
-        'file bugs on the project here in Launchpad.'
-        ))
 
-    official_rosetta = Bool(title=_('Uses Translations Officially'),
-        required=True, description=_('Check this box to indicate that '
-        'this application officially uses Launchpad for upstream '
-        'translation. This will remove the caution presented when '
-        'people contribute translations for the project in Launchpad.'))
+    bugtracker = ProductBugTracker(
+        title=_('Bugs are tracked'),
+        vocabulary="BugTracker")
+
+    official_answers = Bool(
+        title=_('Let people use Launchpad Answers to ask questions'),
+        required=True)
+
+    official_malone = Bool(
+        title=_('Bugs in this project are tracked in Launchpad'),
+        required=True)
+
+    official_rosetta = Bool(
+        title=_('Translations for this project are done in Launchpad'),
+        required=True)
 
     sourcepackages = Attribute(_("List of packages for this product"))
 
@@ -266,13 +260,6 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     branches = Attribute(_("""An iterator over the Bazaar branches that are
     related to this product."""))
-
-    milestones = Attribute(_(
-        "The visible milestones associated with this product, "
-        "ordered by date expected."))
-    all_milestones = Attribute(_(
-        "All milestones associated with this product, ordered by "
-        "date expected."))
 
     bounties = Attribute(_("The bounties that are related to this product."))
 
@@ -302,11 +289,6 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     def getPackage(distroseries):
         """Return a package in that distroseries for this product."""
-
-    def getMilestone(name):
-        """Return a milestone with the given name for this product, or
-        None.
-        """
 
     def newSeries(owner, name, summary, branch=None):
         """Creates a new ProductSeries for this product."""
@@ -359,8 +341,24 @@ class IProductSet(Interface):
         Return the default value if there is no such product.
         """
 
-    def getProductsWithBranches():
-        """Return an iterator over all products that have branches."""
+    def getProductsWithBranches(num_products=None):
+        """Return an iterator over all products that have branches.
+
+        If num_products is not None, then the first `num_products` are
+        returned.
+        """
+
+    def getProductsWithUserDevelopmentBranches():
+        """Return products that have a user branch for the development series.
+
+        A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
+        """
+
+    def getProductsWithUserDevelopmentBranches():
+        """Return products that have a user branch for the development series.
+
+        A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
+        """
 
     def createProduct(owner, name, displayname, title, summary,
                       description, project=None, homepageurl=None,
@@ -430,15 +428,3 @@ class IProductSet(Interface):
         """Return the number of projects that have branches associated with
         them.
         """
-
-
-
-class IProductLaunchpadUsageForm(Interface):
-    """Form for indicating whether Rosetta, Answers, or Bugs is used."""
-
-    official_rosetta = IProduct['official_rosetta']
-    official_answers = IProduct['official_answers']
-    bugtracker = ProductBugTracker(
-        title=_('Bug Tracker'),
-        description=_('Where are bugs primarily tracked?'),
-        vocabulary="BugTracker")

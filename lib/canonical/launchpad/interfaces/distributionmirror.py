@@ -448,7 +448,7 @@ class IDistributionMirrorSet(Interface):
     def __getitem__(mirror_id):
         """Return the DistributionMirror with the given id."""
 
-    def getMirrorsToProbe(content_type, ignore_last_probe=False):
+    def getMirrorsToProbe(content_type, ignore_last_probe=False, limit=None):
         """Return all official mirrors with the given content type that need
         to be probed.
 
@@ -458,6 +458,10 @@ class IDistributionMirrorSet(Interface):
         If ignore_last_probe is True, then all official mirrors of the given
         content type will be probed even if they were probed in the last 
         PROBE_INTERVAL hours.
+
+        If limit is not None, then return at most limit mirrors, giving
+        precedence to never probed ones followed by the ones probed longest
+        ago.
         """
 
     def getBestMirrorsForCountry(country, mirror_type):
