@@ -315,7 +315,7 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getPendingAcceptancePPAs():
         """Return only pending acceptance PPAs in this distribution."""
 
-    def getPendingPublicationPPAs(distribution=None):
+    def getPendingPublicationPPAs():
         """Return only pending publication PPAs in this distribution."""
 
 

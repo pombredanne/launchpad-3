@@ -53,7 +53,7 @@ class ILibraryFileAlias(Interface):
     http_url = Attribute(_("The http URL to this file"))
     https_url = Attribute(_("The https URL to this file"))
 
-    def getURL(self):
+    def getURL():
         """Return this file's http or https URL.
 
         The generated URL will be https if the use_https config variable is
