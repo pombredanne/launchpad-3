@@ -33,16 +33,54 @@ isn't a bug contact, so no bugs are found for him:
     >>> found_bugtasks.count()
     0
 
-
-=== Product bug contact ===
+== Product bugs ==
 
 Firefox has a few bugs:
 
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_bugs = firefox.searchTasks(all_public)
-    >>> firefox_bugs.count() > 0
+    >>> firefox_public_bugs = firefox_bugs.count()
+    >>> firefox_public_bugs > 0
     True
+
+== Distribution and package bugs ==
+
+Ubuntu does too:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IDistributionSourcePackage)
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> all_public = BugTaskSearchParams(user=None)
+    >>> ubuntu_bugs = ubuntu.searchTasks(all_public)
+    >>> ubuntu_bugs.count() > 0
+    True
+
+and in particular, mozilla-firefox in Ubuntu has 'em:
+
+    >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+    >>> ubuntu_firefox_bugs = ubuntu_firefox.searchTasks(all_public)
+    >>> ubuntu_firefox_bugs.count() > 0
+    True
+
+== Dupes and Conjoined tasks ==
+
+You can set flags to omit duplicates:
+
+    >>> no_dupes = BugTaskSearchParams(user=None, omit_dupes=True)
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> sans_dupes = firefox.searchTasks(no_dupes)
+    >>> sans_dupes.count() < firefox_public_bugs
+    True
+
+and also conjoined bugs:
+
+    >>> no_conjoined = BugTaskSearchParams(user=None, omit_targeted=True)
+    >>> sans_conjoined = ubuntu.searchTasks(no_conjoined)
+    >>> sans_conjoined.count() < ubuntu_bugs
+    True
+
+=== Product bug contact ===
 
 If No Privileges is specified as Firefox' bug contact, searching for his
 bugs return all of Firefox' bugs.
@@ -65,18 +103,7 @@ bugs return all of Firefox' bugs.
 
 === Package bug contact ===
 
-Firefox in Ubuntu also has a few bugs:
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IDistributionSourcePackage)
-    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
-    >>> all_public = BugTaskSearchParams(user=None)
-    >>> ubuntu_firefox_bugs = ubuntu_firefox.searchTasks(all_public)
-    >>> ubuntu_firefox_bugs.count() > 0
-    True
-
-If No Privileges Person is added as a bug contact for this package,
+If No Privileges Person is added as a bug contact for mozilla-firefox,
 searching for his bugs returns all bugs in this package, as well as the
 previous bugs (since he is also a bug contact for the Firefox product).
 

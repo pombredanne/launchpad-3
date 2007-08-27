@@ -91,13 +91,8 @@ class MilestoneView(LaunchpadView):
         user = getUtility(ILaunchBag).user
         params = BugTaskSearchParams(user, milestone=self.context,
                     orderby=['-importance', 'datecreated', 'id'],
-                    omit_dupes=True)
-        tasks = getUtility(IBugTaskSet).search(params)
-        # Bug tasks that are explicitly targeted to a development focus series
-        # exist in a conjoined master-slave relationship. To prevent such bugs
-        # from appearing twice in the listing, we remove all bug tasks with a
-        # conjoined master:
-        return [task for task in tasks if task.conjoined_master is None]
+                    omit_dupes=True, omit_targeted=True)
+        return list(getUtility(IBugTaskSet).search(params))
 
     @property
     def is_project_milestone(self):
@@ -127,3 +122,4 @@ class MilestoneEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect('../..')
+
