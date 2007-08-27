@@ -151,6 +151,75 @@ empty.
   ...This branch is empty...
 
 
+== Branch Details ==
+
+The branch page includes a table of details about the branch. The exact details
+vary from branch type to branch type.
+
+For hosted branches, the table has a link to the branch's project and the URL
+for the branch's canonical location.
+
+  >>> def get_branch_details_table():
+  ...     table = find_tag_by_id(browser.contents, 'branch-details-table')
+  ...     return table.tbody
+
+  >>> browser.open(
+  ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
+  >>> print extract_text(get_branch_details_table())
+  Project: GNOME Terminal
+  Hosted on Launchpad: http://bazaar.launchpad.dev/~name12/gnome-terminal/scanned
+
+
+For mirrored branches, the table has a link to the branch's project, the
+location of the original branch, the mirror on Launchpad, information about
+when the branch was last mirrored and when it will be mirrored again.
+
+  >>> browser.open(
+  ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+  >>> print extract_text(get_branch_details_table())
+  Project: GNOME Terminal
+  Location: http://trekkies.example.com/gnome-terminal/klingon
+  Mirror: http://bazaar.launchpad.dev/~name12/gnome-terminal/klingon
+  Next mirror: As soon as possible
+
+
+Branches that have never been mirrored don't have a 'Last mirrored' field.
+
+  >>> browser.open(
+  ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
+  >>> print extract_text(get_branch_details_table())
+  Project: GNOME Terminal
+  Location: http://example.com/gnome-terminal/main
+  Mirror: http://bazaar.launchpad.dev/~name12/gnome-terminal/main
+  Next mirror: As soon as possible
+
+
+If mirror_request_time is NULL, then mirroring of the branch is disabled.
+
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.ftests import login, logout
+  >>> from canonical.database.sqlbase import flush_database_updates
+  >>> from canonical.launchpad.interfaces import (
+  ...     BranchType, IBranchSet, IPersonSet)
+  >>> login('no-priv@canonical.com')
+  >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+  >>> branch = getUtility(IBranchSet).new(
+  ...     BranchType.MIRRORED, name='mirror-disabled', creator=no_priv,
+  ...     owner=no_priv, product=None, url='http://example.com/disabled',
+  ...     title='Disabled branch')
+  >>> branch.mirror_request_time = None
+  >>> flush_database_updates()
+  >>> logout()
+
+
+  >>> browser.open(
+  ...     'http://code.launchpad.dev/~no-priv/+junk/mirror-disabled')
+  >>> print extract_text(get_branch_details_table())
+  Location: http://example.com/disabled
+  Mirror: http://bazaar.launchpad.dev/~no-priv/+junk/mirror-disabled
+  Next mirror: Disabled
+
+
 == Structural object presentation ==
 
 The structural object presentation of a branch is the heading that appears

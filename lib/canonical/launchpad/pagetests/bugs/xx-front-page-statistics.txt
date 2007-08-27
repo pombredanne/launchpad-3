@@ -12,7 +12,7 @@ The Bugs front page shows some statistics:
   >>> for text in statistics.findAll(text=True):
   ...     if text.strip():
   ...         print text
-  12
+  13
    bugs reported across
   7
    projects

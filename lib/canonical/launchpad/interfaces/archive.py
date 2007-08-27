@@ -110,8 +110,8 @@ class IArchiveSet(Interface):
         If purpose is ArchivePurpose.PPA, owner must be set.
         """
 
-    def ensure(owner, distribution, purpose):
-        """Ensure the owner has an valid archive."""
+    def ensure(owner, distribution, purpose, description):
+        """Ensure the owner has a valid archive."""
 
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
