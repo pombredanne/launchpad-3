@@ -21,7 +21,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchType, IBranchSet, IPersonSet, IProductSet)
+    BranchCreationForbidden, BranchType, IBranchSet, IPersonSet, IProductSet,
+    UnknownBranchTypeError)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.database.sqlbase import clear_current_connection_cache
 
@@ -33,10 +34,6 @@ from twisted.internet.threads import deferToThread
 from twisted.python.util import mergeFunctionMetadata
 
 UTC = pytz.timezone('UTC')
-
-
-class UnknownBranchTypeError(Exception):
-    """Raised when the user specifies an unrecognized branch type."""
 
 
 def utf8(x):

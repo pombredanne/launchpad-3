@@ -24,7 +24,8 @@ from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces import (
-    BranchType, IBranchSet, IPersonSet, IProductSet, PersonCreationRationale)
+    BranchType, IBranchSet, IPersonSet, IProductSet, PersonCreationRationale,
+    UnknownBranchTypeError)
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.tests.test_twisted import TwistedTestCase
@@ -174,7 +175,8 @@ class BranchTestCase(BzrlibTestCase):
         elif branch_type == BranchType.MIRRORED:
             url = self.getUniqueURL()
         else:
-            assert "Should not get here"
+            raise UnknownBranchTypeError(
+                'Unrecognized branch type: %r' % (branch_type,))
         return self.branch_set.new(
             branch_type, branch_name, owner, owner, product, url)
 

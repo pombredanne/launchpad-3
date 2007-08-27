@@ -18,6 +18,7 @@ __all__ = [
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchLifecycleFilter',
+    'UnknownBranchTypeError'
     ]
 
 from zope.interface import Interface, Attribute
@@ -144,6 +145,10 @@ class BranchCreationException(Exception):
 
 class CannotDeleteBranch(Exception):
     """The branch cannot be deleted at this time."""
+
+
+class UnknownBranchTypeError(Exception):
+    """Raised when the user specifies an unrecognized branch type."""
 
 
 class BranchCreationForbidden(BranchCreationException):
