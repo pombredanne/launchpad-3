@@ -43,7 +43,7 @@ from canonical.launchpad.interfaces import (
     IShipItReport, IShipItReportSet, ShipItConstants, ILibraryFileAliasSet,
     SOFT_MAX_SHIPPINGRUN_SIZE, MAX_CDS_FOR_UNTRUSTED_PEOPLE,
     ShipItDistroSeries, ShipItArchitecture, ShipItFlavour,
-    ShippingService, ShippingRequestStatus)
+    ShippingService, ShippingRequestStatus, ShippingRequestType)
 from canonical.launchpad.database.country import Country
 
 
@@ -65,6 +65,7 @@ class ShippingRequest(SQLBase):
     shockandawe = ForeignKey(dbName='shockandawe', foreignKey='ShockAndAwe',
                              default=None)
 
+    type = EnumCol(enum=ShippingRequestType, default=None)
     status = EnumCol(
         enum=ShippingRequestStatus, notNull=True,
         default=ShippingRequestStatus.PENDING)
@@ -213,14 +214,6 @@ class ShippingRequest(SQLBase):
                     requested_cds.quantityapproved = quantity
                 if set_requested:
                     requested_cds.quantity = quantity
-
-    def isCustom(self):
-        """See IShippingRequest"""
-        requested_cds = self.getAllRequestedCDs()
-        for flavour in ShipItFlavour.items:
-            if self.containsCustomQuantitiesOfFlavour(flavour):
-                return True
-        return False
 
     def containsCustomQuantitiesOfFlavour(self, flavour):
         """See IShippingRequest"""
