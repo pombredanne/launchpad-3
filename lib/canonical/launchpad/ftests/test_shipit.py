@@ -4,7 +4,7 @@ __metaclass__ = type
 
 import unittest
 
-from zope.component import getMultiAdapter
+from zope.component import getMultiAdapter, getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
@@ -16,8 +16,9 @@ from canonical.launchpad.database import (
 from canonical.launchpad.layers import (
     setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
 from canonical.launchpad.interfaces import (
-    ShipItDistroSeries, ShipItFlavour, ShippingRequestPriority,
-    ShippingRequestStatus)
+    ICountrySet, IPersonSet, ShipItArchitecture, ShipItDistroSeries,
+    ShipItFlavour, ShippingRequestPriority, ShippingRequestStatus,
+    ShippingRequestType)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 
@@ -210,6 +211,61 @@ class TestShippingRequest(LaunchpadFunctionalTestCase):
     def setUp(self):
         self.requestset = ShippingRequestSet()
         LaunchpadFunctionalTestCase.setUp(self)
+
+    def _get_standard_option(self, flavour):
+        return StandardShipItRequest.selectBy(flavour=flavour)[0]
+
+    def _createRequest(self):
+        sample_person = getUtility(IPersonSet).getByName('name12')
+        brazil = getUtility(ICountrySet)['BR']
+        city = 'Sao Carlos'
+        addressline1 = 'Antonio Rodrigues Cajado 1506'
+        name = 'Guilherme Salgado'
+        phone = '+551635015218'
+        request = self.requestset.new(
+            sample_person, name, brazil, city, addressline1, phone)
+        return request
+
+    def test_type_tracking_for_unapproved_requests(self):
+        """Unapproved requests can be standard or custom, depending on the
+        number of requested CDs.
+        """
+        UBUNTU = ShipItFlavour.UBUNTU
+        template = self._get_standard_option(UBUNTU)
+        request = self._createRequest()
+        # If we use the quantities of one of our standard templates, the
+        # request will be considered standard.
+        quantities = template.quantities
+        request.setRequestedQuantities({UBUNTU: quantities})
+        self.failUnlessEqual(request.type, ShippingRequestType.STANDARD)
+
+        # If the quantities don't match the quantities of one of our standard
+        # templates, though, the request is marked as custom.
+        quantities[ShipItArchitecture.X86] += 1
+        request.setRequestedQuantities({UBUNTU: quantities})
+        self.failUnlessEqual(request.type, ShippingRequestType.CUSTOM)
+
+    def test_type_tracking_for_approved_requests(self):
+        """Approved (including shipped) requests can be standard or custom,
+        depending on the number of approved CDs.
+        """
+        UBUNTU = ShipItFlavour.UBUNTU
+        template = self._get_standard_option(UBUNTU)
+        request = self._createRequest()
+        # If we use the quantities of one of our standard templates, the
+        # request will be considered standard.
+        quantities = template.quantities
+        request.approve()
+        request.setQuantities({UBUNTU: quantities})
+        self.failUnlessEqual(
+            request.getTotalApprovedCDs(), request.getTotalCDs())
+        self.failUnlessEqual(request.type, ShippingRequestType.STANDARD)
+
+        # If the approved CDs don't match the quantities of one of our
+        # standard templates, though, the request is marked as custom.
+        quantities[ShipItArchitecture.X86] += 1
+        request.setApprovedQuantities({UBUNTU: quantities})
+        self.failUnlessEqual(request.type, ShippingRequestType.CUSTOM)
 
     def test_recipient_email_for_users(self):
         # If a user is active, its requests will have his preferred email as
