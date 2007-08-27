@@ -22,7 +22,7 @@ export LPCONFIG=lpnet1
 cd  /srv/launchpad.net/production/launchpad/cronscripts
 
 LOCK=/var/lock/smrewrite.lock
-MAP=/tmp/new-sm-map
+MAP=/srv/launchpad.net/var/new-sm-map
 
 lockfile -l 600 ${LOCK}
 
