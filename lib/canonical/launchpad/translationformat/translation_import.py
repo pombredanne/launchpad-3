@@ -30,6 +30,7 @@ from canonical.lp.dbschema import (
 
 importers = {
     TranslationFileFormat.KDEPO: KdePoImporter(),
+    TranslationFileFormat.PO: GettextPoImporter(),
     TranslationFileFormat.XPI: MozillaXpiImporter(),
     }
 

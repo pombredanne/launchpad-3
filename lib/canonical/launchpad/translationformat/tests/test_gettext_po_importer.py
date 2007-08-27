@@ -78,10 +78,10 @@ class GettextPoImporterTestCase(unittest.TestCase):
 
     def testFormat(self):
         """Check whether GettextPoImporter say that handles PO file format."""
+        format = self.template_importer.format(test_template)
         self.failUnless(
-            self.template_importer.format == TranslationFileFormat.PO,
-            'GettextPoImporter format expected PO but got %s' % (
-                self.template_importer.format.name))
+            format == TranslationFileFormat.PO,
+            'GettextPoImporter format expected PO but got %s' % format.name)
 
     def testGetLastTranslator(self):
         """Tests whether we extract last translator information correctly."""

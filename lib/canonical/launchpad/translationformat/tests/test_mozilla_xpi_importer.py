@@ -59,10 +59,10 @@ class MozillaXpiImporterTestCase(unittest.TestCase):
 
     def testFormat(self):
         """Check that MozillaXpiImporter handles the XPI file format."""
+        format = self.template_importer.format('')
         self.failUnless(
-            self.template_importer.format == TranslationFileFormat.XPI,
-            'MozillaXpiImporter format expected XPI but got %s' % (
-                self.template_importer.format.name))
+            format == TranslationFileFormat.XPI,
+            'MozillaXpiImporter format expected XPI but got %s' % format.name)
 
     def testGetLastTranslator(self):
         """Tests whether we extract last translator information correctly."""

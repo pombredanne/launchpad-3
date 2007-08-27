@@ -74,6 +74,13 @@ class TranslationImporterTestCase(unittest.TestCase):
         self.failUnless(po_format_importer is not None, (
             'There is no importer for PO file format!'))
 
+        kdepo_format_importer = (
+            self.translation_importer.getTranslationFormatImporter(
+                TranslationFileFormat.KDEPO))
+
+        self.failUnless(kdepo_format_importer is not None, (
+            'There is no importer for KDE PO file format!'))
+
         xpi_format_importer = (
             self.translation_importer.getTranslationFormatImporter(
                 TranslationFileFormat.XPI))

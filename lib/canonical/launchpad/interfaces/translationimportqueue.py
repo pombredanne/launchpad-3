@@ -4,7 +4,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, TextLine, Datetime, Field
 
 from canonical.launchpad import _
-from canonical.lp.dbschema import RosettaImportStatus
+from canonical.lp.dbschema import RosettaImportStatus, TranslationFileFormat
 
 __metaclass__ = type
 
@@ -66,6 +66,11 @@ class ITranslationImportQueueEntry(Interface):
     content = Attribute(
         "An ILibraryFileAlias reference with the file content. Must be not"
         " None.")
+
+    format = Choice(
+        title=_("The file format of the import."),
+        values=TranslationFileFormat.items,
+        required=True)
 
     status = Choice(
         title=_("The status of the import."),
