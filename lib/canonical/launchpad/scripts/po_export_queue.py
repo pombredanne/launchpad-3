@@ -18,9 +18,20 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IPOExportRequestSet, ITranslationExporter,
-    ITranslationFile)
+    ILibraryFileAliasSet, IPOExportRequestSet, IPOTemplate,
+    ITranslationExporter, ITranslationFile)
 from canonical.launchpad.mail import simple_sendmail
+
+
+def get_template(obj):
+    """Determine translation template that obj relates to.
+
+    :param obj: a translation file or translation template object.  If obj is
+        a template, then obj itself is returned.
+    """
+    if IPOTemplate.providedBy(obj):
+        return obj
+    return obj.potemplate
 
 
 class ExportResult:
@@ -176,7 +187,7 @@ class ExportResult:
         self.successes.append(name)
 
 
-def process_request(potemplate, person, objects, format, logger):
+def process_request(person, objects, format, logger):
     """Process a request for an export of Launchpad translation files.
 
     After processing the request a notification email is sent to the requester
@@ -190,7 +201,14 @@ def process_request(potemplate, person, objects, format, logger):
 
     result = ExportResult('XXX')
     translation_file_list = []
+    last_template_name = None
     for obj in objects:
+        template_name = get_template(obj).displayname
+        if template_name != last_template_name:
+            logger.debug(
+                'Exporting objects for %s, related to template %s'
+                % (person.displayname, template_name))
+            last_template_name = template_name
         translation_file_list.append(ITranslationFile(obj))
 
     try:
@@ -222,8 +240,7 @@ def process_request(potemplate, person, objects, format, logger):
             # filename.
             assert exported_file.file_extension, (
                 'File extension must have a value!.')
-            exported_path = 'launchpad-%s.%s' % (
-                potemplate.potemplatename.translationdomain,
+            exported_path = 'launchpad-export.%s' % (
                 exported_file.file_extension)
         else:
             # Convert the path to a single file name so it's noted in
@@ -248,6 +265,7 @@ def process_request(potemplate, person, objects, format, logger):
 
     result.notify(person)
 
+
 def process_queue(transaction_manager, logger):
     """Process each request in the translation export queue.
 
@@ -256,18 +274,12 @@ def process_queue(transaction_manager, logger):
     """
     request_set = getUtility(IPOExportRequestSet)
 
-    while True:
-        request = request_set.popRequest()
-
-        if request is None:
-            return
-
-        person, potemplate, objects, format = request
-        logger.debug('Exporting objects for %s, related to template %s' % (
-            person.displayname, potemplate.displayname))
+    request = request_set.popRequest()
+    while request is not None:
+        person, objects, format = request
 
         try:
-            process_request(potemplate, person, objects, format, logger)
+            process_request(person, objects, format, logger)
         except psycopg.Error:
             # We had a DB error, we don't try to recover it here, just exit
             # from the script and next run will retry the export.
@@ -284,3 +296,4 @@ def process_queue(transaction_manager, logger):
         # because files are not accessible in the same transaction as they're
         # created.
         transaction_manager.commit()
+        request = request_set.popRequest()

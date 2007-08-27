@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd. All rights reserved.
+# Copyright 2007 Canonical Ltd. All rights reserved.
 
 __metaclass__ = type
 
@@ -13,11 +13,12 @@ class IPOExportRequestSet(Interface):
         title=u'Number of entries waiting in the queue.',
         required=True, readonly=True)
 
-    def addRequest(person, potemplate=None, pofiles=None,
+    def addRequest(person, potemplates=None, pofiles=None,
                    format=TranslationFileFormat.PO):
         """Add a request to export a set of files.
 
-        :param potemplate: The PO template to export, or `None`.
+        :param potemplates: PO template or list of PO templates to export, or
+            `None`.
         :param pofiles: A list of PO files to export.
         """
 
