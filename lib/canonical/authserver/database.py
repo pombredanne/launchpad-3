@@ -35,6 +35,10 @@ from twisted.python.util import mergeFunctionMetadata
 UTC = pytz.timezone('UTC')
 
 
+class UnknownBranchTypeError(Exception):
+    """Raised when the user specifies an unrecognized branch type."""
+
+
 def utf8(x):
     if isinstance(x, unicode):
         x = x.encode('utf-8')
@@ -439,8 +443,6 @@ class DatabaseBranchDetailsStorage:
 
     def getBranchPullQueue(self, branch_type):
         """See `IBranchDetailsStorage`."""
-        if branch_type == '':
-            branch_type = None
         return deferToThread(self._getBranchPullQueueInteraction, branch_type)
 
     @read_only_transaction
@@ -449,7 +451,11 @@ class DatabaseBranchDetailsStorage:
 
         See `IBranchDetailsStorage`.
         """
-        branch_type = BranchType.items[branch_type]
+        try:
+            branch_type = BranchType.items[branch_type]
+        except KeyError:
+            raise UnknownBranchTypeError(
+                'Unknown branch type: %r' % (branch_type,))
         branches = getUtility(IBranchSet).getPullQueue(branch_type)
         return [self._getBranchPullInfo(branch) for branch in branches]
 

@@ -8,7 +8,6 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)
-from canonical.launchpad.interfaces import BranchType
 
 
 class JobManager:
@@ -24,10 +23,6 @@ class JobManager:
         self.branch_type = branch_type
         self.name = 'branch-puller-%s' % branch_type.name.lower()
         self.lockfilename = '/var/lock/launchpad-%s.lock' % self.name
-
-    def add(self, branch_to_mirror):
-        """Add a branch to mirror to the JobManager."""
-        self.branches_to_mirror.append(branch_to_mirror)
 
     def run(self, logger):
         """Run all branches_to_mirror registered with the JobManager"""
@@ -48,7 +43,7 @@ class JobManager:
             branch = BranchToMirror(
                 branch_src, branch_dest, branch_status_client, branch_id,
                 unique_name)
-            self.add(branch)
+            self.branches_to_mirror.append(branch)
 
     def lock(self):
         self.actualLock = GlobalLock(self.lockfilename)

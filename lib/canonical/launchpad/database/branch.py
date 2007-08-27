@@ -928,4 +928,4 @@ class BranchSet:
         return Branch.select(
             AND(Branch.q.branch_type == branch_type,
                 Branch.q.mirror_request_time < UTC_NOW),
-            prejoins=['owner', 'product']).orderBy('mirror_request_time')
+            prejoins=['owner', 'product'], orderBy='mirror_request_time')

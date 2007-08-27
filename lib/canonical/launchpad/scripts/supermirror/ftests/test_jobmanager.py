@@ -50,12 +50,6 @@ class TestJobManager(unittest.TestCase):
         manager.addBranches(fakeclient)
         self.assertEqual([expected_branch], manager.branches_to_mirror)
 
-    def testAddJobManager(self):
-        manager = jobmanager.JobManager(BranchType.HOSTED)
-        manager.add(BranchToMirror(None, None, None, None, None))
-        manager.add(BranchToMirror(None, None, None, None, None))
-        self.assertEqual(len(manager.branches_to_mirror), 2)
-
     def testManagerCreatesLocks(self):
         try:
             manager = jobmanager.JobManager(BranchType.HOSTED)
@@ -158,31 +152,20 @@ class TestJobManagerInLaunchpad(unittest.TestCase):
         self.assertEqual(len(manager.branches_to_mirror), 0)
 
         client = BranchStatusClient()
-        brancha = self._makeBranch("brancha", 1, client)
-        manager.add(brancha)
+        branches = [
+            self._makeBranch("brancha", 1, client),
+            self._makeBranch("branchb", 2, client),
+            self._makeBranch("branchc", 3, client),
+            self._makeBranch("branchd", 4, client),
+            self._makeBranch("branche", 5, client)]
 
-        branchb = self._makeBranch("branchb", 2, client)
-        manager.add(branchb)
-
-        branchc = self._makeBranch("branchc", 3, client)
-        manager.add(branchc)
-
-        branchd = self._makeBranch("branchd", 4, client)
-        manager.add(branchd)
-
-        branche = self._makeBranch("branche", 5, client)
-        manager.add(branche)
-
-        self.assertEqual(len(manager.branches_to_mirror), 5)
+        manager.branches_to_mirror.extend(branches)
 
         manager.run(logging.getLogger())
 
         self.assertEqual(len(manager.branches_to_mirror), 0)
-        self.assertMirrored(brancha)
-        self.assertMirrored(branchb)
-        self.assertMirrored(branchc)
-        self.assertMirrored(branchd)
-        self.assertMirrored(branche)
+        for branch in branches:
+            self.assertMirrored(branch)
 
     def _makeBranch(self, relativedir, target, branch_status_client,
                     unique_name=None):

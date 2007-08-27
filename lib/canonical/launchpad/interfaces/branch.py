@@ -786,7 +786,10 @@ class IBranchSet(Interface):
         """
 
     def getPullQueue(branch_type):
-        """Return a queue of branches to mirror using the puller."""
+        """Return a queue of branches to mirror using the puller.
+
+        :param branch_type: A value from the `BranchType` enum.
+        """
 
 
 class IBranchDelta(Interface):

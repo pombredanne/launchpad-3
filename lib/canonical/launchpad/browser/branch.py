@@ -24,12 +24,8 @@ import cgi
 from datetime import datetime, timedelta
 import pytz
 
-from zope.app.form.browser.widget import BrowserWidget, renderElement
-from zope.app.form.browser import UnicodeDisplayWidget
-from zope.app.form.interfaces import IDisplayWidget
 from zope.event import notify
 from zope.component import getUtility
-from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config

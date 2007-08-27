@@ -13,7 +13,6 @@ import transaction
 
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet

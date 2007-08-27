@@ -1,5 +1,4 @@
 import logging
-from StringIO import StringIO
 import unittest
 
 from canonical.launchpad.scripts.supermirror import mirror

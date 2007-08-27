@@ -14,8 +14,7 @@ import unittest
 import urllib2
 
 import bzrlib.branch
-import bzrlib.bzrdir
-import bzrlib.errors
+from bzrlib import bzrdir
 from bzrlib.revision import NULL_REVISION
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 from bzrlib.tests.repository_implementations.test_repository import (
@@ -97,7 +96,7 @@ class TestBranchToMirror(unittest.TestCase):
 
         # create empty source branch
         os.makedirs(srcbranchdir)
-        tree = bzrlib.bzrdir.BzrDir.create_standalone_workingtree(srcbranchdir)
+        tree = bzrdir.BzrDir.create_standalone_workingtree(srcbranchdir)
         
         to_mirror.mirror(logging.getLogger())
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
@@ -138,27 +137,27 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
     def testMirrorKnitAsKnit(self):
         # Create a source branch in knit format, and check that the mirror is in
         # knit format.
-        self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
+        self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
         self.repository_format = bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
         self._testMirrorFormat()
 
     def testMirrorMetaweaveAsMetaweave(self):
         # Create a source branch in metaweave format, and check that the mirror
         # is in metaweave format.
-        self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
+        self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
         self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
         self._testMirrorFormat()
 
     def testMirrorWeaveAsWeave(self):
         # Create a source branch in weave format, and check that the mirror is
         # in weave format.
-        self.bzrdir_format = bzrlib.bzrdir.BzrDirFormat6()
+        self.bzrdir_format = bzrdir.BzrDirFormat6()
         self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat6()
         self._testMirrorFormat()
 
     def testSourceFormatChange(self):
         # Create and mirror a branch in weave format.
-        self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
+        self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
         self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
         self._createSourceBranch()
         self._mirror()
@@ -261,7 +260,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
     def testMissingFileRevisionData(self):
         self.build_tree(['missingrevision/',
                          'missingrevision/afile'])
-        tree = bzrlib.bzrdir.BzrDir.create_standalone_workingtree(
+        tree = bzrdir.BzrDir.create_standalone_workingtree(
             'missingrevision')
         tree.add(['afile'], ['myid'])
         tree.commit('start')

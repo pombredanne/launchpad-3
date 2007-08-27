@@ -6,6 +6,7 @@ import _pythonpath
 from optparse import OptionParser
 
 from canonical.config import config
+from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts import logger_options, logger
 from canonical.launchpad.scripts.supermirror import mirror, jobmanager
 
@@ -53,7 +54,8 @@ if __name__ == '__main__':
         branch_type = branch_type_map[which]
     except KeyError:
         parser.error(
-            'Expected on of %s, but got: %r' % (branch_type_map.keys(), which))
+            'Expected one of %s, but got: %r'
+            % (branch_type_map.keys(), which))
 
     errorreports = getattr(config.supermirror, '%s_errorreports' % (which,))
     manager = jobmanager.JobManager(branch_type)

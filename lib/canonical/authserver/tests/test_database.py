@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 
-import os
 import unittest
 import datetime
 
@@ -16,14 +15,12 @@ from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.tests.helpers import BranchTestCase
-from canonical.config import config
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.interfaces import (
     BranchType, EmailAddressStatus, IBranchSet, IEmailAddressSet, IPersonSet,
     IProductSet, IWikiNameSet)
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 
@@ -825,25 +822,24 @@ class BranchPullQueueTest(BranchTestCase):
         """
         self.assertBranchQueues([], [], [])
 
-    def test_requestMirrorPutsBranchInQueue_hosted(self):
+    def makeBranchAndRequestMirror(self, branch_type):
+        """Make a branch of the given type and call requestMirror on it."""
         transaction.begin()
-        branch = self.makeBranch(BranchType.HOSTED)
+        branch = self.makeBranch(branch_type)
         branch.requestMirror()
         transaction.commit()
+        return branch
+
+    def test_requestMirrorPutsBranchInQueue_hosted(self):
+        branch = self.makeBranchAndRequestMirror(BranchType.HOSTED)
         self.assertBranchQueues([branch], [], [])
 
     def test_requestMirrorPutsBranchInQueue_mirrored(self):
-        transaction.begin()
-        branch = self.makeBranch(BranchType.MIRRORED)
-        branch.requestMirror()
-        transaction.commit()
+        branch = self.makeBranchAndRequestMirror(BranchType.MIRRORED)
         self.assertBranchQueues([], [branch], [])
 
     def test_requestMirrorPutsBranchInQueue_imported(self):
-        transaction.begin()
-        branch = self.makeBranch(BranchType.IMPORTED)
-        branch.requestMirror()
-        transaction.commit()
+        branch = self.makeBranchAndRequestMirror(BranchType.IMPORTED)
         self.assertBranchQueues([], [], [branch])
 
 
