@@ -11,7 +11,7 @@ from canonical.launchpad.database import ShippingRequest
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
 from canonical.launchpad.interfaces import (
-    ShipItDistroSeries, ShippingRequestType)
+    ShipItDistroSeries, ShipItFlavour, ShippingRequestType)
 
 
 execute_zcml_for_scripts()
@@ -29,7 +29,12 @@ while True:
     if requests.count() == 0:
         break
     for request in requests:
-        if request.isCustom():
+        requested_cds = request.getAllRequestedCDs()
+        is_custom = False
+        for flavour in ShipItFlavour.items:
+            if request.containsCustomQuantitiesOfFlavour(flavour):
+                is_custom = True
+        if is_custom:
             request.type = ShippingRequestType.CUSTOM
             print "Updated type of request #%d to CUSTOM" % request.id
         else:

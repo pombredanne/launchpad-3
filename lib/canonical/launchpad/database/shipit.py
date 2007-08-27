@@ -215,14 +215,6 @@ class ShippingRequest(SQLBase):
                 if set_requested:
                     requested_cds.quantity = quantity
 
-    def isCustom(self):
-        """See IShippingRequest"""
-        requested_cds = self.getAllRequestedCDs()
-        for flavour in ShipItFlavour.items:
-            if self.containsCustomQuantitiesOfFlavour(flavour):
-                return True
-        return False
-
     def containsCustomQuantitiesOfFlavour(self, flavour):
         """See IShippingRequest"""
         quantities = self.getQuantitiesOfFlavour(flavour)

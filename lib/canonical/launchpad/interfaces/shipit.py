@@ -357,11 +357,6 @@ class IShippingRequest(Interface):
         requested CDs of that flavour on this request is greater than 0.
         """
 
-    def isCustom():
-        """Return True if this order contains custom quantities of CDs of any
-        flavour.
-        """
-
     def getAllRequestedCDs():
         """Return all RequestedCDs of this ShippingRequest."""
 
