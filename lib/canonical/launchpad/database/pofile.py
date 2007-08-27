@@ -1303,31 +1303,36 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return self.emptySelectResults()
 
-
     def hasMessageID(self, msgid):
         """See `IPOFile`."""
         raise NotImplementedError
 
-    def currentCount(self):
+    def currentCount(self, language=None):
+        """See `IRosettaStats`."""
         return 0
 
-    def rosettaCount(self):
+    def rosettaCount(self, language=None):
+        """See `IRosettaStats`."""
         return 0
 
-    def updatesCount(self):
+    def updatesCount(self, language=None):
+        """See `IRosettaStats`."""
         return 0
 
-    def unreviewedCount(self):
+    def unreviewedCount(self, language=None):
         """See `IPOFile`."""
         return 0
 
-    def nonUpdatesCount(self):
+    def nonUpdatesCount(self, language=None):
+        """See `IRosettaStats`."""
         return 0
 
-    def translatedCount(self):
+    def translatedCount(self, language=None):
+        """See `IRosettaStats`."""
         return 0
 
-    def untranslatedCount(self):
+    def untranslatedCount(self, language=None):
+        """See `IRosettaStats`."""
         return self.messageCount()
 
     @property
@@ -1335,22 +1340,28 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return 0
 
-    def currentPercentage(self):
+    def currentPercentage(self, language=None):
+        """See `IRosettaStats`."""
         return 0.0
 
-    def rosettaPercentage(self):
+    def rosettaPercentage(self, language=None):
+        """See `IRosettaStats`."""
         return 0.0
 
-    def updatesPercentage(self):
+    def updatesPercentage(self, language=None):
+        """See `IRosettaStats`."""
         return 0.0
 
-    def nonUpdatesPercentage(self):
+    def nonUpdatesPercentage(self, language=None):
+        """See `IRosettaStats`."""
         return 0.0
 
-    def translatedPercentage(self):
+    def translatedPercentage(self, language=None):
+        """See `IRosettaStats`."""
         return 0.0
 
-    def untranslatedPercentage(self):
+    def untranslatedPercentage(self, language=None):
+        """See `IRosettaStats`."""
         return 100.0
 
     def validExportCache(self):

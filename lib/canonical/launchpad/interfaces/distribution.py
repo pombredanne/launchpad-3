@@ -199,8 +199,8 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         title=_('Distribution Main Archive.'), readonly=True, schema=IArchive
         )
 
-    def all_distro_archives():
-        """Return all non-PPA archives."""
+    all_distro_archives = Attribute(
+        "A sequence of the distribution's non-PPA IArchives.")
 
     def __getitem__(name):
         """Returns a DistroSeries that matches name, or raises and

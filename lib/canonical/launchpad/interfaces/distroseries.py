@@ -431,15 +431,15 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
           in the initialisation of a derivative.
         """
 
-    def copyMissingTranslationsFromParent(ztm=None):
+    def copyMissingTranslationsFromParent(ztm):
         """Copy any translation done in parent that we lack.
 
         If there is another translation already added to this one, we ignore
         the one from parent.
 
-        If a transaction manager ztm is passed, it may be used for
-        intermediate commits to break up large copying jobs into palatable
-        smaller chunks.
+        The supplied transaction manager will be used for intermediate
+        commits to break up large copying jobs into palatable smaller
+        chunks.
         """
 
 class IDistroSeriesSet(Interface):
