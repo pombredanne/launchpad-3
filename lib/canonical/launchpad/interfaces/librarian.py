@@ -115,7 +115,7 @@ class ILibraryFileAliasSet(Interface):
         from the Librarian at this time. See LibrarianGarbageCollection.
         """
 
-    def __getitem__(self, key):
+    def __getitem__(key):
         """Lookup an ILibraryFileAlias by id."""
     
     def findBySHA1(sha1):
