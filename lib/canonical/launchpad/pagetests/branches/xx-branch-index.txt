@@ -167,7 +167,7 @@ for the branch's canonical location.
   ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
   >>> print extract_text(get_branch_details_table())
   Project: GNOME Terminal
-  Hosted on Launchpad: http://bazaar.launchpad.net/~name12/gnome-terminal/scanned
+  Hosted on Launchpad: http://bazaar.launchpad.dev/~name12/gnome-terminal/scanned
 
 
 For mirrored branches, the table has a link to the branch's project, the
@@ -179,8 +179,7 @@ when the branch was last mirrored and when it will be mirrored again.
   >>> print extract_text(get_branch_details_table())
   Project: GNOME Terminal
   Location: http://trekkies.example.com/gnome-terminal/klingon
-  Mirror: http://bazaar.launchpad.net/~name12/gnome-terminal/klingon
-  Last mirrored: ...
+  Mirror: http://bazaar.launchpad.dev/~name12/gnome-terminal/klingon
   Next mirror: As soon as possible
 
 
@@ -191,7 +190,7 @@ Branches that have never been mirrored don't have a 'Last mirrored' field.
   >>> print extract_text(get_branch_details_table())
   Project: GNOME Terminal
   Location: http://example.com/gnome-terminal/main
-  Mirror: http://bazaar.launchpad.net/~name12/gnome-terminal/main
+  Mirror: http://bazaar.launchpad.dev/~name12/gnome-terminal/main
   Next mirror: As soon as possible
 
 
@@ -217,7 +216,7 @@ If mirror_request_time is NULL, then mirroring of the branch is disabled.
   ...     'http://code.launchpad.dev/~no-priv/+junk/mirror-disabled')
   >>> print extract_text(get_branch_details_table())
   Location: http://example.com/disabled
-  Mirror: http://bazaar.launchpad.net/~no-priv/+junk/mirror-disabled
+  Mirror: http://bazaar.launchpad.dev/~no-priv/+junk/mirror-disabled
   Next mirror: Disabled
 
 
