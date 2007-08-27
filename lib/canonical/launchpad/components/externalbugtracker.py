@@ -795,6 +795,8 @@ class Trac(ExternalBugTracker):
             # (correctly) return an HTTP 500 if CSV exports are not available,
             # but we check the returned data's content type if the server
             # gives us an HTTP 200, just in case.
+            # We use ticket #1 here because it's more-or-less guaranteed to
+            # exist as long as the Trac instance has any tickets at all.
             http_data = self.urlopen(
                 "%s/%s" % (self.baseurl, self.ticket_url % 1))
             return http_data.headers.subtype == 'csv'
