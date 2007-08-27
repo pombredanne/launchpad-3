@@ -23,8 +23,9 @@ from zope.publisher.browser import FileUpload
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.pomsgset import (
     BaseTranslationView, POMsgSetView)
+from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.potemplate import (
-    BaseExportView, POTemplateSOP, POTemplateFacets)
+    POTemplateSOP, POTemplateFacets)
 from canonical.launchpad.interfaces import (
     IPOFile, ITranslationImporter, ITranslationImportQueue,
     UnexpectedFormData, NotFoundError)
@@ -392,21 +393,14 @@ class POFileTranslateView(BaseTranslationView):
 class POExportView(BaseExportView):
 
     def processForm(self):
-        if self.request.method != 'POST':
-            return
-
-        format = self.validateFileFormat(self.request.form.get('format'))
-        if not format:
-            return
-
         if self.context.validExportCache():
             # There is already a valid exported file cached in Librarian, we
             # can serve that file directly.
             self.request.response.redirect(self.context.exportfile.http_url)
-            return
+            return None
 
-        # Register the request to be processed later with our export script.
-        self.request_set.addRequest(
-            self.user, pofiles=[self.context], format=format)
-        self.nextURL()
+        return (None, [self.context])
+
+    def getDefaultFormat(self):
+        return self.context.potemplate.source_file_format
 
