@@ -161,14 +161,16 @@ class ExternalBugTracker:
             # remote bug; because of that, we need to store lists of bug
             # watches related to the remote bug, and later update the
             # status of each one of them.
-            if not bug_watches_by_remote_bug.has_key(remote_bug):
+            if remote_bug not in bug_watches_by_remote_bug:
                 bug_watches_by_remote_bug[remote_bug] = []
             bug_watches_by_remote_bug[remote_bug].append(bug_watch)
 
-        bug_ids_to_update = bug_watches_by_remote_bug.keys()
+        # Do things in a fixed order, mainly to help with testing.
+        bug_ids_to_update = sorted(bug_watches_by_remote_bug)
         self.initializeRemoteBugDB(bug_ids_to_update)
 
-        for bug_id, bug_watches in bug_watches_by_remote_bug.items():
+        # Again, fixed order here to help with testing.
+        for bug_id, bug_watches in sorted(bug_watches_by_remote_bug.items()):
             local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
             try:
                 try:
