@@ -21,7 +21,6 @@ from zope.component import getUtility
 
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
@@ -90,28 +89,8 @@ class TestBranchPuller(TestCaseWithTransport):
 
     def emptyPullQueue(self):
         """Make sure there are no branches to pull."""
-        # XXX: JonathanLange 2007-08-20, When the mirror-request branch lands,
-        # all of these queries will collapse to 'UPDATE Branch SET
-        # mirror_request_time = NULL'. See bug 74031.
         LaunchpadZopelessLayer.txn.begin()
-        cursor().execute("""
-            UPDATE Branch
-            SET mirror_request_time = NULL, last_mirror_attempt = %s
-            WHERE branch_type = %s"""
-            % sqlvalues(UTC_NOW, BranchType.HOSTED))
-        cursor().execute("""
-            UPDATE Branch
-            SET mirror_request_time = NULL, last_mirror_attempt = %s
-            WHERE branch_type = %s"""
-            % sqlvalues(UTC_NOW, BranchType.MIRRORED))
-        cursor().execute("""
-            UPDATE ProductSeries
-            SET datelastsynced = NULL""")
-        cursor().execute("""
-            UPDATE Branch
-            SET last_mirror_attempt = NULL
-            WHERE branch_type = %s"""
-            % sqlvalues(BranchType.IMPORTED))
+        cursor().execute("UPDATE Branch SET mirror_request_time = NULL")
         LaunchpadZopelessLayer.txn.commit()
 
     # XXX: JonathanLange 2007-08-20, Copied from test_branchset and
