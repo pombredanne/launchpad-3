@@ -7,7 +7,7 @@ __metaclass__ = type
 import os
 
 from canonical.launchpad.components.externalbugtracker import (
-    Bugzilla, Mantis, Trac)
+    Bugzilla, Mantis, Trac, Roundup)
 
 
 def read_test_file(name):
@@ -199,4 +199,23 @@ class TestTrac(Trac):
             print "CALLED urlopen(%r)" % (url,)
 
         return open(file_path + '/' + 'trac_example_ticket_export.csv', 'r')
+
+
+class TestRoundup(Roundup):
+    """Trac ExternalBugTracker for testing purposes.
+
+    It overrides urlopen, so that access to a real Trac instance isn't needed.
+    Also, it overrides the default batch_query_threshold for the sake of
+    making test data sane.
+    """
+
+    trace_calls = False
+
+    def urlopen(self, url):
+        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
+
+        if self.trace_calls:
+            print "CALLED urlopen(%r)" % (url,)
+
+        return open(file_path + '/' + 'roundup_example_ticket_export.csv', 'r')
 
