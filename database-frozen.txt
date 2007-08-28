@@ -8,5 +8,6 @@ means.
 
 Status
 ------
-Database is open for landing of database changes.
+Database is frozen. See the Launchpad google calender or wiki for
+timeframes.
 

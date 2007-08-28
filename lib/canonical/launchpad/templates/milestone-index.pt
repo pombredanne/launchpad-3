@@ -53,6 +53,7 @@
                   class string:specpriority${spec/priority/name}">High</span>
           </td>
           <td tal:condition="view/is_project_milestone">
+              <span class="sortkey" tal:content="spec/product/displayname" />
               <a tal:attributes="href spec/milestone/fmt:url"
                  tal:content="spec/product/displayname" />
           </td>
@@ -80,6 +81,10 @@
         </tr>
       </tbody>
     </table>
+    <div id="specification-count" class="lesser"
+         style="text-align: right; padding: 1px">
+      <tal:count tal:content="view/specification_count_text" /> listed
+    </div>
 
   </tal:has_specs>
 
@@ -113,6 +118,7 @@
             </a>
           </td>
           <td tal:condition="view/is_project_milestone">
+            <span class="sortkey" tal:content="bugtask/product/displayname" />
             <a tal:attributes="href bugtask/milestone/fmt:url"
                tal:content="bugtask/product/displayname" />
           </td>
@@ -134,6 +140,10 @@
         </tr>
       </tbody>
     </table>
+
+    <div id="bug-count" class="lesser" style="text-align: right; padding: 1px">
+      <tal:count tal:content="view/bugtask_count_text" /> listed
+    </div>
 
   </tal:has_bugtasks>
 

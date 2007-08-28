@@ -86,6 +86,22 @@ class MilestoneView(LaunchpadView):
     def specifications(self):
         return list(self.context.specifications)
 
+    @property
+    def bugtask_count_text(self):
+        count = len(self.bugtasks)
+        if count == 1:
+            return "1 bug"
+        else:
+            return "%d bugs" % count
+
+    @property
+    def specification_count_text(self):
+        count = len(self.specifications)
+        if count == 1:
+            return "1 specification"
+        else:
+            return "%d specifications" % count
+
     @cachedproperty
     def bugtasks(self):
         user = getUtility(ILaunchBag).user
@@ -93,10 +109,10 @@ class MilestoneView(LaunchpadView):
                     orderby=['-importance', 'datecreated', 'id'],
                     omit_dupes=True)
         tasks = getUtility(IBugTaskSet).search(params)
-        # Bug tasks that are explicitly targeted to a development focus series
-        # exist in a conjoined master-slave relationship. To prevent such bugs
-        # from appearing twice in the listing, we remove all bug tasks with a
-        # conjoined master:
+        # XXX kiko 2007-08-27: Doing this in the callsite is
+        # particularly annoying, but it's not easy to do the filtering
+        # in BugTaskSet.search() unfortunately. Can we find a good way
+        # of filtering conjoined in database queries?
         return [task for task in tasks if task.conjoined_master is None]
 
     @property
@@ -127,3 +143,4 @@ class MilestoneEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect('../..')
+

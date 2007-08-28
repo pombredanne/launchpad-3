@@ -271,3 +271,68 @@ The whiteboard section can be viewed by the PPA owner:
     ...     find_tag_by_id(carlos_browser.contents, 'whiteboard'))
     PPA whiteboard:
     Here lives a lazy community.
+
+
+== Double submission ==
+
+If two browser windows are open at the same time on the activation page 
+then when the second activation is clicked after already
+activating on the first, then it will just go to the archive page.
+
+Set up two browsers:
+
+    >>> browser1 = Browser()
+    >>> browser1.handleErrors = False
+    >>> browser1.addHeader(
+    ...     "Authorization", "Basic foo.bar@canonical.com:test")
+    >>> browser2 = Browser()
+    >>> browser2.handleErrors = False
+    >>> browser2.addHeader(
+    ...     "Authorization", "Basic foo.bar@canonical.com:test")
+
+Navigate to the activation page:
+
+    >>> browser1.open("http://launchpad.dev/~name16/+activate-ppa")
+    >>> browser2.open("http://launchpad.dev/~name16/+activate-ppa")
+
+The 'accepted' checkbox must be checked:
+
+    >>> browser1.getControl(name="field.accepted").value = True
+    >>> browser1.getControl(name="field.description").value = (
+    ...    'PPA rocks!')
+    >>> browser2.getControl(name="field.accepted").value = True
+    >>> browser2.getControl(name="field.description").value = (
+    ...    'PPA does not explode!')
+
+Activate the first browser:
+
+    >>> browser1.getControl("Activate").click()
+
+A successful activation redirects to the Personal Package Archive page:
+
+    >>> browser1.url
+    'http://launchpad.dev/~name16/+archive'
+
+Where we can check for the submitted description:
+
+    >>> print extract_text(
+    ...     find_tag_by_id(browser1.contents, 'description'))
+    PPA description:
+    PPA rocks!
+
+Activate the second browser:
+
+    >>> browser2.getControl("Activate").click()
+
+It will be directed to the Personal Package Archive page:
+
+    >>> browser2.url
+    'http://launchpad.dev/~name16/+archive'
+
+And the description matches the first submission's:
+
+    >>> print extract_text(
+    ...     find_tag_by_id(browser1.contents, 'description'))
+    PPA description:
+    PPA rocks!
+
