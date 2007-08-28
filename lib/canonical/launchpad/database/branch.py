@@ -6,7 +6,10 @@ __all__ = [
     'BranchSet',
     ]
 
+from datetime import datetime, timedelta
 import re
+
+import pytz
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -14,7 +17,7 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, OR
+from sqlobject.sqlbuilder import AND
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -77,6 +80,9 @@ class Branch(SQLBase):
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
     revision_count = IntCol(default=DEFAULT, notNull=True)
+
+    def __repr__(self):
+        return '<Branch %r (%d)>' % (self.unique_name, self.id)
 
     @property
     def revision_history(self):
@@ -365,10 +371,19 @@ class Branch(SQLBase):
 
     def mirrorComplete(self, last_revision_id):
         """See `IBranch`."""
+        assert self.last_mirror_attempt != None, (
+            "startMirroring must be called before mirrorComplete.")
         self.last_mirrored = self.last_mirror_attempt
         self.mirror_failures = 0
         self.mirror_status_message = None
-        self.mirror_request_time = None
+        if (self.mirror_request_time != None
+            and self.last_mirror_attempt > self.mirror_request_time):
+            # No mirror was requested since we started mirroring.
+            if self.branch_type == BranchType.MIRRORED:
+                self.mirror_request_time = (
+                    datetime.now(pytz.timezone('UTC')) + timedelta(hours=6))
+            else:
+                self.mirror_request_time = None
         self.last_mirrored_id = last_revision_id
         self.syncUpdate()
 
@@ -376,7 +391,8 @@ class Branch(SQLBase):
         """See `IBranch`."""
         self.mirror_failures += 1
         self.mirror_status_message = reason
-        self.mirror_request_time = None
+        self.mirror_request_time = (
+            datetime.now(pytz.timezone('UTC')) + timedelta(hours=6))
         self.syncUpdate()
 
 
@@ -888,51 +904,26 @@ class BranchSet:
 
     def getHostedPullQueue(self):
         """See `IBranchSet`."""
-
-        # XXX: JonathanLange 2007-07-27: Hosted branches (see Andrew's comment
-        # dated 2006-06-15) are mirrored if their mirror_request_time is not
-        # NULL or if they haven't been mirrored in the last 6 hours. The latter
-        # behaviour is a fail-safe and should probably be removed once we trust
-        # the mirror_request_time behavior. See
-        # test_mirror_stale_hosted_branches.
-
-        # The mirroring interval is 6 hours. we think this is a safe balance
-        # between frequency of mirroring and not hammering servers with
-        # requests to check whether mirror branches are up to date.
-
         return Branch.select(
             AND(Branch.q.branch_type == BranchType.HOSTED,
-                OR(Branch.q.last_mirror_attempt == None,
-                   UTC_NOW - Branch.q.last_mirror_attempt > '6 hours',
-                   Branch.q.mirror_request_time != None)),
+                Branch.q.mirror_request_time < UTC_NOW),
             prejoins=['owner', 'product'])
 
     def getMirroredPullQueue(self):
         """See `IBranchSet`."""
-
         # The mirroring interval is 6 hours. we think this is a safe balance
         # between frequency of mirroring and not hammering servers with
         # requests to check whether mirror branches are up to date.
-
         return Branch.select(
             AND(Branch.q.branch_type == BranchType.MIRRORED,
-                OR(Branch.q.last_mirror_attempt == None,
-                   UTC_NOW - Branch.q.last_mirror_attempt > '6 hours')),
+                Branch.q.mirror_request_time < UTC_NOW),
             prejoins=['owner', 'product'])
 
     def getImportedPullQueue(self):
         """See `IBranchSet`."""
-        # XXX: JonathanLange 2007-07-19: Circular import.
-        from canonical.launchpad.database.productseries import ProductSeries
         return Branch.select(
             AND(Branch.q.branch_type == BranchType.IMPORTED,
-                ProductSeries.q.import_branchID == Branch.q.id,
-                OR(AND(ProductSeries.q.datelastsynced != None,
-                       Branch.q.last_mirror_attempt == None),
-                   ProductSeries.q.datelastsynced > Branch.q.last_mirror_attempt,
-                   AND(ProductSeries.q.datelastsynced == None,
-                       UTC_NOW - Branch.q.last_mirror_attempt > '1 day'))),
-            clauseTables=['ProductSeries'],
+                Branch.q.mirror_request_time < UTC_NOW),
             prejoins=['owner', 'product'])
 
     def getPullQueue(self):
@@ -944,4 +935,4 @@ class BranchSet:
         # - any import branches which have been synced since their last mirror
         return self.getHostedPullQueue().union(
             self.getMirroredPullQueue()).union(
-            self.getImportedPullQueue()).orderBy('last_mirror_attempt')
+            self.getImportedPullQueue()).orderBy('mirror_request_time')
