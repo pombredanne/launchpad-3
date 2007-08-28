@@ -1032,6 +1032,6 @@ class Roundup(ExternalBugTracker):
             raise BugNotFound(bug_id)
 
         try:
-            return int(remote_bug['status'])
+            return remote_bug['status']
         except KeyError:
             return UNKNOWN_REMOTE_STATUS
