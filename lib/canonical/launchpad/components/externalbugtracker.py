@@ -104,7 +104,7 @@ class ExternalBugTracker:
     """Base class for an external bug tracker."""
 
     implements(IExternalBugtracker)
-    batch_query_threshold = 10
+    batch_query_threshold = config.checkwatches.batch_query_threshold
 
     def urlopen(self, request, data=None):
         return urllib2.urlopen(request, data)
