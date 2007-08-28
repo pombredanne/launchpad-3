@@ -6,6 +6,10 @@
       i18n:domain="launchpad">
 <body>
 
+<style metal:fill-slot="head_epilogue" type="text/css">
+  div.indented {padding-left: 2em}
+</style>
+
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
@@ -192,7 +196,7 @@
         <img alt="" src="/@@/edit"/>
       </a>
 
-      <div style="padding-left: 3em">
+      <div class="indented">
         <div tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
           The whiteboard.
         </div>
@@ -224,7 +228,7 @@
         <img alt="" src="/@@/edit"/>
       </a>
 
-      <div style="padding-left: 3em">
+      <div class="indented">
         <div tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
           The whiteboard.
         </div>
@@ -299,16 +303,9 @@
 
   <tal:related-bugs condition="context/related_bugs">
     <h2>Related Bugs</h2>
-    <ul style="list-style: none">
-      <span tal:repeat="bug context/related_bugs"
-            tal:omit-tag="">
-        <li tal:condition="bug/required:launchpad.View">
-          <a href="#"
-             tal:content="string:${bug/id}. ${bug/title}"
-             tal:attributes="href bug/fmt:url">Foo is Broken</a>
-        </li>
-      </span>
-    </ul>
+    <div class="indented" tal:define="branch context">
+      <metal:branch-link use-macro="context/@@+macros/bug-branch-links"/>
+    </div>
   </tal:related-bugs>
 
       <div class="related">
