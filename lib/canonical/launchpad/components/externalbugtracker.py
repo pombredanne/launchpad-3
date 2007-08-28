@@ -4,10 +4,13 @@
 
 __metaclass__ = type
 
+import cgi
 import csv
 import os.path
 import urllib
 import urllib2
+import urlparse
+import ClientCookie
 import xml.parsers.expat
 from xml.dom import minidom
 
@@ -548,24 +551,91 @@ class DebBugs(ExternalBugTracker):
 # Mantis
 #
 
-class Mantis(ExternalBugTracker):
-    # Example sites:
-    #   http://www.atutor.ca/atutor/mantis/         1.0.7       NOT OK
-    #   http://bugs.mantisbt.org/                   1.1.0a4-CVS NOT OK (login.php HTTP 404)
-    #   http://bugs.endian.it/                      -           NOT OK (HTTP 404)
-    #   http://www.co-ode.org/mantis/               1.0.0rc1    OK  (322 bugs)
-    #   http://acme.able.cs.cmu.edu/mantis/         1.0.6       OK  (531 bugs)
-    #   http://bugs.netmrg.net/                     1.0.7       NOT OK (login.php infinite HTTP 302 loop)
-    #   http://bugs.busybox.net/                    ??? 2006    NOT OK (login.php HTTP 404)
-    #   https://bugtrack.alsa-project.org/alsa-bug/ 1.0.6       NOT OK (csv_export.php yields no data)
-    #   https://gnunet.org/mantis/                  ??? 2006    OK (787 bugs)
+class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
+    """Handler for ClientCookie.build_opener to automatically log-in
+    to Mantis anonymously if needed.
 
-    # These get set in initializeRemoteBugDB()
-    headers = None
-    bugs = None
+    The ALSA bug tracker is the only tested Mantis installation that
+    actually needs this. For ALSA bugs, the dance is like so (omitting
+    common URL prefixes for clarity):
+
+      1. We request /view.php?id=3301
+
+      2. Mantis redirects us to:
+           /login_page.php?return=%2Fview.php%3Fid%3D3301
+
+      3. We notice this, rewrite the query, and skip to login.php:
+           /login.php?return=%2Fview.php%3Fid%3D3301&username=guest&password=guest
+
+      4. Mantis accepts our credentials then redirects us to the bug
+         view page via a cookie test page (login_cookie_test.php)
+    """
+
+    def redirect_request(self, newurl, req, fp, code, msg, headers):
+        # XXX: The argument order here is different from that in
+        # urllib2.HTTPRedirectHandler. ClientCookie is *meant* to
+        # mimic urllib2 (and does subclass it), so this is probably a
+        # bug. -- Gavin Panella, 2007-08-27
+
+        scheme, host, path, params, query, fragment = (
+            urlparse.urlparse(newurl))
+
+        # If we can, skip the login page and submit credentials
+        # directly. The query should contain a 'return' parameter
+        # which, if our credentials are accepted, means we'll be
+        # redirected back from whence we came. In other words, we'll
+        # end up back at the bug page we first requested.
+        login_page = '/login_page.php'
+        if path.endswith(login_page):
+            path = path[:-len(login_page)] + '/login.php'
+            query = cgi.parse_qs(query, True)
+            query['username'] = query['password'] = ['guest']
+            if 'return' not in query:
+                log.warn("Mantis redirected us to the login page "
+                    "but did not set a return path.")
+            query = urllib.urlencode(query, True)
+            newurl = urlparse.urlunparse(
+                (scheme, host, path, params, query, fragment))
+
+        # XXX: Previous versions of the Mantis external bug tracker
+        # fetched login_anon.php in addition to the login.php method
+        # above, but none of the Mantis installations tested actually
+        # needed this. For example, the ALSA bugtracker actually
+        # issues an error "Your account may be disabled" when
+        # accessing this page. For now it's better to *not* try this
+        # page because we may end up annoying admins with spurious
+        # login attempts. -- Gavin Panella, 2007-08-28.
+
+        return ClientCookie.HTTPRedirectHandler.redirect_request(
+            self, newurl, req, fp, code, msg, headers)
+
+
+class Mantis(ExternalBugTracker):
+    # Example sites (tested 2007-08-2X):
+    #   http://www.atutor.ca/atutor/mantis/         1.0.7       NOT OK (no anon access)
+    #   http://bugs.mantisbt.org/                   1.1.0a4-CVS OK
+    #   http://bugs.endian.it/                      -           OK
+    #   http://www.co-ode.org/mantis/               1.0.0rc1    OK
+    #   http://acme.able.cs.cmu.edu/mantis/         1.0.6       OK
+    #   http://bugs.netmrg.net/                     1.0.7       OK
+    #   http://bugs.busybox.net/                    ??? 2006    OK
+    #   https://bugtrack.alsa-project.org/alsa-bug/ 1.0.6       OK
+    #   https://gnunet.org/mantis/                  ??? 2006    OK
+
+    # Custom opener that automatically sends anonymous credentials to
+    # Mantis if (and only if) needed.
+    _opener = ClientCookie.build_opener(MantisLoginHandler)
 
     def __init__(self, baseurl):
         self.baseurl = baseurl
+
+    def urlopen(self, request, data=None):
+        # We use ClientCookie to make following cookies transparent.
+        # This is required for certain bugtrackers that require cookies
+        # that actually do anything (as is the case with Mantis). It's
+        # basically a drop-in replacement for urllib.urlopen() that
+        # tracks cookies.
+        return self._opener.open(request, data)
 
     def _findValueRightOfKey(self, page_soup, key):
         """Scrape a value from a Mantis bug view page where the value
