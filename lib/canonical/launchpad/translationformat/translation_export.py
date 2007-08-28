@@ -42,7 +42,7 @@ class TranslationExporter:
         """See `ITranslationExporter`."""
         exporters_available = []
         for exporter in zope.component.subscribers([self], ITranslationFormatExporter):
-            if file_format in exporter.handable_formats:
+            if file_format in exporter.supported_formats:
                 exporters_available.append(exporter)
 
         return exporters_available

@@ -1,10 +1,18 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Text, TextLine, Bytes, Datetime, Int
+from zope.interface import Interface
+from zope.schema import (
+    Bool, Bytes, Choice, Datetime, Int, Object, Text, TextLine)
 
-from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.rosettastats import IRosettaStats
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageName)
 from canonical.launchpad import _
 
 __metaclass__ = type
@@ -19,9 +27,11 @@ class LanguageNotFound(NotFoundError):
 
 
 class IPOTemplate(IRosettaStats):
-    """A PO template. For example 'nautilus/po/nautilus.pot'."""
+    """A translation template."""
 
-    id = Attribute("A unique ID number")
+    id = Int(
+        title=u"The translation template id.",
+        required=True, readonly=True)
 
     potemplatename = Choice(
         title=_("Template Name"),
@@ -117,7 +127,9 @@ class IPOTemplate(IRosettaStats):
         title=_("Path of the template in the source tree, including filename."),
         required=False)
 
-    source_file = Attribute("Source file for this template, if needed.")
+    source_file = Object(
+        title=_('Source file for this translation template'),
+        schema=ILibraryFileAlias)
 
     source_file_format = Choice(
         title=_("File format for the source file"),
@@ -135,45 +147,83 @@ class IPOTemplate(IRosettaStats):
             'translated first. Pick any number - higher priority '
             'templates will generally be listed first.'))
 
-    copyright = Attribute("The copyright information for this template.")
+    copyright = Text(
+        title=_('The copyright information for this template.'))
 
-    license = Attribute("The license that applies to this template.")
+    license = Int(title=u'The license under this template messages are.')
 
-    datecreated = Attribute("When this template was created.")
+    datecreated = Datetime(
+        title=_('When this translation template was created.'), required=True)
 
-    translationgroups = Attribute("The translation groups that have "
-        "been selected to apply to this template. There can be several "
-        "because they can be inherited from project to product, for "
-        "example.")
+    translationgroups = Object(
+        title=_('''
+            The `ITranslationGroup` objects that handle translations for this
+            template.
+            '''),
+        description=_('''
+            There can be several because they can be inherited from project to
+            product, for example.
+            '''),
+        required=True)
 
-    translationpermission = Attribute("The permission system which "
-        "is used for this potemplate. This is inherited from the product, "
-        "project and/or distro in which the pofile is found.")
+    translationpermission = Choice(
+        title=_('Translation permission'),
+        required=True,
+        description=_('''
+            The permission system which is used for this translation template.
+            This is inherited from the product, project and/or distro in which
+            the translation template is found.
+            '''),
+        vocabulary='TranslationPermission')
 
-    pofiles = Attribute("An iterator over the PO files that exist for "
-        "this template.")
+    pofiles = Object(
+        title=_('All `IPOFile` that exist for this template.'),
+        required=True)
 
-    relatives_by_name = Attribute("An iterator over other PO templates "
-        "that have the same potemplate name as this one.")
+    relatives_by_name = Object(
+        title=_('''
+            All `IPOTemplate` objects that have the same template name as
+            this one.
+            '''),
+        required = True)
 
-    relatives_by_source = Attribute("An iterator over other PO templates "
-        "that have the same source, for example those that came from the "
-        "same productseries or the same source package.")
+    relatives_by_source = Object(
+        title=_('All `IPOTemplate` objects that have the same source.'),
+        description=_('''
+            For example those that came from the same productseries or the
+            same source package.
+            '''),
+        required = True)
 
-    displayname = Attribute("A brief name for this template, generated.")
+    displayname = TextLine(
+        title=_('The translation template brief name.'), required=True,
+        readonly=True)
 
-    title = Attribute("A title for this template, generated.")
+    title = TextLine(
+        title=_('The translation template title.'), required=True,
+        readonly=True)
 
-    product = Attribute("The project to which this template belongs.")
+    product = Object(
+        title=_('The `IProduct` to which this translation template belongs.'),
+        schema=IProduct)
 
-    distribution = Attribute("The distribution to which this template belongs.")
+    distribution = Object(
+        title=_(
+            'The `IDistribution` to which this translation template belongs.'
+            ),
+        schema=IDistribution)
 
-    language_count = Attribute("The number of languages for which we have "
-        "some number of translations.")
+    language_count = Int(
+        title=_('The number of languages for which we have translations.'),
+        required=True, readonly=True)
 
-    translationtarget = Attribute("The object for which this template is "
-        "a translation. This will either be a SourcePackage or an upstream "
-        "Series.")
+    translationtarget = Object(
+        title=_('The direct object in which this template is attached.'),
+        description=_(
+            'This will either be an `ISourcePackage` or an `IProductSeries`.'
+            ),
+        required=True, readonly=True
+        )
 
     date_last_updated = Datetime(
             title=_('Date for last update'),
@@ -336,16 +386,29 @@ class IPOTemplate(IRosettaStats):
 class IPOTemplateSubset(Interface):
     """A subset of POTemplate."""
 
-    sourcepackagename = Attribute(
-        "The sourcepackagename associated with this subset of POTemplates.")
+    sourcepackagename = Object(
+        title=_('''
+            The `ISourcePackageName` associated with this subset of
+            `IPOTemplate` objects.
+            '''),
+        schema=ISourcePackageName)
 
-    distroseries = Attribute(
-        "The distroseries associated with this subset of POTemplates.")
+    distroseries = Object(
+        title=_('''
+            The `IDistroSeries` associated with this subset of
+            `IPOTemplate` objects.
+            '''),
+        schema=IDistroSeries)
 
-    productseries = Attribute(
-        "The productseries associated with this subset of POTemplates.")
+    productseries = Object(
+        title=_('''
+            The `IProductSeries` associated with this subset of
+            `IPOTemplate` objects.
+            '''),
+        schema=IProductSeries)
 
-    title = Attribute("Title - use for launchpad pages")
+    title = TextLine(
+        title=u'The translation file title.', required=True, readonly=True)
 
     def __iter__():
         """Return an iterator over all POTemplate for this subset."""

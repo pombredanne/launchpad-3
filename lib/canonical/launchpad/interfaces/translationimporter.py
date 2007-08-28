@@ -1,7 +1,9 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
-from zope.interface import Interface, Attribute
-from zope.schema import Choice
+"""Interfaces to handle translation files imports."""
+
+from zope.interface import Interface
+from zope.schema import Bool, Choice, List, TextLine
 
 __metaclass__ = type
 
@@ -69,8 +71,9 @@ class TranslationFormatInvalidInputError(TranslationFormatBaseError):
 class ITranslationImporter(Interface):
     """Importer of translation files."""
 
-    file_extensions_with_importer = Attribute(
-        "List of file extension we have imports for.")
+    file_extensions_with_importer = List(
+        title=u'List of file extensions we have imports for.',
+        required=True, readonly=True)
 
     def getTranslationFileFormatByFileExtension(file_extension):
         """Return the translation file format for given file_extension.
@@ -113,15 +116,21 @@ class ITranslationFormatImporter(Interface):
         vocabulary='TranslationFileFormat',
         required=True)
 
-    content_type = Attribute(
-        "Content type string for this file format.")
+    content_type = TextLine(
+        title=u'Content type string for this file format.',
+        required=True, readonly=True)
 
-    file_extensions = Attribute(
-        "Set of file extensions handlable by this importer.")
+    file_extensions = List(
+        title=u'File extensions handable by this importer.',
+        required=True, readonly=True)
 
-    has_alternative_msgid = Attribute("""
-        Whether this file format importer uses ids to identify strings
-        instead of English strings.""")
+    has_alternative_msgid = Bool(
+        title=u'A flag indicating whether uses ids to identify strings',
+        description=u'''
+            A flag indicating whether this file format importer uses ids to
+            identify strings instead of English strings.
+            ''',
+        required=True, readonly=True)
 
     def parse(translation_import_queue_entry):
         """Parse given translation_import_queue_entry object.

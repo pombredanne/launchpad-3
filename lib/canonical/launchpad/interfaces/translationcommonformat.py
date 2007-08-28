@@ -1,7 +1,9 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Datetime, Int, Text, TextLine
+from zope.interface import Interface
+from zope.schema import Bool, Datetime, Int, List, Object, Set, Text, TextLine
+from canonical.launchpad.interfaces.translationcommon import (
+    ITranslationHeader)
 
 __metaclass__ = type
 
@@ -15,61 +17,86 @@ __all__ = [
 class ITranslationFile(Interface):
     """Parsed translation template file interface."""
 
-    header = Attribute("An ITranslationHeader for the parsed file.")
+    header = Object(
+        title=u'An `ITranslationHeader` for the parsed file.',
+        required=True, readonly=True, schema=ITranslationHeader)
 
-    messages = Attribute(
-        "The list of ITranslationMessage included in the parsed file.")
+    messages = List(
+        title=u'ITranslationMessage objects included in the parsed file.',
+        required=True, readonly=True)
 
-    path = Attribute("The path directory where this file is stored.")
+    path = TextLine(
+        title=u'The path directory where this file is stored.',
+        required=True, readonly=True)
 
-    translation_domain = Attribute(
-        "Translation domain used for this template. It would be used to"
-        " find its content on the file system, when its associated"
-        " application is executed.")
+    translation_domain = TextLine(
+        title=u'Translation domain used for this translation file',
+        description=u'''
+            It would be used to find its content on the file system, when
+            its associated application is executed.
+            ''',
+        required=True, readonly=True)
 
-    is_template = Attribute(
-        "Whether this entry is a template without translations.")
+    is_template = Bool(
+        title=u'''
+            A flag indicating whether this entry is a template without
+            translations.
+            ''',
+        required=True, readonly=True)
 
-    language_code = Attribute(
-        "Language iso code for this translations or None either if it's"
-        " unknown or is_template flag is set.")
+    language_code = TextLine(
+        title=u'Language iso code for this translation file',
+        description=u'''
+            Language iso code for this translation file or None either if it's
+            unknown or is_template flag is set.
+            ''',
+        required=True, readonly=True)
 
 
 class ITranslationHeader(Interface):
     """Translation header interface."""
 
-    is_fuzzy = Attribute(
-        "Whether the header needs some field changes before it's useful.")
+    is_fuzzy = Bool(
+        title=u'A flag indicating whether the header needs to be edited',
+        required=True, readonly=True)
 
-    template_creation_date = Attribute(
-        "A datetime object representing when was created the template used in"
-        " this file.")
+    template_creation_date = Datetime(
+        title=u'When was created the template used in this file.',
+        required=True, readonly=True)
 
     translation_revision_date = Datetime(
         title=u'When the translation resource was last revised or None.',
-        required=True)
+        required=True, readonly=True)
 
-    language_team = Attribute(
-        "String noting the language team in charge of this translation.")
+    language_team = TextLine(
+        title=u'The language team in charge of this translation.',
+        required=True, readonly=True)
 
-    has_plural_forms = Bool(title=u'Whether this file contains plural forms.')
+    has_plural_forms = Bool(
+        title=u'Whether this file contains plural forms.',
+        required=True, readonly=True)
 
-    number_plural_forms = Int(title=u'Number of plural forms.')
+    number_plural_forms = Int(
+        title=u'Number of plural forms.', required=True, readonly=True)
 
     plural_form_expression = TextLine(
-        title=u'The plural form expression defined in this file or None.')
+        title=u'The plural form expression defined in this file or None.',
+        required=True, readonly=True)
 
     charset = TextLine(
-        title=u'Charset used to encode the content in its native form.')
+        title=u'Charset used to encode the content in its native form.',
+        required=True, readonly=True)
 
     launchpad_export_date = Datetime(
-        title=u'when this file was last exported from Launchpad or None.')
+        title=u'when this file was last exported from Launchpad or None.',
+        required=True, readonly=True)
 
     comment = Text(
         title=u'Header comment',
-        description=(
-            u'It usually has copyright information and list of contributors.')
-        )
+        description=u'''
+            It usually has copyright information and list of contributors.
+            ''',
+        required=True, readonly=True)
 
     def getRawContent():
         """Return header raw content in its native file format."""
@@ -99,38 +126,38 @@ class ITranslationHeader(Interface):
 class ITranslationMessage(Interface):
     """Translation message interface."""
 
-    msgctxt = Attribute(
-        "The msgctxt of the message (as unicode).")
+    context = Text(
+        title=u'The context of the message.',
+        required=True, readonly=True)
 
-    msgid = Attribute(
-        "The msgid of the message (as unicode).")
+    msgid = Text(
+        title=u'The msgid of the message.', required=True, readonly=True)
 
-    msgid_plural = Attribute(
-        "The plural msgid of the message (as unicode) or None.")
+    msgid_plural = Text(
+        title=u'The plural msgid of the message or None.',
+        required=True, readonly=True)
 
+    translations = List(
+        title=u'The translations of the message.', required=True,
+        readonly=True)
 
-    translations = Attribute(
-        "The translations of the message (as a list of unicodes).")
+    comment = Text(
+        title=u'Comments added by a translator.', require=True, readonly=True)
 
-    comment = Attribute(
-        "The human-written comments ('# foo') of the message (as unicode).")
+    source_comment = Text(
+        title=u'Comments added by the developer to help translators.',
+        required=True, readonly=True)
 
-    source_comment = Attribute(
-        "The parser-generated comments ('#. foo') of the message (as unicode)."
-        )
+    file_references = Text(
+        title=u'File references from where this message was extracted."',
+        required=True, readonly=True)
 
-    file_references = Attribute(
-        "The references ('#: foo') of the message (as unicode).")
+    flags = Set(
+        title=u'Message flags needed to validate its translation.',
+        required=True, readonly=True)
 
-    flags = Attribute(
-        "The flags of the message (a Set of strings).")
-
-    is_obsolete = Attribute(
-        'Whether the message is obsolete and not used anymore.')
-
-    nplurals = Attribute(
-        """The number of plural forms for this language, as used in this file.
-        None means the header does not have a Plural-Forms entry.""")
-
-    pluralExpr = Attribute(
-        "The expression used to get a plural form from a number.")
+    is_obsolete = Bool(
+        title=u'''
+            A flag indicating whether the message is obsolete and not used anymore.
+            ''',
+        required=True, readonly=True)
