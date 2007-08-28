@@ -958,9 +958,9 @@ class Roundup(ExternalBugTracker):
     }
 
     # The base URL that we will use for retrieving Roundup bugs in CSV format.
-    bug_export_url = (
+    single_bug_export_url = (
         "issue?%%40columns=id&%%40columns=status&%%40columns=priority"
-        "&%%40columns=resolution&%%40action=search&pagesize=%i&%s")
+        "&%%40columns=resolution&%%40action=search&pagesize=%i&id=%i")
 
     def __init__(self, baseurl):
         self.baseurl = baseurl
@@ -975,7 +975,8 @@ class Roundup(ExternalBugTracker):
 
     def getRemoteBug(self, bug_id):
         """See `ExternalBugTracker`."""
-        query_url = self.bug_export_url % (1, "id=%s" % bug_id)
+        bug_id = int(bug_id)
+        query_url = self.bug_export_url % (1, bug_id)
 
         try:
             csv_data = self.urlopen("%s/%s" % (self.baseurl, query_url))
