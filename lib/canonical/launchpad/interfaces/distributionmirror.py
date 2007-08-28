@@ -348,7 +348,7 @@ class IDistributionMirror(Interface):
     def isOfficial():
         """Return True if this is an official mirror."""
 
-    def shouldDisable(self, expected_file_count=None):
+    def shouldDisable(expected_file_count=None):
         """Should this mirror be marked disabled?
 
         If this is a RELEASE mirror then expected_file_count must not be None,
