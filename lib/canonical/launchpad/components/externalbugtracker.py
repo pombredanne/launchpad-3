@@ -976,7 +976,7 @@ class Roundup(ExternalBugTracker):
     def getRemoteBug(self, bug_id):
         """See `ExternalBugTracker`."""
         bug_id = int(bug_id)
-        query_url = self.bug_export_url % (1, bug_id)
+        query_url = self.single_bug_export_url % (1, bug_id)
 
         try:
             csv_data = self.urlopen("%s/%s" % (self.baseurl, query_url))
@@ -984,5 +984,5 @@ class Roundup(ExternalBugTracker):
             raise BugTrackerConnectError(self.baseurl, val)
 
         reader = csv.DictReader(csv_data)
-        self.bugs[bug_id] = reader.next()
+        return (bug_id, reader.next())
 
