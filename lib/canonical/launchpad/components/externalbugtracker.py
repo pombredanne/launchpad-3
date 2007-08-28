@@ -920,3 +920,12 @@ class Trac(ExternalBugTracker):
         except KeyError:
             log.warn("Unknown status '%s'" % remote_status)
             return BugTaskStatus.UNKNOWN
+
+class Roundup(ExternalBugTracker):
+    """An ExternalBugTracker descendant for handling Roundup bug trackers."""
+
+    def __init__(self, baseurl):
+        self.baseurl = baseurl
+
+    def convertRemoteStatus(self, remote_status):
+        """See `IExternalBugTracker`."""
