@@ -924,8 +924,29 @@ class Trac(ExternalBugTracker):
 class Roundup(ExternalBugTracker):
     """An ExternalBugTracker descendant for handling Roundup bug trackers."""
 
+    # Our mapping of Roundup => Launchpad statuses.
+    # Roundup statuses are integer-only and highly configurable. Therefore we
+    # map the statuses available by default so that they can be overridden by
+    # subclassing the Roundup class.
+    status_map = {
+        1: BugTaskStatus.NEW,          # Roundup status 'unread'
+        2: BugTaskStatus.CONFIRMED,    # Roundup status 'deferred'
+        3: BugTaskStatus.INCOMPLETE,   # Roundup status 'chatting'
+        4: BugTaskStatus.INCOMPLETE,   # Roundup status 'need-eg'
+        5: BugTaskStatus.INPROGRESS,   # Roundup status 'in-progress'
+        6: BugTaskStatus.INPROGRESS,   # Roundup status 'testing'
+        7: BugTaskStatus.FIXCOMMITTED, # Roundup status 'done-cbb'
+        8: BugTaskStatus.FIXRELEASED,  # Roundup status 'resolved'
+        UNKNOWN_REMOTE_STATUS: BugTaskStatus.UNKNOWN
+    }
+
     def __init__(self, baseurl):
         self.baseurl = baseurl
 
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
+        try:
+            return self.status_map[remote_status]
+        except KeyError:
+            log.warn("Unknown status '%s'" % remote_status)
+            return BugTaskStatus.UNKNOWN
