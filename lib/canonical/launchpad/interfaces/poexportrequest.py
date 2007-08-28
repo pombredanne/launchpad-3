@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd. All rights reserved.
+# Copyright 2007 Canonical Ltd. All rights reserved.
 
 __metaclass__ = type
 
@@ -8,11 +8,12 @@ from zope.interface import Interface, Attribute
 from canonical.lp.dbschema import TranslationFileFormat
 
 class IPOExportRequestSet(Interface):
-    def addRequest(person, potemplate=None, pofiles=None,
+    def addRequest(person, potemplates=None, pofiles=None,
                    format=TranslationFileFormat.PO):
         """Add a request to export a set of files.
 
-        :param potemplate: The PO template to export, or `None`.
+        :param potemplates: PO template or list of PO templates to export, or
+            `None`.
         :param pofiles: A list of PO files to export.
         """
 

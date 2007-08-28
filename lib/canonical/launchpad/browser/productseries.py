@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -10,6 +10,7 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesBugsMenu',
            'ProductSeriesSpecificationsMenu',
            'ProductSeriesTranslationMenu',
+           'ProductSeriesTranslationsExportView',
            'ProductSeriesView',
            'ProductSeriesEditView',
            'ProductSeriesSourceView',
@@ -41,6 +42,7 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
+from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.rosetta import TranslationsMixin
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
@@ -239,7 +241,7 @@ class ProductSeriesTranslationMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'translations'
-    links = ['translationupload', 'imports']
+    links = ['translationupload', 'imports', 'translationdownload']
 
     def imports(self):
         text = 'See import queue'
@@ -248,6 +250,31 @@ class ProductSeriesTranslationMenu(ApplicationMenu):
     def translationupload(self):
         text = 'Upload translations'
         return Link('+translations-upload', text, icon='add')
+
+    def translationdownload(self):
+        text = 'Download translations'
+        return Link('+export', text, icon='download')
+
+
+class ProductSeriesTranslationsExportView(BaseExportView):
+    """Request tarball export of productseries' complete translations.
+
+    Only complete downloads are supported for now; there is no option to
+    select languages, and templates are always included.
+    """
+
+    def processForm(self):
+        """Process form submission requesting translations export."""
+        pofiles = []
+        for potemplate in self.context.potemplates:
+            pofiles += list(potemplate.pofiles)
+        return (self.context.potemplates, pofiles)
+
+    def getDefaultFormat(self):
+        templates = self.context.potemplates
+        if len(templates) == 0:
+            return None
+        return templates[0].source_file_format
 
 
 def get_series_branch_error(product, branch):

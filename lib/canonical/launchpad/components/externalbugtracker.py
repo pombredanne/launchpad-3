@@ -818,6 +818,24 @@ class Trac(ExternalBugTracker):
         # a 404.
         self.baseurl = baseurl.rstrip('/')
 
+    def supportsSingleExports(self):
+        """Return True if the Trac instance provides CSV exports for single
+        tickets, False otherwise.
+        """
+        try:
+            # We check for CSV export support by trying to export ticket #1
+            # from the trac instance in CSV format. Some Trac instances will
+            # (correctly) return an HTTP 500 if CSV exports are not available,
+            # but we check the returned data's content type if the server
+            # gives us an HTTP 200, just in case.
+            # We use ticket #1 here because it's more-or-less guaranteed to
+            # exist as long as the Trac instance has any tickets at all.
+            http_data = self.urlopen(
+                "%s/%s" % (self.baseurl, self.ticket_url % 1))
+            return http_data.headers.subtype == 'csv'
+        except (urllib2.HTTPError, urllib2.URLError):
+            return False
+
     def initializeRemoteBugDB(self, bug_ids):
         """Do any initialization before each bug watch is updated.
 
@@ -825,37 +843,13 @@ class Trac(ExternalBugTracker):
         BugTrackerConnectError will be raised.
         """
         self.bugs = {}
-        # Trac offers two ways for us to get bug details from them in CSV
-        # format: individually or in groups. For large lists of bug ids we get
-        # them as a batch from the remote bug tracker so as to avoid
-        # effectively DOSing it.
-        if len(bug_ids) > self.batch_query_threshold:
-            id_string = '&'.join(['id=%s' % id for id in bug_ids])
-            query_url = "%s/%s" % (self.baseurl, self.batch_url % id_string)
-            try:
-                csv_data = self.urlopen(query_url)
-            except (urllib2.HTTPError, urllib2.URLError), val:
-                raise BugTrackerConnectError(query_url, val)
-
-            remote_bugs = csv.DictReader(csv_data)
-            for remote_bug in remote_bugs:
-                # We're only interested in the bug if it's one of the ones in
-                # bug_ids, just in case we get all the tickets in the Trac
-                # instance back instead of only the ones we want.
-                if remote_bug['id'] not in bug_ids:
-                    continue
-
-                self.bugs[int(remote_bug['id'])] = remote_bug
-
-        else:
-            # When there aren't more than batch_query_threshold bugs to update
-            # we make one request per bug id to the remote bug tracker, which
-            # (providing it's a reasonably up-to-date Trac instance) will give
-            # us a CSV export of the ticket we ask for. If it doesn't, we can
-            # safely assume that it either doesn't support this functionality
-            # or has this functionality deliberately disabled; either way
-            # there is little
-            # we can do about it.
+        # When there are less than batch_query_threshold bugs to update we
+        # make one request per bug id to the remote bug tracker, providing it
+        # supports CSV exports per-ticket. If the Trac instance doesn't support
+        # exports-per-ticket we fail over to using the batch export method for
+        # retrieving bug statuses.
+        if (len(bug_ids) < self.batch_query_threshold and
+            self.supportsSingleExports()):
             for bug_id in bug_ids:
                 # If we can't get the remote bug for any reason a
                 # BugTrackerConnectError will be raised at this point.
@@ -872,6 +866,25 @@ class Trac(ExternalBugTracker):
                 reader = csv.DictReader(csv_data)
                 self.bugs[bug_id] = reader.next()
 
+        # For large lists of bug ids we retrieve bug statuses as a batch from
+        # the remote bug tracker so as to avoid effectively DOSing it.
+        else:
+            id_string = '&'.join(['id=%s' % id for id in bug_ids])
+            query_url = "%s/%s" % (self.baseurl, self.batch_url % id_string)
+            try:
+                csv_data = self.urlopen(query_url)
+            except (urllib2.HTTPError, urllib2.URLError), val:
+                raise BugTrackerConnectError(query_url, val)
+
+            remote_bugs = csv.DictReader(csv_data)
+            for remote_bug in remote_bugs:
+                # We're only interested in the bug if it's one of the ones in
+                # bug_ids, just in case we get all the tickets in the Trac
+                # instance back instead of only the ones we want.
+                if remote_bug['id'] not in bug_ids:
+                    continue
+
+                self.bugs[int(remote_bug['id'])] = remote_bug
 
     def getRemoteStatus(self, bug_id):
         """Return the remote status for the given bug id.
@@ -896,7 +909,11 @@ class Trac(ExternalBugTracker):
             remote_bug['resolution'] not in ['', '--', None]):
             return remote_bug['resolution']
         else:
-            return remote_bug['status']
+            # Some Trac instances don't include the bug status in their CSV
+            # exports. In those cases we acknowledge that the bug exists but
+            # simply return UNKNOWN_REMOTE_STATUS. Otherwise we return the
+            # status specified in the CSV export.
+            return remote_bug.get('status', UNKNOWN_REMOTE_STATUS)
 
     def convertRemoteStatus(self, remote_status):
         """See IExternalBugTracker"""
