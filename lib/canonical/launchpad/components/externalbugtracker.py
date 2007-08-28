@@ -95,6 +95,8 @@ def get_external_bugtracker(bugtracker, version=None):
         return Mantis(bugtracker.baseurl)
     elif bugtrackertype == BugTrackerType.TRAC:
         return Trac(bugtracker.baseurl)
+    elif bugtrackertype == BugTrackerType.ROUNDUP:
+        return Roundup(bugtracker.baseurl)
     else:
         raise UnknownBugTrackerTypeError(bugtrackertype.name,
             bugtracker.name)
@@ -958,15 +960,18 @@ class Roundup(ExternalBugTracker):
     }
 
     single_bug_export_url = (
-        "issue?@columns=id&@columns=status&@columns=priority"
-        "&@columns=resolution&@action=export_csv&pagesize=%i&id=%i")
+        "issue?@action=export_csv&@columns=title,id,activity,status"
+        "&@sort=activity&@group=priority&@filter=id&@pagesize=50"
+        "&@startwith=0&id=%i")
 
     batch_bug_export_url = (
         "issue?@columns=id&@columns=status&@columns=priority"
         "&@columns=resolution&@action=export_csv&status=&sort=id")
 
     def __init__(self, baseurl):
-        self.baseurl = baseurl
+        # We strip any trailing slashes to ensure that we don't end up
+        # requesting a URL that Roundup can't handle.
+        self.baseurl = baseurl.rstrip('/')
 
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
@@ -982,10 +987,11 @@ class Roundup(ExternalBugTracker):
     def getRemoteBug(self, bug_id):
         """See `ExternalBugTracker`."""
         bug_id = int(bug_id)
-        query_url = self.single_bug_export_url % (1, bug_id)
+        query_url = '%s/%s' % (
+            self.baseurl, self.single_bug_export_url % bug_id)
 
         try:
-            csv_data = self.urlopen("%s/%s" % (self.baseurl, query_url))
+            csv_data = self.urlopen(query_url)
         except (urllib2.HTTPError, urllib2.URLError), val:
             raise BugTrackerConnectError(self.baseurl, val)
 
