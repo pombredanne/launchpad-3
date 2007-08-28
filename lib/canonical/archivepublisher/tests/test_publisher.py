@@ -14,6 +14,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher.diskpool import DiskPool
+from canonical.archivepublisher.publishing import getPublisher
 from canonical.config import config
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.launchpad.interfaces import (
@@ -276,8 +277,6 @@ class TestPublisher(TestNativePublishingBase):
         'main_archive' publication and other for 'PPA', we have a specific
         helper function: 'getPublisher'
         """
-        from canonical.archivepublisher.publishing import getPublisher
-
         # stub parameters
         allowed_suites = [('breezy-autotest', PackagePublishingPocket.RELEASE)]
         distsroot = None
@@ -355,10 +354,35 @@ class TestPublisher(TestNativePublishingBase):
         pending_archive = pending_archives[0]
         self.assertEqual(spiv.archive.id, pending_archive.id)
 
+    def _checkCompressedFile(self, archive_publisher, compressed_file_path,
+                             uncompressed_file_path):
+        """Assert that a compressed file is equal to its uncompressed version.
+
+        Check that a compressed file, such as Releases.gz and Sources.gz
+        matches its uncompressed partner.  The file paths are relative to
+        breezy-autotest/main under the archive_publisher's configured dist
+        root.  'breezy-autotest' is our test distroseries name.
+
+        The contents of the uncompressed file is returned as a list of lines
+        in the file.
+        """
+        index_gz_path = os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest', 'main',
+            compressed_file_path)
+        index_path = os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest', 'main',
+            uncompressed_file_path)
+        index_gz_contents = gzip.GzipFile(
+            filename=index_gz_path).read().splitlines()
+        index_file = open(index_path,'r')
+        index_contents = index_file.read().splitlines()
+        index_file.close()
+        self.assertEqual(index_gz_contents, index_contents)
+
+        return index_contents
+
     def testPPAArchiveIndex(self):
         """Building Archive Indexes from PPA publications."""
-        from canonical.archivepublisher.publishing import getPublisher
-
         allowed_suites = []
 
         cprov = getUtility(IPersonSet).getByName('cprov')
@@ -375,10 +399,11 @@ class TestPublisher(TestNativePublishingBase):
         self.layer.txn.commit()
         archive_publisher.C_writeIndexes(False)
 
-        index_path = os.path.join(
-            archive_publisher._config.distsroot, 'breezy-autotest', 'main',
-            'source', 'Sources.gz')
-        index_contents = gzip.GzipFile(filename=index_path).read().splitlines()
+        # A compressed and uncompressed Sources file is written;
+        # ensure that they are the same after uncompressing the former.
+        index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('source', 'Sources.gz'),
+            os.path.join('source', 'Sources'))
 
         self.assertEqual(
             ['Package: foo',
@@ -394,10 +419,11 @@ class TestPublisher(TestNativePublishingBase):
              ''],
             index_contents)
 
-        index_path = os.path.join(
-            archive_publisher._config.distsroot, 'breezy-autotest', 'main',
-            'binary-i386', 'Packages.gz')
-        index_contents = gzip.GzipFile(filename=index_path).read().splitlines()
+        # A compressed and an uncompressed Packages file is written;
+        # ensure that they are the same after uncompressing the former.
+        index_contents = self._checkCompressedFile(
+            archive_publisher, os.path.join('binary-i386', 'Packages.gz'),
+            os.path.join('binary-i386', 'Packages'))
 
         self.assertEqual(
             ['Package: foo-bin',
@@ -590,7 +616,6 @@ class TestPublisher(TestNativePublishingBase):
         generate/list debian-installer (d-i) indexes in NoMoreAptFtpArchive
         approach.
         """
-        from canonical.archivepublisher.publishing import getPublisher
         allowed_suites = []
         cprov = getUtility(IPersonSet).getByName('cprov')
         archive_publisher = getPublisher(
@@ -634,6 +659,37 @@ class TestPublisher(TestNativePublishingBase):
             first_sha256_line,
             (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
              '8d106a6338              114 main/source/Release'))
+
+    def testReleaseFileForCommercial(self):
+        """Test Release file writing for Commercial archives.
+
+        Signed Release files must reference an uncompressed Sources and
+        Packages file.
+        """
+        # Avoid circular import.
+        archive = self.ubuntutest.getArchiveByComponent('commercial')
+        allowed_suites = []
+        publisher = getPublisher(archive, allowed_suites, self.logger)
+
+        self.getPubSource(filecontent='Hello world', archive=archive)
+
+        publisher.A_publish(False)
+        publisher.C_writeIndexes(False)
+        publisher.D_writeReleaseFiles(False)
+
+        # Open the release file that was just published inside the
+        # 'breezy-autotest' distroseries.
+        release_file = os.path.join(
+            publisher._config.distsroot, 'breezy-autotest', 'Release')
+        release_contents = open(release_file).read().splitlines()
+
+        # The Release file must contain lines ending in "Packages",
+        # "Packages.gz", "Sources" and "Sources.gz".
+        stringified_contents = "\n".join(release_contents)
+        self.assertTrue('Packages.gz\n' in stringified_contents)
+        self.assertTrue('Packages\n' in stringified_contents)
+        self.assertTrue('Sources.gz\n' in stringified_contents)
+        self.assertTrue('Sources\n' in stringified_contents)
 
 
 def test_suite():
