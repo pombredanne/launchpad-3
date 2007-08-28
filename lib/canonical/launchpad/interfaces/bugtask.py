@@ -440,6 +440,9 @@ class IBugTaskSearchBase(Interface):
     omit_dupes = Bool(
         title=_('Omit duplicate bugs'), required=False,
         default=True)
+    omit_targeted = Bool(
+        title=_('Omit bugs targeted to series'), required=False,
+        default=True)
     statusexplanation = TextLine(
         title=_("Status notes"), required=False)
     has_patch = Bool(
@@ -651,7 +654,7 @@ class BugTaskSearchParams:
                  resolved_upstream=False, open_upstream=False,
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
                  bug_contact=None, bug_reporter=None, nominated_for=None,
-                 bug_commenter=None):
+                 bug_commenter=None, omit_targeted=False):
         self.bug = bug
         self.searchtext = searchtext
         self.fast_searchtext = fast_searchtext
@@ -666,6 +669,7 @@ class BugTaskSearchParams:
         self.user = user
         self.orderby = orderby
         self.omit_dupes = omit_dupes
+        self.omit_targeted = omit_targeted
         self.subscriber = subscriber
         self.component = component
         self.pending_bugwatch_elsewhere = pending_bugwatch_elsewhere

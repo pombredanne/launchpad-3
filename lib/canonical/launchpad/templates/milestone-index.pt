@@ -81,6 +81,10 @@
         </tr>
       </tbody>
     </table>
+    <div id="specification-count" class="lesser"
+         style="text-align: right; padding: 1px">
+      <tal:count tal:content="view/specification_count_text" /> listed
+    </div>
 
   </tal:has_specs>
 
@@ -136,6 +140,10 @@
         </tr>
       </tbody>
     </table>
+
+    <div id="bug-count" class="lesser" style="text-align: right; padding: 1px">
+      <tal:count tal:content="view/bugtask_count_text" /> listed
+    </div>
 
   </tal:has_bugtasks>
 
