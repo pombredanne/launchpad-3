@@ -971,7 +971,13 @@ class Roundup(ExternalBugTracker):
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
         try:
-            return self.status_map[remote_status]
+            try:
+                return self.status_map[int(remote_status)]
+            except ValueError:
+                # This will handle those cases where the status passed is
+                # UNKNOWN_REMOTE_STATUS. Anything else will be dealt with by
+                # the outer except clause.
+                return self.status_map[remote_status]
         except KeyError:
             log.warn("Unknown status '%s'" % remote_status)
             return BugTaskStatus.UNKNOWN
@@ -1028,4 +1034,7 @@ class Roundup(ExternalBugTracker):
         except KeyError:
             raise BugNotFound(bug_id)
 
-        return remote_bug.get('status', UNKNOWN_REMOTE_STATUS)
+        try:
+            return int(remote_bug['status'])
+        except KeyError:
+            return UNKNOWN_REMOTE_STATUS
