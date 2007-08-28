@@ -198,7 +198,7 @@ class TestBranchPuller(TestCaseWithTransport):
             os.path.isfile(self._puller_script),
             "%s doesn't exist" % (self._puller_script,))
 
-    def test_mirrorABranch(self):
+    def test_mirrorAHostedBranch(self):
         """Run the puller on a populated pull queue."""
         # XXX: JonathanLange 2007-08-21, This test will fail if run by itself,
         # due to an unidentified bug in bzrlib.trace, possibly related to bug
@@ -211,6 +211,17 @@ class TestBranchPuller(TestCaseWithTransport):
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(branch)
 
+    def test_mirrorAPrivateBranch(self):
+        """Run the puller with a private branch in the queue."""
+        branch = self.getArbitraryBranch(BranchType.HOSTED)
+        self.pushToBranch(branch)
+        branch.requestMirror()
+        branch.private = True
+        LaunchpadZopelessLayer.txn.commit()
+        command, retcode, output, error = self.runPuller('upload')
+        self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertMirrored(branch)
+
     def test_mirrorEmpty(self):
         """Run the puller on an empty pull queue."""
         command, retcode, output, error = self.runPuller("upload")
@@ -218,7 +229,6 @@ class TestBranchPuller(TestCaseWithTransport):
 
     # Possible tests to add:
     # - branch already exists in new location
-    # - private branches
     # - mirrored branches?
     # - imported branches?
     # - branch doesn't exist in fs?
