@@ -90,7 +90,7 @@ a given bug tracker's batch_query_threshold the bugs will be fetched
 one-at-a-time:
 
     >>> trac.batch_query_threshold
-    10.0
+    10
 
     >>> trac.trace_calls = True
     >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])

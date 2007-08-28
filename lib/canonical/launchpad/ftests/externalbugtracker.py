@@ -184,7 +184,7 @@ class TestTrac(Trac):
     for the sake of making test data sane.
     """
 
-    batch_query_threshold = 10.
+    batch_query_threshold = 10
     supports_single_exports = True
     trace_calls = False
 
