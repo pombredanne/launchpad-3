@@ -39,3 +39,13 @@ Now, we should see the spec on the Mozilla Milestone 1.0 page.
 
   >>> admin_browser.getLink('Support <canvas> Objects').url
   'http://blueprints.launchpad.dev/firefox/+spec/canvas'
+
+The page also includes text that says how many specifications are
+targeted to the milestone. Note that the text says "specifications"
+below -- the code pluralizes correctly.
+
+  >>> print find_tag_by_id(admin_browser.contents, 'specification-count')
+  <div id="specification-count"...
+  ... specifications listed
+  </div>
+

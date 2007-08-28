@@ -1067,7 +1067,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         speclist = shortlist(specs, 100)
         return [spec for spec in speclist
                 if (spec != self.context and
-                    spec.product == self.context.product
+                    spec.target == self.context.target
                     and spec not in self.context.all_blocked)]
 
     def _doSearch(self, query):
@@ -1105,7 +1105,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
                                  candidate_specs)
 
     def _all_specs(self):
-        return self._filter_specs(self.context.product.specifications())
+        return self._filter_specs(self.context.target.specifications())
     
     def __iter__(self):
         return (self.toTerm(spec) for spec in self._all_specs())

@@ -19,19 +19,19 @@ True
 '...&quot;example.com/~lifeless/pyresources/&quot; is not a valid URI...'
 
 
-Try to create branches with URLs in bazaar.launchpad.net.
+Try to create branches with URLs in bazaar.launchpad.dev.
 
->>> add_branch('http://bazaar.launchpad.net',)
+>>> add_branch('http://bazaar.launchpad.dev')
 >>> user_browser.url == add_branch_form
 True
 >>> user_browser.contents
-'...Don\'t manually register a bzr branch on <code>bazaar.launchpad.net</code>...'
+'...Don\'t manually register a bzr branch on <code>bazaar.launchpad.dev</code>...'
 
->>> add_branch('http://bazaar.launchpad.net/~me/that/this')
+>>> add_branch('http://bazaar.launchpad.dev/~me/that/this')
 >>> user_browser.url == add_branch_form
 True
 >>> user_browser.contents
-'...Don\'t manually register a bzr branch on <code>bazaar.launchpad.net</code>...'
+'...Don\'t manually register a bzr branch on <code>bazaar.launchpad.dev</code>...'
 
 
 Try to create a branch with a URL that is already registered.

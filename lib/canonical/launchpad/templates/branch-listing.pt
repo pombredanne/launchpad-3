@@ -36,8 +36,11 @@ field.onchange = submit_filter;
         </th>
         <th>Status</th>
         <th>Last Commit</th>
+        <th tal:condition="context/show_column/date_created|nothing">
+          Registered
+        </th>
         <th tal:condition="context/show_column/product|nothing">
-          Product
+          Project
         </th>
         <th tal:condition="context/show_column/role|nothing">
           Role
@@ -52,7 +55,7 @@ field.onchange = submit_filter;
              tal:content="branch/name/fmt:shorten/30">
                Name
           </a>
-          <img src="/@@/locked" alt="private branch" tal:condition="branch/private"/>
+          <img src="/@@/private" alt="private branch" tal:condition="branch/private"/>
           <tal:bugbranch repeat="bugbranch branch/bugbranches">
             <tal:visible
                 define="bug bugbranch/bug"
@@ -72,7 +75,7 @@ field.onchange = submit_filter;
           </a>
         </td>
         <td>
-          <span tal:condition="not:context/multiple_pages" 
+          <span tal:condition="not:context/multiple_pages"
                 tal:content="branch/lifecycle_status/sortkey"
                 class="sortkey">23</span>
           <span tal:content="branch/lifecycle_status/title"
@@ -82,7 +85,7 @@ field.onchange = submit_filter;
         </td>
         <td>
           <tal:has_commit condition="branch/last_commit">
-            <span class="sortkey" 
+            <span class="sortkey"
                   tal:content="branch/last_commit/fmt:datetime">
                2005-02-12 13:45 EST
             </span>
@@ -95,6 +98,16 @@ field.onchange = submit_filter;
               sometime
             </span> ago
           </tal:has_commit>
+        </td>
+        <td tal:condition="context/show_column/date_created|nothing">
+          <span class="sortkey"
+                tal:content="branch/date_created/fmt:datetime">
+            2005-02-12 13:45 EST
+          </span>
+          <span tal:attributes="title branch/date_created/fmt:datetime"
+                tal:content="branch/since_created/fmt:approximateduration">
+            sometime
+            </span> ago
         </td>
         <td tal:condition="context/show_column/product|nothing">
           <a tal:condition="branch/product"

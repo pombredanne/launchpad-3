@@ -1,0 +1,38 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+<body>
+
+<metal:leftportlets fill-slot="portlets">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <tal:branch-link define="branch context">
+    <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
+  </tal:branch-link>
+  <h1>Delete branch</h1>
+
+  <tal:cannot-delete-branch condition="not: context/canBeDeleted">
+    <p>This branch <strong>cannot</strong> be deleted at this time.</p>
+
+    <p>A branch cannot be deleted if it is linked to any bugs or blueprints,
+    or if it has subscribers.</p>
+
+    <p>A branch also cannot be deleted if it has already been pushed to
+    or mirrored.</p>
+  </tal:cannot-delete-branch>
+
+  <tal:can-delete-branch condition="context/canBeDeleted">
+    <p>Branch deletion is permanent.</p>
+    <div metal:use-macro="context/@@launchpad_form/form">
+    </div>
+  </tal:can-delete-branch>
+</div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
+
+</body>
+</html>

@@ -72,6 +72,7 @@ class TestRow:
             'sourcecomment': '',
             'filereferences': '',
             'activesubmission': 65,
+            'context': None,
         }
         self.columns.update(kw)
 
