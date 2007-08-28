@@ -294,9 +294,9 @@ class Publisher(object):
                        % (suite_name, component.name))
 
         self.log.debug("Generating Sources")
-        temp_index_gz = tempfile.mktemp(prefix='source-index_')
+        fd_gz, temp_index_gz = tempfile.mkstemp(prefix='source-index_')
         source_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, 'wb'))
-        temp_index = tempfile.mktemp(prefix='source-index_')
+        fd, temp_index = tempfile.mkstemp(prefix='source-index_')
         source_index = open(temp_index, 'wb')
 
         for spp in distroseries.getSourcePackagePublishing(
@@ -331,8 +331,8 @@ class Publisher(object):
             self.log.debug("Generating Packages for %s" % arch_path)
 
             temp_prefix = '%s-index_' % arch_path
-            temp_index_gz = tempfile.mktemp(prefix=temp_prefix)
-            temp_index = tempfile.mktemp(prefix=temp_prefix)
+            fd_gz, temp_index_gz = tempfile.mkstemp(prefix=temp_prefix)
+            fd, temp_index = tempfile.mkstemp(prefix=temp_prefix)
             package_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, "wb"))
             package_index = open(temp_index, "wb")
 
