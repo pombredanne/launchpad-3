@@ -1027,7 +1027,8 @@ k            </description>
     </sectiontype>
 
     <sectiontype name="checkwatches">
-        <key name="batch_query_threshold" datatype="integer" default="10" />
+        <key name="batch_query_threshold" datatype="integer" default="10"   
+             required="yes" />
     </sectiontype>
 
     <sectiontype name="canonical" extends="database_options">

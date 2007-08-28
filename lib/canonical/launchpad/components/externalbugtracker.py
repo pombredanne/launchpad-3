@@ -120,7 +120,9 @@ class ExternalBugTracker:
         else:
             # XXX: 2007-08-24 Graham Binns
             #      It might be better to do this synchronously for the sake of
-            #      handling timeouts nicely and suchlike.
+            #      handling timeouts nicely. For now, though, we do it
+            #      sequentially for the sake of easing complexity and making
+            #      testing easier.
             for bug_id in bug_ids:
                 bug_id, remote_bug = self.getRemoteBug(bug_id)
                 self.bugs[bug_id] = remote_bug
