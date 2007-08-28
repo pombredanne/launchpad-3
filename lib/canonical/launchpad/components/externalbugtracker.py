@@ -957,10 +957,13 @@ class Roundup(ExternalBugTracker):
         UNKNOWN_REMOTE_STATUS: BugTaskStatus.UNKNOWN
     }
 
-    # The base URL that we will use for retrieving Roundup bugs in CSV format.
     single_bug_export_url = (
-        "issue?%%40columns=id&%%40columns=status&%%40columns=priority"
-        "&%%40columns=resolution&%%40action=search&pagesize=%i&id=%i")
+        "issue?@columns=id&@columns=status&@columns=priority"
+        "&@columns=resolution&@action=export_csv&pagesize=%i&id=%i")
+
+    batch_bug_export_url = (
+        "issue?@columns=id&@columns=status&@columns=priority"
+        "&@columns=resolution&@action=export_csv&status=&sort=id")
 
     def __init__(self, baseurl):
         self.baseurl = baseurl
@@ -986,3 +989,43 @@ class Roundup(ExternalBugTracker):
         reader = csv.DictReader(csv_data)
         return (bug_id, reader.next())
 
+    def getRemoteBugBatch(self, bug_ids):
+        """See `ExternalBugTracker`"""
+        # XXX: 2007-08-28 Graham Binns
+        #      At present, Roundup does not support exporting only a subset of
+        #      bug ids as a batch (bug 135317 in Malone). When this bug is
+        #      fixed, we need to change this method to only export the bug ids
+        #      needed rather than hitting the remote tracker for a potentially
+        #      massive number of bugs.
+        query_url = "%s/%s" % (self.baseurl, self.batch_bug_export_url)
+        try:
+            csv_data = self.urlopen(query_url)
+        except (urllib2.HTTPError, urllib2.URLError), val:
+            raise BugTrackerConnectError(query_url, val)
+
+        remote_bugs = csv.DictReader(csv_data)
+        bugs = {}
+        for remote_bug in remote_bugs:
+            # We're only interested in the bug if it's one of the ones in
+            # bug_ids.
+            if remote_bug['id'] not in bug_ids:
+                continue
+
+            bugs[int(remote_bug['id'])] = remote_bug
+
+        return bugs
+
+    def getRemoteStatus(self, bug_id):
+        """See `ExternalBugTracker`."""
+        try:
+            bug_id = int(bug_id)
+        except ValueError:
+            raise InvalidBugId(
+                "bug_id must be convertable an integer: %s" % str(bug_id))
+
+        try:
+            remote_bug = self.bugs[bug_id]
+        except KeyError:
+            raise BugNotFound(bug_id)
+
+        return remote_bug.get('status', UNKNOWN_REMOTE_STATUS)
