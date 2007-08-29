@@ -7,8 +7,8 @@ bugwatches.
 == Basics ==
 
 The ExternalBugTracker descendant class which implements methods for updating
-bug watches on Roundup bug trackers is externalbugtracker.Trac, which implements
-IExternalBugTracker.
+bug watches on Roundup bug trackers is externalbugtracker.Roundup, which
+implements IExternalBugTracker.
 
     >>> from canonical.launchpad.components.externalbugtracker import Roundup
     >>> from canonical.launchpad.interfaces.externalbugtracker import (
