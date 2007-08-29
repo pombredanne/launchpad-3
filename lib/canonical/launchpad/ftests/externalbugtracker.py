@@ -188,7 +188,7 @@ class TestTrac(Trac):
     supports_single_exports = True
     trace_calls = False
 
-    def supportsSingleExports(self):
+    def supportsSingleExports(self, bug_ids):
         """See `Trac`."""
         return self.supports_single_exports
 
@@ -202,11 +202,11 @@ class TestTrac(Trac):
 
 
 class TestRoundup(Roundup):
-    """Trac ExternalBugTracker for testing purposes.
+    """Roundup ExternalBugTracker for testing purposes.
 
-    It overrides urlopen, so that access to a real Trac instance isn't needed.
-    Also, it overrides the default batch_query_threshold for the sake of
-    making test data sane.
+    It overrides urlopen, so that access to a real Roundup instance isn't
+    needed.  Also, it overrides the default batch_query_threshold for the sake
+    of making test data sane.
     """
 
     trace_calls = False

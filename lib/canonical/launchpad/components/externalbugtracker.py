@@ -820,22 +820,42 @@ class Trac(ExternalBugTracker):
         # a 404.
         self.baseurl = baseurl.rstrip('/')
 
-    def supportsSingleExports(self):
+    def supportsSingleExports(self, bug_ids):
         """Return True if the Trac instance provides CSV exports for single
         tickets, False otherwise.
+
+        :bug_ids: A list of bug IDs that we can use for discovery purposes.
         """
-        try:
-            # We check for CSV export support by trying to export ticket #1
-            # from the trac instance in CSV format. Some Trac instances will
-            # (correctly) return an HTTP 500 if CSV exports are not available,
-            # but we check the returned data's content type if the server
-            # gives us an HTTP 200, just in case.
-            # We use ticket #1 here because it's more-or-less guaranteed to
-            # exist as long as the Trac instance has any tickets at all.
-            http_data = self.urlopen(
-                "%s/%s" % (self.baseurl, self.ticket_url % 1))
-            return http_data.headers.subtype == 'csv'
-        except (urllib2.HTTPError, urllib2.URLError):
+        valid_ticket = False
+        html_ticket_url = '%s/%s' % (
+            self.baseurl, self.ticket_url.replace('?format=csv', ''))
+
+        bug_ids = list(bug_ids)
+        while not valid_ticket and len(bug_ids) > 0:
+            try:
+                # We try to retrive the ticket in HTML form, since that will
+                # tell us whether or not it is actually a valid ticket
+                ticket_id = int(bug_ids.pop())
+                html_data = self.urlopen(html_ticket_url % ticket_id)
+            except (ValueError, urllib2.HTTPError):
+                # If we get an HTTP error we can consider the ticket to be
+                # invalid. If we get a ValueError then the ticket_id couldn't
+                # be intified and it's of no use to us anyway.
+                pass
+            else:
+                # If we didn't get an error we can try to get the ticket in
+                # CSV form. If this fails then we can consider single ticket
+                # exports to be unsupported.
+                try:
+                    csv_data = self.urlopen(
+                        "%s/%s" % (self.baseurl, self.ticket_url % ticket_id))
+                    return csv_data.headers.subtype == 'csv'
+                except (urllib2.HTTPError, urllib2.URLError):
+                    return False
+        else:
+            # If we reach this point then we likely haven't had any valid
+            # tickets or something else is wrong. Either way, we can only
+            # assume that CSV exports of single tickets aren't supported.
             return False
 
     def initializeRemoteBugDB(self, bug_ids):
@@ -851,7 +871,7 @@ class Trac(ExternalBugTracker):
         # exports-per-ticket we fail over to using the batch export method for
         # retrieving bug statuses.
         if (len(bug_ids) < self.batch_query_threshold and
-            self.supportsSingleExports()):
+            self.supportsSingleExports(bug_ids)):
             for bug_id in bug_ids:
                 # If we can't get the remote bug for any reason a
                 # BugTrackerConnectError will be raised at this point.
@@ -911,11 +931,13 @@ class Trac(ExternalBugTracker):
             remote_bug['resolution'] not in ['', '--', None]):
             return remote_bug['resolution']
         else:
-            # Some Trac instances don't include the bug status in their CSV
-            # exports. In those cases we acknowledge that the bug exists but
-            # simply return UNKNOWN_REMOTE_STATUS. Otherwise we return the
-            # status specified in the CSV export.
-            return remote_bug.get('status', UNKNOWN_REMOTE_STATUS)
+            try:
+                return remote_bug['status']
+            except KeyError:
+                # Some Trac instances don't include the bug status in their
+                # CSV exports. In those cases we raise a warning.
+                log.warn("Trac ticket %i defines no status" % bug_id)
+                return UNKNOWN_REMOTE_STATUS
 
     def convertRemoteStatus(self, remote_status):
         """See IExternalBugTracker"""
