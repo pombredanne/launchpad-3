@@ -32,6 +32,7 @@ get_external_bugtracker supports four external bug tracker types:
     ...     BugTrackerType.BUGZILLA,
     ...     BugTrackerType.DEBBUGS,
     ...     BugTrackerType.MANTIS,
+    ...     BugTrackerType.ROUNDUP,
     ...     BugTrackerType.TRAC]
 
     >>> for bugtracker_type in bugtracker_types:
@@ -54,4 +55,5 @@ get_external_bugtracker supports four external bug tracker types:
     Bugzilla --> <...externalbugtracker.Bugzilla object at ...>
     Debbugs --> <...externalbugtracker.DebBugs object at ...>
     Mantis --> <...externalbugtracker.Mantis object at ...>
+    Roundup --> <...externalbugtracker.Roundup object at ...>
     Trac --> <...externalbugtracker.Trac object at ...>
