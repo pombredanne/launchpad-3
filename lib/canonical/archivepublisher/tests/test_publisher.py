@@ -105,6 +105,31 @@ class TestPublisher(TestNativePublishingBase):
             config.distsroot, 'breezy-autotest', 'Release')
         self.assertTrue(open(release_file))
 
+    def testCommercialReleasePocketPublishing(self):
+        """Test commercial package RELEASE pocket publishing.
+
+        Publishing commercial packages out of the RELEASE pocket in a stable
+        distroseries is always allowed, so check for that here.
+        """
+        from canonical.archivepublisher.publishing import Publisher
+        archive = self.ubuntutest.getArchiveByComponent('commercial')
+        config = removeSecurityProxy(archive.getPubConfig())
+        config.setupArchiveDirs()
+        disk_pool = DiskPool(config.poolroot, config.temproot, self.logger)
+        publisher = Publisher(self.logger, config, disk_pool, archive)
+        pub_source = self.getPubSource(
+            archive=archive, filecontent="I am commercial",
+            status=PackagePublishingStatus.PENDING)
+
+        publisher.A_publish(False)
+
+        # The pocket was dirtied:
+        self.assertDirtyPocketsContents(
+            [('breezy-autotest', 'RELEASE')], publisher.dirty_pockets)
+        # The file was published:
+        foo_path = "%s/main/f/foo/foo.dsc" % config.poolroot
+        self.assertEqual(open(foo_path).read().strip(), 'I am commercial')
+
     def testPublishingSpecificDistroSeries(self):
         """Test the publishing procedure with the suite argument.
 
@@ -358,7 +383,7 @@ class TestPublisher(TestNativePublishingBase):
                              uncompressed_file_path):
         """Assert that a compressed file is equal to its uncompressed version.
 
-        Check that a compressed file, such as Releases.gz and Sources.gz
+        Check that a compressed file, such as Packages.gz and Sources.gz
         matches its uncompressed partner.  The file paths are relative to
         breezy-autotest/main under the archive_publisher's configured dist
         root.  'breezy-autotest' is our test distroseries name.
@@ -666,7 +691,6 @@ class TestPublisher(TestNativePublishingBase):
         Signed Release files must reference an uncompressed Sources and
         Packages file.
         """
-        # Avoid circular import.
         archive = self.ubuntutest.getArchiveByComponent('commercial')
         allowed_suites = []
         publisher = getPublisher(archive, allowed_suites, self.logger)
