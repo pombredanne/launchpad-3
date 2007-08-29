@@ -127,9 +127,12 @@ Let's add a few more watches:
 Instead of issuing one request per bug watch, like was done before,
 updateBugWatches() issues only one request to update all watches:
 
+    >>> from operator import attrgetter
+    >>> getid = attrgetter('id')
+
     >>> example_ext_bug_tracker.trace_calls = True
     >>> example_ext_bug_tracker.updateBugWatches(
-    ...     sorted(example_bug_tracker.watches))
+    ...     sorted(example_bug_tracker.watches, key=getid))
     CALLED _getPage(u'view.php?id=1550')
     CALLED _getPage(u'view.php?id=1679')
     CALLED _getPage(u'view.php?id=1730')
@@ -183,7 +186,7 @@ updated:
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
-    >>> bug_watch = example_bug_tracker.watches[0]
+    >>> bug_watch = sorted(example_bug_tracker.watches, key=getid)[0]
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
     >>> old_last_changed = bug_watch.lastchanged

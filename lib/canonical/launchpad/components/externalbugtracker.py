@@ -556,16 +556,16 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
     to Mantis anonymously if needed.
 
     The ALSA bug tracker is the only tested Mantis installation that
-    actually needs this. For ALSA bugs, the dance is like so (omitting
-    common URL prefixes for clarity):
+    actually needs this. For ALSA bugs, the dance is like so:
 
-      1. We request /view.php?id=3301
+      1. We request bug 3301 ('jack sensing problem'):
+           https://bugtrack.alsa-project.org/alsa-bug/view.php?id=3301
 
       2. Mantis redirects us to:
-           /login_page.php?return=%2Fview.php%3Fid%3D3301
+           .../alsa-bug/login_page.php?return=%2Falsa-bug%2Fview.php%3Fid%3D3301
 
       3. We notice this, rewrite the query, and skip to login.php:
-           /login.php?return=%2Fview.php%3Fid%3D3301&username=guest&password=guest
+           .../alsa-bug/login.php?return=%2Falsa-bug%2Fview.php%3Fid%3D3301&username=guest&password=guest
 
       4. Mantis accepts our credentials then redirects us to the bug
          view page via a cookie test page (login_cookie_test.php)
@@ -573,8 +573,8 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
 
     def redirect_request(self, newurl, req, fp, code, msg, headers):
         # XXX: The argument order here is different from that in
-        # urllib2.HTTPRedirectHandler. ClientCookie is *meant* to
-        # mimic urllib2 (and does subclass it), so this is probably a
+        # urllib2.HTTPRedirectHandler. ClientCookie is meant to mimic
+        # urllib2 (and does subclass it), so this is probably a
         # bug. -- Gavin Panella, 2007-08-27
 
         scheme, host, path, params, query, fragment = (
@@ -637,6 +637,28 @@ class Mantis(ExternalBugTracker):
         # tracks cookies.
         return self._opener.open(request, data)
 
+    def _checkForApplicationError(self, page_soup):
+        """If Mantis does not find the bug it still returns a 200 OK
+        response, so we need to look into the page to figure it out.
+
+        If there is no error, None is returned.
+
+        If there is an error, a 2-tuple of (code, message) is
+        returned, both unicode strings.
+        """
+        app_error = page_soup.find(
+            text=lambda node: (node.startswith('APPLICATION ERROR ')
+                               and node.parent['class'] == 'form-title'
+                               and not isinstance(node, Comment)))
+        if app_error:
+            app_error_code = ''.join(c for c in app_error if c.isdigit())
+            app_error_message = app_error.findNext('p')
+            if app_error_message is not None:
+                app_error_message = app_error_message.string
+            return app_error_code, app_error_message
+
+        return None
+
     def _findValueRightOfKey(self, page_soup, key):
         """Scrape a value from a Mantis bug view page where the value
         is displayed to the right of the key.
@@ -657,14 +679,17 @@ class Mantis(ExternalBugTracker):
             text=lambda node: (node.strip() == key
                                and not isinstance(node, Comment)))
         if key_node is None:
-            raise KeyError(key)
+            raise UnparseableBugData(
+                "Key %r not found." % (key,))
 
         value_cell = key_node.findNext('td')
         value_node = value_cell.string
 
         if value_node is None:
-            raise KeyError(key)
-        return value_node.string.strip()
+            raise UnparseableBugData(
+                "Value for key %r not found." % (key,))
+
+        return value_node.strip()
 
     def _findValueBelowKey(self, page_soup, key):
         """Scrape a value from a Mantis bug view page where the value
@@ -686,7 +711,8 @@ class Mantis(ExternalBugTracker):
             text=lambda node: (node.strip() == key
                                and not isinstance(node, Comment)))
         if key_node is None:
-            raise KeyError(key)
+            raise UnparseableBugData(
+                "Key %r not found." % (key,))
 
         key_cell = key_node.parent
         key_row = key_cell.parent
@@ -697,7 +723,9 @@ class Mantis(ExternalBugTracker):
         value_node = value_cell.string
 
         if value_node is None:
-            raise KeyError(key)
+            raise UnparseableBugData(
+                "Value for key %r not found." % (key,))
+
         return value_node.strip()
 
     def getRemoteStatus(self, bug_id):
@@ -705,14 +733,33 @@ class Mantis(ExternalBugTracker):
             raise InvalidBugId(
                 "Mantis (%s) bug number not an integer: %s" % (
                     self.baseurl, bug_id))
+
+        bug_page = BeautifulSoup(
+            self._getPage('view.php?id=%s' % bug_id),
+            convertEntities=BeautifulSoup.HTML_ENTITIES)
+
+        app_error = self._checkForApplicationError(bug_page)
+        if app_error:
+            app_error_code, app_error_message = app_error
+            # 1100 is ERROR_BUG_NOT_FOUND in Mantis (see
+            # mantisbt/core/constant_inc.php) so we raise
+            # BugNotFound.
+            if app_error_code == '1100':
+                raise BugNotFound(bug_id)
+            else:
+                raise BugWatchUpdateError(
+                    "Mantis APPLICATION ERROR #%s: %s" % (
+                        app_error_code, app_error_message))
+
         try:
-            bug_page = BeautifulSoup(
-                self._getPage('view.php?id=%s' % bug_id),
-                convertEntities=BeautifulSoup.HTML_ENTITIES)
             status = self._findValueRightOfKey(bug_page, 'Status')
             resolution = self._findValueRightOfKey(bug_page, 'Resolution')
-        except KeyError:
-            raise BugNotFound(bug_id)
+        except (AttributeError, IndexError, ValueError), e:
+            # These exceptions can come from traversing a
+            # BeautifulSoup tree that is not formed as expected. We
+            # catch them here to avoid pedantic error checking after
+            # every step through the tree.
+            raise UnparseableBugData(e)
 
         # Use a colon and a space to join status and resolution because
         # there is a chance that statuses contain spaces, and because
