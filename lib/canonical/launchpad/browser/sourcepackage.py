@@ -244,3 +244,12 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
     def searchName(self):
         return False
 
+    def defaultBuildState(self):
+        """Default build state for sourcepackage builds.
+
+        This overrides the default that is set on BuildRecordsView."""
+        # None maps to "all states".  We require all states on sourcepackage
+        # builds because the list of architectures is not big enough to
+        # fill more than one page, so presenting all builds makes more sense.
+        return None
+
