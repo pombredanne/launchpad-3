@@ -18,8 +18,7 @@
   </tal:branch-link>
   <h1>Branch landing candidates</h1>
 
-    <div class="mergeproposal" tal:repeat="mergeproposal view/landing_candidates">
-
+    <tal:proposals repeat="mergeproposal view/landing_candidates">
       <tal:landing-candidate
           define="branch mergeproposal/source_branch;
                   dependent_branch nothing;
@@ -28,8 +27,7 @@
                   ">
         <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
       </tal:landing-candidate>
-
-    </div>
+    </tal:proposals>
 
 </div>
 

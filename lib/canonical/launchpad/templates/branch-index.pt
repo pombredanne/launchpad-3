@@ -181,35 +181,32 @@
   <div id="landing-targets" tal:condition="view/landing_targets">
     <h2>Landing targets</h2>
 
-    <div class="mergeproposal" tal:repeat="mergeproposal view/landing_targets">
-
+    <tal:proposals repeat="mergeproposal view/landing_targets">
       <tal:landing-target
           define="branch mergeproposal/target_branch;
                   dependent_branch mergeproposal/dependent_branch;
                   ">
         <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
       </tal:landing-target>
-
-    </div>
+    </tal:proposals>
   </div>
 
   <div id="dependent-branches" tal:condition="context/dependent_branches">
     <h2>Dependent branches</h2>
-    <div class="mergeproposal" tal:repeat="mergeproposal context/dependent_branches">
 
+    <tal:proposals repeat="mergeproposal context/dependent_branches">
       <tal:dependent-branch
           define="branch mergeproposal/source_branch;
                   ">
         <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
       </tal:dependent-branch>
-
-    </div>
+    </tal:proposals>
   </div>
 
   <div id="landing-candidates" tal:condition="view/latest_landing_candidates">
     <h2>Landing candidates</h2>
-    <div class="mergeproposal" tal:repeat="mergeproposal view/latest_landing_candidates">
 
+    <tal:proposals repeat="mergeproposal view/latest_landing_candidates">
       <tal:landing-candidate
           define="branch mergeproposal/source_branch;
                   show_associations python:True;
@@ -217,8 +214,7 @@
                   ">
         <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
       </tal:landing-candidate>
-
-    </div>
+    </tal:proposals>
     <a href="+landing-candidates">more&#8230;</a>
   </div>
 
