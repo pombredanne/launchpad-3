@@ -13,7 +13,7 @@ well.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://bugs.launchpad.dev/firefox/+bug/13
+    http://bugs.launchpad.dev/firefox/+bug/14
 
 Now sabdfl, because he's the bug reporter, and guadamen, because they
 are the product bug contact are subscribed to this bug:
@@ -29,7 +29,7 @@ are the product bug contact are subscribed to this bug:
 
     >>> login(ANONYMOUS)
     >>> bugset = getUtility(IBugSet)
-    >>> subscriber_names(bugset.get(13))
+    >>> subscriber_names(bugset.get(14))
     [u'GuadaMen', u'Mark Shuttleworth']
     >>> logout()
 
@@ -53,12 +53,12 @@ subscribed, because Firefox does not have a security contact.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://bugs.launchpad.dev/firefox/+bug/14
+    http://bugs.launchpad.dev/firefox/+bug/15
 
     >>> logout()
     >>> login("mark@hbd.com")
 
-    >>> subscriber_names(bugset.get(14))
+    >>> subscriber_names(bugset.get(15))
     [u'Mark Shuttleworth', u'Sample Person']
 
     >>> logout()

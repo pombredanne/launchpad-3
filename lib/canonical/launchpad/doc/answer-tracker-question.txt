@@ -8,7 +8,7 @@ Distributions and DistributionSourcePackages.
 
     >>> login('test@canonical.com')
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IProductSet, IPersonSet, IQuestionTarget)
 

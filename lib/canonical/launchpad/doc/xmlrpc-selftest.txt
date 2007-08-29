@@ -3,7 +3,7 @@
 The Launchpad root object has a simple XMLRPC API to show that XMLRPC works.
 
     >>> from canonical.launchpad.xmlrpc import SelfTest, ISelfTest
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> selftestview = SelfTest('somecontext', 'somerequest')
     >>> verifyObject(ISelfTest, selftestview)
     True
