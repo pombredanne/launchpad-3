@@ -683,8 +683,11 @@ class Mantis(ExternalBugTracker):
                 "Key %r not found." % (key,))
 
         value_cell = key_node.findNext('td')
-        value_node = value_cell.string
+        if value_cell is None:
+            raise UnparseableBugData(
+                "Value cell for key %r not found." % (key,))
 
+        value_node = value_cell.string
         if value_node is None:
             raise UnparseableBugData(
                 "Value for key %r not found." % (key,))
@@ -715,13 +718,32 @@ class Mantis(ExternalBugTracker):
                 "Key %r not found." % (key,))
 
         key_cell = key_node.parent
+        if key_cell is None:
+            raise UnparseableBugData(
+                "Cell for key %r not found." % (key,))
+
         key_row = key_cell.parent
-        key_pos = key_row.findAll('td').index(key_cell)
+        if key_row is None:
+            raise UnparseableBugData(
+                "Row for key %r not found." % (key,))
+
+        try:
+            key_pos = key_row.findAll('td').index(key_cell)
+        except ValueError:
+            raise UnparseableBugData(
+                "Key cell in row for key %r not found." % (key,))
 
         value_row = key_row.findNextSibling('tr')
-        value_cell = value_row.findAll('td')[key_pos]
-        value_node = value_cell.string
+        if value_row is None:
+            raise UnparseableBugData(
+                "Value row for key %r not found." % (key,))
 
+        value_cell = value_row.findAll('td')[key_pos]
+        if value_cell is None:
+            raise UnparseableBugData(
+                "Value cell for key %r not found." % (key,))
+
+        value_node = value_cell.string
         if value_node is None:
             raise UnparseableBugData(
                 "Value for key %r not found." % (key,))
@@ -751,15 +773,8 @@ class Mantis(ExternalBugTracker):
                     "Mantis APPLICATION ERROR #%s: %s" % (
                         app_error_code, app_error_message))
 
-        try:
-            status = self._findValueRightOfKey(bug_page, 'Status')
-            resolution = self._findValueRightOfKey(bug_page, 'Resolution')
-        except (AttributeError, IndexError, ValueError), e:
-            # These exceptions can come from traversing a
-            # BeautifulSoup tree that is not formed as expected. We
-            # catch them here to avoid pedantic error checking after
-            # every step through the tree.
-            raise UnparseableBugData(e)
+        status = self._findValueRightOfKey(bug_page, 'Status')
+        resolution = self._findValueRightOfKey(bug_page, 'Resolution')
 
         # Use a colon and a space to join status and resolution because
         # there is a chance that statuses contain spaces, and because
