@@ -101,7 +101,7 @@ fetched as a batch:
 
     >>> roundup.batch_query_threshold = 4
     >>> roundup.initializeRemoteBugDB([6, 7, 8, 9, 10])
-    CALLED urlopen('http://test.roundup/issue?...&status=&sort=id')
+    CALLED urlopen('http://test.roundup/issue?...@startwith=0')
 
 
 == Invalid Bug Statuses ==
@@ -194,7 +194,7 @@ We'll add some more watches now.
 
     >>> roundup.trace_calls = True
     >>> roundup.updateBugWatches(example_bug_tracker.watches)
-    CALLED urlopen(u'http://bugs.example.com/issue?...&status=&sort=id')
+    CALLED urlopen(u'http://bugs.example.com/issue?...@startwith=0')
 
     >>> for remote_bug_id in sorted(bug_watches.keys()):
     ...     remote_status = bug_watches[remote_bug_id].remotestatus

@@ -959,14 +959,19 @@ class Roundup(ExternalBugTracker):
         UNKNOWN_REMOTE_STATUS: BugTaskStatus.UNKNOWN
     }
 
+    # XXX: 2007-08-29 Graham Binns
+    #      I really don't like these URLs but Roundup seems to be very
+    #      sensitive to changing them. These are the only ones that I can find
+    #      that work consistently on all the roundup instances I can find to
+    #      test them against, but I think that refining these should be looked
+    #      into at some point.
     single_bug_export_url = (
         "issue?@action=export_csv&@columns=title,id,activity,status"
-        "&@sort=activity&@group=priority&@filter=id&@pagesize=50"
+        "&@sort=id&@group=priority&@filter=id&@pagesize=50"
         "&@startwith=0&id=%i")
-
     batch_bug_export_url = (
-        "issue?@columns=id&@columns=status&@columns=priority"
-        "&@columns=resolution&@action=export_csv&status=&sort=id")
+        "issue?@action=export_csv&@columns=title,id,activity,status"
+        "&@sort=activity&@group=priority&@pagesize=50&@startwith=0")
 
     def __init__(self, baseurl):
         # We strip any trailing slashes to ensure that we don't end up
@@ -1002,9 +1007,9 @@ class Roundup(ExternalBugTracker):
         """See `ExternalBugTracker`"""
         # XXX: 2007-08-28 Graham Binns
         #      At present, Roundup does not support exporting only a subset of
-        #      bug ids as a batch (bug 135317 in Malone). When this bug is
-        #      fixed, we need to change this method to only export the bug ids
-        #      needed rather than hitting the remote tracker for a potentially
+        #      bug ids as a batch (bug 135317). When this bug is fixed we
+        #      need to change this method to only export the bug ids needed
+        #      rather than hitting the remote tracker for a potentially
         #      massive number of bugs.
         query_url = "%s/%s" % (self.baseurl, self.batch_bug_export_url)
         try:
