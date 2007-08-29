@@ -203,7 +203,7 @@ class IPOMsgSet(Interface):
         """
 
     def updateFlags():
-        """Update the complete and fuzzy flags for this IPOMsgSet.
+        """Update `iscomplete`, `isfuzzy`, and `isupdated` flags.
 
         The new values will reflect current status of this entry.
         """
