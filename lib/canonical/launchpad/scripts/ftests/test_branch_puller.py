@@ -10,14 +10,12 @@ import os
 import shutil
 from subprocess import PIPE, Popen
 import sys
-import tempfile
 import unittest
 from urlparse import urljoin, urlparse
 import xmlrpclib
 
 from bzrlib.branch import Branch
 from bzrlib.tests import HttpServer, TestCaseWithTransport
-from bzrlib.transport import get_transport
 from bzrlib.urlutils import local_path_from_url
 
 from zope.component import getUtility
