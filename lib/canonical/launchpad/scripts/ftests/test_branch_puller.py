@@ -12,7 +12,7 @@ from subprocess import PIPE, Popen
 import sys
 import tempfile
 import unittest
-from urlparse import urljoin
+from urlparse import urljoin, urlparse
 import xmlrpclib
 
 from bzrlib.branch import Branch
@@ -166,11 +166,8 @@ class TestBranchPuller(TestCaseWithTransport):
         retcode, output, error = self.runSubprocess(command)
         return command, retcode, output, error
 
-    def serveOverHTTP(self, path, port=0):
-        """Serve the given path over HTTP, returning the server URL."""
-        cwd = os.getcwd()
-        os.chdir(path)
-        self.addCleanup(lambda: os.chdir(cwd))
+    def serveOverHTTP(self, port=0):
+        """Serve the current directory over HTTP, returning the server URL."""
         http_server = HttpServer()
         http_server.port = port
         http_server.setUp()
@@ -219,24 +216,39 @@ class TestBranchPuller(TestCaseWithTransport):
         """Run the puller on a populated mirrored branch pull queue."""
         branch = self.getArbitraryBranch(BranchType.MIRRORED)
         tree = self.createTemporaryBazaarBranchAndTree()
-        branch.url = self.serveOverHTTP(local_path_from_url(tree.branch.base))
+        branch.url = self.serveOverHTTP()
         branch.requestMirror()
         LaunchpadZopelessLayer.txn.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(branch.url, branch)
 
+    def _getImportMirrorPort(self):
+        """Return the port used to serve imported branches, as specified in
+        config.launchpad.bzr_imports_root_url.
+        """
+        address = urlparse(config.launchpad.bzr_imports_root_url)[1]
+        host, port = address.split(':')
+        self.assertEqual(
+            'localhost', host,
+            'bzr_imports_root_url must be configured on localhost: %s'
+            % (config.launchpad.bzr_imports_root_url,))
+        return int(port)
+
     def test_mirrorAnImportedBranch(self):
         """Run the puller on a populated imported branch pull queue."""
-        port = int(
-            config.launchpad.bzr_imports_root_url.rstrip('/').split(':')[-1])
+        # Create the branch in the database.
         branch = self.getArbitraryBranch(BranchType.IMPORTED)
         branch.requestMirror()
         LaunchpadZopelessLayer.txn.commit()
+        
+        # Create the Bazaar branch and serve it in the expected location.
         branch_path = '%08x' % branch.id
         os.mkdir(branch_path)
         self.createTemporaryBazaarBranchAndTree(branch_path)
-        import_url = self.serveOverHTTP('.', port)
+        import_url = self.serveOverHTTP(self._getImportMirrorPort())
+
+        # Run the puller.
         command, retcode, output, error = self.runPuller("import")
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(urljoin(import_url, branch_path), branch)
