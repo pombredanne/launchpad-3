@@ -14,6 +14,7 @@ from canonical.authserver.interfaces import WRITABLE
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.launchpad.ftests.harness import (
     LaunchpadTestCase, LaunchpadTestSetup)
+from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.config import config
 
