@@ -33,6 +33,12 @@ True
 >>> user_browser.contents
 '...Don\'t manually register a bzr branch on <code>bazaar.launchpad.dev</code>...'
 
+>>> add_branch('sftp://bazaar.launchpad.dev/~me/that/this')
+>>> user_browser.url == add_branch_form
+True
+>>> user_browser.contents
+'...Don\'t manually register a bzr branch on <code>bazaar.launchpad.dev</code>...'
+
 
 Try to create a branch with a URL that is already registered.
 
