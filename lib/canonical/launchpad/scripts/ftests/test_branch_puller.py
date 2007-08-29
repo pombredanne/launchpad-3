@@ -10,7 +10,9 @@ import os
 import shutil
 from subprocess import PIPE, Popen
 import sys
+import tempfile
 import unittest
+from urlparse import urljoin
 import xmlrpclib
 
 from bzrlib.branch import Branch
@@ -79,11 +81,11 @@ class TestBranchPuller(TestCaseWithTransport):
         self.assertEqual('', stdout)
         self.assertEqual('', stderr)
 
-    def createTemporaryBazaarBranchAndTree(self):
+    def createTemporaryBazaarBranchAndTree(self, base_directory='.'):
         """Create a local branch with one revision, return the working tree."""
-        tree = self.make_branch_and_tree('.')
+        tree = self.make_branch_and_tree(base_directory)
         self.local_branch = tree.branch
-        self.build_tree(['foo'])
+        self.build_tree([os.path.join(base_directory, 'foo')])
         tree.add('foo')
         tree.commit('Added foo', rev_id='rev1')
         return tree
@@ -202,19 +204,42 @@ class TestBranchPuller(TestCaseWithTransport):
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(self.getHostedPath(branch), branch)
 
+    def serveOverHTTP(self, path, port=0):
+        """Serve the given path over HTTP, returning the server URL."""
+        cwd = os.getcwd()
+        os.chdir(path)
+        self.addCleanup(lambda: os.chdir(cwd))
+        http_server = HttpServer()
+        http_server.port = port
+        http_server.setUp()
+        self.addCleanup(http_server.tearDown)
+        return http_server.get_url().rstrip('/')
+
     def test_mirrorAMirroredBranch(self):
         branch = self.getArbitraryBranch(BranchType.MIRRORED)
         tree = self.createTemporaryBazaarBranchAndTree()
-        transport = get_transport(tree.branch.base)
-        http_server = HttpServer()
-        http_server.setUp()
-        self.addCleanup(http_server.tearDown)
-        branch.url = http_server.get_url().rstrip('/')
+        branch.url = self.serveOverHTTP(local_path_from_url(tree.branch.base))
         branch.requestMirror()
         LaunchpadZopelessLayer.txn.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(branch.url, branch)
+
+    def test_mirrorAnImportedBranch(self):
+        port = int(
+            config.launchpad.bzr_imports_root_url.rstrip('/').split(':')[-1])
+        base_directory = tempfile.mkdtemp(dir=os.getcwd())
+        base_directory = os.path.basename(base_directory)
+        branch = self.getArbitraryBranch(BranchType.IMPORTED)
+        branch.requestMirror()
+        LaunchpadZopelessLayer.txn.commit()
+        branch_path = os.path.join(base_directory, '%08x' % branch.id)
+        os.mkdir(branch_path)
+        self.createTemporaryBazaarBranchAndTree(branch_path)
+        import_url = self.serveOverHTTP(base_directory, port)
+        command, retcode, output, error = self.runPuller("import")
+        self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertMirrored(urljoin(import_url, '%08x' % branch.id), branch)
 
     def test_mirrorEmpty(self):
         """Run the puller on an empty pull queue."""
@@ -223,8 +248,6 @@ class TestBranchPuller(TestCaseWithTransport):
 
     # Possible tests to add:
     # - branch already exists in new location
-    # - mirrored branches?
-    # - imported branches?
     # - branch doesn't exist in fs?
     # - different branch exists in new location
     # - running puller while another puller is running
