@@ -506,7 +506,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Expected email containing 'OK: foocomm_1.0-2_i386.deb', got:\n%s"
             % raw_msg)
 
-    def testCommercialUploadPockets(self):
+    def testCommercialUploadToNonReleasePocket(self):
         """Test commercial upload pockets.
 
         Commercial uploads must be targeted to the RELEASE pocket only
