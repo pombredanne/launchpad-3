@@ -105,19 +105,6 @@ fetched as a batch:
     CALLED urlopen('http://test.roundup/issue?...@startwith=0')
 
 
-== Invalid Bug Statuses ==
-
-Some Roundup instances don't specificy a status field in their CSV exports. To
-deal with this, our Roundup instance will simply return UNKNOWN_REMOTE_STATUS
-when it encounters such an instance. We can demonstrate this with a simple
-invalid bug:
-
-    >>> invalid_bug = {'id': 1, 'description': 'This bug has no status'}
-    >>> roundup.bugs = {invalid_bug['id']: invalid_bug}
-    >>> roundup.getRemoteStatus(invalid_bug['id'])
-    'UNKNOWN'
-
-
 == Updating Bug Watches ==
 
 First, we create some bug watches to test with:
