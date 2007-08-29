@@ -1331,7 +1331,7 @@ Inactive projects and project groups are not available.
 The FAQ vocabulary contains all the FAQs available in a particular
 collection. It provides the IHugeVocabulary interface.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 
     >>> vocabulary = vocabulary_registry.get(firefox, 'FAQ')
@@ -1483,7 +1483,7 @@ are a dependency of the context spec.
 
 This vocabulary provides the IHugeVocabulary interface.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
     >>> verifyObject(IHugeVocabulary, vocab)
     True

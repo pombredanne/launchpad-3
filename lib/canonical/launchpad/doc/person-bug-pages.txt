@@ -138,7 +138,8 @@ with any importance.
      (1, 'NEW', 'LOW'),
      (1, 'NEW', 'MEDIUM'),
      (4, 'NEW', 'MEDIUM'),
-     (9, 'CONFIRMED', 'MEDIUM')]
+     (9, 'CONFIRMED', 'MEDIUM'),
+     (13, 'NEW', 'UNDECIDED')]
 
 Using the advanced form we can query for closed bugs someone is subscribed to.
 

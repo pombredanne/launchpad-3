@@ -56,6 +56,26 @@
       <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
         <tr><th>Location:</th><td tal:content="context/url" /></tr>
         <tr><th>Mirror:</th><td tal:content="view/supermirror_url" /></tr>
+        <tal:mirrored-yet tal:condition="context/last_mirrored">
+          <tr>
+            <th>Last mirrored:</th>
+            <td tal:attributes="title context/last_mirrored/fmt:datetime"
+                tal:content="context/last_mirrored/fmt:approximatedate"/></tr>
+        </tal:mirrored-yet>
+        <tr><th>Next mirror:</th>
+          <tal:mirror-disabled tal:condition="view/mirror_disabled">
+            <td>Disabled</td>
+          </tal:mirror-disabled>
+          <tal:mirror-enabled tal:condition="not:view/mirror_disabled">
+            <tal:mirror-in-future tal:condition="view/mirror_in_future">
+              <td tal:attributes="title context/last_mirrored/fmt:datetime"
+                  tal:content="context/mirror_request_time/fmt:approximatedate"/>
+            </tal:mirror-in-future>
+            <tal:mirror-in-past tal:condition="not:view/mirror_in_future">
+              <td>As soon as possible</td>
+            </tal:mirror-in-past>
+          </tal:mirror-enabled>
+        </tr>
       </tal:mirrored-branch>
       <tal:remote-branch tal:condition="context/branch_type/enumvalue:REMOTE">
         <tr>

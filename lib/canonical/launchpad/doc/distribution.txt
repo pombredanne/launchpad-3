@@ -15,7 +15,7 @@ syntax should look familiar.
 The IDistributionSet utility is accessed in the usual fashion:
 
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IDistribution, IDistributionSet, IHasTranslationImports)
     >>> from canonical.lp.dbschema import PackagePublishingPocket
