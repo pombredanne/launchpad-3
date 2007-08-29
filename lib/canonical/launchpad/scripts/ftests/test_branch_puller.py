@@ -166,6 +166,17 @@ class TestBranchPuller(TestCaseWithTransport):
         retcode, output, error = self.runSubprocess(command)
         return command, retcode, output, error
 
+    def serveOverHTTP(self, path, port=0):
+        """Serve the given path over HTTP, returning the server URL."""
+        cwd = os.getcwd()
+        os.chdir(path)
+        self.addCleanup(lambda: os.chdir(cwd))
+        http_server = HttpServer()
+        http_server.port = port
+        http_server.setUp()
+        self.addCleanup(http_server.tearDown)
+        return http_server.get_url().rstrip('/')
+
     def test_fixture(self):
         """Confirm the fixture is set up correctly.
 
@@ -181,7 +192,7 @@ class TestBranchPuller(TestCaseWithTransport):
             "%s doesn't exist" % (self._puller_script,))
 
     def test_mirrorAHostedBranch(self):
-        """Run the puller on a populated pull queue."""
+        """Run the puller on a populated hosted branch pull queue."""
         # XXX: JonathanLange 2007-08-21, This test will fail if run by itself,
         # due to an unidentified bug in bzrlib.trace, possibly related to bug
         # 124849.
@@ -204,18 +215,8 @@ class TestBranchPuller(TestCaseWithTransport):
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(self.getHostedPath(branch), branch)
 
-    def serveOverHTTP(self, path, port=0):
-        """Serve the given path over HTTP, returning the server URL."""
-        cwd = os.getcwd()
-        os.chdir(path)
-        self.addCleanup(lambda: os.chdir(cwd))
-        http_server = HttpServer()
-        http_server.port = port
-        http_server.setUp()
-        self.addCleanup(http_server.tearDown)
-        return http_server.get_url().rstrip('/')
-
     def test_mirrorAMirroredBranch(self):
+        """Run the puller on a populated mirrored branch pull queue."""
         branch = self.getArbitraryBranch(BranchType.MIRRORED)
         tree = self.createTemporaryBazaarBranchAndTree()
         branch.url = self.serveOverHTTP(local_path_from_url(tree.branch.base))
@@ -226,6 +227,7 @@ class TestBranchPuller(TestCaseWithTransport):
         self.assertMirrored(branch.url, branch)
 
     def test_mirrorAnImportedBranch(self):
+        """Run the puller on a populated imported branch pull queue."""
         port = int(
             config.launchpad.bzr_imports_root_url.rstrip('/').split(':')[-1])
         base_directory = tempfile.mkdtemp(dir=os.getcwd())
