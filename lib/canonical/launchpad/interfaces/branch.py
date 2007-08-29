@@ -229,6 +229,12 @@ class IBranch(IHasOwner):
     """A Bazaar branch."""
 
     id = Int(title=_('ID'), readonly=True, required=True)
+
+    # The vocabulary set for branch_type is only used for the creation
+    # of branches through the automatically generated forms, and doesn't
+    # actually represent the complete range of real values that branch_type
+    # may actually hold.  Import branches are not created in the same
+    # way as Hosted, Mirrored or Remote branches.
     branch_type = Choice(
         title=_("Branch Type"), required=True,
         vocabulary=UICreatableBranchType,

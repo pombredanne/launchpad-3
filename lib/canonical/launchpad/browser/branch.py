@@ -545,7 +545,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     def validate(self, data):
         product = self.getProduct(data)
-        if product in not None and 'name' in data:
+        if 'name' in data:
             self.validate_branch_name(self.user, product, data['name'])
 
         branch_type = data.get('branch_type')
