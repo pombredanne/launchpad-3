@@ -1063,8 +1063,5 @@ class Roundup(ExternalBugTracker):
             remote_bug = self.bugs[bug_id]
         except KeyError:
             raise BugNotFound(bug_id)
-
-        try:
+        else:
             return remote_bug['status']
-        except KeyError:
-            return UNKNOWN_REMOTE_STATUS
