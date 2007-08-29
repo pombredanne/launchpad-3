@@ -1,0 +1,24 @@
+= Advanced Search Form =
+
+The advanced search form allows searching for bugs within a target by
+supplying many different criteria.
+
+    >>> browser.open('http://launchpad.dev/firefox/+bugs?advanced=1')
+
+== Searching by Assignee ==
+
+To search bugs by assignee, we can select from two options: `Nobody`
+(bugs that aren't assigned) or by a specific user name.
+
+=== Assignee field and radio button behaviour ===
+
+When searching by username we need to both select the coresponding
+radio button and enter a valid user name. The username input
+automatically selects the coresponding radio button when we type some
+text into it by calling the selectWidget Javascript function.
+
+    >>> assignee_widget = find_tag_by_id(browser.contents, 'field.assignee')
+    >>> print assignee_widget['onkeypress']
+    selectWidget('assignee_option', event)
+    >>> print find_tag_by_id(browser.contents, 'assignee_option')
+    <input...type="radio"...>
