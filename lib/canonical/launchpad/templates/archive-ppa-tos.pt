@@ -1,12 +1,11 @@
+ <h2>Personal Package Archive Terms of Service</h2>
     <p>Canonical Ltd. provides the PPA Service to you, subject to
     these Terms of Service ("TOS"), which may be updated periodically
-    without prior notice. You can review the current version of the
-    TOS at: <a href="https://help.launchpad.net/PPATermsOfService"
-    >PPA Terms Of Service</a>. Failure to comply with these TOS may
-    result in account revocation.</p>
+    without prior notice. Failure to comply with these TOS may result
+    in account revocation.</p>
 
     <p>You understand and agree that any content you upload to PPAs
-    must be freely redistributable by Canonical, and licensed under an
+    must be freely redistributable by Canonical, and licensed under any
     OSI approved license. <a href="http://opensource.org/licenses/category"
     >http://opensource.org/licenses/category</a></p>
 

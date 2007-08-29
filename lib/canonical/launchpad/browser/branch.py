@@ -267,6 +267,55 @@ class BranchView(LaunchpadView):
         return truncate_text(
             message, self.MAXIMUM_STATUS_MESSAGE_LENGTH) + ' ...'
 
+    def mirror_disabled(self):
+        """Has mirroring this branch been disabled?"""
+        return self.context.mirror_request_time is None
+
+    def mirror_in_future(self):
+        """Is the branch going to be mirrored in the future?"""
+        return (not self.mirror_disabled()
+                and self.context.mirror_request_time > datetime.now(pytz.UTC))
+
+    @cachedproperty
+    def landing_targets(self):
+        """Return a decorated filtered list of landing targets."""
+        targets = []
+        targets_added = set()
+        for proposal in self.context.landing_targets:
+            # Only show the must recent proposal for any given target.
+            target_id = proposal.target_branch.id
+            if target_id in targets_added:
+                continue
+            targets.append(DecoratedMergeProposal(proposal))
+            targets_added.add(target_id)
+        return targets
+
+    @cachedproperty
+    def latest_landing_candidates(self):
+        """Return a decorated filtered list of landing candidates."""
+        # Only show the most recent 5 landing_candidates
+        candidates = self.context.landing_candidates[:5]
+        return [DecoratedMergeProposal(proposal) for proposal in candidates]
+
+    @cachedproperty
+    def landing_candidates(self):
+        """Return a decorated list of landing candidates."""
+        candidates = self.context.landing_candidates
+        return [DecoratedMergeProposal(proposal) for proposal in candidates]
+
+
+class DecoratedMergeProposal:
+    """Provide some additional functionality to a normal branch merge proposal.
+    """
+    decorates(IBranchMergeProposal)
+
+    def __init__(self, context):
+        self.context = context
+
+    def show_registrant(self):
+        """Show the registrant if it was not the branch owner."""
+        return self.context.registrant != self.source_branch.owner
+
     @cachedproperty
     def landing_targets(self):
         """Return a decorated filtered list of landing targets."""
@@ -462,6 +511,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 lifecycle_status=data['lifecycle_status'],
                 home_page=data['home_page'],
                 whiteboard=data['whiteboard'])
+            self.branch.requestMirror()
         except BranchCreationForbidden:
             self.setForbiddenError(self.getProduct(data))
         else:
