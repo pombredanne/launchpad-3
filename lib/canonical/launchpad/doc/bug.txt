@@ -167,6 +167,10 @@ Note that a search will return all the bugs, as well:
     >>> [bug.id for bug in all_bugs]
     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 
+(This test breaks if you add a new bug to sampledata: it's the only one
+you should need to fix and it only breaks to confirm the addition
+worked.)
+
 Likewise Foo Bar, an admin, can access the bug.
 
     >>> login("foo.bar@canonical.com")
