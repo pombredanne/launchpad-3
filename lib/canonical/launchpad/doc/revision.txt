@@ -6,7 +6,7 @@ have no creation interface and Launchpad cannot create or modify them.
 
 == Interfaces ==
 
->>> from zope.interface.verify import verifyObject
+>>> from canonical.launchpad.webapp.testing import verifyObject
 >>> from canonical.launchpad.interfaces import (
 ...     IRevision, IRevisionAuthor, IRevisionParent, IRevisionSet,
 ...     IBranchRevision)

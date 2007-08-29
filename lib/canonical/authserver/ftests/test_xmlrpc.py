@@ -214,8 +214,10 @@ class BranchAPITestCase(LaunchpadTestCase):
         self.server.startMirroring(29)
 
     def testMirrorComplete(self):
+        self.server.startMirroring(18)
         self.server.mirrorComplete(18, 'rev-1')
         # See comment in testStartMirroring.
+        self.server.startMirroring(29)
         self.server.mirrorComplete(29, 'rev-1')
 
     def testMirrorFailedUnicode(self):
