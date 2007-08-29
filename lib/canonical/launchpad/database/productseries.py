@@ -524,7 +524,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 and self.datelastsynced < self.import_branch.last_mirrored):
             self.datepublishedsync = self.datelastsynced
         self.datelastsynced = UTC_NOW
-
+        self.import_branch.requestMirror()
 
     def newMilestone(self, name, dateexpected=None):
         """See IProductSeries."""
