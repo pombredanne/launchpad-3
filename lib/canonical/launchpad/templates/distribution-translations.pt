@@ -18,7 +18,7 @@
 
 <div metal:fill-slot="main">
 
-  <tal:block condition="view/translation_focus">
+  <tal:translatable condition="view/translation_focus">
     <p>
       The current translation focus for
       <span tal:replace="context/displayname">Ubuntu</span> is
@@ -49,7 +49,14 @@
                 >5.04 The Hoary Hedgehog Release</a>
       </li>
     </ul>
-  </tal:block>
+  </tal:translatable>
+  <tal:untranslatable condition="not: view/translation_focus">
+    <p>
+      This distribution does not have any series to be translated.  Once
+      <span tal:replace="context/displayname">Ubuntu</span> has created a
+      distroseries, you will be able to find or create its translations here.
+    </p>
+  </tal:untranslatable>
 
 </div>
 
