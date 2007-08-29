@@ -798,19 +798,14 @@ class Trac(ExternalBugTracker):
         bug_ids = list(bug_ids)
         while not valid_ticket and len(bug_ids) > 0:
             try:
-                ticket_id = int(bug_ids.pop())
-            except ValueError:
-                # If the ticket id couldn't be intified then we can't use it,
-                # so we skip this iteration.
-                continue
-
-            try:
                 # We try to retrive the ticket in HTML form, since that will
                 # tell us whether or not it is actually a valid ticket
+                ticket_id = int(bug_ids.pop())
                 html_data = self.urlopen(html_ticket_url % ticket_id)
-            except urllib2.HTTPError:
+            except (ValueError, urllib2.HTTPError):
                 # If we get an HTTP error we can consider the ticket to be
-                # invalid.
+                # invalid. If we get a ValueError then the ticket_id couldn't
+                # be intified and it's of no use to us anyway.
                 pass
             else:
                 # If we didn't get an error we can try to get the ticket in
