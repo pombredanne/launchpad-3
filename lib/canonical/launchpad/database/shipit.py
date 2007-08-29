@@ -1118,9 +1118,9 @@ class ShippingRequestSet:
                   '', '', 'Previous Series Only', '']
         header2 = ['', 'requests', '', 'shipped', '', 'requests', '',
                    'shipped', '']
-        header3 = ['# of requests', '# of people', 'avg CDs per request',
-                   '# of people', 'avg CDs per shipment', '# of people',
-                   'avg CDs per request', '# of people',
+        header3 = ['# of requests', '# of people', '%', 'avg CDs per request',
+                   '# of people', '%', 'avg CDs per shipment', '# of people',
+                   '%', 'avg CDs per request', '# of people', '%',
                    'avg CDs per shipment']
         csv_writer.writerow(header1)
         csv_writer.writerow(header2)
@@ -1151,9 +1151,8 @@ class ShippingRequestSet:
         return csv_file
 
     def _add_percentage_to_number_of_people(self, results_dict):
-        """For each element of the given dict change the number of people to
-        store the absolute number as well as the percentage relative to the
-        total of people from all items.
+        """For each element of the given dict change its value to contain the
+        percentage of people relative to the total of people from all items.
 
         The given dict must be of the form:
             {number_of_requests: (number_of_people, average_size)}
@@ -1163,8 +1162,8 @@ class ShippingRequestSet:
         d = {}
         for key, value in results_dict.items():
             people, size = value
-            people = "%s (%s%%)" % (people, float(people) / total)
-            d[key] = (people, size)
+            percentage = float(people) / total
+            d[key] = (people, percentage, size)
         return d
 
     def _convert_results_to_dict_and_fill_gaps(self, results, row_numbers):

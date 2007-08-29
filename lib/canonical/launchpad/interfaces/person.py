@@ -814,7 +814,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """Return the latest karma actions for this person, up to the number
         given as quantity."""
 
-    def iterTopProjectsContributedTo(self, limit=10):
+    def iterTopProjectsContributedTo(limit=10):
         """Iterate over the top projects contributed to, up to the given limit.
         """
 
@@ -1189,7 +1189,7 @@ class IPersonSet(Interface):
     def getPOFileContributors(pofile):
         """Return people that have contributed to the specified POFile."""
 
-    def getPOFileContributorsByDistroSeries(self, distroseries, language):
+    def getPOFileContributorsByDistroSeries(distroseries, language):
         """Return people who translated strings in distroseries to language.
 
         The people that translated only IPOTemplate objects that are not
