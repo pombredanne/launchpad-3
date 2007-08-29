@@ -230,18 +230,16 @@ class TestBranchPuller(TestCaseWithTransport):
         """Run the puller on a populated imported branch pull queue."""
         port = int(
             config.launchpad.bzr_imports_root_url.rstrip('/').split(':')[-1])
-        base_directory = tempfile.mkdtemp(dir=os.getcwd())
-        base_directory = os.path.basename(base_directory)
         branch = self.getArbitraryBranch(BranchType.IMPORTED)
         branch.requestMirror()
         LaunchpadZopelessLayer.txn.commit()
-        branch_path = os.path.join(base_directory, '%08x' % branch.id)
+        branch_path = '%08x' % branch.id
         os.mkdir(branch_path)
         self.createTemporaryBazaarBranchAndTree(branch_path)
-        import_url = self.serveOverHTTP(base_directory, port)
+        import_url = self.serveOverHTTP('.', port)
         command, retcode, output, error = self.runPuller("import")
         self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(urljoin(import_url, '%08x' % branch.id), branch)
+        self.assertMirrored(urljoin(import_url, branch_path), branch)
 
     def test_mirrorEmpty(self):
         """Run the puller on an empty pull queue."""
