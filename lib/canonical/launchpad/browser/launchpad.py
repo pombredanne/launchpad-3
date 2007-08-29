@@ -94,6 +94,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
     LaunchpadFormView, Navigation, stepto, canonical_url, custom_widget)
 from canonical.launchpad.webapp.publisher import RedirectionView
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
@@ -141,7 +142,11 @@ class MaloneApplicationNavigation(Navigation):
     def traverse(self, name):
         # Make /bugs/$bug.id, /bugs/$bug.name /malone/$bug.name and
         # /malone/$bug.id Just Work
-        return getUtility(IBugSet).getByNameOrID(name)
+        bug = getUtility(IBugSet).getByNameOrID(name)
+        if not check_permission("launchpad.View", bug):
+            raise Unauthorized("Bug %s is private" % name)
+        return bug
+
 
 
 class MenuBox(LaunchpadView):
