@@ -1,5 +1,7 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
+"""Common file format classes shared across all formats."""
+
 __metaclass__ = type
 
 __all__ = [
@@ -56,8 +58,8 @@ class TranslationMessage:
         # We raise an error if plural_form < len(self.translations).
         assert plural_form is not None, 'plural_form cannot be None!'
         assert plural_form >= len(self._translations), (
-            'This message already has a translation for plural form %d' % (
-                plural_form))
+            'This message already has a translation for plural form %d' %
+                plural_form)
 
         if plural_form > len(self.translations):
             # There is a hole in the list of translations so we fill it with

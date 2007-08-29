@@ -14,8 +14,8 @@ import os
 import tarfile
 import tempfile
 import time
-import zope
 from StringIO import StringIO
+from zope.component import subscribers
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
@@ -41,7 +41,7 @@ class TranslationExporter:
     def getTranslationFormatExporters(self, file_format):
         """See `ITranslationExporter`."""
         exporters_available = []
-        for exporter in zope.component.subscribers([self], ITranslationFormatExporter):
+        for exporter in subscribers([self], ITranslationFormatExporter):
             if file_format in exporter.supported_formats:
                 exporters_available.append(exporter)
 
@@ -49,7 +49,7 @@ class TranslationExporter:
 
     def getTranslationFormatExporterByFileFormat(self, file_format):
         """See `ITranslationExporter`."""
-        for exporter in zope.component.subscribers([self], ITranslationFormatExporter):
+        for exporter in subscribers([self], ITranslationFormatExporter):
             if exporter.format == file_format:
                 return exporter
 
@@ -108,9 +108,7 @@ class LaunchpadWriteTarFile:
 
     def add_file(self, path, contents):
         """Add a file to the archive."""
-
-        if self.closed:
-            raise RuntimeError("Can't add a file to a closed archive")
+        assert not self.closed, "Can't add a file to a closed archive"
 
         now = int(time.time())
         path_bits = path.split(os.path.sep)

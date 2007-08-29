@@ -1,9 +1,10 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
+"""Common file format interfaces shared across all formats."""
+
+
 from zope.interface import Interface
 from zope.schema import Bool, Datetime, Int, List, Object, Set, Text, TextLine
-from canonical.launchpad.interfaces.translationcommon import (
-    ITranslationHeader)
 
 __metaclass__ = type
 
@@ -11,46 +12,12 @@ __all__ = [
     'ITranslationFile',
     'ITranslationHeader',
     'ITranslationMessage',
+    'TranslationImportExportBaseException',
     ]
 
 
-class ITranslationFile(Interface):
-    """Parsed translation template file interface."""
-
-    header = Object(
-        title=u'An `ITranslationHeader` for the parsed file.',
-        required=True, readonly=True, schema=ITranslationHeader)
-
-    messages = List(
-        title=u'ITranslationMessage objects included in the parsed file.',
-        required=True, readonly=True)
-
-    path = TextLine(
-        title=u'The path directory where this file is stored.',
-        required=True, readonly=True)
-
-    translation_domain = TextLine(
-        title=u'Translation domain used for this translation file',
-        description=u'''
-            It would be used to find its content on the file system, when
-            its associated application is executed.
-            ''',
-        required=True, readonly=True)
-
-    is_template = Bool(
-        title=u'''
-            A flag indicating whether this entry is a template without
-            translations.
-            ''',
-        required=True, readonly=True)
-
-    language_code = TextLine(
-        title=u'Language iso code for this translation file',
-        description=u'''
-            Language iso code for this translation file or None either if it's
-            unknown or is_template flag is set.
-            ''',
-        required=True, readonly=True)
+class TranslationImportExportBaseException(Exception):
+    """Base exception for all import/export exceptions."""
 
 
 class ITranslationHeader(Interface):
@@ -66,22 +33,21 @@ class ITranslationHeader(Interface):
 
     translation_revision_date = Datetime(
         title=u'When the translation resource was last revised or None.',
-        required=True, readonly=True)
+        required=True)
 
     language_team = TextLine(
         title=u'The language team in charge of this translation.',
         required=True, readonly=True)
 
     has_plural_forms = Bool(
-        title=u'Whether this file contains plural forms.',
-        required=True, readonly=True)
+        title=u'Whether this file contains plural forms.', required=True)
 
     number_plural_forms = Int(
-        title=u'Number of plural forms.', required=True, readonly=True)
+        title=u'Number of plural forms.', required=True)
 
     plural_form_expression = TextLine(
         title=u'The plural form expression defined in this file or None.',
-        required=True, readonly=True)
+        required=True)
 
     charset = TextLine(
         title=u'Charset used to encode the content in its native form.',
@@ -89,14 +55,14 @@ class ITranslationHeader(Interface):
 
     launchpad_export_date = Datetime(
         title=u'when this file was last exported from Launchpad or None.',
-        required=True, readonly=True)
+        required=True)
 
     comment = Text(
         title=u'Header comment',
         description=u'''
             It usually has copyright information and list of contributors.
             ''',
-        required=True, readonly=True)
+        required=True)
 
     def getRawContent():
         """Return header raw content in its native file format."""
@@ -142,7 +108,7 @@ class ITranslationMessage(Interface):
         readonly=True)
 
     comment = Text(
-        title=u'Comments added by a translator.', require=True, readonly=True)
+        title=u'Comments added by a translator.', required=True, readonly=True)
 
     source_comment = Text(
         title=u'Comments added by the developer to help translators.',
@@ -157,7 +123,45 @@ class ITranslationMessage(Interface):
         required=True, readonly=True)
 
     is_obsolete = Bool(
-        title=u'''
-            A flag indicating whether the message is obsolete and not used anymore.
+        title=(
+            u'A flag indicating whether the message is obsolete and not used.'
+            ),
+        required=True, readonly=True)
+
+
+class ITranslationFile(Interface):
+    """Parsed translation template file interface."""
+
+    header = Object(
+        title=u'An `ITranslationHeader` for the parsed file.',
+        required=True, readonly=True, schema=ITranslationHeader)
+
+    messages = List(
+        title=u'ITranslationMessage objects included in the parsed file.',
+        required=True, readonly=True)
+
+    path = TextLine(
+        title=u'The path directory where this file is stored.',
+        required=True, readonly=True)
+
+    translation_domain = TextLine(
+        title=u'Translation domain used for this translation file',
+        description=u'''
+            It would be used to find its content on the file system, when
+            its associated application is executed.
+            ''',
+        required=True, readonly=True)
+
+    is_template = Bool(
+        title=(
+            u'A flag indicating whether this entry is a translation template.'
+            ),
+        required=True, readonly=True)
+
+    language_code = TextLine(
+        title=u'Language iso code for this translation file',
+        description=u'''
+            Language iso code for this translation file or None either if it's
+            unknown or is_template flag is set.
             ''',
         required=True, readonly=True)

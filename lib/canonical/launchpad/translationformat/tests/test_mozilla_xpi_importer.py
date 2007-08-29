@@ -36,7 +36,7 @@ class MozillaXpiImporterTestCase(unittest.TestCase):
     def testHasAlternativeMsgID(self):
         """Check that MozillaXpiImporter has an alternative msgid."""
         self.failUnless(
-            self.importer.has_alternative_msgid,
+            self.importer.uses_source_string_msgids,
             "MozillaXpiImporter format says it's not using alternative msgid"
             " when it really does!")
 

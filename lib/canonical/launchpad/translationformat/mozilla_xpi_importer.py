@@ -437,7 +437,7 @@ class MozillaXpiImporter:
         return ['.xpi']
 
     @property
-    def has_alternative_msgid(self):
+    def uses_source_string_msgids(self):
         """See `ITranslationFormatImporter`."""
         return True
 

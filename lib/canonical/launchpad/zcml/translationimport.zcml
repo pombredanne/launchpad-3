@@ -12,7 +12,7 @@
     </securedutility>
 
     <content
-        class="canonical.launchpad.translationformat.gettext_po_parser.PoHeader">
+        class="canonical.launchpad.translationformat.gettext_po_parser.POHeader">
         <allow
             interface="canonical.launchpad.interfaces.ITranslationHeader" />
         <require
@@ -21,7 +21,7 @@
     </content>
 
     <content
-        class="canonical.launchpad.translationformat.gettext_po_importer.GettextPoImporter">
+        class="canonical.launchpad.translationformat.gettext_po_importer.GettextPOImporter">
         <allow
           interface="canonical.launchpad.interfaces.ITranslationFormatImporter" />
     </content>
@@ -29,7 +29,7 @@
     <subscriber
         for="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
         provides="canonical.launchpad.interfaces.ITranslationFormatImporter"
-        factory="canonical.launchpad.translationformat.gettext_po_importer.GettextPoImporter"
+        factory="canonical.launchpad.translationformat.gettext_po_importer.GettextPOImporter"
         />
 
     <content

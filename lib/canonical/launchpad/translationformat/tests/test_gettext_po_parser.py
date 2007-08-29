@@ -1,14 +1,14 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
-import unittest
 import doctest
+import unittest
 
 from canonical.launchpad.interfaces import (
     TranslationConstants, TranslationFormatInvalidInputError,
     TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat import gettext_po_parser
 from canonical.launchpad.translationformat.gettext_po_parser import (
-    PoParser)
+    POParser)
 
 DEFAULT_HEADER = '''
 msgid ""
@@ -19,7 +19,7 @@ msgstr ""
 class POBasicTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.parser = PoParser()
+        self.parser = POParser()
 
     def testSingular(self):
         translation_file = self.parser.parse(

@@ -10,9 +10,9 @@ __all__ = [
     'IPOFileAlternativeLanguage',
     ]
 
+from zope.interface import Attribute, Interface
 from zope.schema import (
     Bool, Choice, Datetime, Field, Int, List, Object, Text, TextLine)
-from zope.interface import Interface
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
@@ -104,10 +104,7 @@ class IPOFile(IRosettaStats):
             ''', required=True, readonly=True)
 
     contributors = List(
-        title=u'''
-            Translators who have made some sort of contribution to this
-            translation file.
-            ''',
+        title=u'''Translators who have made some sort of contribution to this translation file.''',
         required=True, readonly=True)
 
     translationpermission = Choice(
@@ -131,9 +128,8 @@ class IPOFile(IRosettaStats):
             ),
         required=False)
 
-    pomsgsets = Object(
-        title=u'All `IPOMsgset` objects related to this translation file.',
-        required=True, readonly=True)
+    pomsgsets = Attribute(
+        'All `IPOMsgset` objects related to this translation file.')
 
     def translatedCount():
         """

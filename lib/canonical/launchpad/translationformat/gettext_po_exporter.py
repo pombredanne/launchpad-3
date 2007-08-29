@@ -1,20 +1,26 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
+"""Export module for gettext's .po file format.
+
+You can read more about this file format from:
+http://www.gnu.org/software/gettext/manual/html_chapter/gettext_10.html#PO-Files
+"""
+
 __metaclass__ = type
 
 __all__ = [
-    'GettextPoExporter'
+    'GettextPOExporter'
     ]
 
-import os.path
-from StringIO import StringIO
+import os
+from cStringIO import StringIO
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     ITranslationFormatExporter, TranslationConstants)
 from canonical.launchpad.translationformat import TranslationMessage
 from canonical.launchpad.translationformat.translation_export import (
-    LaunchpadWriteTarFile, ExportedTranslationFile)
+    ExportedTranslationFile, LaunchpadWriteTarFile)
 from canonical.lp.dbschema import TranslationFileFormat
 
 def comments_text_representation(translation_message):
@@ -28,23 +34,24 @@ def comments_text_representation(translation_message):
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'bar')
     >>> translation_message.flags = ('fuzzy', )
-    >>> export_translation_message(translation_message)
-    u'#, fuzzy\nmsgid "foo"\nmsgstr "bar"'
+    >>> comments_text_representation(translation_message)
+    u'#, fuzzy'
 
     >>> translation_message = TranslationMessage()
     >>> translation_message.msgid = u'a'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'b')
     >>> translation_message.comment = u' blah\n'
-    u'# blah\nmsgid "a"\nmsgstr "b"'
+    >>> comments_text_representation(translation_message)
+    u'# blah'
 
     >>> translation_message = TranslationMessage()
     >>> translation_message.msgid = u'%d foo'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'%d bar')
     >>> translation_message.flags = ('fuzzy', 'c-format')
-    >>> export_translation_message(translation_message)
-    u'#, fuzzy, c-format\nmsgid "%d foo"\nmsgstr "%d bar"'
+    >>> comments_text_representation(translation_message)
+    u'#, fuzzy, c-format'
     '''
     text = []
     # comment and source_comment always end in a newline, so
@@ -61,10 +68,10 @@ def comments_text_representation(translation_message):
             for line in translation_message.file_references.split('\n'):
                 text.append(u'#: ' + line)
     if translation_message.flags:
-        flags = list(translation_message.flags)
-        flags.sort()
+        flags = sorted(translation_message.flags)
         if 'fuzzy' in flags:
-            # Force 'fuzzy' to be the first flag in the list.
+            # Force 'fuzzy' to be the first flag in the list like gettext's
+            # tools do.
             flags.remove('fuzzy')
             flags.insert(0, 'fuzzy')
         text.append(u'#, %s' % u', '.join(flags))
@@ -73,6 +80,19 @@ def comments_text_representation(translation_message):
 
 def wrap_text(text, prefix, wrap_width):
     r'''Return a list of strings with the given text wrapped to given width.
+
+    We are not using textwrap module because the .po file format has some
+    peculiarities like:
+
+    msgid ""
+    "a really long line."
+
+    instead of:
+
+    msgid "a really long"
+    "line."
+
+    with a wrapping width of 21.
 
     :param text: Unicode string to wrap.
     :param prefix: Unicode prefix to prepend to the given text before wrapping
@@ -83,28 +103,28 @@ def wrap_text(text, prefix, wrap_width):
     >>> translation_message.msgid = u'abcdefghijkl'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'z')
-    >>> export_translation_message(translation_message, wrap=20)
+    >>> export_translation_message(translation_message, wrap_width=20)
     u'msgid "abcdefghijkl"\nmsgstr "z"'
 
     >>> translation_message = TranslationMessage()
     >>> translation_message.msgid = u'abcdefghijklmnopqr'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'z')
-    >>> export_translation_message(translation_message, wrap=20)
+    >>> export_translation_message(translation_message, wrap_width=20)
     u'msgid ""\n"abcdefghijklmnopqr"\nmsgstr "z"'
 
     >>> translation_message = TranslationMessage()
     >>> translation_message.msgid = u'abcdef hijklm'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'z')
-    >>> export_translation_message(translation_message, wrap=20)
+    >>> export_translation_message(translation_message, wrap_width=20)
     u'msgid ""\n"abcdef hijklm"\nmsgstr "z"'
 
     >>> translation_message = TranslationMessage()
     >>> translation_message.msgid = u'abcdefghijklmnopqr st'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'z')
-    >>> export_translation_message(translation_message, wrap=20)
+    >>> export_translation_message(translation_message, wrap_width=20)
     u'msgid ""\n"abcdefghijklmnopqr "\n"st"\nmsgstr "z"'
 
     newlines in the text interfere with wrapping.
@@ -112,7 +132,7 @@ def wrap_text(text, prefix, wrap_width):
     >>> translation_message.msgid = u'abc\ndef'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'z')
-    >>> export_translation_message(translation_message, wrap=20)
+    >>> export_translation_message(translation_message, wrap_width=20)
     u'msgid ""\n"abc\\n"\n"def"\nmsgstr "z"'
 
     but not when it's just a line that ends with a newline char
@@ -132,7 +152,7 @@ def wrap_text(text, prefix, wrap_width):
     ...     TranslationConstants.SINGULAR_FORM,
     ...     u"WARNUNG: Unsichere Zugriffsrechte des umgebenden Verzeichnisses"
     ...         u" des Home-Verzeichnisses `%s'\n")
-    >>> export_translation_message(translation_message)
+    >>> print export_translation_message(translation_message)
     msgid "WARNING: unsafe enclosing directory permissions on homedir `%s'\n"
     msgstr ""
     "WARNUNG: Unsichere Zugriffsrechte des umgebenden Verzeichnisses des Home-"
@@ -298,7 +318,7 @@ def wrap_text(text, prefix, wrap_width):
 def msgid_text_representation(translation_message, wrap_width):
     """Return text representation of the msgids.
 
-    :param translation_message: An ITranslationMessage that will get its
+    :param translation_message: An `ITranslationMessage` that will get its
         msgids exported.
     :param wrap_width: The width where the text should be wrapped.
     """
@@ -308,27 +328,28 @@ def msgid_text_representation(translation_message, wrap_width):
             wrap_text(translation_message.context, u'msgctxt', wrap_width))
     text.extend(wrap_text(translation_message.msgid, u'msgid', wrap_width))
     if translation_message.msgid_plural:
+        # This message has a plural form that we must export.
         text.extend(
             wrap_text(
                 translation_message.msgid_plural, u'msgid_plural',
                 wrap_width))
     if translation_message.is_obsolete:
-        text = ['#~ ' + l for l in text]
+        text = ['#~ ' + line for line in text]
 
     return u'\n'.join(text)
 
 def translation_text_representation(translation_message, wrap_width):
     """Return text representation of the translations.
 
-    :param translation_message: An ITranslationMessage that will get its
+    :param translation_message: An `ITranslationMessage` that will get its
         translations exported.
     :param wrap_width: The width where the text should be wrapped.
     """
     text = []
     if translation_message.msgid_plural:
         # It's a message with plural forms.
-        for i, s in enumerate(translation_message.translations):
-            text.extend(wrap_text(s, u'msgstr[%s]' % i, wrap_width))
+        for i, translation in enumerate(translation_message.translations):
+            text.extend(wrap_text(translation, u'msgstr[%s]' % i, wrap_width))
 
         if len(text) == 0:
             # We don't have any translation for it.
@@ -343,7 +364,7 @@ def translation_text_representation(translation_message, wrap_width):
             text = [u'msgstr ""']
 
     if translation_message.is_obsolete:
-        text = ['#~ ' + l for l in text]
+        text = ['#~ ' + line for line in text]
 
     return u'\n'.join(text)
 
@@ -400,6 +421,7 @@ def export_translation_message(translation_message, wrap_width=77):
     >>> translation_message.msgid = u'foo'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'bar')
+    >>> export_translation_message(translation_message)
     u'msgctxt "bla"\nmsgid "foo"\nmsgstr "bar"'
     '''
     return u'\n'.join([
@@ -409,25 +431,21 @@ def export_translation_message(translation_message, wrap_width=77):
         ]).strip()
 
 
-class GettextPoExporter:
+class GettextPOExporter:
     """Support class to export Gettext .po files."""
     implements(ITranslationFormatExporter)
 
     def __init__(self, context=None):
-        pass
-
-    @property
-    def format(self):
-        """See `ITranslationFormatExporter`."""
-        return TranslationFileFormat.PO
-
-    @property
-    def handlable_formats(self):
-        """See `ITranslationFormatExporter`."""
-        return [TranslationFileFormat.PO, TranslationFileFormat.XPI]
+        # 'context' is ignored here because we don't need it, although we use
+        # zope.component.subscribers from TranslationExporter class to get all
+        # exporters available, which require that each exporter have a
+        # 'context' argument.
+        self.format = TranslationFileFormat.PO
+        self.supported_formats = [
+            TranslationFileFormat.PO, TranslationFileFormat.XPI]
 
     def _getHeaderAsMessage(self, translation_file):
-        """Return an ITranslationMessage with the header content."""
+        """Return an `ITranslationMessage` with the header content."""
         header_translation_message = TranslationMessage()
         header_translation_message.addTranslation(
             TranslationConstants.SINGULAR_FORM,
@@ -453,7 +471,7 @@ class GettextPoExporter:
             dirname = os.path.dirname(translation_file.path)
             if dirname == '':
                 # There is no directory in the path. Use
-                # translation_domain as it's directory.
+                # translation_domain as its directory.
                 dirname = translation_file.translation_domain
 
             if translation_file.is_template:
@@ -501,8 +519,8 @@ class GettextPoExporter:
                         header_translation_message)
                     chunks[0] = exported_header.encode(old_charset)
                     # Update already exported entries.
-                    for index in range(len(chunks)):
-                        chunks[index] = chunks[index].decode(
+                    for index, chunk in enumerate(chunks):
+                        chunks[index] = chunk.decode(
                             old_charset).encode('UTF-8')
                     encoded_text = exported_message.encode('UTF-8')
 
@@ -527,6 +545,9 @@ class GettextPoExporter:
             # archive that include all them.
             exported_file.content_file = LaunchpadWriteTarFile.files_to_stream(
                 exported_files)
+            # For tar.gz files, the standard content type is
+            # application/x-gtar. You can see more info on
+            # http://en.wikipedia.org/wiki/List_of_archive_formats
             exported_file.content_type = 'application/x-gtar'
             exported_file.file_extension = 'tar.gz'
             # We cannot give a proper file path for the tarball, that's why we

@@ -1,21 +1,20 @@
 = Tests for our PO parser =
 
-Gettext PO parser allows to communicate with the external world importing
-files and exporting them.
+The PO parser handles GNU gettext format human readable files.
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     ITranslationMessage, ITranslationHeader)
     >>> from canonical.launchpad.translationformat import TranslationMessage
     >>> from canonical.launchpad.translationformat.gettext_po_parser import (
-    ...     PoHeader, PoParser)
+    ...     POHeader, POParser)
 
 
-== PoParser ==
+== POParser ==
 
-We should be completely sure that a .po file with an empty header is reported.
+PO files with empty headers are not allowed.
 
-  >>> parser = PoParser()
+  >>> parser = POParser()
   >>> parser.parse('msgid "foo"\nmsgstr ""\n')
   Traceback (most recent call last):
   ...
@@ -61,11 +60,12 @@ Unclosed strings (missing closing quotes) are caught.
   ...
   TranslationFormatSyntaxError:...string not terminated...
 
-== PoHeader ==
 
-A PoHeader is a representation of a special message that all .po files have.
-That first message has as the msgid the empty string ("") and as the
-translation of it some metadata.
+== POHeader ==
+
+A POHeader is the first entry in a .po file, and it is treated specially
+because its translation contains metadata about the .po file.  The msgid of
+this special entry is the empty string ("").
 
 It must implement ITranslationHeader.
 
@@ -74,11 +74,11 @@ It must implement ITranslationHeader.
     ...     msgstr ""
     ...     "Content-Type: text/plain; charset=ASCII\n"
     ...     """
-    >>> verifyObject(ITranslationHeader, PoHeader(content))
+    >>> verifyObject(ITranslationHeader, POHeader(content))
     True
 
-Creating a new PoHeader with broken plural forms still gives us a valid
-PoHeader.
+Creating a new POHeader with broken plural forms still gives us a valid
+POHeader.
 
     >>> new_header_string = '''Project-Id-Version: es
     ... POT-Creation-Date: 2004-08-18 11:10+0200
@@ -90,7 +90,7 @@ PoHeader.
     ... Content-Transfer-Encoding: 8bit
     ... Report-Msgid-Bugs-To: serrador@hispalinux.es
     ... Plural-Forms: n != 1'''
-    >>> new_header = PoHeader(new_header_string)
+    >>> new_header = POHeader(new_header_string)
 
 Plural forms are now the default ones. No plural forms.
 
@@ -110,7 +110,7 @@ And the translation_revision_date is exactly the one in the header string.
 This attribute gives you a datetime object representing the
 PO-Revision-Date field.
 
-  >>> header = PoHeader("""
+  >>> header = POHeader("""
   ... Project-Id-Version: foo
   ... Report-Msgid-Bugs-To: foo@bar.com
   ... POT-Creation-Date: 2005-01-26 01:01+0100
@@ -123,10 +123,10 @@ PO-Revision-Date field.
   >>> header.translation_revision_date
   datetime.datetime(2004, 3, 6, 20, 6, tzinfo=tzinfo(60))
 
-Even if the function has unicode chars we detect that as not having the
-revision date:
+If the PO-Revision-Date header contains unicode characters, we get a valid
+header but no revision date.
 
-  >>> header = PoHeader("""
+  >>> header = POHeader("""
   ... Project-Id-Version: foo
   ... Report-Msgid-Bugs-To: foo@bar.com
   ... POT-Creation-Date: 2005-01-26 01:01+0100
@@ -136,8 +136,9 @@ revision date:
   ... Content-Type: text/plain; charset=UTF-8
   ... Content-Transfer-Encoding: 8bit
   ... """)
-  >>> header.translation_revision_date is None
-  True
+  >>> print header.translation_revision_date
+  None
+
 
 === updateFromTemplateHeader(template_header) ===
 
@@ -146,7 +147,7 @@ This method sets some header fields based on the given template_header.
 
 We need an standard template header.
 
-    >>> template_header = PoHeader("""
+    >>> template_header = POHeader("""
     ...     Project-Id-Version: PACKAGE VERSION
     ...     Report-Msgid-Bugs-To: 
     ...     POT-Creation-Date: 2007-07-09 03:39+0100
@@ -161,7 +162,7 @@ We need an standard template header.
 
 and a translation header with some fields set.
 
-    >>> translation_header = PoHeader("""
+    >>> translation_header = POHeader("""
     ...     POT-Creation-Date: 2006-12-30 13:23+0400
     ...     PO-Revision-Date: 2007-04-13 18:45+0000
     ...     Last-Translator: Carlos Perello Marin <carlos@canonical.com>
@@ -210,7 +211,7 @@ Drupal uses a non standard field to note the translation domain for the
 translation catalog. The update method must copy it if it exists in the
 template.
 
-    >>> template_header = PoHeader("""
+    >>> template_header = POHeader("""
     ...     Project-Id-Version: PACKAGE VERSION
     ...     Report-Msgid-Bugs-To: 
     ...     POT-Creation-Date: 2007-07-09 03:39+0100
@@ -261,7 +262,7 @@ Parsing a PO template:
   ... msgstr ""
   ... """
 
-  >>> parser = PoParser()
+  >>> parser = POParser()
   >>> translation_file = parser.parse(content)
 
   >>> len(translation_file.messages)
@@ -311,15 +312,18 @@ character.
 
   >>> translation_file = parser.parse(content)
 
-Check that Big5 characters in the PO header have been correctly
-converted:
+The Big5 characters in the PO header have been correctly converted and are
+displayed as unicode characters.
 
   >>> translation_file.header.getRawContent()
   u'...Last-Translator:   \u7a0b\u5f0f\u932f\u8aa4\n...'
 
-Check that the translation of the first message has been interpreted
-correctly, despite the backslash in the second multibyte sequence:
+The translation of the first message has been interpreted correctly,
+despite the backslash in the second multibyte sequence, because is the same
+as decoding '\xa6\xa8\xa5\\' as BIG5 encoding.
 
+  >>> '\xa6\xa8\xa5\\'.decode('BIG5')
+  u'\u6210\u529f'
   >>> translation_file.messages[0].translations
   [u'\u6210\u529f']
 

@@ -2,9 +2,6 @@
 
 """Interfaces to handle translation files exports."""
 
-from zope.interface import Interface
-from zope.schema import Choice, List, TextLine, Object
-
 __metaclass__ = type
 
 __all__ = [
@@ -14,8 +11,14 @@ __all__ = [
     'UnknownTranslationExporterError',
     ]
 
+from zope.interface import Attribute, Interface
+from zope.schema import Choice, List, TextLine
 
-class UnknownTranslationExporterError(Exception):
+from canonical.launchpad.interfaces.translationcommonformat import (
+    TranslationImportExportBaseException)
+
+
+class UnknownTranslationExporterError(TranslationImportExportBaseException):
     """Something unknown went wrong while doing an export."""
 
 
@@ -88,9 +91,7 @@ class IExportedTranslationFile(Interface):
         title=u'Content type string for this file format.',
         required=True, readonly=True)
 
-    content_file = Object(
-        title=u'File like object with the exported content.',
-        required=True, readonly=True)
+    content_file = Attribute(u'File like object with the exported content.')
 
     path = TextLine(
         title=u'Relative file path for this exported file.',

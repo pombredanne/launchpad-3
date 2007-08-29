@@ -16,10 +16,10 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IPersonSet, ITranslationExporter, ITranslationImporter,
-    NotExportedFromLaunchpad, OldTranslationImported, PersonCreationRationale,
-    TranslationConflict, TranslationConstants)
+    NotExportedFromLaunchpad, OutdatedTranslationError,
+    PersonCreationRationale, TranslationConflict, TranslationConstants)
 from canonical.launchpad.translationformat.gettext_po_importer import (
-    GettextPoImporter)
+    GettextPOImporter)
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     MozillaXpiImporter)
 from canonical.launchpad.webapp import canonical_url
@@ -27,7 +27,7 @@ from canonical.lp.dbschema import (
     RosettaImportStatus, TranslationFileFormat)
 
 importers = {
-    TranslationFileFormat.PO: GettextPoImporter(),
+    TranslationFileFormat.PO: GettextPOImporter(),
     TranslationFileFormat.XPI: MozillaXpiImporter(),
     }
 
@@ -70,7 +70,7 @@ class TranslationImporter:
         return person
 
     @cachedproperty
-    def file_extensions_with_importer(self):
+    def supported_file_extensions(self):
         """See ITranslationImporter."""
         file_extensions = []
 
@@ -128,7 +128,7 @@ class TranslationImporter:
             # We are importing a translation template.
             self.potemplate.source_file_format = (
                 translation_import_queue_entry.format)
-            if importer.has_alternative_msgid:
+            if importer.uses_source_string_msgids:
                 # We use the special 'en' language as the way to store the
                 # English strings to show instead of the msgids.
                 english_pofile = self.potemplate.getPOFileByLang('en')
@@ -151,7 +151,7 @@ class TranslationImporter:
                     # The new imported file is older than latest one imported,
                     # we don't import it, just ignore it as it could be a
                     # mistake and it would make us lose translations.
-                    raise OldTranslationImported(
+                    raise OutdatedTranslationError(
                         'Previous imported file is newer than this one.')
                 # Get the timestamp when this file was exported from
                 # Launchpad. If it was not exported from Launchpad, it will be

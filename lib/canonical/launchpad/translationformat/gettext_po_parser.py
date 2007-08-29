@@ -7,8 +7,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'PoHeader',
-    'PoParser',
+    'POHeader',
+    'POParser',
     ]
 
 import datetime
@@ -41,7 +41,7 @@ class POSyntaxWarning(Warning):
         elif self.lno is None:
             return 'PO file: syntax warning on unknown line'
         else:
-            return 'Po file: syntax warning on entry at line %d' % self.lno
+            return 'PO file: syntax warning on entry at line %d' % self.lno
 
 
 def parse_charset(string_to_parse, is_escaped=True):
@@ -95,7 +95,7 @@ def get_header_dictionary(raw_header, handled_keys_order):
     return header_dictionary
 
 
-class PoHeader:
+class POHeader:
     """See `ITranslationHeader`."""
     implements(ITranslationHeader)
 
@@ -359,7 +359,7 @@ class PoHeader:
         self._last_translator = u'%s <%s>' % (name, email)
 
 
-class PoParser(object):
+class POParser(object):
     """Parser class for Gettext files."""
 
     def __init__(self):
@@ -493,7 +493,7 @@ class PoParser(object):
                 # when it returns an "<unprintable instance object>". You can
                 # see more details on bug #2896
                 raise TranslationFormatInvalidInputError(
-                    message='Po file: duplicate msgid ending on line %r' % (
+                    message='PO file: duplicate msgid ending on line %r' % (
                         self._message_lineno))
 
             number_plural_forms = (
@@ -512,7 +512,7 @@ class PoParser(object):
 
     def _parseHeader(self):
         try:
-            self._translation_file.header = PoHeader(
+            self._translation_file.header = POHeader(
                 self._message.translations[
                     TranslationConstants.SINGULAR_FORM],
                 self._message.comment)
@@ -534,7 +534,7 @@ class PoParser(object):
     def _parseQuotedString(self, string):
         r"""Parse a quoted string, interpreting escape sequences.
 
-          >>> parser = PoParser()
+          >>> parser = POParser()
           >>> parser._parseQuotedString(u'\"abc\"')
           u'abc'
           >>> parser._parseQuotedString(u'\"abc\\ndef\"')

@@ -22,7 +22,7 @@ class POExportRequestSet:
 
     @property
     def number_entries(self):
-        """See IPOExportRequestSet."""
+        """See `IPOExportRequestSet`."""
         return POExportRequest.select().count()
 
     def _addRequestEntry(self, person, potemplate, pofile, format):

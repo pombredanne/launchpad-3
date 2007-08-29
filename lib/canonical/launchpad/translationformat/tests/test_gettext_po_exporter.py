@@ -2,24 +2,26 @@
 
 __metaclass__ = type
 
-from textwrap import dedent
+import doctest
 import unittest
+from textwrap import dedent
 
 from canonical.launchpad.helpers import test_diff
+from canonical.launchpad.translationformat import gettext_po_exporter
 from canonical.launchpad.translationformat.gettext_po_exporter import (
-    GettextPoExporter)
+    GettextPOExporter)
 from canonical.launchpad.translationformat.gettext_po_parser import (
-    PoParser)
+    POParser)
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class GettextPoExporterTestCase(unittest.TestCase):
+class GettextPOExporterTestCase(unittest.TestCase):
     """Class test for gettext's .po file exports"""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.parser = PoParser()
-        self.translation_exporter = GettextPoExporter()
+        self.parser = POParser()
+        self.translation_exporter = GettextPOExporter()
 
     def _compareImportAndExport(self, import_file, export_file):
         """."""
@@ -249,6 +251,8 @@ class GettextPoExporterTestCase(unittest.TestCase):
 
 
 def test_suite():
+    # Run gettext po exporter doc tests.
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(GettextPoExporterTestCase))
+    suite.addTest(doctest.DocTestSuite(gettext_po_exporter))
+    suite.addTest(unittest.makeSuite(GettextPOExporterTestCase))
     return suite

@@ -1,6 +1,6 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Int, Object, Text, TextLine)
 
@@ -150,21 +150,18 @@ class IPOTemplate(IRosettaStats):
     copyright = Text(
         title=_('The copyright information for this template.'))
 
-    license = Int(title=u'The license under this template messages are.')
+    license = Int(title=_('The license under this template messages are.'))
 
     datecreated = Datetime(
         title=_('When this translation template was created.'), required=True)
 
-    translationgroups = Object(
-        title=_('''
+    translationgroups = Attribute(
+        _('''
             The `ITranslationGroup` objects that handle translations for this
             template.
-            '''),
-        description=_('''
             There can be several because they can be inherited from project to
             product, for example.
-            '''),
-        required=True)
+            '''))
 
     translationpermission = Choice(
         title=_('Translation permission'),
@@ -176,24 +173,20 @@ class IPOTemplate(IRosettaStats):
             '''),
         vocabulary='TranslationPermission')
 
-    pofiles = Object(
-        title=_('All `IPOFile` that exist for this template.'),
-        required=True)
+    pofiles = Attribute(
+        _('All `IPOFile` that exist for this template.'))
 
-    relatives_by_name = Object(
-        title=_('''
+    relatives_by_name = Attribute(
+        _('''
             All `IPOTemplate` objects that have the same template name as
             this one.
-            '''),
-        required = True)
+            '''))
 
-    relatives_by_source = Object(
-        title=_('All `IPOTemplate` objects that have the same source.'),
-        description=_('''
+    relatives_by_source = Attribute(
+        _('''All `IPOTemplate` objects that have the same source.
             For example those that came from the same productseries or the
             same source package.
-            '''),
-        required = True)
+            '''))
 
     displayname = TextLine(
         title=_('The translation template brief name.'), required=True,
@@ -217,13 +210,11 @@ class IPOTemplate(IRosettaStats):
         title=_('The number of languages for which we have translations.'),
         required=True, readonly=True)
 
-    translationtarget = Object(
-        title=_('The direct object in which this template is attached.'),
-        description=_(
-            'This will either be an `ISourcePackage` or an `IProductSeries`.'
-            ),
-        required=True, readonly=True
-        )
+    translationtarget = Attribute(
+        _('''
+            The direct object in which this template is attached.
+            This will either be an `ISourcePackage` or an `IProductSeries`.
+            '''))
 
     date_last_updated = Datetime(
             title=_('Date for last update'),
@@ -387,28 +378,22 @@ class IPOTemplateSubset(Interface):
     """A subset of POTemplate."""
 
     sourcepackagename = Object(
-        title=_('''
-            The `ISourcePackageName` associated with this subset of
-            `IPOTemplate` objects.
-            '''),
+        title=_(
+            'The `ISourcePackageName` associated with this subset.'),
         schema=ISourcePackageName)
 
     distroseries = Object(
-        title=_('''
-            The `IDistroSeries` associated with this subset of
-            `IPOTemplate` objects.
-            '''),
+        title=_(
+            'The `IDistroSeries` associated with this subset.'),
         schema=IDistroSeries)
 
     productseries = Object(
-        title=_('''
-            The `IProductSeries` associated with this subset of
-            `IPOTemplate` objects.
-            '''),
+        title=_(
+            'The `IProductSeries` associated with this subset.'),
         schema=IProductSeries)
 
     title = TextLine(
-        title=u'The translation file title.', required=True, readonly=True)
+        title=_('The translation file title.'), required=True, readonly=True)
 
     def __iter__():
         """Return an iterator over all POTemplate for this subset."""

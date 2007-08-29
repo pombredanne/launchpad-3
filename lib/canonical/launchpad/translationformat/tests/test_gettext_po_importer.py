@@ -9,7 +9,7 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
 from canonical.launchpad.translationformat.gettext_po_importer import (
-    GettextPoImporter)
+    GettextPOImporter)
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, ITranslationFormatImporter,
     ITranslationImportQueue)
@@ -39,7 +39,7 @@ msgstr "blah"
 '''
 
 
-class GettextPoImporterTestCase(unittest.TestCase):
+class GettextPOImporterTestCase(unittest.TestCase):
     """Class test for gettext's .po file imports"""
     layer = LaunchpadZopelessLayer
 
@@ -64,9 +64,9 @@ class GettextPoImporterTestCase(unittest.TestCase):
             productseries=productseries)
 
         transaction.commit()
-        self.template_importer = GettextPoImporter()
+        self.template_importer = GettextPOImporter()
         self.template_file = self.template_importer.parse(template_entry)
-        self.translation_importer = GettextPoImporter()
+        self.translation_importer = GettextPOImporter()
         self.translation_file = self.translation_importer.parse(
             translation_entry)
 
@@ -74,19 +74,19 @@ class GettextPoImporterTestCase(unittest.TestCase):
         """Check whether the object follows the interface."""
         self.failUnless(
             verifyObject(ITranslationFormatImporter, self.template_importer),
-            "GettextPoImporter doesn't conform to ITranslationFormatImporter"
+            "GettextPOImporter doesn't conform to ITranslationFormatImporter"
                 "interface.")
 
     def testFormat(self):
-        """Check whether GettextPoImporter say that handles PO file format."""
+        """Check whether GettextPOImporter say that handles PO file format."""
         self.failUnless(
             self.template_importer.format == TranslationFileFormat.PO,
-            'GettextPoImporter format expected PO but got %s' % (
+            'GettextPOImporter format expected PO but got %s' % (
                 self.template_importer.format.name))
 
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(GettextPoImporterTestCase))
+    suite.addTest(unittest.makeSuite(GettextPOImporterTestCase))
     return suite
 

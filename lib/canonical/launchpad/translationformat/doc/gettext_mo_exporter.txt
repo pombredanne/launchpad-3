@@ -1,25 +1,37 @@
 = MO file format exporter =
 
-MO file format is a binary file format used on run time by most
-free/open software projects and it's just a binary version of
-Gettext's .po file format.
+MO files are binary files compiled from human readable PO files by an
+external program, usually msgfmt(1).  One mnemonic to help you remember
+these is that MO files are machine friendly and PO files are people
+friendly.
 
-Launchpad gets a .po file content and 'compiles' it to get
+You can read more about MO file format on:
+
+http://www.gnu.org/software/gettext/manual/html_chapter/gettext_10.html#MO-Files
+
+Launchpad gets .po file content and 'compiles' it to get
 the binary form.
 
     >>> from canonical.launchpad.translationformat.tests.helpers import (
     ...     is_valid_mofile)
     >>> from canonical.launchpad.translationformat.gettext_mo_exporter import (
-    ...     MoCompiler)
+    ...     POCompiler)
 
-    >>> compiler = MoCompiler()
+    >>> compiler = POCompiler()
 
-    >>> mofile = compiler.compile('''
+
+POCompiler.compile gets a string with .po file content and gives you
+a .mo file binary stream.
+
+    >>> mofile_content = compiler.compile('''
     ... msgid "foo"
     ... msgstr "bar"
     ... ''')
-    >>> is_valid_mofile(mofile)
+    >>> is_valid_mofile(mofile_content)
     True
+
+Though, if we provide it with something that is not a .po file content, we
+get an export error exception:
 
     >>> mofile = compiler.compile('''
     ... blah

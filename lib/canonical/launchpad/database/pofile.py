@@ -38,7 +38,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet, IPOFile,
     IPOFileSet, IPOFileTranslator, IPOSubmissionSet, ITranslationExporter,
     ITranslationFile, ITranslationImporter, IVPOExportSet,
-    NotExportedFromLaunchpad, NotFoundError, OldTranslationImported,
+    NotExportedFromLaunchpad, NotFoundError, OutdatedTranslationError,
     TranslationConstants, TranslationFormatSyntaxError,
     TranslationFormatInvalidInputError, ZeroLengthPOExportError)
 from canonical.launchpad.mail import simple_sendmail
@@ -107,11 +107,11 @@ def _can_edit_translations(pofile, person):
     to edit these translations.
 
     Admins and Rosetta experts are always able to edit any translation.
-    If the IPOFile is for an IProductSeries, the owner of the IProduct has
-    also permissions.
+    If the `IPOFile` is for an `IProductSeries`, the owner of the `IProduct`
+    has also permissions.
     Any other mortal will have rights depending on if he/she is on the right
-    translation team for the given IPOFile.translationpermission and the
-    language associated with this IPOFile.
+    translation team for the given `IPOFile`.translationpermission and the
+    language associated with this `IPOFile`.
     """
     # If the person is None, then they cannot edit
     if person is None:
@@ -363,10 +363,11 @@ class POFile(SQLBase, POFileMixIn):
         return _can_edit_translations(self, person)
 
     def canAddSuggestions(self, person):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return _can_add_suggestions(self, person)
 
     def currentMessageSets(self):
+        """See `IPOFile`."""
         return POMsgSet.select(
             'POMsgSet.pofile = %d AND POMsgSet.sequence > 0' % self.id,
             orderBy='sequence')
@@ -744,15 +745,12 @@ class POFile(SQLBase, POFileMixIn):
         old_date = old_header.translation_revision_date
         new_date = header.translation_revision_date
         if old_date is None or new_date is None:
-            # If one of the headers, has an unknown revision date, they cannot
+            # If one of the headers has an unknown revision date, they cannot
             # be compared, so we consider the new one as the most recent.
             return False
 
-        # Check whether or not the date is older.
-        if old_date <= new_date:
-            return False
-        elif old_date > new_date:
-            return True
+        # Check whether the date is older.
+        return old_date > new_date
 
     def getNextToImport(self):
         """See `IPOFile`."""
@@ -806,7 +804,7 @@ class POFile(SQLBase, POFileMixIn):
                     'Error importing %s' % self.title, exc_info=1)
             template_mail = 'poimport-syntax-error.txt'
             import_rejected = True
-        except OldTranslationImported:
+        except OutdatedTranslationError:
             # The attached file is older than the last imported one, we ignore
             # it. We also log this problem and select the email template.
             if logger:
@@ -958,6 +956,7 @@ class POFile(SQLBase, POFileMixIn):
 
     def uncachedExport(self, ignore_obsolete=False, force_utf8=False):
         """See `IPOFile`."""
+        # Get the exporter for this translation.
         translation_exporter = getUtility(ITranslationExporter)
         translation_format_exporter = (
             translation_exporter.getTranslationFormatExporterByFileFormat(
@@ -966,13 +965,20 @@ class POFile(SQLBase, POFileMixIn):
         translation_file = ITranslationFile(self)
         if (self.last_touched_pomsgset is not None and
             self.last_touched_pomsgset.reviewer is not None):
+            # There is a translation reviewed, get its reviewer as the last
+            # translator.
             reviewer = self.last_touched_pomsgset.reviewer
-            preferredemail = reviewer.preferredemail
-            email = 'Unknown'
-            if preferredemail is not None:
-                email = preferredemail.email
+            if reviewer.preferredemail is None:
+                # We are supposed to have always a valid email address, but
+                # with removed accounts that's not true anymore so we just set
+                # it to 'Unknown' to note we don't know it.
+                email = 'Unknown'
+            else:
+                email = reviewer.preferredemail.email
             displayname = reviewer.displayname
             translation_file.header.setLastTranslator(email, name=displayname)
+
+        # Get the export file.
         exported_file = translation_format_exporter.exportTranslationFiles(
             [translation_file], ignore_obsolete, force_utf8)
         return removeAllProxies(exported_file.content_file).read()
@@ -1355,7 +1361,7 @@ class POFileTranslator(SQLBase):
 
 
 class POFileToTranslationFileAdapter:
-    """Adapter from IPOFile to ITranslationFile."""
+    """Adapter from `IPOFile` to `ITranslationFile`."""
     implements(ITranslationFile)
 
     def __init__(self, pofile):
@@ -1390,7 +1396,7 @@ class POFileToTranslationFileAdapter:
         """See `ITranslationFile`."""
         template_header = self._pofile.potemplate.getHeader()
         translation_header = self._pofile.getHeader()
-        # Update default fields based on its values in the template header
+        # Update default fields based on its values in the template header.
         translation_header.updateFromTemplateHeader(template_header)
         date_reviewed = None
         if self._pofile.last_touched_pomsgset is not None:
@@ -1429,7 +1435,7 @@ class POFileToTranslationFileAdapter:
 
 
     def _getMessages(self):
-        """Return a list of ITranslationMessage for the IPOFile adapted."""
+        """Return a list of `ITranslationMessage` for the `IPOFile` adapted."""
         pofile = self._pofile
         # Get all rows related to this file. We do this to speed the export
         # process so we have a single DB query to fetch all needed

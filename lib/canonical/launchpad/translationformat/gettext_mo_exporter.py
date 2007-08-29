@@ -1,25 +1,29 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
+"""Export module for gettext's .mo file format."""
+
 __metaclass__ = type
 
 __all__ = [
-    'GettextMoExporter'
+    'GettextMOExporter',
+    'POCompiler'
     ]
 
-import os.path
+import os
 import subprocess
-from StringIO import StringIO
+from cStringIO import StringIO
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    ITranslationExporter,
-    ITranslationFormatExporter, UnknownTranslationExporterError)
+    ITranslationExporter, ITranslationFormatExporter,
+    UnknownTranslationExporterError)
 from canonical.launchpad.translationformat.translation_export import (
-    LaunchpadWriteTarFile, ExportedTranslationFile)
+    ExportedTranslationFile, LaunchpadWriteTarFile)
 from canonical.lp.dbschema import TranslationFileFormat
 
-class MoCompiler:
+
+class POCompiler:
     """Compile PO files to MO files."""
 
     MSGFMT = '/usr/bin/msgfmt'
@@ -28,7 +32,7 @@ class MoCompiler:
         """Return a MO version of the given PO file."""
 
         msgfmt = subprocess.Popen(
-            args=[MoCompiler.MSGFMT, '-v', '-o', '-', '-'],
+            args=[POCompiler.MSGFMT, '-v', '-o', '-', '-'],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
@@ -36,32 +40,27 @@ class MoCompiler:
 
         if msgfmt.returncode != 0:
             raise UnknownTranslationExporterError(
-                "Got an error while compiling PO file into MO:\n%s" % stderr)
+                'Error compiling PO file: %s\n%s' % (gettext_po_file, stderr))
 
         return stdout
 
 
-class GettextMoExporter:
+class GettextMOExporter:
     """Support class to export Gettext .mo files."""
     implements(ITranslationFormatExporter)
 
     def __init__(self, context):
-        pass
-
-    @property
-    def format(self):
-        """See `ITranslationFormatExporter`."""
-        return TranslationFileFormat.MO
-
-    @property
-    def handlable_formats(self):
-        """See `ITranslationFormatExporter`."""
-        return [TranslationFileFormat.PO]
+        # 'context' is ignored here because we don't need it, although we use
+        # zope.component.subscribers from TranslationExporter class to get all
+        # exporters available, which require that each exporter have a
+        # 'context' argument.
+        self.format = TranslationFileFormat.MO
+        self.supported_formats = [TranslationFileFormat.PO]
 
     def exportTranslationMessage(self, translation_message):
         """See `ITranslationFormatExporter`."""
-        # This file format doesn't allow to export a single message.
-        raise NotImplementedError
+        raise NotImplementedError(
+            "This file format doesn't allow to export a single message.")
 
     def exportTranslationFiles(self, translation_file_list,
                                ignore_obsolete=False, force_utf8=False):
@@ -98,7 +97,7 @@ class GettextMoExporter:
                     '%s.%s' % (
                         translation_file.translation_domain,
                         file_extension))
-                mo_compiler = MoCompiler()
+                mo_compiler = POCompiler()
                 mo_content = mo_compiler.compile(exported_file_content)
                 exported_file_content = mo_content
                 content_type = 'application/x-gmo'
@@ -117,6 +116,9 @@ class GettextMoExporter:
             # archive that include all them.
             exported_file.content_file = LaunchpadWriteTarFile.files_to_stream(
                 exported_files)
+            # For tar.gz files, the standard content type is
+            # application/x-gtar. You can see more info on
+            # http://en.wikipedia.org/wiki/List_of_archive_formats
             exported_file.content_type = 'application/x-gtar'
             exported_file.file_extension = 'tar.gz'
             # We cannot give a proper file path for the tarball, that's why we

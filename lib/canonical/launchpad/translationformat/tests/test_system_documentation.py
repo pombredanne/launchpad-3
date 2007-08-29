@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+
 """
 Test the examples included in the system documentation in
 lib/canonical/launchpad/translationformat/doc.
@@ -25,13 +26,12 @@ special = {
         '../doc/gettext_po_parser.txt', optionflags=default_optionflags)
     }
 
+
 def test_suite():
     suite = unittest.TestSuite()
 
     # Add special needs tests
-    keys = special.keys()
-    keys.sort()
-    for key in keys:
+    for key in sorted(special):
         special_suite = special[key]
         suite.addTest(special_suite)
 
@@ -40,18 +40,19 @@ def test_suite():
             )
 
     # Add tests using default setup/teardown
-    filenames = [filename
-                 for filename in os.listdir(testsdir)
-                 if filename.lower().endswith('.txt')
-                    and filename not in special
-                 ]
     # Sort the list to give a predictable order.  We do this because when
     # tests interfere with each other, the varying orderings that os.listdir
     # gives on different people's systems make reproducing and debugging
     # problems difficult.  Ideally the test harness would stop the tests from
     # being able to interfere with each other in the first place.
     #   -- Andrew Bennetts, 2005-03-01.
-    filenames.sort()
+    filenames = sorted([
+        filename
+        for filename in os.listdir(testsdir)
+            if (os.path.splitext(filename)[1] == '.txt' and
+                filename not in special)
+        ])
+
     for filename in filenames:
         path = os.path.join('../doc/', filename)
         one_test = FunctionalDocFileSuite(
@@ -62,6 +63,7 @@ def test_suite():
         suite.addTest(one_test)
 
     return suite
+
 
 if __name__ == '__main__':
     unittest.main(test_suite())

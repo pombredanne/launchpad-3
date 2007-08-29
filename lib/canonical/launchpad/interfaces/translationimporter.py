@@ -2,30 +2,33 @@
 
 """Interfaces to handle translation files imports."""
 
-from zope.interface import Interface
-from zope.schema import Bool, Choice, List, TextLine
-
 __metaclass__ = type
 
 __all__ = [
     'ITranslationFormatImporter',
     'ITranslationImporter',
-    'OldTranslationImported',
+    'OutdatedTranslationError',
     'NotExportedFromLaunchpad',
     'TranslationFormatSyntaxError',
     'TranslationFormatInvalidInputError',
     ]
 
+from zope.interface import Interface
+from zope.schema import Bool, Choice, List, TextLine
 
-class OldTranslationImported(Exception):
+from canonical.launchpad.interfaces.translationcommonformat import (
+    TranslationImportExportBaseException)
+
+
+class OutdatedTranslationError(TranslationImportExportBaseException):
     """A newer file has already been imported."""
 
 
-class NotExportedFromLaunchpad(Exception):
+class NotExportedFromLaunchpad(TranslationImportExportBaseException):
     """An imported file lacks the Launchpad export time."""
 
 
-class TranslationFormatBaseError(Exception):
+class TranslationFormatBaseError(TranslationImportExportBaseException):
     """Base exception for errors in translation format files."""
 
     def __init__(self, filename='unknown', line_number=None, message=None):
@@ -33,7 +36,8 @@ class TranslationFormatBaseError(Exception):
 
         :param filename: The file name that is being parsed.
         :param line_number: The line number where the error was found.
-        :param message: The concrete syntax error found.
+        :param message: The concrete syntax error found. If we get a None
+            value here, filename and line_number are ignored.
         """
         assert filename is not None, 'filename cannot be None'
 
@@ -71,40 +75,41 @@ class TranslationFormatInvalidInputError(TranslationFormatBaseError):
 class ITranslationImporter(Interface):
     """Importer of translation files."""
 
-    file_extensions_with_importer = List(
+    supported_file_extensions = List(
         title=u'List of file extensions we have imports for.',
         required=True, readonly=True)
 
     def getTranslationFileFormatByFileExtension(file_extension):
-        """Return the translation file format for given file_extension.
+        """Return the translation file format for the given file extension.
 
-        :param file_extension: File extension.
-        :return: None if there is no handler for that file_extension.
+        :param file_extension: File extension including the dot.
+        :return: A `TranslationFileFormat` for the given file extension
+            or None if it's not a known extension.
         """
 
     def getTranslationFormatImporter(file_format):
-        """Return the translation file format for give file_format.
+        """Return the translation format importer for the given file format.
 
         :param file_format: A TranslationFileFormat entry.
-        :return: None if there is no handler for that file_format.
+        :return: An `ITranslationFormatImporter` or None if there is no
+            handler for the given file format.
         """
 
     def importFile(translation_import_queue_entry):
-        """Convert a translation resource into database objects.
+        """Import an `ITranslationImportQueueEntry` file into the system.
 
-        :param translation_import_queue_entry: An ITranslationImportQueueEntry
-            entry.
-
-        :raise OldTranslationImported: If the entry is older than the
+        :param translation_import_queue_entry: An
+            `ITranslationImportQueueEntry` entry.
+        :raise OutdatedTranslationError: If the entry is older than the
             previously imported file.
         :raise NotExportedFromLaunchpad: If the entry imported is not
             published and doesn't have the tag added by Launchpad on export
             time.
-
-        :return: a list of dictionaries with three keys:
-            - 'pomsgset': The database pomsgset with an error.
-            - 'pomessage': The original POMessage object.
-            - 'error-message': The error message as gettext names it.
+        :return: a list of dictionaries with all errors found. Each dictionary
+            has three keys:
+            - 'pomsgset': An `IPOMsgSet` associated with this error.
+            - 'pomessage': The original message text in its native format.
+            - 'error-message': The error message text.
         """
 
 
@@ -124,25 +129,26 @@ class ITranslationFormatImporter(Interface):
         title=u'File extensions handable by this importer.',
         required=True, readonly=True)
 
-    has_alternative_msgid = Bool(
-        title=u'A flag indicating whether uses ids to identify strings',
+    uses_source_string_msgids = Bool(
+        title=u'A flag indicating whether uses source string as the id',
         description=u'''
-            A flag indicating whether this file format importer uses ids to
-            identify strings instead of English strings.
+            A flag indicating whether this file format importer uses source
+            string msgids as the English strings.
             ''',
         required=True, readonly=True)
 
     def parse(translation_import_queue_entry):
-        """Parse given translation_import_queue_entry object.
+        """Parse an `ITranslationImportQueueEntry` into an `ITranslationFile`.
 
-        :param translation_import_queue: An ITranslationImportQueueEntry to
-            import.
-        :return: an ITranslationFile representing the parsed file.
+        :param translation_import_queue: An `ITranslationImportQueueEntry` to
+            parse.
+        :return: An `ITranslationFile` representing the parsed file.
         """
 
     def getHeaderFromString(header_string):
-        """Return an ITranslationHeader representing the given header_string.
+        """Return the `ITranslationHeader` for the given header string.
 
-        :param header_string: A text representing a string for this concrete
+        :param header_string: A text representing a header for this concrete
             file format.
+        :return: An `ITranslationHeader` based on the header string.
         """

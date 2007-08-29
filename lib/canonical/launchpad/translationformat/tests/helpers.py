@@ -9,14 +9,10 @@ __all__ = [
     ]
 
 def is_valid_mofile(mofile):
-     """Test whether a string is a valid MO file."""
-     # There are different magics for big- and little-endianness, so we
-     # test for both.
-     be_magic = '\x95\x04\x12\xde'
-     le_magic = ''.join(reversed(be_magic))
+    """Test whether a string is a valid MO file."""
+    # There are different magics for big- and little-endianness, so we
+    # test for both.
+    be_magic = '\x95\x04\x12\xde'
+    le_magic = ''.join(reversed(be_magic))
 
-     for magic in (be_magic, le_magic):
-         if mofile[:len(magic)] == magic:
-             return True
-
-     return False
+    return mofile[:len(be_magic)] in (be_magic, le_magic)
