@@ -47,6 +47,10 @@ from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
+from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.binarypackagerelease import (
+        BinaryPackageRelease)
+from canonical.launchpad.database.component import Component
 from canonical.launchpad.database.distroseriesbinarypackage import (
     DistroSeriesBinaryPackage)
 from canonical.launchpad.database.distroseriessourcepackagerelease import (
@@ -64,10 +68,7 @@ from canonical.launchpad.database.distroserieslanguage import (
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.bugtask import BugTaskSet
-from canonical.launchpad.database.binarypackagerelease import (
-        BinaryPackageRelease)
-from canonical.launchpad.database.component import Component
+from canonical.launchpad.database.pomsgset import POMsgSet
 from canonical.launchpad.database.section import Section
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
@@ -1616,11 +1617,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 holding.new_id IS NULL
             """ % query_parameters)
 
-        # XXX: JeroenVermeulen 2007-07-16 bug=124410: Fix up
-        # POFile.last_touched_pomsgset!  Can't do that here because we'd be
-        # pouring POFiles with foreign keys that pointed to POMsgSets that
-        # hadn't been poured yet.
-
         # ### POMsgSet ###
 
         def prepare_pomsgset_batch(
@@ -1691,19 +1687,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             WHERE holding.potmsgset = temp_equiv_potmsgset.id
             """ % query_parameters)
 
-        # Prepare to remove inert POMsgSets from holding before pouring...
-        cur.execute("""
-            CREATE TEMP TABLE temp_inert_pomsgsets AS
-            SELECT id
-            FROM %(pomsgset_holding_table)s
-            WHERE new_id IS NULL
-            """ % query_parameters)
-        cur.execute(
-            "CREATE UNIQUE INDEX inert_pomsgset_idx "
-            "ON temp_inert_pomsgsets(id)")
-
-        # ...and map new_ids in holding to those of child distroseries'
-        # corresponding POMsgSets.
+        # Map new_ids in holding to those of child distroseries' corresponding
+        # POMsgSets.
         cur.execute("""
             UPDATE %(pomsgset_holding_table)s AS holding
             SET new_id = pms.id
@@ -1714,72 +1699,27 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 holding.pofile = pms.pofile
             """ % query_parameters)
 
-        # Where corresponding POMsgSets already exist but are not complete,
-        # and parent's version is complete, update review-related status.
-        class UpdatePOMsgSets:
-            """Tunable loop: update incomplete `POMsgSet`s in child."""
-            implements(ITunableLoop)
-
-            def __init__(self, holding_table, transaction_manager):
-                self.holding_table = holding_table
-                self.transaction_manager = transaction_manager
-                cur = cursor()
-
-                cur.execute(
-                    "SELECT min(id), max(id) FROM temp_inert_pomsgsets")
-                self.lowest_id, self.highest_id = cur.fetchone()
-
-            def isDone(self):
-                """See `ITunableLoop`."""
-                return (self.lowest_id is None or
-                    self.lowest_id > self.highest_id)
-
-            def __call__(self, chunk_size):
-                """See `ITunableLoop`."""
-                chunk_size = int(chunk_size)
-
-                # Figure out what id lies exactly batch_size rows ahead.
-                # There could be huge holes in the numbering here, so we can't
-                # just do fixed-size batches of id sequence.
-                cur = cursor()
-                cur.execute("""
-                    SELECT id
-                    FROM temp_inert_pomsgsets
-                    WHERE id >= %s
-                    ORDER BY id
-                    OFFSET %s
-                    LIMIT 1
-                    """ % (sqlvalues(self.lowest_id, chunk_size)))
-                end_id = cur.fetchone()
-                if end_id is not None:
-                    next = end_id[0]
-                else:
-                    next = self.highest_id
-
-                next += 1
-
-                cur.execute("""
-                    UPDATE POMsgSet AS target
-                    SET
-                        iscomplete = TRUE,
-                        isfuzzy = original.isfuzzy,
-                        isupdated = original.isupdated,
-                        reviewer = original.reviewer,
-                        date_reviewed = original.date_reviewed
-                    FROM %s original, temp_inert_pomsgsets
-                    WHERE
-                        original.id = temp_inert_pomsgsets.id AND
-                        target.id = original.new_id AND
-                        original.iscomplete AND
-                        NOT target.iscomplete AND
-                        temp_inert_pomsgsets.id >= %s AND
-                        temp_inert_pomsgsets.id < %s
-                    """ % (
-                    self.holding_table, quote(self.lowest_id), quote(next)))
-
-                self.transaction_manager.commit()
-                self.transaction_manager.begin()
-                self.lowest_id = next
+        # Keep some information about POMsgSets we won't be copying.  We'll be
+        # removing those later, and even after that, the mapping information
+        # will be needed.  We've just messed with the inert POMsgSets' new_id
+        # fields, but we can still recognize each of these by the fact that
+        # its new_id will refer to an already existing POMsgSet.
+        cur.execute("""
+            CREATE TEMP TABLE temp_inert_pomsgsets AS
+            SELECT
+                holding.id,
+                holding.new_id,
+                holding.date_reviewed,
+                holding.reviewer
+            FROM %(pomsgset_holding_table)s holding, POMsgSet source
+            WHERE holding.new_id = source.id
+            """ % query_parameters)
+        cur.execute(
+            "CREATE UNIQUE INDEX inert_pomsgset_idx "
+            "ON temp_inert_pomsgsets(id)")
+        cur.execute(
+            "CREATE UNIQUE INDEX inert_pomsgset_newid_idx "
+            "ON temp_inert_pomsgsets(new_id)")
 
         # ### POSubmission ###
 
@@ -1866,15 +1806,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             inert_where=have_better)
         cur = cursor()
 
-        # Update existing incomplete POMsgSets that need not be replaced by
-        # copies from parent, but whose parents are complete.
-        # XXX: JeroenVermeulen 2007-07-16: this may still be a "hole" in the
-        # algorithm.  We're marking POMsgSets as complete, which really won't
-        # be true until after pouring.  Can we close it?  Do something safe?
-        # Problem is we need information from a holding table.
-        updater = UpdatePOMsgSets(holding_tables['pomsgset'], transaction)
-        LoopTuner(updater, 2, 500).run()
-
         # Remember which POFiles we will affect, so we can update their stats
         # later.
         cur.execute(
@@ -1902,8 +1833,113 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # this is where the real work happens.
         copier.pour(transaction)
 
-        # Update the statistics cache for every POFile we touched.
-        logging.info("Updating POFile's statistics")
+        # Where corresponding POMsgSets already exist but are not complete,
+        # and parent's version is complete, update review-related status.
+        class UpdateReviewInfo:
+            """Tunable loop: update incomplete `POMsgSet`s in child."""
+            implements(ITunableLoop)
+
+            def __init__(self, holding_table, transaction_manager):
+                self.holding_table = holding_table
+                self.transaction_manager = transaction_manager
+                cur = cursor()
+
+                cur.execute(
+                    "SELECT min(new_id), max(new_id) FROM temp_inert_pomsgsets")
+                self.lowest_id, self.highest_id = cur.fetchone()
+
+            def isDone(self):
+                """See `ITunableLoop`."""
+                return (self.lowest_id is None or
+                    self.lowest_id > self.highest_id)
+
+            def __call__(self, chunk_size):
+                """See `ITunableLoop`."""
+                chunk_size = int(chunk_size)
+
+                # Figure out what id lies exactly batch_size rows ahead.
+                # There could be huge holes in the numbering here, so we can't
+                # just do fixed-size batches of id sequence.
+                cur = cursor()
+                cur.execute("""
+                    SELECT id
+                    FROM temp_inert_pomsgsets
+                    WHERE id >= %s
+                    ORDER BY id
+                    OFFSET %s
+                    LIMIT 1
+                    """ % (sqlvalues(self.lowest_id, chunk_size)))
+                end_id = cur.fetchone()
+                if end_id is not None:
+                    next = end_id[0]
+                else:
+                    next = self.highest_id
+
+                next += 1
+
+                cur.execute("""
+                    UPDATE POMsgSet AS target
+                    SET
+                        reviewer = temp.reviewer,
+                        date_reviewed = temp.date_reviewed
+                    FROM temp_inert_pomsgsets temp
+                    WHERE
+                        target.id = temp.new_id AND
+                        NOT target.iscomplete AND
+                        temp.date_reviewed > target.date_reviewed AND
+                        temp.id >= %s AND
+                        temp.id < %s
+                    """ % sqlvalues(self.lowest_id, next))
+
+                self.transaction_manager.commit()
+                self.transaction_manager.begin()
+                self.lowest_id = next
+
+        # Update review information on existing incomplete POMsgSets that may
+        # have become complete.
+        updater = UpdateReviewInfo(holding_tables['pomsgset'], transaction)
+        LoopTuner(updater, 2, 500).run()
+
+        class UpdatePOMsgSetFlags:
+            """Update flags on `POMsgSets` that may have been completed.
+
+            Implemented using LoopTuner, this sets the iscomplete, isfuzzy,
+            and isupdated flags appropriately.  This is done atop the object
+            persistence layer, so should not be too arbitrarily mixed with SQL
+            manipulation.
+            """
+            implements(ITunableLoop)
+
+            def __init__(self, holding_table, transaction_manager):
+                self.holding_table = holding_table
+                self.transaction_manager = transaction_manager
+                self.last_seen_id = -1
+                self.done = False
+
+            def isDone(self):
+                """See `ITunableLoop`."""
+                return self.done
+
+            def __call__(self, chunk_size):
+                """See `ITunableLoop`."""
+                pomsgsets_to_update = POMsgSet.select("""
+                    id > %s AND
+                    NOT iscomplete AND
+                    id IN (SELECT new_id FROM temp_inert_pomsgsets)
+                    """ % quote(self.last_seen_id),
+                    orderBy="id", limit=int(chunk_size))
+                highest_id = None
+                for pomsgset in pomsgsets_to_update:
+                    pomsgset.updateFlags()
+                    highest_id = pomsgset.id
+
+                self.transaction_manager.commit()
+                self.transaction_manager.begin()
+
+                if highest_id is None:
+                    self.done = True
+                else:
+                    self.last_seen_id = highest_id
 
         class UpdatePOFileStats:
             """Update statistics of affected `POFiles`, using `LoopTuner`.
@@ -1917,9 +1953,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             def __init__(self, transaction):
                 """See `ITunableLoop`."""
                 self.transaction = transaction
-                cur = cursor()
-                cur.execute("SELECT id FROM temp_changed_pofiles ORDER BY id")
-                self.pofile_ids = cur
+                self.last_seen_id = -1
                 self.done = False
 
             def isDone(self):
@@ -1928,32 +1962,38 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
             def __call__(self, batch_size):
                 """See `ITunableLoop`."""
-                cur = cursor()
-                cur.execute("""
-                    SELECT max(id) FROM (
-                        SELECT id
-                        FROM temp_changed_pofiles
-                        ORDER BY id
-                        LIMIT %s) AS id""" % quote(int(batch_size)))
-                max_id, = cur.fetchone()
-                if max_id is None:
-                    self.done = True
-                    return
+                pofiles_to_update = POFile.select("""
+                    id > %s AND
+                    id IN (SELECT id FROM temp_changed_pofiles)
+                    """ % quote(self.last_seen_id),
+                    orderBy="id", limit=int(batch_size))
 
-                pofiles = POFile.select("""
-                    id IN (
-                        SELECT id
-                        FROM temp_changed_pofiles
-                        WHERE id <= %s)""" % quote(max_id))
-
-                for pofile in pofiles:
+                highest_id = None
+                for pofile in pofiles_to_update:
                     pofile.updateStatistics()
+                    highest_id = pofile.id
 
-                cur.execute("DELETE FROM temp_changed_pofiles WHERE id <= %s"
-                            % quote(max_id))
                 self.transaction.commit()
                 self.transaction.begin()
 
+                if highest_id is None:
+                    self.done = True
+                else:
+                    self.last_seen_id = highest_id
+
+        # Update review information on existing incomplete POMsgSets that may
+        # have become complete.
+        logger.info("Updating review information on POMsgSets")
+        updater = UpdateReviewInfo(holding_tables['pomsgset'], transaction)
+        LoopTuner(updater, 2).run()
+
+        # Update other POMsgSet flags.  This uses SQLObject, not raw SQL.
+        logger.info("Updating status flags on POMsgSets")
+        updater = UpdatePOMsgSetFlags(holding_tables['pomsgset'], transaction)
+        LoopTuner(updater, 1).run()
+
+        # Update the statistics cache for every POFile we touched.
+        logging.info("Updating statistics on POFiles")
         LoopTuner(UpdatePOFileStats(transaction), 1).run()
 
         # Clean up after ourselves, in case we get called again this session.
@@ -2004,6 +2044,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         else:
             # Incremental copy of updates from parent distroseries
             self._copyActiveTranslationsAsUpdate(transaction, logger)
+
+        # XXX: JeroenVermeulen 2007-07-16 bug=124410: Fix up
+        # POFile.last_touched_pomsgset for POFiles that had POMsgSets and/or
+        # POSubmissions copied in.
 
     def copyMissingTranslationsFromParent(self, transaction, logger=None):
         """See IDistroSeries."""
