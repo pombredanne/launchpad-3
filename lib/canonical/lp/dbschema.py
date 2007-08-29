@@ -2526,31 +2526,31 @@ class ArchivePurpose(DBSchema):
     """
 
     PRIMARY = Item(1, """
-        Primary Archive.
+        Primary Archive
 
         This is the primary Ubuntu archive.
         """)
 
     PPA = Item(2, """
-        PPA Archive.
+        PPA Archive
 
         This is a Personal Package Archive.
         """)
 
     EMBARGOED = Item(3, """
-        Embargoed Archive.
+        Embargoed Archive
 
         This is the archive for embargoed packages.
         """)
 
     COMMERCIAL = Item(4, """
-        Commercial Archive.
+        Commercial Archive
 
         This is the archive for commercial packages.
         """)
 
     OBSOLETE = Item(5, """
-        Obsolete Archive.
+        Obsolete Archive
 
         This is the archive for obsolete packages.
         """)
