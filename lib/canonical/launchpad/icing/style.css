@@ -1610,3 +1610,7 @@ th.descending {
 .lowerCaseText {
   text-transform: lowercase
 }
+
+.mergeproposal {margin-bottom: 0.5em}
+.mergeproposal p {margin: 0.5em 0 }
+.indented {padding-left: 2em}

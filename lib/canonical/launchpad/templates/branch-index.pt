@@ -6,10 +6,6 @@
       i18n:domain="launchpad">
 <body>
 
-<style metal:fill-slot="head_epilogue" type="text/css">
-  div.indented {padding-left: 2em}
-</style>
-
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
@@ -182,69 +178,49 @@
     </div>
   </tal:whiteboard>
 
-  <tal:landing-targets condition="view/landing_targets">
+  <div id="landing-targets" tal:condition="view/landing_targets">
     <h2>Landing targets</h2>
-    <div id="landing-targets">
-    <div tal:repeat="mergeproposal view/landing_targets">
-      <tal:target replace="structure mergeproposal/target_branch/fmt:link" />
-      <tal:show-registrant condition="mergeproposal/show_registrant">
-        registered by
-        <tal:registrant replace="structure mergeproposal/registrant/fmt:link"/>
-      </tal:show-registrant>
-      <a tal:condition="mergeproposal/required:launchpad.Edit"
-         tal:attributes="href mergeproposal/fmt:url">
-        <img alt="" src="/@@/edit"/>
-      </a>
 
-      <div class="indented">
-        <div tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
-          The whiteboard.
-        </div>
-        <div tal:condition="mergeproposal/dependent_branch">
-          Dependent on
-          <tal:dependent replace="structure mergeproposal/dependent_branch/fmt:link" />
-        </div>
-        <div tal:condition="mergeproposal/date_merged" class="branchstatusMERGED">
-          Merged
-          <tal:merged replace="mergeproposal/date_merged/fmt:approximatedate">
-            2007-06-04
-          </tal:merged>
-          <tal:have-revno condition="mergeproposal/merged_revno">
-            as revision <tal:revno replace="mergeproposal/merged_revno"/>
-          </tal:have-revno>
-        </div>
-      </div>
-    </div>
-    </div>
-  </tal:landing-targets>
+    <div class="mergeproposal" tal:repeat="mergeproposal view/landing_targets">
 
-  <tal:dependent-branches condition="context/dependent_branches">
+      <tal:landing-target
+          define="branch mergeproposal/target_branch;
+                  dependent_branch mergeproposal/dependent_branch;
+                  ">
+        <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
+      </tal:landing-target>
+
+    </div>
+  </div>
+
+  <div id="dependent-branches" tal:condition="context/dependent_branches">
     <h2>Dependent branches</h2>
-    <div id="dependent-branches">
-    <div tal:repeat="mergeproposal context/dependent_branches">
-      <tal:source replace="structure mergeproposal/source_branch/fmt:link" />
-      <a tal:condition="mergeproposal/required:launchpad.Edit"
-         tal:attributes="href mergeproposal/fmt:url">
-        <img alt="" src="/@@/edit"/>
-      </a>
+    <div class="mergeproposal" tal:repeat="mergeproposal context/dependent_branches">
 
-      <div class="indented">
-        <div tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
-          The whiteboard.
-        </div>
-      </div>
-    </div>
-    </div>
-  </tal:dependent-branches>
+      <tal:dependent-branch
+          define="branch mergeproposal/source_branch;
+                  ">
+        <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
+      </tal:dependent-branch>
 
-  <tal:landing-candidates condition="view/latest_landing_candidates">
+    </div>
+  </div>
+
+  <div id="landing-candidates" tal:condition="view/latest_landing_candidates">
     <h2>Landing candidates</h2>
-    <div id="landing-candidates">
-    <div tal:repeat="mergeproposal view/latest_landing_candidates">
-      <metal:landing-candidate use-macro="context/@@+macros/landing-candidate"/>
+    <div class="mergeproposal" tal:repeat="mergeproposal view/latest_landing_candidates">
+
+      <tal:landing-candidate
+          define="branch mergeproposal/source_branch;
+                  show_associations python:True;
+                  show_lifecycle python:True;
+                  ">
+        <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
+      </tal:landing-candidate>
+
     </div>
-    </div>
-  </tal:landing-candidates>
+    <a href="+landing-candidates">more&#8230;</a>
+  </div>
 
   <h2 style="clear: both;">Recent revisions</h2>
 

@@ -698,8 +698,8 @@ class BranchFormatterAPI(ObjectFormatterAPI):
         url = canonical_url(branch)
         if extra_path:
             url = '%s/%s' % (url, extra_path)
-        return '<a href="%s"><img src="/@@/branch" alt=""/>&nbsp;%s</a>' % (
-            url, branch.displayname)
+        return ('<a href="%s" title="%s"><img src="/@@/branch" alt=""/>'
+                '&nbsp;%s</a>' % (url, branch.displayname, branch.unique_name))
 
 
 class NumberFormatterAPI:
