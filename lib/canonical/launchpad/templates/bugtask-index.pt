@@ -187,8 +187,10 @@
   </p>
 
   <tal:comment repeat="comment view/getBugCommentsForDisplay">
-    <metal:comment-box
-        metal:use-macro="context/@@bugcomment-macros/comment-box" />
+    <tal:commentbox condition="not: comment/isEmpty">
+      <metal:comment-box
+          metal:use-macro="context/@@bugcomment-macros/comment-box" />
+    </tal:commentbox>
   </tal:comment>
 
   <tal:logged-in condition="view/user">
