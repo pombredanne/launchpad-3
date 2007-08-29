@@ -14,7 +14,8 @@ import unittest
 import xmlrpclib
 
 from bzrlib.branch import Branch
-from bzrlib.tests import TestCaseWithTransport
+from bzrlib.tests import HttpServer, TestCaseWithTransport
+from bzrlib.transport import get_transport
 from bzrlib.urlutils import local_path_from_url
 
 from zope.component import getUtility
@@ -48,12 +49,12 @@ class TestBranchPuller(TestCaseWithTransport):
         authserver_tac.setUp()
         self.addCleanup(authserver_tac.tearDown)
 
-    def assertMirrored(self, branch):
+    def assertMirrored(self, source_path, branch):
         """Assert that 'branch' was mirrored succesfully."""
         self.assertEqual(branch.last_mirror_attempt, branch.last_mirrored)
         self.assertEqual(0, branch.mirror_failures)
         self.assertEqual(None, branch.mirror_status_message)
-        hosted_branch = Branch.open(self.getHostedPath(branch))
+        hosted_branch = Branch.open(source_path)
         mirrored_branch = Branch.open(self.getMirroredPath(branch))
         self.assertEqual(
             hosted_branch.last_revision(), branch.last_mirrored_id)
@@ -188,7 +189,7 @@ class TestBranchPuller(TestCaseWithTransport):
         LaunchpadZopelessLayer.txn.commit()
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(branch)
+        self.assertMirrored(self.getHostedPath(branch), branch)
 
     def test_mirrorAPrivateBranch(self):
         """Run the puller with a private branch in the queue."""
@@ -199,7 +200,21 @@ class TestBranchPuller(TestCaseWithTransport):
         LaunchpadZopelessLayer.txn.commit()
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
-        self.assertMirrored(branch)
+        self.assertMirrored(self.getHostedPath(branch), branch)
+
+    def test_mirrorAMirroredBranch(self):
+        branch = self.getArbitraryBranch(BranchType.MIRRORED)
+        tree = self.createTemporaryBazaarBranchAndTree()
+        transport = get_transport(tree.branch.base)
+        http_server = HttpServer()
+        http_server.setUp()
+        self.addCleanup(http_server.tearDown)
+        branch.url = http_server.get_url().rstrip('/')
+        branch.requestMirror()
+        LaunchpadZopelessLayer.txn.commit()
+        command, retcode, output, error = self.runPuller('mirror')
+        self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertMirrored(branch.url, branch)
 
     def test_mirrorEmpty(self):
         """Run the puller on an empty pull queue."""
