@@ -506,14 +506,11 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Expected email containing 'OK: foocomm_1.0-2_i386.deb', got:\n%s"
             % raw_msg)
 
-    def testCommercialUploadToNonReleasePocket(self):
-        """Test commercial upload pockets.
+    def _uploadCommercialToNonReleasePocketAndCheck(self):
+        """Upload commercial package to non-release pocket.
 
-        Commercial uploads must be targeted to the RELEASE pocket only
-        """
-        self.setupBreezy()
-        self.layer.txn.commit()
-
+        Helper function to upload a commercial package to a non-release
+        pocket and ensure it fails."""
         # Set up the uploadprocessor with appropriate options and logger.
         self.options.context = 'insecure'
         uploadprocessor = UploadProcessor(
@@ -529,6 +526,36 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertTrue(
             expect_msg in raw_msg,
             "Expected email with %s, got:\n%s" % (expect_msg, raw_msg))
+
+        # Housekeeping so the next test won't fail.
+        shutil.rmtree(upload_dir)
+
+    def testCommercialUploadToNonReleasePocket(self):
+        """Test commercial upload pockets.
+
+        Commercial uploads must be targeted to the RELEASE pocket only,
+        """
+        self.setupBreezy()
+
+        # Check unstable states:
+
+        self.breezy.status = DistroSeriesStatus.DEVELOPMENT
+        self.layer.txn.commit()
+        self._uploadCommercialToNonReleasePocketAndCheck()
+
+        self.breezy.status = DistroSeriesStatus.EXPERIMENTAL
+        self.layer.txn.commit()
+        self._uploadCommercialToNonReleasePocketAndCheck()
+
+        # Check stable states:
+
+        self.breezy.status = DistroSeriesStatus.CURRENT
+        self.layer.txn.commit()
+        self._uploadCommercialToNonReleasePocketAndCheck()
+
+        self.breezy.status = DistroSeriesStatus.SUPPORTED
+        self.layer.txn.commit()
+        self._uploadCommercialToNonReleasePocketAndCheck()
 
 
 class TestUploadProcessorPPA(TestUploadProcessorBase):
