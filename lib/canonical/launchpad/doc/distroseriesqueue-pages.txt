@@ -24,7 +24,7 @@ View parameters need to be set properly before start:
 After setup we have a 'batched' list:
 
   >>> from canonical.launchpad.webapp.interfaces import IBatchNavigator
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> verifyObject(IBatchNavigator, queue_view.batchnav)
   True
 

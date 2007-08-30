@@ -246,6 +246,9 @@ echo "
 </VirtualHost>
 " | sudo tee /etc/apache2/sites-available/bazaar.launchpad.dev > /dev/null
 
+# Create an empty rewritemap file so that Apache will start.
+touch /var/tmp/sm-ng/config/launchpad-lookup.txt
+
 sudo a2enmod proxy > /dev/null
 if [ $? -ne 0 ]; then
   echo "ERROR: Unable to enable proxy module in Apache2"
