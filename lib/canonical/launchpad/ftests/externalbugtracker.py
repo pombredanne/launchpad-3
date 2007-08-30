@@ -211,10 +211,9 @@ class TestRoundup(Roundup):
     trace_calls = False
 
     def urlopen(self, url):
-        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
-
         if self.trace_calls:
             print "CALLED urlopen(%r)" % (url,)
 
+        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
         return open(file_path + '/' + 'roundup_example_ticket_export.csv', 'r')
 
