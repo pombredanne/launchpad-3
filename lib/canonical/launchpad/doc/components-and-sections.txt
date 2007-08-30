@@ -6,7 +6,7 @@ are related by their need, shipment condition and/or license.
 
 Zope auxiliary test toolchain:
 
- >>> from zope.interface.verify import verifyObject
+ >>> from canonical.launchpad.webapp.testing import verifyObject
  >>> from zope.component import getUtility
 
 Importing Component content class and its interface:
