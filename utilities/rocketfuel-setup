@@ -53,9 +53,8 @@ done
 
 grep -q "^127.0.0.89" /etc/hosts
 if [ $? -ne 0 ]; then
-  echo "Adding development hosts on local machine"
+  echo "Adding development host on local machine"
   echo "
-# Launchpad virtual domains. This should be on one line.
 127.0.0.89      bazaar.launchpad.dev
 " | sudo tee -a /etc/hosts > /dev/null
   echo "bazaar.launchpad.dev added to /etc/hosts"
@@ -278,7 +277,7 @@ fi
 
 sudo a2ensite bazaar.launchpad.dev > /dev/null
 if [ $? -ne 0 ]; then
-  echo "ERROR: Unable to enable launchpad.dev"
+  echo "ERROR: Unable to enable bazaar.launchpad.dev"
   exit 1
 fi
 

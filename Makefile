@@ -126,7 +126,7 @@ run_all: inplace stop bzr_version_info
 		 $(PYTHON) -t $(STARTSCRIPT) -r librarian,buildsequencer,authserver,sftp,mailman \
 		 -C $(CONFFILE)
 
-pull: bzr_version_info
+pull_branches: bzr_version_info
 	# Mirror the hosted branches in the development upload area to the
 	# mirrored area.
 	$(PYTHON) cronscripts/supermirror-pull.py upload
@@ -137,11 +137,11 @@ rewritemap:
 	mkdir -p /var/tmp/sm-ng/config
 	$(PYTHON) cronscripts/supermirror_rewritemap.py /var/tmp/sm-ng/config/launchpad-lookup.txt
 
-scan: rewritemap
+scan_branches: rewritemap
 	# Scan branches from the filesystem into the database.
 	$(PYTHON) cronscripts/branch-scanner.py
 
-sync_branches: pull scan
+sync_branches: pull_branches scan_branches
 
 bzr_version_info:
 	rm -f bzr-version-info.py bzr-version-info.pyc
