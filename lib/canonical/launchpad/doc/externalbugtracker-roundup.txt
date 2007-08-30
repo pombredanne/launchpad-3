@@ -194,26 +194,3 @@ We'll add some more watches now.
     Remote bug 13: Incomplete
     Remote bug 14: In Progress
 
-updateBugWatches() updates the lastchecked attribute on the watches, so
-now no bug watches are in need of updating:
-
-    >>> flush_database_updates()
-    >>> example_bug_tracker.getBugWatchesNeedingUpdate(23).count()
-    0
-
-If the status isn't different, the lastchanged attribute doesn't get
-updated. If we set a bug watch's lastchanged timestamp manually and call
-update, lastchanged shouldn't be affected because the remote status of the bug
-watch hasn't altered:
-
-    >>> import pytz
-    >>> from datetime import datetime, timedelta
-    >>> bug_watch = example_bug_tracker.watches[0]
-    >>> now = datetime.now(pytz.timezone('UTC'))
-    >>> bug_watch.lastchanged = now - timedelta(weeks=2)
-    >>> old_last_changed = bug_watch.lastchanged
-    >>> roundup.trace_calls = False
-    >>> roundup.updateBugWatches(example_bug_tracker.watches)
-    >>> bug_watch.lastchanged == old_last_changed
-    True
-
