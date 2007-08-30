@@ -650,12 +650,17 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
         visible_comments = []
         previous_comment = None
         for comment in comments:
+            comment.setupText()
+
             # Omit comments that are identical to their previous
             # comment, which were probably produced by
             # double-submissions or user errors, and which don't add
             # anything useful to the bug itself.
-            if previous_comment and previous_comment.isIdenticalTo(comment):
+            # Also omit comments with no body text or attachments to display.
+            if ((previous_comment and previous_comment.isIdenticalTo(comment))
+                or comment.isEmpty()):
                 continue
+
             visible_comments.append(comment)
             previous_comment = comment
 

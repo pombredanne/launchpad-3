@@ -214,6 +214,7 @@ def print_action_links(content):
         print '%s: %s' % (entry.a.string, entry.a['href'])
 
 def print_comments(page):
+    """Print the comments on a BugTask index page."""
     main_content = find_main_content(page)
     for comment in main_content('div', 'boardCommentBody'):
         for li_tag in comment('li'):
