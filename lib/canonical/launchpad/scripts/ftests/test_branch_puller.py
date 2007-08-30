@@ -94,22 +94,6 @@ class TestBranchPuller(BranchTestCase):
         tree.commit('Added foo', rev_id='rev1')
         return tree
 
-    # XXX: JonathanLange 2007-08-20, Copied from test_branchset and
-    # subsequently modified. Fix by providing standardised codehosting test
-    # base class in well-known location.
-    def getArbitraryBranch(self, branch_type=None):
-        """Return an arbitrary branch."""
-        id_query = "SELECT id FROM Branch %s ORDER BY random() LIMIT 1"
-        if branch_type is None:
-            id_query = id_query % ''
-        else:
-            id_query = id_query % (
-                "WHERE branch_type = %s" % sqlvalues(branch_type))
-        cur = cursor()
-        cur.execute(id_query)
-        [branch_id] = cur.fetchone()
-        return getUtility(IBranchSet).get(branch_id)
-
     def getHostedPath(self, branch):
         """Return the path of 'branch' in the upload area."""
         return os.path.join(
@@ -196,7 +180,7 @@ class TestBranchPuller(BranchTestCase):
         # XXX: JonathanLange 2007-08-21, This test will fail if run by itself,
         # due to an unidentified bug in bzrlib.trace, possibly related to bug
         # 124849.
-        branch = self.getArbitraryBranch(BranchType.HOSTED)
+        branch = self.makeBranch(BranchType.HOSTED)
         self.pushToBranch(branch)
         branch.requestMirror()
         transaction.commit()
@@ -206,7 +190,7 @@ class TestBranchPuller(BranchTestCase):
 
     def test_mirrorAPrivateBranch(self):
         """Run the puller with a private branch in the queue."""
-        branch = self.getArbitraryBranch(BranchType.HOSTED)
+        branch = self.makeBranch(BranchType.HOSTED)
         self.pushToBranch(branch)
         branch.requestMirror()
         branch.private = True
@@ -217,7 +201,7 @@ class TestBranchPuller(BranchTestCase):
 
     def test_mirrorAMirroredBranch(self):
         """Run the puller on a populated mirrored branch pull queue."""
-        branch = self.getArbitraryBranch(BranchType.MIRRORED)
+        branch = self.makeBranch(BranchType.MIRRORED)
         tree = self.createTemporaryBazaarBranchAndTree()
         branch.url = self.serveOverHTTP()
         branch.requestMirror()
@@ -241,7 +225,7 @@ class TestBranchPuller(BranchTestCase):
     def test_mirrorAnImportedBranch(self):
         """Run the puller on a populated imported branch pull queue."""
         # Create the branch in the database.
-        branch = self.getArbitraryBranch(BranchType.IMPORTED)
+        branch = self.makeBranch(BranchType.IMPORTED)
         branch.requestMirror()
         transaction.commit()
         
