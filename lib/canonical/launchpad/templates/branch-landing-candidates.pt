@@ -11,10 +11,6 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-<style metal:fill-slot="head_epilogue" type="text/css">
-  div.indented {padding-left: 2em}
-</style>
-
 <div metal:fill-slot="main">
 
   <tal:branch-link define="branch context">
@@ -22,9 +18,16 @@
   </tal:branch-link>
   <h1>Branch landing candidates</h1>
 
-    <div tal:repeat="mergeproposal view/landing_candidates">
-      <metal:landing-candidate use-macro="context/@@+macros/landing-candidate"/>
-    </div>
+    <tal:proposals repeat="mergeproposal view/landing_candidates">
+      <tal:landing-candidate
+          define="branch mergeproposal/source_branch;
+                  dependent_branch nothing;
+                  show_associations python:True;
+                  show_lifecycle python:True;
+                  ">
+        <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
+      </tal:landing-candidate>
+    </tal:proposals>
 
 </div>
 
