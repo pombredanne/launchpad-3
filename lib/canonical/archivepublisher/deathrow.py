@@ -8,6 +8,8 @@ import logging
 import pytz
 import os
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archivepublisher.diskpool import DiskPool
 
@@ -23,7 +25,7 @@ from canonical.launchpad.interfaces import (
 from canonical.lp.dbschema import PackagePublishingStatus
 
 
-def getDeathRow(archive, log, pool_root_override):
+def getDeathRow(archive, log, pool_root_override=None):
     """Return a Deathrow object for the archive supplied.
 
     :param archive: Use the publisher config for this archive to derive the
@@ -39,16 +41,20 @@ def getDeathRow(archive, log, pool_root_override):
         log.error(info)
         raise
 
+    pubconf = removeSecurityProxy(pubconf)
+
     if pool_root_override is not None:
         pool_root = pool_root_override
     else:
         pool_root = pubconf.poolroot
 
     log.debug("Preparing on-disk pool representation.")
-    dp = DiskPool(pool_root, pubconf.temproot,
-        logging.getLogger("DiskPool"))
+
+    diskpool_log = logging.getLogger("DiskPool")
     # Set the diskpool's log level to INFO to suppress debug output
-    dp.logger.setLevel(20)
+    diskpool_log.setLevel(20)
+
+    dp = DiskPool(pool_root, pubconf.temproot, diskpool_log)
 
     log.debug("Preparing death row.")
     return DeathRow(archive, dp, log)
@@ -63,7 +69,6 @@ class DeathRow:
     """
     def __init__(self, archive, diskpool, logger):
         self.archive = archive
-        self.distribution = archive.distribution
         self.diskpool = diskpool
         self._removeFile = diskpool.removeFile
         self.logger = logger
@@ -140,8 +145,7 @@ class DeathRow:
                 SecureSourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageReleaseFile.sourcepackagerelease AND
                 SourcePackageReleaseFile.libraryfile = LibraryFileAlias.id
-            """ % sqlvalues(PackagePublishingStatus.REMOVED,
-                            self.distribution.main_archive))
+            """ % sqlvalues(PackagePublishingStatus.REMOVED, self.archive))
             clauseTables.append('SourcePackageReleaseFile')
         elif ISecureBinaryPackagePublishingHistory.implementedBy(
             publication_class):
@@ -151,8 +155,7 @@ class DeathRow:
                 SecureBinaryPackagePublishingHistory.binarypackagerelease =
                     BinaryPackageFile.binarypackagerelease AND
                 BinaryPackageFile.libraryfile = LibraryFileAlias.id
-            """ % sqlvalues(PackagePublishingStatus.REMOVED,
-                            self.distribution.main_archive))
+            """ % sqlvalues(PackagePublishingStatus.REMOVED, self.archive))
             clauseTables.append('BinaryPackageFile')
         else:
             raise AssertionError("%r is not supported." % publication_class)
