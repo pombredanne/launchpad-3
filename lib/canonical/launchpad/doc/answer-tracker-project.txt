@@ -4,7 +4,7 @@ Although question cannot be filed directly against projects, IProject in
 Launchpad also provides the IQuestionCollection and
 ISearchableByQuestionOwner interfaces.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IProjectSet, ISearchableByQuestionOwner, IQuestionCollection)
 

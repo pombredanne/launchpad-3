@@ -162,7 +162,7 @@ Failing to specify a product or distribution.
     Traceback (most recent call last):
     ...
     Fault: <Fault 60: 'Required arguments missing.
-            You must specify either a product or distrubtion
+            You must specify either a product or distribution
             in which the bug exists.'>
 
 Specifying *both* a product and distribution.

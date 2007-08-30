@@ -24,6 +24,7 @@ class POTMsgSet(SQLBase):
 
     _table = 'POTMsgSet'
 
+    context = StringCol(dbName='context', notNull=False)
     primemsgid_ = ForeignKey(foreignKey='POMsgID', dbName='primemsgid',
         notNull=True)
     sequence = IntCol(dbName='sequence', notNull=True)
@@ -34,6 +35,13 @@ class POTMsgSet(SQLBase):
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
 
+    # XXX: JeroenVermeulen 2007-08-27: This field keeps track of a cached
+    # value for msgid_plural.  We couldn't use @cachedproperty there because
+    # @cachedproperty uses None for "not cached."  But for msgid_plural None
+    # is a plausible cacheable value, so that wouldn't work.  The "phase 2"
+    # Rosetta schema optimization will replace msgid_plural with a column, so
+    # this custom caching machinery will disappear.  If that weren't the case,
+    # we ought to extend @cachedproperty to support None as a value.
     has_cached_msgid_plural = False
 
     @property
