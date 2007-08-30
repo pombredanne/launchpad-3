@@ -293,12 +293,12 @@
   </tal:history-available>
   </div>
 
-  <tal:related-bugs condition="context/related_bugs">
+  <div id="related-bugs" tal:condition="context/related_bugs">
     <h2>Related Bugs</h2>
     <div class="indented" tal:define="branch context">
       <metal:branch-link use-macro="context/@@+macros/bug-branch-links"/>
     </div>
-  </tal:related-bugs>
+  </div>
 
       <div class="related">
 
