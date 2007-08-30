@@ -820,7 +820,7 @@ translation.  First we need to find a message with active, published
 translation:
 
     >>> for pomsgset in pofile_changed:
-    ... 	  if pomsgset.publishedcomplete and not pomsgset.publishedfuzzy:
+    ...     if pomsgset.publishedcomplete and not pomsgset.publishedfuzzy:
     ...         submission = pomsgset.getPublishedSubmission(0)
     ...         if submission and submission.active:
     ...             break

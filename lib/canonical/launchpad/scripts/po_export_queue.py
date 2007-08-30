@@ -77,11 +77,14 @@ class ExportResult:
         Launchpad error mailing list for debugging purposes.
         """
         if self.failure is None and self.url is not None:
-            # There are no failures, so we have a full export without
+            # There is no failure, so we have a full export without
             # problems.
             body = self._getSuccessEmailBody(person)
-        elif self.failures is not None:
+        elif self.failure is not None and self.url is None:
             body = self._getFailureEmailBody(person)
+        elif self.failure is not None and self.url is not None:
+            raise AssertionError(
+                'We cannot have a URL for the export and a failure.')
         else:
             raise AssertionError(
                 'We neither have the exported URL nor we got a failure.')
@@ -95,24 +98,27 @@ class ExportResult:
                 subject='Translation download request: %s' % self.name,
                 body=body)
 
-        if len(self.failures) > 0:
-            # The export process had errors that we should notify to admins.
-            admins_email_body = textwrap.dedent('''
-                Hello admins,
+        if self.failure is None:
+            # There are no errors, so nothing else to do here.
+            return
 
-                Rosetta encountered problems exporting some files requested by
-                %s. This means we have a bug in
-                Launchpad that needs to be fixed to be able to proceed with
-                this export. You can see the list of failed files with the
-                error we got:
+        # The export process had errors that we should notify to admins.
+        admins_email_body = textwrap.dedent('''
+            Hello admins,
 
-                %s''') % (person.browsername, self.failure)
+            Rosetta encountered problems exporting some files requested by
+            %s. This means we have a bug in
+            Launchpad that needs to be fixed to be able to proceed with
+            this export. You can see the list of failed files with the
+            error we got:
 
-            simple_sendmail(
-                from_addr=config.rosetta.rosettaadmin.email,
-                to_addrs=[config.launchpad.errors_address],
-                subject='Translation download errors: %s' % self.name,
-                body=admins_email_body)
+            %s''') % (person.browsername, self.failure)
+
+        simple_sendmail(
+            from_addr=config.rosetta.rosettaadmin.email,
+            to_addrs=[config.launchpad.errors_address],
+            subject='Translation download errors: %s' % self.name,
+            body=admins_email_body)
 
     def addFailure(self):
         """Store an exception that broke the export."""

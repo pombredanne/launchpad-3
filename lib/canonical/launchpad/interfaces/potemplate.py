@@ -133,7 +133,7 @@ class IPOTemplate(IRosettaStats):
 
     source_file = Object(
         title=_('Source file for this translation template'),
-        schema=ILibraryFileAlias)
+        readonly=True, schema=ILibraryFileAlias)
 
     source_file_format = Choice(
         title=_("File format for the source file"),
@@ -151,13 +151,9 @@ class IPOTemplate(IRosettaStats):
             'translated first. Pick any number - higher priority '
             'templates will generally be listed first.'))
 
-    copyright = Text(
-        title=_('The copyright information for this template.'))
-
-    license = Int(title=_('The license under this template messages are.'))
-
     datecreated = Datetime(
-        title=_('When this translation template was created.'), required=True)
+        title=_('When this translation template was created.'), required=True,
+        readonly=True)
 
     translationgroups = Attribute(
         _('''
@@ -170,6 +166,7 @@ class IPOTemplate(IRosettaStats):
     translationpermission = Choice(
         title=_('Translation permission'),
         required=True,
+        readonly=True,
         description=_('''
             The permission system which is used for this translation template.
             This is inherited from the product, project and/or distro in which
@@ -202,13 +199,13 @@ class IPOTemplate(IRosettaStats):
 
     product = Object(
         title=_('The `IProduct` to which this translation template belongs.'),
-        schema=IProduct)
+        required=False, readonly=True, schema=IProduct)
 
     distribution = Object(
         title=_(
             'The `IDistribution` to which this translation template belongs.'
             ),
-        schema=IDistribution)
+        readonly=True, schema=IDistribution)
 
     language_count = Int(
         title=_('The number of languages for which we have translations.'),

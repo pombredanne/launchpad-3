@@ -721,7 +721,7 @@ a change directly there that we should not overwrite.
     --- expected
     +++ actual
     <BLANKLINE>
-    @@ -33,7 +33,7 @@
+    @@ -34,7 +34,7 @@
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:101
      msgid "current addressbook folder"

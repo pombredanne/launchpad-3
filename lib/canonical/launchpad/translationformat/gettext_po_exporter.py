@@ -503,10 +503,11 @@ class GettextPOExporter:
                 try:
                     encoded_text = exported_message.encode(
                         translation_file.header.charset)
-                except UnicodeEncodeError:
+                except UnicodeEncodeError, error:
                     if translation_file.header.charset.upper() == 'UTF-8':
                         # It's already UTF-8, we cannot do anything.
-                        raise
+                        raise UnicodeEncodeError(
+                            '%s:\n%s' % (file_path, str(error)))
 
                     # This message cannot be represented in current encoding,
                     # change to UTF-8 and try again.

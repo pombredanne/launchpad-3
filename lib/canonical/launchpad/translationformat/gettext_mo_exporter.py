@@ -14,6 +14,7 @@ import subprocess
 from cStringIO import StringIO
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces import (
     ITranslationExporter, ITranslationFormatExporter,
@@ -78,7 +79,8 @@ class GettextMOExporter:
             # generate the MO one.
             template_exported = gettext_po_exporter.exportTranslationFiles(
                 [translation_file], ignore_obsolete, force_utf8)
-            exported_file_content = template_exported.content_file.read()
+            exported_file_content = removeSecurityProxy(
+                template_exported.content_file).read()
             if translation_file.is_template:
                 # This exporter is not able to handle template files. In that
                 # case, we leave it as .po file. For this file format exported

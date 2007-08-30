@@ -473,7 +473,7 @@ Templates can be exported to its native format.
     "that item's actual story/article).</li>\n"
     "       <li><strong><a href=\"%categories\">Categories</a></strong> -- "
     "Organizes incoming content by category, displaying category titles (each of "
-    "which links to a page with thex latest items from that category) and item "
+    "which links to a page with the latest items from that category) and item "
     "titles (which link to that item's actual story/article).</li>\n"
     "      </ul>\n"
     "      <p>Pages that display items (for sources, categories, etc.) display "

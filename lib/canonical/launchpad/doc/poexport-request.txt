@@ -84,7 +84,7 @@ The user receives a confirmation email.
   > The files you requested from Rosetta are ready for download
   > from the following location:
   >
-  >     http://localhost:58000/.../launchpad-pmount.tar.gz
+  >     http://localhost:58000/.../launchpad-export.tar.gz
 
 The email contains a URL linking to where the exported file can be downloaded.
 
