@@ -650,6 +650,9 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
         visible_comments = []
         previous_comment = None
         for comment in comments:
+            # We need to call setupText() on the comment now because otherwise
+            # it can invalidate the results of isIdenticalTo() and isEmpty()
+            # below.
             comment.setupText()
 
             # Omit comments that are identical to their previous
