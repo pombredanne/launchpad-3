@@ -15,12 +15,13 @@ from urlparse import urljoin, urlparse
 import xmlrpclib
 
 from bzrlib.branch import Branch
-from bzrlib.tests import HttpServer, TestCaseWithTransport
+from bzrlib.tests import HttpServer
 from bzrlib.urlutils import local_path_from_url
 
 from zope.component import getUtility
 
-from canonical.authserver.ftests.harness import AuthserverTacTestSetup
+from canonical.authserver.tests.harness import AuthserverTacTestSetup
+from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.interfaces import BranchType, IBranchSet
@@ -28,7 +29,7 @@ from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestBranchPuller(TestCaseWithTransport):
+class TestBranchPuller(BranchTestCase):
     """Integration tests for the branch puller.
 
     These tests actually run the supermirror-pull.py script. Instead of
@@ -39,7 +40,7 @@ class TestBranchPuller(TestCaseWithTransport):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
+        super(TestBranchPuller, self).setUp()
         self._puller_script = os.path.join(
             config.root, 'cronscripts', 'supermirror-pull.py')
         self.makeCleanDirectory(config.codehosting.branches_root)
@@ -181,7 +182,12 @@ class TestBranchPuller(TestCaseWithTransport):
         self.assertEqual([], os.listdir(config.codehosting.branches_root))
         self.assertEqual([], os.listdir(config.supermirror.branchesdest))
         server = xmlrpclib.Server(config.supermirror.authserver_url)
-        self.assertEqual([], server.getBranchPullQueue())
+        self.assertEqual(
+            [], server.getBranchPullQueue(BranchType.HOSTED.name))
+        self.assertEqual(
+            [], server.getBranchPullQueue(BranchType.MIRRORED.name))
+        self.assertEqual(
+            [], server.getBranchPullQueue(BranchType.IMPORTED.name))
         self.failUnless(
             os.path.isfile(self._puller_script),
             "%s doesn't exist" % (self._puller_script,))
