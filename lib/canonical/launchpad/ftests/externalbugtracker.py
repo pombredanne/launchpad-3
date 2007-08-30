@@ -7,7 +7,7 @@ __metaclass__ = type
 import os
 
 from canonical.launchpad.components.externalbugtracker import (
-    Bugzilla, Mantis, Trac, Roundup)
+    Bugzilla, Mantis, Trac, Roundup, Python)
 
 
 def read_test_file(name):
@@ -219,3 +219,9 @@ class TestRoundup(Roundup):
 
         return open(file_path + '/' + 'roundup_example_ticket_export.csv', 'r')
 
+
+class TestPython(Python):
+    """A Python ExternalBugTracker for the sake of testing.
+
+    Overrides urlopen to avoid the need for a real Python bugtracker instance.
+    """
