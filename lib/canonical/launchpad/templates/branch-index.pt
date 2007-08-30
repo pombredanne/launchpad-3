@@ -270,9 +270,9 @@ div.revision p {
   </p>
 
   <tal:history-available condition="context/revision_count">
-  <div class="revision"
-       tal:repeat="rev_no context/latest_revisions"
-       tal:attributes="id string:rev${rev_no/sequence}">
+    <div class="revision"
+         tal:repeat="rev_no context/latest_revisions"
+         tal:attributes="id string:rev${rev_no/sequence}">
       <div>
         <tal:comment condition="nothing">
           The end of the anchor and the start of the next tal expression
@@ -308,7 +308,7 @@ div.revision p {
       <p tal:replace="structure rev_no/revision/log_body/fmt:text-to-html">
         The revision commit message.
       </p>
-  </div>
+    </div>
   </tal:history-available>
   </div>
 
