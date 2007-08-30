@@ -205,8 +205,7 @@ class TestRoundup(Roundup):
     """Roundup ExternalBugTracker for testing purposes.
 
     It overrides urlopen, so that access to a real Roundup instance isn't
-    needed.  Also, it overrides the default batch_query_threshold for the sake
-    of making test data sane.
+    needed.
     """
 
     trace_calls = False
