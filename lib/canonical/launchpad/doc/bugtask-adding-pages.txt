@@ -43,7 +43,7 @@ guess which product we want to add, so it will ask us to specify it.
 
     >>> print add_task_view.widgets['product']._getFormInput()
     None
-    >>> add_task_view.step_id
+    >>> add_task_view.step_name
     'choose_product'
 
 It also didn't add any notification prompting us to add packaging
@@ -57,7 +57,8 @@ If we POST the form without entering any information, it will complain
 that product is required:
 
     >>> form = {
-    ...     'field.actions.continue': '', 'field.product': ''}
+    ...     'field.actions.continue': '', 'field.product': '',
+    ...     'field.visited_steps': 'choose_product'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.getWidgetError('product')
@@ -67,19 +68,21 @@ that product is required:
 If we supply a valid product, it will move on to the next step.
 
     >>> form = {
-    ...     'field.actions.continue': '', 'field.product': 'evolution'}
+    ...     'field.actions.continue': '', 'field.product': 'evolution',
+    ...     'field.visited_steps': 'choose_product'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
-    >>> add_task_view.step_id
+    >>> add_task_view.step_name
     'specify_remote_bug_url' 
 
 If the validation fails, an error will be displayed.
 
     >>> form = {
-    ...     'field.actions.continue': '', 'field.product': 'firefox'}
+    ...     'field.actions.continue': '', 'field.product': 'firefox',
+    ...     'field.visited_steps': 'choose_product'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
-    >>> add_task_view.step_id
+    >>> add_task_view.step_name
     'choose_product'
     >>> add_task_view.getWidgetError('product')
     u'A fix for this bug has already been requested for Mozilla Firefox'
@@ -108,7 +111,7 @@ selected.
     >>> add_task_view = get_and_setup_view(
     ...     ubuntu_firefox_task, '+choose-affected-product', form={},
     ...     method='GET')
-    >>> add_task_view.step_id
+    >>> add_task_view.step_name
     'specify_remote_bug_url'
     >>> add_task_view.widgets['product'].getInputValue().name
     u'firefox'
@@ -125,7 +128,7 @@ why the product wasn't chosen automatically.
     ...     ubuntu_thunderbird_task, '+choose-affected-product', form={},
     ...     method='GET')
 
-    >>> add_task_view.step_id
+    >>> add_task_view.step_name
     'choose_product'
     >>> print add_task_view.widgets['product']._getFormInput()
     None
@@ -149,7 +152,7 @@ add one.
     >>> add_task_view = get_and_setup_view(
     ...     gentoo_thunderbird_task, '+choose-affected-product', form={},
     ...     method='GET')
-    >>> add_task_view.step_id
+    >>> add_task_view.step_name
     'choose_product'
     >>> print add_task_view.widgets['product']._getFormInput()
     None
@@ -178,14 +181,14 @@ validation (for example, a bugtask for that product already exists),
 the user will be kept in the first step and asked to choose the product.
 
 Note that for the form of the second step to be processed we have to
-include its (and all previous) step_id in field.visited_steps.
+include its (and all previous) step_name in field.visited_steps.
 
     >>> form = {
     ...     'field.actions.continue': '1', 'field.product': u'no-such-product',
     ...     'field.visited_steps': 'choose_product, specify_remote_bug_url'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
-    >>> add_task_view.step_id
+    >>> add_task_view.step_name
     'choose_product'
     >>> print add_task_view.widgets['product']._getFormInput()
     no-such-product
@@ -193,7 +196,7 @@ include its (and all previous) step_id in field.visited_steps.
     >>> form['field.product'] = u'firefox'
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
-    >>> add_task_view.step_id
+    >>> add_task_view.step_name
     'choose_product'
     >>> print add_task_view.widgets['product']._getFormInput()
     firefox
@@ -225,7 +228,7 @@ as smoothly as above.
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
 
-    >>> add_task_view.step_id
+    >>> add_task_view.step_name
     'specify_remote_bug_url'
     >>> print add_task_view.widgets['product']._getFormInput()
     alsa-utils
@@ -278,7 +281,7 @@ URL. If we don't enter a valid URL, we get an error message.
     >>> form['field.bug_url'] = u'not-a-url'
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
-    >>> add_task_view.step_id
+    >>> add_task_view.step_name
     'specify_remote_bug_url'
     >>> print add_task_view.getWidgetError('bug_url')
     Launchpad does not recognize the bug tracker at this URL.
@@ -330,9 +333,8 @@ the bug watch's status later.
     'Unknown'
 
 
-There's a method for easily retrieving the target display name for use
-on the confirmation page. If we request a fix in an upstream product,
-its display name is returned:
+There's a property for easily retrieving the target for use on the
+confirmation page.
 
     >>> form['field.bug_url'] = u''
     >>> form['field.product'] = u'thunderbird'
@@ -341,7 +343,7 @@ its display name is returned:
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.errors
     []
-    >>> add_task_view.getBugTargetName()
+    >>> add_task_view.getTarget().displayname
     u'Mozilla Thunderbird'
 
 If we request a fix in a source package, the distribution's display
@@ -352,7 +354,7 @@ name is returned.
     ...     'field.sourcepackagename': u'evolution'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+distrotask', form)
-    >>> add_task_view.getBugTargetName()
+    >>> add_task_view.getTarget().displayname
     u'Debian'
 
     >>> on_created_listener.unregister()

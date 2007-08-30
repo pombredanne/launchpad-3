@@ -374,10 +374,68 @@ class BugWithoutContextView:
         self.request.response.redirect(canonical_url(bugtasks[0]))
 
 
-class ChooseAffectedProductView(LaunchpadFormView):
-    """View for choosing a product and redirect to +add-affected-product."""
+class MultiStepBaseView(LaunchpadFormView):
+    """Base view for all steps of the bug-also-affects workflow."""
 
-    # Need to define this here because we may render this view manually.
+    next_view = None
+    step_name = ""
+    main_action_label = u'Continue'
+
+    @action(u'Continue', name='continue')
+    def continue_action(self, action, data):
+        """Check if the form should be processed or if it's the first time
+        we're showing it and call self.main_action() if necessary.
+        """
+        if not self.shouldProcess(data):
+            return
+
+        return self.main_action(action, data)
+
+    def injectStepNameInRequest(self):
+        visited_steps = self.request.form.get('field.visited_steps')
+        if visited_steps is None:
+            self.request.form['field.visited_steps'] = self.step_name
+        elif self.step_name not in visited_steps:
+            self.request.form['field.visited_steps'] = (
+                "%s, %s" % (visited_steps, self.step_name))
+        else:
+            # Already visited this step, so there's no need to inject our
+            # step_name in the request anymore.
+            pass
+
+    def shouldProcess(self, data):
+        """Should this data be processed by the view's action methods?
+
+        It should be processed only if the user has already visited this page
+        and submitted the form.
+        
+        Since we use identical action names in all views we can't rely on
+        that to find out whether or not to process them, so we use an extra
+        hidden input to store the views the user has visited already.
+        """
+        visited_steps = data['visited_steps']
+        if visited_steps is not None and self.step_name not in visited_steps:
+            # First time we visit this page, so there's no point in validating
+            # its data.
+            return False
+        return True
+
+    def render(self):
+        # This is a hack to make it possible to change the label of our main
+        # action in subclasses.
+        actions = []
+        for action in self.actions:
+            if action.__name__ == 'field.actions.continue':
+                action.label = self.main_action_label
+            actions.append(action)
+        self.actions = actions
+        return super(MultiStepBaseView, self).render()
+
+
+class ChooseAffectedProductView(MultiStepBaseView):
+    """View for choosing a product that is affected by a given bug."""
+
+    # Need to define this here because we will render this view manually.
     template = ViewPageTemplateFile(
         '../templates/bugtask-choose-affected-product.pt')
     __launchpad_facetname__ = 'bugs'
@@ -386,18 +444,7 @@ class ChooseAffectedProductView(LaunchpadFormView):
     field_names = ['product', 'visited_steps']
     label = u"Record as affecting another project"
     custom_widget('visited_steps', TextWidget, visible=False)
-    next_view = None
-    step_id = "choose_product"
-
-    def validateProduct(self, product):
-        try:
-            valid_upstreamtask(self.context.bug, product)
-        except WidgetsError, errors:
-            for error in errors:
-                self.setFieldError('product', error.snippet())
-            return False
-        else:
-            return True
+    step_name = "choose_product"
 
     def _getUpstream(self, distro_package):
         """Return the upstream if there is a packaging link."""
@@ -410,18 +457,7 @@ class ChooseAffectedProductView(LaunchpadFormView):
             return None
 
     def initialize(self):
-        visited_steps = self.request.form.get('field.visited_steps')
-        if visited_steps is None:
-            self.request.form['field.visited_steps'] = self.step_id
-        elif self.step_id not in visited_steps:
-            self.request.form['field.visited_steps'] = (
-                "%s, %s" % (visited_steps, self.step_id))
-        else:
-            # Already visited this step, so we can just pocess it to ensure
-            # the data is valid and move on to the next one.
-            pass
-
-        LaunchpadFormView.initialize(self)
+        super(ChooseAffectedProductView, self).initialize()
         bugtask = self.context
         if (self.widgets['product'].hasInput() or
             not IDistributionSourcePackage.providedBy(bugtask.target)):
@@ -450,18 +486,24 @@ class ChooseAffectedProductView(LaunchpadFormView):
             else:
                 # We can infer the upstream and there's no bugtask for it,
                 # so we can go straight to the page asking for the remote
-                # but URL.
+                # bug URL.
                 self.request.form['field.product'] = urllib.quote(
                     upstream.name)
                 self.next_view = BugAlsoReportInUpstreamView
 
     def validate(self, data):
-        if data.get('product'):
-            self.validateProduct(data['product'])
+        if not self.shouldProcess(data):
             return
 
-        entered_product = self.request.form.get(
-            self.widgets['product'].name)
+        if data.get('product'):
+            try:
+                valid_upstreamtask(self.context.bug, data.get('product'))
+            except WidgetsError, errors:
+                for error in errors:
+                    self.setFieldError('product', error.snippet())
+                return
+
+        entered_product = self.request.form.get(self.widgets['product'].name)
         if not entered_product:
             return
 
@@ -479,23 +521,24 @@ class ChooseAffectedProductView(LaunchpadFormView):
                 cgi.escape(search_url, quote=True),
                 cgi.escape(new_product_url, quote=True)))
 
-    @action(u'Continue', name='continue')
-    def continue_action(self, action, data):
+    def main_action(self, action, data):
+        """Inject the selected product into the form and set the next_view to
+        be used by our meta view.
+        """
         self.request.form['field.product'] = urllib.quote(data['product'].name)
         self.next_view = BugAlsoReportInUpstreamView
 
 
 class BugAddAffectedProductMetaView(LaunchpadView):
-    """Can't use the super-view approach because the action of a given
-    submitted view is always lost (from the request) when the next one is
-    submitted.  Using actions with identical names in all views is not
-    possible because there are views with more than one action.  Also,
-    keeping actions from previously submitted views in the request is
-    probably not a good idea.
+    """Meta view for adding an affected product to an existing bug.
 
-    Another alternative (to keep with this same approach) is to inspect the
-    form and try to find out what view we should render.  It doesn't sound
-    like a robust solution to me, though.
+    This view implements a wizard-like workflow in which you specify the first
+    step and then each step is responsible for specifying the next one or None
+    if, for some reason, we need to stay at the current step.
+
+    Any views used as steps here must inherit from MultiStepBaseView. The
+    views are also responsible for injecting into the request anything they
+    may want to be available for the next view.
     """
 
     first_step_view = ChooseAffectedProductView
@@ -503,16 +546,19 @@ class BugAddAffectedProductMetaView(LaunchpadView):
     def initialize(self):
         view = self.first_step_view(self.context, self.request)
         view.initialize()
+        view.injectStepNameInRequest()
         while view.next_view is not None:
             view = view.next_view(self.context, self.request)
             view.initialize()
+            view.injectStepNameInRequest()
         self.view = view
 
     def render(self):
         return self.view.render()
 
 
-class BugAlsoReportInView(LaunchpadFormView):
+# XXX: FIX docstring and rename.
+class BugAlsoReportInView(MultiStepBaseView):
     """View class for reporting a bug in other contexts.
 
     In this view the user specifies the URL for the remote bug and we create
@@ -527,7 +573,7 @@ class BugAlsoReportInView(LaunchpadFormView):
     custom_widget('bug_url', StrippedTextWidget, displayWidth=50)
     custom_widget('visited_steps', TextWidget, visible=False)
 
-    step_id = 'specify_remote_bug_url'
+    step_name = 'specify_remote_bug_url'
     next_view = None
     task_added = None
     available_action_names = None
@@ -536,37 +582,10 @@ class BugAlsoReportInView(LaunchpadFormView):
     __launchpad_facetname__ = 'bugs'
 
     def __init__(self, context, request):
-        LaunchpadFormView.__init__(self, context, request)
+        super(BugAlsoReportInView, self).__init__(context, request)
         self.notifications = []
         self.field_names = ['bug_url', 'visited_steps'] + list(
             self.target_field_names)
-
-    def initialize(self):
-        LaunchpadFormView.initialize(self)
-        # One of our subclasses may be used as the first step, so we have to
-        # check if visited_steps is not None here as well.
-        visited_steps = self.request.form.get('field.visited_steps')
-        if visited_steps is None:
-            self.request.form['field.visited_steps'] = self.step_id
-        elif self.step_id not in visited_steps:
-            self.request.form['field.visited_steps'] = (
-                "%s, %s" % (visited_steps, self.step_id))
-        else:
-            # Already visited this step, so we can just pocess it to ensure
-            # the data is valid and move on to the next one.
-            pass
-
-    # XXX: This validation should not be necessary here as it's done in the
-    # previous step (ChooseAffectedProductView).
-    def validateProduct(self, product):
-        try:
-            valid_upstreamtask(self.context.bug, product)
-        except WidgetsError, errors:
-            for error in errors:
-                self.setFieldError('product', error.snippet())
-            return False
-        else:
-            return True
 
     def setUpWidgets(self):
         super(BugAlsoReportInView, self).setUpWidgets()
@@ -577,68 +596,29 @@ class BugAlsoReportInView(LaunchpadFormView):
         self.bugwatch_widgets = [self.widgets['bug_url']]
         self.compulsory_widgets = [self.widgets['visited_steps']]
 
-    def getBugTargetName(self):
-        """Return the name of the fix target.
+    def getTarget(self, data=None):
+        """Return the fix target.
 
-        This is either the chosen product or distribution.
+        If data is given extract the target from there. Otherwise extract it
+        from this view's widgets.
         """
-        if 'distribution' in self.field_names:
-            target = self.widgets['distribution'].getInputValue()
-        elif 'product' in self.field_names:
-            target = self.widgets['product'].getInputValue()
-        else:
-            raise AssertionError(
-                'Either a product or distribution widget should be present'
-                ' in the form.')
-        return target.displayname
+        raise NotImplementedError()
+
+    def doInitialValidation(self, data):
+        """Any initial validation wanted by subclasses."""
+        pass
 
     def validate(self, data):
         """Validate the form.
 
-        Check that:
-            * We have a unique upstream task
-            * We have a unique distribution task
-            * If the target uses Malone, a bug_url has to be None.
+        Do any initial validation defined in subclasses and check that bug_url
+        is None if the target uses Launchpad for bug tracking.
         """
-        if (data['visited_steps'] is not None 
-            and self.step_id not in data['visited_steps']):
-            # First time we visit this page, so there's no point in validating
-            # its data.
+        if not self.shouldProcess(data):
             return
 
-        product = data.get('product')
-        distribution = data.get('distribution')
-        sourcepackagename = data.get('sourcepackagename')
-        if product:
-            target = product
-            if not self.validateProduct(product):
-                return
-        elif distribution:
-            target = distribution
-            entered_package = self.request.form.get(
-                self.widgets['sourcepackagename'].name)
-            if sourcepackagename is None and entered_package:
-                # The entered package doesn't exist.
-                filebug_url = "%s/+filebug" % canonical_url(
-                    getUtility(ILaunchpadCelebrities).launchpad)
-                self.setFieldError(
-                    'sourcepackagename',
-                    'There is no package in %s named "%s". If it should'
-                    ' be here, <a href="%s">report this as a bug</a>.' % (
-                        cgi.escape(distribution.displayname),
-                        cgi.escape(entered_package),
-                        cgi.escape(filebug_url, quote=True)))
-            else:
-                try:
-                    validate_new_distrotask(
-                        self.context.bug, distribution, sourcepackagename)
-                except LaunchpadValidationError, error:
-                    self.setFieldError('sourcepackagename', error.snippet())
-        else:
-            # Validation failed for either the product or distribution,
-            # no point in trying to validate further.
-            return
-
+        self.doInitialValidation(data)
+        target = self.getTarget(data)
         bug_url = data.get('bug_url')
         if bug_url and target.official_malone:
             self.addError(
@@ -681,22 +661,17 @@ class BugAlsoReportInView(LaunchpadFormView):
                 " manually. You can however link to an external bug tracker"
                 " at a later stage in order to get automatic status updates."
                 " Are you sure you want to request a fix anyway?"
-                " %s" % (cgi.escape(self.getBugTargetName()), confirm_button))
+                " %s"
+                % (cgi.escape(self.getTarget().displayname), confirm_button))
             self.should_ask_for_confirmation = True
 
-    @action(u'Continue', name='continue')
-    def continue_action(self, action, data):
+    # XXX: Fix docstring
+    def main_action(self, action, data):
         """Create new bug task.
 
         Only one of product and distribution may be not None, and
         if distribution is None, sourcepackagename has to be None.
         """
-        if (data['visited_steps'] is not None 
-            and self.step_id not in data['visited_steps']):
-            # First time we visit this page, so there's no point in processing
-            # its data.
-            return
-
         bug_url = self.request.form.get('field.bug_url', '')
         if self.should_ask_for_confirmation:
             assert not bug_url, ("We should only ask for confirmation when "
@@ -726,22 +701,11 @@ class BugAlsoReportInView(LaunchpadFormView):
         product = data.get('product')
         distribution = data.get('distribution')
         sourcepackagename = data.get('sourcepackagename')
-
-        if product is not None:
-            target = product
-        elif distribution is not None:
-            target = distribution
-        else:
-            raise AssertionError(
-                'validate() should ensure that a product or distribution'
-                ' is present')
-
         self.task_added = getUtility(IBugTaskSet).createTask(
-            self.context.bug,
-            getUtility(ILaunchBag).user,
-            product=product,
+            self.context.bug, getUtility(ILaunchBag).user, product=product,
             distribution=distribution, sourcepackagename=sourcepackagename)
 
+        target = self.getTarget(data)
         if extracted_bug:
             assert extracted_bugtracker is not None, (
                 "validate() should have ensured that bugtracker is not None.")
@@ -766,14 +730,44 @@ class BugAlsoReportInView(LaunchpadFormView):
         self.next_url = canonical_url(self.task_added)
 
 
+# XXX: FIX docstring and rename.
 class BugAlsoReportInDistributionView(BugAlsoReportInView):
     """Specialized BugAlsoReportInView for reporting a bug in a distro."""
 
-    # Need to define this here because we may render this view manually.
+    # Need to define this here because we will render this view manually.
     template = ViewPageTemplateFile('../templates/bugtask-requestfix.pt')
 
     label = "Also affects distribution/package"
     target_field_names = ('distribution', 'sourcepackagename')
+
+    def getTarget(self, data=None):
+        if data is not None:
+            return data.get('distribution')
+        else:
+            return self.widgets['distribution'].getInputValue()
+
+    def doInitialValidation(self, data):
+        distribution = data.get('distribution')
+        sourcepackagename = data.get('sourcepackagename')
+        entered_package = self.request.form.get(
+            self.widgets['sourcepackagename'].name)
+        if sourcepackagename is None and entered_package:
+            # The entered package doesn't exist.
+            filebug_url = "%s/+filebug" % canonical_url(
+                getUtility(ILaunchpadCelebrities).launchpad)
+            self.setFieldError(
+                'sourcepackagename',
+                'There is no package in %s named "%s". If it should'
+                ' be here, <a href="%s">report this as a bug</a>.' % (
+                    cgi.escape(distribution.displayname),
+                    cgi.escape(entered_package),
+                    cgi.escape(filebug_url, quote=True)))
+        else:
+            try:
+                validate_new_distrotask(
+                    self.context.bug, distribution, sourcepackagename)
+            except LaunchpadValidationError, error:
+                self.setFieldError('sourcepackagename', error.snippet())
 
     def render(self):
         for bugtask in IBug(self.context).bugtasks:
@@ -785,6 +779,7 @@ class BugAlsoReportInDistributionView(BugAlsoReportInView):
         return super(BugAlsoReportInDistributionView, self).render()
 
 
+# XXX: FIX docstring and rename.
 class BugAlsoReportInUpstreamView(BugAlsoReportInView):
     """Specialized BugAlsoReportInView for reporting a bug in an upstream."""
 
@@ -794,12 +789,13 @@ class BugAlsoReportInUpstreamView(BugAlsoReportInView):
 
     label = "Confirm project"
     target_field_names = ('product',)
+    main_action_label = u'Add to Bug Report'
 
-    # Redefine this action here as we want a different label.
-    @action(u'Add to Bug Report', name='continue')
-    def continue_action(self, action, data):
-        return super(
-            BugAlsoReportInUpstreamView, self).continue_action.success(data)
+    def getTarget(self, data=None):
+        if data is not None:
+            return data.get('product')
+        else:
+            return self.widgets['product'].getInputValue()
 
 
 class BugAddAffectedDistroView(BugAddAffectedProductMetaView):
@@ -809,7 +805,8 @@ class BugAddAffectedDistroView(BugAddAffectedProductMetaView):
 
 # XXX: Must rename the 3 views below as they don't actually do anything other
 # than creating the bugtracker.
-class BugAlsoReportInWithBugTrackerCreationView(LaunchpadFormView):
+# XXX: Must also fix the docstring.
+class BugAlsoReportInWithBugTrackerCreationView(MultiStepBaseView):
     """A view to be used in conjunction with BugAlsoReportInView.
 
     This view will ask the user if he really wants to register the new bug
@@ -826,15 +823,9 @@ class BugAlsoReportInWithBugTrackerCreationView(LaunchpadFormView):
     custom_widget('visited_steps', TextWidget, visible=False)
 
     __launchpad_facetname__ = 'bugs'
-    step_id = "bugtracker_creation"
+    step_name = "bugtracker_creation"
     next_view = None
-
-    def initialize(self):
-        LaunchpadFormView.initialize(self)
-        visited_steps = self.request.form.get('field.visited_steps')
-        if self.step_id not in visited_steps:
-            self.request.form['field.visited_steps'] = (
-                "%s, %s" % (visited_steps, self.step_id))
+    main_action_label = u'Register Bug Tracker and Add to Bug Report'
 
     def create_task_and_bugtracker_action(self, action, data):
         bug_url = data.get('bug_url')
@@ -859,13 +850,7 @@ class BugAlsoReportInDistributionWithBugTrackerCreationView(
     template = ViewPageTemplateFile(
         '../templates/bugtask-confirm-bugtracker-creation.pt')
 
-    @action('Register Bug Tracker and Add to Bug Report', name='continue')
-    def create_task_and_bugtracker_action(self, action, data):
-        if (data['visited_steps'] is not None 
-            and self.step_id not in data['visited_steps']):
-            # First time we visit this page, so there's no point in processing
-            # its data.
-            return
+    def main_action(self, action, data):
         super(BugAlsoReportInDistributionWithBugTrackerCreationView,
               self).create_task_and_bugtracker_action(action, data)
         self.next_view = BugAlsoReportInDistributionView
@@ -881,13 +866,7 @@ class BugAlsoReportInUpstreamWithBugTrackerCreationView(
     template = ViewPageTemplateFile(
         '../templates/bugtask-confirm-bugtracker-creation.pt')
 
-    @action('Register Bug Tracker and Add to Bug Report', name='continue')
-    def create_task_and_bugtracker_action(self, action, data):
-        if (data['visited_steps'] is not None 
-            and self.step_id not in data['visited_steps']):
-            # First time we visit this page, so there's no point in processing
-            # its data.
-            return
+    def main_action(self, action, data):
         super(BugAlsoReportInUpstreamWithBugTrackerCreationView,
               self).create_task_and_bugtracker_action(action, data)
         self.next_view = BugAlsoReportInUpstreamView
