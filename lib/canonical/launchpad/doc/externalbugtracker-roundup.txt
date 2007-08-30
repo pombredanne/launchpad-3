@@ -13,7 +13,7 @@ implements IExternalBugTracker.
     >>> from canonical.launchpad.components.externalbugtracker import Roundup
     >>> from canonical.launchpad.interfaces.externalbugtracker import (
     ...     IExternalBugtracker)
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(IExternalBugtracker, Roundup('http://roundup.foo.com'))
     True
 
@@ -71,12 +71,6 @@ working network connection.
     >>> roundup.initializeRemoteBugDB([1])
     >>> sorted(roundup.bugs.keys())
     [1]
-
-If we initialise with a different set of keys we overwrite the first set:
-
-    >>> roundup.initializeRemoteBugDB([6,7,8,9,10,11,12])
-    >>> sorted(roundup.bugs.keys())
-    [6, 7, 8, 9, 10, 11, 12]
 
 
 == Export Methods ==
