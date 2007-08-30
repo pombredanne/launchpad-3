@@ -18,7 +18,11 @@ OVERRIDEROOT=$ARCHIVEROOT/../ubuntu-overrides
 CACHEROOT=$ARCHIVEROOT/../ubuntu-cache
 DISTSCOPYROOT=$ARCHIVEROOT/../ubuntu-distscopy
 INDICES=$ARCHIVEROOT/indices
-ARCHIVEROOT_COMMERCIAL=/srv/launchpad.net/ubuntu-archive/ubuntu-commercial
+if [ "$LPCONFIG" = "ftpmaster" ]; then
+    ARCHIVEROOT_COMMERCIAL=/srv/launchpad.net/ubuntu-archive/ubuntu-commercial
+else
+    ARCHIVEROOT_COMMERCIAL=/srv/launchpad.net/ppa/ubuntu-commercial
+fi
 DISTSROOT_COMMERCIAL=$ARCHIVEROOT_COMMERCIAL/dists
 
 # Configuration options
@@ -28,7 +32,9 @@ DISTSROOT_COMMERCIAL=$ARCHIVEROOT_COMMERCIAL/dists
 LAUNCHPADROOT=/srv/launchpad.net/codelines/current
 LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
 DISTRONAME=ubuntu
-GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
+if [ "$LPCONFIG" = "ftpmaster" ]; then
+    GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
+fi
 TOUCHLIST=$ARCHIVEROOT/project/trace/$(hostname --fqdn)
 DSYNCLIST=$CACHEROOT/dsync.list
 MD5LIST=$INDICES/md5sums.gz
@@ -89,13 +95,15 @@ rsync -aH --delete ${DISTSROOT}/ ${ARCHIVEROOT}/dists.new
 # satisfactory correction in the publisher we just touch the Packages
 # files to ensure that the Release files get generated properly.
 
-for DIST in dapper breezy; do
-  for COMP in restricted universe; do
-   for ARCH in i386 amd64 powerpc hppa sparc ia64; do
-     touch ${DISTSROOT}.new/${DIST}-updates/$COMP/debian-installer/binary-$ARCH/Packages
-   done
-  done
-done
+if [ "$LPCONFIG" = "ftpmaster" ]; then
+    for DIST in dapper breezy; do
+      for COMP in restricted universe; do
+       for ARCH in i386 amd64 powerpc hppa sparc ia64; do
+         touch ${DISTSROOT}.new/${DIST}-updates/$COMP/debian-installer/binary-$ARCH/Packages
+       done
+      done
+    done
+fi
 
 # Publish the results for all archives (except PPA).
 # (the -R only affects the primary archive)
@@ -138,9 +146,11 @@ find ${DISTSROOT}.new \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
 find ${DISTSROOT_COMMERCIAL} \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
 
 # Copy in the indices
-echo Copying the indices into place.
-rm -f $INDICES/override.*
-cp $OVERRIDEROOT/override.* $INDICES
+if [ "$LPCONFIG" = "ftpmaster" ]; then
+    echo Copying the indices into place.
+    rm -f $INDICES/override.*
+    cp $OVERRIDEROOT/override.* $INDICES
+fi
 
 set -x 
 
@@ -152,9 +162,11 @@ DONEPUB=yes
 mv ${DISTSROOT}.old ${DISTSCOPYROOT}/dists
 
 # Touch everything you asked us to do
-for FILE in $TOUCHLIST; do
-  touch "$FILE"
-done
+if [ "$LPCONFIG" = "ftpmaster" ]; then
+    for FILE in $TOUCHLIST; do
+      touch "$FILE"
+    done
+fi
 
 # Make the lslr because we all love those
 LSLR=ls-lR.gz
@@ -182,7 +194,7 @@ find $ARCHIVEROOT_COMMERCIAL -type d -empty | xargs -r rmdir
 cron.germinate
 
 # Trigger master mirrors
-if [ "$LPCONFIG" = "ftpmaster" ]
+if [ "$LPCONFIG" = "ftpmaster" ];
     ssh archvsync@syowa
     ssh archvsync@frei
 fi
