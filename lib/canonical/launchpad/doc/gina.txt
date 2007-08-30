@@ -595,24 +595,20 @@ Importing the commercial archive requires overriding the component to
 "commercial", which also makes the archive on any publishing records the
 commercial archive.
 
-First get a count of the number of existing commercial publishings for
-both source and binary:
+First get a set of existing commercial publishings for both source and binary:
 
     >>> comm_archive = ubuntu.getArchiveByComponent('commercial')
     >>> hoary = ubuntu['hoary']
     >>> hoary_i386 = hoary['i386']
-    >>> SSPPH.select("""distrorelease = %s AND
-    ...                 archive = %s""" %
-    ...                 sqlvalues(hoary, comm_archive)).count()
-    0
+    >>> commercial_source_set = set(
+    ...     SSPPH.select("distrorelease = %s AND archive = %s" %
+    ...                  sqlvalues(hoary, comm_archive)))
 
-    >>> SBPPH.select("""distroarchrelease = %s AND
-    ...                 archive = %s""" %
-    ...                 sqlvalues(hoary_i386, comm_archive)).count()
-    0
+    >>> commercial_binary_set = set(
+    ...     SBPPH.select("distroarchrelease = %s AND archive = %s" %
+    ...                  sqlvalues(hoary_i386, comm_archive)))
 
-As can be seen, the existing count is zero.  Now run gina to import packages 
-and convert them to commercial:
+Now run gina to import packages and convert them to commercial:
 
     >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q', 'commercial']
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
@@ -622,15 +618,29 @@ and convert them to commercial:
 
 There will now be a number of publishings in the commercial archive:
 
-    >>> SSPPH.select("""distrorelease = %s AND
-    ...                 archive = %s""" %
-    ...                 sqlvalues(hoary, comm_archive)).count()
+    >>> commercial_source_set_after = set(
+    ...     SSPPH.select("distrorelease = %s AND archive = %s" %
+    ...                  sqlvalues(hoary, comm_archive)))
+
+    >>> commercial_binary_set_after = set(
+    ...     SBPPH.select("distroarchrelease = %s AND archive = %s" %
+    ...                  sqlvalues(hoary_i386, comm_archive)))
+
+    >>> len(commercial_source_set_after - commercial_source_set)
     11
 
-    >>> SBPPH.select("""distroarchrelease = %s AND
-    ...                 archive = %s""" %
-    ...                 sqlvalues(hoary_i386, comm_archive)).count()
+    >>> len(commercial_binary_set_after - commercial_binary_set)
     24
+
+All the publishings will also have the 'commercial' component:
+
+    >>> print set(
+    ...     sspph.component.name for sspph in commercial_source_set_after)
+    set([u'commercial'])
+
+    >>> print set(
+    ...     sbpph.component.name for sbpph in commercial_binary_set_after)
+    set([u'commercial'])
 
 
 === Other tests ===
