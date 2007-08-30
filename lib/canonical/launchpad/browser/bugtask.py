@@ -655,9 +655,9 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
             # double-submissions or user errors, and which don't add
             # anything useful to the bug itself.
             # Also omit comments with no body text or attachments to display.
-            if ((previous_comment
-                and previous_comment.isIdenticalTo(comment))
-                or comment.isEmpty()):
+            if ((previous_comment and
+                previous_comment.isIdenticalTo(comment)) or
+                comment.isEmpty()):
                 continue
 
             visible_comments.append(comment)
