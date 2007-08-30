@@ -6,6 +6,8 @@ __metaclass__ = type
 
 import os
 
+from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
+from canonical.launchpad.database import BugTracker
 from canonical.launchpad.components.externalbugtracker import (
     Bugzilla, Mantis, Trac, Roundup)
 
@@ -19,6 +21,24 @@ def read_test_file(name):
 
     test_file = open(file_path, 'r')
     return test_file.read()
+
+
+def add_watches_to_tracker(remote_bugs, tracker):
+    """Add a set of bug watches to a tracker.
+
+    :remote_bugs: A list of remote bug IDs to add as bug watches to the
+        bug tracker.
+
+    :tracker: A BugTracker instance to which the bug watches should be
+        added.
+    """
+    bug_watch_set = getUtility(IBugWatchSet)
+    for remote_bug in remote_bugs:
+         bug_watch = bug_watch_set.createBugWatch(
+             bug=example_bug, owner=sample_person,
+             bugtracker=example_bug_tracker,
+             remotebug=str(remote_bug_id))
+         bug_watches[remote_bug_id] = bug_watch
 
 
 class TestBugzilla(Bugzilla):
