@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces.potemplate import IPOTemplate
 from canonical.lp.dbschema import TranslationFileFormat
 
 class IPOExportRequestSet(Interface):
-    number_entries = Int(
+    entry_count = Int(
         title=u'Number of entries waiting in the queue.',
         required=True, readonly=True)
 

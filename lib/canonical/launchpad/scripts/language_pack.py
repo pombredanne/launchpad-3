@@ -1,10 +1,15 @@
 # Copyright 2005-2007 Canonical Ltd. All rights reserved.
+
 """Functions for language pack creation script."""
 
 __metaclass__ = type
 
+__all__ = [
+    'export_language_pack',
+    ]
+
 import datetime
-import os.path
+import os
 import sys
 import tempfile
 from shutil import copyfileobj
@@ -20,15 +25,18 @@ from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.translationformat.translation_export import (
     LaunchpadWriteTarFile)
 
+
 def get_distribution(name):
     """Return the distribution with the given name."""
     return getUtility(IDistributionSet)[name]
+
 
 def get_series(distribution_name, series_name):
     """Return the series with the given name in the distribution with the
     given name.
     """
     return get_distribution(distribution_name).getSeries(series_name)
+
 
 def iter_sourcepackage_translationdomain_mapping(series):
     """Return an iterator of tuples with sourcepackagename - translationdomain
@@ -53,6 +61,7 @@ def iter_sourcepackage_translationdomain_mapping(series):
 
     for (sourcepackagename, translationdomain,) in cur.fetchall():
         yield (sourcepackagename, translationdomain)
+
 
 def export(distribution_name, series_name, component, update, force_utf8,
            logger):
@@ -142,6 +151,7 @@ def export(distribution_name, series_name, component, update, force_utf8,
 
     return filehandle, size
 
+
 def upload(filename, filehandle, size):
     """Upload a translation tarball to the Librarian.
 
@@ -156,6 +166,7 @@ def upload(filename, filehandle, size):
         contentType='application/octet-stream')
 
     return file_alias
+
 
 def send_upload_notification(recipients, distribution_name, series_name,
         component, file_alias):
@@ -176,6 +187,7 @@ def send_upload_notification(recipients, distribution_name, series_name,
             'Component: %s\n'
             'Librarian file alias: %s\n'
             % (distribution_name, series_name, components, file_alias))
+
 
 def export_language_pack(distribution_name, series_name, component, update,
                          force_utf8, output_file, email_addresses, logger):

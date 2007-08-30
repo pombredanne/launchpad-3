@@ -43,47 +43,29 @@ class POBasicTestCase(unittest.TestCase):
             "bar", "incorrect translation")
 
     def testMissingQuote(self):
-        try:
-            self.parser.parse('%smsgid "foo"\nmsgstr "bar' % DEFAULT_HEADER)
-        except TranslationFormatSyntaxError:
-            pass
-        else:
-            self.fail("uncaught syntax error (missing quote)")
+        self.assertRaises(
+            TranslationFormatSyntaxError, self.parser.parse,
+            '%smsgid "foo"\nmsgstr "bar' % DEFAULT_HEADER)
 
     def testBadNewline(self):
-        try:
-            self.parser.parse(
-                '%smsgid "foo\n"\nmsgstr "bar"\n' % DEFAULT_HEADER)
-        except TranslationFormatSyntaxError:
-            pass
-        else:
-            self.fail("uncaught syntax error (misplaced newline)")
+        self.assertRaises(
+            TranslationFormatSyntaxError, self.parser.parse,
+            '%smsgid "foo\n"\nmsgstr "bar"\n' % DEFAULT_HEADER)
 
     def testBadBackslash(self):
-        try:
-            self.parser.parse(
-                '%smsgid "foo\\"\nmsgstr "bar"\n' % DEFAULT_HEADER)
-        except TranslationFormatSyntaxError:
-            pass
-        else:
-            self.fail("uncaught syntax error (misplaced backslash)")
+        self.assertRaises(
+            TranslationFormatSyntaxError, self.parser.parse,
+            '%smsgid "foo\\"\nmsgstr "bar"\n' % DEFAULT_HEADER)
 
     def testMissingMsgstr(self):
-        try:
-            self.parser.parse('%smsgid "foo"\n' % DEFAULT_HEADER)
-        except TranslationFormatSyntaxError:
-            pass
-        else:
-            self.fail("uncaught syntax error (missing msgstr)")
+        self.assertRaises(
+            TranslationFormatSyntaxError, self.parser.parse,
+            '%smsgid "foo"\n' % DEFAULT_HEADER)
 
     def testMissingMsgid1(self):
-        try:
-            self.parser.parse('%smsgid_plural "foos"\n' % DEFAULT_HEADER)
-        except TranslationFormatSyntaxError:
-            pass
-        else:
-            self.fail(
-                "uncaught syntax error (missing msgid before msgid_plural)")
+        self.assertRaises(
+            TranslationFormatSyntaxError, self.parser.parse,
+            '%smsgid_plural "foos"\n' % DEFAULT_HEADER)
 
     def testFuzzy(self):
         translation_file = self.parser.parse(
@@ -115,12 +97,9 @@ class POBasicTestCase(unittest.TestCase):
     # Lalo doesn't agree with this test
     # def badEscapeTest(self):
     #
-    #     try:
-    #         self.parser.parse('''msgid "foo\."\nmsgstr "bar"\n''')
-    #     except TranslationFormatSyntaxError:
-    #         pass
-    #     else:
-    #         self.fail("no exception on bad escape sequence")
+    #     self.assertRaises(
+    #         TranslationFormatSyntaxError, self.parser.parse,
+    #         'msgid "foo\."\nmsgstr "bar"\n')
 
     def testPlural(self):
         translation_file = self.parser.parse('''
@@ -164,18 +143,16 @@ class POBasicTestCase(unittest.TestCase):
             "bar")
 
     def testDuplicateMsgid(self):
-        try:
-            self.parser.parse('''
+        self.assertRaises(
+            TranslationFormatInvalidInputError, self.parser.parse,
+            '''
                 %s
                 msgid "foo"
                 msgstr "bar1"
 
                 msgid "foo"
-                msgstr "bar2"''' % DEFAULT_HEADER)
-        except TranslationFormatInvalidInputError:
-            pass
-        else:
-            self.fail("no error when duplicate msgid encountered")
+                msgstr "bar2"
+                ''' % DEFAULT_HEADER)
 
     def testSquareBracketAndPlural(self):
         try:

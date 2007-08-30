@@ -51,7 +51,7 @@ class ITranslationHeader(Interface):
 
     charset = TextLine(
         title=u'Charset used to encode the content in its native form.',
-        required=True, readonly=True)
+        required=True)
 
     launchpad_export_date = Datetime(
         title=u'when this file was last exported from Launchpad or None.',
@@ -134,7 +134,7 @@ class ITranslationFile(Interface):
 
     header = Object(
         title=u'An `ITranslationHeader` for the parsed file.',
-        required=True, readonly=True, schema=ITranslationHeader)
+        required=True, schema=ITranslationHeader)
 
     messages = List(
         title=u'ITranslationMessage objects included in the parsed file.',

@@ -66,14 +66,17 @@ def parse_charset(string_to_parse, is_escaped=True):
 
     return charset
 
+
 def get_header_dictionary(raw_header, handled_keys_order):
     """Return dictionary with all keys in raw_header.
 
-    :arg raw_header: string representing the header in native format.
+    :param raw_header: string representing the header in native format.
+    :param handled_keys_order: list of header keys in the order they must
+        appear on export time.
     :return: dictionary with all key/values in raw_header.
     """
     header_dictionary = {}
-    for line in raw_header.strip().split('\n'):
+    for line in raw_header.strip().splitlines():
         line = line.strip()
         if not line:
             continue
@@ -172,8 +175,6 @@ class POHeader:
 
         return text
 
-
-
     def _parseHeaderFields(self):
         """Return plural form values based on the parsed header."""
         for key, value in self._header_dictionary.iteritems():
@@ -232,14 +233,14 @@ class POHeader:
         for key in self._handled_keys_order:
             value = self._handled_keys_mapping[key]
             if key == 'project-id-version':
-                if key in self._header_dictionary.keys():
+                if key in self._header_dictionary:
                     content = self._header_dictionary[key]
                 else:
                     # Use default one.
                     content = 'PACKAGE VERSION'
                 raw_content_list.append('%s: %s\n' % (value, content))
             elif key == 'report-msgid-bugs-to':
-                if key in self._header_dictionary.keys():
+                if key in self._header_dictionary:
                     content = self._header_dictionary[key]
                 else:
                     # Use default one.
@@ -309,7 +310,7 @@ class POHeader:
 
         # Now, we copy any other header information in the original .po file.
         for key, value in self._header_dictionary.iteritems():
-            if key in self._handled_keys_mapping.keys():
+            if key in self._handled_keys_mapping:
                 # It's already handled, skip it.
                 continue
 
@@ -352,7 +353,7 @@ class POHeader:
 
     def setLastTranslator(self, email, name=None):
         """See `ITranslationHeader`."""
-        assert email is not None, ('Email address cannot be None')
+        assert email is not None, 'Email address cannot be None'
 
         if name is None:
             name = u''
@@ -421,7 +422,7 @@ class POParser(object):
         """Parse string as a PO file."""
         # Initialise the parser.
         self._translation_file = TranslationFile()
-        self._messageids = {}
+        self._messageids = set()
         self._pending_chars = content_text
         self._pending_unichars = u''
         self._lineno = 0
@@ -488,7 +489,7 @@ class POParser(object):
             msgkey = self._message.msgid
             if self._message.context is not None:
                 msgkey = '%s\2%s' % (self._message.context, msgkey)
-            if self._messageids.has_key(msgkey):
+            if msgkey in self._messageids:
                 # We use '%r' instead of '%d' because there are situations
                 # when it returns an "<unprintable instance object>". You can
                 # see more details on bug #2896
@@ -507,7 +508,7 @@ class POParser(object):
                     self._message.addTranslation(index, u'')
 
             self._translation_file.messages.append(self._message)
-            self._messageids[msgkey] = True
+            self._messageids.add(msgkey)
             self._message = None
 
     def _parseHeader(self):
@@ -516,9 +517,9 @@ class POParser(object):
                 self._message.translations[
                     TranslationConstants.SINGULAR_FORM],
                 self._message.comment)
-        except TranslationFormatInvalidInputError, e:
-            if e.line_number is None:
-                e.line_number = self._message_lineno
+        except TranslationFormatInvalidInputError, error:
+            if error.line_number is None:
+                error.line_number = self._message_lineno
             raise
         self._translation_file.header.is_fuzzy = (
             'fuzzy' in self._message.flags)
@@ -765,6 +766,9 @@ class POParser(object):
                 # header for this file.
                 self._dumpCurrentSection()
                 self._parseHeader()
+            else:
+                logging.warning(
+                    POSyntaxWarning(self._lineno, 'We got a second header.'))
 
             # Start a new message.
             self._message = TranslationMessage()

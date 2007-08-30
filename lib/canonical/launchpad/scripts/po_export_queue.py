@@ -41,27 +41,13 @@ class ExportResult:
 
      - name: A short identifying string for this export.
      - url: The Librarian URL for any successfully exported files.
-     - failures: A list of filenames for failed exports.
+     - failure: Failure got while exporting.
     """
 
     def __init__(self, name):
         self.name = name
         self.url = None
-        self.failures = {}
-        self.successes = []
-
-    def _getErrorLines(self):
-        """Return a string with logging information about errors.
-
-        That logging information contains error messages got while doing the
-        export.
-        """
-        # Look for any export that is success but got any warning that we
-        # should show to the user.
-        return '\n'.join([
-            '%s:\n%s\n\n' % (failure_key, failure_value)
-            for failure_key, failure_value in self.failures.iteritems()
-            ])
+        self.failure = None
 
     def _getFailureEmailBody(self, person):
         """Send an email notification about the export failing."""
@@ -70,37 +56,8 @@ class ExportResult:
 
             Rosetta encountered problems exporting the files you
             requested. The Rosetta team has been notified of this
-            problem. Please reply to this email for further assistance.''' %
-                person.browsername)
-
-    def _getPartialSuccessEmailBody(self, person):
-        """Send an email notification about the export working partially."""
-        # Get a list of files that failed.
-        failure_list = '\n'.join([
-            ' * %s' % failure
-            for failure in self.failures.keys()])
-
-        success_count = len(self.successes)
-        total_count = success_count + len(self.failures)
-
-        return textwrap.dedent('''
-            Hello %s,
-
-            Rosetta has finished exporting your requested files.
-            However, problems were encountered exporting the
-            following files:
-
-            %s
-
-            The Rosetta team has been notified of this problem. Please
-            reply to this email for further assistance.
-
-            Of the %d files you requested, Rosetta successfully exported
-            %d, which can be downloaded from the following location:
-
-            \t%s''') % (
-                person.browsername, failure_list, total_count, success_count,
-                self.url)
+            problem. Please reply to this email for further assistance.
+            ''' % person.browsername)
 
     def _getSuccessEmailBody(self, person):
         """Send an email notification about the export working."""
@@ -116,24 +73,18 @@ class ExportResult:
     def notify(self, person):
         """Send a notification email to the given person about the export.
 
-        If there were failures, a copy of the email is also sent to the
+        If there is a failure, a copy of the email is also sent to the
         Launchpad error mailing list for debugging purposes.
         """
-        assert self.url or self.failures, (
-            'An export result must have an URL or failures (or both).')
-
-        assert ((self.url and self.successes) or
-                not (self.url or self.successes)), (
-            'Can\'t have a URL without successes (or vice versa).')
-
-        if self.failures and self.url:
-            body = self._getPartialSuccessEmailBody(person)
-        elif self.failures:
-            body = self._getFailureEmailBody(person)
-        else:
+        if self.failure is None and self.url is not None:
             # There are no failures, so we have a full export without
             # problems.
             body = self._getSuccessEmailBody(person)
+        elif self.failures is not None:
+            body = self._getFailureEmailBody(person)
+        else:
+            raise AssertionError(
+                'We neither have the exported URL nor we got a failure.')
 
         recipients = list(helpers.contactEmailAddresses(person))
 
@@ -155,8 +106,7 @@ class ExportResult:
                 this export. You can see the list of failed files with the
                 error we got:
 
-                %s''') % (
-                    person.browsername, self._getErrorLines())
+                %s''') % (person.browsername, self.failure)
 
             simple_sendmail(
                 from_addr=config.rosetta.rosettaadmin.email,
@@ -164,27 +114,14 @@ class ExportResult:
                 subject='Translation download errors: %s' % self.name,
                 body=admins_email_body)
 
-    def addFailure(self, name):
-        """Add name as an export that failed.
-
-        The failures are stored at self.failures dictionary using the entry
-        that failed as the key and the exception that caused the error as the
-        value. If there isn't any warning information, the value is the empty
-        string.
-        """
+    def addFailure(self):
+        """Store an exception that broke the export."""
         # Get the trace back that produced this failure.
         exception = StringIO()
         traceback.print_exc(file=exception)
         exception.seek(0)
         # And store it.
-        self.failures[name] = exception.read()
-
-    def addSuccess(self, name):
-        """Add name as an export that succeed.
-
-        The success are stored at self.success list.
-        """
-        self.successes.append(name)
+        self.failure = exception.read()
 
 
 def process_request(person, objects, format, logger):
@@ -199,7 +136,7 @@ def process_request(person, objects, format, logger):
     translation_format_exporter = (
         translation_exporter.getTranslationFormatExporterByFileFormat(format))
 
-    result = ExportResult('XXX')
+    result = ExportResult(person.name)
     translation_file_list = []
     last_template_name = None
     for obj in objects:
@@ -224,17 +161,8 @@ def process_request(person, objects, format, logger):
     except:
         # The export for the current entry failed with an unexpected
         # error, we add the entry to the list of errors.
-        result.addFailure('XXX')
-        # And log the error.
-        logger.error(
-            "A unexpected exception was raised when exporting %s" % (
-                obj.title),
-            exc_info=True)
+        result.addFailure()
     else:
-        result.addSuccess('XXX')
-        #archive.add_file('rosetta-%s/%s' % (name, filename), contents)
-
-    if result.successes:
         if exported_file.path is None:
             # The exported path is unknown, use translation domain as its
             # filename.

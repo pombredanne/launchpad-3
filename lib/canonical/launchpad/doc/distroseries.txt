@@ -526,11 +526,11 @@ and child distro series.
    ...     # Get content as list of lines, removing X-Launchpad-Export-Date
    ...     # lines to prevent time bombs in tests.
    ...     old_file_lines = [
-   ...         line for line in old_file.split('\n')
+   ...         line for line in old_file.splitlines()
    ...         if not line.startswith('"X-Launchpad-Export-Date:')
    ...         ]
    ...     new_file_lines = [
-   ...         line for line in new_file.split('\n')
+   ...         line for line in new_file.splitlines()
    ...         if not line.startswith('"X-Launchpad-Export-Date:')
    ...         ]
    ...

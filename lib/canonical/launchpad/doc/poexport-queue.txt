@@ -1,7 +1,10 @@
-The Translation Export Queue is the functionality that allows us to export translation
-resources from the Launchpad portal.
+= Translation Export Queue =
 
-= ExportResult =
+The Translation Export Queue is the functionality that allows us to export
+translation resources from the Launchpad portal.
+
+
+== ExportResult ==
 
 ExportResult class is used to control the list of exported files that succeed
 and the ones that failed with the error associated.
@@ -239,13 +242,14 @@ In this case, there are no errors, so we should get just a single email
   > 
   >     http://someplace.com/somefile.tar.gz
 
-= process_queue() =
+
+== process_queue() ==
 
 This method handles entries from the queue of entries to be exported.
 
     >>> from canonical.launchpad.scripts.po_export_queue import process_queue
 
-First, need to fill the export queue with entries to be exported.
+First, fill the export queue with entries to be exported.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.database import POTemplate
@@ -256,14 +260,14 @@ First, need to fill the export queue with entries to be exported.
 
 The queue is empty by default.
 
-    >>> export_request_set.number_entries
+    >>> export_request_set.entry_count
     0
+
+Once a new entry has been added, the queue has content.
+
     >>> export_request_set.addRequest(
     ...     carlos, potemplate=potemplate, format=TranslationFileFormat.PO)
-
-Once added a new entry, the queue has content.
-
-    >>> export_request_set.number_entries
+    >>> export_request_set.entry_count
     1
 
 Once the queue is processed, the queue is empty again.
@@ -271,7 +275,7 @@ Once the queue is processed, the queue is empty again.
     >>> import logging
     >>> process_queue(transaction, logging.getLogger())
 
-    >>> export_request_set.number_entries
+    >>> export_request_set.entry_count
     0
 
 And a confirmation email was sent to carlos, the importer.
@@ -279,10 +283,9 @@ And a confirmation email was sent to carlos, the importer.
     >>> len(test_emails)
     1
 
-    >>> from_addrs, to_addrs, body = test_emails.pop()
-
 The confirmation email shows no errors at all.
 
+    >>> from_addrs, to_addrs, body = test_emails.pop()
     >>> print to_addrs
     ['carlos@canonical.com']
     >>> print_mail_body(body)

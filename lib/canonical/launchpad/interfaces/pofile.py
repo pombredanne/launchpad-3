@@ -154,13 +154,13 @@ class IPOFile(IRosettaStats):
         """
 
     def __iter__():
-        """Return an iterator over Current IPOMessageSets in this PO file."""
+        """Return an iterator over Current `IPOMessageSets` in this PO file."""
 
     def getHeader():
-        """Return an ITranslationHeader representing its header."""
+        """Return an `ITranslationHeader` representing its header."""
 
     def getPOMsgSet(msgid_text, only_current=False, context=None):
-        """Return the IPOMsgSet in this IPOFile by msgid_text or None.
+        """Return the `IPOMsgSet` in this `IPOFile` by msgid_text or None.
 
         :param msgid_text: is an unicode string.
         :param only_current: Whether we should look only on current entries.
@@ -168,7 +168,7 @@ class IPOFile(IRosettaStats):
         """
 
     def getPOMsgSetFromPOTMsgSet(potmsgset, only_current=False):
-        """Return the IPOMsgSet in this IPOFile by potmsgset or None.
+        """Return the `IPOMsgSet` in this `IPOFile` by potmsgset or None.
 
         :param potmsgset: is an instance of POTMsgSet.
         :param only_current: Whether we should look only on current entries.
@@ -184,7 +184,7 @@ class IPOFile(IRosettaStats):
         """
 
     def __getitem__(msgid_text):
-        """Return the active IPOMsgSet in this IPOFile identified by msgid_text.
+        """Return the active `IPOMsgSet` in this IPOFile by msgid_text.
 
         :param msgid_text: is an unicode string.
 
@@ -337,10 +337,11 @@ class IPOFileSet(Interface):
 
     def getPOFileByPathAndOrigin(path, productseries=None,
         distroseries=None, sourcepackagename=None):
-        """Return an IPOFile that is stored at 'path' in source code.
+        """Return an `IPOFile` that is stored at 'path' in source code.
 
-        We filter the IPOFiles to check only the ones related to the given
-        arguments 'productseries', 'distroseries' and 'sourcepackagename'
+        We filter the `IPOFile` objects to check only the ones related to the
+        given arguments 'productseries', 'distroseries' and
+        'sourcepackagename'.
 
         Return None if there is not such IPOFile.
         """

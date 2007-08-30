@@ -21,7 +21,7 @@ class POExportRequestSet:
     implements(IPOExportRequestSet)
 
     @property
-    def number_entries(self):
+    def entry_count(self):
         """See `IPOExportRequestSet`."""
         return POExportRequest.select().count()
 

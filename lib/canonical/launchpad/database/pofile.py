@@ -1,5 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+"""SQLObject implementation of IPOFile interface."""
+
 __metaclass__ = type
 __all__ = [
     'POFile',
@@ -1433,7 +1435,6 @@ class POFileToTranslationFileAdapter:
 
         return translation_header
 
-
     def _getMessages(self):
         """Return a list of `ITranslationMessage` for the `IPOFile` adapted."""
         pofile = self._pofile
@@ -1448,26 +1449,18 @@ class POFileToTranslationFileAdapter:
         msgset = None
 
         for row in rows:
-            assert row.pofile == pofile, (
-                'Got a row for a different IPOFile.')
-
-            new_msgset = False
+            assert row.pofile == pofile, 'Got a row for a different IPOFile.'
 
             # Skip messages which are neither in the PO template nor in the PO
-            # file. (Messages which are in the PO template but not in the PO file
-            # are untranslated, and messages which are not in the PO template but
-            # in the PO file are obsolete.)
-            if ((row.posequence == 0 or row.posequence is None) and
-                row.potsequence == 0):
+            # file. (Messages which are in the PO template but not in the PO
+            # file are untranslated, and messages which are not in the PO
+            # template but in the PO file are obsolete.)
+            if row.posequence in (0, None) and row.potsequence == 0:
                 continue
 
-            # If the sequence number of either the PO template or the PO file has
-            # changed, we start a new message set.
-            if (row.potsequence != potsequence or
-                row.posequence != posequence):
-                new_msgset = True
-
-            if new_msgset:
+            # If the sequence number of either the PO template or the PO file
+            # has changed, we start a new message set.
+            if row.potsequence != potsequence or row.posequence != posequence:
                 if msgset is not None:
                     # Output current message set before creating the new one.
                     messages.append(msgset)
@@ -1485,9 +1478,9 @@ class POFileToTranslationFileAdapter:
                     msgset.is_obsolete = True
 
             # Because of the way the database view works, message IDs and
-            # translations will appear multiple times. We see how many we've added
-            # already to check whether the message ID/translation in the current
-            # row are ones we need to add.
+            # translations will appear multiple times. We see how many we've
+            # added already to check whether the message ID/translation in the
+            # current row are ones we need to add.
             # Note that the translation plural forms can be greater than or
             # equal to the translations available. This allows for
             # non-contiguous plural form indices.
@@ -1497,29 +1490,34 @@ class POFileToTranslationFileAdapter:
             elif (row.msgidpluralform == TranslationConstants.PLURAL_FORM and
                 msgset.msgid_plural is None):
                 msgset.msgid_plural = row.msgid
+            elif row.msgidpluralform is None:
+                # This row has no
+                pass
             else:
                 assert row.msgidpluralform in (
-                        TranslationConstants.SINGULAR_FORM,
-                        TranslationConstants.PLURAL_FORM), (
-                    'msgid plural form is not valid!')
+                    TranslationConstants.SINGULAR_FORM,
+                    TranslationConstants.PLURAL_FORM), (
+                        'msgid plural form is not valid: %s.' %
+                            row.msgidpluralform)
 
             if (row.activesubmission is not None and
                 row.translationpluralform >= len(msgset.translations)):
-                # There is an active submission, the plural form is higher than
-                # the last imported plural form.
+                # There is an active submission, the plural form is higher
+                # than the last imported plural form.
 
                 if (pofile.language.pluralforms is not None and
                     row.translationpluralform >= pofile.language.pluralforms):
-                    # The plural form index is higher than the number of plural
-                    # form for this language, so we should ignore it.
+                    # The plural form index is higher than the number of
+                    # plural form for this language, so we should ignore it.
                     continue
 
-                msgset.addTranslation(row.translationpluralform, row.translation)
+                msgset.addTranslation(
+                    row.translationpluralform, row.translation)
 
             if row.context is not None and msgset.context is None:
                 msgset.context = row.context
 
-            if row.isfuzzy and not 'fuzzy' in msgset.flags:
+            if row.isfuzzy and 'fuzzy' not in msgset.flags:
                 msgset.flags.add('fuzzy')
 
             if row.pocommenttext and not msgset.comment:

@@ -52,7 +52,7 @@ Some initialisation tasks:
 == Base language pack export using Librarian ==
 
 When a new language pack export is requested, you can select to use Librarian
-to store the language pack. That's is noted with output_file set to None.
+to store the language pack. That is noted with output_file set to None.
 
     >>> logger = FakeLogger()
     >>> export_language_pack(
@@ -110,12 +110,10 @@ The tarball has the right members.
     rosetta-hoary/mapping.txt
 
 Directory permissions allow correct use of those directories:
-    >>> directory = tarfile.getmember('rosetta-hoary/')
 
-    # 493 is 0755 in decimal. This mean read-write for owner and read for
-    # group and others.
-    >>> directory.mode
-    493
+    >>> directory = tarfile.getmember('rosetta-hoary/')
+    >>> oct(directory.mode)
+    '0755'
 
 And one of the included .po files look like what we expected.
 
@@ -135,23 +133,22 @@ First we need to set up some data to test with, and for this we need some DB
 classes.
 
     >>> from StringIO import StringIO
-    >>> from canonical.launchpad.database import Person
     >>> from canonical.launchpad.database import DistroSeries
     >>> from canonical.launchpad.database import SourcePackageName
     >>> from canonical.launchpad.database import POTemplateName
     >>> from canonical.launchpad.database import POTemplate
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IPersonSet)
 
 Get hold of a person.
 
-    >>> mark = Person.get(1)
+    >>> mark = getUtility(IPersonSet).getByName('sabdfl')
     >>> print mark.displayname
     Mark Shuttleworth
 
-Get a distro series.
+Get the Grumpy distro series.
 
-    >>> series = DistroSeries.get(5)
-    >>> series.name
-    u'grumpy'
+    >>> series = getUtility(IDistributionSet)['ubuntu'].getSeries('grumpy')
 
 Get a source package name to go with our distro series.
 
@@ -169,7 +166,8 @@ creating.
 
 Create a PO template and put a single message set in it.
 
-    >>> ptn = POTemplateName(name='test', translationdomain='test', title='test')
+    >>> ptn = POTemplateName(
+    ...     name='test', translationdomain='test', title='test')
     >>> pot_header = 'Content-Type: text/plain; charset=UTF-8\n'
     >>> template = POTemplate(
     ...     potemplatename=ptn, distroseries=series, sourcepackagename=spn,

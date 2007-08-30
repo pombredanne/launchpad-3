@@ -473,7 +473,7 @@ Templates can be exported to its native format.
     "that item's actual story/article).</li>\n"
     "       <li><strong><a href=\"%categories\">Categories</a></strong> -- "
     "Organizes incoming content by category, displaying category titles (each of "
-    "which links to a page with the latest items from that category) and item "
+    "which links to a page with thex latest items from that category) and item "
     "titles (which link to that item's actual story/article).</li>\n"
     "      </ul>\n"
     "      <p>Pages that display items (for sources, categories, etc.) display "
@@ -506,7 +506,7 @@ Templates can be exported to its native format.
 == exportWithTranslations() ==
 
 We can also get a template export that includes all translations inside. The
-file format we will get depends on the file format.
+file format we will get depends on the default template file format.
 
 In this case, we are going to see how a PO template is exported with
 translations.
@@ -538,8 +538,8 @@ Inspecting the tarball content, we have the list of entries exported.
 
 The *-es.po file is indeed the Spanish translation...
 
-    >>> fh = tarfile.extractfile('evolution-2.2/evolution-2.2-es.po')
-    >>> fh.readline()
+    >>> file_content = tarfile.extractfile('evolution-2.2/evolution-2.2-es.po')
+    >>> file_content.readline()
     '# traducci\xc3\xb3n de es.po al Spanish\n'
 
 And GNU tar can cope with it.

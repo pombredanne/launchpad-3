@@ -17,9 +17,13 @@ from canonical.launchpad import _
 
 __metaclass__ = type
 
-__all__ = (
-    'LanguageNotFound', 'IPOTemplateSubset', 'IPOTemplateSet', 'IPOTemplate',
-    'IPOTemplateWithContent')
+__all__ = [
+    'IPOTemplate',
+    'IPOTemplateSet',
+    'IPOTemplateSubset',
+    'IPOTemplateWithContent',
+    'LanguageNotFound',
+    ]
 
 
 class LanguageNotFound(NotFoundError):
@@ -221,16 +225,16 @@ class IPOTemplate(IRosettaStats):
             required=True)
 
     def __iter__():
-        """Return an iterator over current IPOTMsgSets in this template."""
+        """Return an iterator over current `IPOTMsgSet` in this template."""
 
     def getHeader():
-        """Return an ITranslationHeader representing its header."""
+        """Return an `ITranslationHeader` representing its header."""
 
     def getPOTMsgSetByMsgIDText(msgidtext, only_current=False, context=None):
-        """Return the IPOTMesgSet indexed by msgidtext from this template.
+        """Return the `IPOTMesgSet` indexed by msgidtext from this template.
 
         If the key is a string or a unicode object, returns the
-        IPOTMsgSet in this template that has a primary message ID
+        `IPOTMsgSet` in this template that has a primary message ID
         with the given text.
 
         If only_current is True, then get only current message sets.
@@ -238,19 +242,19 @@ class IPOTemplate(IRosettaStats):
         If context is not None, look for a message set with that context
         value.
 
-        If no IPOTMsgSet is found, return None.
+        If no `IPOTMsgSet` is found, return None.
         """
 
     def getPOTMsgSetBySequence(sequence):
-        """Return the IPOTMsgSet with the given sequence or None.
+        """Return the `IPOTMsgSet` with the given sequence or None.
 
-        :arg sequence: The sequence number when the IPOTMsgSet appears.
+        :arg sequence: The sequence number when the `IPOTMsgSet` appears.
 
         The sequence number must be > 0.
         """
 
     def getPOTMsgSets(current=True, slice=None):
-        """Return an iterator over IPOTMsgSet objects in this template.
+        """Return an iterator over `IPOTMsgSet` objects in this template.
 
         The 'current' argument is used to select only current POTMsgSets or
         all of them.
@@ -286,7 +290,7 @@ class IPOTemplate(IRosettaStats):
     def getPOFileByPath(path):
         """Get the PO file of the given path.
 
-        Return None if there is no such IPOFile.
+        Return None if there is no such `IPOFile`.
         """
 
     def getPOFileByLang(language_code, variant=None):
@@ -321,20 +325,20 @@ class IPOTemplate(IRosettaStats):
         """Mark all of our message sets as not current (sequence=0)"""
 
     def newPOFile(language_code, variant=None, requester=None):
-        """Return a new IPOFile for the given language. The variant is
+        """Return a new `IPOFile` for the given language. The variant is
         optional.
 
         Raise LanguageNotFound if the language does not exist in the
         database.
 
-        We should not have already an IPOFile for the given language_code and
+        We should not have already an `IPOFile` for the given language_code and
         variant.
         """
 
     def getDummyPOFile(language_code, variant=None, requester=None):
-        """Return a DummyPOFile if there isn't already a persistent IPOFile
+        """Return a DummyPOFile if there isn't already a persistent `IPOFile`
 
-        Raise LanguageNotFound if the language does not exist in the
+        Raise `LanguageNotFound` if the language does not exist in the
         database.
 
         This method is designed to be used by read only actions. This way you
@@ -399,7 +403,7 @@ class IPOTemplateSubset(Interface):
         """Return an iterator over all POTemplate for this subset."""
 
     def __len__():
-        """Return the number of IPOTemplate objects in this subset."""
+        """Return the number of `IPOTemplate` objects in this subset."""
 
     def __getitem__(name):
         """Get a POTemplate by its name."""
@@ -408,21 +412,21 @@ class IPOTemplateSubset(Interface):
         """Create a new template for the context of this Subset."""
 
     def getPOTemplateByName(name):
-        """Return the IPOTemplate with the given name or None.
+        """Return the `IPOTemplate` with the given name or None.
 
-        The IPOTemplate is restricted to this concrete IPOTemplateSubset.
+        The `IPOTemplate` is restricted to this concrete `IPOTemplateSubset`.
         """
 
     def getPOTemplateByTranslationDomain(translation_domain):
-        """Return the IPOTemplate with the given translation_domain or None.
+        """Return the `IPOTemplate` with the given translation_domain or None.
 
-        The IPOTemplate is restricted to this concrete IPOTemplateSubset.
+        The `IPOTemplate` is restricted to this concrete `IPOTemplateSubset`.
         """
 
     def getPOTemplateByPath(path):
-        """Return the IPOTemplate from this subset that has the given path.
+        """Return the `IPOTemplate` from this subset that has the given path.
 
-        Return None if there is no such IPOTemplate.
+        Return None if there is no such `IPOTemplate`.
         """
 
     def getAllOrderByDateLastUpdated():
@@ -432,10 +436,10 @@ class IPOTemplateSubset(Interface):
         """
 
     def getClosestPOTemplate(path):
-        """Return a IPOTemplate with a path closer to the given path or None.
+        """Return a `IPOTemplate` with a path closer to the given path or None.
 
-        If there is no IPOTemplate with a common path with the given argument,
-        or if there are more than one IPOTemplate with the same common path,
+        If there is no `IPOTemplate` with a common path with the given argument,
+        or if there are more than one `IPOTemplate` with the same common path,
         and both are the closer ones, returns None.
         """
 
@@ -467,15 +471,15 @@ class IPOTemplateSet(Interface):
 
     def getPOTemplateByPathAndOrigin(path, productseries=None,
         distroseries=None, sourcepackagename=None):
-        """Return an IPOTemplate that is stored at 'path' in source code and
+        """Return an `IPOTemplate` that is stored at 'path' in source code and
            came from the given arguments.
 
-        Return None if there is no such IPOTemplate.
+        Return None if there is no such `IPOTemplate`.
         """
 
 
 class IPOTemplateWithContent(IPOTemplate):
-    """Interface for an IPOTemplate used to create the new POTemplate form."""
+    """Interface for an `IPOTemplate` used to create the new POTemplate form."""
 
     content = Bytes(
         title=_("PO Template File to Import"),

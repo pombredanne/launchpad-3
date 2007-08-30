@@ -1,5 +1,6 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-"""SQLObject implementation of POTemplate classes."""
+
+"""SQLObject implementation of IPOTemplate interface."""
 
 __metaclass__ = type
 __all__ = [
@@ -10,7 +11,7 @@ __all__ = [
     ]
 
 import datetime
-import os.path
+import os
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
@@ -108,12 +109,12 @@ class POTemplate(SQLBase, RosettaStats):
     pofiles = SQLMultipleJoin('POFile', joinColumn='potemplate')
 
     def __iter__(self):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         for potmsgset in self.getPOTMsgSets():
             yield potmsgset
 
     def __getitem__(self, key):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         potmsgset = self.getPOTMsgSetByMsgIDText(key, only_current=True)
         if potmsgset is None:
             raise NotFoundError(key)
@@ -123,12 +124,12 @@ class POTemplate(SQLBase, RosettaStats):
     # properties
     @property
     def name(self):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         return self.potemplatename.name
 
     @property
     def displayname(self):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         if self.productseries:
             dn = '%s in %s %s' % (
                 self.name,
@@ -144,7 +145,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     @property
     def title(self):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         if self.productseries:
             title = 'Template "%s" in %s %s' % (
                 self.name,
@@ -160,7 +161,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     @property
     def distribution(self):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         if self.distroseries is not None:
             return self.distroseries.distribution
         else:
@@ -168,7 +169,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     @property
     def product(self):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         if self.productseries is not None:
             return self.productseries.product
         else:
@@ -176,7 +177,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     @property
     def translationgroups(self):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         ret = []
         if self.distroseries:
             tg = self.distroseries.distribution.translationgroup
@@ -196,7 +197,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     @property
     def translationpermission(self):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         if self.distroseries:
             # in the case of a distro template, use the distro translation
             # permission settings
@@ -208,7 +209,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     @property
     def relatives_by_name(self):
-        "See IPOTemplate"
+        "See `IPOTemplate`."
         return POTemplate.select('''
             id <> %s AND
             potemplatename = %s AND
@@ -218,7 +219,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     @property
     def relatives_by_source(self):
-        "See IPOTemplate"
+        "See `IPOTemplate`."
         if self.productseries:
             return POTemplate.select('''
                 id <> %s AND
@@ -290,7 +291,7 @@ class POTemplate(SQLBase, RosettaStats):
             (' AND primemsgid = %s' % sqlvalues(pomsgid.id)))
 
     def getPOTMsgSetBySequence(self, sequence):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         assert sequence > 0, ('%r is out of range')
 
         return POTMsgSet.selectOne("""
@@ -299,7 +300,7 @@ class POTemplate(SQLBase, RosettaStats):
             """ % sqlvalues (self.id, sequence))
 
     def getPOTMsgSets(self, current=True, slice=None):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         if current:
             # Only count the number of POTMsgSet that are current.
             results = POTMsgSet.select(
@@ -318,7 +319,7 @@ class POTemplate(SQLBase, RosettaStats):
         return results
 
     def getPOTMsgSetsCount(self, current=True):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         if current:
             # Only count the number of POTMsgSet that are current
             results = POTMsgSet.select(
@@ -331,13 +332,13 @@ class POTemplate(SQLBase, RosettaStats):
         return results.count()
 
     def getPOTMsgSetByID(self, id):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         return POTMsgSet.selectOne(
             "POTMsgSet.potemplate = %s AND POTMsgSet.id = %s" % sqlvalues(
                 self.id, id))
 
     def languages(self):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         return Language.select("POFile.language = Language.id AND "
                                "Language.code != 'en' AND "
                                "POFile.potemplate = %d AND "
@@ -347,14 +348,14 @@ class POTemplate(SQLBase, RosettaStats):
                                )
 
     def getPOFileByPath(self, path):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         return POFile.selectOne("""
             POFile.potemplate = %s AND
             POFile.path = %s
             """ % sqlvalues(self.id, path))
 
     def getPOFileByLang(self, language_code, variant=None):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         if variant is None:
             variantspec = 'IS NULL'
         elif isinstance(variant, unicode):
@@ -375,11 +376,11 @@ class POTemplate(SQLBase, RosettaStats):
             prejoins=["last_touched_pomsgset"])
 
     def messageCount(self):
-        """See IRosettaStats."""
+        """See `IRosettaStats`."""
         return self.messagecount
 
     def currentCount(self, language=None):
-        """See IRosettaStats."""
+        """See `IRosettaStats`."""
         if language is None:
             return 0
         pofile = self.getPOFileByLang(language)
@@ -389,7 +390,7 @@ class POTemplate(SQLBase, RosettaStats):
             return pofile.currentCount()
 
     def updatesCount(self, language=None):
-        """See IRosettaStats."""
+        """See `IRosettaStats`."""
         if language is None:
             return 0
         pofile = self.getPOFileByLang(language)
@@ -399,7 +400,7 @@ class POTemplate(SQLBase, RosettaStats):
             pofile.updatesCount()
 
     def rosettaCount(self, language=None):
-        """See IRosettaStats."""
+        """See `IRosettaStats`."""
         if language is None:
             return 0
         pofile = self.getPOFileByLang(language)
@@ -409,13 +410,13 @@ class POTemplate(SQLBase, RosettaStats):
             pofile.rosettaCount()
 
     def hasMessageID(self, messageID, context=None):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         results = POTMsgSet.selectBy(potemplate=self, primemsgid_=messageID,
                                      context=context)
         return bool(results)
 
     def hasPluralMessage(self):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         results = POMsgIDSighting.select('''
             POMsgIDSighting.pluralform = %s AND
             POMsgIDSighting.potmsgset = POTMsgSet.id AND
@@ -454,12 +455,12 @@ class POTemplate(SQLBase, RosettaStats):
             translation_files)
 
     def expireAllMessages(self):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         for potmsgset in self:
             potmsgset.sequence = 0
 
     def newPOFile(self, language_code, variant=None, requester=None):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         # see if one exists already
         existingpo = self.getPOFileByLang(language_code, variant)
         assert existingpo is None, (
@@ -524,7 +525,7 @@ class POTemplate(SQLBase, RosettaStats):
         return pofile
 
     def getDummyPOFile(self, language_code, variant=None, requester=None):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         # see if a valid one exists.
         existingpo = self.getPOFileByLang(language_code, variant)
         assert existingpo is None, (
@@ -551,7 +552,7 @@ class POTemplate(SQLBase, RosettaStats):
             pluralform=0)
 
     def createMessageSetFromMessageID(self, messageID, context=None):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         messageSet = POTMsgSet(
             context=context,
             primemsgid_=messageID,
@@ -565,7 +566,7 @@ class POTemplate(SQLBase, RosettaStats):
         return messageSet
 
     def createMessageSetFromText(self, text, context=None):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         try:
             messageID = POMsgID.byMsgid(text)
         except SQLObjectNotFound:
@@ -581,12 +582,12 @@ class POTemplate(SQLBase, RosettaStats):
         return self.createMessageSetFromMessageID(messageID, context)
 
     def invalidateCache(self):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         for pofile in self.pofiles:
             pofile.invalidateCache()
 
     def getNextToImport(self):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         flush_database_updates()
         return TranslationImportQueueEntry.selectFirstBy(
                 potemplate=self,
@@ -715,7 +716,7 @@ class POTemplateSubset:
         self.orderby.append('POTemplate.path')
 
     def __iter__(self):
-        """See IPOTemplateSubset."""
+        """See `IPOTemplateSubset`."""
         res = POTemplate.select(self.query, clauseTables=self.clausetables,
                                 orderBy=self.orderby)
 
@@ -723,12 +724,12 @@ class POTemplateSubset:
             yield potemplate
 
     def __len__(self):
-        """See IPOTemplateSubset."""
+        """See `IPOTemplateSubset`."""
         res = POTemplate.select(self.query, clauseTables=self.clausetables)
         return res.count()
 
     def __getitem__(self, name):
-        """See IPOTemplateSubset."""
+        """See `IPOTemplateSubset`."""
         potemplate = self.getPOTemplateByName(name)
         if potemplate is None:
             raise NotFoundError(name)
@@ -737,7 +738,7 @@ class POTemplateSubset:
 
     @property
     def title(self):
-        """See IPOTemplateSubset."""
+        """See `IPOTemplateSubset`."""
         titlestr = ''
         if self.distroseries:
             titlestr += ' ' + self.distroseries.displayname
@@ -749,7 +750,7 @@ class POTemplateSubset:
         return titlestr
 
     def new(self, potemplatename, path, owner):
-        """See IPOTemplateSubset."""
+        """See `IPOTemplateSubset`."""
         return POTemplate(potemplatename=potemplatename,
                           sourcepackagename=self.sourcepackagename,
                           distroseries=self.distroseries,
@@ -758,7 +759,7 @@ class POTemplateSubset:
                           owner=owner)
 
     def getPOTemplateByName(self, name):
-        """See IPOTemplateSubset."""
+        """See `IPOTemplateSubset`."""
         queries = [self.query]
         clausetables = list(self.clausetables)
 
@@ -770,7 +771,7 @@ class POTemplateSubset:
             clauseTables=clausetables)
 
     def getPOTemplateByTranslationDomain(self, translation_domain):
-        """See IPOTemplateSubset."""
+        """See `IPOTemplateSubset`."""
         queries = [self.query]
         clausetables = list(self.clausetables)
 
@@ -783,13 +784,13 @@ class POTemplateSubset:
             clauseTables=clausetables)
 
     def getPOTemplateByPath(self, path):
-        """See IPOTemplateSubset."""
+        """See `IPOTemplateSubset`."""
         query = '%s AND POTemplate.path = %s' % (self.query, quote(path))
 
         return POTemplate.selectOne(query, clauseTables=self.clausetables)
 
     def getAllOrderByDateLastUpdated(self):
-        """See IPOTemplateSet."""
+        """See `IPOTemplateSet`."""
         query = []
         if self.productseries is not None:
             query.append('productseries = %s' % sqlvalues(self.productseries))
@@ -803,7 +804,7 @@ class POTemplateSubset:
             ' AND '.join(query), orderBy=['-date_last_updated'])
 
     def getClosestPOTemplate(self, path):
-        """See IPOTemplateSubset."""
+        """See `IPOTemplateSubset`."""
         if path is None:
             return None
 
@@ -833,13 +834,13 @@ class POTemplateSet:
     implements(IPOTemplateSet)
 
     def __iter__(self):
-        """See IPOTemplateSet."""
+        """See `IPOTemplateSet`."""
         res = POTemplate.select()
         for potemplate in res:
             yield potemplate
 
     def getByIDs(self, ids):
-        """See IPOTemplateSet."""
+        """See `IPOTemplateSet`."""
         values = ",".join(sqlvalues(*ids))
         return POTemplate.select("POTemplate.id in (%s)" % values,
             prejoins=["potemplatename", "productseries",
@@ -847,7 +848,7 @@ class POTemplateSet:
             orderBy=["POTemplate.id"])
 
     def getAllByName(self, name):
-        """See IPOTemplateSet."""
+        """See `IPOTemplateSet`."""
         return helpers.shortlist(POTemplate.select(
             'POTemplate.potemplatename = POTemplateName.id AND'
             ' POTemplateName.name = %s' % sqlvalues(name),
@@ -855,12 +856,12 @@ class POTemplateSet:
             orderBy=['POTemplateName.name', 'POTemplate.id']))
 
     def getAllOrderByDateLastUpdated(self):
-        """See IPOTemplateSet."""
+        """See `IPOTemplateSet`."""
         return POTemplate.select(orderBy=['-date_last_updated'])
 
     def getSubset(self, distroseries=None, sourcepackagename=None,
                   productseries=None):
-        """See IPOTemplateSet."""
+        """See `IPOTemplateSet`."""
         return POTemplateSubset(
             distroseries=distroseries,
             sourcepackagename=sourcepackagename,
@@ -868,7 +869,7 @@ class POTemplateSet:
 
     def getSubsetFromImporterSourcePackageName(self, distroseries,
         sourcepackagename):
-        """See IPOTemplateSet."""
+        """See `IPOTemplateSet`."""
         if distroseries is None or sourcepackagename is None:
             raise AssertionError(
                 'distroseries and sourcepackage must be not None.')
@@ -879,7 +880,7 @@ class POTemplateSet:
 
     def getPOTemplateByPathAndOrigin(self, path, productseries=None,
         distroseries=None, sourcepackagename=None):
-        """See IPOTemplateSet."""
+        """See `IPOTemplateSet`."""
         if productseries is not None:
             return POTemplate.selectOne('''
                     POTemplate.productseries = %s AND
@@ -920,7 +921,7 @@ class POTemplateSet:
 
 
 class POTemplateToTranslationFileAdapter:
-    """Adapter from IPOTemplate to ITranslationFile."""
+    """Adapter from `IPOTemplate` to `ITranslationFile`."""
     implements(ITranslationFile)
 
     def __init__(self, potemplate):
@@ -953,7 +954,7 @@ class POTemplateToTranslationFileAdapter:
         return self._potemplate.getHeader()
 
     def _getMessages(self):
-        """Return a list of ITranslationMessage for the IPOTemplate adapted."""
+        """Return a list of `ITranslationMessage`."""
         potemplate = self._potemplate
         # Get all rows related to this file. We do this to speed the export
         # process so we have a single DB query to fetch all needed
@@ -968,17 +969,12 @@ class POTemplateToTranslationFileAdapter:
             assert row.potemplate == potemplate, (
                 'Got a row for a different IPOTemplate.')
 
-            new_msgset = False
-
             # Skip messages which aren't anymore in the PO template.
             if row.sequence == 0:
                 continue
 
             # If the sequence number changes, is a new message.
             if row.sequence != sequence:
-                new_msgset = True
-
-            if new_msgset:
                 if msgset is not None:
                     # Output current message set before creating the new one.
                     messages.append(msgset)
@@ -988,9 +984,10 @@ class POTemplateToTranslationFileAdapter:
                 msgset.sequence = row.sequence
                 msgset.obsolete = False
 
-            # Because of the way the database view works, message IDs will appear
-            # multiple times. We see how many we've added already to check whether
-            # the message ID/translation in the current row are ones we need to add.
+            # Because of the way the database view works, message IDs will
+            # appear multiple times. We see how many we've added already to
+            # check whether the message ID/translation in the current row are
+            # ones we need to add.
             if (row.pluralform == TranslationConstants.SINGULAR_FORM and
                 msgset.msgid is None):
                 msgset.msgid = row.msgid
@@ -999,9 +996,10 @@ class POTemplateToTranslationFileAdapter:
                 msgset.msgid_plural = row.msgid
             else:
                 assert row.msgidpluralform in (
-                        TranslationConstants.SINGULAR_FORM,
-                        TranslationConstants.PLURAL_FORM), (
-                    'msgid plural form is not valid!')
+                    TranslationConstants.SINGULAR_FORM,
+                    TranslationConstants.PLURAL_FORM), (
+                        'msgid plural form is not valid: %s.' %
+                            row.msgidpluralform)
 
             if row.context is not None and msgset.context is None:
                 msgset.context = row.context
