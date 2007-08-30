@@ -566,6 +566,12 @@ k            </description>
               page.
           </description>
         </key>
+        <key name="search_comments" datatype="boolean" required="no"
+             default="no">
+          <description>
+            Whether comments should be searched when searching bugs.
+          </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="shipit" extends="database_options">
@@ -970,13 +976,14 @@ k            </description>
     </sectiontype>
 
     <sectiontype name="personalpackagearchive">
-        <key name="root" datatype="string" required="yes">
+        <key name="root" datatype="string" required="no"
+             default="/var/tmp/ppa">
             <description>
                 Directory to be created to store PPAs.
             </description>
         </key>
         <key name="base_url" datatype="string" required="no"
-             default="http://ppa.launchpad.dev">
+             default="http://ppa.launchpad.net">
             <description>
                 External base URL for PPAs.
             </description>
@@ -991,7 +998,7 @@ k            </description>
             </description>
         </key>
         <key name="base_url" datatype="string" required="no"
-            default="http://launchpad.dev">
+            default="http://archive.launchpad.net">
             <description>
                 External base URL for distribution archives.
             </description>

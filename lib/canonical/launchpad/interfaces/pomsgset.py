@@ -157,9 +157,10 @@ class IPOMsgSet(Interface):
         """List of suggestions for given pluralform.
 
         A suggestion is a POSubmission for another POMsgSet in the same
-        language, whose potmsgset shares the same primemsgid as self's.  In
+        language, whose potmsgset shares the same primemsgid as self's, but
+        which offers a translation that's not already selected for self.  In
         less formal terms, a suggestion is an existing translation that is
-        likely to be a useful translation for self as well.
+        likely to be a useful translation for self.
         """
 
     def getNewSubmissions(pluralfom):

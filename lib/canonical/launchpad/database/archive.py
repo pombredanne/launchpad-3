@@ -275,13 +275,13 @@ class ArchiveSet:
         return Archive(owner=owner, distribution=distribution,
                        description=description, purpose=purpose)
 
-    def ensure(self, owner, distribution, purpose):
+    def ensure(self, owner, distribution, purpose, description=None):
         """See `IArchiveSet`."""
         if owner is not None:
             archive = owner.archive
             if archive is None:
                 archive = self.new(distribution=distribution, purpose=purpose,
-                                   owner=owner)
+                                   owner=owner, description=description)
         else:
             archive = self.getByDistroPurpose(distribution, purpose)
             if archive is None:
