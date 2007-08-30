@@ -20,6 +20,7 @@ __all__ = [
     'IBranchBatchNavigator',
     'IBranchLifecycleFilter',
     'UICreatableBranchType',
+    'UnknownBranchTypeError'
     ]
 
 from zope.interface import Interface, Attribute
@@ -151,6 +152,10 @@ class BranchCreationException(Exception):
 
 class CannotDeleteBranch(Exception):
     """The branch cannot be deleted at this time."""
+
+
+class UnknownBranchTypeError(Exception):
+    """Raised when the user specifies an unrecognized branch type."""
 
 
 class BranchCreationForbidden(BranchCreationException):
@@ -507,6 +512,9 @@ class IBranch(IHasOwner):
                the corresponding BranchRevision rows for this branch.
         """
 
+    def getPullURL():
+        """Return the URL used to pull the branch into the mirror area."""
+
     def requestMirror():
         """Request that this branch be mirrored on the next run of the branch
         puller.
@@ -807,17 +815,11 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
-    def getHostedPullQueue():
-        """Return the queue of hosted branches to mirror using the puller."""
+    def getPullQueue(branch_type):
+        """Return a queue of branches to mirror using the puller.
 
-    def getMirroredPullQueue():
-        """Return the queue of mirrored branches to mirror using the puller."""
-
-    def getImportedPullQueue():
-        """Return the queue of imported branches to mirror using the puller."""
-
-    def getPullQueue():
-        """Return the entire queue of branches to mirror using the puller."""
+        :param branch_type: A value from the `BranchType` enum.
+        """
 
 
 class IBranchDelta(Interface):

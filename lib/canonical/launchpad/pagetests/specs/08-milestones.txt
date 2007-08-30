@@ -1,9 +1,17 @@
 Specifications and Milestones
 =============================
 
-In terms of project management, lets go ahead and target one of these specs
-to the 1.0 milestone of Mozilla. We'll use the "canvas" spec. First we
-ensure we can see the page for milestone targeting.
+Let's target a blueprint to the 1.0 milestone of Mozilla. Before we do this,
+the milestone page lists one feature targeted already, and no bugs:
+
+    >>> admin_browser.open('http://launchpad.dev/firefox/+milestone/1.0')
+    >>> content = find_main_content(admin_browser.contents)
+    >>> for heading in content.findAll('h3'):
+    ...     print extract_text(heading)
+    1 blueprint targeted
+
+We'll target the "canvas" blueprint. Each blueprint has a separate page for
+milestone targeting.
 
   >>> admin_browser.open(
   ...     'http://blueprints.launchpad.dev/firefox/+spec/canvas')
@@ -40,12 +48,9 @@ Now, we should see the spec on the Mozilla Milestone 1.0 page.
   >>> admin_browser.getLink('Support <canvas> Objects').url
   'http://blueprints.launchpad.dev/firefox/+spec/canvas'
 
-The page also includes text that says how many specifications are
-targeted to the milestone. Note that the text says "specifications"
-below -- the code pluralizes correctly.
+The count of targeted features has also updated.
 
-  >>> print find_tag_by_id(admin_browser.contents, 'specification-count')
-  <div id="specification-count"...
-  ... specifications listed
-  </div>
-
+    >>> content = find_main_content(admin_browser.contents)
+    >>> for heading in content.findAll('h3'):
+    ...     print extract_text(heading)
+    2 blueprints targeted
