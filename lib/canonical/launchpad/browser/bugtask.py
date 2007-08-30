@@ -1496,6 +1496,13 @@ class BugTaskSearchListingView(LaunchpadFormView):
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)
 
+    def setUpWidgets(self):
+        """Customize the onKeyPress event of the assignee chooser."""
+        LaunchpadFormView.setUpWidgets(self)
+
+        self.widgets["assignee"].onKeyPress = (
+            "selectWidget('assignee_option', event)")
+
     def validate(self, data):
         """Validates the form."""
         self.validateVocabulariesAdvancedForm()
