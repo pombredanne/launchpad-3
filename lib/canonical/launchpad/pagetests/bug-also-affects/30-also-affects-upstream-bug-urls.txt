@@ -2,12 +2,11 @@ When adding a bug watch together with a new bugtask, you have to enter
 the URL of the remote bug.
 
     >>> user_browser.open(
-    ...    'http://launchpad.dev/firefox/+bug/4/+choose-affected-product')
+    ...    'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product')
     >>> user_browser.getControl('Project').value = 'gnome-terminal'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/4/+add-affected-product?field.product=gnome-terminal'
-
+    'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
 
     >>> user_browser.getControl('URL').value = (
     ...     u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=42')
@@ -24,11 +23,11 @@ It's possible to supply an HTTPS URL, even though the bug tracker's
 base URL is HTTP.
 
     >>> user_browser.open(
-    ...  'http://launchpad.dev/firefox/+bug/4/+choose-affected-product')
+    ...  'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product')
     >>> user_browser.getControl('Project').value = 'netapplet'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/4/+add-affected-product?field.product=netapplet'
+    'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
 
     >>> user_browser.getControl('URL').value = (
     ...     u'https://bugzilla.gnome.org/bugs/show_bug.cgi?id=84')
@@ -49,16 +48,16 @@ If the URL can't be recognised (i.e., we don't even know what bug
 tracker type it is), an error message is displayed.
 
     >>> user_browser.open(
-    ...    'http://launchpad.dev/firefox/+bug/4/+choose-affected-product')
+    ...    'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product')
     >>> user_browser.getControl('Project').value = 'alsa-utils'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/4/+add-affected-product?field.product=alsa-utils'
+    'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
 
     >>> user_browser.getControl('URL').value = u'http://bugs.unknown/42'
     >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/4/+add-affected-product'
+    'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
 
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
@@ -71,11 +70,11 @@ registered in Launchpad, the user will be prompted to register it first.
     >>> user_browser.getControl('URL').value = u"http://new.trac/ticket/42"
     >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/4/+add-affected-product'
+    'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
 
-    >>> print get_feedback_messages(user_browser)
-    [u'The bugtracker with the given URL is not registered in Launchpad.
-     Would you like to register it now?']
+    >>> print get_feedback_messages(user_browser)[0]
+    The bugtracker with the given URL is not registered in Launchpad.
+    Would you like to register it now?
 
 Now the user confirms he wants us to register the bug tracker for him and we
 do that before creating the new bug watch.

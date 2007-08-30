@@ -264,6 +264,8 @@ bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 bugtask_choose_affected_product = LaunchbagBugID(
     'Bug #%d - Record as affecting another project')
 
+bugtask_confirm_bugtracker_creation = "XXX: FIXME"
+
 bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()
