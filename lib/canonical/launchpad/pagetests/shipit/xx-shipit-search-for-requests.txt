@@ -2,7 +2,7 @@
 
 Let's have a look at the requests that are still pending approval.
 
-    >>> browser.addHeader('Authorization', 'Basic marilize@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic marilize@hbd.com:test')
     >>> browser.open('http://shipit.ubuntu.dev/requests')
     >>> browser.getControl(name='statusfilter').value = ['PENDING']
     >>> browser.getControl('Show').click()
@@ -79,6 +79,16 @@ recipient and the date of request.
     17  James Blackwell...      approved (sent for shipping on 2006-04-01)
     ...
     1 ... of ...
+
+The values we specified are preserved, in case we want to do another search
+or review the values we used.
+
+    >>> browser.getControl(name='statusfilter').value
+    ['all']
+    >>> browser.getControl(name='recipient_text').value
+    ''
+    >>> browser.getControl(name='orderby').value
+    ['-highpriority']
 
 Are those at the top really high priority requests? Let's check.
 
