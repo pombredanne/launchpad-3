@@ -1,6 +1,6 @@
 = ExternalBugTracker: Roundup =
 
-This covers the implementation of the ExternalBugTracker class for Trac
+This covers the implementation of the ExternalBugTracker class for Roundup
 bugwatches.
 
 
