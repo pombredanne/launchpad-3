@@ -1,0 +1,34 @@
+= Bug branch links =
+
+It is possible to link bugs and branches from both the bug page and the branch
+page.
+
+
+== From the branch page ==
+
+There is an action link to "Link to bug report" that is visible to any
+logged in user.
+
+    >>> anon_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> anon_browser.getLink('Link to bug report')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> user_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> user_browser.getLink('Link to bug report').click()
+    >>> print user_browser.title
+    Link
+
+When linking from a branch to a bug, the bug widget is used.  This
+requires the user to enter a bug number.
+
+    >>> user_browser.getControl('The bug that is linked to.').value = 10
+    >>> user_browser.getControl('Link').click()
+
+
+    >>> for message in get_feedback_messages(user_browser):
+    ...     print message
+

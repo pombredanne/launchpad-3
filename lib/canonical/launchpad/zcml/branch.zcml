@@ -153,6 +153,14 @@
       template="../templates/branch-register-merge-proposal.pt" />
 
   <browser:page
+    name="+linkbug"
+    for="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchLinkToBugView"
+    facet="branches"
+    permission="launchpad.AnyPerson"
+    template="../templates/branch-link-to-bug.pt" />
+
+  <browser:page
     name="+addsubscriber"
     for="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchSubscriptionAddOtherView"

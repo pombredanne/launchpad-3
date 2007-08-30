@@ -368,7 +368,7 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+supersede', text, icon='edit')
 
     def linkbug(self):
-        text = 'Link to bug'
+        text = 'Link to bug report'
         return Link('+linkbug', text, icon='add')
 
     def unlinkbug(self):
