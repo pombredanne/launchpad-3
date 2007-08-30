@@ -132,7 +132,7 @@ pull_branches: bzr_version_info
 	$(PYTHON) cronscripts/supermirror-pull.py upload
 
 rewritemap:
-	# Build to rewrite map that maps friendly branch names to IDs. Necessary
+	# Build rewrite map that maps friendly branch names to IDs. Necessary
 	# for http access to branches and for the branch scanner.
 	mkdir -p /var/tmp/sm-ng/config
 	$(PYTHON) cronscripts/supermirror_rewritemap.py /var/tmp/sm-ng/config/launchpad-lookup.txt
