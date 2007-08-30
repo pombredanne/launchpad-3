@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Message related view classes."""
 
 __metaclass__ = type
@@ -10,7 +10,6 @@ from zope.interface import providedBy
 
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.interfaces import ITicket
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -30,17 +29,6 @@ class MessageAddView(SQLObjectAddView):
             self.context, providing=providedBy(self.context))
         msg = self.context.newMessage(owner=owner,
             subject=subject, content=content)
-        #XXX: The part the does specific things when the context is
-        #     ITicket shouldn't be here. I'll refactor TicketView later
-        #     to handle the adding of comments instead.
-        #     -- Bjorn Tillenius, 2005-11-22
-        if ITicket.providedBy(self.context):
-            resolved = kw.get('resolved', None)
-            if resolved and owner == self.context.owner:
-                self.context.acceptAnswer(owner)
-            notify(SQLObjectModifiedEvent(
-                self.context, unmodified_context,
-                edited_fields=['messages', 'status']))
         self._nextURL = canonical_url(self.context)
 
         return msg

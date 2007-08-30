@@ -16,24 +16,18 @@ import re
 import tarfile
 import warnings
 from StringIO import StringIO
-from math import ceil
-from xml.sax.saxutils import escape as xml_escape
 from difflib import unified_diff
 import sha
 
 from zope.component import getUtility
-from zope.interface import providedBy
-from zope.security.management import checkPermission as zcheckPermission
-from zope.app.security.permission import (
-    checkPermission as check_permission_is_registered)
 
 import canonical
 from canonical.lp.dbschema import (
     SourcePackageFileType, BinaryPackageFormat, BinaryPackageFileType)
 from canonical.launchpad.interfaces import (
     ILaunchBag, IRequestPreferredLanguages,
-    IRequestLocalLanguages, ITeam, TranslationConstants)
-from canonical.launchpad.components.poparser import POParser
+    IRequestLocalLanguages, ITeam)
+from canonical.launchpad.translationformat.gettext_po_parser import POParser
 
 
 def text_replaced(text, replacements, _cache={}):
@@ -97,9 +91,6 @@ def backslashreplace(str):
     xNN or uNNNN. Used to test data containing typographical quotes etc.
     """
     return str.decode('UTF-8').encode('ASCII', 'backslashreplace')
-
-
-CHARACTERS_PER_LINE = 50
 
 
 def join_lines(*lines):
@@ -219,10 +210,10 @@ def contactEmailAddresses(person):
     """
     emails = set()
     if person.preferredemail is not None:
-        # XXX: This str() call can be removed as soon as Andrew lands his
+        # XXX: Guilherme Salgado 2006-04-20:
+        # This str() call can be removed as soon as Andrew lands his
         # unicode-simple-sendmail branch, because that will make
         # simple_sendmail handle unicode email addresses.
-        # Guilherme Salgado, 2006-04-20
         emails.add(str(person.preferredemail.email))
         return emails
 
@@ -296,7 +287,11 @@ def validate_translation(original, translation, flags):
     msg.check_format()
 
 
-def shortlist(sequence, longest_expected=15):
+class ShortListTimeoutError(Exception):
+    """This error is raised when the shortlist hardlimit is reached"""
+
+
+def shortlist(sequence, longest_expected=15, hardlimit=None):
     """Return a listified version of sequence.
 
     If <sequence> has more than <longest_expected> items, a warning is issued.
@@ -309,36 +304,38 @@ def shortlist(sequence, longest_expected=15):
         ...
     UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 3 items.
 
+    >>> shortlist([1, 2, 3, 4], hardlimit=2)
+    Traceback (most recent call last):
+        ...
+    ShortListTimeoutError: Hard limit of 2 exceeded.  There were 4 items.
+
+    >>> shortlist([1, 2, 3, 4], 2, hardlimit=4)
+    Traceback (most recent call last):
+        ...
+    UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 4 items.
 
     """
     L = list(sequence)
-    if len(L) > longest_expected:
+    size = len(L)
+    if hardlimit and size > hardlimit:
+        msg = 'Hard limit of %d exceeded.  There were %d items.'
+        raise ShortListTimeoutError(msg % (hardlimit, size))
+    if size > longest_expected:
         warnings.warn(
             "shortlist() should not be used here. It's meant to listify"
             " sequences with no more than %d items.  There were %s items." %
-              (longest_expected, len(L)),
+              (longest_expected, size),
               stacklevel=2)
     return L
 
 
-def count_lines(text):
-    '''Count the number of physical lines in a string. This is always at least
-    as large as the number of logical lines in a string.
+def preferred_or_request_languages(request):
+    '''Turn a request into a list of languages to show.
+
+    Return Person.languages when the user has preferred languages.
+    Otherwise, return the languages from the request either from the
+    headers or from the IP address.
     '''
-
-    count = 0
-
-    for line in text.split('\n'):
-        if len(line) == 0:
-            count += 1
-        else:
-            count += int(ceil(float(len(line)) / CHARACTERS_PER_LINE))
-
-    return count
-
-
-def request_languages(request):
-    '''Turn a request into a list of languages to show.'''
     user = getUtility(ILaunchBag).user
     if user is not None and user.languages:
         return user.languages
@@ -352,207 +349,25 @@ def request_languages(request):
     return languages
 
 
-class UnrecognisedCFormatString(ValueError):
-    """Exception raised when a string containing C format sequences can't be
-    parsed."""
+def is_english_variant(language):
+    """Return whether the language is a variant of modern English .
 
-
-def parse_cformat_string(string):
-    """Parse a printf()-style format string into a sequence of interpolations
-    and non-interpolations."""
-
-    # The sequence '%%' is not counted as an interpolation. Perhaps splitting
-    # into 'special' and 'non-special' sequences would be better.
-
-    # This function works on the basis that s can be one of three things: an
-    # empty string, a string beginning with a sequence containing no
-    # interpolations, or a string beginning with an interpolation.
-
-    segments = []
-    end = string
-    plain_re = re.compile('(%%|[^%])+')
-    interpolation_re = re.compile('%[^diouxXeEfFgGcspmn]*[diouxXeEfFgGcspmn]')
-
-    while end:
-        # Check for a interpolation-less prefix.
-
-        match = plain_re.match(end)
-
-        if match:
-            segment = match.group(0)
-            segments.append(('string', segment))
-            end = end[len(segment):]
-            continue
-
-        # Check for an interpolation sequence at the beginning.
-
-        match = interpolation_re.match(end)
-
-        if match:
-            segment = match.group(0)
-            segments.append(('interpolation', segment))
-            end = end[len(segment):]
-            continue
-
-        # Give up.
-
-        raise UnrecognisedCFormatString(string)
-
-    return segments
-
-
-def convert_newlines_to_web_form(unicode_text):
-    r"""Convert an Unicode text from any newline style to the one used on web
-    forms, that's the Windows style ('\r\n').
-
-    >>> convert_newlines_to_web_form(u'foo')
-    u'foo'
-    >>> convert_newlines_to_web_form(u'foo\n')
-    u'foo\r\n'
-    >>> convert_newlines_to_web_form(u'foo\nbar\n\nbaz')
-    u'foo\r\nbar\r\n\r\nbaz'
-    >>> convert_newlines_to_web_form(u'foo\r\nbar')
-    u'foo\r\nbar'
-    >>> convert_newlines_to_web_form(u'foo\rbar')
-    u'foo\r\nbar'
+    >>> class Language:
+    ...     def __init__(self, code):
+    ...         self.code = code
+    >>> is_english_variant(Language('fr'))
+    False
+    >>> is_english_variant(Language('en'))
+    False
+    >>> is_english_variant(Language('en_CA'))
+    True
+    >>> is_english_variant(Language('enm'))
+    False
     """
-    assert isinstance(unicode_text, unicode), (
-        "The given text must be unicode instead of %s" % type(unicode_text))
-
-    if unicode_text is None:
-        return None
-    elif u'\r\n' in unicode_text:
-        # The text is already using the windows newline chars
-        return unicode_text
-    elif u'\n' in unicode_text:
-        return text_replaced(unicode_text, {u'\n': u'\r\n'})
-    else:
-        return text_replaced(unicode_text, {u'\r': u'\r\n'})
-
-
-def contract_rosetta_tabs(text):
-    r"""Replace Rosetta representation of tab characters with their native form.
-
-    Normal strings get passed through unmolested.
-
-    >>> contract_rosetta_tabs('foo')
-    'foo'
-    >>> contract_rosetta_tabs('foo\\nbar')
-    'foo\\nbar'
-
-    The string '[tab]' gets gonveted to a tab character.
-
-    >>> contract_rosetta_tabs('foo[tab]bar')
-    'foo\tbar'
-
-    The string '\[tab]' gets converted to a literal '[tab]'.
-
-    >>> contract_rosetta_tabs('foo\\[tab]bar')
-    'foo[tab]bar'
-
-    The string '\\[tab]' gets converted to a literal '\[tab]'.
-
-    >>> contract_rosetta_tabs('foo\\\\[tab]bar')
-    'foo\\[tab]bar'
-
-    And so on...
-
-    >>> contract_rosetta_tabs('foo\\\\\\[tab]bar')
-    'foo\\\\[tab]bar'
-    """
-    return text_replaced(text, {'[tab]': '\t', r'\[tab]': '[tab]'})
-
-
-def expand_rosetta_tabs(unicode_text):
-    r"""Replace tabs with their Rosetta representation.
-
-    Normal strings get passed through unmolested.
-
-    >>> expand_rosetta_tabs(u'foo')
-    u'foo'
-    >>> expand_rosetta_tabs(u'foo\\nbar')
-    u'foo\\nbar'
-
-    Tabs get converted to u'[tab]'.
-
-    >>> expand_rosetta_tabs(u'foo\tbar')
-    u'foo[tab]bar'
-
-    Literal occurrences of u'[tab]' get escaped.
-
-    >>> expand_rosetta_tabs(u'foo[tab]bar')
-    u'foo\\[tab]bar'
-
-    Escaped ocurrences themselves get escaped.
-
-    >>> expand_rosetta_tabs(u'foo\\[tab]bar')
-    u'foo\\\\[tab]bar'
-
-    And so on...
-
-    >>> expand_rosetta_tabs(u'foo\\\\[tab]bar')
-    u'foo\\\\\\[tab]bar'
-    """
-    return text_replaced(unicode_text, {u'\t': u'[tab]', u'[tab]': ur'\[tab]'})
-
-
-def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
-               newline=TranslationConstants.NEWLINE_CHAR):
-    """Convert a message ID to a HTML representation."""
-
-    lines = []
-
-    # Replace leading and trailing spaces on each line with special markup.
-
-    for line in xml_escape(text).split('\n'):
-        # Pattern:
-        # - group 1: zero or more spaces: leading whitespace
-        # - group 2: zero or more groups of (zero or
-        #   more spaces followed by one or more non-spaces): maximal string
-        #   which doesn't begin or end with whitespace
-        # - group 3: zero or more spaces: trailing whitespace
-        match = re.match('^( *)((?: *[^ ]+)*)( *)$', line)
-
-        if match:
-            lines.append(
-                space * len(match.group(1)) +
-                match.group(2) +
-                space * len(match.group(3)))
-        else:
-            raise AssertionError(
-                "A regular expression that should always match didn't.")
-
-    if 'c-format' in flags:
-        # Replace c-format sequences with marked-up versions. If there is a
-        # problem parsing the c-format sequences on a particular line, that
-        # line is left unformatted.
-
-        for i in range(len(lines)):
-            formatted_line = ''
-
-            try:
-                segments = parse_cformat_string(lines[i])
-            except UnrecognisedCFormatString:
-                continue
-
-            for segment in segments:
-                type, content = segment
-
-                if type == 'interpolation':
-                    formatted_line += ('<code>%s</code>' % content)
-                elif type == 'string':
-                    formatted_line += content
-
-            lines[i] = formatted_line
-
-    # Replace newlines and tabs with their respective representations.
-
-    html = expand_rosetta_tabs(newline.join(lines))
-    html = text_replaced(html, {
-        '[tab]': TranslationConstants.TAB_CHAR,
-        r'\[tab]': TranslationConstants.TAB_CHAR_ESCAPED
-        })
-    return html
+    # XXX sinzui 2007-07-12 bug=125545:
+    # We would not need to use this function so often if variant languages
+    # knew their parent language.
+    return language.code[0:3] in ['en_']
 
 
 def check_po_syntax(s):
@@ -591,19 +406,6 @@ def test_diff(lines_a, lines_b):
         tofile='actual',
         lineterm='',
         )))
-
-
-def check_permission(permission_name, context):
-    """Like zope.security.management.checkPermission, but also ensures that
-    permission_name is real permission.
-
-    Raises ValueError if the permission doesn't exist.
-    """
-    # This will raise ValueError if the permission doesn't exist.
-    check_permission_is_registered(context, permission_name)
-
-    # Now call Zope's checkPermission.
-    return zcheckPermission(permission_name, context)
 
 
 def filenameToContentType(fname):
@@ -781,3 +583,17 @@ def is_ascii_only(string):
         return False
     else:
         return True
+
+
+def truncate_text(text, max_length):
+    """Return a version of string no longer than max_length characters.
+
+    Tries not to cut off the text mid-word.
+    """
+    words = re.compile(r'\s*\S+').findall(text, 0, max_length + 1)
+    truncated = words[0]
+    for word in words[1:]:
+        if len(truncated) + len(word) > max_length:
+            break
+        truncated += word
+    return truncated[:max_length]

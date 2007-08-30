@@ -25,6 +25,9 @@ class ISelfTest(Interface):
     def hello():
         """Return a greeting to the one calling the method."""
 
+    def raise_exception():
+        """Raise an exception."""
+
 
 class SelfTest(LaunchpadXMLRPCView):
 
@@ -46,6 +49,9 @@ class SelfTest(LaunchpadXMLRPCView):
         else:
             caller_name = "Anonymous"
         return "Hello %s." % caller_name
+
+    def raise_exception(self):
+        raise RuntimeError("selftest exception")
 
 
 class IRosettaSelfTest(Interface):

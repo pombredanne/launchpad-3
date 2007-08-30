@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
 import sys
@@ -41,7 +41,8 @@ def main(argv):
     if product is None:
         parser.error('Product %s does not exist' % options.product)
 
-    export_bugtasks(ztm, product, output, include_private=include_private)
+    export_bugtasks(ztm, product, output,
+                    include_private=options.include_private)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

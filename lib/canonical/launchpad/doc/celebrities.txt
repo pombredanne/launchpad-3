@@ -53,8 +53,27 @@ tracker
   >>> celebs.sourceforge_tracker == sf_tracker
   True
 
+We have an Answer Tracker Janitor which takes care of expiring old
+questions.
+
+  >>> answer_tracker_janitor = personset.getByName('answer-tracker-janitor')
+  >>> celebs.answer_tracker_janitor == answer_tracker_janitor
+  True
+
+We also have a Team Membership Janitor, responsible for expiring memberships
+when we reach their expiry date.
+
+  >>> team_membership_janitor = personset.getByName('team-membership-janitor')
+  >>> celebs.team_membership_janitor == team_membership_janitor
+  True
+
+The Launchpad product itself.
+
+  >>> from canonical.launchpad.interfaces import IProductSet
+  >>> launchpad = getUtility(IProductSet).getByName('launchpad')
+  >>> celebs.launchpad == launchpad
+  True
+
 
   TODO: add interface verification test.
         ask debonzi to add these in general.
-
-

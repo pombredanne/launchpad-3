@@ -58,9 +58,9 @@ He can't login without first validating his email address.
   ...Confirm e-mail address...martin.pitt@canonical.com...
   ...
 
-  >>> browser.getControl('Confirm').click()
+  >>> browser.getControl('Continue').click()
   >>> browser.url
-  'http://launchpad.dev/people/martin-pitt'
+  'http://launchpad.dev/~martin-pitt'
   >>> print '\n' + browser.contents
   <BLANKLINE>
   ...informational message">Email address successfully confirmed...

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
@@ -25,11 +25,12 @@ import psycopg
 from optparse import OptionParser
 from datetime import timedelta
 
+from contrib.glock import GlobalLock, LockAlreadyAcquired
+
 from canonical.lp import initZopeless, dbschema
 from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, log)
-from canonical.launchpad.scripts.lockfile import LockFile
 
 from canonical.launchpad.scripts.gina import ExecutionError
 from canonical.launchpad.scripts.gina.katie import Katie
@@ -44,7 +45,7 @@ from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
 
 
 def _get_keyring(keyrings_root):
-    # XXX: untested
+    # XXX kiko 2005-10-23: untested
     keyrings = ""
     for keyring in os.listdir(keyrings_root):
         path = os.path.join(keyrings_root, keyring)
@@ -88,11 +89,10 @@ def main():
             if target not in possible_targets:
                 parser.error("No Gina target %s in config file" % target)
 
-    lockfile = LockFile(options.lockfile, timeout=timedelta(days=1),
-                        logger=log)
+    lockfile = GlobalLock(options.lockfile, logger=log)
     try:
         lockfile.acquire()
-    except OSError:
+    except LockAlreadyAcquired:
         log.info('Lockfile %s already locked. Exiting.', options.lockfile)
         sys.exit(1)
 
@@ -101,7 +101,7 @@ def main():
         for target in targets:
             target_sections = [section for section in config.gina.target
                                if section.getSectionName() == target]
-            # XXX: should be a proper exception -- kiko, 2005-10-18
+            # XX kiko, 2005-10-18X: should be a proper exception.
             assert len(target_sections) == 1
             run_gina(options, ztm, target_sections[0])
     finally:
@@ -112,7 +112,7 @@ def run_gina(options, ztm, target_section):
     package_root = target_section.root
     keyrings_root = target_section.keyrings
     distro = target_section.distro
-    # XXX I honestly think having a separate distrorelease section is a
+    # XXX kiko 2005-10-23: I honestly think having a separate distrorelease
     # bit silly. Can't we construct this based on `distrorelease-pocket`?
     pocket_distrorelease = target_section.pocketrelease
     distrorelease = target_section.distrorelease
@@ -314,11 +314,11 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
                 continue
 
             if COUNTDOWN and count % COUNTDOWN == 0:
-                # XXX: untested
+                # XXX kiko 2005-10-23: untested
                 log.warn('%i/%i binary packages processed' % (count, npacks))
 
         if nosource:
-            # XXX: untested
+            # XXX kiko 2005-10-23: untested
             log.warn('%i source packages not found' % len(nosource))
             for pkg in nosource:
                 log.warn(pkg)

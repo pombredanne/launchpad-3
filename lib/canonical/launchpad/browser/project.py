@@ -1,39 +1,58 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Project-related View Classes"""
 
 __metaclass__ = type
 
 __all__ = [
+    'ProjectAddProductView',
+    'ProjectAddQuestionView',
+    'ProjectAddView',
+    'ProjectBrandingView',
     'ProjectNavigation',
+    'ProjectDynMenu',
+    'ProjectEditView',
+    'ProjectReviewView',
     'ProjectSetNavigation',
-    'ProjectView',
+    'ProjectSOP',
+    'ProjectFacets',
+    'ProjectOverviewMenu',
+    'ProjectSpecificationsMenu',
+    'ProjectBountiesMenu',
+    'ProjectAnswersMenu',
+    'ProjectTranslationsMenu',
+    'ProjectSetContextMenu',
     'ProjectEditView',
     'ProjectAddProductView',
     'ProjectSetView',
-    'ProjectAddView',
     'ProjectRdfView',
     ]
 
-from urllib import quote as urlquote
-
-from zope.component import getUtility
-from zope.app.form.browser.add import AddView
-from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.app.form.browser import TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.component import getUtility
+from zope.event import notify
+from zope.formlib import form
+from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IPerson, IProject, IProjectSet, IProductSet, ICalendarOwner)
-from canonical.launchpad import helpers
-from canonical.launchpad.browser.editview import SQLObjectEditView
+    ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
+    NotFoundError)
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.browser.question import QuestionAddView
+from canonical.launchpad.browser.questiontarget import (
+    QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, ContextMenu,
-    enabled_with_permission, GetitemNavigation, LaunchpadEditFormView, Link,
-    Navigation, StandardLaunchpadFacets, structured)
+    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
+    enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
+    Navigation, StandardLaunchpadFacets, stepthrough, structured)
+from canonical.launchpad.webapp.dynmenu import DynMenu
+from canonical.launchpad.helpers import shortlist
 
 
 class ProjectNavigation(Navigation, CalendarTraversalMixin):
@@ -43,22 +62,98 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
     def breadcrumb(self):
         return self.context.displayname
 
-    def breadcrumb(self):
-        return self.context.displayname
-
     def traverse(self, name):
         return self.context.getProduct(name)
 
+    @stepthrough('+milestone')
+    def traverse_milestone(self, name):
+        return self.context.getMilestone(name)
 
-class ProjectSetNavigation(GetitemNavigation):
+
+class ProjectDynMenu(DynMenu):
+
+    menus = {
+        '': 'mainMenu',
+        'related': 'relatedMenu',
+        }
+
+    MAX_SUB_PROJECTS = 8
+
+    def relatedMenu(self):
+        """Show items related to this project.
+
+        Show a link to the project, and then
+        the contents of the project menu, excluding the current
+        product from the project's list of products.
+        """
+        yield self.makeLink(self.context.title, target=self.context)
+        for link in self.mainMenu():
+            yield link
+
+    def mainMenu(self, excludeproduct=None):
+        """List products within this project.
+
+        List up to MAX_SUB_PROJECTS products.  If there are more than that
+        number of products, list up to MAX_SUB_PROJECTS products with
+        releases, and give a link to a page showing all products.
+
+        Pass a Product instance in as 'excludeproduct' so that it will be
+        excluded from the menu.
+
+        """
+        products = shortlist(self.context.products, 25)
+        num_products = len(products)
+        if excludeproduct is None:
+            MAX_SUB_PROJECTS = self.MAX_SUB_PROJECTS
+        else:
+            MAX_SUB_PROJECTS = self.MAX_SUB_PROJECTS + 1
+        if num_products < MAX_SUB_PROJECTS:
+            for product in products:
+                if product != excludeproduct:
+                    yield self.makeBreadcrumbLink(product)
+        else:
+            # XXX: SteveAlexander 2007-03-27:
+            # Use a database API for products-with-releases that prejoins.
+            count = 0
+            for product in products:
+                if product != excludeproduct and product.releases:
+                    yield self.makeBreadcrumbLink(product)
+                    count += 1
+                    if count >= self.MAX_SUB_PROJECTS:
+                        break
+            yield self.makeLink(
+                'See all %s related projects...' % num_products)
+
+
+class ProjectSetNavigation(Navigation):
 
     usedfor = IProjectSet
 
     def breadcrumb(self):
-        return 'Projects'
+        return 'Project Groups'
 
-    def breadcrumb(self):
-        return 'Projects'
+    def traverse(self, name):
+        # Raise a 404 on an invalid project name
+        project = self.context.getByName(name)
+        if project is None:
+            raise NotFoundError(name)
+        return self.redirectSubTree(canonical_url(project))
+
+
+class ProjectSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        # XXX mpt 2006-10-04: Products, alphabetically
+        return list(self.context.products[:num])
+
+    def listAltChildren(self, num):
+        return None
 
 
 class ProjectSetContextMenu(ContextMenu):
@@ -68,20 +163,21 @@ class ProjectSetContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def register(self):
-        text = 'Register a Project'
+        text = 'Register a project group'
         return Link('+new', text, icon='add')
 
     def listall(self):
-        text = 'List All Projects'
+        text = 'List all project groups'
         return Link('+all', text, icon='list')
 
 
-class ProjectFacets(StandardLaunchpadFacets):
+class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProject."""
 
     usedfor = IProject
 
-    enable_only = ['overview', 'bugs', 'specifications']
+    enable_only = [
+        'overview', 'bugs', 'specifications', 'answers', 'translations']
 
     def calendar(self):
         target = '+calendar'
@@ -90,35 +186,88 @@ class ProjectFacets(StandardLaunchpadFacets):
         enabled = ICalendarOwner(self.context).calendar is not None
         return Link(target, text, enabled=enabled)
 
+    def bugs(self):
+        site = 'bugs'
+        text = 'Bugs'
+
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
+
+    def answers(self):
+        site = 'answers'
+        text = 'Answers'
+
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
+
+    def specifications(self):
+        site = 'blueprints'
+        text = 'Blueprints'
+
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
+
+    def translations(self):
+        site = 'translations'
+        text = 'Translations'
+
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
+
 
 class ProjectOverviewMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'overview'
-    links = ['edit', 'driver', 'reassign', 'rdf', 'changetranslators']
+    links = [
+        'edit', 'branding', 'driver', 'reassign', 'top_contributors',
+        'mentorship', 'administer', 'branch_visibility', 'rdf']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Project Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        text = 'Change branding'
+        return Link('+branding', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change Admin'
+        text = 'Change owner'
         return Link('+reassign', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def driver(self):
         text = 'Appoint driver'
-        summary = 'Someone with permission to set goals for all products'
+        summary = 'Someone with permission to set goals for all projects'
         return Link('+driver', text, summary, icon='edit')
+
+    def top_contributors(self):
+        text = 'List top contributors'
+        return Link('+topcontributors', text, icon='info')
+
+    def mentorship(self):
+        text = 'Mentoring available'
+
+        # We disable this link if the project has no products. This is for
+        # consistency with the way the overview buttons behave in the same
+        # circumstances.
+        return Link('+mentoring', text, icon='info', 
+                    enabled=self.context.hasProducts())
 
     def rdf(self):
         text = structured(
             'Download <abbr title="Resource Description Framework">'
-            'RDF</abbr> Metadata')
+            'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download')
 
-    def changetranslators(self):
-        text = 'Change Translators'
-        return Link('+changetranslators', text, icon='edit')
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+review', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def branch_visibility(self):
+        text = 'Define branch visibility'
+        return Link('+branchvisibility', text, icon='edit')
 
 
 class ProjectBountiesMenu(ApplicationMenu):
@@ -128,11 +277,11 @@ class ProjectBountiesMenu(ApplicationMenu):
     links = ['new', 'link']
 
     def new(self):
-        text = 'Register a Bounty'
+        text = 'Register a bounty'
         return Link('+addbounty', text, icon='add')
 
     def link(self):
-        text = 'Link Existing Bounty'
+        text = 'Link existing bounty'
         return Link('+linkbounty', text, icon='edit')
 
 
@@ -140,14 +289,14 @@ class ProjectSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'specifications'
-    links = ['listall', 'doc', 'roadmap', 'assignments',]
+    links = ['listall', 'doc', 'roadmap', 'assignments', 'new']
 
     def listall(self):
-        text = 'List All'
+        text = 'List all blueprints'
         return Link('+specs?show=all', text, icon='info')
 
     def doc(self):
-        text = 'Documentation'
+        text = 'List documentation'
         summary = 'Show all completed informational specifications'
         return Link('+documentation', text, summary, icon="info")
 
@@ -159,92 +308,44 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
 
+    def new(self):
+        text = 'Register a blueprint'
+        summary = 'Register a new blueprint for %s' % self.context.title
+        return Link('+addspec', text, summary, icon='add')
 
-class ProjectView(object):
+class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
+    """Menu for the answers facet of projects."""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.form = self.request.form
+    usedfor = IProject
+    facet = 'answers'
+    links = QuestionCollectionAnswersMenu.links + ['new']
 
-    #
-    # XXX: this code is broken -- see bug 47769
-    #
-    def hasProducts(self):
-        return len(list(self.context.products())) > 0
+    def new(self):
+        text = 'Ask a question'
+        return Link('+addquestion', text, icon='add')
 
-    #
-    # XXX: this code is broken -- see bug 47769
-    #
-    def productTranslationStats(self):
-        for product in self.context.products():
-            total = 0
-            currentCount = 0
-            rosettaCount = 0
-            updatesCount = 0
-            for language in helpers.request_languages(self.request):
-                total += product.messageCount()
-                currentCount += product.currentCount(language.code)
-                rosettaCount += product.rosettaCount(language.code)
-                updatesCount += product.updatesCount(language.code)
 
-            nonUpdatesCount = currentCount - updatesCount
-            translated = currentCount  + rosettaCount
-            untranslated = total - translated
-            try:
-                currentPercent = float(currentCount) / total * 100
-                rosettaPercent = float(rosettaCount) / total * 100
-                updatesPercent = float(updatesCount) / total * 100
-                nonUpdatesPercent = float (nonUpdatesCount) / total * 100
-                translatedPercent = float(translated) / total * 100
-                untranslatedPercent = float(untranslated) / total * 100
-            except ZeroDivisionError:
-                # XXX: I think we will see only this case when we don't have
-                # anything to translate.
-                currentPercent = 0
-                rosettaPercent = 0
-                updatesPercent = 0
-                nonUpdatesPercent = 0
-                translatedPercent = 0
-                untranslatedPercent = 100
+class ProjectTranslationsMenu(ApplicationMenu):
 
-            # NOTE: To get a 100% value:
-            # 1.- currentPercent + rosettaPercent + untranslatedPercent
-            # 2.- translatedPercent + untranslatedPercent
-            # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
-            # untranslatedPercent
-            retdict = {
-                'name': product.name,
-                'title': product.title,
-                'poLen': total,
-                'poCurrentCount': currentCount,
-                'poRosettaCount': rosettaCount,
-                'poUpdatesCount' : updatesCount,
-                'poNonUpdatesCount' : nonUpdatesCount,
-                'poTranslated': translated,
-                'poUntranslated': untranslated,
-                'poCurrentPercent': currentPercent,
-                'poRosettaPercent': rosettaPercent,
-                'poUpdatesPercent' : updatesPercent,
-                'poNonUpdatesPercent' : nonUpdatesPercent,
-                'poTranslatedPercent': translatedPercent,
-                'poUntranslatedPercent': untranslatedPercent,
-            }
+    usedfor = IProject
+    facet = 'translations'
+    links = ['changetranslators']
 
-            yield retdict
-
-    def languages(self):
-        return helpers.request_languages(self.request)
+    def changetranslators(self):
+        text = 'Change translators'
+        return Link('+changetranslators', text, icon='edit')
 
 
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
 
+    label = "Change project details"
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
         'homepageurl', 'bugtracker', 'sourceforgeproject',
         'freshmeatproject', 'wikiurl']
+
 
     @action('Change Details', name='change')
     def edit(self, action, data):
@@ -260,24 +361,37 @@ class ProjectEditView(LaunchpadEditFormView):
             return canonical_url(getUtility(IProjectSet))
 
 
-class ProjectAddProductView(AddView):
 
-    __used_for__ = IProject
+class ProjectReviewView(ProjectEditView):
 
-    def __init__(self, context, request):
-        self.request = request
-        self.context = context
-        AddView.__init__(self, context, request)
+    label = "Review upstream project group details"
+    field_names = ['name', 'owner', 'active', 'reviewed']
 
-    def createAndAdd(self, data):
+
+class ProjectAddProductView(LaunchpadFormView):
+
+    schema = IProduct
+    field_names = ['name', 'displayname', 'title', 'summary', 'description',
+                   'homepageurl', 'sourceforgeproject', 'freshmeatproject',
+                   'wikiurl', 'screenshotsurl', 'downloadurl',
+                   'programminglang']
+    custom_widget('homepageurl', TextWidget, displayWidth=30)
+    custom_widget('screenshotsurl', TextWidget, displayWidth=30)
+    custom_widget('wikiurl', TextWidget, displayWidth=30)
+    custom_widget('downloadurl', TextWidget, displayWidth=30)
+
+    label = "Register a new project that is part of this initiative"
+    product = None
+
+    @action(_('Add'), name='add')
+    def add_action(self, action, data):
         # add the owner information for the product
-        owner = IPerson(self.request.principal, None)
-        if not owner:
+        if not self.user:
             raise Unauthorized(
                 "Need to have an authenticated user in order to create a bug"
-                " on a product")
+                " on a project")
         # create the product
-        product = getUtility(IProductSet).createProduct(
+        self.product = getUtility(IProductSet).createProduct(
             name=data['name'],
             title=data['title'],
             summary=data['summary'],
@@ -287,33 +401,32 @@ class ProjectAddProductView(AddView):
             downloadurl=data['downloadurl'],
             screenshotsurl=data['screenshotsurl'],
             wikiurl=data['wikiurl'],
-            programminglang=data['programminglang'],
             freshmeatproject=data['freshmeatproject'],
             sourceforgeproject=data['sourceforgeproject'],
+            programminglang=data['programminglang'],
             project=self.context,
-            owner=owner)
-        notify(ObjectCreatedEvent(product))
-        return product
+            owner=self.user)
+        notify(ObjectCreatedEvent(self.product))
 
-    def nextURL(self):
-        # Always redirect to the project's page
-        return '.'
- 
+    @property
+    def next_url(self):
+        assert self.product is not None, 'No product has been created'
+        return canonical_url(self.product)
 
 
 class ProjectSetView(object):
 
-    header = "Projects registered in Launchpad"
+    header = "Project groups registered in Launchpad"
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.form = self.request.form
-        self.soyuz = self.form.get('soyuz', None)
-        self.rosetta = self.form.get('rosetta', None)
-        self.malone = self.form.get('malone', None)
-        self.bazaar = self.form.get('bazaar', None)
-        self.text = self.form.get('text', None)
+        self.form = self.request.form_ng
+        self.soyuz = self.form.getOne('soyuz', None)
+        self.rosetta = self.form.getOne('rosetta', None)
+        self.malone = self.form.getOne('malone', None)
+        self.bazaar = self.form.getOne('bazaar', None)
+        self.text = self.form.getOne('text', None)
         self.searchrequested = False
         if (self.text is not None or
             self.bazaar is not None or
@@ -340,33 +453,39 @@ class ProjectSetView(object):
         return self.results
 
 
-class ProjectAddView(AddView):
+class ProjectAddView(LaunchpadFormView):
 
-    _nextURL = '.'
+    schema = IProject
+    field_names = ['name', 'displayname', 'title', 'summary',
+                   'description', 'homepageurl',]
+    custom_widget('homepageurl', TextWidget, displayWidth=30)
+    label = _('Register a project group with Launchpad')
+    project = None
 
-    def createAndAdd(self, data):
-        """
-        Create the new Project instance if a form with details
-        was submitted.
-        """
-        owner = IPerson(self.request.principal)
-        self.name = data['name'].lower()
-
-        # Now create a new project in the db
-        project = getUtility(IProjectSet).new(
-            name=self.name,
+    @action(_('Add'), name='add')
+    def add_action(self, action, data):
+        """Create the new Project from the form details."""
+        self.project = getUtility(IProjectSet).new(
+            name=data['name'].lower().strip(),
             displayname=data['displayname'],
             title=data['title'],
             homepageurl=data['homepageurl'],
             summary=data['summary'],
             description=data['description'],
-            owner=owner)
-        notify(ObjectCreatedEvent(project))
-        self._nextURL = canonical_url(project)
-        return project
+            owner=self.user,
+            )
+        notify(ObjectCreatedEvent(self.project))
 
-    def nextURL(self):
-        return self._nextURL
+    @property
+    def next_url(self):
+        assert self.project is not None, 'No project has been created'
+        return canonical_url(self.project)
+
+
+class ProjectBrandingView(BrandingChangeView):
+
+    schema = IProject
+    field_names = ['icon', 'logo', 'mugshot']
 
 
 class ProjectRdfView(object):
@@ -394,4 +513,61 @@ class ProjectRdfView(object):
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
+
+
+class ProjectAddQuestionView(QuestionAddView):
+    """View that handles creation of a question from an IProject context."""
+
+    search_field_names = ['product'] + QuestionAddView.search_field_names
+
+    def setUpFields(self):
+        # Add a 'product' field to the beginning of the form.
+        QuestionAddView.setUpFields(self)
+        self.form_fields = self.createProductField() + self.form_fields
+        
+    def setUpWidgets(self):
+        # Only setup the widgets that needs validation
+        if not self.add_action.submitted():
+            fields = self.form_fields.select(*self.search_field_names)
+        else:
+            fields = self.form_fields
+
+        # We need to initialize the widget in two phases because
+        # the language vocabulary factory will try to access the product
+        # widget to find the final context.        
+        self.widgets = form.setUpWidgets(
+            fields.select('product'),
+            self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=False)
+        self.widgets += form.setUpWidgets(
+            fields.omit('product'),
+            self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=False)
+
+    def createProductField(self):
+        """Create a Choice field to select one of the project's products."""
+        return form.Fields(
+            Choice(
+                __name__='product', vocabulary='ProjectProducts',
+                title=_('Project'),
+                description=_(
+                    '${context} is a group of projects, which specific '
+                    'project do you have a question about?',
+                    mapping=dict(context=self.context.title)),
+                required=True),
+            render_context=self.render_context)
+
+    @property
+    def pagetitle(self):
+        """The current page title."""
+        return _('Ask a question about a project in ${project}',
+                 mapping=dict(project=self.context.displayname))
+
+    @property
+    def question_target(self):
+        """The IQuestionTarget to use is the selected product."""
+        if self.widgets['product'].hasValidInput():
+            return self.widgets['product'].getInputValue()
+        else:
+            return None
 

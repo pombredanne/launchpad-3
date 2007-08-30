@@ -5,12 +5,13 @@ __metaclass__ = type
 
 import md5
 import sha
-import urllib
-import urllib2
 import socket
-import time
 from socket import SOCK_STREAM, AF_INET
 from select import select
+import time
+import threading
+import urllib
+import urllib2
 from urlparse import urljoin
 
 from canonical.config import config
@@ -22,6 +23,12 @@ __all__ = ['FileUploadClient', 'FileDownloadClient', 'LibrarianClient']
 class FileUploadClient:
     """Simple blocking client for uploading to the librarian."""
 
+    def __init__(self):
+        # This class is registered as a utility, which means an instance of
+        # it will be shared between threads. The easiest way of making this
+        # class thread safe is by storing all state in a thread local.
+        self.state = threading.local()
+
     def _connect(self):
         """Connect this client.
         
@@ -31,24 +38,24 @@ class FileUploadClient:
         port = config.librarian.upload_port
 
         try:
-            self.s = socket.socket(AF_INET, SOCK_STREAM)
-            self.s.connect((host, port))
-            self.f = self.s.makefile('w+', 0)
+            self.state.s = socket.socket(AF_INET, SOCK_STREAM)
+            self.state.s.connect((host, port))
+            self.state.f = self.state.s.makefile('w+', 0)
         except socket.error, x:
             raise UploadFailed(str(x))
 
     def _close(self):
         """Close connection"""
-        del self.s
-        del self.f
+        del self.state.s
+        del self.state.f
 
     def _checkError(self):
-        if select([self.s], [], [], 0)[0]:
-            response = self.f.readline().strip()
+        if select([self.state.s], [], [], 0)[0]:
+            response = self.state.f.readline().strip()
             raise UploadFailed, 'Server said: ' + response
-            
+
     def _sendLine(self, line):
-        self.f.write(line + '\r\n')
+        self.state.f.write(line + '\r\n')
         self._checkError()
 
     def _sendHeader(self, name, value):
@@ -91,7 +98,7 @@ class FileUploadClient:
             # server.
             cur = cursor()
             databaseName = self._getDatabaseName(cur)
-            
+
             # Generate new content and alias IDs.
             # (we'll create rows with these IDs later, but not yet)
             cur.execute("SELECT nextval('libraryfilecontent_id_seq')")
@@ -112,7 +119,7 @@ class FileUploadClient:
 
             # Send blank line
             self._sendLine('')
-            
+
             # Prepare to the upload the file
             shaDigester = sha.sha()
             md5Digester = md5.md5()
@@ -122,18 +129,18 @@ class FileUploadClient:
             # form of iter (see
             # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42).
             for chunk in iter(lambda: file.read(1024*64), ''):
-                self.f.write(chunk)
+                self.state.f.write(chunk)
                 bytesWritten += len(chunk)
                 shaDigester.update(chunk)
                 md5Digester.update(chunk)
-            
+
             assert bytesWritten == size, (
                 'size is %d, but %d were read from the file' 
                 % (size, bytesWritten))
-            self.f.flush()
+            self.state.f.flush()
 
             # Read response
-            response = self.f.readline().strip()
+            response = self.state.f.readline().strip()
             if response != '200':
                 raise UploadFailed, 'Server said: ' + response
 
@@ -177,7 +184,7 @@ class FileUploadClient:
 
             # Send blank line
             self._sendLine('')
-            
+
             # Prepare to the upload the file
             bytesWritten = 0
 
@@ -185,16 +192,16 @@ class FileUploadClient:
             # form of iter (see
             # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42).
             for chunk in iter(lambda: file.read(1024*64), ''):
-                self.f.write(chunk)
+                self.state.f.write(chunk)
                 bytesWritten += len(chunk)
-            
+
             assert bytesWritten == size, (
                 'size is %d, but %d were read from the file' 
                 % (size, bytesWritten))
-            self.f.flush()
+            self.state.f.flush()
 
             # Read response
-            response = self.f.readline().strip()
+            response = self.state.f.readline().strip()
             if not response.startswith('200'):
                 raise UploadFailed, 'Server said: ' + response
 
@@ -209,7 +216,8 @@ class FileUploadClient:
 
 
 def quote(s):
-    # TODO: Perhaps filenames with / in them should be disallowed?
+    # XXX: Robert Collins 2004-09-21: Perhaps filenames with / in them
+    # should be disallowed?
     return urllib.quote(s).replace('/', '%2F')
 
 

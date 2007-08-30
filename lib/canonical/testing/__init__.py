@@ -8,19 +8,20 @@ __all__ = [
     'reset_logging',
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
-    'LaunchpadZopelessLayer', 'PageTestLayer',
+    'LaunchpadZopelessLayer', 'PageTestLayer', 'TwistedLayer',
+    'LaunchpadScriptLayer',
     ]
 
 import logging
 
 def reset_logging():
     """Reset the logging system back to defaults
-    
+
     Currently, defaults means 'the way the Z3 testrunner sets it up'
 
-    XXX: We need isolation enforcement so that an error will be raised and
-    the test run stop if a test fails to reset the logging system. Bug 39877
-    -- StuartBishop 20060308
+    XXX: StuartBishop 2006-03-08 bug=39877:
+    We need isolation enforcement so that an error will be raised and
+    the test run stop if a test fails to reset the logging system.
     """
     # Remove all handlers from non-root loggers, and remove the loggers too.
     loggerDict = logging.Logger.manager.loggerDict
@@ -45,11 +46,9 @@ def reset_logging():
     import zope.testing.testrunner
     zope.testing.testrunner.configure_logging()
 
+
 # Imported here to avoid circular import issues
 from canonical.testing.layers import (
     BaseLayer, DatabaseLayer, LibrarianLayer, FunctionalLayer,
     LaunchpadLayer, ZopelessLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer, PageTestLayer,
-    )
-
-
+    LaunchpadZopelessLayer, PageTestLayer, TwistedLayer, LaunchpadScriptLayer)

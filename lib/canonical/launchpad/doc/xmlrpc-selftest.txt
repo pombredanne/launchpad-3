@@ -3,7 +3,7 @@
 The Launchpad root object has a simple XMLRPC API to show that XMLRPC works.
 
     >>> from canonical.launchpad.xmlrpc import SelfTest, ISelfTest
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> selftestview = SelfTest('somecontext', 'somerequest')
     >>> verifyObject(ISelfTest, selftestview)
     True
@@ -25,6 +25,32 @@ which talks with the publisher directly.
     Traceback (most recent call last):
     ...
     Fault: <Fault 666: 'Yoghurt and spanners.'>
+
+
+== Unexpected Exceptions ==
+
+Sometimes an XML-RPC method will be buggy, and raise an exception
+other than xmlrpclib.Fault.  We have such a method on the self test
+view:
+
+    >>> selftestview.raise_exception()
+    Traceback (most recent call last):
+      ...
+    RuntimeError: selftest exception
+
+
+As with normal browser requests, we don't want to expose these error
+messages to the user since they could contain confidential
+information.  Such exceptions get converted to a fault listing the
+OOPS ID (assuming one was generated):
+
+    >>> selftest.raise_exception()
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault -1: 'OOPS-...'>
+
+
+== Authentication ==
 
     >>> selftest.hello()
     'Hello Anonymous.'

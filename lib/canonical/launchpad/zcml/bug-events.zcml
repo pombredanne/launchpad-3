@@ -44,6 +44,11 @@
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugAttachment
+        canonical.launchpad.event.interfaces.ISQLObjectDeletedEvent"
+   handler="canonical.launchpad.mailnotification.notify_bug_attachment_removed" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.IBugAttachment
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
 

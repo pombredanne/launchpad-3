@@ -1,0 +1,33 @@
+= Person Team Branches Portlet =
+
+The purpose of this portlet is to indiciate that there are teams
+that this person participates in that has branches.
+
+The portlet only appears when the persons teams actually have branches,
+and only teams that have branches are shown.
+
+None of No Privileges Person's teams have any branches, so there should
+not be a portlet there.
+
+    >>> browser.open('http://code.launchpad.dev/~no-priv')
+    >>> portlet = find_portlet(browser.contents, 'Branches for')
+    >>> print portlet
+    None
+
+Robert is a member of vcs-imports so there is one team branch there.
+
+    >>> browser.open('http://code.launchpad.dev/~lifeless')
+    >>> portlet = find_portlet(browser.contents, 'Branches for')
+    >>> print extract_text(portlet)
+    Branches for
+    VCS imports
+
+Now Foo Bar has three different teams with code.
+
+    >>> browser.open('http://code.launchpad.dev/~name16')
+    >>> portlet = find_portlet(browser.contents, 'Branches for')
+    >>> print extract_text(portlet)
+    Branches for
+    Launchpad Developers
+    Ubuntu Team
+    VCS imports

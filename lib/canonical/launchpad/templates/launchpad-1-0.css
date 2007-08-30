@@ -1,0 +1,229 @@
+/* Things browsers should do, but don't: */
+
+abbr[title], acronym[title] {
+  border-bottom: 1px dotted Black;
+  color: Black;
+  background-color: transparent;
+  cursor: help;
+}
+address {
+  font-style: inherit;
+}
+* html body {
+  word-wrap: break-word; /* stops floats dropping in IE 5.5/6 */
+}
+dd {
+  margin-bottom: 1em;
+}
+dt dfn {
+  font-style: inherit;
+  font-weight: bold;
+}
+img {
+  border: none;
+}
+kbd {
+  border: 1px solid;
+  border-color: white gray gray white;
+  color: black;
+  background-color: #ddd;
+  min-width: 1em;
+}
+label {
+  white-space: nowrap;
+}
+legend {
+  font-weight: bold;
+}
+legend legend {
+  font-weight: normal;
+}
+p { /* http://tom-lee.blogspot.com/2006/03/how-many-pixels-in-em.html */
+  max-width: 30em;
+  width: expression(document.body.clientWidth >
+    (30*((screen.deviceXDPI?screen.deviceXDPI:96)/72)) *
+    parseInt(document.body.currentStyle.fontSize)? "30em": "auto"
+  );
+}
+table {
+  border-collapse: collapse;
+}
+tr {
+  vertical-align: top;
+}
+th {
+  text-align: right;
+}
+thead {
+  vertical-align: bottom;
+}
+thead th, tr.thead th {
+  text-align: center;
+}
+.listbox { /* a scrolling list of checkboxes or radio buttons */
+  border: 1px solid #8cacbb;
+  display: inline-block;
+  max-height: 12em;
+  overflow: auto;
+  overflow: -moz-scrollbars-vertical;
+}
+.listbox label {
+  background-color: #f6f6f6;
+  border: solid white;
+  border-width: 0 0 1px 0;
+  display: block;
+}
+
+/* ------ Launchpad 1.0 design: ------ */
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+#globalheader, #logincontrol, #locationbar, #structuralobject,
+#structuralobjectchildren, #globalsearch, #immediateobjectheading, #portlets,
+#globalfooter {
+  font-family: "Trebuchet MS", sans-serif;
+}
+#globalheader, #logincontrol, #locationbar, #structuralobject, #globalfooter {
+  font-size: smaller;
+}
+#structuralobjectchildren,
+#structuralobjectchildren .primary, #structuralobjectchildren .secondary {
+  font-size: xx-small;
+  margin: 0;
+  padding: 0;
+}
+#globalheader, #globalheader :link, #globalheader :visited {
+  background-color: #666;
+  color: #fff;
+  font-weight: bold;
+  padding: 0.125em 0.5em;
+  text-align: right;
+  text-decoration: none;
+}
+#globalheader::before {
+  content: url(/@@/launchpad);
+  margin-right: 0.25em;
+  vertical-align: center;
+}
+#logincontrol {
+  float: right;
+}
+#locationbar {
+  float: left;
+}
+#structuralobject {
+  clear: both;
+  float: left;
+  width: 50%;
+  background-color: #cff;
+}
+#structuralobject img {
+  float: left;
+}
+#structuralobject .secondary, #structuralobjectchildren, #globalsearch {
+  margin-top: 16px;
+}
+.primary {
+  font-size: 1.5em;
+}
+#structuralobjectchildren, #globalsearch {
+  float: left;
+  width: 25%;
+}
+#globalsearch input[type="text"] {
+  width: 95%;
+}
+#applicationchooser {
+  clear: both;
+  text-align: right;
+}
+#pagecontent {
+  clear: both;
+}
+#portlets {
+  float: left;
+  font-size: smaller;
+  width: 25% !important;
+}
+#nonportlets {
+  clear: both;
+  float: right;
+  width: 75% !important;
+}
+.portlet {
+  border: 1px solid #ccc;
+}
+.nearby {
+  background-color: #eee;
+  clear: both;
+  margin-top: 3em;
+  padding: 0.5em 2em;
+}
+#globalfooter {
+  clear: both;
+  margin-top: 2em;
+  text-align: center;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: sans-serif;
+  font-weight: normal;
+}
+h1 {font-size: 1.5em;}
+h2 {font-size: 1.2em;}
+h3 {font-size: 1em;}
+h2 {
+  border-top: 1px dotted #ccc;
+  margin-top: 1em;
+  padding-top: 0.5em;
+}
+.portlet h2 {
+  background: #666;
+  border-top: none;
+  color: #fff;
+  font-size: 1em;
+  font-weight: bold;
+  margin-top: 0;
+  padding: 0.25em;
+}
+.portlet table, .portlet div {
+  margin: 0.25em;
+}
+
+.features h1, .features h2, .features h3 {
+  background: none;
+  color: #6f0;
+}
+
+table.summary {
+  border-collapse: collapse;
+  border: hidden;
+  float: right;
+  font-family: sans-serif;
+  font-size: smaller;
+  margin: 0 0 1em 2em;
+  width: 50%;
+}
+table.summary, table.summary :link, table.summary :visited {
+  color: #666;
+}
+table.summary tr {
+  border: 1px solid #eee;
+}
+table.summary th {
+  padding-right: 1em;
+  text-align: left;
+}
+
+ul.menu {
+  font-family: sans-serif;
+  font-size: smaller;
+}
+li.link {
+  list-style-image: url('/@@/link');
+}
+li.refer {
+  list-style-image: url('/@@/link');
+}

@@ -1,0 +1,34 @@
+= Answer Tracker FAQ Pages =
+
+    >>> from canonical.launchpad.interfaces import ILaunchBag, IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+
+    >>> login('foo.bar@canonical.com')
+    >>> foo_bar = getUtility(ILaunchBag).user
+    >>> firefox_faq = firefox.newFAQ(
+    ...     foo_bar, 'A FAQ', 'FAQ for test purpose')
+
+
+== FAQStructuralObjectPresentation ==
+
+There is an IStructuralObjectPresentation adapter available for
+IFAQ. This adapter is used to render the title appearing in
+the structuralheader area.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IStructuralObjectPresentation)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    >>> login(ANONYMOUS)
+    >>> firefox_faq_sop = IStructuralObjectPresentation(firefox_faq)
+    >>> verifyObject(
+    ...     IStructuralObjectPresentation,
+    ...     removeSecurityProxy(firefox_faq_sop))
+    True
+
+    # The returned string is an instance of zope.i18n.Message.
+    >>> import zope.i18n
+    >>> print zope.i18n.translate(
+    ...     firefox_faq_sop.getMainHeading())
+    FAQ #... in Mozilla Firefox

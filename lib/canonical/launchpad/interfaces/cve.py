@@ -106,3 +106,5 @@ class ICveSet(Interface):
         supplied sequence of bugtasks.
         """
 
+    def getBugCveCount():
+        """Return the number of CVE bug links there is in Launchpad."""

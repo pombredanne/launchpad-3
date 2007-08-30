@@ -28,7 +28,7 @@ class IPOTemplate(IRosettaStats):
         description=_("The name of this PO template, for example "
             "'evolution-2.2'. Each translation template has a "
             "unique name in its package. It's important to get this "
-            "correct, because Rosetta will recommend alternative "
+            "correct, because Launchpad will recommend alternative "
             "translations based on the name."),
         required=True,
         vocabulary="POTemplateName")
@@ -64,21 +64,21 @@ class IPOTemplate(IRosettaStats):
         title=_("Owner"),
         required=True,
         description=_(
-            "The owner of the template in Rosetta can edit the template "
+            "The owner of the template in Launchpad can edit the template "
             "and change it's status, and can also upload new versions "
             "of the template when a new release is made or when the "
             "translation strings have been changed during development."),
         vocabulary="ValidOwner")
 
     productseries = Choice(
-        title=_("Product Branch or Series"),
+        title=_("Series"),
         required=False,
         vocabulary="ProductSeries")
 
-    distrorelease = Choice(
-        title=_("Distribution Release"),
+    distroseries = Choice(
+        title=_("Series"),
         required=False,
-        vocabulary="DistroRelease")
+        vocabulary="DistroSeries")
 
     sourcepackagename = Choice(
         title=_("Source Package Name"),
@@ -118,6 +118,13 @@ class IPOTemplate(IRosettaStats):
     path = TextLine(
         title=_("Path of the template in the source tree, including filename."),
         required=False)
+
+    source_file = Attribute("Source file for this template, if needed.")
+
+    source_file_format = Choice(
+        title=_("File format for the source file"),
+        required=False,
+        vocabulary="TranslationFileFormat")
 
     priority = Int(
         title=_('Priority'),
@@ -159,7 +166,7 @@ class IPOTemplate(IRosettaStats):
 
     title = Attribute("A title for this template, generated.")
 
-    product = Attribute("The product to which this template belongs.")
+    product = Attribute("The project to which this template belongs.")
 
     distribution = Attribute("The distribution to which this template belongs.")
 
@@ -167,20 +174,17 @@ class IPOTemplate(IRosettaStats):
         "some number of translations.")
 
     translationtarget = Attribute("The object for which this template is "
-        "a translation. This will either be a SourcePackage or a Product "
+        "a translation. This will either be a SourcePackage or an upstream "
         "Series.")
 
     date_last_updated = Datetime(
             title=_('Date for last update'),
             required=True)
 
-    def __len__():
-        """Return the number of Current IPOTMsgSets in this template."""
-
     def __iter__():
         """Return an iterator over current IPOTMsgSets in this template."""
 
-    def getPOTMsgSetByMsgIDText(msgidtext, only_current=False):
+    def getPOTMsgSetByMsgIDText(msgidtext, only_current=False, context=None):
         """Return the IPOTMesgSet indexed by msgidtext from this template.
 
         If the key is a string or a unicode object, returns the
@@ -188,6 +192,9 @@ class IPOTemplate(IRosettaStats):
         with the given text.
 
         If only_current is True, then get only current message sets.
+
+        If context is not None, look for a message set with that context
+        value.
 
         If no IPOTMsgSet is found, return None.
         """
@@ -248,9 +255,9 @@ class IPOTemplate(IRosettaStats):
         Return None if there is no such POFile.
         """
 
-    def hasMessageID(msgid):
+    def hasMessageID(msgid, context=None):
         """Check whether a message set with the given message ID exists within
-        this template."""
+        this template with given context."""
 
     def hasPluralMessage():
         """Test whether this template has any message sets which are plural
@@ -289,7 +296,7 @@ class IPOTemplate(IRosettaStats):
         variant.
         """
 
-    def createMessageSetFromMessageID(msgid):
+    def createMessageSetFromMessageID(msgid, context=None):
         """Creates in the database a new message set.
 
         As a side-effect, creates a message ID sighting in the database for the
@@ -298,11 +305,12 @@ class IPOTemplate(IRosettaStats):
         Returns the newly created message set.
         """
 
-    def createMessageSetFromText(text):
+    def createMessageSetFromText(text, context=None):
         """Creates in the database a new message set.
 
         Similar to createMessageSetFromMessageID, but takes a text object
-        (unicode or string) rather than a message ID.
+        (unicode or string) along with textual context, rather than a
+        message ID.
 
         Returns the newly created message set.
         """
@@ -324,8 +332,8 @@ class IPOTemplateSubset(Interface):
     sourcepackagename = Attribute(
         "The sourcepackagename associated with this subset of POTemplates.")
 
-    distrorelease = Attribute(
-        "The distrorelease associated with this subset of POTemplates.")
+    distroseries = Attribute(
+        "The distroseries associated with this subset of POTemplates.")
 
     productseries = Attribute(
         "The productseries associated with this subset of POTemplates.")
@@ -383,24 +391,27 @@ class IPOTemplateSet(Interface):
     def __iter__():
         """Return an iterator over all PO templates."""
 
+    def getByIDs(ids):
+        """Return all PO templates with the given IDs."""
+
     def getAllByName(name):
         """Return a list with all PO templates with the given name."""
 
     def getAllOrderByDateLastUpdated():
         """Return an iterator over all POTemplate sorted by modification."""
 
-    def getSubset(distrorelease=None, sourcepackagename=None,
+    def getSubset(distroseries=None, sourcepackagename=None,
                   productseries=None):
         """Return a POTemplateSubset object depending on the given arguments.
         """
 
     def getSubsetFromImporterSourcePackageName(
-        distrorelease, sourcepackagename):
+        distroseries, sourcepackagename):
         """Return a POTemplateSubset based on the origin sourcepackagename.
         """
 
     def getPOTemplateByPathAndOrigin(path, productseries=None,
-        distrorelease=None, sourcepackagename=None):
+        distroseries=None, sourcepackagename=None):
         """Return an IPOTemplate that is stored at 'path' in source code and
            came from the given arguments.
 

@@ -9,15 +9,16 @@ Basics
 ------
 
 The class that implements EBT is called Bugzilla. It works differently
-depending on which version of Bugzilla it is talking to. If it's an
-unknown version, UnsupportedBugTrackerVersion is raised:
+depending on which version of Bugzilla it is talking to. If it's a
+version we can't parse, UnparseableBugTrackerVersion is raised:
 
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
-    >>> external_bugzilla = Bugzilla('http://foo.com/', version='2.15')
+    >>> external_bugzilla = Bugzilla('http://foo.com/', version='A.B4')
     >>> external_bugzilla.updateBugWatches([])
     Traceback (most recent call last):
       ...
-    UnsupportedBugTrackerVersion: Unsupported version '2.15' for http://foo.com
+    UnparseableBugTrackerVersion:
+    Failed to parse version 'A.B4' for http://foo.com
 
 Since we don't want to depend on a working network connection, we use a
 slightly modified implementation.
@@ -41,7 +42,7 @@ resolution, separated by a space character. The resolution only exists
 if the bug is closed:
 
     >>> external_bugzilla.convertRemoteStatus('UNCONFIRMED').title
-    'Unconfirmed'
+    'New'
     >>> external_bugzilla.convertRemoteStatus('NEW').title
     'Confirmed'
     >>> external_bugzilla.convertRemoteStatus('ASSIGNED').title
@@ -49,9 +50,9 @@ if the bug is closed:
     >>> external_bugzilla.convertRemoteStatus('REOPENED').title
     'Confirmed'
     >>> external_bugzilla.convertRemoteStatus('NEEDINFO').title
-    'Needs Info'
+    'Incomplete'
     >>> external_bugzilla.convertRemoteStatus('NEEDINFO_REPORTER').title
-    'Needs Info'
+    'Incomplete'
     >>> external_bugzilla.convertRemoteStatus('MODIFIED').title
     'Fix Committed'
     >>> external_bugzilla.convertRemoteStatus('UPSTREAM').title
@@ -60,12 +61,16 @@ if the bug is closed:
     'Fix Committed'
     >>> external_bugzilla.convertRemoteStatus('RESOLVED FIXED').title
     'Fix Released'
+    >>> external_bugzilla.convertRemoteStatus('CLOSED PATCH_ALREADY_AVAILABLE').title
+    'Fix Released'
+    >>> external_bugzilla.convertRemoteStatus('RESOLVED CODE_FIX').title
+    'Fix Released'
     >>> external_bugzilla.convertRemoteStatus('VERIFIED WONTFIX').title
-    'Rejected'
+    "Won't Fix"
     >>> external_bugzilla.convertRemoteStatus('CLOSED INVALID').title
-    'Rejected'
+    'Invalid'
 
-If the status can't be converted, Unkown is returned, and a warning
+If the status can't be converted, Unknown is returned, and a warning
 is logged.
 
     >>> external_bugzilla.convertRemoteStatus('FOO').title
@@ -188,13 +193,13 @@ the remote status hasn't changed. This can happen if we change the
 status mapping.
 
     >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> thunderbird_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> thunderbird_task.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
     >>> print thunderbird_task.status.title
     In Progress
     >>> print thunderbird_task.bugwatch.remotestatus
     ASSIGNED
-
 
 If there are two bug watches, linked to different bugs, pointing to the
 same remote bug, both will of course be updated.
@@ -213,12 +218,14 @@ same remote bug, both will of course be updated.
     >>> print bug_watch2.remotestatus
     RESOLVED FIXED
 
-
 If updateBugWatches() can't parse the XML file returned from the remote
 bug tracker, an error is logged.
 
     >>> external_bugzilla._postPage = (
     ...     lambda self, data: '<invalid xml>')
     >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
-    ERROR:...:Failed to parse XML description...
+    Traceback (most recent call last):
+    ...
+    UnparseableBugData:
+    Failed to parse XML description for https://bugzilla.mozilla.org...
 

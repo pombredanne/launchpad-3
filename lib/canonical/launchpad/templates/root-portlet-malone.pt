@@ -1,16 +1,19 @@
-<div class="portlet">
+<div class="portlet" id="portlet-bugs">
   <h2>Bug tracking</h2>
 
-  <div class="portletBody portletContent" i18n:translate="malone-blurb">
+  <div class="portletBody portletContent" i18n:translate="malone-blurb"
+      tal:define="vhosts
+        modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
     <p>
     <img alt="" src="/@@/bug" />
-    <a i18n:attributes="title" title="Malone"
-       href="malone" i18n:translate="">Malone</a> is a
+    <a i18n:attributes="title" title="Launchpad Bug Tracker"
+        tal:attributes="href vhosts/bugs/rooturl"
+        href="/bugs" i18n:translate="">Launchpad</a> is a
     <strong>collaborative bug tracker</strong> that allows the same bug to be
-    tracked in different distributions and products.
+    tracked in different projects.
     </p>
 
-    <p>You can use Malone as your primary bug tracker. It offers both web-based
+    <p>You can use Launchpad as your primary bug tracker. It offers both web-based
     and email interfaces, tagging bugs, monitoring bugs in other
     systems, <a href="http://help.launchpad.net/MaloneHighlights">and more</a>.
     </p>

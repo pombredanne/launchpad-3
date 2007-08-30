@@ -6,14 +6,17 @@ __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IShipmentSet', 'ShippingRequestPriority', 'IShipItReport',
            'IShipItReportSet', 'IShippingRequestAdmin', 'IShippingRequestEdit',
            'SOFT_MAX_SHIPPINGRUN_SIZE', 'ShipItConstants',
-           'IShippingRequestUser']
+           'IShippingRequestUser', 'MAX_CDS_FOR_UNTRUSTED_PEOPLE',
+           'ShipItDistroSeries', 'ShipItArchitecture', 'ShipItFlavour',
+           'ShippingService', 'ShippingRequestStatus']
 
 from zope.schema import Bool, Choice, Int, Datetime, TextLine
 from zope.interface import Interface, Attribute, implements
 from zope.schema.interfaces import IChoice
 from zope.app.form.browser.itemswidgets import DropdownWidget
 
-from canonical.lp.dbschema import ShipItDistroRelease, ShippingRequestStatus
+from canonical.lazr import DBEnumeratedType, DBItem
+
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.validation import (
     validate_shipit_recipientdisplayname, validate_shipit_phone,
@@ -29,6 +32,149 @@ from canonical.launchpad import _
 
 # The maximum number of requests in a single shipping run
 SOFT_MAX_SHIPPINGRUN_SIZE = 10000
+
+MAX_CDS_FOR_UNTRUSTED_PEOPLE = 5
+
+
+class ShippingRequestStatus(DBEnumeratedType):
+    """The status of a given ShippingRequest."""
+
+    PENDING = DBItem(0, """
+        Pending
+
+        The request is pending approval.
+        """)
+
+    APPROVED = DBItem(1, """
+        Approved (unshipped)
+
+        The request is approved but not yet sent to the shipping company.
+        """)
+
+    DENIED = DBItem(2, """
+        Denied
+
+        The request is denied.
+        """)
+
+    CANCELLED = DBItem(3, """
+        Cancelled
+
+        The request is cancelled.
+        """)
+
+    SHIPPED = DBItem(4, """
+        Approved (shipped)
+
+        The request was sent to the shipping company.
+        """)
+
+    PENDINGSPECIAL = DBItem(5, """
+        Pending Special Consideration
+
+        This request needs special consideration.
+        """)
+
+    DUPLICATEDADDRESS = DBItem(6, """
+        Pending Special Consideration (dupe address)
+
+        This request needs special consideration because other users already
+        requested CDs to the same address.
+        """)
+
+
+class ShippingService(DBEnumeratedType):
+    """The Shipping company we use to ship CDs."""
+
+    TNT = DBItem(1, """
+        TNT
+
+        The TNT shipping company.
+        """)
+
+    SPRING = DBItem(2, """
+        Spring
+
+        The Spring shipping company.
+        """)
+
+
+class ShipItFlavour(DBEnumeratedType):
+    """The Distro Flavour, used only to link with ShippingRequest."""
+
+    UBUNTU = DBItem(1, """
+        Ubuntu
+
+        The Ubuntu flavour.
+        """)
+
+    KUBUNTU = DBItem(2, """
+        Kubuntu
+
+        The Kubuntu flavour.
+        """)
+
+    EDUBUNTU = DBItem(3, """
+        Edubuntu
+
+        The Edubuntu flavour.
+        """)
+
+
+class ShipItArchitecture(DBEnumeratedType):
+    """The Distro Architecture, used only to link with ShippingRequest."""
+
+    X86 = DBItem(1, """
+        PC
+
+        Intel/X86 processors.
+        """)
+
+    AMD64 = DBItem(2, """
+        64-bit PC
+
+        AMD64 or EM64T based processors.
+        """)
+
+    PPC = DBItem(3, """
+        Mac
+
+        PowerPC processors.
+        """)
+
+
+class ShipItDistroSeries(DBEnumeratedType):
+    """The Distro Release, used only to link with ShippingRequest."""
+
+    BREEZY = DBItem(1, """
+        5.10 (Breezy Badger)
+
+        The Breezy Badger release.
+        """)
+
+    DAPPER = DBItem(2, """
+        6.06 LTS (Dapper Drake)
+
+        The Dapper Drake lont-term-support release.
+        """)
+
+    EDGY = DBItem(3, """
+        6.10 (Edgy Eft)
+
+        The Edgy Eft release.
+        """)
+
+    FEISTY = DBItem(4, """
+        7.04 (Feisty Fawn)
+
+        The Feisty Fawn release.
+        """)
+
+    GUTSY = DBItem(5, """
+        7.10 (Gutsy Gibbon)
+
+        The Gutsy Gibbon release.
+        """)
 
 
 def _validate_positive_int(value):
@@ -49,8 +195,8 @@ class ShipItConstants:
     ubuntu_url = 'https://shipit.ubuntu.com'
     kubuntu_url = 'https://shipit.kubuntu.com'
     edubuntu_url = 'https://shipit.edubuntu.com'
-    current_distrorelease = ShipItDistroRelease.DAPPER
-    max_size_for_auto_approval = 39
+    current_distroseries = ShipItDistroSeries.FEISTY
+    max_size_for_auto_approval = 16
 
 
 class IEmptyDefaultChoice(IChoice):
@@ -61,9 +207,9 @@ class EmptyDefaultChoice(Choice):
     implements(IEmptyDefaultChoice)
 
 
-# XXX: This sould probably be moved somewhere else, but as I need to get this
-# in production ASAP I'm leaving it here for now. -- Guilherme Salgado
-# 2005-10-03
+# XXX Guilherme Salgado 2005-10-03: 
+# This sould probably be moved somewhere else, but as I need to get this
+# in production ASAP I'm leaving it here for now.
 class EmptyDefaultDropdownWidget(DropdownWidget):
     """A dropdown widget in which the default option is one that is not part
     of its vocabulary.
@@ -80,8 +226,8 @@ class EmptyDefaultDropdownWidget(DropdownWidget):
 class IShipItCountry(Interface):
     """This schema is only to get the Country widget."""
 
-    country = EmptyDefaultChoice(title=_('Country'), required=True, 
-                     vocabulary='CountryName')
+    country = EmptyDefaultChoice(
+        title=_('Country'), required=True, vocabulary='CountryName')
 
 
 class IShippingRequest(Interface):
@@ -95,7 +241,7 @@ class IShippingRequest(Interface):
         title=_('Date of Request'), required=True, readonly=True)
 
     status = Choice(title=_('Request Status'), required=True, readonly=False,
-                    vocabulary='ShippingRequestStatus')
+                    vocabulary=ShippingRequestStatus)
 
     whoapproved = Int(
         title=_('Who Approved'), required=False, readonly=False,
@@ -163,7 +309,13 @@ class IShippingRequest(Interface):
             constraint=validate_shipit_organization,
             description=_('The Organization requesting the CDs')
             )
+    normalized_address = TextLine(
+            title=_("This request's normalized address"),
+            description=_("This request's address, city, province and "
+                          "postcode normalized and concatenated"))
 
+    distroseries = Attribute(_(
+        "The ShipItDistroSeries of the CDs contained in this request"))
     recipient_email = Attribute(_("The recipient's email address."))
     shipment = Int(title=_(
         "The request's Shipment or None if the request wasn't shipped yet."),
@@ -252,6 +404,9 @@ class IShippingRequest(Interface):
     def isAwaitingApproval():
         """Return True if this request's status is PENDING."""
 
+    def isDuplicatedAddress():
+        """Return True if this request's status is DUPLICATEDADDRESS."""
+
     def isPendingSpecial():
         """Return True if this request's status is PENDINGSPECIAL."""
 
@@ -278,6 +433,9 @@ class IShippingRequest(Interface):
         
         Only APPROVED, PENDING and PENDINGSPECIAL requests can be denied.
         """
+
+    def markAsDuplicatedAddress():
+        """Mark this request as having a duplicated address."""
 
     def markAsPendingSpecial():
         """Mark this request as pending special consideration."""
@@ -316,6 +474,16 @@ class IShippingRequest(Interface):
         quantityamd64approved, approved and whoapproved to None.
         """
 
+    def addressIsDuplicated():
+        """Return True if there is one or more requests made from another
+        user using the same address and distroseries as this one.
+        """
+
+    def getRequestsWithSameAddressFromOtherUsers():
+        """Return all non-cancelled non-denied requests with the same address
+        and distroseries as this one but with a different recipient.
+        """
+
 
 class IShippingRequestSet(Interface):
     """The set of all ShippingRequests"""
@@ -331,16 +499,16 @@ class IShippingRequestSet(Interface):
         information about what is a current request.
         """
 
-    def processRequestsPendingSpecial(status=ShippingRequestStatus.DENIED):
-        """Change the status of all PENDINGSPECIAL requests to :status.
-        
-        :status:  Must be either DENIED or APPROVED.
+    def processRequests(status, new_status):
+        """Change the status of requests with the given status to the new one.
 
         Also sends an email to the shipit admins listing all requests that
         were processed.
         """
 
-    def exportRequestsToFiles(priority, ztm):
+    def exportRequestsToFiles(
+            priority, ztm,
+            distroseries=ShipItConstants.current_distroseries):
         """Export all approved, unshipped and non-cancelled into CSV files.
 
         Group approved, unshipped and non-cancelled requests into one or more
@@ -366,7 +534,8 @@ class IShippingRequestSet(Interface):
         request listed.
         """
 
-    def getUnshippedRequestsIDs(priority):
+    def getUnshippedRequestsIDs(
+            priority, distroseries=ShipItConstants.current_distroseries):
         """Return the ID of all requests that are eligible for shipping.
 
         These are approved requests that weren't shipped yet.
@@ -378,43 +547,53 @@ class IShippingRequestSet(Interface):
         Return the default value if there's no ShippingRequest with this id.
         """
 
-    def search(status=None, flavour=None, distrorelease=None,
+    def search(status=None, flavour=None, distroseries=None,
                recipient_text=None, include_cancelled=False):
         """Search for requests that match the given arguments."""
 
-    def generateShipmentSizeBasedReport(current_release_only=False):
+    def generateShipmentSizeBasedReport(current_series_only=False):
         """Generate a csv file with the size of shipments and the number of
         shipments of that size.
 
-        If current_release_only is True, then include only requests for CDs of
-        ShipItConstants.current_distrorelease.
+        If current_series_only is True, then include only requests for CDs of
+        ShipItConstants.current_distroseries.
         """
 
-    def generateCountryBasedReport(current_release_only=False):
+    def generateCountryBasedReport(current_series_only=False):
         """Generate a csv file with statiscs about orders placed by country.
 
-        If current_release_only is True, then include only requests for CDs of
-        ShipItConstants.current_distrorelease.
+        If current_series_only is True, then include only requests for CDs of
+        ShipItConstants.current_distroseries.
         """
 
     def generateWeekBasedReport(
-            start_date, end_date, only_current_distrorelease=False):
+            start_date, end_date, only_current_distroseries=False):
         """Generate a csv file with statistics about orders placed by week.
 
-        If only_current_distrorelease is True, then the requests included will
-        be limited to those for CDs of ShipItConstants.current_distrorelease.
+        If only_current_distroseries is True, then the requests included will
+        be limited to those for CDs of ShipItConstants.current_distroseries.
 
         Only the orders placed between the first monday prior to start_date
         and the first sunday prior to end_date are considered.
+        """
+
+    def generateRequestDistributionReport():
+        """Generate a csv file with the distribution of requests and shipments.
+
+        For the current series, there will be 4 columns displaying the number
+        of requests/shipments and the number of users which had that exact
+        number of requests/shipments. The previous series we do the same but
+        for requests/shipments across all series and only include people
+        which requested the current series.
         """
 
 
 class IRequestedCDs(Interface):
 
     request = Int(title=_('The ShippingRequest'), required=True, readonly=True)
-    distrorelease = Int(title=_('Distro Release'), required=True, readonly=True)
+    distroseries = Int(title=_('Series'), required=True, readonly=True)
     flavour = Choice(title=_('Distro Flavour'), required=True, readonly=True,
-                     vocabulary='ShipItFlavour')
+                     vocabulary=ShipItFlavour)
     architecture = Int(title=_('Architecture'), required=True, readonly=True)
     quantity = Int(
         title=_('The number of CDs'), required=True, readonly=False,
@@ -433,7 +612,7 @@ class IStandardShipItRequest(Interface):
     id = Int(title=_('The unique ID'), required=True, readonly=True)
 
     flavour = Choice(title=_('Distribution Flavour'), required=True,
-                     readonly=False, vocabulary='ShipItFlavour')
+                     readonly=False, vocabulary=ShipItFlavour)
     quantityx86 = ShipItQuantity(
         title=_('PC CDs'), required=True, readonly=False,
         description=_('Number of PC CDs in this request.'),
@@ -472,11 +651,16 @@ class IStandardShipItRequestSet(Interface):
     def new(flavour, quantityx86, quantityamd64, quantityppc, isdefault):
         """Create and return a new StandardShipItRequest."""
 
-    def getAll():
-        """Return all standard ShipIt requests."""
+    def getByFlavour(flavour, user):
+        """Return the standard ShipIt requests for the given flavour and user.
 
-    def getByFlavour(flavour):
-        """Return all standard ShipIt requests for the given flavour."""
+        If the given user is trusted in Shipit, then all options of that
+        flavour are returned. Otherwise, only the options with less than
+        MAX_CDS_FOR_UNTRUSTED_PEOPLE CDs are returned.
+
+        To find out whether a user has made contributions or not, we use the
+        is_trusted_on_shipit property of IPerson.
+        """
 
     def get(id, default=None):
         """Return the StandardShipItRequest with the given id.
@@ -487,6 +671,10 @@ class IStandardShipItRequestSet(Interface):
     def getAllGroupedByFlavour():
         """Return a dictionary mapping ShipItFlavours to the 
         StandardShipItRequests of that flavour.
+
+        This is used in the admin interface to show all StandardShipItRequests
+        to the shipit admins, so it doesn't need to check whether the user is
+        trusted on shipit or not.
         """
 
     def getByNumbersOfCDs(flavour, quantityx86, quantityamd64, quantityppc):

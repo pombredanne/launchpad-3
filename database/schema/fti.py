@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 """
 Add full text indexes to the launchpad database
@@ -7,12 +7,15 @@ __metaclass__ = type
 
 import _pythonpath
 
-import sys, os.path, popen2, re
+import sys, os.path, popen2
 from optparse import OptionParser
 import psycopg
-from canonical.database.sqlbase import connect
+
 from canonical import lp
 from canonical.config import config
+from canonical.database.sqlbase import (
+        connect, READ_COMMITTED_ISOLATION, AUTOCOMMIT_ISOLATION,
+        )
 from canonical.launchpad.scripts import logger, logger_options, db_options
 
 # Defines parser and locale to use.
@@ -24,6 +27,9 @@ A, B, C, D = 'ABCD' # tsearch2 ranking constants
 
 # This data structure defines all of our full text indexes.  Each tuple in the
 # top level list creates a 'fti' column in the specified table.
+# The letters letters A-D assign a weight to the corresponding column.
+# A is most important, and D is least important. This affects result ordering
+# when you are ordering by rank.
 ALL_FTI = [
     ('bug', [
             ('name', A),
@@ -46,17 +52,32 @@ ALL_FTI = [
             ('description', B),
             ]),
 
+    ('distribution', [
+            ('name', A),
+            ('displayname', A),
+            ('title', B),
+            ('summary', C),
+            ('description', D),
+            ]),
+
     ('distributionsourcepackagecache', [
             ('name', A),
             ('binpkgnames', B),
             ('binpkgsummaries', C),
             ('binpkgdescriptions', D),
+            ('changelog', D),
             ]),
 
     ('distroreleasepackagecache', [
             ('name', A),
             ('summaries', B),
             ('descriptions', C),
+            ]),
+
+    ('faq', [
+            ('title', A),
+            ('tags', B),
+            ('content', D),
             ]),
 
     ('message', [
@@ -80,6 +101,10 @@ ALL_FTI = [
             ('description', D),
             ]),
 
+    ('productreleasefile', [
+            ('description', D),
+            ]),
+
     ('project', [
             ('name', A),
             ('displayname', A),
@@ -99,7 +124,7 @@ ALL_FTI = [
             ('whiteboard', D),
             ]),
 
-    ('ticket', [
+    ('question', [
             ('title', A),
             ('description', B),
             ('whiteboard', B),
@@ -192,6 +217,47 @@ def fti(con, table, columns, configuration=DEFAULT_CONFIG):
     con.commit()
 
 
+def nullify(con):
+    """Set all fti index columns to NULL"""
+    cur = con.cursor()
+    for table, ignored in ALL_FTI:
+        table = quote_identifier(table)
+        log.info("Removing full text index data from %s", table)
+        cur.execute("ALTER TABLE %s DISABLE TRIGGER tsvectorupdate" % table)
+        cur.execute("UPDATE %s SET fti=NULL" % table)
+        cur.execute("ALTER TABLE %s ENABLE TRIGGER tsvectorupdate" % table)
+    cur.execute("DELETE FROM FtiCache")
+    con.commit()
+
+
+def liverebuild(con):
+    """Rebuild the data in all the fti columns against possibly live database.
+    """
+    batch_size = 50 # Update maximum of this many rows per commit
+    cur = con.cursor()
+    for table, ignored in ALL_FTI:
+        table = quote_identifier(table)
+        cur.execute("SELECT max(id) FROM %s" % table)
+        max_id = cur.fetchone()[0]
+        if max_id is None:
+            log.info("No data in %s - skipping", table)
+            continue
+
+        log.info("Rebuilding fti column on %s", table)
+        for id in range(0, max_id, batch_size):
+            try:
+                query = "UPDATE %s SET fti=NULL WHERE id BETWEEN %d AND %d" % (
+                    table, id+1, id + batch_size
+                    )
+                log.debug(query)
+                cur.execute(query)
+            except psycopg.Error:
+                # No commit - we are in autocommit mode
+                log.exception('psycopg error')
+                con = connect(lp.dbuser)
+                con.set_isolation_level(AUTOCOMMIT_ISOLATION)
+
+
 def setup(con, configuration=DEFAULT_CONFIG):
     """Setup and install tsearch2 if isn't already"""
     try:
@@ -279,7 +345,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
         # Now that we have handle case sensitive booleans, convert to lowercase
         query = query.lower()
 
-        # Convert foo-bar to ((foo&bar)|foobar) and foo-bar-baz to 
+        # Convert foo-bar to ((foo&bar)|foobar) and foo-bar-baz to
         # ((foo&bar&baz)|foobarbaz)
         def hyphen_repl(match):
             bits = match.group(0).split("-")
@@ -415,7 +481,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
             return "MODIFY"
         ' LANGUAGE plpythonu
         """)
-        
+
     execute(con,
         r"COMMENT ON FUNCTION ftiupdate() IS 'Trigger function that keeps "
         r"the fti tsvector column up to date.'"
@@ -449,7 +515,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
                 )
             WHERE ts_name='default'
             """)
-    
+
     # Don't bother with this - the setting is not exported with dumps
     # or propogated  when duplicating the database. Only reliable
     # way we can use is setting search_path in postgresql.conf
@@ -507,6 +573,8 @@ def get_tsearch2_sql_path(con):
         path = os.path.join(PGSQL_BASE, '8.0', 'contrib', 'tsearch2.sql')
     elif pgversion.startswith('8.1.'):
         path = os.path.join(PGSQL_BASE, '8.1', 'contrib', 'tsearch2.sql')
+    elif pgversion.startswith('8.2.'):
+        path = os.path.join(PGSQL_BASE, '8.2', 'contrib', 'tsearch2.sql')
     elif pgversion.startswith('7.4.'):
         path = os.path.join(PGSQL_BASE, '7.4', 'contrib', 'tsearch2.sql')
         if not os.path.exists(path):
@@ -514,13 +582,13 @@ def get_tsearch2_sql_path(con):
     else:
         raise RuntimeError('Unknown version %s' % pgversion)
 
-    assert os.path.exists(path), '%s does not exist'
+    assert os.path.exists(path), '%s does not exist' % path
     return path
 
 
 def update_dicts(con):
     '''Fix paths to the stop word lists.
-    
+
     The PostgreSQL 7.4 installation had absolute paths to the stop words
     lists. This path changed with breezy. Update the paths to the
     newer relative paths.
@@ -540,14 +608,21 @@ def update_dicts(con):
 
 def main():
     con = connect(lp.dbuser)
-    setup(con)
-    if not options.setup:
-        for table, columns in ALL_FTI:
-            if needs_refresh(con, table, columns):
-                log.info("Rebuilding full text index on %s", table)
-                fti(con, table, columns)
-            else:
-                log.info("No need to rebuild full text index on %s", table)
+    if options.liverebuild:
+        con.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        liverebuild(con)
+    else:
+        con.set_isolation_level(READ_COMMITTED_ISOLATION)
+        setup(con)
+        if options.null:
+            nullify(con)
+        elif not options.setup:
+            for table, columns in ALL_FTI:
+                if needs_refresh(con, table, columns):
+                    log.info("Rebuilding full text index on %s", table)
+                    fti(con, table, columns)
+                else:
+                    log.info("No need to rebuild full text index on %s", table)
 
 
 if __name__ == '__main__':
@@ -562,10 +637,23 @@ if __name__ == '__main__':
             action="store_true", default=False,
             help="Force a rebuild of all full text indexes.",
             )
+    parser.add_option(
+            "-0", "--null", dest="null",
+            action="store_true", default=False,
+            help="Set all full text index column values to NULL.",
+            )
+    parser.add_option(
+            "-l", "--live-rebuild", dest="liverebuild",
+            action="store_true", default=False,
+            help="Rebuild all the indexes against a live database.",
+            )
     db_options(parser)
     logger_options(parser)
 
     (options, args) = parser.parse_args()
+
+    if options.setup + options.force + options.null + options.liverebuild > 1:
+        parser.error("Incompatible options")
 
     log = logger(options)
 

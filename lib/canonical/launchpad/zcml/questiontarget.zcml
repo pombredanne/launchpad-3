@@ -1,0 +1,116 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
+
+<facet facet="answers">
+
+  <!-- Because of Zope issue #754, defaultView still needs to
+       be added for specific content object that also provides
+       IQuestionCollection. -->
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IQuestionCollection"
+    layer="canonical.launchpad.layers.AnswersLayer"
+    name="+tickets"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IQuestionCollection"
+    class="canonical.launchpad.browser.SearchQuestionsView"
+    name="+questions"
+    permission="zope.Public"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IQuestionCollection"
+    name="+tickets"
+    new_name="+questions"
+    rootsite="answers"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IQuestionCollection"
+    class="canonical.launchpad.browser.QuestionCollectionOpenCountView"
+    name="+open_questions_count"
+    permission="zope.Public"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IQuestionCollection"
+    class="canonical.launchpad.browser.QuestionCollectionLatestQuestionsView"
+    name="+portlet-latestquestions"
+    permission="zope.Public"
+    template="../templates/questiontarget-portlet-latestquestions.pt"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.ISearchableByQuestionOwner"
+    class="canonical.launchpad.browser.QuestionCollectionMyQuestionsView"
+    name="+myquestions"
+    permission="launchpad.AnyPerson"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.ISearchableByQuestionOwner"
+    name="+mytickets"
+    new_name="+myquestions"
+    rootsite="answers"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.ISearchableByQuestionOwner"
+    class="canonical.launchpad.browser.QuestionCollectionNeedAttentionView"
+    name="+need-attention"
+    permission="launchpad.AnyPerson"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IQuestionTarget"
+    class="canonical.launchpad.browser.QuestionCollectionByLanguageView"
+    name="+by-language"
+    permission="launchpad.AnyPerson"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IQuestionTarget"
+    name="+unsupported"
+    new_name="+questions"
+    rootsite="answers"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IQuestionTarget"
+    name="+answer-contact"
+    permission="launchpad.AnyPerson"
+    class="canonical.launchpad.browser.ManageAnswerContactView"
+    template="../templates/questiontarget-manage-answercontacts.pt"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IQuestionTarget"
+    name="+support-contact"
+    new_name="+answer-contact"
+    rootsite="answers"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IQuestionTarget"
+    name="+portlet-answercontacts"
+    permission="zope.Public"
+    template="../templates/questiontarget-portlet-answercontacts.pt"
+    />
+  <browser:page
+    name="+addquestion"
+    for="canonical.launchpad.interfaces.IQuestionTarget"
+    class="canonical.launchpad.browser.QuestionAddView"
+    permission="launchpad.AnyPerson"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IQuestionTarget"
+    name="+addticket"
+    new_name="+addquestion"
+    rootsite="answers"
+    />
+  <browser:page
+    name="+ask-a-question-button"
+    for="canonical.launchpad.interfaces.IQuestionTarget"
+    class="canonical.launchpad.browser.AskAQuestionButtonView"
+    permission="zope.Public"
+    />
+  <browser:menus
+    module="canonical.launchpad.browser"
+    classes="QuestionCollectionAnswersMenu QuestionTargetAnswersMenu"
+    />
+
+</facet>
+
+</configure>

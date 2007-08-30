@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="malone"
 >
   <body>
@@ -24,10 +24,9 @@
     <table class="sortable listing" id="latestwatches">
       <thead>
         <tr>
-          <th>Malone bug</th>
+          <th>Launchpad bug</th>
           <th>Remote bug</th>
           <th>Status</th>
-          <th class="default-revsort">Date created</th>
         </tr>
       </thead>
 
@@ -37,7 +36,7 @@
             <img alt="" src="/@@/bug" />
             <a href="#" tal:attributes="href watch/bug/fmt:url">
               #<span tal:replace="watch/bug/id">34</span>:
-               <span tal:replace="watch/bug/title">Malone Bug Title</span>
+               <span tal:replace="watch/bug/title">Launchpad Bug Title</span>
             </a>
           </td>
           <td><a tal:content="watch/remotebug"
@@ -45,7 +44,6 @@
               </a>
           </td>
           <td tal:content="watch/remotestatus" />
-          <td tal:content="watch/datecreated/fmt:datetime" />
         </tr>
       </tbody>
     </table>
@@ -60,19 +58,18 @@
     highlights.
   </p>
 
-  <h2>Contact details</h2>
+  <h2 tal:condition="context/contactdetails">
+    Contact details
+  </h2>
 
-  <div tal:condition="not: context/contactdetails">
-    None provided.
-  </div>
   <div tal:condition="context/contactdetails"
        tal:content="context/contactdetails" >
     The contact details for the admins of this bug tracker go here, so we
     can get to them in an emergency.
   </div>
 
-  <h2>Bug watches</h2>
-  <tal:navigation tal:replace="structure view/batchnav/@@+navigation-links" />
+  <h2 tal:condition="context/watches">Bug watches</h2>
+  <tal:navigation tal:replace="structure view/batchnav/@@+navigation-links-upper" />
 
   <tal:block define="watches view/batchnav/batch"
              condition="watches">
@@ -80,6 +77,8 @@
     <metal:watches use-macro="template/macros/watchlisting" />
 
   </tal:block>
+
+  <tal:navigation tal:replace="structure view/batchnav/@@+navigation-links-lower" />
 
 </div>
 

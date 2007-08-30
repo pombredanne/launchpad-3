@@ -1,0 +1,125 @@
+ProductRelease File Download
+============================
+
+A ProductRelease can have files associated with it for one of two
+reasons.  First, a code tarball can be associated to a ProductRelease
+and it is used to create an associated branch.
+
+In another use, a product owner can associate files with a
+ProductRelease for direct download by Launchpad users.  These files
+can be installers, executables, documentation, or README files.
+
+A ProductSeries can have multiple releases.  Firefox 1.5 (a ProductSeries)
+has ProductReleases 1.5.0.1 and 1.5.0.2
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, IProductSeries, IProductSet, NotFoundError, IProjectSet)
+    >>> from canonical.database.sqlbase import flush_database_updates
+
+First, get a product that has some ProductSeries in the sample data.
+
+    >>> productset = getUtility(IProductSet)
+    >>> firefox = productset['firefox']
+
+A ProductSeries can be retrieved using the associated product and the
+series name.
+
+    >>> trunk = firefox.getSeries('trunk')
+
+Get the product releases for trunk.
+
+    >>> releases = trunk.releases
+    >>> releases.count()
+    3
+
+Find all product release files for trunk.
+    >>> files = trunk.release_files
+    >>> len(files)
+    1
+
+Pick the first release from the set.
+    >>> rel = releases[0]
+    >>> files = rel.files
+    >>> print files.count()
+    1
+
+Add a file alias to the productrelease.
+    >>> from StringIO import StringIO
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugAttachmentSet, IMessageSet, IBugMessageSet,
+    ...     ILibraryFileAliasSet)
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+
+    >>> def current_user():
+    ...     return getUtility(ILaunchBag).user
+
+    >>> login("foo.bar@canonical.com")
+    >>> file_content = 'Some useful information.'
+    >>> file_alias = getUtility(ILibraryFileAliasSet).create(
+    ...     name='foo.txt', size=len(file_content),
+    ...     file=StringIO(file_content), contentType='text/plain')
+    >>> product_release_file = rel.addFileAlias(file_alias,
+    ...     current_user(),
+    ...     description="Foo file")
+
+Ensure the description is as we set it.
+    >>> print product_release_file.description
+    Foo file
+
+And that the number of files in the ProductRelease has increased.
+    >>> print rel.files.count()
+    2
+
+And that the number of files on the series has increased
+    >>> print len(trunk.release_files)
+    2
+    
+Retrieve the alias by name.
+    >>> file_alias = rel.getFileAliasByName('foo.txt')
+    >>> print file_alias.filename
+    foo.txt
+
+Retrieve an alias that does not exist and see that an error is raised.
+    >>> file_alias = rel.getFileAliasByName('bar.txt')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'bar.txt'
+
+Delete the file alias from the ProductRelease and see the file count decrement.
+    >>> rel.deleteFileAlias(file_alias)
+    >>> print rel.files.count()
+    1
+
+Try to delete the same alias again and see that an error is raised.
+    >>> rel.deleteFileAlias(file_alias)
+    Traceback (most recent call last):
+    ...
+    NotFoundError: u'foo.txt'
+
+Attempting to delete files via a GET method are not allowed.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from zope.component import getMultiAdapter
+    >>> request = LaunchpadTestRequest(
+    ...     environ={'REQUEST_METHOD': 'GET'},
+    ...     form={'delete_files': 'Delete Files'})
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> view = getMultiAdapter((firefox,request), name='+download')
+    >>> view.initialize()
+    Traceback (most recent call last):
+     ...
+    UnsafeFormGetSubmissionError: Delete Files
+
+Determine which (series,release) pairs are associated with milestones.
+
+    >>> trunk = firefox.getSeries('trunk')
+    >>> ms = trunk.newMilestone('0.9.2')
+    >>> release = trunk.getRelease('0.9.2')
+    >>> request = LaunchpadTestRequest(
+    ...     environ={'REQUEST_METHOD': 'GET'},
+    ...     form=dict())
+    >>> view = getMultiAdapter((firefox,request), name='+download')
+    >>> view.initialize()
+    >>> print view.is_milestone(trunk, release)
+    True

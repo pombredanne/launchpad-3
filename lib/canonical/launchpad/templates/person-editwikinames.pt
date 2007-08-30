@@ -18,12 +18,8 @@
   <div metal:fill-slot="main">
 
 
-    <p
-      tal:define="feedback view/processWikiForm"
-      tal:condition="feedback" 
-      tal:content="structure feedback"
-      class="error message"
-    />
+    <p tal:condition="view/error_message" 
+      tal:content="structure view/error_message" class="error message" />
 
     <form name="edit_wikiname" action="" method="POST">
     <table>

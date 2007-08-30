@@ -65,6 +65,31 @@ them. Use IBugTrackerSet.getMostActiveBugTrackers to get this list.
      (4, u'debbugs'), (4, u'mozilla.org')]
 
 
+Getting Bug Trackers
+====================
+
+You can get a specific bug tracker from the database by querying by its
+base URL.
+
+    >>> mozilla_bugzilla = bugtracker_set.queryByBaseURL(
+    ...     u'https://bugzilla.mozilla.org/')
+    >>> mozilla_bugzilla.baseurl
+    u'https://bugzilla.mozilla.org/'
+
+It's necessary to specify the exact URL, differences in the schema
+(http vs. https) and trailing slashes are accepted.
+
+    >>> mozilla_bugzilla = bugtracker_set.queryByBaseURL(
+    ...     u'http://bugzilla.mozilla.org')
+    >>> mozilla_bugzilla.baseurl
+    u'https://bugzilla.mozilla.org/'
+
+If no bug tracker can be found None is returned.
+
+    >>> bugtracker_set.queryByBaseURL('http://no/such/bugtracker') is None
+    True
+
+
 checkwatches.py
 ===============
 

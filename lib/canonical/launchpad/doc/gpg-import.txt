@@ -7,7 +7,7 @@ check for all error conditions that we do, but we can't assume the
 keyserver is a trusted data source, so we have to do that.
 
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject 
+    >>> from canonical.launchpad.webapp.testing import verifyObject 
    
     >>> from canonical.launchpad.interfaces import (
     ...      IGPGHandler, IPymeKey)
@@ -111,6 +111,12 @@ the 40-byte fingerprint we captured above:
     >>> fingerprint = "A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
     >>> gpghandler.getURLForKeyInServer(fingerprint)
     'http://localhost:11371/pks/lookup?search=0xDFD20543&op=index'
+
+The method accepts a flag to retrieve a link to ubuntu's public
+keyserver web interface.
+
+    >>> gpghandler.getURLForKeyInServer("DFD20543", public=True)
+    'http://keyserver.ubuntu.com:11371/pks/lookup?search=0xDFD20543&op=index'
 
 
 Fingerprint sanitizing

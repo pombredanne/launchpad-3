@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
   <body>
@@ -18,32 +18,35 @@
 
     <div metal:fill-slot="main">
 
-      <div>You are translating</div>
-      <h1>
-        <tal:productseries
-          condition="exists:context/pofile/potemplate/productseries/displayname"
-          tal:replace="context/pofile/potemplate/productseries/displayname"
-        />
-        <tal:sourcepackage
-          condition="exists:context/pofile/potemplate/sourcepackagename"
-          replace="context/pofile/potemplate/sourcepackagename"
-        />
-        into
-        <tal:language replace="context/pofile/language/englishname" />
-      </h1>
-      <div class="discreet">
-        Template: <tal:template replace="context/pofile/title" />
+      <div>
+        <a tal:attributes="href context/pofile/potemplate/fmt:url"
+           tal:content="context/pofile/potemplate/title">
+          evolution 2.10 template
+        </a>
       </div>
+      <tal:form-not-writeable condition="not:view/form_is_writeable">
+        <h1>
+          Browsing
+          <tal:language replace="context/pofile/language/englishname">
+            Spanish
+          </tal:language>
+          translation
+        </h1>
+      </tal:form-not-writeable>
+      <tal:form-writeable condition="view/form_is_writeable">
+        <h1>
+          Translating into
+          <tal:language replace="context/pofile/language/englishname">
+            Spanish
+          </tal:language>
+        </h1>
+      </tal:form-writeable>
 
       <tal:havepluralforms condition="view/has_plural_form_information">
 
         <!-- Alternative suggestions. -->
         <div metal:define-macro="editform">
-          <form method="POST" action="+translate">
-            <input type="hidden" name="start" value=""
-                   tal:attributes="value view/start" />
-            <input type="hidden" name="batch" value=""
-                   tal:attributes="value view/size" />
+          <form method="get" action="+translate">
             <tal:comment replace="nothing">
               Suggestions from this alternative language will be displayed as
               well as suggestions from the translation language. In the case
@@ -53,35 +56,30 @@
             </tal:comment>
             <label>Make suggestions from:</label>
             <tal:language-widget content="structure view/alternative_language_widget" />
-            <input
-              type="submit" name='select_alternate_language' value="Change" />
+            <input type="submit" name="select_alternate_language" value="Change" />
           </form>
         </div>
 
         <!-- The translation form. -->
-        <form method="POST" action="+translate">
+        <form method="POST" action="">
           <!-- the hidden elements -->
-          <input type="hidden" name="alt"
-                 tal:condition="view/second_lang_code"
-                 tal:attributes="value view/second_lang_code" />
+          <input type="hidden" name="lock_timestamp" value=""
+                 tal:condition="view/form_is_writeable"
+                 tal:attributes="value view/lock_timestamp/isoformat" />
           <table class="listing" style="margin-top: 0.5em;">
             <thead>
               <tr class="results">
                 <td colspan="5">
                   <!-- Paging doodads. -->
-                  <tal:navigation replace="structure view/batchnav/@@+navigation-links" />
+                  <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
                 </td>
               </tr>
             </thead>
-            <tbody>
-              <tal:block define="pomsgset_view nocall:view">
-                <metal:pomsgsetview
-                  use-macro="view/@@+pomsgset-translate/pomsgset-view"
-                  />
-              </tal:block>
+            <tbody id="messages_to_translate">
+              <div tal:replace="structure view/pomsgset_view" />
             </tbody>
             <tfoot>
-              <tr>
+              <tr tal:condition="view/form_is_writeable">
                 <th colspan="5">
                   <tal:review
                     condition="not: view/user_is_official_translator"
@@ -92,14 +90,15 @@
                   <input type="submit"
                          name="submit_translations"
                          value="Save &amp; Continue"
-                         style="text-align: right;"
-                         tal:attributes="tabindex view/generateNextTabIndex" />
+                         style="text-align: right;" />
                 </th>
               </tr>
             </tfoot>
           </table>
 
         </form>
+        <!-- Paging doodads. -->
+        <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
       </tal:havepluralforms>
     </div>
 

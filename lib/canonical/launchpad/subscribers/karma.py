@@ -1,10 +1,11 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """ karma.py -- handles all karma assignments done in the launchpad
 application."""
 
-from canonical.launchpad.interfaces import IDistroBugTask, IDistroReleaseBugTask
-from canonical.launchpad.mailnotification import get_bug_delta, get_task_delta
+from canonical.launchpad.interfaces import (
+    IDistribution, IProduct, QuestionAction)
+from canonical.launchpad.mailnotification import get_bug_delta
 from canonical.lp.dbschema import BugTaskStatus
 
 
@@ -14,17 +15,24 @@ def bug_created(bug, event):
     assert len(bug.bugtasks) >= 1
     _assignKarmaUsingBugContext(event.user, bug, 'bugcreated')
 
+def _assign_karma_using_bugtask_context(person, bugtask, actionname):
+    """Extract the right context from the bugtask and assign karma."""
+    distribution = bugtask.distribution
+    if bugtask.distroseries is not None:
+        # This is a DistroSeries Task, so distribution is None and we
+        # have to get it from the distroseries.
+        distribution = bugtask.distroseries.distribution
+    product = bugtask.product
+    if bugtask.productseries is not None:
+        product = bugtask.productseries.product
+    person.assignKarma(
+        actionname, product=product, distribution=distribution,
+        sourcepackagename=bugtask.sourcepackagename)
+
 
 def bugtask_created(bugtask, event):
     """Assign karma to the user which created <bugtask>."""
-    distribution = bugtask.distribution
-    if bugtask.distrorelease is not None:
-        # This is a Distro Release Task, so distribution is None and we
-        # have to get it from the distrorelease.
-        distribution = bugtask.distrorelease.distribution
-    event.user.assignKarma(
-        'bugtaskcreated', product=bugtask.product, distribution=distribution,
-        sourcepackagename=bugtask.sourcepackagename)
+    _assign_karma_using_bugtask_context(event.user, bugtask, 'bugtaskcreated')
 
 
 def _assignKarmaUsingBugContext(person, bug, actionname):
@@ -32,16 +40,9 @@ def _assignKarmaUsingBugContext(person, bug, actionname):
     actionname to the given person.
     """
     for task in bug.bugtasks:
-        if task.status == BugTaskStatus.REJECTED:
+        if task.status == BugTaskStatus.INVALID:
             continue
-        distribution = task.distribution
-        if task.distrorelease is not None:
-            # This is a Distro Release Task, so distribution is None and we
-            # have to get it from the distrorelease.
-            distribution = task.distrorelease.distribution
-        person.assignKarma(
-            actionname, product=task.product, distribution=distribution,
-            sourcepackagename=task.sourcepackagename)
+        _assign_karma_using_bugtask_context(person, task, actionname)
 
 
 def bug_comment_added(bugmessage, event):
@@ -84,36 +85,24 @@ def extref_added(extref, event):
 def bugtask_modified(bugtask, event):
     """Check changes made to <bugtask> and assign karma to user if needed."""
     user = event.user
-    task_delta = get_task_delta(event.object_before_modification, event.object)
+    task_delta = event.object.getDelta(event.object_before_modification)
 
     assert task_delta is not None
 
-    if IDistroBugTask.providedBy(bugtask):
-        distribution = bugtask.distribution
-    elif IDistroReleaseBugTask.providedBy(bugtask):
-        distribution = bugtask.distrorelease.distribution
-    else:
-        distribution = None
-
     actionname_status_mapping = {
         BugTaskStatus.FIXRELEASED: 'bugfixed',
-        BugTaskStatus.REJECTED: 'bugrejected',
+        BugTaskStatus.INVALID: 'bugrejected',
         BugTaskStatus.CONFIRMED: 'bugaccepted'}
 
     if task_delta.status:
         new_status = task_delta.status['new']
         actionname = actionname_status_mapping.get(new_status)
         if actionname is not None:
-            user.assignKarma(
-                actionname, product=bugtask.product,
-                distribution=distribution,
-                sourcepackagename=bugtask.sourcepackagename)
+            _assign_karma_using_bugtask_context(user, bugtask, actionname)
 
     if task_delta.importance is not None:
-        user.assignKarma(
-            'bugtaskimportancechanged', product=bugtask.product,
-            distribution=distribution,
-            sourcepackagename=bugtask.sourcepackagename)
+        _assign_karma_using_bugtask_context(
+            user, bugtask, 'bugtaskimportancechanged')
 
 
 def spec_created(spec, event):
@@ -136,7 +125,7 @@ def spec_modified(spec, event):
         'specurl': 'specurlchanged',
         'priority': 'specpriority',
         'productseries': 'specseries',
-        'distrorelease': 'specrelease',
+        'distroseries': 'specseries',
         'milestone': 'specmilestone',
         }
 
@@ -147,37 +136,87 @@ def spec_modified(spec, event):
                 distribution=spec.distribution)
 
 
-def _assignKarmaUsingTicketContext(person, ticket, actionname):
+def _assignKarmaUsingQuestionContext(person, question, actionname):
     """Assign Karma with the given actionname to the given person.
 
-    Use the given ticket's context as the karma context.
+    Use the given question's context as the karma context.
     """
     person.assignKarma(
-        actionname, product=ticket.product, distribution=ticket.distribution,
-        sourcepackagename=ticket.sourcepackagename)
+        actionname, product=question.product,
+	distribution=question.distribution,
+        sourcepackagename=question.sourcepackagename)
 
 
-def ticket_modified(ticket, event):
-    """Check changes made to <ticket> and assign karma to user if needed."""
+def question_created(question, event):
+    """Assign karma to the user which created <question>."""
+    _assignKarmaUsingQuestionContext(question.owner, question, 'questionasked')
+
+
+def question_modified(question, event):
+    """Check changes made to <question> and assign karma to user if needed."""
     user = event.user
-    old_ticket = event.object_before_modification
+    old_question = event.object_before_modification
 
-    if old_ticket.description != ticket.description:
-        _assignKarmaUsingTicketContext(
-            user, ticket, 'ticketdescriptionchanged')
+    if old_question.description != question.description:
+        _assignKarmaUsingQuestionContext(
+            user, question, 'questiondescriptionchanged')
 
-    if old_ticket.title != ticket.title:
-        _assignKarmaUsingTicketContext(user, ticket, 'tickettitlechanged')
-
-
-def ticket_comment_added(ticketmessage, event):
-    """Assign karma to the user which added <ticketmessage>."""
-    ticket = ticketmessage.ticket
-    _assignKarmaUsingTicketContext(event.user, ticket, 'ticketcommentadded')
+    if old_question.title != question.title:
+        _assignKarmaUsingQuestionContext(user, question, 'questiontitlechanged')
 
 
-def ticket_bug_added(ticketbug, event):
-    """Assign karma to the user which added <ticketbug>."""
-    ticket = ticketbug.ticket
-    _assignKarmaUsingTicketContext(event.user, ticket, 'ticketlinkedtobug')
+QuestionAction2KarmaAction = {
+    QuestionAction.REQUESTINFO: 'questionrequestedinfo',
+    QuestionAction.GIVEINFO: 'questiongaveinfo',
+    QuestionAction.SETSTATUS: None,
+    QuestionAction.COMMENT: 'questioncommentadded',
+    QuestionAction.ANSWER: 'questiongaveanswer',
+    QuestionAction.CONFIRM: None, # Handled in giveAnswer() and confirmAnswer()
+    QuestionAction.EXPIRE: None,
+    QuestionAction.REJECT: 'questionrejected',
+    QuestionAction.REOPEN: 'questionreopened',
+}
 
+
+def question_comment_added(questionmessage, event):
+    """Assign karma to the user which added <questionmessage>."""
+    question = questionmessage.question
+    karma_action = QuestionAction2KarmaAction.get(questionmessage.action)
+    if karma_action:
+        _assignKarmaUsingQuestionContext(
+            questionmessage.owner, question, karma_action)
+
+
+def question_bug_added(questionbug, event):
+    """Assign karma to the user which added <questionbug>."""
+    question = questionbug.question
+    _assignKarmaUsingQuestionContext(event.user, question, 'questionlinkedtobug')
+
+# XXX flacoste 2007-07-13 bug=125849:
+# This should go away once bug #125849 is fixed.
+def get_karma_context_parameters(context):
+    """Return the proper karma context parameters based on the object."""
+    params = dict(product=None, distribution=None)
+    if IProduct.providedBy(context):
+        params['product'] = context
+    elif IDistribution.providedBy(context):
+        params['distribution'] = context
+    else:
+        raise AssertionError('Unknown karma context: %r' % context)
+    return params
+
+
+def faq_created(faq, event):
+    """Assign karma to the user who created the FAQ."""
+    context = get_karma_context_parameters(faq.target)
+    faq.owner.assignKarma('faqcreated', **context)
+
+
+def faq_edited(faq, event):
+    """Assign karma to user who edited a FAQ."""
+    user = event.user
+    old_faq = event.object_before_modification
+
+    context = get_karma_context_parameters(faq.target)
+    if old_faq.content != faq.content or old_faq.title != faq.title:
+        user.assignKarma('faqedited', **context)

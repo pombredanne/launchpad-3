@@ -1,0 +1,220 @@
+= Answer Tracker Utility: IQuestionSet =
+
+There is an IQuestionSet utility that can be use to retrieve and search
+for question whatever the target they were created in.
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import IQuestionSet
+    >>> question_set = getUtility(IQuestionSet)
+    >>> verifyObject(IQuestionSet, question_set)
+    True
+
+
+== get() ==
+
+The get() method can be used to get a question with a specific id:
+
+    >>> question_one = question_set.get(1)
+    >>> question_one.title
+    u'Firefox cannot render Bank Site'
+
+If no question exists, a default value is returned:
+
+    >>> default = object()
+    >>> question_nonexistant = question_set.get(123456, default=default)
+    >>> question_nonexistant is default
+    True
+
+If no default value is given, None is returned:
+
+    >>> question_set.get(123456) is None
+    True
+
+
+== searchQuestions() ==
+
+IQuestionSet also defines a searchQuestions() method that can be used to
+search for questions defined in any products or distributions (in fact,
+in any context that allows questions to be defined). Two search criteria
+are defined search_text and status.
+
+
+=== search_text ===
+
+The search_text parameter will limit the questions to those matching
+the query using the regular full text algorithm.
+
+    >>> for question in question_set.searchQuestions(search_text='firefox'):
+    ...     print repr(question.title), question.target.displayname
+    u'Problemas de Impress\xe3o no Firefox'        Mozilla Firefox
+    u'Firefox loses focus and gets stuck'          Mozilla Firefox
+    u'Firefox cannot render Bank Site'             Mozilla Firefox
+    u'mailto: problem in webpage'                  mozilla-firefox in ubuntu
+    u"Newly installed plug-in doesn't seem to be used" Mozilla Firefox
+    u'Problem showing the SVG demo on W3C site'    Mozilla Firefox
+    u'\u0639\u0643\u0633 ...'                      Ubuntu
+
+
+=== status ===
+
+By default, expired and invalid questions are not searched for. The
+status parameter can be used to select the questions in the status
+you are interested in.
+
+    >>> from canonical.launchpad.interfaces import QuestionStatus
+    >>> for question in question_set.searchQuestions(
+    ...     status=QuestionStatus.INVALID):
+    ...     print question.title, question.status.title, (
+    ...         question.target.displayname)
+    Firefox is slow and consumes too much RAM Invalid mozilla-firefox in ubuntu
+
+The status parameter can also take a list of statuses.
+
+    >>> for question in question_set.searchQuestions(
+    ...         status=[QuestionStatus.SOLVED, QuestionStatus.INVALID]):
+    ...     print question.title, question.status.title, (
+    ...          question.target.displayname)
+    mailto: problem in webpage                Solved mozilla-firefox in ubuntu
+    Firefox is slow and consumes too much RAM Invalid mozilla-firefox in ubuntu
+
+
+=== language ===
+
+The language parameter can be used to select only questions written in a
+particular language.
+
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> spanish = getUtility(ILanguageSet)['es']
+    >>> for t in question_set.searchQuestions(language=spanish):
+    ...     print t.title.encode('us-ascii', 'backslashreplace')
+    Problema al recompilar kernel con soporte smp (doble-n\xfacleo)
+
+=== Combination ===
+
+The returned sets of questions is the intersection of the sets delimited
+by each criteria:
+
+    >>> for question in question_set.searchQuestions(
+    ...         search_text='firefox',
+    ...         status=[QuestionStatus.OPEN, QuestionStatus.INVALID]):
+    ...     print repr(question.title), question.status.title, (
+    ...           question.target.displayname)
+    u'Problemas de Impress\xe3o no Firefox'     Open    Mozilla Firefox
+    u'Firefox is slow and consumes too much RAM' Invalid mozilla-firefox in ubuntu
+    u'Firefox loses focus and gets stuck'       Open    Mozilla Firefox
+    u'Firefox cannot render Bank Site'          Open    Mozilla Firefox
+    u'Problem showing the SVG demo on W3C site' Open    Mozilla Firefox
+    u'\u0639\u0643\u0633 ...'                   Open    Ubuntu
+
+
+=== Sort Order ===
+
+When using the search_text criteria, the default is to sort the results
+by relevancy. One can use the sort parameter to change that. It takes
+one of the constant defined in the QuestionSort enumeration.
+
+    >>> from canonical.launchpad.interfaces import QuestionSort
+    >>> for question in question_set.searchQuestions(
+    ...         search_text='firefox', sort=QuestionSort.OLDEST_FIRST):
+    ...     print question.id, repr(question.title), (
+    ...          question.target.displayname)
+    14 u'\u0639\u0643\u0633 ...'                   Ubuntu
+    1 u'Firefox cannot render Bank Site'           Mozilla Firefox
+    2 u'Problem showing the SVG demo on W3C site'  Mozilla Firefox
+    4 u'Firefox loses focus and gets stuck'        Mozilla Firefox
+    6 u"Newly installed plug-in doesn't seem to be used" Mozilla Firefox
+    9 u'mailto: problem in webpage'                mozilla-firefox in ubuntu
+    13 u'Problemas de Impress\xe3o no Firefox'     Mozilla Firefox
+
+When no text search is done, the default sort order is
+QuestionSort.NEWEST_FIRST.
+
+    >>> for question in question_set.searchQuestions(
+    ...     status=QuestionStatus.OPEN)[:5]:
+    ...     print question.id, repr(question.title), (
+    ...         question.target.displayname)
+    13 u'Problemas de Impress\xe3o no Firefox'   Mozilla Firefox
+    12 u'Problema al recompilar kernel con soporte smp (doble-n\xfacleo)' Ubuntu
+    11 u'Continue playing after shutdown'          Ubuntu
+     5 u'Installation failed'                      Ubuntu
+     4 u'Firefox loses focus and gets stuck'       Mozilla Firefox
+
+
+== getQuestionLanguages() ==
+
+The getQuestionLanguages() method returns the set of languages in which
+questions are written in Launchpad.
+
+    >>> sorted([language.code
+    ...         for language in question_set.getQuestionLanguages()])
+    [u'ar', u'en', u'es', u'pt_BR']
+
+
+== getActiveProjects() ==
+
+This method can be used to retrieve the projects that are the most
+actively using the Answer Tracker in the last 60 days. By active, we
+mean that the project is registered as officially using Answers and
+had some questions asked in the period. The projects are ordered
+by the number of questions asked during the period.
+
+Sample data should not contain any questions more recent than
+two months, so no projects are initially returned:
+
+    >>> for project in question_set.getMostActiveProjects():
+    ...     print project.displayname
+
+Create recent questions on a number of projects.
+
+    >>> from canonical.launchpad.ftests.answertracker import (
+    ...     QuestionFactory)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, ILaunchBag, IProductSet)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> landscape = getUtility(IProductSet).getByName('landscape')
+    >>> launchpad = getUtility(IProductSet).getByName('launchpad')
+
+    >>> login('no-priv@canonical.com')
+    >>> no_priv = getUtility(ILaunchBag).user
+    >>> QuestionFactory.createManyByProject([
+    ...     ('ubuntu', 3),
+    ...     ('firefox', 2),
+    ...     ('landscape', 1)])
+
+Create a question just before the time limit on Launchpad.
+
+    >>> from datetime import datetime, timedelta
+    >>> from pytz import UTC
+    >>> question = launchpad.newQuestion(
+    ...     no_priv, 'Launchpad question', 'A question',
+    ...     datecreated=datetime.now(UTC) - timedelta(days=61))
+    >>> login(ANONYMOUS)
+
+The method returns only projects which officially use the Answer
+Tracker. The order of the returned projects is based on the number of
+questions asked during the period.
+
+    >>> ubuntu.official_answers
+    True
+    >>> firefox.official_answers
+    True
+    >>> landscape.official_answers
+    False
+    >>> launchpad.official_answers
+    True
+
+    >>> for project in question_set.getMostActiveProjects():
+    ...     print project.displayname
+    Ubuntu
+    Mozilla Firefox
+
+(Launchpad is not returned because the question was not asked in
+the last 60 days.)
+
+The method accepts an optional limit parameter limiting the number of
+project returned:
+
+    >>> for project in question_set.getMostActiveProjects(limit=1):
+    ...     print project.displayname
+    Ubuntu

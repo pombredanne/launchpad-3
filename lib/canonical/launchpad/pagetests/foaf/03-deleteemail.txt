@@ -1,7 +1,7 @@
   'foo' doesn't want to use baz.foo@canonical.com on Launchpad. He removes it.
 
   >>> print http(r"""
-  ... POST /people/foo/+editemails HTTP/1.1
+  ... POST /~foo/+editemails HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... Content-Type: application/x-www-form-urlencoded
   ... 

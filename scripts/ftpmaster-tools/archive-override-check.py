@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 """Archive Override Check
 
 Given a distribution to run on, report any override inconsistence found.
@@ -36,7 +36,7 @@ def main():
     parser.add_option("-s", "--suite", action="store",
                       dest="suite", metavar="SUITE", default=None,
                       help=("Suite to consider, if not passed consider the "
-                            "currentrelease and the RELEASE pocket"))
+                            "currentseries and the RELEASE pocket"))
 
     (options, args) = parser.parse_args()
 
@@ -54,17 +54,17 @@ def main():
         try:
             distribution = getUtility(IDistributionSet)[options.distribution]
             if options.suite is None:
-                distrorelease = distribution.currentrelease
+                distroseries = distribution.currentseries
                 pocket = PackagePublishingPocket.RELEASE
             else:
-                distrorelease, pocket = distribution.getDistroReleaseAndPocket(
+                distroseries, pocket = distribution.getDistroSeriesAndPocket(
                     options.suite)
 
             log.debug("Considering: %s/%s/%s/%s."
-                      % (distribution.name, distrorelease.name, pocket.name,
-                         distrorelease.releasestatus.name))
+                      % (distribution.name, distroseries.name, pocket.name,
+                         distroseries.status.name))
 
-            checkOverrides(distrorelease, pocket, log)
+            checkOverrides(distroseries, pocket, log)
 
         except NotFoundError, info:
             log.error('Not found: %s' % info)
@@ -78,13 +78,13 @@ def main():
     return 0
 
 
-def checkOverrides(distrorelease, pocket, log):
+def checkOverrides(distroseries, pocket, log):
     """Initialize and handle PubSourceChecker.
 
     Iterate over PUBLISHED sources and perform PubSourceChecker.check()
     on each published Source/Binaries couple.
     """
-    spps = distrorelease.getSourcePackagePublishing(
+    spps = distroseries.getSourcePackagePublishing(
         status=PackagePublishingStatus.PUBLISHED,
         pocket=pocket)
 
@@ -99,7 +99,7 @@ def checkOverrides(distrorelease, pocket, log):
         for bpp in spp.publishedBinaries():
             bpr = bpp.binarypackagerelease
             checker.addBinary(
-                bpr.name, bpr.version, bpp.distroarchrelease.architecturetag,
+                bpr.name, bpr.version, bpp.distroarchseries.architecturetag,
                 bpp.component.name, bpp.section.name, bpr.priority.name)
 
         checker.check()

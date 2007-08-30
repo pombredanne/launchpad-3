@@ -1,0 +1,65 @@
+A test to demonstrate the correct ordering for product releases.
+
+A helper function to print out the product series part of the portlet.
+
+   >>> def print_portlet_area_series(contents):
+   ...   registered_series = find_tag_by_id(contents, 'registered-series')
+   ...   series = registered_series.fetch('li')
+   ...   for name in series:
+   ...      print name.renderContents()
+
+A helper function to print out the product series on the main page.
+
+   >>> def print_content_area_series(contents):
+   ...   series_divs = find_tags_by_class(contents, 'project series')
+   ...   for series in series_divs:
+   ...     anchors = series.fetch('a')
+   ...     # first anchor is the product series link
+   ...     print anchors[0]
+
+Start by going to the firefox page.
+
+   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+   >>> browser.open('http://launchpad.dev/firefox')
+
+Check the series order. Development focus is at the top:
+
+   >>> print_content_area_series(browser.contents)
+   <a href="/firefox/trunk">trunk</a>
+   <a href="/firefox/1.0">1.0</a>
+
+Now let's add another product series for 1.5.
+
+   >>> browser.getLink('Register a series').click()
+   >>> browser.getControl('Name').value = '1.5'
+   >>> browser.getControl('Summary').value= 'A slightly newer firefox'
+   >>> browser.getControl('Register Series').click()
+
+And go back to the main product page
+
+   >>> browser.getLink('Mozilla Firefox').click()
+
+And check the ordering of the series. Again, development focus at the top:
+
+   >>> print_content_area_series(browser.contents)
+   <a href="/firefox/trunk">trunk</a>
+   <a href="/firefox/1.5">1.5</a>
+   <a href="/firefox/1.0">1.0</a>
+
+Let's make 1.5 the development series.
+
+   >>> browser.getLink('Change details').click()
+   >>> browser.getControl('Development focus').displayValue = ['firefox 1.5']
+
+With the additions of the icons and emblems, you need to specify
+the name of the Change control as there are now more than one.
+
+   >>> browser.getControl(name='field.actions.change').click()
+
+And now check the ordering of the series:
+
+   >>> print_content_area_series(browser.contents)
+   <a href="/firefox/1.5">1.5</a>
+   <a href="/firefox/1.0">1.0</a>
+   <a href="/firefox/trunk">trunk</a>
+

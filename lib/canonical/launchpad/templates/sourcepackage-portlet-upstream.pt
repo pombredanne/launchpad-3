@@ -1,0 +1,10 @@
+<div class="portlet" id="portlet-upstream">
+  <h2>Upstream release series</h2>
+  <div class="portletBody portletContent">
+
+  <a tal:condition="context/productseries"
+     tal:content="context/productseries/title"
+     tal:attributes="href context/productseries/fmt:url">apache head</a>
+     <i tal:condition="not: context/productseries">None linked.</i>
+  </div>
+</div>

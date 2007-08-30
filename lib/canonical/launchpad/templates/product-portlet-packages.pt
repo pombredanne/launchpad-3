@@ -1,10 +1,8 @@
-<div class="portlet" tal:condition="context/sourcepackages">
-
-  <h2>Distro packages</h2>
-
+<div class="portlet" id="portlet-packages"
+     tal:condition="context/sourcepackages">
+  <h2>Packaging</h2>
   <div class="portletBody portletContent">
-
-    <ul>
+    <ul class="source package">
       <li class="packages" tal:repeat="package context/sourcepackages">
         <a tal:content="package/title"
            tal:attributes="href package/fmt:url">

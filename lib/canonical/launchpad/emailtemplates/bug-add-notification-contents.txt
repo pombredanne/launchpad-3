@@ -1,5 +1,0 @@
-%(visibility)s bug reported:
-
-%(description)s
-
-%(bug_info)s

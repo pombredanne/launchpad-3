@@ -1,7 +1,6 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
-  xmlns:lp="http://launchpad.canonical.com"
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
@@ -13,7 +12,7 @@
     permission="zope.Public">
     <browser:page
       name="+specs"
-      template="../templates/specificationgoal-specs.pt" />
+      template="../templates/hasspecifications-specs.pt" />
   </browser:pages>
 
   <browser:page

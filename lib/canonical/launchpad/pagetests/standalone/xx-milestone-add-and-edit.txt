@@ -7,7 +7,7 @@ registrant of alsa-utils.
 First we test the +addmilestone page.  
   
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+addmilestone HTTP/1.1
+  ... GET /ubuntu/hoary/+addmilestone HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -16,7 +16,7 @@ First we test the +addmilestone page.
 Once authorized, let's create 2 milestones!
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+addmilestone HTTP/1.1
+  ... POST /ubuntu/hoary/+addmilestone HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------70936480015097772051927203955
   ... 
@@ -38,7 +38,7 @@ Once authorized, let's create 2 milestones!
   ...
   
   >>> print http(r"""
-  ... GET /distros/ubuntu/+milestone/milestone1 HTTP/1.1
+  ... GET /ubuntu/+milestone/milestone1 HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -46,7 +46,7 @@ Once authorized, let's create 2 milestones!
 
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+addmilestone HTTP/1.1
+  ... POST /ubuntu/hoary/+addmilestone HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------73806245718620212181717230063
   ... 
@@ -68,7 +68,7 @@ Once authorized, let's create 2 milestones!
   ...
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+milestone/milestone2 HTTP/1.1
+  ... GET /ubuntu/+milestone/milestone2 HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -77,7 +77,7 @@ Once authorized, let's create 2 milestones!
 Now let's try to create another one named milestone1.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+addmilestone HTTP/1.1
+  ... POST /ubuntu/hoary/+addmilestone HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------2560098541154579410319811278
   ... 
@@ -104,7 +104,7 @@ First we try to change the name of milestone2 to milestone1, wich is already
 in use.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/+milestone/milestone2/+edit HTTP/1.1
+  ... POST /ubuntu/+milestone/milestone2/+edit HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------213577065459040936697430468
   ... 
@@ -139,7 +139,7 @@ Then we try to change milestone2's name to milestone3.
 
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/+milestone/milestone2/+edit HTTP/1.1
+  ... POST /ubuntu/+milestone/milestone2/+edit HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------7472362501994754044821794503
   ... 
@@ -169,14 +169,14 @@ Then we try to change milestone2's name to milestone3.
   ...
   
   >>> print http(r"""
-  ... GET /distros/ubuntu/+milestone/milestone3 HTTP/1.1
+  ... GET /ubuntu/+milestone/milestone3 HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+milestone/milestone2 HTTP/1.1
+  ... GET /ubuntu/+milestone/milestone2 HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 404 Not Found
@@ -188,7 +188,7 @@ Now we do the same for a product instead of a distro.
 First we test the +addmilestone page.  
   
   >>> print http(r"""
-  ... GET /products/alsa-utils/trunk/+addmilestone HTTP/1.1
+  ... GET /alsa-utils/trunk/+addmilestone HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -197,7 +197,7 @@ First we test the +addmilestone page.
 Once authorized, let's create 2 milestones!
 
   >>> print http(r"""
-  ... POST /products/alsa-utils/trunk/+addmilestone HTTP/1.1
+  ... POST /alsa-utils/trunk/+addmilestone HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------70936480015097772051927203955
   ... 
@@ -219,7 +219,7 @@ Once authorized, let's create 2 milestones!
   ...
   
   >>> print http(r"""
-  ... GET /products/alsa-utils/+milestone/milestone1 HTTP/1.1
+  ... GET /alsa-utils/+milestone/milestone1 HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -227,7 +227,7 @@ Once authorized, let's create 2 milestones!
 
 
   >>> print http(r"""
-  ... POST /products/alsa-utils/trunk/+addmilestone HTTP/1.1
+  ... POST /alsa-utils/trunk/+addmilestone HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------73806245718620212181717230063
   ... 
@@ -249,7 +249,7 @@ Once authorized, let's create 2 milestones!
   ...
 
   >>> print http(r"""
-  ... GET /products/alsa-utils/+milestone/milestone2 HTTP/1.1
+  ... GET /alsa-utils/+milestone/milestone2 HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -258,7 +258,7 @@ Once authorized, let's create 2 milestones!
 Now let's try to create another one named milestone1.
 
   >>> print http(r"""
-  ... POST /products/alsa-utils/trunk/+addmilestone HTTP/1.1
+  ... POST /alsa-utils/trunk/+addmilestone HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------2560098541154579410319811278
   ... 
@@ -285,7 +285,7 @@ First we try to change the name of milestone2 to milestone1, wich is already
 in use.
 
   >>> print http(r"""
-  ... POST /products/alsa-utils/+milestone/milestone2/+edit HTTP/1.1
+  ... POST /alsa-utils/+milestone/milestone2/+edit HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------213577065459040936697430468
   ... 
@@ -319,7 +319,7 @@ Then we try to change milestone2's name to milestone3.
 
 
   >>> print http(r"""
-  ... POST /products/alsa-utils/+milestone/milestone2/+edit HTTP/1.1
+  ... POST /alsa-utils/+milestone/milestone2/+edit HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------7472362501994754044821794503
   ... 
@@ -349,14 +349,14 @@ Then we try to change milestone2's name to milestone3.
   ...
   
   >>> print http(r"""
-  ... GET /products/alsa-utils/+milestone/milestone3 HTTP/1.1
+  ... GET /alsa-utils/+milestone/milestone3 HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...
 
   >>> print http(r"""
-  ... GET /products/alsa-utils/+milestone/milestone2 HTTP/1.1
+  ... GET /alsa-utils/+milestone/milestone2 HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 404 Not Found

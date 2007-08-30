@@ -12,7 +12,6 @@
 </metal:leftportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/browsername">Steve Alexander</h3>
   <h1>Register a branch</h1>
 </metal:heading>
 
@@ -28,6 +27,40 @@
 
   </div>
 
-</div>
+  <metal:javascript
+      metal:use-macro="context/@@branch-javascript-macros/branch-name-from-url" />
+
+</div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
+
+<metal:block fill-slot="help">
+
+  <p>Launchpad is integrated with the <a
+    href="http://bazaar-vcs.org/">Bazaar</a> version control system. (<a
+    href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>).</p>
+
+  <p>Use this page to register a mirror branch on behalf this person. The
+    branch must be already available on the internet in a publicly accessible
+    location.</p>
+
+  <p>The URL of the branch mirror is based on the nickname of the registrant,
+    not the author.</p>
+
+  <p>The project this branch belongs to is specified by the
+    &ldquo;Project&rdquo; entry. You can also register branches from project
+    pages.</p>
+
+  <p>Do not use this page to:</p>
+
+  <ul>
+    <li>Request a <em>VCS import</em>, that is a Bazaar mirror of a CVS or
+      Subversion branch. Instead, edit the source details of the trunk release
+      series of this project.</li>
+
+    <li><a href="https://help.launchpad.net/CreatingAHostedBranch">Create
+      an <em>upload</em> branch</a>, that is a branch that you upload
+      directly, to use Launchpad as a community hosting service.</li>
+  </ul>
+
+</metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
 </body>
 </html>

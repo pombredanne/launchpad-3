@@ -10,21 +10,34 @@ __all__ = [
     'LaunchpadEditFormView',
     'action',
     'custom_widget',
+    'safe_action',
     ]
 
 import transaction
-from zope.interface import providedBy
+from zope.interface import classImplements, providedBy
 from zope.interface.advice import addClassAdvisor
 from zope.event import notify
 from zope.formlib import form
 from zope.formlib.form import action
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import IInputWidget
+from zope.app.form.browser import (
+    CheckBoxWidget, DropdownWidget, RadioWidget, TextAreaWidget)
 
+from canonical.launchpad.webapp.interfaces import (
+    ISingleLineWidgetLayout, IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
+    IAlwaysSubmittedWidget, UnsafeFormGetSubmissionError)
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.event import (
     SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
+
+
+classImplements(CheckBoxWidget, ICheckBoxWidgetLayout)
+classImplements(DropdownWidget, IAlwaysSubmittedWidget)
+classImplements(RadioWidget, IAlwaysSubmittedWidget)
+classImplements(TextAreaWidget, IMultiLineWidgetLayout)
+
 
 # marker to represent "focus the first widget in the form"
 _first_widget_marker = object()
@@ -57,6 +70,10 @@ class LaunchpadFormView(LaunchpadView):
     render_context = False
 
     form_result = None
+    # The for_input is passed through to create the fields.  If this value
+    # is set to true in derived classes, then fields that are marked
+    # read only will have editable widgets created for them.
+    for_input=None
 
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
@@ -74,6 +91,12 @@ class LaunchpadFormView(LaunchpadView):
         # no action selected, so return
         if action is None:
             return
+
+        # Check to see if an attempt was made to submit a non-safe
+        # action with a GET query.
+        is_safe = getattr(action, 'is_safe', False)
+        if not is_safe and self.request.method != 'POST':
+            raise UnsafeFormGetSubmissionError(action.__name__)
 
         if errors:
             self.form_result = action.failure(data, errors)
@@ -103,7 +126,7 @@ class LaunchpadFormView(LaunchpadView):
 
         This will be called in the case of a validation error.
         """
-        # XXX: 20060802 jamesh
+        # XXX jamesh 2006-08-02:
         # This should really be dooming the transaction rather than
         # aborting.  What we really want is to prevent more work being
         # done and then committed.
@@ -111,7 +134,7 @@ class LaunchpadFormView(LaunchpadView):
 
     def setUpFields(self):
         assert self.schema is not None, "Schema must be set for LaunchpadFormView"
-        self.form_fields = form.Fields(self.schema,
+        self.form_fields = form.Fields(self.schema, for_input=self.for_input,
                                        render_context=self.render_context)
         if self.field_names is not None:
             self.form_fields = self.form_fields.select(*self.field_names)
@@ -120,12 +143,35 @@ class LaunchpadFormView(LaunchpadView):
             if field.__name__ in self.custom_widgets:
                 field.custom_widget = self.custom_widgets[field.__name__]
 
-    def setUpWidgets(self):
-        # XXX: 20060802 jamesh
+    def setUpWidgets(self, context=None):
+        """Set up the widgets using the view's form fields and the context.
+
+        If no context is given, the view's context is used."""
+        if context is None:
+            context = self.context
+        # XXX: jamesh 2006-08-02:
         # do we want to do anything with ignore_request?
         self.widgets = form.setUpWidgets(
-            self.form_fields, self.prefix, self.context, self.request,
-            data=self.initial_values, ignore_request=False)
+            self.form_fields, self.prefix, context, self.request,
+            data=self.initial_values, adapters=self.adapters,
+            ignore_request=False)
+
+    @property
+    def adapters(self):
+        """Provide custom adapters for use when setting up the widgets."""
+        return {}
+
+    @property
+    def action_url(self):
+        """Set the default action URL for the form."""
+
+        # XXX: bac 2007-04-13:
+        # Rather than use a property it is tempting to just cache the value of
+        # request.getURL.  This caching cannot be done in __init__ as the full
+        # URL has not been traversed at instantiation time.  It could be
+        # done in 'initialize' if the functionality for initialization and
+        # form processing are split.
+        return self.request.getURL()
 
     @property
     def initial_values(self):
@@ -149,8 +195,7 @@ class LaunchpadFormView(LaunchpadView):
         self.errors.append(message)
 
     def _validate(self, action, data):
-        # XXXX 2006-09-26 jamesh
-
+        # XXX jamesh 2006-09-26:
         # If a form field is disabled, then no data will be sent back.
         # getWidgetsData() raises an exception when this occurs, even
         # if the field is not marked as required.
@@ -242,41 +287,69 @@ class LaunchpadFormView(LaunchpadView):
                     "setFocusByName('%s');\n"
                     "// -->" % widget.name)
 
+    def isSingleLineLayout(self, field_name):
+        widget = self.widgets[field_name]
+        return not (IMultiLineWidgetLayout.providedBy(widget) or
+                    ICheckBoxWidgetLayout.providedBy(widget))
+
+    def isMultiLineLayout(self, field_name):
+        widget = self.widgets[field_name]
+        return IMultiLineWidgetLayout.providedBy(widget)
+
+    def isCheckBoxLayout(self, field_name):
+        widget = self.widgets[field_name]
+        return (ICheckBoxWidgetLayout.providedBy(widget) and
+                not IMultiLineWidgetLayout.providedBy(widget))
+
+    def showOptionalMarker(self, field_name):
+        widget = self.widgets[field_name]
+        return not (widget.required or
+                    IAlwaysSubmittedWidget.providedBy(widget))
+
 
 class LaunchpadEditFormView(LaunchpadFormView):
 
     render_context = True
 
-    def updateContextFromData(self, data):
+    def updateContextFromData(self, data, context=None):
         """Update the context object based on form data.
+
+        If no context is given, the view's context is used.
 
         If any changes were made, SQLObjectModifiedEvent will be
         emitted.
 
         This method should be called by an action method of the form.
+
+        Returns True if there were any changes to apply.
         """
+        if context is None:
+            context = self.context
         context_before_modification = Snapshot(
-            self.context, providing=providedBy(self.context))
+            context, providing=providedBy(context))
 
-        notify(SQLObjectToBeModifiedEvent(self.context, data))
+        notify(SQLObjectToBeModifiedEvent(context, data))
 
-        if form.applyChanges(self.context, self.form_fields, data):
+        was_changed = form.applyChanges(context, self.form_fields,
+                                        data, self.adapters)
+        if was_changed:
             field_names = [form_field.__name__
                            for form_field in self.form_fields]
-            notify(SQLObjectModifiedEvent(self.context,
+            notify(SQLObjectModifiedEvent(context,
                                           context_before_modification,
                                           field_names))
+        return was_changed
 
 
 class custom_widget:
     """A class advisor for overriding the default widget for a field."""
 
-    def __init__(self, field_name, widget, **kwargs):
+    def __init__(self, field_name, widget, *args, **kwargs):
         self.field_name = field_name
         if widget is None:
             self.widget = None
         else:
-            self.widget = CustomWidgetFactory(widget, **kwargs)
+            self.widget = CustomWidgetFactory(widget, *args, **kwargs)
         addClassAdvisor(self.advise)
 
     def advise(self, cls):
@@ -288,11 +361,11 @@ class custom_widget:
         return cls
 
 
-# XXX: 20060809 jamesh
-# this is an evil hack to allow us to share the widget macros between
-# the new and old form base classes.
-def getWidgetError(view, widget):
-    if hasattr(view, 'getWidgetError'):
-        return view.getWidgetError(widget.context.__name__)
-    else:
-        return widget.error()
+def safe_action(action):
+    """A decorator used to mark a particular action as 'safe'.
+
+    In the context of LaunchpadFormView, only actions marked as safe
+    can be submitted using a GET request.
+    """
+    action.is_safe = True
+    return action

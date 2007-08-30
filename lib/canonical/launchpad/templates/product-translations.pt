@@ -14,11 +14,9 @@
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-preflangs" />
-  <div tal:replace="structure context/@@+portlet-translatables" />
 </metal:rightportlets>
 
     <metal:heading fill-slot="pageheading">
-      <h3 tal:content="context/title">Context title goes here</h3>
       <h1 tal:condition="context/primary_translatable">Translation overview</h1>
       <tal:untranslatable condition="not: context/primary_translatable">
         <h1 tal:condition="context/required:launchpad.Edit"
@@ -38,17 +36,18 @@
           &#8220;<span tal:replace="target/displayname">main</span>&#8221;.
         </p>
         <div tal:replace="structure target/@@+potlist" />
+        <div tal:replace="structure context/@@+portlet-translatables" />
       </tal:translatable>
       <tal:untranslatable condition="not: context/primary_translatable">
         <tal:registrantoradmin condition="context/required:launchpad.Edit">
           <p>
             To set up
             <tal:product replace="context/displayname" />
-            for translation in Rosetta, you need to upload the
-            <abbr>PO</abbr> template for one of its product series.
+            for translation in Launchpad, you need to upload the
+            <abbr>PO</abbr> template for one of its release series.
           </p>
           <ul>
-            <li tal:repeat="series context/serieslist">
+            <li tal:repeat="series context/serieses">
               <a
                 tal:attributes=
                   "href string:${series/fmt:url}/+translations-upload"
@@ -59,7 +58,7 @@
           <p>
             Or you may want to
             <a tal:attributes="href string:${context/fmt:url}/+packages"
-            >link the product to a distribution package</a>
+            >link the project to a distribution package</a>
             set up for translation, if there is one,
             so their translations can be shared.
           </p>
@@ -67,13 +66,13 @@
         <tal:other condition="not: context/required:launchpad.Edit">
           <p>
             The <tal:product replace="context/displayname" /> product
-            is not set up for translation in Rosetta.
+            is not set up for translation in Launchpad.
           </p>
           <tal:loggedout condition="not: request/lp:person">
             <p>
               If you&#8217;re <tal:person replace="context/owner/displayname" />,
               <a tal:attributes=
-              "href string:${context/fmt:url}/+translations/+login">log in</a>
+              "href string:${context/fmt:url}/+login">log in</a>
               to begin the setup process.
             </p>
             <p>
@@ -81,7 +80,8 @@
               <a
                 tal:attributes="href context/owner/fmt:url"
                 tal:content="context/owner/displayname"
-              >Foo Bar</a>, the product registrant, about using Rosetta.
+		>Foo Bar</a>, the project registrant, about using Launchpad
+              for translations.
             </p>
           </tal:loggedout>
           <p tal:condition="request/lp:person">
@@ -89,7 +89,7 @@
             <a
               tal:attributes="href context/owner/fmt:url"
               tal:content="context/owner/displayname"
-            >Foo Bar</a>, the product registrant, about using Rosetta.
+            >Foo Bar</a>, the project registrant, about using Rosetta.
           </p>
         </tal:other>
       </tal:untranslatable>

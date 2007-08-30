@@ -9,29 +9,26 @@ __all__ = [
 
 
 import os
-import unittest
 
-from bzrlib.bzrdir import BzrDir
+from bzrlib.tests import TestCaseWithTransport
 
 from canonical.config import config
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.testing import ZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer
 from importd.tests.helpers import SandboxHelper
 from importd.tests.test_bzrmanager import ProductSeriesHelper
 
 
-class ImportdTestCase(unittest.TestCase):
+class ImportdTestCase(TestCaseWithTransport):
     """Common base for test cases of importd script backends."""
 
-    layer = ZopelessLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.zopeless_helper = LaunchpadZopelessTestSetup(
-            dbuser=config.importd.dbuser)
-        self.zopeless_helper.setUp()
+        TestCaseWithTransport.setUp(self)
+        LaunchpadZopelessLayer.switchDbUser(config.importd.dbuser)
+        self.bzrworking = 'bzrworking'
         self.sandbox = SandboxHelper()
         self.sandbox.setUp()
-        self.bzrworking = self.sandbox.join('bzrworking')
         self.bzrmirrors = self.sandbox.join('bzr-mirrors')
         os.mkdir(self.bzrmirrors)
         self.series_helper = ProductSeriesHelper()
@@ -42,10 +39,10 @@ class ImportdTestCase(unittest.TestCase):
     def tearDown(self):
         self.series_helper.tearDown()
         self.sandbox.tearDown()
-        self.zopeless_helper.tearDown()
+        TestCaseWithTransport.tearDown(self)
 
     def setUpOneCommit(self):
-        workingtree = BzrDir.create_standalone_workingtree(self.bzrworking)
+        workingtree = self.make_branch_and_tree(self.bzrworking)
         workingtree.commit('first commit')
 
     def mirrorPath(self):
@@ -87,6 +84,14 @@ class _InstrumentedMethod:
 
 class InstrumentedMethodObserver:
     """Observer for InstrumentedMethod."""
+
+    def __init__(self, called=None, returned=None, raised=None):
+        if called is not None:
+            self.called = called
+        if returned is not None:
+            self.returned = returned
+        if raised is not None:
+            self.raised = raised
 
     def called(self, name, args, kwargs):
         """Called before an instrumented method."""

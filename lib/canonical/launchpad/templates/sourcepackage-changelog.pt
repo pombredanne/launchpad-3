@@ -5,36 +5,33 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div class="portlet">
-    <h4>What&#8217;s this all about? </h4>
-    <div class="portletBody portletContent">      
-      <img src="/@@/info" />
+<div metal:fill-slot="main">
+
+    <h1><span tal:replace="context/title"/> change logs</h1>
+
+    <tal:block condition="context/distinctreleases">
+      <p>Change logs for this package:</p>
+
+    <div id=changelogs>
+      <ul tal:condition="context/distinctreleases">
+        <li tal:repeat="spr context/distinctreleases">
+          <div tal:replace="structure spr/@@+changelog"/>
+        </li>
+      </ul>
+      <p tal:condition="not: context/distinctreleases" 
+         class="informational message">
+        There are no change logs associated with this source package.
+      </p>
+    </div>
+
+    </tal:block>
+
+
+    </div>
+    <p metal:fill-slot="help">
       The change log is uploaded by the package maintainer when a new
       package release is made. It should document all the latest information
       we have for this release of the package.
-
-    </div>
-  </div>
-</metal:leftportlets>
-
-<div metal:fill-slot="main">
-
-    <h1><span tal:replace="context/title"/> changelog</h1>
-
-    <tal:block condition="context/changelog">
-      <p>This is the latest changelog we have on file for this source
-      package:</p>
-    
-<pre>
-<span tal:replace="structure view/linkified_changelog" />
-</pre>
-    </tal:block>
-
-    <p tal:condition="not: context/changelog" class="informational message">
-      There is no changelog associated with this source package.
     </p>
-
-</div>
-</body>
+  </body>
 </html>

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 
 """Change the component of a package.
 
@@ -41,7 +41,7 @@ def main():
     # control options
     parser.add_option("-S", "--source-and-binary", dest="sourceandchildren",
                       default=False, action="store_true",
-                      help="select source and binaries with the same name")
+                      help="select source and all binaries from this source")
     parser.add_option("-B", "--binary-and-source", dest="binaryandsource",
                       default=False, action="store_true",
                       help="select source and binary (of the same name)")
@@ -62,7 +62,7 @@ def main():
     lock.acquire(blocking=True)
 
     log.debug("Initialising connection.")
-    # XXX cprov 20060417: retrieve dbuser from config file
+    # XXX cprov 2006-04-17: retrieve dbuser from config file
     ztm = initZopeless(dbuser="lucille")
     execute_zcml_for_scripts()
 

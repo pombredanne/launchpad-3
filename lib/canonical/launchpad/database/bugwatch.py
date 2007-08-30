@@ -4,7 +4,6 @@ __metaclass__ = type
 __all__ = ['BugWatch', 'BugWatchSet']
 
 import re
-import cgi
 import urllib
 from urlparse import urlunsplit
 
@@ -17,7 +16,7 @@ from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, SQLMultipleJoin
 
 from canonical.lp.dbschema import BugTrackerType, BugTaskImportance
 
-from canonical.database.sqlbase import SQLBase, flush_database_updates
+from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -25,6 +24,7 @@ from canonical.launchpad.event import SQLObjectModifiedEvent
 
 from canonical.launchpad.webapp import urlappend, urlsplit
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.webapp.uri import find_uris_in_text
 
 from canonical.launchpad.interfaces import (
     IBugWatch, IBugWatchSet, IBugTrackerSet, ILaunchpadCelebrities,
@@ -64,6 +64,7 @@ class BugWatch(SQLBase):
             BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
             BugTrackerType.ROUNDUP:     'issue%s',
             BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
+            BugTrackerType.MANTIS:      'view.php?id=%s',
         }
         bt = self.bugtracker.bugtrackertype
         if not url_formats.has_key(bt):
@@ -87,7 +88,9 @@ class BugWatch(SQLBase):
         for linked_bugtask in self.bugtasks:
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
-            linked_bugtask.transitionToStatus(malone_status)
+            linked_bugtask.transitionToStatus(
+                malone_status,
+                getUtility(ILaunchpadCelebrities).bug_watch_updater)
             # We don't yet support updating the following values.
             linked_bugtask.importance = BugTaskImportance.UNKNOWN
             linked_bugtask.transitionToAssignee(None)
@@ -96,13 +99,17 @@ class BugWatch(SQLBase):
                     linked_bugtask, old_bugtask, ['status'])
                 notify(event)
 
+    def destroySelf(self):
+        """See IBugWatch."""
+        assert self.bugtasks.count() == 0, "Can't delete linked bug watches"
+        SQLBase.destroySelf(self)
+
 
 class BugWatchSet(BugSetBase):
     """A set for BugWatch"""
 
     implements(IBugWatchSet)
     table = BugWatch
-    url_pattern = re.compile(r'(\bhttps?://.+/\S*)\.?\b')
 
     def __init__(self, bug=None):
         BugSetBase.__init__(self, bug)
@@ -113,6 +120,7 @@ class BugWatchSet(BugSetBase):
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
             BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
             BugTrackerType.TRAC: self.parseTracURL,
+            BugTrackerType.MANTIS: self.parseMantisURL,
         }
 
     def get(self, watch_id):
@@ -129,13 +137,13 @@ class BugWatchSet(BugSetBase):
         """See IBugTrackerSet.fromText."""
         newwatches = []
         # Let's find all the URLs and see if they are bug references.
-        matches = self.url_pattern.findall(text)
+        matches = list(find_uris_in_text(text))
         if len(matches) == 0:
             return []
 
         for url in matches:
             try:
-                bugtracker, remotebug = self.extractBugTrackerAndBug(url)
+                bugtracker, remotebug = self.extractBugTrackerAndBug(str(url))
             except NoBugTrackerFound, error:
                 bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
                     error.base_url, owner, error.bugtracker_type)
@@ -144,16 +152,7 @@ class BugWatchSet(BugSetBase):
                 # It doesn't look like a bug URL, so simply ignore it.
                 continue
 
-            for bugwatch in bug.watches:
-                #XXX: This matching is a bit fragile, since
-                #     bugwatch.remotebug is a user editable text string.
-                #     We should improve the matching so that for example
-                #     '#42' matches '42' and so on.
-                #     -- Bjorn Tillenius, 2006-10-11
-                if (bugwatch.bugtracker == bugtracker and
-                    bugwatch.remotebug == remotebug):
-                    break
-            else:
+            if bug.getBugWatch(bugtracker, remotebug) is None:
                 # This bug doesn't have such a bug watch, let's create
                 # one.
                 bugwatch = BugWatch(
@@ -202,17 +201,41 @@ class BugWatchSet(BugSetBase):
         base_url = urlunsplit((scheme, host, base_path, '', ''))
         return base_url, remote_bug
 
+    def parseMantisURL(self, scheme, host, path, query):
+        """Extract the Mantis base URL and bug ID."""
+        bug_page = 'view.php'
+        if not path.endswith(bug_page):
+            return None
+        if query.get('id'):
+            remote_bug = query['id']
+        else:
+            return None
+        base_path = path[:-len(bug_page)]
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
     def parseDebbugsURL(self, scheme, host, path, query):
         """Extract the Debbugs base URL and bug ID."""
         bug_page = 'cgi-bin/bugreport.cgi'
-        if not path.endswith(bug_page):
+        remote_bug = None
+
+        if path.endswith(bug_page):
+            remote_bug = query.get('bug')
+            base_path = path[:-len(bug_page)]
+        elif host == "bugs.debian.org":
+            # Oy, what a hack. debian's tracker allows you to access
+            # bugs by saying http://bugs.debian.org/400848, so support
+            # that shorthand. The reason we need to do this special
+            # check here is because otherwise /any/ URL that ends with
+            # "/number" will appear to match a debbugs URL.
+            remote_bug = path.split("/")[-1]
+            base_path = ''
+        else:
             return None
 
-        remote_bug = query.get('bug')
         if remote_bug is None or not remote_bug.isdigit():
             return None
 
-        base_path = path[:-len(bug_page)]
         base_url = urlunsplit((scheme, host, base_path, '', ''))
         return base_url, remote_bug
 
@@ -247,10 +270,10 @@ class BugWatchSet(BugSetBase):
         """
         if not path.startswith('/tracker/'):
             return None
-        if not query.get('atid'):
+        if not query.get('aid'):
             return None
 
-        remote_bug = query['atid']
+        remote_bug = query['aid']
         # There's only one global SF instance registered in Launchpad.
         sf_tracker = getUtility(ILaunchpadCelebrities).sourceforge_tracker
 

@@ -34,7 +34,8 @@ def nl_term_candidates(phrase):
     return TS_QUERY_TERM_RE.findall(terms)
 
 
-def nl_phrase_search(phrase, table, constraints=''):
+def nl_phrase_search(phrase, table, constraints='',
+                     extra_constraints_tables=None):
     """Return the tsearch2 query that should be use to do a phrase search.
 
     This function implement an algorithm similar to the one used by MySQL
@@ -45,7 +46,8 @@ def nl_phrase_search(phrase, table, constraints=''):
     according to the full text indexation rules (lowercasing and stemming).
 
     Each term that is present in more than 50% of the candidate rows is also
-    eliminated from the query.
+    eliminated from the query. That term eliminatation is only done when there
+    are 5 candidate rows or more.
 
     The remaining terms are then ORed together. One should use the rank() or
     rank_cd() function to order the results from running that query. This will
@@ -60,20 +62,26 @@ def nl_phrase_search(phrase, table, constraints=''):
     :constraints: Additional SQL clause that limits the rows to a
     subset of the table.
 
+    :extra_constraints_tables: A list of additional table names that are
+    needed by the constraints clause.
+
     Caveat: The SQLBase class must define a 'fti' column .
     This is the column that is used for full text searching.
     """
     terms = []
-    total = table.select(constraints).count()
+    total = table.select(
+        constraints, clauseTables=extra_constraints_tables).count()
     term_candidates = nl_term_candidates(phrase)
-    if total == 0:
+    if total < 5:
         return '|'.join(term_candidates)
     for term in term_candidates:
         where_clause = []
         if constraints:
             where_clause.append('(' + constraints + ')')
-        where_clause.append('fti @@ ftq(%s)' % quote(term))
-        matches = table.select(' AND '.join(where_clause)).count()
+        where_clause.append('%s.fti @@ ftq(%s)' % (table._table, quote(term)))
+        matches = table.select(
+            ' AND '.join(where_clause),
+            clauseTables=extra_constraints_tables).count()
         if float(matches) / total < 0.5:
             terms.append(term)
     return '|'.join(terms)

@@ -39,8 +39,10 @@ class TwistedAuthServer:
             productID = None
         return productID
 
-    def createBranch(self, personID, productID, branchName):
-        if productID is None:
-            productID = ''
-        return self.proxy.callRemote('createBranch', personID, productID,
-                                     branchName)
+    def createBranch(self, loginID, personName, productName, branchName):
+        return self.proxy.callRemote(
+            'createBranch', loginID, personName, productName, branchName)
+
+    def requestMirror(self, branchID):
+        return self.proxy.callRemote('requestMirror', branchID)
+

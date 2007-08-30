@@ -23,6 +23,7 @@ class VPOTExportSet:
         'sequence',
         'header',
         'pluralform',
+        'context',
         'msgid',
         'commenttext',
         'sourcecomment',
@@ -34,6 +35,7 @@ class VPOTExportSet:
     sort_column_names = [
         'potemplate',
         'sequence',
+        'potmsgset',
         'pluralform',
     ]
     sort_columns = ', '.join(
@@ -80,6 +82,7 @@ class VPOTExport:
          self.sequence,
          self.header,
          self.pluralform,
+         self.context,
          self.msgid,
          self.commenttext,
          self.sourcecomment,

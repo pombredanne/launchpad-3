@@ -4,15 +4,19 @@ __metaclass__ = type
 __all__ = [
     'Sprint',
     'SprintSet',
+    'HasSprintsMixin',
     ]
 
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, StringCol, SQLRelatedJoin)
 
-from canonical.launchpad.interfaces import ISprint, ISprintSet
+from canonical.launchpad.interfaces import (
+    IHasLogo, IHasMugshot, IHasIcon, ILaunchpadCelebrities,
+    ISprint, ISprintSet)
 
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote)
@@ -24,13 +28,14 @@ from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 
 from canonical.lp.dbschema import (
-    SprintSpecificationStatus, SpecificationFilter, SpecificationSort)
+    SprintSpecificationStatus, SpecificationFilter, SpecificationSort,
+    SpecificationImplementationStatus)
 
 
 class Sprint(SQLBase):
-    """See ISprint."""
+    """See `ISprint`."""
 
-    implements(ISprint)
+    implements(ISprint, IHasLogo, IHasMugshot, IHasIcon)
 
     _defaultOrder = ['name']
 
@@ -41,6 +46,13 @@ class Sprint(SQLBase):
     summary = StringCol(notNull=True)
     driver = ForeignKey(dbName='driver', foreignKey='Person')
     home_page = StringCol(notNull=False, default=None)
+    homepage_content = StringCol(default=None)
+    icon = ForeignKey(
+        dbName='icon', foreignKey='LibraryFileAlias', default=None)
+    logo = ForeignKey(
+        dbName='logo', foreignKey='LibraryFileAlias', default=None)
+    mugshot = ForeignKey(
+        dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
     address = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     time_zone = StringCol(notNull=True)
@@ -55,6 +67,13 @@ class Sprint(SQLBase):
     @property
     def displayname(self):
         return self.title
+
+    @property
+    def drivers(self):
+        """See IHasDrivers."""
+        if self.driver is not None:
+            return [self.driver, self.owner]
+        return [self.owner,]
 
     # useful joins
     attendees = SQLRelatedJoin('Person',
@@ -83,18 +102,19 @@ class Sprint(SQLBase):
         #  - acceptance for sprint agenda.
         #  - informational.
         #
-        base = """SprintSpecification.sprint = %d AND
+        base = """SprintSpecification.sprint = %s AND
                   SprintSpecification.specification = Specification.id AND 
                   (Specification.product IS NULL OR
                    Specification.product NOT IN
                     (SELECT Product.id FROM Product
                      WHERE Product.active IS FALSE))
-                  """ % self.id
+                  """ % quote(self)
         query = base
 
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+              quote(SpecificationImplementationStatus.INFORMATIONAL))
         
         # import here to avoid circular deps
         from canonical.launchpad.database.specification import Specification
@@ -111,14 +131,14 @@ class Sprint(SQLBase):
         # look for specs that have a particular SprintSpecification
         # status (proposed, accepted or declined)
         if SpecificationFilter.ACCEPTED in filter:
-            query += ' AND SprintSpecification.status = %d' % (
-                SprintSpecificationStatus.ACCEPTED.value)
+            query += ' AND SprintSpecification.status = %s' % (
+                quote(SprintSpecificationStatus.ACCEPTED))
         elif SpecificationFilter.PROPOSED in filter:
-            query += ' AND SprintSpecification.status = %d' % (
-                SprintSpecificationStatus.PROPOSED.value)
+            query += ' AND SprintSpecification.status = %s' % (
+                quote(SprintSpecificationStatus.PROPOSED))
         elif SpecificationFilter.DECLINED in filter:
-            query += ' AND SprintSpecification.status = %d' % (
-                SprintSpecificationStatus.DECLINED.value)
+            query += ' AND SprintSpecification.status = %s' % (
+                quote(SprintSpecificationStatus.DECLINED))
         
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -154,7 +174,7 @@ class Sprint(SQLBase):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status',
+            order = ['-priority', 'Specification.definition_status',
                      'Specification.name']
         elif sort == SpecificationSort.DATE:
             # we need to establish if the listing will show specs that have
@@ -181,7 +201,7 @@ class Sprint(SQLBase):
         return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def specificationLinks(self, sort=None, quantity=None, filter=None):
-        """See ISprint."""
+        """See `ISprint`."""
 
         query = self.spec_filter_clause(filter=filter)
 
@@ -196,7 +216,7 @@ class Sprint(SQLBase):
         return results.prejoin(['specification'])
 
     def getSpecificationLink(self, speclink_id):
-        """See ISprint.
+        """See `ISprint`.
         
         NB: we expose the horrible speclink.id because there is no unique
         way to refer to a specification outside of a product or distro
@@ -207,11 +227,11 @@ class Sprint(SQLBase):
         assert (speclink.sprint.id == self.id)
         return speclink
 
-    def acceptSpecificationLinks(self, idlist):
-        """See ISprintSpecification."""
+    def acceptSpecificationLinks(self, idlist, decider):
+        """See `ISprint`."""
         for sprintspec in idlist:
             speclink = self.getSpecificationLink(sprintspec)
-            speclink.status = SprintSpecificationStatus.ACCEPTED
+            speclink.acceptBy(decider)
 
         # we need to flush all the changes we have made to disk, then try
         # the query again to see if we have any specs remaining in this
@@ -221,11 +241,11 @@ class Sprint(SQLBase):
         return self.specifications(
                         filter=[SpecificationFilter.PROPOSED]).count()
 
-    def declineSpecificationLinks(self, idlist):
-        """See ISprintSpecification."""
+    def declineSpecificationLinks(self, idlist, decider):
+        """See `ISprint`."""
         for sprintspec in idlist:
             speclink = self.getSpecificationLink(sprintspec)
-            speclink.status = SprintSpecificationStatus.DECLINED
+            speclink.declineBy(decider)
 
         # we need to flush all the changes we have made to disk, then try
         # the query again to see if we have any specs remaining in this
@@ -237,7 +257,7 @@ class Sprint(SQLBase):
 
     # attendance
     def attend(self, person, time_starts, time_ends):
-        """See ISprint."""
+        """See `ISprint`."""
         # first see if a relevant attendance exists, and if so, update it
         for attendance in self.attendances:
             if attendance.attendee.id == person.id:
@@ -249,7 +269,7 @@ class Sprint(SQLBase):
             time_starts=time_starts, time_ends=time_ends)
 
     def removeAttendance(self, person):
-        """See ISprint."""
+        """See `ISprint`."""
         for attendance in self.attendances:
             if attendance.attendee.id == person.id:
                 attendance.destroySelf()
@@ -262,18 +282,25 @@ class Sprint(SQLBase):
 
     # linking to specifications
     def linkSpecification(self, spec):
-        """See ISprint."""
+        """See `ISprint`."""
         for speclink in self.spec_links:
             if speclink.spec.id == spec.id:
                 return speclink
         return SprintSpecification(sprint=self, specification=spec)
 
     def unlinkSpecification(self, spec):
-        """See ISprint."""
+        """See `ISprint`."""
         for speclink in self.spec_links:
             if speclink.spec.id == spec.id:
                 SprintSpecification.delete(speclink.id)
                 return speclink
+
+    def isDriver(self, user):
+        """See `ISprint`."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.owner) or
+                user.inTeam(self.driver) or
+                user.inTeam(admins))
 
 
 class SprintSet:
@@ -282,22 +309,74 @@ class SprintSet:
     implements(ISprintSet)
 
     def __init__(self):
-        """See ISprintSet."""
+        """See `ISprintSet`."""
         self.title = 'Sprints and meetings'
 
     def __getitem__(self, name):
-        """See ISprintSet."""
+        """See `ISprintSet`."""
         return Sprint.selectOneBy(name=name)
 
     def __iter__(self):
-        """See ISprintSet."""
-        return iter(Sprint.select(orderBy='-time_starts'))
+        """See `ISprintSet`."""
+        return iter(Sprint.select("time_ends > 'NOW'", orderBy='time_starts'))
+
+    @property
+    def all(self):
+        return Sprint.select(orderBy='-time_starts')
 
     def new(self, owner, name, title, time_zone, time_starts, time_ends,
-        summary=None, driver=None, home_page=None):
-        """See ISprintSet."""
+            summary=None, address=None, driver=None, home_page=None,
+            mugshot=None, logo=None, icon=None):
+        """See `ISprintSet`."""
         return Sprint(owner=owner, name=name, title=title,
             time_zone=time_zone, time_starts=time_starts,
             time_ends=time_ends, summary=summary, driver=driver,
-            home_page=home_page)
+            home_page=home_page, mugshot=mugshot, icon=icon,
+            logo=logo, address=address)
+
+
+class HasSprintsMixin:
+    """A mixin class implementing the common methods for any class
+    implementing IHasSprints.
+    """
+
+    def _getBaseQueryAndClauseTablesForQueryingSprints(self):
+        """Return the base SQL query and the clauseTables to be used when
+        querying sprints related to this object.
+
+        Subclasses must overwrite this method if it doesn't suit them.
+        """
+        query = """
+            Specification.%s = %s
+            AND Specification.id = SprintSpecification.specification
+            AND SprintSpecification.sprint = Sprint.id
+            AND SprintSpecification.status = %s
+            """ % (self._table, self.id,
+                   quote(SprintSpecificationStatus.ACCEPTED))
+        return query, ['Specification', 'SprintSpecification']
+
+    @property
+    def sprints(self):
+        """See IHasSprints."""
+        query, tables = self._getBaseQueryAndClauseTablesForQueryingSprints()
+        return Sprint.select(
+            query, clauseTables=tables, orderBy='-time_starts', distinct=True)
+
+    @property
+    def coming_sprints(self):
+        """See IHasSprints."""
+        query, tables = self._getBaseQueryAndClauseTablesForQueryingSprints()
+        query += " AND Sprint.time_ends > 'NOW'"
+        return Sprint.select(
+            query, clauseTables=tables, orderBy='time_starts',
+            distinct=True, limit=5)
+
+    @property
+    def past_sprints(self):
+        """See IHasSprints."""
+        query, tables = self._getBaseQueryAndClauseTablesForQueryingSprints()
+        query += " AND Sprint.time_ends <= 'NOW'"
+        return Sprint.select(
+            query, clauseTables=tables, orderBy='-time_starts',
+            distinct=True)
 

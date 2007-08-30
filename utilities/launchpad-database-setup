@@ -13,25 +13,25 @@ set -e
 # https://launchpad.canonical.com/DatabaseSetup which are intended for
 # initial Launchpad setup on an otherwise unconfigured postgresql instance
 
-sudo /etc/init.d/postgresql-8.1 stop
+sudo /etc/init.d/postgresql-8.2 stop
 
 
-main=/var/lib/postgresql/8.1/main
+main=/var/lib/postgresql/8.2/main
 echo Purging postgresql data...
 sudo -u postgres sh -c "rm -rf $main/*"
 echo Re-creating postgresql database...
-sudo -u postgres /usr/lib/postgresql/8.1/bin/initdb \
+sudo -u postgres /usr/lib/postgresql/8.2/bin/initdb \
 	--pgdata=$main \
 	--encoding=UNICODE --locale=C
 sudo -u postgres ln -s /etc/postgresql-common/root.crt $main
-sudo -u postgres ln -s /etc/postgresql-common/postgresql.crt $main/server.crt
-sudo -u postgres ln -s /etc/postgresql-common/postgresql.pem $main/server.key
+sudo -u postgres ln -s /etc/ssl/certs/ssl-cert-snakeoil.pem $main/server.crt
+sudo -u postgres ln -s /etc/ssl/private/ssl-cert-snakeoil.key $main/server.key
 
 echo Applying postgresql configuration changes...
 
-sudo cp -a /etc/postgresql/8.1/main/pg_hba.conf /etc/postgresql/8.1/main/pg_hba.conf.old
-sudo grep -q Launchpad /etc/postgresql/8.1/main/pg_hba.conf || \
-sudo patch /etc/postgresql/8.1/main/pg_hba.conf <<'EOF'
+sudo cp -a /etc/postgresql/8.2/main/pg_hba.conf /etc/postgresql/8.2/main/pg_hba.conf.old
+sudo grep -q Launchpad /etc/postgresql/8.2/main/pg_hba.conf || \
+sudo patch /etc/postgresql/8.2/main/pg_hba.conf <<'EOF'
 --- pg_hba.conf 2005-11-02 17:33:08.000000000 -0800
 +++ /tmp/pg_hba.conf    2005-11-03 07:32:46.932400423 -0800
 @@ -58,7 +58,9 @@
@@ -46,17 +46,18 @@ sudo patch /etc/postgresql/8.1/main/pg_hba.conf <<'EOF'
 
 
 EOF
-sudo chown --reference=/etc/postgresql/8.1/main/pg_hba.conf.old /etc/postgresql/8.1/main/pg_hba.conf
-sudo chmod --reference=/etc/postgresql/8.1/main/pg_hba.conf.old /etc/postgresql/8.1/main/pg_hba.conf
+sudo chown --reference=/etc/postgresql/8.2/main/pg_hba.conf.old /etc/postgresql/8.2/main/pg_hba.conf
+sudo chmod --reference=/etc/postgresql/8.2/main/pg_hba.conf.old /etc/postgresql/8.2/main/pg_hba.conf
 
-sudo grep -q Launchpad /etc/postgresql/8.1/main/postgresql.conf || \
-sudo patch /etc/postgresql/8.1/main/postgresql.conf <<'EOF'
---- /etc/postgresql/8.1/main/postgresql.conf    2005-11-03 07:56:27.000000000 -0800
+sudo grep -q Launchpad /etc/postgresql/8.2/main/postgresql.conf || \
+sudo patch /etc/postgresql/8.2/main/postgresql.conf <<'EOF'
+--- /etc/postgresql/8.2/main/postgresql.conf    2005-11-03 07:56:27.000000000 -0800
 +++ /tmp/postgresql.conf        2005-11-03 07:57:28.156973216 -0800
-@@ -423,3 +423,11 @@
+@@ -423,6 +423,14 @@
  # - Other Platforms & Clients -
 
- #transform_null_equals = false
+ #transform_null_equals = off
+
 +##
 +## Launchpad configuration
 +##
@@ -65,19 +66,22 @@ sudo patch /etc/postgresql/8.1/main/postgresql.conf <<'EOF'
 +add_missing_from=false
 +# Force use of indexes, to assist in tuning queries
 +enable_seqscan=false
+
+ #---------------------------------------------------------------------------
+ # CUSTOMIZED OPTIONS
 EOF
 
-if [ -f /etc/postgresql/8.1/main/start.conf ]; then
-    sudo sed -i -e 's/^manual/auto/' /etc/postgresql/8.1/main/start.conf
+if [ -f /etc/postgresql/8.2/main/start.conf ]; then
+    sudo sed -i -e 's/^manual/auto/' /etc/postgresql/8.2/main/start.conf
 fi
 
-sudo /etc/init.d/postgresql-8.1 start
+sudo /etc/init.d/postgresql-8.2 start
 
 echo Waiting 10 seconds for postgresql to come up...
 sleep 10
 
 echo Creating postgresql user $(id -un)
-sudo -u postgres /usr/lib/postgresql/8.1/bin/createuser -a -d $(id -un)
+sudo -u postgres /usr/lib/postgresql/8.2/bin/createuser -a -d $(id -un)
 
 echo
 echo Looks like everything went ok.

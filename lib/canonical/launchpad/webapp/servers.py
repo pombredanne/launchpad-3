@@ -4,31 +4,41 @@
 __metaclass__ = type
 
 import threading
+import xmlrpclib
 
-from zope.publisher.browser import BrowserRequest, BrowserResponse, TestRequest
-from zope.publisher.xmlrpc import XMLRPCRequest
+from zope.app.form.browser.widget import SimpleInputWidget
+from zope.app.form.browser.itemswidgets import  MultiDataHelper
 from zope.app.session.interfaces import ISession
-from zope.interface import implements
 from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
 from zope.app.publication.interfaces import IRequestPublicationFactory
-from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
+from zope.interface import implements
+from zope.publisher.browser import (
+    BrowserRequest, BrowserResponse, TestRequest)
+from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
+from zope.security.proxy import isinstance as zope_isinstance
 from zope.server.http.commonaccesslogger import CommonAccessLogger
-import zope.publisher.publish
-from zope.publisher.interfaces import IRequest
+from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
 
-from canonical.config import config
+from canonical.cachedproperty import cachedproperty
+
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
-    ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest)
+        IShipItApplication, IOpenIdApplication)
+
 from canonical.launchpad.webapp.notifications import (
-        NotificationRequest, NotificationResponse, NotificationList
-        )
+    NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
-        INotificationRequest, INotificationResponse)
+    ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest,
+    IBrowserFormNG, INotificationRequest, INotificationResponse,
+    UnexpectedFormData)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
-from canonical.launchpad.webapp.url import Url
+from canonical.launchpad.webapp.uri import URI
+from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
+from canonical.launchpad.webapp.publisher import get_current_browser_request
+from canonical.launchpad.webapp.opstats import OpStats
 
 
 class StepsToGo:
@@ -130,7 +140,7 @@ class ApplicationServerSettingRequestFactory:
         return request
 
 
-class LaunchpadBrowserFactory:
+class LaunchpadRequestPublicationFactory:
     """An IRequestPublicationFactory which looks at the Host header.
 
     It chooses the request and publication factories by looking at the
@@ -144,88 +154,67 @@ class LaunchpadBrowserFactory:
     USE_DEFAULTS = object()
     UNHANDLED_HOST = object()
 
+    class VirtualHostRequestPublication:
+        """Data type to represent request publication of a single virtual host.
+        """
+        def __init__(self, conffilename, requestfactory, publicationfactory):
+            self.conffilename = conffilename
+            self.requestfactory = requestfactory
+            self.publicationfactory = publicationfactory
+            # Add data from launchpad.conf
+            self.vhostconfig = allvhosts.configs[self.conffilename]
+            self.allhostnames = set(self.vhostconfig.althostnames
+                                    + [self.vhostconfig.hostname])
+
     def __init__(self):
         # This is run just once at server start-up.
 
-        from canonical.publication import (
-            BlueprintPublication, MainLaunchpadPublication, ShipItPublication)
-        # Set up a dict which maps a host name to a tuple of a reqest and
-        # publication factory.
-        self._hostname_requestpublication = {}
-        self._setUpHostnames(
-            config.launchpad.main_hostname,
-            config.launchpad.root_url,
-            LaunchpadBrowserRequest,
-            MainLaunchpadPublication)
-        self._setUpHostnames(
-            config.launchpad.blueprint_hostname,
-            config.launchpad.blueprint_root_url,
-            BlueprintBrowserRequest,
-            BlueprintPublication)
-        self._setUpHostnames(
-            config.launchpad.shipitubuntu_hostname,
-            config.launchpad.shipitubuntu_root_url,
-            UbuntuShipItBrowserRequest,
-            ShipItPublication)
+        vhrps = []
+        # Use a short form of VirtualHostRequestPublication, for clarity.
+        VHRP = self.VirtualHostRequestPublication
+        vhrps.append(VHRP('mainsite', LaunchpadBrowserRequest,
+            MainLaunchpadPublication))
+        vhrps.append(VHRP('blueprints', BlueprintBrowserRequest,
+            BlueprintPublication))
+        vhrps.append(VHRP('code', CodeBrowserRequest, CodePublication))
+        vhrps.append(VHRP('translations', TranslationsBrowserRequest,
+            TranslationsPublication))
+        vhrps.append(VHRP('bugs', BugsBrowserRequest, BugsPublication))
+        vhrps.append(VHRP('answers', AnswersBrowserRequest,
+            AnswersPublication))
+        vhrps.append(VHRP('openid', OpenIdBrowserRequest, OpenIdPublication))
+        vhrps.append(VHRP('shipitubuntu', UbuntuShipItBrowserRequest,
+            ShipItPublication))
+        vhrps.append(VHRP('shipitkubuntu', KubuntuShipItBrowserRequest,
+            ShipItPublication))
+        vhrps.append(VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest,
+            ShipItPublication))
+        vhrps.append(VHRP('xmlrpc',
+                          PublicXMLRPCRequest, PublicXMLRPCPublication))
+        # Done with using the short form of VirtualHostRequestPublication, so
+        # clean up, as we won't need to use it again later.
+        del VHRP
 
-        self._setUpHostnames(
-            config.launchpad.shipitkubuntu_hostname,
-            config.launchpad.shipitkubuntu_root_url,
-            KubuntuShipItBrowserRequest,
-            ShipItPublication)
+        # Set up a dict that maps a host name to a
+        # VirtualHostRequestPublication object.
+        self._hostname_vhrp = {}
 
-        self._setUpHostnames(
-            config.launchpad.shipitedubuntu_hostname,
-            config.launchpad.shipitedubuntu_root_url,
-            EdubuntuShipItBrowserRequest,
-            ShipItPublication)
-
-        self._setUpHostnames(
-            config.launchpad.xmlrpc_hostname,
-            config.launchpad.root_url,
-            LaunchpadXMLRPCRequest,
-            MainLaunchpadPublication)
+        # Register hostname and althostnames for each virtual host.
+        for vhrp in vhrps:
+            for hostname in vhrp.allhostnames:
+                assert hostname not in self._hostname_vhrp, (
+                    "The alt host name '%s' was defined more than once.")
+                self._hostname_vhrp[hostname] = vhrp
 
         self._thread_local = threading.local()
 
-    @staticmethod
-    def _hostnameStrToList(hostnamestr):
-        """Return list of hostname string.
-
-        >>> thismethod = LaunchpadBrowserFactory._hostnameStrToList
-        >>> thismethod('foo')
-        ['foo']
-        >>> thismethod('foo,bar, baz')
-        ['foo', 'bar', 'baz']
-        >>> thismethod('foo,,bar, ,baz ,')
-        ['foo', 'bar', 'baz']
-        >>> thismethod('')
-        []
-        >>> thismethod(' ')
-        []
-
-        """
-        if not hostnamestr.strip():
-            return []
-        return [
-            name.strip() for name in hostnamestr.split(',') if name.strip()]
-
-    def _setUpHostnames(
-        self, hostnamestr, rooturl, requestfactory, publicationfactory):
-        """Set up the hostnames from the given config string in the lookup
-        table.
-        """
-        for hostname in self._hostnameStrToList(hostnamestr):
-            self._hostname_requestpublication[hostname] = (
-                rooturl, requestfactory, publicationfactory)
-
     def _defaultFactories(self):
-        from canonical.publication import LaunchpadBrowserPublication
+        from canonical.launchpad.webapp.publication import (
+            LaunchpadBrowserPublication)
         return LaunchpadBrowserRequest, LaunchpadBrowserPublication
 
     def canHandle(self, environment):
         """Only configured domains are handled."""
-        from canonical.publication import LaunchpadBrowserPublication
         if 'HTTP_HOST' not in environment:
             self._thread_local.host = self.USE_DEFAULTS
             return True
@@ -235,7 +224,7 @@ class LaunchpadBrowserFactory:
             assert len(host.split(':')) == 2, (
                 "Having a ':' in the host name isn't allowed.")
             host, port = host.split(':')
-        if host not in self._hostname_requestpublication:
+        if host not in self._hostname_vhrp:
             self._thread_local.host = self.UNHANDLED_HOST
             return False
         self._thread_local.host = host
@@ -269,18 +258,17 @@ class LaunchpadBrowserFactory:
         # cases.  Where we have an unknown host header, we can just leave
         # things as is.
 
-        rooturl, request_factory, publication_factory = (
-            self._hostname_requestpublication[host])
+        vhrp = self._hostname_vhrp[host]
 
         # Get hostname, protocol and port out of rooturl.
-        rooturlobj = Url(rooturl)
+        rooturlobj = URI(vhrp.vhostconfig.rooturl)
 
-        request_factory = ApplicationServerSettingRequestFactory(
-            request_factory,
-            rooturlobj.hostname,
-            rooturlobj.addressingscheme,
+        requestfactory = ApplicationServerSettingRequestFactory(
+            vhrp.requestfactory,
+            rooturlobj.host,
+            rooturlobj.scheme,
             rooturlobj.port)
-        return request_factory, publication_factory
+        return requestfactory, vhrp.publicationfactory
 
 
 class BasicLaunchpadRequest:
@@ -291,12 +279,20 @@ class BasicLaunchpadRequest:
     def __init__(self, body_instream, environ, response=None):
         self.breadcrumbs = []
         self.traversed_objects = []
+        self._wsgi_keys = set()
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
     @property
     def stepstogo(self):
         return StepsToGo(self)
+
+    def retry(self):
+        """See IPublisherRequest."""
+        new_request = super(BasicLaunchpadRequest, self).retry()
+        # propagate the list of keys we have set in the WSGI environment
+        new_request._wsgi_keys = self._wsgi_keys
+        return new_request
 
     def getNearest(self, *some_interfaces):
         """See ILaunchpadBrowserApplicationRequest.getNearest()"""
@@ -305,6 +301,19 @@ class BasicLaunchpadRequest:
                 if iface.providedBy(context):
                     return context, iface
         return None, None
+
+    def setInWSGIEnvironment(self, key, value):
+        """Set a key-value pair in the WSGI environment of this request.
+
+        Raises KeyError if the key is already present in the environment
+        but not set with setInWSGIEnvironment().
+        """
+        # This method expects the BasicLaunchpadRequest mixin to be used
+        # with a base that provides self._orig_env.
+        if key not in self._wsgi_keys and key in self._orig_env:
+            raise KeyError("'%s' already present in wsgi environment." % key)
+        self._orig_env[key] = value
+        self._wsgi_keys.add(key)
 
 
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
@@ -325,6 +334,98 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
 
+    @cachedproperty
+    def form_ng(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        return BrowserFormNG(self.form)
+
+
+class BrowserFormNG:
+    """Wrapper that provides IBrowserFormNG around a regular form dict."""
+    
+    implements(IBrowserFormNG)
+
+    def __init__(self, form):
+        """Create a new BrowserFormNG that wraps a dict containing form data."""
+        self.form = form
+
+    def __contains__(self, name):
+        """See IBrowserFormNG."""
+        return name in self.form
+
+    def __iter__(self):
+        """See IBrowserFormNG."""
+        return iter(self.form)
+    
+    def getOne(self, name, default=None):
+        """See IBrowserFormNG."""
+        value = self.form.get(name, default)
+        if zope_isinstance(value, (list, tuple)):
+            raise UnexpectedFormData(
+                'Expected only one value form field %s: %s' % (name, value))
+        return value
+    
+    def getAll(self, name, default=None):
+        """See IBrowserFormNG."""
+        # We don't want a mutable as a default parameter, so we use None as a
+        # marker.
+        if default is None:
+            default = []
+        else:
+            assert zope_isinstance(default, list), (
+                "default should be a list: %s" % default)
+        value = self.form.get(name, default)
+        if not zope_isinstance(value, list):
+            value = [value]
+        return value
+
+
+class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
+    """Make Zope3 widgets use IBrowserFormNG.
+
+    Replace the SimpleInputWidget._getFormInput method with one using
+    `IBrowserFormNG`.
+    """
+
+    installed = False
+    
+    @classmethod
+    def install(cls):
+        """Install the monkey patch."""
+        assert not cls.installed, "Monkey patch is already installed."
+        def _getFormInput_single(self):
+            """Return the submitted form value.
+
+            :raises UnexpectedFormData: If more than one value is submitted.
+            """
+            return self.request.form_ng.getOne(self.name)
+
+        def _getFormInput_multi(self):
+            """Return the submitted form values.
+            """
+            return self.request.form_ng.getAll(self.name)
+
+        # Save the original method and replace it with fixed ones.
+        # We don't save MultiDataHelper._getFormInput because it doesn't
+        # override the one in SimpleInputWidget.
+        cls._original__getFormInput = SimpleInputWidget._getFormInput
+        SimpleInputWidget._getFormInput = _getFormInput_single
+        MultiDataHelper._getFormInput = _getFormInput_multi
+        cls.installed = True
+        
+    @classmethod
+    def uninstall(cls):
+        """Uninstall the monkey patch."""
+        assert cls.installed, "Monkey patch is not installed."
+
+        # Restore saved method.
+        SimpleInputWidget._getFormInput = cls._original__getFormInput
+        del MultiDataHelper._getFormInput
+        cls.installed = False
+
+
+Zope3WidgetsUseIBrowserFormNGMonkeyPatch.install()
+
 
 class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
 
@@ -333,6 +434,31 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
     def __init__(self, header_output=None, http_transaction=None):
         super(LaunchpadBrowserResponse, self).__init__(
                 header_output, http_transaction
+                )
+
+    def redirect(self, location, status=None, temporary_if_possible=False):
+        """Do a redirect.
+
+        If temporary_if_possible is True, then do a temporary redirect
+        if this is a HEAD or GET, otherwise do a 303.
+
+        See RFC 2616.
+
+        The interface doesn't say that redirect returns anything.
+        However, Zope's implementation does return the location given.  This
+        is largely useless, as it is just the location given which is often
+        relative.  So we won't return anything.
+        """
+        if temporary_if_possible:
+            assert status is None, (
+                "Do not set 'status' if also setting 'temporary_if_possible'.")
+            method = self._request.method
+            if method == 'GET' or method == 'HEAD':
+                status = 307
+            else:
+                status = 303
+        super(LaunchpadBrowserResponse, self).redirect(
+                unicode(location).encode('UTF-8'), status=status
                 )
 
 
@@ -357,16 +483,35 @@ class LaunchpadTestRequest(TestRequest):
     >>> isinstance(request, TestRequest)
     True
 
-    It adds a mock INotificationRequest implementation
+    It provides LaunchpadLayer and adds a mock INotificationRequest
+    implementation.
 
+    >>> canonical.launchpad.layers.LaunchpadLayer.providedBy(request)
+    True
     >>> INotificationRequest.providedBy(request)
     True
     >>> request.uuid == request.response.uuid
     True
     >>> request.notifications is request.response.notifications
     True
+
+    It also provides the form_ng attribute that is available from
+    LaunchpadBrowserRequest.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> verifyObject(IBrowserFormNG, request.form_ng)
+    True
     """
-    implements(INotificationRequest)
+    implements(INotificationRequest, IBasicLaunchpadRequest,
+               canonical.launchpad.layers.LaunchpadLayer)
+
+    def __init__(self, body_instream=None, environ=None, form=None,
+                 skin=None, outstream=None, method='GET', **kw):
+        super(LaunchpadTestRequest, self).__init__(
+            body_instream=body_instream, environ=environ, form=form,
+            skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
+        self.breadcrumbs = []
+        self.traversed_objects = []
 
     @property
     def uuid(self):
@@ -374,11 +519,26 @@ class LaunchpadTestRequest(TestRequest):
 
     @property
     def notifications(self):
+        """See INotificationRequest."""
         return self.response.notifications
+
+    @property
+    def stepstogo(self):
+        """See IBasicLaunchpadRequest."""
+        return StepsToGo(self)
+
+    def getNearest(self, *some_interfaces):
+        """See IBasicLaunchpadRequest."""
+        return None, None
 
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadTestResponse()
+
+    @property
+    def form_ng(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        return BrowserFormNG(self.form)
 
 
 class LaunchpadTestResponse(LaunchpadBrowserResponse):
@@ -408,27 +568,6 @@ class LaunchpadTestResponse(LaunchpadBrowserResponse):
         return self._notifications
 
 
-class BlueprintBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.BlueprintLayer)
-
-
-class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItUbuntuLayer)
-
-
-class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItKUbuntuLayer)
-
-
-class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.ShipItEdUbuntuLayer)
-
-
-class LaunchpadXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
-                             ErrorReportRequest):
-    """Request type for doing XMLRPC in Launchpad."""
-
-
 class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
     """RequestFactory that sets the DebugLayer on a request."""
 
@@ -444,24 +583,187 @@ class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
         return request
 
 
+class LaunchpadAccessLogger(CommonAccessLogger):
+
+    def log(self, task):
+        """Receives a completed task and logs it in launchpad log format.
+
+        task IP address
+        X_FORWARDED_FOR
+        HOST
+        datetime task started
+        request string  (1st line of request)
+        response status
+        response bytes written
+        launchpad user id
+        launchpad page id
+        REFERER
+        USER_AGENT
+
+        """
+        request_headers = task.request_data.headers
+        cgi_env = task.getCGIEnvironment()
+
+        x_forwarded_for = request_headers.get('X_FORWARDED_FOR', '')
+        host = request_headers.get('HOST', '')
+        start_time = self.log_date_string(task.start_time)
+        first_line = task.request_data.first_line
+        status = task.status
+        bytes_written = task.bytes_written
+        userid = cgi_env.get('launchpad.userid', '')
+        pageid = cgi_env.get('launchpad.pageid', '')
+        referer = request_headers.get('REFERER', '')
+        user_agent = request_headers.get('USER_AGENT', '')
+
+        self.output.logRequest(
+            task.channel.addr[0],
+            ' - "%s" "%s" [%s] "%s" %s %d "%s" "%s" "%s" "%s"\n' % (
+                x_forwarded_for,
+                host,
+                start_time,
+                first_line,
+                status,
+                bytes_written,
+                userid,
+                pageid,
+                referer,
+                user_agent
+                )
+           )
+
+
 http = wsgi.ServerType(
     WSGIHTTPServer,
     WSGIPublisherApplication,
-    CommonAccessLogger,
+    LaunchpadAccessLogger,
     8080,
     True)
 
 pmhttp = wsgi.ServerType(
     PMDBWSGIHTTPServer,
     WSGIPublisherApplication,
-    CommonAccessLogger,
+    LaunchpadAccessLogger,
     8081,
     True)
 
 debughttp = wsgi.ServerType(
     WSGIHTTPServer,
     WSGIPublisherApplication,
-    CommonAccessLogger,
+    LaunchpadAccessLogger,
     8082,
     True,
     requestFactory=DebugLayerRequestFactory)
+
+
+# ---- mainsite
+
+class MainLaunchpadPublication(LaunchpadBrowserPublication):
+    """The publication used for the main Launchpad site."""
+
+# ---- blueprint
+
+class BlueprintBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.BlueprintLayer)
+
+class BlueprintPublication(LaunchpadBrowserPublication):
+    """The publication used for the Blueprint site."""
+
+# ---- code
+
+class CodePublication(LaunchpadBrowserPublication):
+    """The publication used for the Code site."""
+
+class CodeBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.CodeLayer)
+
+# ---- translations
+
+class TranslationsPublication(LaunchpadBrowserPublication):
+    """The publication used for the Translations site."""
+
+class TranslationsBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.TranslationsLayer)
+
+# ---- bugs
+
+class BugsPublication(LaunchpadBrowserPublication):
+    """The publication used for the Bugs site."""
+
+class BugsBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.BugsLayer)
+
+# ---- answers
+
+class AnswersPublication(LaunchpadBrowserPublication):
+    """The publication used for the Answers site."""
+
+class AnswersBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.AnswersLayer)
+
+# ---- shipit
+
+class ShipItPublication(LaunchpadBrowserPublication):
+    """The publication used for the ShipIt sites."""
+
+    root_object_interface = IShipItApplication
+
+class UbuntuShipItBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.ShipItUbuntuLayer)
+
+class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.ShipItKUbuntuLayer)
+
+class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.ShipItEdUbuntuLayer)
+
+# ---- xmlrpc
+
+class PublicXMLRPCPublication(LaunchpadBrowserPublication):
+    """The publication used for public XML-RPC requests."""
+    def handleException(self, object, request, exc_info, retry_allowed=True):
+        LaunchpadBrowserPublication.handleException(
+                self, object, request, exc_info, retry_allowed
+                )
+        OpStats.stats['xml-rpc faults'] += 1
+
+    def endRequest(self, request, object):
+        OpStats.stats['xml-rpc requests'] += 1
+        return LaunchpadBrowserPublication.endRequest(self, request, object)
+
+
+class PublicXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
+                          ErrorReportRequest):
+    """Request type for doing public XML-RPC in Launchpad."""
+
+    def _createResponse(self):
+        return PublicXMLRPCResponse()
+
+
+class PublicXMLRPCResponse(XMLRPCResponse):
+    """Response type for doing public XML-RPC in Launchpad."""
+
+    def handleException(self, exc_info):
+        # If we don't have a proper xmlrpclib.Fault, and we have
+        # logged an OOPS, create a Fault that reports the OOPS ID to
+        # the user.
+        exc_value = exc_info[1]
+        if not isinstance(exc_value, xmlrpclib.Fault):
+            request = get_current_browser_request()
+            if request is not None and request.oopsid is not None:
+                exc_info = (xmlrpclib.Fault,
+                            xmlrpclib.Fault(-1, request.oopsid),
+                            None)
+        XMLRPCResponse.handleException(self, exc_info)
+
+
+# ---- openid
+
+class OpenIdPublication(LaunchpadBrowserPublication):
+    """The publication used for OpenId requests."""
+
+    root_object_interface = IOpenIdApplication
+
+
+class OpenIdBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.OpenIdLayer)
+

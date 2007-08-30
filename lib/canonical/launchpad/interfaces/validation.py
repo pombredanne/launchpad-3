@@ -3,19 +3,15 @@
 __metaclass__ = type
 
 __all__ = [
+    'can_be_nominated_for_serieses',
     'validate_url',
-    'valid_http_url',
-    'valid_ftp_url',
-    'valid_rsync_url',
     'valid_webref',
-    'non_duplicate_bug',
+    'valid_branch_url',
     'non_duplicate_branch',
     'valid_bug_number',
     'valid_cve_sequence',
-    'valid_emblem',
-    'valid_hackergotchi',
-    'valid_unregistered_email',
-    'validate_distribution_mirror_schema',
+    'validate_new_team_email',
+    'validate_new_person_email',
     'validate_shipit_recipientdisplayname',
     'validate_shipit_phone',
     'validate_shipit_city',
@@ -25,15 +21,17 @@ __all__ = [
     'validate_shipit_postcode',
     'validate_shipit_province',
     'shipit_postcode_required',
-    'valid_distrotask',
+    'validate_distrotask',
+    'validate_new_distrotask',
     'valid_upstreamtask',
     'valid_password',
     'validate_date_interval'
     ]
 
+import re
+import string
 import urllib
 from textwrap import dedent
-from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.app.form.interfaces import WidgetsError
@@ -47,17 +45,37 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.validators.url import valid_absolute_url
 
+def can_be_nominated_for_serieses(serieses):
+    """Can the bug be nominated for these serieses?"""
+    current_bug = getUtility(ILaunchBag).bug
+    unnominatable_serieses = []
+    for series in serieses:
+        if not current_bug.canBeNominatedFor(series):
+            unnominatable_serieses.append(series.name.capitalize())
 
-def _validate_ascii_text(text):
-    """Check if the given text contains only ASCII characters.
-    
-    >>> print _validate_ascii_text(u'no non-ascii characters')
+    if unnominatable_serieses:
+        raise LaunchpadValidationError(_(
+            "This bug has already been nominated for these series: %s" %
+                ", ".join(unnominatable_serieses)))
+
+    return True
+
+
+def _validate_ascii_printable_text(text):
+    """Check if the given text contains only printable ASCII characters.
+
+    >>> print _validate_ascii_printable_text(u'no non-ascii characters')
     None
-    >>> print _validate_ascii_text(u'\N{LATIN SMALL LETTER E WITH ACUTE}')
+    >>> print _validate_ascii_printable_text(
+    ...     u'\N{LATIN SMALL LETTER E WITH ACUTE}')
     Traceback (most recent call last):
     ...
     LaunchpadValidationError: ...
-    >>> print _validate_ascii_text('\xc3\xa7')
+    >>> print _validate_ascii_printable_text(u'\x06')
+    Traceback (most recent call last):
+    ...
+    LaunchpadValidationError: Non printable characters are not allowed.
+    >>> print _validate_ascii_printable_text('\xc3\xa7')
     Traceback (most recent call last):
     ...
     AssertionError: Expected unicode string, but got <type 'str'>
@@ -74,6 +92,9 @@ def _validate_ascii_text(text):
             by our shipping company. Please change these to ASCII
             equivalents. (For instance, '%s' should be changed to 'e')"""
             % (first_non_ascii_char, e_with_acute))))
+    if re.search(r"^[%s]*$" % re.escape(string.printable), text) is None:
+        raise LaunchpadValidationError(_(
+            'Non printable characters are not allowed.'))
 
 
 def shipit_postcode_required(country):
@@ -116,7 +137,7 @@ class ShipItAddressValidator:
         ...
         LaunchpadValidationError: some custom message
         """
-        _validate_ascii_text(value)
+        _validate_ascii_printable_text(value)
         if len(value) > self.length:
             if not self.msg:
                 self.msg = ("The %s can't have more than %d characters."
@@ -143,18 +164,17 @@ validate_shipit_phone = ShipItAddressValidator('phone number', 16)
 
 validate_shipit_province = ShipItAddressValidator('province', 30)
 
-# XXX: For now we only check if the postcode is valid ascii, as we haven't
+# XXX Guilherme Salgado 2006-05-22: 
+# For now we only check if the postcode is valid ascii, as we haven't
 # heard back from MediaMotion on the length constraint.
-# -- Guilherme Salgado, 2006-05-22
 def validate_shipit_postcode(value):
-    _validate_ascii_text(value)
+    _validate_ascii_printable_text(value)
     return True
 
 
-# XXX matsubara 2006-03-15: The validations functions that deals with URLs
-# should be in validators/ and we should have them as separete constraints in
-# trusted.sql.
-# https://launchpad.net/products/launchpad/+bug/35077
+# XXX matsubara 2006-03-15 bug=35077: 
+# The validations functions that deals with URLs should be in 
+# validators/ and we should have them as separete constraints in trusted.sql.
 def validate_url(url, valid_schemes):
     """Returns a boolean stating whether 'url' is a valid URL.
 
@@ -193,7 +213,7 @@ def validate_url(url, valid_schemes):
 
 
 def valid_webref(web_ref):
-    """Returns True if web_ref is not a valid download URL, or raises a
+    """Returns True if web_ref is a valid download URL, or raises a
     LaunchpadValidationError.
 
     >>> valid_webref('http://example.com')
@@ -220,62 +240,30 @@ def valid_webref(web_ref):
             scheme (for instance, http:// for a web URL), and ensure the
             URL uses either http, https or ftp.""")))
 
-def valid_ftp_url(url):
-    if validate_url(url, ['ftp']):
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid FTP URL. Please enter the full URL, including the
-            ftp:// part.""")))
+def valid_branch_url(branch_url):
+    """Returns True if web_ref is a valid download URL, or raises a
+    LaunchpadValidationError.
 
-def valid_rsync_url(url):
-    if validate_url(url, ['rsync']):
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid Rsync URL. Please enter the full URL, including the
-            rsync:// part.""")))
-
-def valid_http_url(url):
-    if validate_url(url, ['http']):
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid HTTP URL. Please enter the full URL, including the
-            http:// part.""")))
-
-def non_duplicate_bug(value):
-    """Prevent dups of dups.
-
-    Returns True if the dup target is not a duplicate /and/ if the
-    current bug doesn't have any duplicates referencing it /and/ if the
-    bug isn't a duplicate of itself, otherwise
-    return False.
+    >>> valid_branch_url('http://example.com')
+    True
+    >>> valid_branch_url('https://example.com/foo/bar')
+    True
+    >>> valid_branch_url('ftp://example.com/~ming')
+    True
+    >>> valid_branch_url('sftp://example.com//absolute/path/maybe')
+    True
+    >>> valid_branch_url('other://example.com/moo')
+    Traceback (most recent call last):
+    ...
+    LaunchpadValidationError: ...
     """
-
-    from canonical.launchpad.interfaces.bug import IBugSet
-    bugset = getUtility(IBugSet)
-    current_bug = getUtility(ILaunchBag).bug
-    dup_target = value
-    current_bug_has_dup_refs = bool(bugset.searchAsUser(
-        user=getUtility(ILaunchBag).user,
-        duplicateof=current_bug))
-    if current_bug == dup_target:
-        raise LaunchpadValidationError(_(dedent("""
-            You can't mark a bug as a duplicate of itself.""")))
-    elif dup_target.duplicateof is not None:
-        raise LaunchpadValidationError(_(dedent("""
-            Bug %i is already a duplicate of bug %i. You can only
-            duplicate to bugs that are not duplicates themselves.
-            """% (dup_target.id, dup_target.duplicateof.id))))
-    elif current_bug_has_dup_refs:
-        raise LaunchpadValidationError(_(dedent("""
-            There are other bugs already marked as duplicates of Bug %i.
-            These bugs should be changed to be duplicates of another bug
-            if you are certain you would like to perform this change."""
-            % current_bug.id)))
-    else:
+    if validate_url(branch_url, ['http', 'https', 'ftp', 'sftp', 'bzr+ssh']):
         return True
+    else:
+        raise LaunchpadValidationError(_(dedent("""
+            Not a valid URL. Please enter the full URL, including the
+            scheme (for instance, http:// for a web URL), and ensure the
+            URL uses http, https, ftp, sftp, or bzr+ssh.""")))
 
 
 def non_duplicate_branch(value):
@@ -309,123 +297,106 @@ def valid_cve_sequence(value):
             "%s is not a valid CVE number" % value))
 
 
-def _valid_image(image, max_size, max_dimensions):
-    """Check that the given image is under the given constraints.
-
-    :length: is the maximum size of the image, in bytes.
-    :dimensions: is a tuple of the form (width, height).
-    """
-    # No global import to avoid hard dependency on PIL being installed
-    import PIL.Image
-    if len(image) > max_size:
-        raise LaunchpadValidationError(_(dedent("""
-            This file exceeds the maximum allowed size in bytes.""")))
-    try:
-        image = PIL.Image.open(StringIO(image))
-    except IOError:
-        # cannot identify image type
-        raise LaunchpadValidationError(_(dedent("""
-            The file uploaded was not recognized as an image; please
-            check the file and retry.""")))
-    if image.size > max_dimensions:
-        raise LaunchpadValidationError(_(dedent("""
-            This image exceeds the maximum allowed width or height in
-            pixels.""")))
-    return True
-
-def valid_emblem(emblem):
-    return _valid_image(emblem, 9000, (16,16))
-
-def valid_hackergotchi(hackergotchi):
-    return _valid_image(hackergotchi, 54000, (150,150))
-
-# XXX: matsubara 2005-12-08 This validator shouldn't be used in an editform,
-# because editing an already registered e-mail would fail if this constraint
-# is used.
-def valid_unregistered_email(email):
-    """Check that the given email is valid and that isn't registered to
-    another user."""
-
-    from canonical.launchpad.interfaces import IEmailAddressSet
-    if valid_email(email):
-        emailset = getUtility(IEmailAddressSet)
-        if emailset.getByEmail(email) is not None:
-            raise LaunchpadValidationError(_(dedent("""
-                %s is already taken.""" % email)))
-        else:
-            return True
-    else:
+def _validate_email(email):
+    if not valid_email(email):
         raise LaunchpadValidationError(_(dedent("""
             %s isn't a valid email address.""" % email)))
 
-def validate_distribution_mirror_schema(form_values):
-    """Perform schema validation according to IDistributionMirror constraints.
 
-    This validation will take place after the values of individual widgets
-    are validated. It's necessary because we have some constraints where we
-    need to take into account the value of multiple widgets.
-
-    :form_values: A dictionary mapping IDistributionMirror attributes to the
-                  values suplied by the user.
+def validate_new_team_email(email):
+    """Check that the given email is valid and not registered to
+    another launchpad account.
     """
-    errors = []
-    if not (form_values['http_base_url'] or form_values['ftp_base_url']):
-        errors.append(LaunchpadValidationError(_(
-            "All mirrors require at least an HTTP or FTP URL to be "
-            "specified.")))
+    from canonical.launchpad.webapp import canonical_url
+    from canonical.launchpad.interfaces import IEmailAddressSet
+    _validate_email(email)
+    email = getUtility(IEmailAddressSet).getByEmail(email)
+    if email is not None:
+        raise LaunchpadValidationError(_(
+            '%s is already registered in Launchpad and is associated with '
+            '<a href="%s">%s</a>.'), email.email,
+            canonical_url(email.person), email.person.browsername)
+    return True
 
-    if errors:
-        raise WidgetsError(errors)
+
+def validate_new_person_email(email):
+    """Check that the given email is valid and not registered to
+    another launchpad account.
+    
+    This validator is supposed to be used only when creating a new profile
+    using the /people/+newperson page, as the message will say clearly to the
+    user that the profile he's trying to create already exists, so there's no
+    need to create another one.
+    """
+    from canonical.launchpad.webapp import canonical_url
+    from canonical.launchpad.interfaces import IPersonSet
+    _validate_email(email)
+    owner = getUtility(IPersonSet).getByEmail(email)
+    if owner is not None:
+        raise LaunchpadValidationError(_(
+            "The profile you're trying to create already exists: "
+            '<a href="%s">%s</a>.'), canonical_url(owner), owner.browsername)
+    return True
 
 
-def valid_distrotask(bug, distribution, sourcepackagename=None,
-                     on_create=False):
-    """Check if a distribution bugtask already exists for a given bug.
+def validate_new_distrotask(bug, distribution, sourcepackagename=None):
+    """Validate a distribution bugtask to be added.
 
-    :on_create: A boolean set to True if the task is being added, otherwise
-    False.
+    Make sure that the isn't already a distribution task without a
+    source package, or that such task is added only when the bug doesn't
+    already have any tasks for the distribution.
 
-    If validation fails, a WidgetsError will be raised.
+    The same checks as `validate_distrotask` does are also done.
     """
     from canonical.launchpad.helpers import shortlist
 
-    distribution_tasks_for_bug = distribution.searchTasks(
-        BugTaskSearchParams(user=getUtility(ILaunchBag).user, bug=bug))
-    distribution_tasks_for_bug = shortlist(
-        distribution_tasks_for_bug, longest_expected=5)
-
     if sourcepackagename:
-        # Ensure this distribution/sourcepackage task is unique, and that there
-        # isn't already a generic task open on the distribution for this bug,
-        # because if there were, that task should be reassigned to the
-        # sourcepackage, rather than a new task opened.
-        for task in distribution_tasks_for_bug:
-            if task.sourcepackagename is None and on_create:
-                raise WidgetsError([
-                    LaunchpadValidationError(_(
-                        'This bug is already open on %s with no package '
-                        'specified. You should fill in a package name for the '
-                        'existing bug.') % (distribution.displayname))
-                    ])
-            elif task.sourcepackagename == sourcepackagename:
-                raise WidgetsError([
-                    LaunchpadValidationError(_(
-                        'This bug has already been reported on %s (%s).') % (
-                        sourcepackagename.name, distribution.name))
-                    ])
+        # Ensure that there isn't already a generic task open on the
+        # distribution for this bug, because if there were, that task
+        # should be reassigned to the sourcepackage, rather than a new
+        # task opened.
+        if bug.getBugTask(distribution) is not None:
+            raise LaunchpadValidationError(_(
+                    'This bug is already open on %s with no package '
+                    'specified. You should fill in a package name for the '
+                    'existing bug.') % (distribution.displayname))
     else:
         # Prevent having a task on only the distribution if there's at least one
         # task already on the distribution, whether or not that task also has a
         # source package.
-        if distribution_tasks_for_bug:
-            if on_create:
-                raise WidgetsError([
-                    LaunchpadValidationError(_(
-                        'This bug is already open on %s or packages in %s. '
-                        'Please specify an affected package in which the bug '
-                        'has not yet been reported.') % (
-                        distribution.displayname, distribution.displayname))
-                    ])
+        distribution_tasks_for_bug = [
+            bugtask for bugtask in shortlist(bug.bugtasks, longest_expected=50)
+            if bugtask.distribution == distribution]
+
+        if len(distribution_tasks_for_bug) > 0:
+            raise LaunchpadValidationError(_(
+                    'This bug is already open on %s or packages in %s. '
+                    'Please specify an affected package in which the bug '
+                    'has not yet been reported.') % (
+                    distribution.displayname, distribution.displayname))
+    validate_distrotask(bug, distribution, sourcepackagename)
+
+
+def validate_distrotask(bug, distribution, sourcepackagename=None):
+    """Check if a distribution bugtask already exists for a given bug.
+
+    If validation fails, a LaunchpadValidationError will be raised.
+    """
+    new_source_package = distribution.getSourcePackage(sourcepackagename)
+    if sourcepackagename and bug.getBugTask(new_source_package) is not None:
+        # Ensure this distribution/sourcepackage task is unique.
+        raise LaunchpadValidationError(_(
+                'This bug has already been reported on %s (%s).') % (
+                sourcepackagename.name, distribution.name))
+    elif (sourcepackagename is None and 
+          bug.getBugTask(distribution) is not None):
+        # Don't allow two distribution tasks with no source package.
+        raise LaunchpadValidationError(_(
+                'This bug has already been reported on %s.') % (
+                    distribution.name))
+    else:
+        # The bugtask is valid.
+        pass
 
 
 def valid_upstreamtask(bug, product):
@@ -445,9 +416,9 @@ def valid_upstreamtask(bug, product):
         raise WidgetsError(errors)
 
 
-# XXX: Not sure if this is the best place for this, but it'll sit here for
+# XXX Guilherme Salgado 2006-04-25: 
+# Not sure if this is the best place for this, but it'll sit here for
 # now, as it's not used anywhere else.
-# Guilherme Salgado, 2006-04-25
 _countries_where_postcode_is_required = """
     AT Austria
     DZ Algeria

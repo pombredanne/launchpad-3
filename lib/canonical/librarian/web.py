@@ -7,7 +7,7 @@ from twisted.web import resource, static, error, util, server, proxy
 from twisted.internet.threads import deferToThread
 
 from canonical.librarian.client import quote
-from canonical.database.sqlbase import begin, rollback
+from canonical.database.sqlbase import begin, commit, rollback
 
 defaultResource = static.Data("""
         <html>
@@ -17,7 +17,7 @@ defaultResource = static.Data("""
         http://librarian.launchpad.net/ is a
         file repository used by <a href="https://launchpad.net/">Launchpad</a>.
         </p>
-        <p><small>Copyright 2004-2006 Canonical Ltd.</small></p>
+        <p><small>Copyright 2004-2007 Canonical Ltd.</small></p>
         <!-- kthxbye. -->
         </body></html>
         """, type='text/html')
@@ -80,11 +80,12 @@ class LibraryFileAliasResource(resource.Resource):
         try:
             try:
                 alias = self.storage.getFileAlias(aliasID)
+                alias.updateLastAccessed()
                 return alias.contentID, alias.filename, alias.mimetype
             except LookupError:
                 raise NotFound
         finally:
-            rollback()
+            commit()
 
     def _eb_getFileAlias(self, failure):
         failure.trap(NotFound)

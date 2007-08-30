@@ -4,10 +4,8 @@ __metaclass__ = type
 
 __all__ = [
     'IMessage',
-    'IMessageOnTicket',
     'IMessageSet',
     'IMessageChunk',
-    'IAddMessage',
     'UnknownSender',
     'MissingSubject',
     'DuplicateMessageId',
@@ -32,6 +30,8 @@ class IMessage(Interface):
     subject = TextLine(
             title=_('Subject'), required=True, readonly=True,
             )
+    # XXX flacoste 2006-09-08: This attribute is only used for the
+    # add form used by MessageAddView.
     content = Text(title=_("Message"), required=True, readonly=True)
     owner = Int(
             title=_('Person'), required=False, readonly=True,
@@ -57,19 +57,11 @@ class IMessage(Interface):
     title = Attribute(_('The message title, usually just the subject.'))
     bugattachments = Attribute("A list of BugAttachments connected to this "
         "message.")
+    has_new_title = Attribute("Whether or not the title of this message "
+        "is different to that of its parent.")
 
     def __iter__():
         """Iterate over all the message chunks."""
-
-
-class IMessageOnTicket(IMessage):
-    """A specific extension to the basic Message, used for ITickets."""
-
-    resolved = Bool(title=_("Resolved"), required=False,
-        description=_("Check this box to indicate that you think this "
-        "problem is resolved. Note: only the person who made the technical "
-        "support request can actually close the ticket, other people can "
-        "only indicate that they believe it has been answered."))
 
 
 class IMessageSet(Interface):
@@ -122,12 +114,6 @@ class IMessageChunk(Interface):
     sequence = Int(title=_('Sequence order'), required=True, readonly=True)
     content = Text(title=_('Text content'), required=False, readonly=True)
     blob = Int(title=_('Binary content'), required=False, readonly=True)
-
-
-class IAddMessage(Interface):
-    """This schema is used to generate the add comment form"""
-    subject = TextLine(title=_("Subject"), required=True)
-    content = Text(title=_("Body"), required=True)
 
 
 class UnknownSender(NotFoundError):

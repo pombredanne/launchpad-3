@@ -22,9 +22,7 @@
 <div metal:fill-slot="main"
      tal:define="batch view/batchnav/currentBatch">
 
-  <tal:navigation
-    tal:condition="batch"
-    replace="structure view/batchnav/@@+navigation-links" />
+  <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
 
   <p>
   <tal:per_item repeat="result batch">
@@ -34,9 +32,7 @@
   </tal:per_item>
   </p>
 
-  <tal:navigation
-    tal:condition="batch"
-    replace="structure view/batchnav/@@+navigation-links" />
+  <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
 
 </div>
 </body>

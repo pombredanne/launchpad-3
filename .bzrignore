@@ -1,4 +1,5 @@
 .tags
+bzr-version-info.py
 launchpad.log
 launchpad-access.log
 configs/+config-overrides.zcml
@@ -9,7 +10,10 @@ sourcecode/bzrtools
 sourcecode/cscvs
 sourcecode/gnarly
 sourcecode/hct
+sourcecode/mailman
+sourcecode/openid
 sourcecode/psycopgda
+sourcecode/pyax
 sourcecode/pybaz
 sourcecode/pygettextpo
 sourcecode/pygpgme
@@ -17,8 +21,11 @@ sourcecode/pytz
 sourcecode/sourcerer
 sourcecode/sqlobject
 sourcecode/sqlos
+sourcecode/storm
 sourcecode/testresources
+sourcecode/urljr
 sourcecode/zope
+sourcecode/zstorm
 ./botmaster
 ./tags
 database/schema/diagrams/*.ps
@@ -26,3 +33,4 @@ database/schema/diagrams/*.dot
 sourcecode/twisted
 thread*.request
 ./TAGS
+lib/mailman

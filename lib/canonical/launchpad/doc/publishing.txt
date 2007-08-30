@@ -9,14 +9,14 @@ Select a publishing record from the sampledata (pmount is a
 interesting one):
 
  >>> spph = SourcePackagePublishingHistory.get(8)
- >>> spph.sourcepackagerelease.name, spph.distrorelease.name
+ >>> spph.sourcepackagerelease.name, spph.distroseries.name
  (u'pmount', u'hoary')
 
 Verify if the object follows its interface contracts:
 
- >>> from zope.interface.verify import verifyObject
+ >>> from canonical.launchpad.webapp.testing import verifyObject
  >>> from canonical.launchpad.interfaces import (
- ...     ISourcePackageRelease, IDistroRelease,
+ ...     ISourcePackageRelease, IDistroSeries,
  ...     ISourcePackagePublishingHistory,
  ...     ISourcePackage,
  ...     IDistributionSourcePackageRelease)
@@ -28,7 +28,7 @@ Verify if the object follows its interface contracts:
  So, they claim to implement some thing they don't really have. Most
  of the problems are related with bad interface inheritance.
 
- >>> IDistroRelease.providedBy(spph.distrorelease)
+ >>> IDistroSeries.providedBy(spph.distroseries)
  True
 
  >>> ISourcePackageRelease.providedBy(spph.sourcepackagerelease)
@@ -79,6 +79,43 @@ SourcePackagPublishingHistory implements both interfaces properly:
  >>> verifyObject(IArchivePublisher, spph)
  True
 
+Generating respective archive index *stanzas* based on IArchivePublisher:
+
+A 'stanza' is the name given to a group of attributes related to one
+source or binary package in the archive index file, it provides
+informations to APT, things like, package name, pool path, DSC format,
+files checksum, etc.
+
+The archive index should containg one entry for each source or binary
+currently published in the archive, it is usually partionated by
+component:
+
+<mirror_url_base>/ubuntu/edgy/main/binary-i386/Packages
+<mirror_url_base>/ubuntu/edgy/main/source/Sources
+
+The archive index is also available in in compressed formats.
+
+IArchivePublisher provide the following API to retrieve the *stanza*
+for a particular publication:
+
+ >>> print spph.getIndexStanza() #doctest: -NORMALIZE_WHITESPACE
+ Package: alsa-utils
+ Binary: alsa-mixer
+ Version: 1.0.8-1ubuntu1
+ Maintainer: Mark Shuttleworth <sabdfl@hbd.com>
+ Architecture: all
+ Standards-Version: 3.6.2
+ Format: 1.0
+ Directory: pool/main/a/alsa-utils
+ Files:
+  01234567890123456789012345678925 3 alsa-utils_1.0.8-1ubuntu1.dsc
+
+
+Empty fields like are suppressed, like 'Build-Depends' or
+'Build-Depends-Indep' to avoid extra charge on download.
+See sourcepackagerelease.txt for further information about the fields
+in question.
+
 IArchivePublisher.files are the SourcePackageFilePublishing records
 contained in this publication record. Each instance also implements
 IArchiveFilePublishing.
@@ -91,7 +128,6 @@ IArchiveFilePublishing.
 
  >>> [pub_file.libraryfilealias.filename for pub_file in spph.files]
  [u'alsa-utils_1.0.8-1ubuntu1.dsc']
-
 
 'secure_record' returns a ISecureSourcePackagePublishing instance
 corresponding to this publication. This instance implements
@@ -121,6 +157,26 @@ BinaryPackageFile and ISecureBinaryPackagePublishingHistory
  True
  >>> verifyObject(IArchivePublisher, bpph)
  True
+
+Generating respective "Packages" stanzas based on IArchivePublish:
+
+ >>> print bpph.getIndexStanza() #doctest: -NORMALIZE_WHITESPACE
+ Package: mozilla-firefox
+ Priority: important
+ Section: editors
+ Maintainer: Mark Shuttleworth <mark@canonical.com>
+ Architecture: i386
+ Version: 0.9
+ Replaces: gnome-mozilla-browser
+ Suggests: firefox-gnome-support (= 1.0.7-0ubuntu20), latex-xft-fonts, xprint
+ Provides: mozilla-firefox
+ Depends: gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)
+ Conflicts: firefox, mozilla-web-browser
+ Filename: pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb
+ Size: 3
+ MD5sum: 01234567890123456789012345678926
+ Description: Mozilla Firefox Web Browser
+  Mozilla Firefox Web Browser is .....
 
  >>> sbpph = bpph.secure_record
  >>> ISecureBinaryPackagePublishingHistory.providedBy(sbpph)

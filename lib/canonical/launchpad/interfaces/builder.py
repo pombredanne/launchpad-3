@@ -1,14 +1,18 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
-"""Build interfaces."""
+"""Builder interfaces."""
 
 __metaclass__ = type
 
 __all__ = [
+    'BuildDaemonError',
+    'BuildJobMismatch',
+    'BuildSlaveFailure',
+    'CannotBuild',
+    'CannotResetHost',
     'IBuilder',
     'IBuilderSet',
-    'IBuildQueue',
-    'IBuildQueueSet',
+    'ProtocolVersionMismatch',
     ]
 
 from zope.interface import Interface, Attribute
@@ -20,7 +24,33 @@ from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.url import builder_url_validator
 
-    
+
+class BuildDaemonError(Exception):
+    """The class of errors raised by the buildd classes"""
+
+
+class ProtocolVersionMismatch(BuildDaemonError):
+    """The build slave had a protocol version. This is a serious error."""
+
+
+class BuildJobMismatch(BuildDaemonError):
+    """The build slave is working with mismatched information, needs rescue."""
+
+
+class CannotResetHost(BuildDaemonError):
+    """The build slave is hosted on a machine that cannot be remotely reset."""
+
+
+# CannotBuild is intended to be the base class for a family of more specific
+# errors.
+class CannotBuild(BuildDaemonError):
+    """The requested build cannot be done."""
+
+
+class BuildSlaveFailure(BuildDaemonError):
+    """The build slave has suffered an error and cannot be used."""
+
+
 class IBuilder(IHasOwner):
     """Build-slave information and state.
 
@@ -71,8 +101,8 @@ class IBuilder(IHasOwner):
                               )
 
     trusted = Bool(title=_('Trusted'), required=True,
-                   description=_('Whether or not the builder is trusted to '
-                                 'build packages under security embargo.')
+                   description=_('Whether or not the builder is prepared '
+                                 'to build untrusted packages.')
                    )
 
     manual = Bool(title=_('Manual Mode'), required=False,
@@ -93,8 +123,107 @@ class IBuilder(IHasOwner):
     currentjob = Attribute("Build Job being processed")
     status = Attribute("Generated status information")
 
+    def cacheFileOnSlave(logger, libraryfilealias):
+        """Ask the slave to cache a librarian file to its local disk.
+
+        This is used in preparation for a build.
+
+        :param logger: A logger used for providing debug information.
+        :param libraryfilealias: A library file alias representing the needed
+            file.
+        """
+
+    def checkCanBuildForDistroArchSeries(distro_arch_series):
+        """Check that the slave can compile for the given distro_arch_release.
+
+        This will query the builder to determine its actual architecture (as
+        opposed to what we expect it to be).
+
+        :param distro_arch_release: The distro_arch_release to check against.
+        :raises BuildDaemonError: When the builder is down or of the wrong
+            architecture.
+        :raises ProtocolVersionMismatch: When the builder returns an
+            unsupported protocol version.
+        """
+
+    def checkSlaveAlive():
+        """Check that the buildd slave is alive.
+
+        This pings the slave over the network via the echo method and looks
+        for the sent message as the reply.
+
+        :raises BuildDaemonError: When the slave is down.
+        """
+
+    def cleanSlave():
+        """Clean any temporary files from the slave."""
+
     def failbuilder(reason):
         """Mark builder as failed for a given reason."""
+
+    def requestAbort():
+        """Ask that a build be aborted.
+
+        This takes place asynchronously: Actually killing everything running
+        can take some time so the slave status should be queried again to
+        detect when the abort has taken effect. (Look for status ABORTED).
+        """
+
+    def resetSlaveHost(logger):
+        """Reset the slave host to a known good condition.
+
+        :param logger: A logger used for providing debug information.
+        :raises CannotResetHost: Currently only virtual machine based builders
+            (those that are used to build untrusted source (not self.trusted)
+            can be reset.
+        """
+
+    def setSlaveForTesting(new_slave):
+        """Set a new slave object. This is for testing only."""
+
+    def slaveStatus():
+        """Get the slave status for this builder.
+
+        * builder_status => string
+        * build_id => string
+        * build_status => string or None
+        * logtail => string or None
+        * filename => dictionary or None
+        * dependencies => string or None
+
+        :return: a tuple containing (
+            builder_status, build_id, build_status, logtail, filemap,
+            dependencies)
+        """
+
+    def slaveStatusSentence():
+        """Get the slave status sentence for this builder.
+
+        :return: A tuple with the first element containing the slave status,
+            build_id-queue-id and then optionally more elements depending on
+            the status.
+        """
+
+    def startBuild(build_queue_item, logger):
+        """Start a build on this builder.
+
+        :param build_queue_item: A BuildQueueItem to build.
+        :param logger: A logger to be used to log diagnostic information.
+        :raises BuildSlaveFailure: When the build slave fails.
+        :raises CannotBuild: When a build cannot be started for some reason
+            other than the build slave failing.
+        """
+
+    def transferSlaveFileToLibrarian(file_sha1, filename):
+        """Transfer a file from the slave to the librarian.
+
+        :param file_sha1: The file's sha1, which is how the file is addressed
+            in the slave XMLRPC protocol. Specially, the file_sha1 'buildlog'
+            will cause the build log to be retrieved and gzipped.
+        :param filename: The name of the file to be given to the librarian file
+            alias.
+        :return: A librarian file alias.
+        """
 
 
 class IBuilderSet(Interface):
@@ -128,76 +257,31 @@ class IBuilderSet(Interface):
         """Return all configured builders."""
 
     def getBuildersByArch(arch):
-        """Return all configured builders for a given DistroArchRelease."""
+        """Return all configured builders for a given DistroArchSeries."""
 
+    def pollBuilders(logger, txn):
+        """Poll all the builders and take any immediately available actions.
 
-class IBuildQueue(Interface):
-    """A launchpad Auto Build queue entry"""
+        Specifically this will request a reset if needed, update log tails in
+        the database, copy and process the result of builds.
 
-    id = Attribute("Job identifier")
-    build = Attribute("The build in question")
-    builder = Attribute("The builder building the build")
-    created = Attribute("The datetime that the queue entry waw created")
-    buildstart = Attribute("The datetime of the last build attempt")
-    logtail = Attribute("The current tail of the log of the build")
-    lastscore = Attribute("Last score to be computed for this job")
-    archrelease = Attribute("the build DistroArchRelease")
-    urgency = Attribute("SourcePackageRelease Urgency")
-    component_name = Attribute("Component name where the job got published")
-    archhintlist = Attribute("SourcePackageRelease archhintlist")
-    name = Attribute("SourcePackageRelease name")
-    version = Attribute("SourcePackageRelease version")
-    files = Attribute("SourcePackageRelease files")
-    builddependsindep = Attribute("SourcePackageRelease builddependsindep")
-    buildduration = Attribute("The duration of the build in progress")
-    manual = Attribute("whether or not the record was rescored manually")
-
-    def manualScore(value):
-        """Manually set a score value to a queue item and lock it."""
-
-    def destroySelf():
-        """Delete this entry from the database."""
-
-
-class IBuildQueueSet(Interface):
-    """Launchpad Auto Build queue set handler and axiliary methods"""
-    title = Attribute('Title')
-
-    def __iter__():
-        """Iterate over current build jobs."""
-
-    def __getitem__(job_id):
-        """Retrieve a build job by id"""
-
-    def count():
-        """Return the number of build jobs in the queue."""
-
-    def get(job_id):
-        """Return the IBuildQueue with the given jobid."""
-
-    def getActiveBuildJobs():
-        """Return All active Build Jobs."""
-
-    def fetchByBuildIds(build_ids):
-        """Used to pre-populate the cache with reversed referred keys.
-
-        When dealing with a group of Build records we can't use pre-join
-        facility to also fetch BuildQueue records in a single query,
-        because Build and BuildQueue are related with reversed keys
-
-        Build.id = BuildQueue.build
-
-        So this method recieves a list of Build IDs and fetches the
-        correspondent BuildQueue with prejoined builder information.
-
-        It return the SelectResults or empty list if the passed builds
-        is empty, but the result isn't might to be used in call site.
+        :param logger: A logger to use to provide information about the polling
+            process.
+        :param txn: A zopeless transaction object which is currently used by
+            legacy code that we are in the process of removing. DO NOT add
+            additional uses of this parameter.
+        :return: A canonical.buildmaster.master.BuilddMaster instance. This is
+            temporary and once the dispatchBuilds method no longer requires
+            a used instance this return parameter will be dropped.
         """
 
-    def calculateCandidates(archreleases, state):
-        """Return the candidates for building
+    def dispatchBuilds(logger, buildMaster):
+        """Dispatch any pending builds that can be dispatched.
 
-        The result is a unsorted list of buildqueue items in a given state
-        within a given distroarchrelease group.
+        :param logger: A logger to use to provide information about the
+            dispatching process.
+        :param buildMaster: This is a canonical.buildmaster.master.BuilddMaster
+            instance which will be used to perform the dispatching as that is
+            where the detailed logic currently resides. This is being
+            refactored to remove the need for a buildMaster parameter at all.
         """
-

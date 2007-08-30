@@ -1,0 +1,16 @@
+= Recently Fixed Bugs on the Front Page =
+
+On the bugs front page there is a list of the most recently fixed bugs,
+across all products and distributions.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/')
+    >>> fixed_bugs = find_tag_by_id(anon_browser.contents, 'fixed-bugs')
+    >>> for tr in fixed_bugs('tr'):
+    ...     icon_td, summary_td, = tr('td')
+    ...     print "%s: %s" % (
+    ...         summary_td.b.renderContents().strip(),
+    ...         summary_td.a.renderContents())
+    Debian: 
+            Printing doesn't work
+    <BLANKLINE>
+

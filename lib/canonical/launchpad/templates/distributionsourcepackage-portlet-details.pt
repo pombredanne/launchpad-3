@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-details">
 
   <h2>"<span tal:replace="context/name">apache2</span>" source package in
   <span tal:replace="context/distribution/name">ubuntu</span></h2>
@@ -7,7 +7,7 @@
        tal:define="cr context/currentrelease">
 
     <tal:has_currentrelease condition="cr">
-      <b>Current release:</b>
+      <b>Latest release:</b>
       <a tal:content="cr/version"
          tal:attributes="href cr/fmt:url">3.2.1-3</a><br />
       <div tal:replace="structure cr/sourcepackagerelease/@@+portlet-details-content" />

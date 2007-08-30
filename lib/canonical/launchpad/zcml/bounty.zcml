@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -32,19 +31,19 @@
         <browser:page
             name="+index"
             template="../templates/bounty-index.pt"
-            lp:url="/bounties/$Bounty.name/+index" />
+            />
         <browser:page
             name="+portlet-details"
             template="../templates/bounty-portlet-details.pt"
-            lp:url="/bounties/$Bounty.name/+portlet-details" />
+            />
         <browser:page
             name="+portlet-relateds"
             template="../templates/bounty-portlet-relateds.pt"
-            lp:url="/bounties/$Bounty.name/+portlet-relateds" />
+            />
         <browser:page
             name="+portlet-subscribers"
             template="../templates/bounty-portlet-subscribers.pt"
-            lp:url="/bounties/$Bounty.name/+portlet-subscribers" />
+            />
     </browser:pages>
 
     <browser:pages
@@ -54,7 +53,7 @@
         <browser:page
             name="+subscribe"
             template="../templates/bounty-subscription.pt"
-            lp:url="/bounties/$Bounty.name/+subscribe" />
+            />
     </browser:pages>
 
     <browser:editform
@@ -125,8 +124,7 @@
         class="canonical.launchpad.browser.BountyAddView"
         permission="launchpad.AnyPerson"
         template="../templates/bounty-add.pt"
-        lp:url="/bounties/+new">
-    </browser:addform>
+        />
 
     <browser:pages
       for="canonical.launchpad.interfaces.IBountySet"
@@ -134,7 +132,7 @@
       <browser:page
         template="../templates/bounties-index.pt"
         name="+index"
-        lp:url="/bounties/+index" />
+        />
       <browser:page
         template="../templates/bounties-portlet-about.pt"
         name="+portlet-about" />

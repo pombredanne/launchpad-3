@@ -1,0 +1,107 @@
+= Restricted OpenID Simple Registration Extension support =
+
+The Launchpad OpenID server has restricted support for the OpenID
+Simple Registration Extension.  It will only provide registration
+details to certain known trust roots.
+
+This is done in order to share the user details among the various
+Canonical/Ubuntu sites participating in single sign-on.
+
+
+== Behaviour for unknown trust roots ==
+
+If a relying party attempts to request user details via the
+openid.sreg extension and Launchpad does not have a particular policy
+configured, then no details are disclosed in the response.
+
+First acquire an association handle:
+
+    >>> from canonical.launchpad.ftests.openid import (
+    ...     install_consumer, uninstall_consumer)
+    >>> install_consumer()
+
+    >>> from urllib import urlencode
+    >>> args = urlencode({
+    ...     'openid.mode': 'associate',
+    ...     'openid.assoc_type': 'HMAC-SHA1',
+    ...     })
+    >>> anon_browser.open('http://openid.launchpad.dev/+openid', data=args)
+    >>> import re
+    >>> [assoc_handle] = re.findall('assoc_handle:(.*)', anon_browser.contents)
+
+Now perform an OpenID authentication request:
+
+    >>> args = urlencode({
+    ...     'openid.mode': 'checkid_setup',
+    ...     'openid.assoc_handle': assoc_handle,
+    ...     'openid.identity': 'http://specs.openid.net/auth/2.0/identifier_select',
+    ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
+    ...     'openid.trust_root': 'http://launchpad.dev/+openid-consumer',
+    ...     'openid.sreg.required': 'email,country',
+    ...     'openid.sreg.optional': 'fullname,nickname',
+    ...     })
+
+    >>> sabdfl_browser = setupBrowser('Basic mark@hbd.com:test')
+    >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
+    >>> sabdfl_browser.getControl('Sign In', index=0).click()
+    >>> print sabdfl_browser.url
+    http://launchpad.dev/+openid-consumer?...
+    >>> print sabdfl_browser.contents
+    Consumer received GET
+    openid.assoc_handle:...
+    openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
+    openid.mode:id_res
+    openid.return_to:http://launchpad.dev/+openid-consumer
+    openid.sig:...
+    openid.signed:return_to,mode,identity
+    <BLANKLINE>
+
+
+== Behaviour for known trust roots ==
+
+Now we'll do the same thing, but with a Relying Party configuration
+registered for the trust root.
+
+Note that we don't grant this trust root access to the user's country
+so it is ommitted from the OpenID response.  Similarly, we allow
+access to the user's time zone but it is not sent because it hasn't
+been requested.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import IOpenIDRPConfigSet
+
+    >>> login('foo.bar@canonical.com')
+    >>> rpconfig = getUtility(IOpenIDRPConfigSet).new(
+    ...     trust_root='http://launchpad.dev/+openid-consumer',
+    ...     displayname='Test RP', description='A test RP',
+    ...     allowed_sreg=['fullname', 'nickname', 'email', 'timezone'])
+    >>> logout()
+
+    >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
+    >>> sabdfl_browser.getControl('Sign In', index=0).click()
+    >>> print sabdfl_browser.url
+    http://launchpad.dev/+openid-consumer?...
+    >>> print sabdfl_browser.contents
+    Consumer received GET
+    openid.assoc_handle:...
+    openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
+    openid.mode:id_res
+    openid.return_to:http://launchpad.dev/+openid-consumer
+    openid.sig:...
+    openid.signed:return_to,mode,identity,sreg.fullname,sreg.nickname,sreg.email
+    openid.sreg.email:mark@hbd.com
+    openid.sreg.fullname:Mark Shuttleworth
+    openid.sreg.nickname:sabdfl
+    <BLANKLINE>
+
+
+== Cleanup ==
+
+    >>> login('foo.bar@canonical.com')
+    >>> rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+    ...     'http://launchpad.dev/+openid-consumer')
+    >>> rpconfig.destroySelf()
+    >>> logout()
+
+    >>> uninstall_consumer()

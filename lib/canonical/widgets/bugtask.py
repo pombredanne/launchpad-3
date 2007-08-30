@@ -14,17 +14,17 @@ from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
-    IDisplayWidget, IInputWidget, InputErrors, ConversionError,
-    WidgetInputError)
+    IDisplayWidget, IInputWidget, InputErrors, WidgetInputError,
+    ConversionError)
 from zope.schema.interfaces import ValidationError, InvalidValue
 from zope.app.form import Widget, CustomWidgetFactory
 from zope.app.form.utility import setUpWidget
 
 from canonical.launchpad.interfaces import IBugWatch, ILaunchBag, NotFoundError
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
 
 class BugTaskAssigneeWidget(Widget):
     """A widget for setting the assignee on an IBugTask."""
@@ -44,17 +44,23 @@ class BugTaskAssigneeWidget(Widget):
         #
         # See zope.app.form.interfaces.IInputWidget.
         self.required = False
-
         self.assignee_chooser_widget = SinglePopupWidget(
             context, context.vocabulary, request)
-        self.assignee_chooser_widget.onKeyPress = "selectWidget('assign_to', event)"
+        self.setUpNames()
 
-        # Set some values that will be used as values for the input
-        # widgets.
-        self.assigned_to = "assigned_to"
-        self.assign_to_me = "assign_to_me"
-        self.assign_to_nobody = "assign_to_nobody"
-        self.assign_to = "assign_to"
+    def setUpNames(self):
+        """Set up the the names used by this widget."""
+        self.assigned_to = "%s.assigned_to" % self.name
+        self.assign_to_me = "%s.assign_to_me" % self.name
+        self.assign_to_nobody = "%s.assign_to_nobody" % self.name
+        self.assign_to = "%s.assign_to" % self.name
+        self.assignee_chooser_widget.onKeyPress = (
+            "selectWidget('%s', event)" % self.assign_to)
+
+    def setPrefix(self, prefix):
+        Widget.setPrefix(self, prefix)
+        self.assignee_chooser_widget.setPrefix(prefix)
+        self.setUpNames()
 
     def validate(self):
         """
@@ -64,7 +70,7 @@ class BugTaskAssigneeWidget(Widget):
         # If the user has chosen to assign this bug to somebody else,
         # ensure that they actually provided a valid input value for
         # the assignee field.
-        if self.request.form.get(self.name + ".option") == self.assign_to:
+        if self.request.form_ng.getOne(self.name + ".option") == self.assign_to:
             if not self.assignee_chooser_widget.hasInput():
                 raise WidgetInputError(
                         self.name, self.label,
@@ -103,9 +109,9 @@ class BugTaskAssigneeWidget(Widget):
         """See zope.app.form.interfaces.IInputWidget."""
         self.validate()
 
-        form = self.request.form
+        form = self.request.form_ng
 
-        assignee_option = form.get(self.name + ".option")
+        assignee_option = form.getOne(self.name + ".option")
         if assignee_option == self.assign_to:
             # The user has chosen to use the assignee chooser widget
             # to select an assignee.
@@ -171,10 +177,7 @@ class BugTaskAssigneeWidget(Widget):
         field = self.context
         bugtask = field.context
         if bugtask.assignee:
-            if bugtask.assignee.preferredemail is not None:
-                return bugtask.assignee.preferredemail.email
-            else:
-                return bugtask.assignee.browsername
+            return bugtask.assignee.unique_displayname
 
     def selectedRadioButton(self):
         """Return the radio button that should be selected.
@@ -188,7 +191,7 @@ class BugTaskAssigneeWidget(Widget):
         """
         # Give form values in the request precedence in deciding which
         # radio button should be selected.
-        selected_option = self.request.form.get(self.name + ".option")
+        selected_option = self.request.form_ng.getOne(self.name + ".option")
         if selected_option:
             return selected_option
 
@@ -215,16 +218,24 @@ class BugTaskBugWatchWidget(RadioWidget):
 
     def __init__(self, field, vocabulary, request):
         RadioWidget.__init__(self, field, vocabulary, request)
-        # Use javascript to select the correct radio button if he enters
-        # a remote bug.
-        select_js = "selectWidget('%s.%s', event)" % (
-            self.name, self._new_bugwatch_value)
-        self.remotebug_widget = CustomWidgetFactory(
-            TextWidget, extra='onKeyPress="%s"' % select_js)
+        self.remotebug_widget = CustomWidgetFactory(TextWidget)
         for field_name in ['bugtracker', 'remotebug']:
             setUpWidget(
                 self, field_name, IBugWatch[field_name], IInputWidget,
                 context=field.context)
+        self.setUpJavascript()
+
+    def setUpJavascript(self):
+        """Set up JS to select the "new bugwatch" option automatically."""
+        select_js = "selectWidget('%s.%s', event)" % (
+            self.name, self._new_bugwatch_value)
+        self.remotebug_widget.extra = 'onKeyPress="%s"' % select_js
+
+    def setPrefix(self, prefix):
+        RadioWidget.setPrefix(self, prefix)
+        self.remotebug_widget.setPrefix(prefix)
+        self.bugtracker_widget.setPrefix(prefix)
+        self.setUpJavascript()
 
     _messageNoValue = "None, the status of the bug is updated manually."
     _new_bugwatch_value = 'NEW'
@@ -259,7 +270,7 @@ class BugTaskBugWatchWidget(RadioWidget):
         one uses getInputValue(), which it shouldn't do.
         """
         if not self._renderedValueSet():
-            return self.request.form.get(self.name, self._missing)
+            return self.request.form_ng.getOne(self.name, self._missing)
         else:
             return self._toFormValue(self._data)
 
@@ -278,17 +289,17 @@ class BugTaskBugWatchWidget(RadioWidget):
             'input_id': input_id,
             'input_label': label}
 
-    #XXX: This method is mostly copied from RadioWidget.renderItems() and
+    #XXX: Bjorn Tillenius 2006-04-26:
+    #     This method is mostly copied from RadioWidget.renderItems() and
     #     modified to actually work. RadioWidget.renderItems() should be
     #     fixed upstream so that we can override it and only do the last
     #     part locally, the part after "# Add an option for creating...".
     #     http://www.zope.org/Collectors/Zope3-dev/592
-    #     -- Bjorn Tillenius, 2006-04-26
     def renderItems(self, value):
         """Render the items with with the correct radio button selected."""
-        #XXX: This works around the fact that we incorrectly gets the form
-        #     value instead of a valid field value.
-        #     -- Bjorn Tillenius, 2006-04-26
+        # XXX: Bjorn Tillenius 2006-04-26 
+        #      This works around the fact that we incorrectly gets the form
+        #      value instead of a valid field value.
         if value == self._missing:
             value = self.context.missing_value
         elif (isinstance(value, basestring) and
@@ -397,11 +408,11 @@ class BugTaskSourcePackageNameWidget(SinglePopupWidget):
 
         field = self.context
         distribution = field.context.distribution
-        if distribution is None and field.context.distrorelease is not None:
-            distribution = field.context.distrorelease.distribution
+        if distribution is None and field.context.distroseries is not None:
+            distribution = field.context.distroseries.distribution
         assert distribution is not None, (
             "BugTaskSourcePackageNameWidget should be used only for"
-            " bugtasks on distributions or on distribution releases.")
+            " bugtasks on distributions or on distribution series.")
 
         try:
             source, binary = distribution.guessPackageNames(input)
@@ -409,9 +420,9 @@ class BugTaskSourcePackageNameWidget(SinglePopupWidget):
             try:
                 return self.convertTokensToValues([input])[0]
             except InvalidValue:
-                raise LaunchpadValidationError(
+                raise ConversionError(
                     "Launchpad doesn't know of any source package named"
-                    " '%s' in %s.", input, distribution.displayname)
+                    " '%s' in %s." % (input, distribution.displayname))
         return source
 
 
@@ -432,7 +443,7 @@ class AssigneeDisplayWidget(BrowserWidget):
             assignee = assignee_field.get(bugtask)
         if assignee:
             person_img = renderElement(
-                'img', style="padding-bottom: 2px", src="/@@/user", alt="")
+                'img', style="padding-bottom: 2px", src="/@@/person", alt="")
             return renderElement(
                 'a', href=canonical_url(assignee),
                 contents="%s %s" % (person_img, escape(assignee.browsername)))
@@ -466,12 +477,26 @@ class DBItemDisplayWidget(BrowserWidget):
             return renderElement('span', contents='&mdash;')
 
 
-class NewLineToSpacesWidget(TextWidget):
+class NewLineToSpacesWidget(StrippedTextWidget):
     """A widget that replaces new line characters with spaces."""
 
     def _toFieldValue(self, input):
-        value = TextWidget._toFieldValue(self, input)
+        value = StrippedTextWidget._toFieldValue(self, input)
         if value is not self.context.missing_value:
             lines = value.splitlines()
             value = ' '.join(lines)
         return value
+
+
+class NominationReviewActionWidget(LaunchpadRadioWidget):
+    """Widget for choosing a nomination review action.
+
+    It renders a radio box with no label for each option.
+    """
+    orientation = "horizontal"
+
+    # The label will always be the empty string.
+    _joinButtonToMessageTemplate = '%s%s'
+
+    def textForValue(self, term):
+        return u''

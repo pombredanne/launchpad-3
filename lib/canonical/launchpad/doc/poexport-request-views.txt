@@ -60,6 +60,41 @@ See, no requests!
   >>> POExportRequest.select().count()
   0
 
+Request an empty potemplate (i.e. without any POTMsgSets).
+https://launchpad.net/products/rosetta/+bug/68261
+
+  >>> form = {
+  ...     'what': 'some',
+  ...     'potemplate': True,
+  ...     'format': 'PO'}
+  >>> request = LaunchpadTestRequest(form=form)
+  >>> request.method = 'POST'
+  >>> empty_potemplate = POTemplate.get(6)
+  >>> broken_potemplate_view = getView(empty_potemplate, '+export', request)
+  >>> broken_potemplate_view.initialize()
+
+Check that the request has been added to the DB.
+
+  >>> for request in POExportRequest.select(
+  ...         orderBy=['person', 'potemplate', 'pofile']):
+  ...     things = [
+  ...         request.person.displayname,
+  ...         request.potemplate.potemplatename.name]
+  ...     if request.pofile:
+  ...         things.append(request.pofile.language.englishname)
+  ...     print things
+  [u'Carlos Perell\xf3 Mar\xedn', u'evolution-2.2-test']
+
+Now forget that request happened.
+
+  >>> LaunchpadFunctionalTestSetup().tearDown()
+  >>> LaunchpadFunctionalTestSetup().setUp()
+
+The queue is now empty.
+
+  >>> POExportRequest.select().count()
+  0
+
 Let's request a PO file instead this time.
 
   >>> from canonical.launchpad.database import POFile

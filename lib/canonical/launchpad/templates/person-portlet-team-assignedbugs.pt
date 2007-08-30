@@ -1,16 +1,20 @@
-<div class="portlet" tal:condition="context/myactivememberships">
+<div class="portlet" id="portlet-team-assigned-bugs"
+     tal:condition="context/myactivememberships">
 
-  <h2>Bugs assigned to</h2>
+  <h2><span tal:replace="context/title" />'s teams</h2>
 
-  <div class="portletBody portletContent">
+  <div class="portletBody">
 
-    <ul tal:repeat="membership context/myactivememberships">
-      <li>
-        <a tal:attributes="href string:${membership/team/fmt:url}/+assignedbugs"
-          ><span tal:replace="membership/team/browsername" /></a>
-      </li>
-    </ul>
-    
+    <table>
+      <tr tal:repeat="team context/teams_participated_in">
+        <td tal:content="structure team/image:icon" />
+        <td>
+          <a tal:attributes="
+               href string:${team/fmt:url}/+assignedbugs"
+             tal:content="team/title">Team name</a>
+        </td>
+      </tr>
+    </table>
   </div>
 
 </div>

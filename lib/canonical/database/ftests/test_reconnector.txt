@@ -2,26 +2,13 @@
 This test demonstrates the reconnecting wrapper.  Compare and contrast to
 test_disconnection.txt.
 
-Make a TCP proxy to postgres. Note we have to match the version of
-twisted we use with out version of Python.
+Make a TCP proxy to postgres.
 
+    >>> import os
     >>> from canonical.ftests.pgsql import PgTestSetup
-    >>> import os, sys
-    >>> import canonical.lp
-    >>> from canonical.database.ftests import (
-    ...     getDBHost, wait_until_proxy_is_ready, wait_until_proxy_is_stopped)
-    >>> dbhost = getDBHost()
-    >>> ver = sys.version[:3]
-    >>> cmd = ('mktap%s portforward --port 5555 --dest_port 5432 '
-    ...        '--host %s' % (ver, dbhost))
-    >>> os.system(cmd)
-    0
-    >>> os.system('twistd%s -of portforward.tap' % ver)
-    0
-
-Wait for the proxy to start.
-
-    >>> wait_until_proxy_is_ready()
+    >>> from canonical.database.ftests import PortForwardTestSetup
+    >>> portforward = PortForwardTestSetup()
+    >>> portforward.setUp()
 
 Install the reconnector.
 
@@ -53,18 +40,12 @@ Genuine (not connection related) errors still work normally, too.
     >>> cur.execute("SELECT garbage invalid sql;")
     Traceback (most recent call last):
     ...
-    ProgrammingError: ERROR:  syntax error at or near "invalid" at character 16
-    <BLANKLINE>
-    SELECT garbage invalid sql;
+    ProgrammingError: ERROR:  syntax error at or near "invalid"
+    ...
 
 Break the connection by stopping the proxy.
 
-    >>> os.system('kill `cat twistd.pid`')
-    0
-
-Wait for the proxy to stop.
-
-    >>> wait_until_proxy_is_stopped()
+    >>> portforward.tearDown()
 
 Executing a query now blocks until the database connection can be
 reestablished.
@@ -94,9 +75,7 @@ can't be reached:
 
 Restart the proxy:
 
-    >>> os.system('twistd%s -of portforward.tap' % ver)
-    0
-    >>> wait_until_proxy_is_ready()
+    >>> portforward.setUp()
 
 Now, our blocked thread should've finished successfully.
 
@@ -113,15 +92,11 @@ Also, using our connection should still work.
     1
 
 
-XXX: Test that interrupting a transaction still fails -- spiv
+XXX: spiv 2004-12-08: Test that interrupting a transaction still fails.
 
 Clean up the proxy.
 
-    >>> os.system('kill `cat twistd.pid`')
-    0
-    >>> wait_until_proxy_is_stopped()
-    >>> os.remove('twistd.log')
-    >>> os.remove('portforward.tap')
+    >>> portforward.tearDown()
 
 Close our connection
 

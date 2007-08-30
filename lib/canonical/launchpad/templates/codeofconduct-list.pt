@@ -70,7 +70,7 @@
 
       </div>
 
-      <h4>Older (obsolete) versions of the Code of Conduct</h4>
+      <h2>Older (obsolete) versions of the Code of Conduct</h2>
 
       <ul class="document">
          <tal:codes tal:repeat="code context"> 

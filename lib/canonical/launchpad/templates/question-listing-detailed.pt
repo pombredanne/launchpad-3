@@ -1,0 +1,36 @@
+
+<tr class="noted"
+    tal:attributes="title context/description/fmt:shorten/320">
+  <td class="icon left">
+    <img alt="" src="/@@/question" />
+  </td>
+  <td>
+    <div>
+      <a
+        tal:attributes="
+          href context/fmt:url;
+          class string:${context/status/title}
+        "
+        tal:content="context/title"
+      />
+      (<span tal:replace="context/status/title">Approved</span>)
+    </div>
+    <div class="lesser">
+      posted
+      <span
+        tal:attributes="title context/datecreated/fmt:datetime"
+        tal:replace="context/datecreated/fmt:displaydate">2005-10-05</span>
+      by
+      <a tal:replace="structure context/owner/fmt:link"
+         >Foo Bar</a><tal:assignee condition="context/assignee">,
+      assigned to
+      <a tal:replace="structure context/assignee/fmt:link"
+         >Foo Bar</a></tal:assignee><tal:answerer condition="context/answerer">,
+      answered by
+      <a tal:replace="structure context/answerer/fmt:link">Foo Bar</a>
+      </tal:answerer>
+      in
+      <span tal:replace="context/target/title">SmegConf</span>
+    </div>
+  </td>
+</tr>

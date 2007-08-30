@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 """Classes to represent source packages in a distribution."""
 
@@ -8,7 +8,6 @@ __all__ = [
     'DistributionSourcePackage',
     ]
 
-from sqlobject import SQLObjectNotFound
 from sqlobject.sqlbuilder import SQLConstant
 
 from zope.interface import implements
@@ -16,11 +15,11 @@ from zope.interface import implements
 from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackage, ITicketTarget, DuplicateBugContactError,
-    DeleteBugContactError, TICKET_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.components.bugtarget import BugTargetBase
+    IDistributionSourcePackage, IQuestionTarget, DuplicateBugContactError,
+    DeleteBugContactError)
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
@@ -31,13 +30,12 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.database.supportcontact import SupportContact
-from canonical.launchpad.database.ticket import Ticket, TicketSet
-from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.database.sourcepackage import (
+    SourcePackage, SourcePackageQuestionTargetMixin)
 
 
-class DistributionSourcePackage(BugTargetBase):
+class DistributionSourcePackage(BugTargetBase,
+                                SourcePackageQuestionTargetMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -45,7 +43,7 @@ class DistributionSourcePackage(BugTargetBase):
     or current release, etc.
     """
 
-    implements(IDistributionSourcePackage, ITicketTarget)
+    implements(IDistributionSourcePackage, IQuestionTarget)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -61,6 +59,11 @@ class DistributionSourcePackage(BugTargetBase):
         """See IDistributionSourcePackage."""
         return '%s in %s' % (
             self.sourcepackagename.name, self.distribution.name)
+
+    @property
+    def bugtargetdisplayname(self):
+        """See IBugTarget."""
+        return "%s (%s)" % (self.name, self.distribution.displayname)
 
     @property
     def bugtargetname(self):
@@ -82,11 +85,14 @@ class DistributionSourcePackage(BugTargetBase):
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.version = %s
-            """ % sqlvalues(self.distribution, self.sourcepackagename,
+            """ % sqlvalues(self.distribution,
+                            self.distribution.all_distro_archive_ids,
+                            self.sourcepackagename,
                             version),
             orderBy='-datecreated',
             prejoinClauseTables=['SourcePackageRelease'],
@@ -97,7 +103,7 @@ class DistributionSourcePackage(BugTargetBase):
             distribution=self.distribution,
             sourcepackagerelease=spph[0].sourcepackagerelease)
 
-    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
+    # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
     def currentrelease(self):
         """See IDistributionSourcePackage."""
@@ -109,8 +115,11 @@ class DistributionSourcePackage(BugTargetBase):
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.status != %s
-            """ % sqlvalues(self.sourcepackagename, self.distribution,
+            """ % sqlvalues(self.sourcepackagename,
+                            self.distribution,
+                            self.distribution.all_distro_archive_ids,
                             PackagePublishingStatus.REMOVED),
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             orderBy=[SQLConstant(order_const),
@@ -138,9 +147,15 @@ class DistributionSourcePackage(BugTargetBase):
         """See IDistributionSourcePackage."""
         # Use "list" here because it's possible that this list will be longer
         # than a "shortlist", though probably uncommon.
-        contacts = PackageBugContact.selectBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
+        query = """
+            PackageBugContact.distribution=%s
+            AND PackageBugContact.sourcepackagename = %s
+            AND PackageBugContact.bugcontact = Person.id
+            """ % sqlvalues(self.distribution, self.sourcepackagename)
+        contacts = PackageBugContact.select(
+            query,
+            orderBy='Person.displayname',
+            clauseTables=['Person'])
         contacts.prejoin(["bugcontact"])
         return list(contacts)
 
@@ -190,13 +205,13 @@ class DistributionSourcePackage(BugTargetBase):
             return None
         return cache.binpkgnames
 
-    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
+    # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
-    def by_distroreleases(self):
+    def by_distroseriess(self):
         """See IDistributionSourcePackage."""
         result = []
-        for release in self.distribution.releases:
-            candidate = SourcePackage(self.sourcepackagename, release)
+        for series in self.distribution.serieses:
+            candidate = SourcePackage(self.sourcepackagename, series)
             if candidate.currentrelease:
                 result.append(candidate)
         return result
@@ -206,7 +221,7 @@ class DistributionSourcePackage(BugTargetBase):
         """See IDistributionSourcePackage."""
         return self._getPublishingHistoryQuery()
 
-    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
+    # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
     def current_publishing_records(self):
         """See IDistributionSourcePackage."""
@@ -216,13 +231,15 @@ class DistributionSourcePackage(BugTargetBase):
     def _getPublishingHistoryQuery(self, status=None):
         query = """
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id)
+            """ % sqlvalues(self.distribution,
+                            self.distribution.all_distro_archive_ids,
+                            self.sourcepackagename)
 
         if status is not None:
             query += ("AND SourcePackagePublishingHistory.status = %s"
@@ -233,17 +250,20 @@ class DistributionSourcePackage(BugTargetBase):
             prejoinClauseTables=['SourcePackageRelease'],
             orderBy='-datecreated')
 
-    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
+    # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
     def releases(self):
         """See IDistributionSourcePackage."""
         ret = SourcePackagePublishingHistory.select("""
-            sourcepackagepublishinghistory.distrorelease = distrorelease.id AND
-            distrorelease.distribution = %s AND
+            sourcepackagepublishinghistory.distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = %s AND
+            sourcepackagepublishinghistory.archive IN %s AND
             sourcepackagepublishinghistory.sourcepackagerelease =
                 sourcepackagerelease.id AND
             sourcepackagerelease.sourcepackagename = %s
-            """ % sqlvalues(self.distribution.id, self.sourcepackagename.id),
+            """ % sqlvalues(self.distribution,
+                            self.distribution.all_distro_archive_ids,
+                            self.sourcepackagename),
             orderBy='-datecreated',
             clauseTables=['distrorelease', 'sourcepackagerelease'])
         result = []
@@ -257,84 +277,6 @@ class DistributionSourcePackage(BugTargetBase):
                 result.append(dspr)
         return result
 
-    # ticket related interfaces
-    def tickets(self, quantity=None):
-        """See ITicketTarget."""
-        return Ticket.select("""
-            distribution=%s AND
-            sourcepackagename=%s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id),
-            orderBy='-datecreated',
-            limit=quantity)
-
-    def newTicket(self, owner, title, description, datecreated=None):
-        """See ITicketTarget."""
-        return TicketSet.new(
-            title=title, description=description, owner=owner,
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename,
-            datecreated=datecreated)
-
-    def getTicket(self, ticket_id):
-        """See ITicketTarget."""
-        # first see if there is a ticket with that number
-        try:
-            ticket = Ticket.get(ticket_id)
-        except SQLObjectNotFound:
-            return None
-        # now verify that that ticket is actually for this target
-        if ticket.distribution != self.distribution:
-            return None
-        if ticket.sourcepackagename != self.sourcepackagename:
-            return None
-        return ticket
-
-    def searchTickets(self, search_text=None,
-                      status=TICKET_STATUS_DEFAULT_SEARCH, sort=None):
-        """See ITicketTarget."""
-        return TicketSet.search(search_text=search_text, status=status,
-                                sort=sort, distribution=self.distribution,
-                                sourcepackagename=self.sourcepackagename)
-
-    def findSimilarTickets(self, title):
-        """See ITicketTarget."""
-        return TicketSet.findSimilar(title, distribution=self.distribution,
-                                     sourcepackagename=self.sourcepackagename)
-
-    def addSupportContact(self, person):
-        """See ITicketTarget."""
-        if person in self.support_contacts:
-            return False
-        SupportContact(
-            product=None, person=person,
-            sourcepackagename=self.sourcepackagename,
-            distribution=self.distribution)
-        return True
-
-    def removeSupportContact(self, person):
-        """See ITicketTarget."""
-        if person not in self.support_contacts:
-            return False
-        support_contact_entry = SupportContact.selectOneBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename,
-            person=person)
-        support_contact_entry.destroySelf()
-        return True
-
-    @property
-    def support_contacts(self):
-        """See ITicketTarget."""
-        support_contacts = SupportContact.selectBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
-
-        return shortlist([
-            support_contact.person for support_contact in support_contacts
-            ],
-            longest_expected=100)
-
     def __eq__(self, other):
         """See IDistributionSourcePackage."""
         return (
@@ -345,6 +287,12 @@ class DistributionSourcePackage(BugTargetBase):
     def __ne__(self, other):
         """See IDistributionSourcePackage."""
         return not self.__eq__(other)
+
+    def _getBugTaskContextWhereClause(self):
+        """See BugTargetBase."""
+        return (
+            "BugTask.distribution = %d AND BugTask.sourcepackagename = %d" % (
+            self.distribution.id, self.sourcepackagename.id))
 
     def searchTasks(self, search_params):
         """See IBugTarget."""
@@ -370,3 +318,8 @@ class DistributionSourcePackage(BugTargetBase):
             sourcepackagename=self.sourcepackagename)
         return BugSet().createBug(bug_params)
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return (
+            'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
+                sqlvalues(self.distribution, self.sourcepackagename))

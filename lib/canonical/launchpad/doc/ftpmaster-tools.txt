@@ -59,7 +59,7 @@ INFO by ID, return an error if it's not present in the specified queue:
   Aborting current transaction
   <BLANKLINE>
 
-Same for wrong distribution/distrorelease
+Same for wrong distribution/distroseries
 
   >>> process = subprocess.Popen([sys.executable, script,
   ...                             "-s", "hoary",
@@ -100,14 +100,15 @@ SOURCE OVERRIDE
 
   >>> process = subprocess.Popen([sys.executable, script, "-N",
   ...                             "-s", "breezy-autotest",
-  ...                             "override", "3", "source",
-  ...                             "universe/base"], stdout=subprocess.PIPE)
+  ...                             "-c", "universe", "-x", "base",
+  ...                             "override", "source", "3"],
+  ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
   0
   >>> print stdout
   Initialising connection to queue new
-  Running: "override 3 source universe/base"
+  Running: "override source 3"
   Overriding ubuntu/breezy-autotest (NEW) 1/6
   ---------------------------------------------------------------------------
      | * netapplet/0.99.6-1 Component: universe Section: base
@@ -119,15 +120,16 @@ BINARY OVERRIDE
 
   >>> process = subprocess.Popen([sys.executable, script, "-N",
   ...                             "-s", "breezy-autotest",
-  ...                             "override", "pmount", "binary",
-  ...                             "universe/web/extra"],
+  ...                             "-c", "universe", "-x", "web",
+  ...                             "-p", "extra",
+  ...                             "override", "binary", "pmount"],
   ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
   0
   >>> print stdout
   Initialising connection to queue new
-  Running: "override pmount binary universe/web/extra"
+  Running: "override binary pmount"
   Overriding ubuntu/breezy-autotest (NEW) 1/6
   ---------------------------------------------------------------------------
   Overriding pmount_0.1-1 (main/base/IMPORTANT)
@@ -142,15 +144,9 @@ via an API, without having to shell the script. This would enable us to get
 a mailer stub into place and check if a mail was really going to be sent, 
 instead of relying on log output. See bug 56722.
 
-  >>> libpath = '/var/tmp/fatsam.test/'
-  >>> for directory in ['00', '00', '00']:
-  ...     libpath = os.path.join(libpath, directory)
-  ...     os.mkdir(libpath)
-
-  >>> libpath = os.path.join(libpath, '01')
-  >>> libfile = open(libpath, 'wb')
-  >>> libfile.write('Fake Changesfile')
-  >>> libfile.close()
+  >>> from canonical.librarian.ftests.harness import (
+  ...     fillLibrarianFile, cleanupLibrarianFiles)
+  >>> fillLibrarianFile(1, content="Fake Changesfile")
 
   >>> process = subprocess.Popen([sys.executable, script, "-NM", "accept",
   ...                             "-s", "breezy-autotest",
@@ -219,7 +215,7 @@ REJECT
   ---------------------------------------------------------------------------
   Rejecting alsa-utils
   Would be sending a mail:
-     Subject: netapplet-1.0.0.tar.gz Rejected
+     Subject: netapplet-1.0.0.tar.gz rejected
      Sender: Root <root@localhost>
      Recipients: Root <root@localhost>
      Bcc:
@@ -235,13 +231,17 @@ REJECT
   If you don't understand why your files were rejected, or if the
   override file requires editing, reply to this email.
   <BLANKLINE>
+  -- 
+  You are receiving this email because you are the uploader, maintainer or
+  signer of the above package.
+  <BLANKLINE>
   ---------------------------------------------------------------------------
                                                                 1/6 total
   DRY RUN requested, not committing.
   <BLANKLINE>
 
 
-Also works for rejecting DistroReleaseQueueBuilds (issue mentioned in
+Also works for rejecting PackageUploadBuilds (issue mentioned in
 bug #57662)
 
   >>> process = subprocess.Popen([sys.executable, script, "-N", "reject",
@@ -257,7 +257,7 @@ bug #57662)
   ---------------------------------------------------------------------------
   Rejecting pmount
   Would be sending a mail:
-     Subject: netapplet-1.0.0.tar.gz Rejected
+     Subject: netapplet-1.0.0.tar.gz rejected
      Sender: Root <root@localhost>
      Recipients: Root <root@localhost>
      Bcc:
@@ -272,6 +272,10 @@ bug #57662)
   If you don't understand why your files were rejected, or if the
   override file requires editing, reply to this email.
   <BLANKLINE>
+  -- 
+  You are receiving this email because you are the uploader, maintainer or
+  signer of the above package.
+  <BLANKLINE>
   ---------------------------------------------------------------------------
                                                                  1/6 total
   DRY RUN requested, not committing.
@@ -279,6 +283,8 @@ bug #57662)
 
 
 FETCH CHANGES
+
+  >>> fillLibrarianFile(37, content="Fake DEB")
 
   >>> process = subprocess.Popen([sys.executable, script,
   ...                             "-s", "breezy-autotest", "fetch", "pmount"],
@@ -292,6 +298,7 @@ FETCH CHANGES
   Fetching ubuntu/breezy-autotest (NEW) 1/6
   ---------------------------------------------------------------------------
   Constructing netapplet-1.0.0.tar.gz
+  Constructing pmount_1.9-1_all.deb
   ---------------------------------------------------------------------------
                                                                 1/6 total
   <BLANKLINE>
@@ -300,11 +307,14 @@ FETCH CHANGES
   >>> print "'%s'" % changesfile.read()
   'Fake Changesfile'
 
+  >>> debfile = open('pmount_1.9-1_all.deb')
+  >>> print "'%s'" % debfile.read()
+  'Fake DEB'
+
   >>> os.remove('netapplet-1.0.0.tar.gz')
+  >>> os.remove('pmount_1.9-1_all.deb')
 
-  >>> import shutil
-  >>> shutil.rmtree('/var/tmp/fatsam.test/00')
-
+  >>> cleanupLibrarianFiles()
 
 Testing change-override behaviour:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -334,6 +344,31 @@ component 'universe':
   INFO    'mozilla-firefox/main/base' source overridden
   INFO    Commiting transaction, changes will be visible after next publisher run.
   <BLANKLINE>
+
+
+This is a full source and binary override of package 'mozilla-firefox' in warty,
+moving to component 'universe':
+
+  >>> process = subprocess.Popen([sys.executable, script, "-vS",
+  ...                             "-s", "warty", "-c", "universe",
+  ...                             "mozilla-firefox"],
+  ...                             stdout=subprocess.PIPE,
+  ...                             stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+
+It will only override binaries currently published from that source package 
+version.  In the sample data, mozilla-firefox source gives mozilla-firefox
+binary version 0.9.  The 1.0 version comes from the "iceweasel" source, so
+only the 0.9 version is overridden:
+
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> warty386 = getUtility(IDistributionSet)['ubuntu']['warty']['i386']
+  >>> for release in warty386.getBinaryPackage('mozilla-firefox').releases:
+  ...     (release.version, release.component.name)
+  (u'1.0', u'main')
+  (u'0.9', u'universe')
 
 
 Testing full (source and binary) override of package 'pmount', moving

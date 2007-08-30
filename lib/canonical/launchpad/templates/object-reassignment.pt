@@ -6,7 +6,6 @@
 >
 <body>
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Mozilla Firefox</h3>
   <h1>Change the <tal:role replace="view/ownerOrMaintainerAttr" /> of 
         <tal:thing replace="view/contextName" />
   </h1>
@@ -21,6 +20,7 @@
 
 <div metal:fill-slot="main">
 
+  <span metal:define-macro="object-reassignment">
   <p
     tal:condition="view/errormessage"
     class="error message"
@@ -69,10 +69,12 @@
       <tr>
         <td></td>
         <td>
-          <input type="submit" value="Change Owner" name="CHANGE_OWNER" />
+          <input type="submit" value="Change Registrant" name="CHANGE_OWNER" />
         </td>
       </tr>
     </table>
+  </form>
+  </span>
 
 </div> 
 

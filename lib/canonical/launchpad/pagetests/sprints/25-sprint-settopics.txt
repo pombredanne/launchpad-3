@@ -1,15 +1,23 @@
-Any logged in user can propose a spec to be discussed in a sprint.
+Any logged in user can propose specs to be discussed in a sprint.
 
   >>> user_browser.open(
-  ...     'http://features.launchpad.dev/distros/ubuntu/'
+  ...     'http://blueprints.launchpad.dev/ubuntu/'
   ...     '+spec/media-integrity-check/+linksprint')
+
   >>> user_browser.getControl('Sprint').value = ['uds-guacamole']
   >>> user_browser.getControl('Add').click()
+  >>> meeting_link = user_browser.getLink('uds-guacamole')
+  >>> meeting_link is not None
+  True
 
-  >>> spec_portlet = find_portlet(
-  ...     user_browser.contents, 'Specification details')
-  >>> spec_portlet.find(text='Sprints:').findNext('a').string
-  u'uds-guacamole'
+  >>> user_browser.open(
+  ...     'http://blueprints.launchpad.dev/kubuntu/'
+  ...     '+spec/kde-desktopfile-langpacks/+linksprint')
+  >>> user_browser.getControl('Sprint').value = ['uds-guacamole']
+  >>> user_browser.getControl('Add').click()
+  >>> meeting_link = user_browser.getLink('uds-guacamole')
+  >>> meeting_link is not None
+  True
 
 Regular users can't approve items to be discussed in a sprint.
 
@@ -19,8 +27,8 @@ Regular users can't approve items to be discussed in a sprint.
   ...
   LinkNotFoundError
 
-  >>> user_browser.getLink('Features').click()
-  >>> user_browser.getLink('Set Topics').click()
+  >>> user_browser.getLink('Blueprints').click()
+  >>> user_browser.getLink('Set agenda').click()
   Traceback (most recent call last):
   ...
   LinkNotFoundError
@@ -36,21 +44,23 @@ First choose a driver for the UDS Guacamole sprint.
 
   >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
   >>> browser.open('http://launchpad.dev/sprints/uds-guacamole')
-  >>> browser.getLink('Edit Details').click()
+  >>> browser.getLink('Change details').click()
   >>> browser.url
   'http://launchpad.dev/sprints/uds-guacamole/+edit'
 
   >>> browser.getControl('Meeting Driver').value = 'ubuntu-team'
-  >>> browser.getControl('Continue').click()
+  >>> browser.getControl('Change').click()
 
   >>> browser.url
   'http://launchpad.dev/sprints/uds-guacamole'
 
+  >>> ut = 'Ubuntu Team'
   >>> meeting_portlet = find_portlet(browser.contents, 'Meeting details')
-  >>> meeting_portlet.find(text='Driver:').findNext('a').string
-  u'Ubuntu Team'
+  >>> ut in extract_text(meeting_portlet.find(text='Driver:').findNext('a'))
+  True
 
-Any member of the Ubuntu-Team can now approve items to the UDS Guacamole agenda.
+Any member of the Ubuntu-Team can now approve and/or decline items to the UDS 
+Guacamole agenda.
 
   >>> from zope.testbrowser.testing import Browser
   >>> cprov_browser = Browser()
@@ -58,11 +68,22 @@ Any member of the Ubuntu-Team can now approve items to the UDS Guacamole agenda.
   >>> cprov_browser.addHeader(
   ...     'Authorization', 'Basic celso.providelo@canonical.com:cprov')
   >>> cprov_browser.open('http://launchpad.dev/sprints/uds-guacamole')
-  >>> cprov_browser.getLink('Features').click()
+  >>> cprov_browser.getLink('Blueprints').click()
   >>> cprov_browser.url
-  'http://features.launchpad.dev/sprints/uds-guacamole/+specs'
-
-  >>> cprov_browser.getLink('Set Topics').click()
+  'http://blueprints.launchpad.dev/sprints/uds-guacamole/'
+  >>> cprov_browser.getLink('Set agenda').click()
 
   >>> cprov_browser.title
   'Review topics proposed for discussion at Ubuntu DevSummit Guacamole'
+
+  >>> cprov_browser.getControl('CD Media Integrity Check').selected = True
+  >>> cprov_browser.getControl('Accept').click()
+
+  >>> cprov_browser.getControl(
+  ...     'KDE Desktop File Language Packs').selected = True
+  >>> cprov_browser.getControl('Decline').click()
+
+  >>> cprov_browser.url
+  'http://blueprints.launchpad.dev/sprints/uds-guacamole/+specs'
+
+

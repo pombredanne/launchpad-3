@@ -43,7 +43,7 @@ class BzrManager:
 
     def createImportTarget(self, working_dir):
         """Create a bzrworking branch to perform an import into."""
-        # TODO: fail if there is a mirror -- David Allouche 2006-07-28
+        # XXX David Allouche 2006-07-28: fail if there is a mirror.
         path = self._targetTreePath(working_dir)
         BzrDir.create_standalone_workingtree(path)
         return path
@@ -71,25 +71,8 @@ class BzrManager:
                 + arguments)
 
     def _runCommand(self, arguments):
-        stdout = None
-        stderr = None
         stdin = open('/dev/null', 'r')
-        if self.silent:
-            fd, name = tempfile.mkstemp()
-            os.unlink(name)
-            stdout = stderr = fd
-        retcode = subprocess.call(
-            arguments, stdin=stdin, stdout=stdout, stderr=stderr)
+        retcode = subprocess.call(arguments, stdin=stdin)
         if retcode != 0:
-            # failure in the subprocess should bubble up to CommandLineRunner
-            # for buildbot to get the non-zero exit status. We could use any
-            # exception here, but SystemExit seems appropriate.
-            if self.silent:
-                exit_value = 'Exited with status: %d\n' % retcode
-                logfile = os.fdopen(fd, 'rw')
-                exit_value += logfile.read()
-                logfile.close()
-            else:
-                exit_value = retcode
-            sys.exit(exit_value)
+            sys.exit(retcode)
 

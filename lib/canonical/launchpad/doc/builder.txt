@@ -7,7 +7,7 @@ which represents the Buildd Slave entity.
 
 Need auxiliar methods from zope toolchain:
 
- >>> from zope.interface.verify import verifyObject
+ >>> from canonical.launchpad.webapp.testing import verifyObject
  >>> from zope.component import getUtility
 
 Importing Builder content class and its interface:
@@ -75,6 +75,7 @@ Check if the instance is iterable:
  >>> for b in builderset:
  ...     b.id
  1
+ 2
 
 Check if the __getitem__ method:
 
@@ -106,7 +107,7 @@ Or raises an SQLObjectNotFound exception:
 count() return the number of builder instance we have stored:
 
  >>> builderset.count()
- 2
+ 3
 
 getBuilder() method returns all the builders available. It seems the
 same than the own instance but we have plans to turn it aware of some
@@ -116,5 +117,4 @@ attributes of builder instance as: builderok and trust.
  ...     b.name
  u'bob'
  u'dummy'
-
-
+ u'frog'

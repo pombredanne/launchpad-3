@@ -9,17 +9,20 @@ __metaclass__ = type
 
 __all__ = [
     'ISprint',
+    'IHasSprints',
     'ISprintSet',
     ]
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Choice, Text, TextLine
+from zope.schema import Datetime, Int, Choice, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.fields import (
+    ContentNameField, IconImageUpload, LogoImageUpload, MugshotImageUpload)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces import IHasOwner, IHasSpecifications
+from canonical.launchpad.interfaces import (
+    IHasOwner, IHasSpecifications, IHasDrivers)
 
 
 class SprintNameField(ContentNameField):
@@ -34,8 +37,10 @@ class SprintNameField(ContentNameField):
         return getUtility(ISprintSet)[name]
 
 
-class ISprint(IHasOwner, IHasSpecifications):
+class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     """A sprint, or conference, or meeting."""
+
+    id = Int(title=_('The Sprint ID'))
 
     name = SprintNameField(
         title=_('Name'), required=True, description=_('A unique name '
@@ -61,6 +66,33 @@ class ISprint(IHasOwner, IHasSpecifications):
     home_page = TextLine(
         title=_('Home Page'), required=False, description=_("A web page "
         "with further information about the event."))
+    icon = IconImageUpload(
+        title=_("Icon"), required=False,
+        default_image_resource='/@@/meeting',
+        description=_(
+            "A small image of exactly 14x14 pixels and at most 5kb in size, "
+            "that can be used to identify this meeting. The icon will be "
+            "displayed wherever we list and link to the meeting."))
+    logo = LogoImageUpload(
+        title=_("Logo"), required=False,
+        default_image_resource='/@@/meeting-logo',
+        description=_(
+            "An image of exactly 64x64 pixels that will be displayed in "
+            "the heading of all pages related to this meeting. It should be "
+            "no bigger than 50kb in size."))
+    mugshot = MugshotImageUpload(
+        title=_("Brand"), required=False,
+        default_image_resource='/@@/meeting-mugshot',
+        description=_(
+            "A large image of exactly 192x192 pixels, that will be displayed "
+            "on this meeting's home page in Launchpad. It should be no "
+            "bigger than 100kb in size. "))
+    homepage_content = Text(
+        title=_("Homepage Content"), required=False,
+        description=_(
+            "The content of this meeting's home page. Edit this and it "
+            "will be displayed for all the world to see. It is NOT a wiki "
+            "so you cannot undo changes."))
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     time_zone = Choice(
@@ -77,7 +109,7 @@ class ISprint(IHasOwner, IHasSpecifications):
     # joins
     attendees = Attribute('The set of attendees at this sprint.')
     attendances = Attribute('The set of SprintAttendance records.')
-    
+
     def specificationLinks(status=None):
         """Return the SprintSpecification records matching the filter,
         quantity and sort given. The rules for filtering and sorting etc are
@@ -91,12 +123,12 @@ class ISprint(IHasOwner, IHasSpecifications):
         multiple products and distros.
         """
 
-    def acceptSpecificationLinks(idlist):
+    def acceptSpecificationLinks(idlist, decider):
         """Accept the given sprintspec items, and return the number of
         sprintspec items that remain proposed.
         """
 
-    def declineSpecificationLinks(idlist):
+    def declineSpecificationLinks(idlist, decider):
         """Decline the given sprintspec items, and return the number of
         sprintspec items that remain proposed.
         """
@@ -115,12 +147,38 @@ class ISprint(IHasOwner, IHasSpecifications):
     def unlinkSpecification(spec):
         """Remove this specification from the sprint spec list."""
 
+    def isDriver(user):
+        """Returns True if and only if the specified user
+        is a driver of this sprint.
 
-# Interfaces for containers
+        A driver for a sprint is either the person in the
+        `driver` attribute, a person who is memeber of a team
+        in the `driver` attribute or an administrator.
+        """
+
+
+class IHasSprints(Interface):
+    """An interface for things that have lists of sprints associated with
+    them. This is used for projects, products and distributions, for
+    example, where we can generate a list of upcoming events relevant to
+    them.
+    """
+
+    coming_sprints = Attribute(
+        "A list of up to 5 events currently on, or soon to be on, that are "
+        "relevant to this context.")
+
+    sprints = Attribute("All sprints relevant to this context.")
+
+    past_sprints = Attribute("Sprints that occured in the past.")
+
+
 class ISprintSet(Interface):
     """A container for sprints."""
 
     title = Attribute('Title')
+
+    all = Attribute('All sprints, in reverse order of starting')
 
     def __iter__():
         """Iterate over all Sprints, in reverse time_start order."""
@@ -129,7 +187,6 @@ class ISprintSet(Interface):
         """Get a specific Sprint."""
 
     def new(owner, name, title, time_starts, time_ends, summary=None,
-        description=None):
+            description=None, mugshot=None, logo=None, icon=None):
         """Create a new sprint."""
-
 

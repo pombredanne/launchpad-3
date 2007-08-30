@@ -11,7 +11,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:condition="not: context/potemplates" class="portlet">
-    <h4>No templates yet for <span tal:replace="context/name">1.0</span>:</h4>
+    <h2>No templates yet for <span tal:replace="context/name">1.0</span></h2>
     <div class="portletBody portletContent">
 
       <img src="/@@/info" />
@@ -29,7 +29,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Foo Series: main</h3>
   <h1>Upload new translation resources</h1>
 </metal:heading>
 
@@ -42,12 +41,12 @@
     files (<code>.tar</code>, <code>.tar.gz</code>, <code>.tgz</code> or
     <code>.tar.bz2</code>).
     The files you upload will be reviewed by an admin before they appear in
-    Rosetta.  We do this for new uploads so that we can check that things are
+    Launchpad.  We do this for new uploads so that we can check that things are
     set up properly.  Further uploads of these files will not need to be
     reviewed.
   </p>
 
-  <form action="+translations-upload" method="POST" enctype="multipart/form-data">
+  <form action="+translations-upload" method="post" enctype="multipart/form-data">
     <table>
       <tr>
         <th><label for="file_input">File:</label></th>

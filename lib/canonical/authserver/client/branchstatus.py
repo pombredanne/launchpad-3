@@ -13,8 +13,8 @@ class BranchStatusClient:
         self.client = xmlrpclib.ServerProxy(
             config.supermirror.authserver_url)
 
-    def getBranchPullQueue(self):
-        return self.client.getBranchPullQueue()
+    def getBranchPullQueue(self, branch_type):
+        return self.client.getBranchPullQueue(branch_type)
 
     def startMirroring(self, branch_id):
         assert isinstance(branch_id, int)
@@ -36,3 +36,15 @@ class BranchStatusClient:
         if not self.client.mirrorFailed(branch_id, reason):
             raise BranchStatusError('mirrorFailed() failed for branch %d'
                                     % branch_id)
+
+    def recordSuccess(self, name, hostname, date_started, date_completed):
+
+        # utctimetuple returns a time.struct_t, not a tuple, and xmlrpclib does
+        # not know how to marshall this type. So we need to apply tuple() to
+        # the return value of utctimetuple() to be able to transmit it.
+        started_tuple = tuple(date_started.utctimetuple())
+        completed_tuple = tuple(date_completed.utctimetuple())
+
+        if not self.client.recordSuccess(
+                name, hostname, started_tuple, completed_tuple):
+            raise BranchStatusError('recordSuccess() failed')

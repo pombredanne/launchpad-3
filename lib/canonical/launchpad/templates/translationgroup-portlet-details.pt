@@ -1,0 +1,9 @@
+<div class="portlet" id="portlet-details">
+  <h2>Current details</h2>
+  <div class="portletBody portletContent">
+    Owner:
+    <a tal:content="context/owner/displayname"
+      tal:attributes="href context/owner/fmt:url"
+      class="link" />
+  </div>
+</div>

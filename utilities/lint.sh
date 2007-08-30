@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Runs pyflakes and pylint on files changed in tree
 #
@@ -14,11 +14,11 @@ PYLINT=pylint.python2.4
 # the top of the file, a disable-msg command:
 #   # pylint: disable-msg=W0401, E0202
 
-# Stuff I'd like to add:
-# XXX: E0201 (Access to undefined member) fails for classmethods and
-#            SQLObject's id and _table attributes
-# XXX: W0613 (Unused argument) triggers often for hook methods, and for tuple
-#            unpacking where you really want it to make the code clearer
+# XXX kiko 2005-07-21: Stuff I'd like to add:
+# E0201 (Access to undefined member) fails for classmethods and
+#       SQLObject's id and _table attributes
+# W0613 (Unused argument) triggers often for hook methods, and for tuple
+#       unpacking where you really want it to make the code clearer
 PYLINTOFF="W0232,C0103,W0103,C0101,W0142,R0903,W0201,W0212"
 
 if [ "$1" == "-v" ]; then
@@ -61,8 +61,6 @@ PYLINTOPTS_SCRIPT="$PYLINTOPTS,W0702,W0703"
 # R0911 (Too many return statements)
 PYLINTOPTS_TRAVERSERS="$PYLINTOPTS,W0613,R0911"
 
-export PYTHONPATH=lib:$PYTHONPATH
-
 if [ -z "$1" ]; then
     files=`bzr added ; bzr modified`
 else
@@ -90,7 +88,8 @@ if [ -z "$pyfiles" ]; then
 fi
 
 if which pyflakes >/dev/null; then
-    output=`pyflakes $pyfiles`
+    output=`pyflakes $pyfiles \
+            | grep -v "unable to detect undefined names"`
     if [ ! -z "$output" ]; then
         echo "============================================================="
         echo "Pyflakes notices"
@@ -126,7 +125,7 @@ for file in $pyfiles; do
                 | grep -v "Unused argument 'view'" \
                 | grep -v "Unused argument 'context'" \
                 | grep -v '^*'`
-# XXX: wtf is this?
+# XXX Stuart Bishop 2005-10-27: wtf is this?
 #     elif echo $file | grep -qs "launchpad/pagetitles.py"; then
 #         output=`$PYLINT $file $OPTS 2>/dev/null \
 #                 | grep -v "Unused argument 'furtherPath'" \

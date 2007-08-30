@@ -1,0 +1,131 @@
+= Review Nominated Bugs =
+
+== Distribution Series ==
+
+From the distribution series bug page you can go to a page to review
+all the bugs nominated for this series.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/hoary')
+    >>> anon_browser.getLink('Review nominations').click()
+    >>> print anon_browser.title
+    Bugs nominated for Hoary
+
+All the basic bug details are displayed.
+
+    >>> from canonical.launchpad.ftests.bug import print_bugtasks
+    >>> print_bugtasks(anon_browser.contents)
+    1  Firefox does not support SVG  mozilla-firefox  Medium  New
+
+There are no controls for approving/declining the nominations if the
+user don't have permissions to do it.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/ubuntu/hoary')
+    >>> user_browser.getLink('Review nominations').click()
+    >>> print anon_browser.title
+    Bugs nominated for Hoary
+
+    >>> print_bugtasks(user_browser.contents)
+    1  Firefox does not support SVG  mozilla-firefox  Medium  New
+
+    >>> bug_listing = find_tag_by_id(user_browser.contents, 'buglisting')
+    >>> def print_which_items_have_widgets(bug_listing):
+    ...     for tr in bug_listing.tbody('tr'):
+    ...         approve_td, icon_td, bug_id = tr('td')[:3]
+    ...         if not bug_id.renderContents().isdigit():
+    ...             # No widget column is rendered at all.
+    ...             has_input_controls = False
+    ...             bug_id = icon_td
+    ...         else:
+    ...             has_input_controls = (
+    ...                 approve_td.renderContents().strip() != '')
+    ...         print "%s: %s" % (extract_text(bug_id), has_input_controls)
+    >>> print_which_items_have_widgets(bug_listing)
+    1: False
+
+No button for submitting the form is shown, nor is the approve/decline
+header:
+
+    >>> user_browser.getControl('Save changes')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Save changes'
+
+    >>> for th in bug_listing.thead('th'):
+    ...     print "'%s'" % extract_text(th).strip()
+    'Summary'
+    'Package'
+    'Importance'
+    'Status'
+
+Someone with enough permissions sees controls for approving/declining
+nominations.
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/ubuntu/hoary')
+    >>> admin_browser.getLink('Review nominations').click()
+    >>> print anon_browser.title
+    Bugs nominated for Hoary
+
+    >>> print_bugtasks(admin_browser.contents)
+    1  Firefox does not support SVG  mozilla-firefox  Medium  New
+
+    >>> bug_listing = find_tag_by_id(admin_browser.contents, 'buglisting')
+    >>> print_which_items_have_widgets(bug_listing)
+    1: True
+
+    >>> for th in bug_listing.thead('th'):
+    ...     print "'%s'" % extract_text(th).strip()
+    'Accept Decline No change'
+    'Summary'
+    'Package'
+    'Importance'
+    'Status'
+
+After approving the nominated bugs, the listing is empty.
+
+    >>> from canonical.launchpad.database import BugSet, DistributionSet
+    >>> ubuntu = DistributionSet().getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> bug_one = BugSet().get(1)
+    >>> hoary_nomination = bug_one.getNominationFor(hoary)
+    >>> nomination_control = admin_browser.getControl(
+    ...     name='field.review_action_%s' % hoary_nomination.id)
+    >>> nomination_control.getControl(value='ACCEPT').click()
+    >>> admin_browser.getControl('Save changes').click()
+    >>> for message in get_feedback_messages(admin_browser):
+    ...     print message
+    1 nomination(s) accepted
+
+    >>> print find_tag_by_id(admin_browser.contents, 'buglisting')
+    None
+    >>> user_browser.getControl('Save changes')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Save changes'
+
+== Product Series ==
+
+A product series has the same nomination listing as a distro series.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/1.0')
+    >>> user_browser.getLink('Review nominations').click()
+    >>> print user_browser.title
+    Bugs nominated for 1.0
+
+    >>> print_bugtasks(user_browser.contents)
+    1  Firefox does not support SVG Low  New
+
+    >>> from canonical.launchpad.database import ProductSet
+    >>> firefox = ProductSet().getByName('firefox')
+    >>> firefox_1_0 = firefox.getSeries('1.0')
+    >>> bug_one = BugSet().get(1)
+    >>> firefox_nomination = bug_one.getNominationFor(firefox_1_0)
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/firefox/1.0')
+    >>> admin_browser.getLink('Review nominations').click()
+    >>> nomination_control = admin_browser.getControl(
+    ...     name='field.review_action_%s' % firefox_nomination.id)
+    >>> nomination_control.getControl(value='DECLINE').click()
+    >>> admin_browser.getControl('Save changes').click()
+    >>> for message in get_feedback_messages(admin_browser):
+    ...     print message
+    1 nomination(s) declined

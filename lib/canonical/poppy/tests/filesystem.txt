@@ -13,6 +13,7 @@ The UploadFileSystem class implements the interface IFileSystem.
 First we need to setup our test environment.
 
     >>> import os
+    >>> import shutil
     >>> import tempfile
     >>> rootpath = tempfile.mkdtemp()
 
@@ -20,7 +21,7 @@ First we need to setup our test environment.
     >>> full_testfile = os.path.join(rootpath, testfile)
     >>> testfile_contents = "contents of the file"
     >>> open(full_testfile, 'w').write(testfile_contents)
-    
+
     >>> testdir = "testdir"
     >>> full_testdir = os.path.join(rootpath, testdir)
     >>> os.mkdir(full_testdir)
@@ -45,32 +46,47 @@ An UploadFileSystem object provides the interface IFileSystem.
 mkdir
 =====
 
-We are not implementing `mkdir` because users of UploadFileSystem will
-not need to create directories.  However, we are going to return
-success from the FTP server when the client tries to create a
-directory so as not to break clients.
+"mkdir" should work as expected, directory will be created as
+requested by the clients:
 
-    >>> ufs.mkdir("does-not-exist")
-    >>> os.path.exists(os.path.join(rootpath, "does-not-exist"))
-    False
+    >>> ufs.mkdir("anything")
+    >>> os.path.exists(os.path.join(rootpath, "anything"))
+    True
+
+    >>> os.rmdir(os.path.join(rootpath, "anything"))
+
+It recursively creates directories:
+
+    >>> ufs.mkdir("anything/something/whatever")
+
+    >>> wanted_path = os.path.join(rootpath, "anything/something/whatever")
+
+    >>> os.path.exists(wanted_path)
+    True
+
+    >>> oct(os.stat(wanted_path).st_mode)
+    '040775'
+
+    >>> shutil.rmtree(os.path.join(rootpath, "anything"))
 
 rmdir
 =====
 
-We are not implementing `rmdir` because we don't implement `mkdir` and
-because we expect rootpath to be empty and so there will be nothing to
-remove.  As with `mkdir' we are going to return success from the FTP
-server for the same reason.
-
-Check that it doesn't do anything when there isn't a directory.
+Check if it complains on removal request of an existent dir
 
     >>> ufs.rmdir("does-not-exist")
+    Traceback (most recent call last):
+    ...
+    OSError: [Errno Not exists:] does-not-exist
 
-Check that it doesn't do anything when there is a directory.
+Check if it works as expected after the directory creation:
 
-    >>> ufs.rmdir(testdir)
-    >>> os.path.exists(full_testdir)
-    True
+    >>> ufs.mkdir("new-dir")
+    >>> ufs.rmdir("new-dir")
+
+    >>> os.path.exists(os.path.join(rootpath, "new-dir"))
+    False
+
 
 lsinfo
 ======
@@ -131,10 +147,34 @@ directory.
     ...     exp["size"] = s[stat.ST_SIZE]
     ...     expected.append(exp)
     ...
+
+    >>> dir_exp = copy.copy(def_exp)
+    >>> s = os.stat(full_testdir)
+    >>> dir_exp["type"] = "d"
+    >>> dir_exp["name"] = testdir
+    >>> dir_exp["mtime"] = datetime.datetime.fromtimestamp(s[stat.ST_MTIME])
+    >>> dir_exp["size"] = s[stat.ST_SIZE]
+    >>> dir_exp["nlinks"] = s[stat.ST_NLINK]
+    >>> dir_exp["owner_executable"] = True
+    >>> dir_exp["other_executable"] = True
+    >>> dir_exp["group_executable"] = True
+    >>> expected.append(dir_exp)
+
+We need a helper function to turn the returned and expected data into reliably
+sorted orders for comparison.
+
+    >>> from operator import itemgetter
+    >>> def sorted_listings(ls_infos):
+    ...     # ls_infos will be a sequence of dictionaries.  They need to be
+    ...     # sorted for the sequences to compare equal, so do that on the
+    ...     # dictionary's 'name' key.  The equality test used here
+    ...     # doesn't care about the sort order of the dictionaries.
+    ...     return sorted(ls_infos, key=itemgetter('name'))
+
     >>> expected.sort()
     >>> returned = ufs.ls(".")
     >>> returned.sort()
-    >>> expected == returned
+    >>> sorted_listings(expected) == sorted_listings(returned)
     True
 
 If `filter` is not None, include only those names for which `filter`
@@ -155,7 +195,7 @@ returns a true value.
     ...         filtered_expected = [i];
     >>> returned = ufs.ls(".", always_true_filter)
     >>> returned.sort()
-    >>> expected == returned
+    >>> sorted_listings(expected) == sorted_listings(returned)
     True
     >>> returned = ufs.ls(".", always_false_filter)
     >>> returned.sort()
@@ -163,7 +203,7 @@ returns a true value.
     True
     >>> returned = ufs.ls(".", arbitrary_filter)
     >>> returned.sort()
-    >>> filtered_expected == returned
+    >>> sorted_listings(filtered_expected) == sorted_listings(returned)
     True
     >>> for i in [ "foo", "bar" ]:
     ...     ufs.remove(i)
@@ -288,20 +328,23 @@ directory.
 names
 =====
 
-The `names` command returns a seuquence of the names in the `path`.
+The `names` command returns a sequence of the names in the `path`.
 
-    >>> ufs.names(".")
-    ['testfile']
+    >>> sorted(ufs.names("."))
+    ['testdir', 'testfile']
 
 `path` is normalized before used.
 
-    >>> ufs.names("some-directory/..") # -> "."
-    ['testfile']
+    >>> sorted(ufs.names("some-directory/..")) 
+    ['testdir', 'testfile']
 
-Any attempt to read anything but the root directory returns nothing.
+'path' under the server root is not allowed:
 
     >>> ufs.names("..")
-    []
+    Traceback (most recent call last):
+    ...
+    OSError: [Errno Path not allowed:] ..
+
 
 If the `filter` argument is provided, each name is only returned if
 the given `filter` function returns True for it.
@@ -309,8 +352,8 @@ the given `filter` function returns True for it.
     >>> ufs.names(".", always_false_filter)
     []
 
-    >>> ufs.names(".", always_true_filter)
-    ['testfile']
+    >>> sorted(ufs.names(".", always_true_filter))
+    ['testdir', 'testfile']
 
     >>> for i in [ "foo", "bar", "baz", "bat" ]:
     ...     x = open(os.path.join(rootpath, i), 'w')
@@ -409,6 +452,19 @@ Additionally, if `append` is true, `start` and `end` are ignored.
     True
     >>> ufs.writefile(testfile, StringIO(testfile_contents))
 
+'writefile' is able to create inexistent directories in a requested
+path:
+
+    >>> os.path.exists(os.path.join(rootpath, "foo"))
+    False
+    >>> ufs.writefile("foo/bar", StringIO("fake")) is None
+    True
+    >>> os.path.exists(os.path.join(rootpath, "foo/bar"))
+    True
+    >>> open(os.path.join(rootpath, "foo/bar")).read()
+    'fake'
+
+
 writable
 ========
 
@@ -437,65 +493,108 @@ path checking
     >>> ufs.type(os.path.join("non-existent-dir", "..", testfile))
     'f'
 
-We must not allow path's with "/" in it.
 
-    >>> ufs.type("foo/bar")
-    Traceback (most recent call last):
-    ...
-    OSError: [Errno No access to anything outside CWD:] foo/bar
+Cleanup the server root:
+
+    >>> for leaf in os.listdir(rootpath):
+    ...     full_path = os.path.join(rootpath, leaf)
+    ...     if os.path.isdir(full_path):
+    ...          shutil.rmtree(full_path)
+    ...     else:
+    ...          os.remove(full_path)
+
+
+Dealing with inexistent path:
+
+    >>> ufs.type("foo/bar") is None
+    True
+    >>> ufs.mtime("foo/bar") is None
+    True
+    >>> ufs.size("foo/bar") is None
+    True
+    >>> ufs.writable("foo/bar")
+    True
     >>> ufs.names("foo/bar")
     Traceback (most recent call last):
     ...
-    OSError: [Errno No access to anything outside CWD:] foo/bar
+    OSError: [Errno Not exists:] foo/bar
     >>> ufs.ls("foo/bar")
     Traceback (most recent call last):
     ...
-    OSError: [Errno No access to anything outside CWD:] foo/bar
+    OSError: [Errno Not exists:] foo/bar
     >>> ufs.lsinfo("foo/bar")
     Traceback (most recent call last):
     ...
-    OSError: [Errno No access to anything outside CWD:] foo/bar
-    >>> ufs.mtime("foo/bar")
-    Traceback (most recent call last):
-    ...
-    OSError: [Errno No access to anything outside CWD:] foo/bar
-    >>> ufs.size("foo/bar")
-    Traceback (most recent call last):
-    ...
-    OSError: [Errno No access to anything outside CWD:] foo/bar
-    >>> ufs.mkdir("foo/bar")
-    Traceback (most recent call last):
-    ...
-    OSError: [Errno No access to anything outside CWD:] foo/bar
+    OSError: [Errno Not exists:] foo/bar
     >>> ufs.remove("foo/bar")
     Traceback (most recent call last):
     ...
-    OSError: [Errno No access to anything outside CWD:] foo/bar
-    >>> ufs.rmdir("foo/bar")
-    Traceback (most recent call last):
-    ...
-    OSError: [Errno No access to anything outside CWD:] foo/bar
+    OSError: [Errno Not exists:] foo/bar
     >>> ufs.rename("foo/bar", "baz")
     Traceback (most recent call last):
     ...
-    OSError: [Errno No access to anything outside CWD:] foo/bar
+    OSError: [Errno Not exists:] foo/bar
     >>> ufs.rename("baz", "foo/bar")
     Traceback (most recent call last):
     ...
-    OSError: [Errno No access to anything outside CWD:] foo/bar
-    >>> ufs.writefile("foo/bar", StringIO("fake"))
+    OSError: [Errno Not exists:] baz
+
+
+Dealing with paths outside the server root directory:
+
+    >>> ufs.type("..")
     Traceback (most recent call last):
     ...
-    OSError: [Errno No access to anything outside CWD:] foo/bar
-    >>> ufs.writable("foo/bar")
+    OSError: [Errno Path not allowed:] ..
+    >>> ufs.mtime("..")
     Traceback (most recent call last):
     ...
-    OSError: [Errno No access to anything outside CWD:] foo/bar
+    OSError: [Errno Path not allowed:] ..
+    >>>	ufs.size("..")
+    Traceback (most recent call last):
+    ...
+    OSError: [Errno Path not allowed:] ..
+    >>> ufs.writable("..")
+    Traceback (most recent call last):
+    ...
+    OSError: [Errno Path not allowed:] ..
+    >>> ufs.names("..")
+    Traceback (most recent call last):
+    ...
+    OSError: [Errno Path not allowed:] ..
+    >>> ufs.ls("..")
+    Traceback (most recent call last):
+    ...
+    OSError: [Errno Path not allowed:] ..
+    >>> ufs.lsinfo("..")
+    Traceback (most recent call last):
+    ...
+    OSError: [Errno Path not allowed:] ..
+    >>> ufs.remove("..")
+    Traceback (most recent call last):
+    ...
+    OSError: [Errno Path not allowed:] ..
+    >>> ufs.rename("..", "baz")
+    Traceback (most recent call last):
+    ...
+    OSError: [Errno Path not allowed:] ..
+    >>> ufs.rename("baz", "..")
+    Traceback (most recent call last):
+    ...
+    OSError: [Errno Path not allowed:] ..
+    >>> ufs.mkdir("..")
+    Traceback (most recent call last):
+    ...
+    OSError: [Errno Path not allowed:] ..
+    >>> ufs.rmdir("..")
+    Traceback (most recent call last):
+    ...
+    OSError: [Errno Path not allowed:] ..
+
 
 ------------------------------------------------------------------------
 
 Finally, cleanup after ourselves.
 
-    >>> from shutil import rmtree
-    >>> rmtree(rootpath)
+    >>> shutil.rmtree(rootpath)
 

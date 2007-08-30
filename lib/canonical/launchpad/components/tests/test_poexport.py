@@ -4,7 +4,6 @@ __metaclass__ = type
 
 import pytz
 import unittest
-import logging
 from StringIO import StringIO
 from datetime import datetime
 
@@ -30,17 +29,30 @@ class FakeSQLObjectClass:
 class TestPOFile:
     """Pretend to be a pofile for testing purposes."""
 
-    def __init__(self):
+    def __init__(self, language_code='es', pluralforms=2,
+                 pluralexpression='n != 1'):
         mock_email = FakeSQLObjectClass(
             email='kk@pleasure-dome.com')
         mock_person = FakeSQLObjectClass(
             browsername='Kubla Kahn',
             preferredemail=mock_email,
             isTeam=lambda: False)
-        self.latestsubmission = FakeSQLObjectClass(
-            person=mock_person,
-            datecreated = datetime.fromtimestamp(
+        self.last_touched_pomsgset = FakeSQLObjectClass(
+            pofile=self,
+            reviewer=mock_person,
+            date_reviewed = datetime.fromtimestamp(
                 1000000000, pytz.timezone('UTC')))
+        self.language = FakeSQLObjectClass(
+            code=language_code,
+            pluralforms=pluralforms,
+            pluralexpression=pluralexpression)
+
+pofile_cy = TestPOFile(language_code='cy', pluralforms=4,
+    pluralexpression='n==1 ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3')
+pofile_es = TestPOFile(language_code='es', pluralforms=2,
+    pluralexpression='n != 1')
+pofile_ja = TestPOFile(
+    language_code='ja', pluralforms=1, pluralexpression='0')
 
 
 class TestRow:
@@ -60,7 +72,7 @@ class TestRow:
             'sourcecomment': '',
             'filereferences': '',
             'activesubmission': 65,
-            'popluralforms': 2,
+            'context': None,
         }
         self.columns.update(kw)
 
@@ -75,26 +87,6 @@ class TestRow:
 
 class ExportTest(unittest.TestCase):
     """Base class for export tests."""
-
-    def setUp(self):
-        """Set up the logger."""
-        logger = logging.getLogger('poexport-user-warnings')
-        # Disable the propagation of logging messages so we only use our
-        # handler.
-        logger.propagate = 0
-        # Here we are going to store the warning output.
-        self.warnings_stream = StringIO()
-        self.warnings_handler = logging.StreamHandler(self.warnings_stream)
-        logger.addHandler(self.warnings_handler)
-
-    def tearDown(self):
-        """Tear down the logger."""
-        logger = logging.getLogger('poexport-user-warnings')
-        logger.removeHandler(self.warnings_handler)
-        # Not necessary, but it silences some false positives # with test
-        #isolation enforcement I'm experimenting with
-        from canonical.testing import reset_logging
-        reset_logging()
 
     def test_export(self, rows, expected_pofiles):
         """Export a set of rows and compare the generated PO files to expected
@@ -114,26 +106,32 @@ class ExportTest(unittest.TestCase):
         self.assertEqual(len(expected_pofiles), len(pofiles))
 
         for i in range(len(expected_pofiles)):
-            lines = pofiles[i].split('\n')
+            # Remove X-Rosetta-Export-Date line to prevent time bombs in
+            # tests.
+            lines = [line for line in pofiles[i].split('\n')
+                     if not line.startswith('"X-Rosetta-Export-Date:')]
+            for j in range(len(lines)):
+                if expected_pofiles[i][j] != lines[j]:
+                    # The output is different.
+                    raise AssertionError, (
+                        "Output doesn't match:\n\n %s" % test_diff(
+                            expected_pofiles[i], lines))
 
-            self.assertEqual(expected_pofiles[i], lines,
-                "Output doesn't match:\n\n" +
-                test_diff(expected_pofiles[i], lines))
 
 class BasicExportTest(ExportTest):
     """Test exporting various basic cases."""
 
     def runTest(self):
         prototype1 = TestRow(
-            potemplate=TestPOTemplate(), pofile=TestPOFile(),
+            potemplate=TestPOTemplate(), pofile=pofile_es,
             language='es')
 
         prototype2 = TestRow(
             potemplate=TestPOTemplate(has_plural_message=True),
-            pofile=TestPOFile(),
+            pofile=pofile_cy,
             language='cy',
             poheader=(prototype1.poheader +
-                'Plural-Forms: nplurals=2; plural=(n!=1)\n'))
+                'Plural-Forms: nplurals=2; plural=(n!=1);\n'))
 
         rows = [
             # Simple PO file.
@@ -196,7 +194,8 @@ class BasicExportTest(ExportTest):
             'msgid ""',
             'msgstr ""',
             '"Content-Type: text/plain; charset=UTF-8\\n"',
-            '"Plural-Forms: nplurals=2; plural=(n!=1)\\n"',
+            '"Plural-Forms: nplurals=4; plural=(n==1 ? 0 : n==2 ? 1 : (n != 8 || n != 11) "',
+            '"? 2 : 3);\\n"',
             '"Last-Translator: Kubla Kahn <kk@pleasure-dome.com>\\n"',
             '"PO-Revision-Date: 2001-09-09 01:46+0000\\n"',
             '',
@@ -204,6 +203,8 @@ class BasicExportTest(ExportTest):
             'msgid_plural "foos"',
             'msgstr[0] "cy-FOO1"',
             'msgstr[1] "cy-FOO2"',
+            'msgstr[2] ""',
+            'msgstr[3] ""',
             '',
             '#, fuzzy',
             'msgid "zig"',
@@ -239,7 +240,7 @@ class EncodingExportTest(ExportTest):
         prototype1 = TestRow(language='ja', potsequence=1, posequence=1,
             msgidpluralform=0, translationpluralform=0, msgid="Japanese",
             translation=nihongo_unicode, potemplate=TestPOTemplate(),
-            pofile=TestPOFile())
+            pofile=pofile_ja)
 
         rows = [
             prototype1.clone(potemplate=TestPOTemplate(),
@@ -299,7 +300,7 @@ class BrokenEncodingExportTest(ExportTest):
         prototype1 = TestRow(language='es', potsequence=1, posequence=1,
             msgidpluralform=0, translationpluralform=0, msgid="a",
             translation=u'\u00e1', potemplate=TestPOTemplate(),
-            pofile=TestPOFile())
+            pofile=pofile_es)
 
         rows = [
             prototype1.clone(potemplate=TestPOTemplate(),
@@ -319,15 +320,6 @@ class BrokenEncodingExportTest(ExportTest):
 
         self.test_export(rows, expected_pofiles)
 
-        # Flush the logger.
-        self.warnings_handler.flush()
-
-        # Check that we got the warning.
-        self.assertEqual(
-            u'Had to recode the file as UTF-8 as it has characters that'
-            u' cannot be represented using the ASCII charset\n',
-            self.warnings_stream.getvalue())
-
 
 class IncompletePluralMessageTest(ExportTest):
     """Test that plural message sets which are missing some translations are
@@ -337,12 +329,10 @@ class IncompletePluralMessageTest(ExportTest):
     def runTest(self):
         prototype = TestRow(
             potemplate=TestPOTemplate(has_plural_message=True),
-            pofile=TestPOFile(),
+            pofile=pofile_es,
             language='es',
-            popluralforms=3,
             poheader=(
-                'Content-Type: text/plain; charset=UTF-8\n'
-                'Plural-Forms: nplurals=3; plural=(n==0)?0:(n==1)?1:2\n'))
+                'Content-Type: text/plain; charset=UTF-8\n'))
 
         rows = [
             prototype.clone(potsequence=1, posequence=1, msgidpluralform=0,
@@ -351,24 +341,20 @@ class IncompletePluralMessageTest(ExportTest):
             prototype.clone(potsequence=1, posequence=1, msgidpluralform=1,
                 translationpluralform=0, msgid="%d dead horses",
                 translation="no tengo caballos muertos"),
-            prototype.clone(potsequence=1, posequence=1, msgidpluralform=0,
-                translationpluralform=2, msgid="1 dead horse",
-                translation="%d caballos muertos"),
             ]
 
         expected_pofiles = [[
             'msgid ""',
             'msgstr ""',
             '"Content-Type: text/plain; charset=UTF-8\\n"',
-            '"Plural-Forms: nplurals=3; plural=(n==0)?0:(n==1)?1:2\\n"',
             '"Last-Translator: Kubla Kahn <kk@pleasure-dome.com>\\n"',
             '"PO-Revision-Date: 2001-09-09 01:46+0000\\n"',
+            '"Plural-Forms: nplurals=2; plural=(n != 1);\\n"',
             '',
             'msgid "1 dead horse"',
             'msgid_plural "%d dead horses"',
             'msgstr[0] "ning\xc3\xban caballo muerto"',
-            'msgstr[1] ""',
-            'msgstr[2] "%d caballos muertos"'
+            'msgstr[1] ""'
         ]]
 
         self.test_export(rows, expected_pofiles)
@@ -379,7 +365,7 @@ class InactiveTranslationTest(ExportTest):
     def runTest(self):
         prototype = TestRow(
             potemplate=TestPOTemplate(),
-            pofile=TestPOFile(),
+            pofile=pofile_es,
             language='es',
             msgidpluralform=0,
             translationpluralform=0)
@@ -430,14 +416,14 @@ class HeaderUpdateTest(ExportTest):
             translation='bar',
             msgidpluralform=0,
             translationpluralform=0,
-            pofile=TestPOFile(),
+            pofile=pofile_es,
             poheader=(
                 'Project-Id-Version: foo\n'
                 'Content-Type: text/plain; charset=UTF-8\n'
                 'Last-Translator: Aleister Crowley <crowley@golden-dawn.org>\n'
                 'PO-Revision-Date: 1947-12-01 20:21+0100\n'
                 'Language-Team: Spanish <es@li.org>\n'
-                'Plural-Forms: nplurals=2; plural=(n!=1)\n'))
+                'Plural-Forms: nplurals=2; plural=(n!=1);\n'))
 
         expected_pofiles = [[
             'msgid ""',
@@ -462,7 +448,7 @@ class DomainHeaderUpdateTest(ExportTest):
     def runTest(self):
         test_row = TestRow(
             potemplate=TestPOTemplate(),
-            pofile=TestPOFile(),
+            pofile=pofile_es,
             potsequence=1,
             posequence=1,
             language='es',

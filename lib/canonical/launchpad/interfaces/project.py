@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Project-related interfaces for Launchpad."""
 
@@ -9,17 +9,21 @@ __all__ = [
     'IProjectSet',
     ]
 
-from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Summary, Title
+from canonical.launchpad.fields import Summary, Title, URIField
 from canonical.launchpad.interfaces import (
-        IHasOwner, IBugTarget, IHasSpecifications, PillarNameField,
-        valid_webref
-        )
+    IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy, IHasIcon,
+    IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
+    IHasSpecifications, IKarmaContext, PillarNameField)
+from canonical.launchpad.interfaces.sprint import IHasSprints
+from canonical.launchpad.interfaces.translationgroup import (
+    IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.fields import (
+    IconImageUpload, LogoImageUpload, MugshotImageUpload)
 
 
 class ProjectNameField(PillarNameField):
@@ -29,7 +33,10 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IHasOwner, IBugTarget, IHasSpecifications):
+class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
+               IHasIcon, IHasLogo, IHasMentoringOffers, IHasMilestones,
+               IHasMugshot, IHasOwner, IHasSpecifications, IHasSprints,
+               IHasTranslationGroup, IKarmaContext):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -38,14 +45,14 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
         title=_('Owner'),
         required=True,
         vocabulary='ValidOwner',
-        description=_("""Project owner, it can either a valid
+        description=_("""Project group owner, it can either a valid
             Person or Team inside Launchpad context."""))
 
     name = ProjectNameField(
         title=_('Name'),
         required=True,
-        description=_("""A unique name, used in URLs, identifying the project.
-            All lowercase, no special characters.
+        description=_("""A unique name, used in URLs, identifying the project 
+            group.  All lowercase, no special characters.
             Examples: apache, mozilla, gimp."""),
         constraint=name_validator)
 
@@ -58,47 +65,47 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
 
     title = Title(
         title=_('Title'),
-        description=_("""The full name of the project,
+        description=_("""The full name of the project group,
             which can contain spaces, special characters etc."""))
 
     summary = Summary(
-        title=_('Project Summary'),
-        description=_("""A brief (one-paragraph) summary of the project."""))
+        title=_('Project Group Summary'),
+        description=_("""A brief (one-paragraph) summary of the project group."""))
 
     description = Text(
         title=_('Description'),
-        description=_("""A detailed description of the project,
+        description=_("""A detailed description of the project group,
             including details like when it was founded, 
             how many contributors there are,
             and how it is organised and coordinated."""))
 
     datecreated = TextLine(
         title=_('Date Created'),
-        description=_("""The date this project was created in Launchpad."""))
+        description=_("""The date this project group was created in Launchpad."""))
 
     driver = Choice(
         title=_("Driver"),
         description=_(
-            "This is a project-wide appointment, think carefully here! "
+            "This is a project group-wide appointment, think carefully here! "
             "This person or team will be able to set feature goals and "
             "approve bug targeting and backporting for ANY series in "
-            "ANY product in this project. You can also appoint drivers "
-            "at the level of a specific product or series. So you may "
+            "ANY project in this group. You can also appoint drivers "
+            "at the level of a specific project or series. So you may "
             "just want to leave this space blank, and instead let the "
-            "individual products and series have drivers."),
+            "individual projects and series have drivers."),
         required=False, vocabulary='ValidPersonOrTeam')
 
-    homepageurl = TextLine(
+    homepageurl = URIField(
         title=_('Homepage URL'),
         required=False,
-        constraint=valid_webref,
-        description=_("""The project home page. Please include the http://"""))
+        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
+        description=_("""The project group home page. Please include the http://"""))
 
-    wikiurl = TextLine(
+    wikiurl = URIField(
         title=_('Wiki URL'),
         required=False,
-        constraint=valid_webref,
-        description=_("""The URL of this project's wiki, if it has one.
+        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
+        description=_("""The URL of this project group's wiki, if it has one.
             Please include the http://"""))
 
     lastdoap = TextLine(
@@ -110,58 +117,83 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
 
     sourceforgeproject = TextLine(
         title=_("SourceForge Project Name"),
-        description=_("""The SourceForge project name for this project,
+        description=_("""The SourceForge project name for this project group,
             if it is in sourceforge."""),
         required=False)
 
     freshmeatproject = TextLine(
         title=_("Freshmeat Project Name"),
-        description=_("""The Freshmeat project name for this project,
+        description=_("""The Freshmeat project name for this project group,
             if it is in freshmeat."""),
         required=False)
 
-    translationgroup = Choice(
-        title = _("Translation group"),
-        description = _("The translation group for this project. This group "
-            "is made up of a set of translators for all the languages "
-            "approved by the group manager. These translators then have "
-            "permission to edit the groups translation files, based on the "
-            "permission system selected below."),
-        required=False,
-        vocabulary='TranslationGroup')
+    homepage_content = Text(
+        title=_("Homepage Content"), required=False,
+        description=_(
+            "The content of this project group's home page. Edit this and it "
+            "will be displayed for all the world to see. It is NOT a wiki "
+            "so you cannot undo changes."))
 
-    translationpermission = Choice(
-        title=_("Translation Permission System"),
-        description=_("The permissions this group requires for "
-            "translators. If 'Open', then anybody can edit translations "
-            "in any language. If 'Reviewed', then anybody can make "
-            "suggestions but only the designated translators can edit "
-            "or confirm translations. And if 'Closed' then only the "
-            "designated translation group will be able to touch the "
-            "translation files at all."),
-        required=True,
-        vocabulary='TranslationPermission')
+    icon = IconImageUpload(
+        title=_("Icon"), required=False,
+        default_image_resource='/@@/project',
+        description=_(
+            "A small image of exactly 14x14 pixels and at most 5kb in size, "
+            "that can be used to identify this project group. The icon will be "
+            "displayed in Launchpad everywhere that we link to this "
+            "project group. For example in listings or tables of active "
+	    "project groups."))
+
+    logo = LogoImageUpload(
+        title=_("Logo"), required=False,
+        default_image_resource='/@@/project-logo',
+        description=_(
+            "An image of exactly 64x64 pixels that will be displayed in "
+            "the heading of all pages related to this project group. It should "
+            "be no bigger than 50kb in size."))
+
+    mugshot = MugshotImageUpload(
+        title=_("Brand"), required=False,
+        default_image_resource='/@@/project-mugshot',
+        description=_(
+            "A large image of exactly 192x192 pixels, that will be displayed "
+            "on this project group's home page in Launchpad. It should be no "
+            "bigger than 100kb in size. "))
 
     active = Bool(title=_('Active'), required=False,
-        description=_("Whether or not this project is considered active."))
+        description=_(
+	    "Whether or not this project group is considered active."))
 
     reviewed = Bool(title=_('Reviewed'), required=False,
-        description=_("Whether or not this project has been reviewed."))
+        description=_("Whether or not this project group has been reviewed."))
 
-    bounties = Attribute(_("The bounties that are related to this project."))
+    bounties = Attribute(
+        _("The bounties that are related to this project group."))
 
     bugtracker = Choice(title=_('Bug Tracker'), required=False,
         vocabulary='BugTracker',
-        description=_("The bug tracker the products in this project use."))
+        description=_(
+	    "The bug tracker the products in this project group use."))
 
-    def products():
-        """Return Products for this Project."""
+    products = Attribute(
+        _("An iterator over the active Products for this project group."))
 
     def getProduct(name):
         """Get a product with name `name`."""
 
     def ensureRelatedBounty(bounty):
-        """Ensure that the bounty is linked to this project. Return None.
+        """Ensure that the bounty is linked to this project group. Return None.
+        """
+
+    def translatables():
+        """Return an iterator over products that have resources translatables.
+
+        It also should have IProduct.official_rosetta flag set.
+        """
+
+    def hasProducts():
+        """Returns True if a project has products associated with it, False
+        otherwise.
         """
 
 
@@ -187,11 +219,12 @@ class IProjectSet(Interface):
     def getByName(name, default=None, ignore_inactive=False):
         """Return the project with the given name, ignoring inactive projects
         if ignore_inactive is True.
-        
+
         Return the default value if there is no such project.
         """
 
-    def new(name, displayname, title, homepageurl, summary, description, owner):
+    def new(name, displayname, title, homepageurl, summary, description,
+            owner, mugshot=None, logo=None, icon=None):
         """Create and return a project with the given arguments."""
 
     def count_all():

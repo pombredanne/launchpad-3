@@ -1,6 +1,6 @@
-<div class="portlet">
+<div class="portlet" id="portlet-bugtrackers">
 
-    <h2>Project bug trackers</h2>
+    <h2>Project group bug trackers</h2>
 
     <div class="portletBody portletContent">
 
@@ -13,7 +13,7 @@
 
         <ul><li class="add">
         <a href="+newbugtracker"
-            title="Add a project bugtracker">
+            title="Add a project group bugtracker">
             Add a bug tracker...
         </a>
         </li></ul>

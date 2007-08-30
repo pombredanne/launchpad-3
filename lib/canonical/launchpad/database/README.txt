@@ -17,16 +17,14 @@ match our SQL's naming scheme.  As a result, we can't simply say::
     class SourcePackageRelease(SQLOS):
         """A source package release."""
 
-        _columns = [
-            StringCol('version')
-        ]
+        version = StringCol()
 
 Instead, we need to say::
 
     class SourcePackageRelease(SQLOS):
         """A source package release."""
 
-        _table = 'SourcePackageRelease'    # SQLObject guesses 'source_package'
+        _table = 'SourcePackageRelease'
         name =  StringCol()
 
 TODO: This should be fixable by defining our own style (see the sqlobject.styles
@@ -46,9 +44,7 @@ SQLObject the names to use.  See this example::
 
         _table = 'branch'
         _idName = 'branch'
-        _columns = [
-            StringCol('description', dbName='description'),
-        ]
+        description = StringCol(dbName='description')
         changesets = MultipleJoin('Changeset', joinColumn='branch')
 
 
@@ -59,11 +55,9 @@ SQLObject the names to use.  See this example::
 
         _table = 'changeset'
         _idName = 'changeset'
-        _columns = [
-            ForeignKey(name='branch', foreignKey='Branch', dbName='branch',
-                       notNull=1),
-            StringCol('message', dbName='logmessage', notNull=1),
-        ]
+        branch = ForeignKey(foreignKey='Branch', dbName='branch',
+                            notNull=True)
+        message = StringCol(dbName='logmessage', notNull=True)
 
 Note the passing of `name`, `foreignKey` and `dbName` to the ForeignKey column.
 

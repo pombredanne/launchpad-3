@@ -1,7 +1,7 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com">
+    >
 
     <securedutility
         class="canonical.launchpad.systemhomes.RosettaApplication"
@@ -12,7 +12,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IRosettaApplication"
-        path_expression="string:rosetta"
+        path_expression="string:translations"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
@@ -31,15 +31,19 @@
         facet="translations"
         permission="zope.Public"
         class="canonical.launchpad.browser.RosettaApplicationView"
-        lp:url="Rosetta">
+        >
         <browser:page
             name="+index"
             template="../templates/rosetta-index.pt"
-            lp:url="/rosetta/+index" />
+            />
         <browser:page
             name="+about"
             template="../templates/rosetta-about.pt"
-            lp:url="Rosetta/+about" />
+            />
+        <browser:page
+            name="+products-with-translations"
+            template="../templates/rosetta-products.pt"
+            />
         <!-- portlets -->
         <browser:page
             name="+portlet-stats"
@@ -47,17 +51,6 @@
         <browser:page
             name="+portlet-groups"
             template="../templates/rosetta-portlet-groups.pt" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IRosettaApplication"
-        facet="translations"
-        permission="launchpad.AnyPerson"
-        class="canonical.launchpad.browser.RosettaPreferencesView" >
-        <browser:page
-            name="prefs"
-            template="../templates/rosetta-preferences.pt"
-            lp:url="Rosetta/prefs" />
     </browser:pages>
 
   <!-- Rosetta Stats Views -->

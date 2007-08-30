@@ -25,7 +25,7 @@ class IBugWatch(IHasBug):
     bug = Int(title=_('Bug ID'), required=True, readonly=True)
     bugtracker = Choice(title=_('Bug System'), required=True,
         vocabulary='BugTracker', description=_("You can register "
-        "new bug trackers from the Malone home page."))
+        "new bug trackers from the Launchpad Bugs home page."))
     remotebug = StrippedTextLine(title=_('Remote Bug'), required=True,
         readonly=False, description=_("The bug number of this bug in the "
         "remote bug tracker."))
@@ -38,9 +38,9 @@ class IBugWatch(IHasBug):
 
     # useful joins
     bugtasks = Attribute('The tasks which this watch will affect. '
-        'In Malone, a bug watch can be linked to one or more tasks, and '
+        'In Launchpad, a bug watch can be linked to one or more tasks, and '
         'if it is linked and we notice a status change in the watched '
-        'bug then we will try to update the Malone bug task accordingly.')
+        'bug then we will try to update the Launchpad bug task accordingly.')
 
     # properties
     needscheck = Attribute("A True or False indicator of whether or not "
@@ -59,6 +59,9 @@ class IBugWatch(IHasBug):
 
         The lastchanged attribute gets set to the current time.
         """
+
+    def destroySelf():
+        """Delete this bug watch."""
 
 
 class IBugWatchSet(Interface):

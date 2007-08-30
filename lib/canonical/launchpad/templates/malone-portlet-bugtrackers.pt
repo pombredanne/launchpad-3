@@ -1,7 +1,7 @@
-<div class="portlet">
+<div class="portlet" id="portlet-bugtrackers">
   <h2>Top bug trackers</h2>
   <div class="portletBody portletContent">
-    The top bug trackers in Malone (by remote bug watches):
+    The top bug trackers in Launchpad (by remote bug watches):
     <ul>
       <li tal:repeat="tracker context/top_bugtrackers">
         <a tal:content="tracker/name"
@@ -11,7 +11,7 @@
     </ul>
     <ul class="list">
       <li>
-        <a href="/malone/bugtrackers">All 
+        <a href="/bugs/bugtrackers">All 
         <span tal:replace="context/bugtracker_count">15</span>...</a>
       </li>
     </ul>

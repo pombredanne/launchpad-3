@@ -11,6 +11,7 @@ from zope.component import getUtility
 from zope.app.session.interfaces import ISession
 from zope.event import notify
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.email import valid_email
@@ -18,11 +19,12 @@ from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
 from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 from canonical.launchpad.webapp.error import SystemErrorView
+from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.interfaces import (
-    ILoginTokenSet, IPersonSet, UBUNTU_WIKI_URL, ShipItConstants)
+    ILoginTokenSet, IPersonSet, LoginTokenType, UBUNTU_WIKI_URL, ShipItConstants)
 from canonical.launchpad.interfaces.validation import valid_password
-from canonical.lp.dbschema import LoginTokenType
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from canonical.config import config
+
 
 class UnauthorizedView(SystemErrorView):
 
@@ -54,7 +56,13 @@ class UnauthorizedView(SystemErrorView):
             query_string = self.request.get('QUERY_STRING', '')
             if query_string:
                 query_string = '?' + query_string
-            target = self.request.getURL() + '/+login' + query_string
+            target = self.request.getURL()
+            while True:
+                nextstep = self.request.stepstogo.consume()
+                if nextstep is None:
+                    break
+                target = urlappend(target, nextstep)
+            target = urlappend(target, '+login' + query_string)
             self.request.response.addNoticeNotification(_(
                     'To continue, you must log in to Launchpad.'
                     ))
@@ -86,6 +94,24 @@ class BasicLoginPage:
         return ''
 
 
+class RestrictedLoginInfo:
+    """On a team-restricted launchpad server, show who may access the server.
+
+    Otherwise, show that this is an unrestricted server.
+    """
+
+    def isTeamRestrictedServer(self):
+        return bool(config.launchpad.restrict_to_team)
+
+    def getAllowedTeamURL(self):
+        return 'https://launchpad.net/people/%s' % (
+            config.launchpad.restrict_to_team)
+
+    def getAllowedTeamDescription(self):
+        return getUtility(IPersonSet).getByName(
+            config.launchpad.restrict_to_team).title
+
+
 class LoginOrRegister:
     """Merges the former CookieLoginPage and JoinLaunchpadView classes
     to allow the two forms to appear on a single page.
@@ -109,22 +135,33 @@ class LoginOrRegister:
     submitted = False
     email = None
 
-    # XXX: If you add a new origin here, you must also add a new entry on
-    # NewAccountView.urls_and_rationales in browser/logintoken.py. Ideally,
-    # we should be storing the rationale in the logintoken too, but this
-    # should do for now. -- Guilherme Salgado, 2006-09-27
+    # XXX Guilherme Salgado 2006-09-27: If you add a new origin here, you
+    # must also add a new entry on NewAccountView.urls_and_rationales in
+    # browser/logintoken.py. Ideally, we should be storing the rationale in
+    # the logintoken too, but this should do for now.
     registered_origins = {
         'shipit-ubuntu': ShipItConstants.ubuntu_url,
         'shipit-edubuntu': ShipItConstants.edubuntu_url,
         'shipit-kubuntu': ShipItConstants.kubuntu_url,
         'ubuntuwiki': UBUNTU_WIKI_URL}
 
+    def process_restricted_form(self):
+        """Entry-point for the team-restricted login page.
+
+        If we're not running in team-restricted mode, then redirect to a
+        regular login page.  Otherwise, process_form as usual.
+        """
+        if config.launchpad.restrict_to_team:
+            self.process_form()
+        else:
+            self.request.response.redirect('/+login', temporary_if_possible=True)
+
     def process_form(self):
         """Determines whether this is the login form or the register
         form, and delegates to the appropriate function.
         """
         if self.request.method != "POST":
-            return 
+            return
 
         self.submitted = True
         if self.request.form.get(self.submit_login):
@@ -132,21 +169,22 @@ class LoginOrRegister:
         elif self.request.form.get(self.submit_registration):
             self.process_registration_form()
 
-    def getApplicationURL(self): 
-        # XXX: This method is needed because this view is used on shipit and
-        # we have to use an application URL different than the one we have in
-        # the request. -- Guilherme Salgado 2005-12-09
+    def getApplicationURL(self):
+        # XXX Guilherme Salgado 2005-12-09: This method is needed because
+        # this view is used on shipit and we have to use an application URL
+        # different than the one we have in the request.
         return self.request.getApplicationURL()
 
     def getRedirectionURL(self):
         """Return the URL we should redirect the user to, after finishing a
         registration or password reset process.
-        
+
         If the request has an 'origin' query parameter, that means the user came
         from either the ubuntu wiki or shipit, and thus we return the URL for
         either shipit or the wiki. When there's no 'origin' query parameter, we
-        check the HTTP_REFERER header and if it's in the Launchpad namespace we
-        return that URL, otherwise we return None.
+        check the HTTP_REFERER header and if it's under any URL specified in
+        registered_origins we return it, otherwise we rerturn the current URL
+        without the "/+login" bit.
         """
         request = self.request
         origin = request.get('origin')
@@ -155,12 +193,10 @@ class LoginOrRegister:
         except KeyError:
             referrer = request.getHeader('Referer')
             if referrer:
-                redirectable_referrers = self.registered_origins.values()
-                redirectable_referrers.append(request.getApplicationURL())
-                for url in redirectable_referrers:
+                for url in self.registered_origins.values():
                     if referrer.startswith(url):
                         return referrer
-            return None
+        return request.getURL(1)
 
     def process_login_form(self):
         """Process the form data.
@@ -174,10 +210,9 @@ class LoginOrRegister:
             self.login_error = _("Enter your email address and password.")
             return
 
-        # XXX matsubara 2006-05-08: This class should inherit from
+        # XXX matsubara 2006-05-08 bug=43675: This class should inherit from
         # GeneralFormView, that way we could take advantage of Zope's widget
         # validation, instead of checking manually for password validity.
-        # https://launchpad.net/products/launchpad/+bug/43675
         if not valid_password(password):
             self.login_error = _(
                 "The password provided contains non-ASCII characters.")
@@ -228,8 +263,8 @@ class LoginOrRegister:
         if isinstance(redirection_url, list):
             # Remove blank entries.
             redirection_url_list = [url for url in redirection_url if url]
-            # XXX: Shouldn't this be an UnexpectedFormData?
-            # -- Guilherme Salgado, 2006-09-27
+            # XXX Guilherme Salgado 2006-09-27:
+            # Shouldn't this be an UnexpectedFormData?
             assert len(redirection_url_list) == 1, redirection_url_list
             redirection_url = redirection_url_list[0]
 
@@ -282,16 +317,16 @@ class LoginOrRegister:
             list(self.iter_form_items()), doseq=True)
         if query_string:
             target = '%s?%s' % (target, query_string)
-        self.request.response.redirect(target)
+        self.request.response.redirect(target, temporary_if_possible=True)
 
     def iter_form_items(self):
         """Iterate over keys and single values, excluding stuff we don't
         want such as '-C' and things starting with self.form_prefix.
         """
         for name, value in self.request.form.items():
-            # XXX: Exclude '-C' because this is left in from sys.argv in Zope3
-            #      using python's cgi.FieldStorage to process requests.
-            # -- SteveAlexander, 2005-04-11
+            # XXX SteveAlexander 2005-04-11: Exclude '-C' because this is
+            #     left in from sys.argv in Zope3 using python's
+            #     cgi.FieldStorage to process requests.
             if name == '-C' or name == 'loggingout':
                 continue
             if name.startswith(self.form_prefix):
@@ -310,7 +345,7 @@ class LoginOrRegister:
             L.append('<input type="hidden" name="%s" value="%s" />' % (
                 name, cgi.escape(value, quote=True)
                 ))
-                    
+
         return '\n'.join(L)
 
 

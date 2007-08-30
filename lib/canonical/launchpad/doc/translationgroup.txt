@@ -78,5 +78,16 @@ No Privileges Person *is* allowed to translate into Welsh.
     >>> pofile.canEditTranslations(no_priv)
     True
 
+We can use TranslationGroupSet to check what translation groups a person
+is a part of:
+
+    >>> [group.name for group in translation_group_set.getByPerson(carlos)]
+    [u'testing-translation-team']
+
+    >>> [group.name for group in translation_group_set.getByPerson(no_priv)]
+    [u'foo-translators']
+
+"Do you want us to shut everything down?"
+
     >>> LaunchpadFunctionalTestSetup().tearDown()
 

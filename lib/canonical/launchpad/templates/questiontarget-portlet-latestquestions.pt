@@ -1,0 +1,16 @@
+<div class="portlet" id="portlet-latest-questions"
+     tal:condition="view/getLatestQuestions">
+  <h2>Latest questions</h2>
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li class="question" tal:repeat="question view/getLatestQuestions">
+           [<span tal:attributes="
+                    class string:questionstatus${question/status/name}"
+                  tal:content="question/status/title" />]
+        <a tal:content="question/title/fmt:shorten/80"
+           tal:attributes="href question/fmt:url">question title</a>
+      </li>
+    </ul>
+  </div>
+</div>

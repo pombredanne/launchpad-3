@@ -1,0 +1,10 @@
+Hello,
+
+%(reviewer)s has invited %(member)s (which you are an administrator of) to join %(team)s.
+
+You can accept or decline this invitation on the following page:
+
+    %(membership_invitations_url)s
+
+Regards,
+The Launchpad team

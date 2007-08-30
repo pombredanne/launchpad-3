@@ -1,0 +1,90 @@
+  If we try to add a packaging record entry to a distroseries where
+  that productseries is already packaged we should get a nice error message.
+
+  >>> print http(r"""
+  ... POST /firefox/1.0/+addpackage HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------1000417103532496791590743664
+  ... 
+  ... -----------------------------1000417103532496791590743664
+  ... Content-Disposition: form-data; name="field.distroseries"
+  ... 
+  ... ubuntu/hoary
+  ... -----------------------------1000417103532496791590743664
+  ... Content-Disposition: form-data; name="field.distroseries-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------1000417103532496791590743664
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... mozilla-firefox
+  ... -----------------------------1000417103532496791590743664
+  ... Content-Disposition: form-data; name="field.packaging"
+  ... 
+  ... Primary Product
+  ... -----------------------------1000417103532496791590743664
+  ... Content-Disposition: form-data; name="field.packaging-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------1000417103532496791590743664
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... 
+  ... Continue
+  ... -----------------------------1000417103532496791590743664--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...This series is already packaged in Hoary...
+  ...
+
+  Now we'll add a correct packaging record
+
+  >>> print http(r"""
+  ... POST /firefox/1.0/+addpackage HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 872
+  ... Content-Type: multipart/form-data; boundary=---------------------------2047034390275580538431124302
+  ... 
+  ... -----------------------------2047034390275580538431124302
+  ... Content-Disposition: form-data; name="field.distroseries"
+  ... 
+  ... ubuntu/grumpy
+  ... -----------------------------2047034390275580538431124302
+  ... Content-Disposition: form-data; name="field.distroseries-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------2047034390275580538431124302
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... mozilla-firefox
+  ... -----------------------------2047034390275580538431124302
+  ... Content-Disposition: form-data; name="field.packaging"
+  ... 
+  ... Primary Product
+  ... -----------------------------2047034390275580538431124302
+  ... Content-Disposition: form-data; name="field.packaging-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------2047034390275580538431124302
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... 
+  ... Continue
+  ... -----------------------------2047034390275580538431124302--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/firefox/1.0
+  <BLANKLINE>
+
+  We can now check that the packaging information was successfully added.
+
+  >>> print http(r"""
+  ... GET /firefox/1.0/ HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Distribution packaging...
+  ...ubuntu hoary...mozilla-firefox...
+  ...ubuntu grumpy...mozilla-firefox...
+  ...

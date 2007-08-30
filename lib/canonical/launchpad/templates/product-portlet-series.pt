@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-series">
   <h2>
     <tal:name content="context/displayname">Firefox</tal:name>
     release series
@@ -7,7 +7,7 @@
   <div class="portletBody portletContent">
 
   <ul>
-    <li tal:repeat="series context/serieslist"
+    <li tal:repeat="series context/serieses"
         class="product">
       <a tal:attributes="href series/fmt:url"
          tal:content="series/displayname">Evolution MAIN</a>

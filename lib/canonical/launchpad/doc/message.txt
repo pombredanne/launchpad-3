@@ -175,9 +175,9 @@ True
 >>> blob = chunks[1].blob
 >>> blob.filename
 u'anna.jpg.exe'
->>> blob.url.startswith(u'http://localhost:58000/')
+>>> blob.http_url.startswith(u'http://localhost:58000/')
 True
->>> blob.url.endswith(u'/anna.jpg.exe')
+>>> blob.http_url.endswith(u'/anna.jpg.exe')
 True
 
 >>> blob2 = chunks[3].blob

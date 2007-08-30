@@ -8,9 +8,11 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol
 
 from canonical.database.sqlbase import quote, SQLBase
+from canonical.database.enumcol import EnumCol
+
 from canonical.launchpad.interfaces import (
-    EmailAddressAlreadyTaken, IEmailAddress, IEmailAddressSet)
-from canonical.lp.dbschema import EmailAddressStatus, EnumCol
+    EmailAddressAlreadyTaken, IEmailAddress, IEmailAddressSet,
+    EmailAddressStatus)
 
 
 class EmailAddress(SQLBase):

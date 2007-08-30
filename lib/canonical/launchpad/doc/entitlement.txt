@@ -1,0 +1,321 @@
+= Entitlements =
+
+Entitlements are a means of recording features and privileges
+Launchpad users have been assigned.  The business model for these
+assignments is not important, but it could be through a commercial
+arrangement or through a grant that applies to everyone.
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     EntitlementQuota, EntitlementState, EntitlementType,
+    ...     IEntitlement, IEntitlementSet, IPersonSet)
+    >>> from canonical.launchpad.database import Entitlement
+    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.database.sqlbase import flush_database_updates
+
+The logged in user must be an admin in order to change the quota.
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> login("foo.bar@canonical.com")
+    >>> foobar = getUtility(ILaunchBag).user
+    >>> lp_admins = getUtility(ILaunchpadCelebrities).admin
+    >>> foobar.inTeam(lp_admins)
+    True
+    >>> entitlements = getUtility(IEntitlementSet)
+    >>> entitlements_in_sample_data = entitlements.count()
+
+Find a team with an entitlement.
+
+    >>> personset = getUtility(IPersonSet)
+    >>> ubuntu_team = personset.getByName('ubuntu-team')
+
+An entitlement grants privilege to use a restricted feature.  The
+'quota' is the number of instances being granted and the
+entitlement_type is the feature being enabled.  The 'person' is the
+person or team being granted the right.  The state for a granted
+entitlement is ACTIVE and the expiration and start dates can be specified.
+
+    >>> entitlement = getUtility(IEntitlementSet).new(
+    ...     quota=5,
+    ...     entitlement_type=EntitlementType.PRIVATE_BUGS,
+    ...     person=ubuntu_team,
+    ...     state=EntitlementState.ACTIVE,
+    ...     date_expires="2038-06-11 00:00:00",
+    ...     amount_used=0)
+    >>> verifyObject(IEntitlement, entitlement)
+    True
+
+The person can be accessed and shown to be correct.
+
+    >>> print entitlement.person.name
+    ubuntu-team
+
+If the current date is after the start date (if not None) or before
+the expiration date (if not None) then the in_date_range test will
+pass.
+
+    >>> entitlement.in_date_range
+    True
+
+== Quota checking ==
+
+If the amount used is less than the quota value the exceeded_quota
+test will be false.
+
+    >>> entitlement.quota = 100
+    >>> entitlement.amount_used = 0
+    >>> entitlement.exceeded_quota
+    False
+
+The quota is not exceeded, the date is in range, and the state is
+ACTIVE, so the entitlement is valid.
+
+    >>> entitlement.is_valid
+    True
+
+If the amount used is equal to the quota 'exceeded_quota' should still
+be false and 'is_valid' is still true.
+
+    >>> entitlement.quota = 100
+    >>> entitlement.amount_used = 100
+    >>> entitlement.exceeded_quota
+    False
+    >>> entitlement.is_valid
+    True
+
+However if the amount_used to exceeds the quota, the exceeded quota is
+true and the entitlement is no longer valid.
+
+    >>> entitlement.quota = 100
+    >>> entitlement.amount_used = 101
+    >>> entitlement.exceeded_quota
+    True
+    >>> entitlement.is_valid
+    False
+
+If the quota is UNLIMITED the exceeded quota test is false even when
+using a really large value for amount used.  The entitlement remains
+valid.
+
+    >>> import sys
+    >>> entitlement.quota = EntitlementQuota.UNLIMITED
+    >>> entitlement.amount_used = pow(10,9)
+    >>> entitlement.exceeded_quota
+    False
+    >>> entitlement.is_valid
+    True
+
+Calling incrementAmountUsed increases the value by one.
+
+    >>> entitlement.quota = 10
+    >>> entitlement.amount_used = 9
+    >>> entitlement.incrementAmountUsed()
+    >>> entitlement.amount_used
+    10
+
+Attempting to increment past the quota will cause an error.
+
+    >>> entitlement.incrementAmountUsed()
+    Traceback (most recent call last):
+      ...
+    EntitlementQuotaExceededError: ...
+
+If the entitlement is invalid for any reason, attempting to increment
+the amount used will cause an error.
+
+    >>> entitlement.state = EntitlementState.INACTIVE
+    >>> entitlement.quota = 50
+    >>> entitlement.incrementAmountUsed()
+    Traceback (most recent call last):
+      ...
+    EntitlementInvalidError: ...
+
+
+== Date range checking ==
+
+The 'in_date_range' attribute can be used to tell whether the
+entitlement is valid with respect to the start date and expires date.
+When the current date is out of range the entitlement is considered
+invalid.
+
+When the entitlement does not have a start date or an expiration date
+then those values are not checked.  If no start date is given the
+expiration date is still used, and vice versa.  If both start date and
+expiration date are None then no date range checking is performed and
+the entitlement is valid with respect to dates.
+
+Remove the start and expiration dates and the date range will be
+valid.
+
+    >>> entitlement.state = EntitlementState.ACTIVE
+    >>> entitlement.date_starts = None
+    >>> entitlement.date_expires = None
+    >>> entitlement.in_date_range
+    True
+    >>> entitlement.is_valid
+    True
+
+    >>> from datetime import datetime, timedelta
+    >>> from pytz import UTC
+    >>> now = datetime.now(UTC)
+    >>> yesterday = now - timedelta(days = 1)
+    >>> tomorrow = now + timedelta(days = 1)
+
+If the start date is in the past and the expiration date is not set
+this condition is considered an open-ended entitlement and we are
+still in its range.
+
+    >>> entitlement.date_starts = yesterday
+    >>> entitlement.in_date_range
+    True
+    >>> entitlement.is_valid
+    True
+
+If the start date is in the future the date is not in range and the
+entitlement is invalid.
+
+    >>> entitlement.date_starts = tomorrow
+    >>> entitlement.in_date_range
+    False
+    >>> entitlement.is_valid
+    False
+
+If the expires date is in the past, we are not in its date range and
+the entitlement is not valid.
+
+    >>> entitlement.date_starts = None
+    >>> entitlement.date_expires = yesterday
+    >>> entitlement.in_date_range
+    False
+    >>> entitlement.is_valid
+    False
+
+If the expiration date is in the future the date range is satisfied
+and the entitlement is valid.
+
+    >>> entitlement.date_expires = tomorrow
+    >>> entitlement.in_date_range
+    True
+    >>> entitlement.is_valid
+    True
+
+If the start date is in the past and the expires date is in the future
+the date range is again satisfied and the entitlement is valid.
+
+    >>> entitlement.date_starts = yesterday
+    >>> entitlement.date_expires = tomorrow
+    >>> entitlement.in_date_range
+    True
+    >>> entitlement.is_valid
+    True
+
+
+== Security ==
+
+Viewing the entitlement's attributes is restricted to the
+entitlement's owner, the entitlement's registrant (or to a member of
+these teams), and to Launchpad administrators.
+
+If logged in as an anonymous user the entitlement values cannot be
+viewed.  A security-wrapped entitlement must be used to exercise the
+security adapters.
+
+    >>> entitlement = ubuntu_team.entitlements[0]
+    >>> entitlement.quota = 50
+    >>> logout()
+    >>> login(ANONYMOUS)
+    >>> entitlement.quota
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<Entitlement..., 'quota', 'launchpad.View')
+
+
+    >>> entitlement.quota=10
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<Entitlement..., 'quota', 'launchpad.Admin')
+    >>> logout()
+
+Authenticated Launchpad users who are not the owner or team member are
+similarly restricted.
+
+    >>> login('no-priv@canonical.com')
+    >>> entitlement.quota
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<Entitlement..., 'quota', 'launchpad.View')
+
+
+    >>> entitlement.quota=10
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<Entitlement..., 'quota', 'launchpad.Admin')
+
+Add the current user to the team and the user can now access
+attributes.  Since ubuntu-team is restricted, an administrator must be
+listed as a reviewer for the membership to go through.
+
+    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
+    >>> nopriv = getUtility(ILaunchBag).user
+    >>> sabdfl = personset.getByName('sabdfl')
+    >>> nopriv.join(ubuntu_team)
+    >>> ubuntu_team.setMembershipData(nopriv, TeamMembershipStatus.APPROVED, sabdfl)
+    >>> flush_database_updates()
+    >>> nopriv in ubuntu_team.activemembers
+    True
+    >>> nopriv.inTeam(ubuntu_team)
+    True
+    >>> entitlement.quota
+    50
+
+    >>> entitlement.quota=10
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<Entitlement..., 'quota', 'launchpad.Admin')
+
+
+= EntitlementSet =
+
+All of the entitlements can be obtained using IEntitlementSet.
+
+    >>> login("foo.bar@canonical.com")
+    >>> entitlements = getUtility(IEntitlementSet)
+
+One entitlement was created in the previous examples.
+
+    >>> entitlements.count() - entitlements_in_sample_data
+    1
+
+To look up an entitlement from the set, simply use the 'get' with the id.
+
+    >>> entitlement2 = entitlements.get(entitlement.id)
+    >>> entitlement2.id == entitlement.id
+    True
+
+Get all of the valid entitlements for ubuntu_team.
+
+    >>> valid_list = getUtility(IEntitlementSet).getValidForPerson(ubuntu_team)
+    >>> len(valid_list)
+    1
+
+A new entitlement for the ubuntu_team can be created, increasing the
+number of valid entitlements.
+
+    >>> entitlement = getUtility(IEntitlementSet).new(
+    ...     quota=50,
+    ...     entitlement_type=EntitlementType.PRIVATE_BRANCHES,
+    ...     person=ubuntu_team,
+    ...     state=EntitlementState.ACTIVE,
+    ...     date_expires="2038-06-11 00:00:00",
+    ...     amount_used=0)
+    >>> valid_list = getUtility(IEntitlementSet).getValidForPerson(ubuntu_team)
+    >>> len(valid_list)
+    2
+
+Setting the original entitlement to INACTIVE will now reduce the
+number of valid entitlements.
+
+    >>> entitlement.state = EntitlementState.INACTIVE
+    >>> valid_list = getUtility(IEntitlementSet).getValidForPerson(ubuntu_team)
+    >>> len(valid_list)
+    1

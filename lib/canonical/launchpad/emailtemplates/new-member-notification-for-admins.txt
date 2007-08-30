@@ -1,0 +1,8 @@
+Hello,
+
+%(person_name)s has been added as a member of %(team_name)s by %(reviewer_name)s. Follow the link below for more details.
+
+    %(url)s
+
+Regards,
+The Launchpad team

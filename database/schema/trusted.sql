@@ -1,4 +1,4 @@
--- Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+-- Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 /* This is created as a function so the same definition can be used with
     many tables
@@ -121,7 +121,9 @@ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
     from urlparse import urlparse
     (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
-    if scheme == "sftp":
+    # urlparse in the stdlib does not correctly parse the netloc from
+    # sftp and bzr+ssh schemes, so we have to manually check those
+    if scheme in ("sftp", "bzr+ssh"):
         return 1
     if not (scheme and netloc):
         return 0
@@ -154,7 +156,7 @@ $$
         return 0
 $$;
 
-COMMENT ON FUNCTION valid_keyid(text) IS 'Returns true if passed a valid GPG keyid. Valid GPG keyids are an 8 character long hexadecimal number in uppercase (in reality, they are 16 characters long but we are using the \'common\' definition.';
+COMMENT ON FUNCTION valid_keyid(text) IS 'Returns true if passed a valid GPG keyid. Valid GPG keyids are an 8 character long hexadecimal number in uppercase (in reality, they are 16 characters long but we are using the ''common'' definition.';
 
 
 CREATE OR REPLACE FUNCTION valid_regexp(text) RETURNS boolean
@@ -188,10 +190,8 @@ CREATE OR REPLACE FUNCTION you_are_your_own_member() RETURNS trigger
 LANGUAGE plpgsql AS
 $$
     BEGIN
-        IF NEW.teamowner IS NULL THEN
-            INSERT INTO TeamParticipation (person, team)
-                VALUES (NEW.id, NEW.id);
-        END IF;
+        INSERT INTO TeamParticipation (person, team)
+            VALUES (NEW.id, NEW.id);
         RETURN NULL;
     END;
 $$;
@@ -250,18 +250,6 @@ COMMENT ON FUNCTION is_printable_ascii(text) IS
     'True if the string is pure printable US-ASCII';
 
 
-CREATE OR REPLACE FUNCTION sleep_for_testing(double precision) RETURNS boolean
-LANGUAGE plpythonu AS
-$$
-    import time
-    time.sleep(args[0])
-    return True
-$$;
-
-COMMENT ON FUNCTION sleep_for_testing(double precision) IS
-    'Sleep for the given number of seconds and return True.  This function is intended to be used by tests to trigger timeout conditions.';
-
-
 CREATE OR REPLACE FUNCTION mv_pillarname_distribution() RETURNS TRIGGER
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
 $$
@@ -285,10 +273,11 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
 $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        INSERT INTO PillarName (name, product)
-        VALUES (NEW.name, NEW.id);
-    ELSIF NEW.name != OLD.name THEN
-        UPDATE PillarName SET name=NEW.name WHERE product=NEW.id;
+        INSERT INTO PillarName (name, product, active)
+        VALUES (NEW.name, NEW.id, NEW.active);
+    ELSIF NEW.name != OLD.name OR NEW.active != OLD.active THEN
+        UPDATE PillarName SET name=NEW.name, active=NEW.active
+        WHERE product=NEW.id;
     END IF;
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
@@ -302,10 +291,11 @@ CREATE OR REPLACE FUNCTION mv_pillarname_project() RETURNS TRIGGER
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        INSERT INTO PillarName (name, project)
-        VALUES (NEW.name, NEW.id);
-    ELSIF NEW.name != OLD.name THEN
-        UPDATE PillarName SET name=NEW.name WHERE project=NEW.id;
+        INSERT INTO PillarName (name, project, active)
+        VALUES (NEW.name, NEW.id, NEW.active);
+    ELSIF NEW.name != OLD.name or NEW.active != OLD.active THEN
+        UPDATE PillarName SET name=NEW.name, active=NEW.active
+        WHERE project=NEW.id;
     END IF;
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
@@ -475,6 +465,108 @@ $$;
 COMMENT ON FUNCTION mv_validpersonorteamcache_emailaddress() IS 'A trigger for maintaining the ValidPersonOrTeamCache eager materialized view when changes are made to the EmailAddress table';
 
 
+CREATE OR REPLACE FUNCTION mv_pofiletranslator_posubmission() RETURNS TRIGGER
+VOLATILE SECURITY DEFINER AS $$
+DECLARE
+    v_pofile INTEGER;
+    v_trash_old BOOLEAN;
+BEGIN
+    -- If we are deleting a row, we need to remove the existing
+    -- POFileTranslator row and reinsert the historical data if it exists.
+    -- We also treat UPDATEs that change the key (person, pofile) the same
+    -- as deletes. UPDATEs that don't change these columns are treated like
+    -- INSERTs below.
+    IF TG_OP = 'INSERT' THEN
+        v_trash_old := FALSE;
+    ELSIF TG_OP = 'DELETE' THEN
+        v_trash_old := TRUE;
+    ELSE -- UPDATE
+        v_trash_old = (
+            OLD.person != NEW.person OR OLD.pomsgset != NEW.pomsgset
+            );
+    END IF;
+
+    IF v_trash_old THEN
+
+        -- Delete the old record.
+        DELETE FROM POFileTranslator USING POMsgSet
+        WHERE POFileTranslator.pofile = POMsgSet.pofile
+            AND POFileTranslator.person = OLD.person
+            AND POMsgSet.id = OLD.pomsgset;
+
+        -- Insert a past record if there is one.
+        INSERT INTO POFileTranslator (
+            person, pofile, latest_posubmission, date_last_touched
+            )
+            SELECT DISTINCT ON (POSubmission.person, POMsgSet.pofile)
+                POSubmission.person, POMsgSet.pofile,
+                POSubmission.id, POSubmission.datecreated
+            FROM POSubmission, POMsgSet
+            WHERE POSubmission.pomsgset = POMsgSet.id
+                AND POSubmission.pomsgset = OLD.pomsgset
+                AND POSubmission.person = OLD.person
+            ORDER BY
+                POSubmission.person, POMsgSet.pofile,
+                POSubmission.datecreated DESC, POSubmission.id DESC;
+
+        -- No NEW with DELETE, so we can short circuit and leave.
+        IF TG_OP = 'DELETE' THEN
+            RETURN NULL; -- Ignored because this is an AFTER trigger
+        END IF;
+    END IF;
+
+    -- Get our new pofile id
+    SELECT INTO v_pofile POMsgSet.pofile FROM POMsgSet
+    WHERE POMsgSet.id = NEW.pomsgset;
+
+    -- Standard 'upsert' loop to avoid race conditions.
+    LOOP
+        UPDATE POFileTranslator
+            SET
+                date_last_touched = CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+                latest_posubmission = NEW.id
+            WHERE
+                person = NEW.person
+                AND pofile = v_pofile;
+        IF found THEN
+            RETURN NULL; -- Return value ignored as this is an AFTER trigger
+        END IF;
+
+        BEGIN
+            INSERT INTO POFileTranslator (person, pofile, latest_posubmission)
+            VALUES (NEW.person, v_pofile, NEW.id);
+            RETURN NULL; -- Return value ignored as this is an AFTER trigger
+        EXCEPTION WHEN unique_violation THEN
+            -- do nothing
+        END;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION mv_pofiletranslator_posubmission() IS
+    'Trigger maintaining the POFileTranslator table';
+
+
+CREATE OR REPLACE FUNCTION mv_pofiletranslator_pomsgset() RETURNS TRIGGER
+VOLATILE SECURITY INVOKER AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        RAISE EXCEPTION
+            'Deletions from POMsgSet not supported by the POFileTranslator materialized view';
+    ELSIF TG_OP = 'UPDATE' THEN
+        IF OLD.pofile != NEW.pofile THEN
+            RAISE EXCEPTION
+                'Changing POMsgSet.pofile not supported by the POFileTranslator materialized view';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION mv_pofiletranslator_pomsgset() IS
+    'Trigger enforing no POMsgSet deletions or POMsgSet.pofile changes';
+
+
 CREATE OR REPLACE FUNCTION person_sort_key(displayname text, name text)
 RETURNS text
 LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
@@ -608,4 +700,68 @@ $$
 $$;
 
 COMMENT ON FUNCTION is_blacklisted_name(text) IS 'Return TRUE if any regular expressions stored in the NameBlacklist table match the givenname, otherwise return FALSE.';
+
+
+CREATE OR REPLACE FUNCTION set_shipit_normalized_address() RETURNS trigger
+LANGUAGE plpgsql AS
+$$
+    BEGIN
+        NEW.normalized_address = 
+            lower(
+                -- Strip off everything that's not alphanumeric
+                -- characters.
+                regexp_replace(
+                    coalesce(NEW.addressline1, '') || ' ' ||
+                    coalesce(NEW.addressline2, '') || ' ' ||
+                    coalesce(NEW.city, ''),
+                    '[^a-zA-Z0-9]+', '', 'g'));
+        RETURN NEW;
+    END;
+$$;
+
+COMMENT ON FUNCTION set_shipit_normalized_address() IS 'Store a normalized concatenation of the request''s address into the normalized_address column.';
+
+
+CREATE OR REPLACE FUNCTION set_openid_identifier() RETURNS trigger
+LANGUAGE plpythonu AS
+$$
+    # If someone is trying to explicitly set the openid_identifier, let them.
+    # This also causes openid_identifiers to be left alone if this is an
+    # UPDATE trigger.
+    if TD['new']['openid_identifier'] is not None:
+        return None
+
+    from random import choice
+
+    # Non display confusing characters
+    chars = '34678bcdefhkmnprstwxyzABCDEFGHJKLMNPQRTWXY'
+
+    # character length of tokens. Can be increased, decreased or even made
+    # random - Launchpad does not care. 7 means it takes 40 bytes to store
+    # a null-terminated Launchpad identity URL on the current domain name.
+    length=7
+
+    loop_count = 0
+    while loop_count < 20000:
+        # Generate a random openid_identifier
+        oid = ''.join(choice(chars) for count in range(length))
+
+        # Check if the oid is already in the db, although this is pretty
+        # unlikely
+        rv = plpy.execute("""
+            SELECT COUNT(*) AS num FROM Person WHERE openid_identifier = '%s'
+            """ % oid, 1)
+        if rv[0]['num'] == 0:
+            TD['new']['openid_identifier'] = oid
+            return "MODIFY"
+        loop_count += 1
+        if loop_count == 1:
+            plpy.warning(
+                'Clash generating unique openid_identifier. '
+                'Increase length if you see this warning too much.')
+    plpy.error(
+        "Unable to generate unique openid_identifier. "
+        "Need to increase length of tokens.")
+$$;
+
 

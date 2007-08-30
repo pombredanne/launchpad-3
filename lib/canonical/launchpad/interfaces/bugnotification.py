@@ -3,13 +3,17 @@
 """Bug notifications."""
 
 __metaclass__ = type
-__all__ = ['IBugNotification', 'IBugNotificationSet']
+__all__ = [
+    'IBugNotification',
+    'IBugNotificationSet',
+    ]
 
-from zope.interface import Attribute, Interface
+from zope.interface import Attribute, Interface, implements
 from zope.schema import Bool, Datetime
 
 from canonical.launchpad.fields import BugField
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.launchpad import (
+    IHasOwner, INotificationRecipientSet)
 
 
 class IBugNotification(IHasOwner):

@@ -1,20 +1,19 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
     <!-- Milestone -->
     <content class="canonical.launchpad.database.Milestone">
         <allow interface="canonical.launchpad.interfaces.IMilestone" />
-        <allow interface="canonical.launchpad.interfaces.IAuthorization" />
+        <allow interface="canonical.launchpad.webapp.interfaces.IAuthorization" />
         <require
             permission="launchpad.Edit"
             set_attributes="name dateexpected visible" />
         <require
             permission="launchpad.Admin"
-            set_attributes="productseries distrorelease" />
+            set_attributes="productseries distroseries" />
     </content>
 
     <browser:navigation
@@ -58,8 +57,7 @@
         fields="name dateexpected visible"
         permission="launchpad.Edit"
         template="../templates/milestone-edit.pt"
-        lp:url="/products/$Product.name/+milestone/$Milestone.name/+edit">
-    </browser:editform>
+        />
 
     <browser:editform
         name="+admin"
@@ -67,11 +65,10 @@
         class="canonical.launchpad.browser.milestone.MilestoneEditView"
         facet="overview"
         schema="canonical.launchpad.interfaces.IMilestone"
-        fields="productseries distrorelease"
+        fields="productseries distroseries"
         permission="launchpad.Admin"
         template="../templates/milestone-edit.pt"
-        lp:url="/products/$Product.name/+milestone/$Milestone.name/+admin">
-    </browser:editform>
+        />
 
     <!-- IMilestoneSet -->
     <securedutility
@@ -79,5 +76,10 @@
         provides="canonical.launchpad.interfaces.IMilestoneSet">
         <allow interface="canonical.launchpad.interfaces.IMilestoneSet" />
     </securedutility>
+
+    <!-- ProjectMilestone -->
+    <content class="canonical.launchpad.database.milestone.ProjectMilestone">
+        <allow interface="canonical.launchpad.interfaces.IProjectMilestone" />
+    </content>
 
 </configure>
