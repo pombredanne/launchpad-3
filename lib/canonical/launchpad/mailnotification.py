@@ -792,8 +792,11 @@ def get_bug_edit_notification_texts(bug_delta):
                 added_bugtask.importance.title)
             if added_bugtask.assignee:
                 assignee = added_bugtask.assignee
-                change_info += u"%13s: %s <%s>\n" % (
-                    u"Assignee", assignee.name, assignee.preferredemail.email)
+                if assignee.preferredemail is not None:
+                    change_info += u"%13s: %s <%s>\n" % (
+                        u"Assignee", assignee.name, assignee.preferredemail.email)
+                else:
+                    change_info += u"%13s: %s\n" % (u"Assignee", assignee.name)
             change_info += u"%13s: %s" % (
                 u"Status", added_bugtask.status.title)
             changes.append(change_info)
