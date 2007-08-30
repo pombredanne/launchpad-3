@@ -47,19 +47,9 @@ if [ $? -ne 0 ]; then
   echo "launchpad.dev added to /etc/hosts"
 fi
 
-for hostname in code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translations.launchpad.dev xmlrpc.launchpad.dev shipit.ubuntu.dev shipit.kubuntu.dev shipit.edubuntu.dev; do
+for hostname in code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translations.launchpad.dev xmlrpc.launchpad.dev bazaar.launchpad.dev shipit.ubuntu.dev shipit.kubuntu.dev shipit.edubuntu.dev; do
   dev_host;
 done
-
-grep -q "^127.0.0.89" /etc/hosts
-if [ $? -ne 0 ]; then
-  echo "Adding development hosts on local machine"
-  echo "
-# Launchpad virtual domains. This should be on one line.
-127.0.0.89      bazaar.launchpad.dev
-" | sudo tee -a /etc/hosts > /dev/null
-  echo "bazaar.launchpad.dev added to /etc/hosts"
-fi
 
 # Enable relevant Ubuntu package repositories
 grep -q "^deb http:.* ${DISTRIB_CODENAME} .*universe" /etc/apt/sources.list
@@ -189,9 +179,11 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "
+NameVirtualHost 127.0.0.88:80
+
 <VirtualHost 127.0.0.88:80>
   ServerName launchpad.dev
-  ServerAlias *.launchpad.dev
+  ServerAlias code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translations.launchpad.dev xmlrpc.launchpad.dev
   <Proxy *>
     Order deny,allow
     Allow from 127.0.0.0/255.0.0.0
@@ -202,7 +194,7 @@ echo "
 " | sudo tee /etc/apache2/sites-available/launchpad.dev > /dev/null
 
 echo "
-<VirtualHost 127.0.0.89:80>
+<VirtualHost 127.0.0.88:80>
   ServerName bazaar.launchpad.dev
 
   ProxyRequests off
@@ -222,6 +214,8 @@ echo "
   # (6) Everything else is redirected to a non-existent page to give the user a 404
 
   RewriteEngine On
+
+  # Generate this file using 'make rewritemap'.
   RewriteMap branch-list txt:/var/tmp/sm-ng/config/launchpad-lookup.txt
 
   # (1) / -> Launchpad frontpage
@@ -252,6 +246,9 @@ echo "
 </VirtualHost>
 " | sudo tee /etc/apache2/sites-available/bazaar.launchpad.dev > /dev/null
 
+# Create an empty rewritemap file so that Apache will start.
+touch /var/tmp/sm-ng/config/launchpad-lookup.txt
+
 sudo a2enmod proxy > /dev/null
 if [ $? -ne 0 ]; then
   echo "ERROR: Unable to enable proxy module in Apache2"
@@ -278,7 +275,7 @@ fi
 
 sudo a2ensite bazaar.launchpad.dev > /dev/null
 if [ $? -ne 0 ]; then
-  echo "ERROR: Unable to enable launchpad.dev"
+  echo "ERROR: Unable to enable bazaar.launchpad.dev"
   exit 1
 fi
 
