@@ -203,7 +203,6 @@ ALTER TABLE BugTask
 
 
 -- ComponentSelection
-
 ALTER TABLE ComponentSelection RENAME COLUMN distrorelease TO distroseries;
 DROP INDEX componentselection__distrorelease__component__uniq;
 ALTER TABLE ComponentSelection
@@ -218,8 +217,49 @@ ALTER TABLE ComponentSelection
 
 
 -- DevelopmentManifest
+ALTER TABLE DevelopmentManifest RENAME COLUMN distrorelease TO distroseries;
+ALTER TABLE DevelopmentManifest
+    ADD CONSTRAINT developmentmanifest__distroseries__fk
+        FOREIGN KEY (distroseries) REFERENCES DistroSeries,
+    DROP CONSTRAINT developmentmanifest_distrorelease_fk;
+ALTER TABLE developmentmanifest_manifest_idx
+    RENAME TO developmentmanifest__manifest__idx;
+ALTER TABLE developmentmanifest_datecreated_idx
+    RENAME TO developmentmanifest__datecreated__idx;
+ALTER TABLE developmentmanifest_owner_datecreated_idx
+    RENAME TO developmentmanifest__owner__datecreated__idx;
 
-\d DevelopmentManifest
+
+-- DistroReleaseRole
+DROP SEQUENCE distroreleaserole_id_seq;
+
+
+-- MirrorCdImageDistroRelease
+ALTER TABLE MirrorCdImageDistroRelease RENAME TO MirrorCdImageDistroSeries;
+ALTER TABLE MirrorCdImageDistroSeries
+    RENAME COLUMN distrorelease TO distroseries;
+ALTER TABLE mirrorcdimagedistrorelease_pkey
+    RENAME TO mirrorcdimagedistroseries_pkey;
+ALTER TABLE mirrorcdimagedistrorelease_id_seq
+    RENAME TO mirrorcdimagedistroseries_id_seq;
+ALTER TABLE MirrorCdImageDistroSeries
+    ALTER COLUMN id SET DEFAULT nextval('mirrorcdimagedistroseries_id_seq'),
+    ADD CONSTRAINT mirrorcdimagedistroseries__distroseries__fk
+        FOREIGN KEY (distroseries) REFERENCES DistroSeries,
+    DROP CONSTRAINT mirrorcdimagedistrorelease_distrorelease_fkey,
+    ADD CONSTRAINT mirrorcdimagedistroseries__distribution_mirror__fk
+        FOREIGN KEY (distribution_mirror) REFERENCES DistributionMirror,
+    DROP CONSTRAINT mirrorcdimagedistrorelease_distribution_mirror_fkey,
+    ADD CONSTRAINT mirrorcdimagedistroseries__unq
+        UNIQUE (distroseries, flavour, distribution_mirror),
+    DROP CONSTRAINT mirrorcdimagedistrorelease__unq;
+
+
+-- Remaining tables
+SELECT relname from pg_class where relname like '%distrorelease%';
+
+\d MirrorCdImageDistroSeries
+
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
 ABORT;
