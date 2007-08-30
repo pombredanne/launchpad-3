@@ -61,6 +61,11 @@ PYLINTOPTS_SCRIPT="$PYLINTOPTS,W0702,W0703"
 # R0911 (Too many return statements)
 PYLINTOPTS_TRAVERSERS="$PYLINTOPTS,W0613,R0911"
 
+if grep -r verifyObject lib/canonical/launchpad/doc/* | \
+   grep zope.interface; then
+   echo "Fix these to use canonical.launchpad.webapp.testing please."
+fi
+
 if [ -z "$1" ]; then
     files=`bzr added ; bzr modified`
 else
