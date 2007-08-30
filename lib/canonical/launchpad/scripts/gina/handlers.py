@@ -351,9 +351,8 @@ class DistroHandler:
     def __init__(self):
         # Components and sections are cached to avoid redoing the same
         # database queries over and over again.
-        self.compcache = {} 
+        self.compcache = {}
         self.sectcache = {}
-        self.archivecache = {}
 
     def getComponentByName(self, component):
         """Returns a component object by its name."""
@@ -380,17 +379,6 @@ class DistroHandler:
             ret = Section(name=section)
 
         self.sectcache[section] = ret
-        return ret
-
-    def getArchiveByDistroComponent(self, distribution, component):
-        """Return an archive appropriate for the distro and component."""
-        # It's safe to ignore distribution in the cache because it won't
-        # change over the course of the lifetime of the script run.
-        if component in self.archivecache:
-            return self.archivecache[component]
-
-        ret = distribution.getArchiveByComponent(component.name)
-        self.archivecache[component] = ret
         return ret
 
 
@@ -632,8 +620,8 @@ class SourcePackagePublisher:
         else:
             component = self.distro_handler.getComponentByName(
                 spdata.component)
-        archive = self.distro_handler.getArchiveByDistroComponent(
-            self.distroseries.distribution, component)
+        archive = self.distroseries.distribution.getArchiveByComponent(
+            component.name)
         section = self.distro_handler.ensureSection(spdata.section)
 
         source_publishinghistory = self._checkPublishing(sourcepackagerelease)
@@ -866,8 +854,8 @@ class BinaryPackagePublisher:
         else:
             component = self.distro_handler.getComponentByName(
                 bpdata.component)
-        archive = self.distro_handler.getArchiveByDistroComponent(
-            self.distroarchseries.distroseries.distribution, component)
+        distribution = self.distroarchseries.distroseries.distribution
+        archive = distribution.getArchiveByComponent(component.name)
         section = self.distro_handler.ensureSection(bpdata.section)
         priority = prioritymap[bpdata.priority]
 
