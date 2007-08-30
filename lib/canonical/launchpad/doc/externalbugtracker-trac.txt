@@ -13,7 +13,7 @@ IExternalBugTracker.
     >>> from canonical.launchpad.components.externalbugtracker import Trac
     >>> from canonical.launchpad.interfaces.externalbugtracker import (
     ...     IExternalBugtracker)
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(IExternalBugtracker, Trac('http://trac.foo.com'))
     True
 
