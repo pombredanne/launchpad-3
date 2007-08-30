@@ -5,11 +5,13 @@
 __metaclass__ = type
 
 import os
+import shutil
 import subprocess
 import sys
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -82,6 +84,50 @@ class TestPublishDistro(TestNativePublishingBase):
         baz_path = "%s/main/b/baz/baz.dsc" % self.pool_dir
         self.assertEqual('baz', open(baz_path).read().strip())
 
+    def testDistsrootOverridePrimaryArchive(self):
+        """Test the -R option to publish-distro.
+
+        Make sure that -R works with the primary archive.
+        """
+        self.getPubSource(filecontent="primary archive")
+        self.layer.txn.commit()
+        main_archive = getUtility(IDistributionSet)['ubuntutest'].main_archive
+        pubconf = removeSecurityProxy(main_archive.getPubConfig())
+        tmp_path = "/tmp/tmpdistroot"
+
+        if os.path.exists(tmp_path):
+            shutil.rmtree(tmp_path)
+        os.mkdir(tmp_path)
+        rc, out, err = self.runPublishDistro(['-R', tmp_path])
+        distroseries = 'breezy-autotest'
+        self.assertExists(os.path.join(tmp_path, distroseries, 'Release'))
+        self.assertNotExists(
+            os.path.join("%s" % pubconf.distsroot, distroseries, 'Release'))
+        shutil.rmtree(tmp_path)
+
+    def testDistsrootNotOverrideCommercialArchive(self):
+        """Test the -R option to publish-distro.
+
+        Make sure the -R option does not affect the commercial archive.
+        """
+        ubuntu = getUtility(IDistributionSet)['ubuntutest']
+        commercial_archive = ubuntu.getArchiveByComponent('commercial')
+        self.getPubSource(
+            filecontent="commercial archive", archive=commercial_archive)
+        self.layer.txn.commit()
+        pubconf = removeSecurityProxy(commercial_archive.getPubConfig())
+        tmp_path = "/tmp/tmpdistroot"
+
+        if os.path.exists(tmp_path):
+            shutil.rmtree(tmp_path)
+        os.mkdir(tmp_path)
+        rc, out, err = self.runPublishDistro(['-R', tmp_path])
+        distroseries = 'breezy-autotest'
+        self.assertNotExists(os.path.join(tmp_path, distroseries, 'Release'))
+        self.assertExists(
+            os.path.join("%s" % pubconf.distsroot, distroseries, 'Release'))
+        shutil.rmtree(tmp_path)
+
     def testForPPA(self):
         """Try to run publish-distro in PPA mode.
 
@@ -101,7 +147,6 @@ class TestPublishDistro(TestNativePublishingBase):
             sourcename='bar', filecontent='bar', archive=name16.archive)
 
         # Override PPAs distributions
-        from zope.security.proxy import removeSecurityProxy
         naked_archive = removeSecurityProxy(cprov.archive)
         naked_archive.distribution = self.ubuntutest
         naked_archive = removeSecurityProxy(name16.archive)

@@ -48,7 +48,8 @@ def parse_options():
 
     parser.add_option("-R", "--distsroot",
                       dest="distsroot", metavar="SUFFIX", default=None,
-                      help="Override the dists path for generation")
+                      help="Override the dists path for generation of the "
+                           "PRIMARY archive only.")
 
     parser.add_option("--ppa", action="store_true",
                       dest="ppa", metavar="PPA", default=False,
@@ -137,8 +138,12 @@ def main():
         else:
             log.info("Processing %s" % archive.archive_url)
 
-        publisher = getPublisher(
-            archive, allowed_suites, log, options.distsroot)
+        # Only let the primary archive override the distsroot.
+        if archive.purpose == ArchivePurpose.PRIMARY:
+            publisher = getPublisher(
+                archive, allowed_suites, log, options.distsroot)
+        else:
+            publisher = getPublisher(archive, allowed_suites, log)
 
         try_and_commit("publishing", publisher.A_publish,
                        options.careful or options.careful_publishing)

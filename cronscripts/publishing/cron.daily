@@ -1,5 +1,10 @@
 #!/bin/sh
 
+if [ -z $LPCONFIG ]; then
+    echo LPCONFIG must be set to run this script.
+    exit 1
+fi
+
 set -x
 set -e
 set -u
@@ -13,9 +18,13 @@ OVERRIDEROOT=$ARCHIVEROOT/../ubuntu-overrides
 CACHEROOT=$ARCHIVEROOT/../ubuntu-cache
 DISTSCOPYROOT=$ARCHIVEROOT/../ubuntu-distscopy
 INDICES=$ARCHIVEROOT/indices
+ARCHIVEROOT_COMMERCIAL=/srv/launchpad.net/ubuntu-archive/ubuntu-commercial
+DISTSROOT_COMMERCIAL=$ARCHIVEROOT_COMMERCIAL/dists
 
 # Configuration options
-LPCONFIG=ftpmaster
+#LPCONFIG=ftpmaster
+# LPCONFIG will come from the environment so this script can run unaltered
+# on dogfood.
 LAUNCHPADROOT=/srv/launchpad.net/codelines/current
 LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
 DISTRONAME=ubuntu
@@ -25,7 +34,6 @@ DSYNCLIST=$CACHEROOT/dsync.list
 MD5LIST=$INDICES/md5sums.gz
 
 # Manipulate the environment
-export LPCONFIG
 export GNUPGHOME
 PATH=$PATH:$LAUNCHPADROOT/scripts:$LAUNCHPADROOT/cronscripts:$LAUNCHPADROOT/cronscripts/publishing
 
@@ -89,10 +97,11 @@ for DIST in dapper breezy; do
   done
 done
 
-# Publish the results.
+# Publish the results for all archives (except PPA).
+# (the -R only affects the primary archive)
 publish-distro.py -v -v -d $DISTRONAME -R ${DISTSROOT}.new
 
-# Process death row
+# Process death row for all archives (except PPA).
 process-death-row.py -v -v -d $DISTRONAME
 
 set +x
@@ -110,12 +119,23 @@ for CANDIDATE in $(find ${DISTSROOT}.new -maxdepth 2 -name Release) \
     echo "Not re-signing $CANDIDATE"
   fi
 done
+for CANDIDATE in $(find ${DISTSROOT_COMMERCIAL} -maxdepth 2 -name Release) \
+       $(find ${DISTSROOT_COMMERCIAL}/*/*/dist-upgrader* -name "*.tar.gz"); do
+  #  [ Release.gpg missing   ] or [ Release is newer than Release.gpg ]
+  if [ ! -f $CANDIDATE.gpg ] || [ $CANDIDATE -nt $CANDIDATE.gpg ]; then
+    echo "(re-)signing $CANDIDATE"
+    gpg --yes --detach-sign --armor -o $CANDIDATE.gpg --sign $CANDIDATE
+  else
+    echo "Not re-signing $CANDIDATE"
+  fi
+done
 
 # The Packages and Sources files are very large and would cripple our
 # mirrors, so we remove them now that the uncompressed MD5SUMS are in the
 # Release files.
 echo Removing uncompressed Packages and Sources files
 find ${DISTSROOT}.new \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
+find ${DISTSROOT_COMMERCIAL} \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
 
 # Copy in the indices
 echo Copying the indices into place.
@@ -124,7 +144,8 @@ cp $OVERRIDEROOT/override.* $INDICES
 
 set -x 
 
-# As close to atomically as possible, put the new dists into place
+# As close to atomically as possible, put the new dists into place for the
+# primary archive.
 mv $DISTSROOT ${DISTSROOT}.old
 mv ${DISTSROOT}.new $DISTSROOT
 DONEPUB=yes
@@ -141,8 +162,12 @@ LSLR=ls-lR.gz
   rm -f .$LSLR.new ; \
   TZ=UTC ls -lR  | gzip -9n > .$LSLR.new ; \
   mv -f .$LSLR.new $LSLR )
+( cd $ARCHIVEROOT_COMMERCIAL ; \
+  rm -f .$LSLR.new ; \
+  TZ=UTC ls -lR  | gzip -9n > .$LSLR.new ; \
+  mv -f .$LSLR.new $LSLR )
 
-# Run dsync
+# Run dsync over primary archive only.
 
 ( cd $ARCHIVEROOT ; \
   dsync-flist -q generate $DSYNCLIST --md5 ; \
@@ -151,11 +176,13 @@ LSLR=ls-lR.gz
 
 # Clear out empty and thus redundant dirs
 find $ARCHIVEROOT -type d -empty | xargs -r rmdir
+find $ARCHIVEROOT_COMMERCIAL -type d -empty | xargs -r rmdir
 
 # invoke cron.germinate to fill ubuntu tasks
 cron.germinate
 
 # Trigger master mirrors
-
-ssh archvsync@syowa
-ssh archvsync@frei
+if [ "$LPCONFIG" = "ftpmaster" ]
+    ssh archvsync@syowa
+    ssh archvsync@frei
+fi
