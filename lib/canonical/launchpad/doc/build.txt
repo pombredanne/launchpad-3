@@ -1,5 +1,4 @@
-The Build table
-^^^^^^^^^^^^^^^
+= The Build table =
 
 The build table contains the information pertaining to a given build
 of a sourcepackagerelease on a distroarchseries.
@@ -47,6 +46,9 @@ Let's check the complex properties of a build object.
 
   >>> firefox_build.is_trusted
   True
+
+  >>> firefox_build.upload_status
+  <DBItem PackageUploadStatus.NEW, (0) New>
 
 Test "retry" functionality:
 
