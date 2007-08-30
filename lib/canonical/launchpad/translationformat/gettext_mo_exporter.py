@@ -50,7 +50,7 @@ class GettextMOExporter:
     """Support class to export Gettext .mo files."""
     implements(ITranslationFormatExporter)
 
-    def __init__(self, context):
+    def __init__(self, context=None):
         # 'context' is ignored here because we don't need it, although we use
         # zope.component.subscribers from TranslationExporter class to get all
         # exporters available, which require that each exporter have a

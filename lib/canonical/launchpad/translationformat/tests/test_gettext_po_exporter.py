@@ -5,8 +5,10 @@ __metaclass__ = type
 import doctest
 import unittest
 from textwrap import dedent
+from zope.interface.verify import verifyObject
 
 from canonical.launchpad.helpers import test_diff
+from canonical.launchpad.interfaces import ITranslationFormatExporter
 from canonical.launchpad.translationformat import gettext_po_exporter
 from canonical.launchpad.translationformat.gettext_po_exporter import (
     GettextPOExporter)
@@ -37,6 +39,12 @@ class GettextPOExporterTestCase(unittest.TestCase):
                 export_lines[i], import_lines[i],
                 "Output doesn't match:\n\n %s" % test_diff(
                     import_lines, export_lines))
+
+    def testInterface(self):
+        """Check whether the object follows the interface."""
+        self.failUnless(
+            verifyObject(ITranslationFormatExporter, self.translation_exporter),
+            "GettextPOExporter doesn't follow the interface")
 
     def testGeneralExport(self):
         """Check different kind of messages export."""

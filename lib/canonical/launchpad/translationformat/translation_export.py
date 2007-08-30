@@ -38,7 +38,7 @@ class TranslationExporter:
     """See `ITranslationExporter`."""
     implements(ITranslationExporter)
 
-    def getTranslationFormatExporters(self, file_format):
+    def getTranslationFormatExportersForFileFormat(self, file_format):
         """See `ITranslationExporter`."""
         exporters_available = []
         for exporter in subscribers([self], ITranslationFormatExporter):
