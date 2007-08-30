@@ -14,11 +14,14 @@ import unittest
 from urlparse import urljoin, urlparse
 import xmlrpclib
 
+import transaction
+
 from bzrlib.branch import Branch
 from bzrlib.tests import HttpServer
 from bzrlib.urlutils import local_path_from_url
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.codehosting.tests.helpers import BranchTestCase
@@ -26,7 +29,7 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import LaunchpadScriptLayer
 
 
 class TestBranchPuller(BranchTestCase):
@@ -37,7 +40,7 @@ class TestBranchPuller(BranchTestCase):
     components in the branch puller system work together sanely.
     """
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadScriptLayer
 
     def setUp(self):
         super(TestBranchPuller, self).setUp()
@@ -45,13 +48,15 @@ class TestBranchPuller(BranchTestCase):
             config.root, 'cronscripts', 'supermirror-pull.py')
         self.makeCleanDirectory(config.codehosting.branches_root)
         self.makeCleanDirectory(config.supermirror.branchesdest)
-        self.emptyPullQueue()
+        self.emptyPullQueues()
         authserver_tac = AuthserverTacTestSetup()
         authserver_tac.setUp()
         self.addCleanup(authserver_tac.tearDown)
 
     def assertMirrored(self, source_path, branch):
         """Assert that 'branch' was mirrored succesfully."""
+        # Make sure that we are testing the actual data.
+        removeSecurityProxy(branch).sync()
         self.assertEqual(branch.last_mirror_attempt, branch.last_mirrored)
         self.assertEqual(0, branch.mirror_failures)
         self.assertEqual(None, branch.mirror_status_message)
@@ -88,12 +93,6 @@ class TestBranchPuller(BranchTestCase):
         tree.add('foo')
         tree.commit('Added foo', rev_id='rev1')
         return tree
-
-    def emptyPullQueue(self):
-        """Make sure there are no branches to pull."""
-        LaunchpadZopelessLayer.txn.begin()
-        cursor().execute("UPDATE Branch SET mirror_request_time = NULL")
-        LaunchpadZopelessLayer.txn.commit()
 
     # XXX: JonathanLange 2007-08-20, Copied from test_branchset and
     # subsequently modified. Fix by providing standardised codehosting test
@@ -200,7 +199,7 @@ class TestBranchPuller(BranchTestCase):
         branch = self.getArbitraryBranch(BranchType.HOSTED)
         self.pushToBranch(branch)
         branch.requestMirror()
-        LaunchpadZopelessLayer.txn.commit()
+        transaction.commit()
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(self.getHostedPath(branch), branch)
@@ -211,7 +210,7 @@ class TestBranchPuller(BranchTestCase):
         self.pushToBranch(branch)
         branch.requestMirror()
         branch.private = True
-        LaunchpadZopelessLayer.txn.commit()
+        transaction.commit()
         command, retcode, output, error = self.runPuller('upload')
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(self.getHostedPath(branch), branch)
@@ -222,7 +221,7 @@ class TestBranchPuller(BranchTestCase):
         tree = self.createTemporaryBazaarBranchAndTree()
         branch.url = self.serveOverHTTP()
         branch.requestMirror()
-        LaunchpadZopelessLayer.txn.commit()
+        transaction.commit()
         command, retcode, output, error = self.runPuller('mirror')
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(branch.url, branch)
@@ -244,7 +243,7 @@ class TestBranchPuller(BranchTestCase):
         # Create the branch in the database.
         branch = self.getArbitraryBranch(BranchType.IMPORTED)
         branch.requestMirror()
-        LaunchpadZopelessLayer.txn.commit()
+        transaction.commit()
         
         # Create the Bazaar branch and serve it in the expected location.
         branch_path = '%08x' % branch.id
