@@ -856,6 +856,7 @@ to restart?
 Running on Ubuntu - with Jokosher 0.2 runscript.', 16, NULL, NULL, false, false, '2007-03-15 20:37:51.603369', NULL, NULL);
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private) VALUES (12, '2007-03-15 20:41:18.635493', NULL, 'Copy, Cut and Delete operations should work on selections', 'When trying to copy, cut or delete just a selected portion of an event, the operations affect the event completely. That is, you can''t select a portion and cut that piece. The whole event will be cut. Same goes for the other 2 operations.', 16, NULL, NULL, false, false, '2007-03-15 20:46:49.909153', NULL, NULL);
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private) VALUES (13, '2007-07-27 20:00:58.299796', NULL, 'Launchpad CSS and JS is not testible', 'The messages placed on this bug are for eyeball viewing of JS and CSS behaviour.', 12, NULL, NULL, false, false, '2007-07-27 20:29:46.336737', NULL, NULL);
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private) VALUES (14, '2007-08-09 11:39:16.836856', NULL, 'jokosher exposes personal details in its actions portlet', 'Jokosher discloses to any passerby the fact that I am single and unwed in its actions portlet. Please fix this blatant violacion of privacy now!!', 63, NULL, NULL, true, true, '2007-08-09 11:39:16.836856', NULL, NULL);
 
 
 ALTER TABLE bug ENABLE TRIGGER ALL;
@@ -895,6 +896,8 @@ INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, ne
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (30, 12, '2007-03-15 20:41:42.154264', 16, 'jokosher: importance', 'Undecided', 'Critical', NULL);
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (31, 12, '2007-03-15 20:41:42.154264', 16, 'jokosher: statusexplanation', NULL, '', NULL);
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (32, 13, '2007-07-27 20:00:58.299796', 12, 'bug', NULL, NULL, 'added bug');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (33, 14, '2007-08-09 11:39:16.836856', 63, 'bug', NULL, NULL, 'added bug');
+
 
 
 ALTER TABLE bugactivity ENABLE TRIGGER ALL;
@@ -963,6 +966,8 @@ INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (25, 12, 35, NULL);
 INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (26, 12, 36, NULL);
 INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (27, 13, 37, NULL);
 INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (28, 13, 38, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (29, 14, 39, NULL);
+
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -1021,6 +1026,9 @@ INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (11, 16, 10, 
 INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (12, 16, 11, '2007-03-15 20:33:56.67893');
 INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (13, 16, 12, '2007-03-15 20:41:18.635493');
 INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (14, 12, 13, '2007-07-27 20:00:58.299796');
+INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (15, 63, 14, '2007-08-09 11:39:16.836856');
+INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (16, 14, 14, '2007-08-09 11:39:16.836856');
+
 
 
 ALTER TABLE bugsubscription ENABLE TRIGGER ALL;
@@ -1035,6 +1043,7 @@ INSERT INTO bugtag (id, bug, tag) VALUES (5, 3, 'layout-test');
 INSERT INTO bugtag (id, bug, tag) VALUES (6, 4, 'layout-test');
 INSERT INTO bugtag (id, bug, tag) VALUES (7, 5, 'doc');
 INSERT INTO bugtag (id, bug, tag) VALUES (8, 10, 'crash');
+INSERT INTO bugtag (id, bug, tag) VALUES (9, 14, 'lunch-money');
 
 
 ALTER TABLE bugtag ENABLE TRIGGER ALL;
@@ -1067,6 +1076,8 @@ INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackag
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (30, 11, 20, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-03-15 20:33:56.67893', 16, NULL, NULL, NULL, NULL, 'Jokosher', NULL, NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (31, 12, 20, NULL, NULL, NULL, NULL, 20, NULL, 50, NULL, NULL, '2007-03-15 20:41:18.635493', 16, NULL, NULL, '', NULL, 'Jokosher', '2007-03-15 20:41:42.256326', NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (32, 13, 17, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-07-27 20:00:58.299796', 12, NULL, NULL, NULL, NULL, 'Launchpad', NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (33, 14, 20, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-08-09 11:39:16.836856', 63, NULL, NULL, NULL, NULL, 'Jokosher', NULL, NULL, NULL, NULL);
+
 
 
 ALTER TABLE bugtask ENABLE TRIGGER ALL;
@@ -2007,6 +2018,7 @@ INSERT INTO karma (id, datecreated, person, "action", product, distribution, sou
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (60, '2000-03-13 20:45:51.817826', 16, 2, 20, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (61, '2000-03-13 20:46:49.83307', 16, 2, 20, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (62, '2001-07-03 21:30:51.583356', 12, 47, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (63, '2001-08-09 11:39:16.836856', 63, 1, 20, NULL, NULL);
 
 
 ALTER TABLE karma ENABLE TRIGGER ALL;
@@ -3092,6 +3104,8 @@ INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rf
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (36, '2007-03-15 20:46:49.83307', 'Re: Copy, Cut and Delete operations should work on selections', 6, NULL, NULL, '<20070315204649.14326.69581.malone@localhost>', NULL, NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (37, '2007-07-27 20:00:58.299796', 'Launchpad CSS and JS is not testible', 12, NULL, NULL, '<20070727200058.25131.76173.malonedeb@autumn.annrky-sinzui.local>', NULL, NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (38, '2007-07-27 20:29:46.25854', 'Re: Launchpad CSS and JS is not testible', 12, NULL, NULL, '<20070727202946.25131.16206.malone@autumn.annrky-sinzui.local>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (39, '2007-08-09 11:39:16.836856', 'jokosher exposes personal details in its actions portlet', 63, NULL, NULL, '<20070809113916.26819.83859.malonedeb@localhost.localdomain>', NULL, NULL);
+
 
 
 ALTER TABLE message ENABLE TRIGGER ALL;
@@ -3279,6 +3293,8 @@ T2PIWy0CUJsX8RXSt/M51WE=
 =J2S5
 -----END PGP SIGNATURE-----
 ', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (39, 39, 1, 'Jokosher discloses to any passerby the fact that I am single and unwed in its actions portlet. Please fix this blatant violacion of privacy now!!', NULL, NULL);
+
 
 
 ALTER TABLE messagechunk ENABLE TRIGGER ALL;
