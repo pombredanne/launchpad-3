@@ -687,12 +687,12 @@ class ShippingRequestsView:
             flavour = ShipItFlavour.items[self.selectedFlavourName]
 
         # Sort as directed by form, but also by id as a tie-breaker
-        # XXX: JeroenVermeulen bug=136345: Indeterministic sorting was
-        # breaking the xx-shipit-search-for-requests.txt test most of the time
-        # (and blocking PQM).  This is a quick fix, but it looks like we could
-        # also use some extra input checking here.  SQL sorting expressions
-        # are hard-coded in the template, plus not selecting an order would
-        # trigger an exception in this line.
+        # XXX: JeroenVermeulen bug=136345 2007-08-31: Indeterministic sorting
+        # was breaking the xx-shipit-search-for-requests.txt test most of the
+        # time (and blocking PQM).  This is a quick fix, but it looks like we
+        # could also use some extra input checking here.  SQL sorting
+        # expressions are hard-coded in the template, plus not selecting an
+        # order would trigger an exception in this line.
         orderby = [str(request.get('orderby')), 'id']
         self.recipient_text = request.get('recipient_text')
 
