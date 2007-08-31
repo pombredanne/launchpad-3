@@ -471,13 +471,14 @@ transaction manager (in this case a fake one) to make these work.
     ...         pass
     >>> transaction_stub = FakeTransactionManager()
 
-=== Preconditions to migrate translations between distro series. ===
+=== Preconditions for migrating translations between distro series ===
 
 Before we are able to migrate translations, there are a set of preconditions
-that should be meet:
+that should be met:
 
 First one is that we should keep the new distroseries's translations hidden
-from the public:
+from the public, so the copying procedure is not confused by concurrent
+updates:
 
     >>> humpy.hide_all_translations = False
     >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
@@ -489,7 +490,8 @@ from the public:
     # tests.
     >>> humpy.hide_all_translations = True
 
-And the other one is that import queue should be stopped while doing this.
+The other one is that, for the same reason, the import queue should not be
+accepting uploads for this distroseries.
 
     >>> humpy.defer_translation_imports = False
     >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
@@ -573,15 +575,26 @@ and child distro series.
    ...                 output_text += output
    ...     return output_text
 
-Let's compare what we have in our parent distro series and the new one just
-created. We should get no differences at all.
+Comparing the current translations for the parent distro series to those of the
+distro series we just created, we see that there are no differences at all.
+Translation-wise, humpy is a perfect copy of hoary.
 
    >>> print compare_translations(hoary, humpy)
    <BLANKLINE>
 
-Now, we are going to test how to migrate updates from Hoary to Humpy. To do
-this test, we will add some new translations to Hoary, migrate them to Humpy
-and check that the changes are migrated when needed.
+Since people may continue to translate Hoary (and in fact we usually encourage
+them to do so as a matter of policy), we will also periodically update Humpy's
+translations based on changes made in Hoary.
+
+To illustrate this, we will add some new translations to Hoary, migrate them
+to Humpy, and check that the changes are copied where appropriate.
+
+In practice the updates need not be entirely complete.  The database and the
+Translations application remain "live" during the process, so there may be some
+interference from changes made through the UI.  In those cases the copying
+mechanism will drop a few updates rather than risk overwriting newer changes.
+Any dropped updates from Hoary will still appear as suggestions to translators
+working on Humpy, as long as they're still translating the same messages.
 
 Get the needed objects to prepare this test.
 
@@ -601,7 +614,16 @@ Get the needed objects to prepare this test.
     >>> potemplate_humpy = potemplatesubset_humpy.getPOTemplateByName(
     ...     'evolution-2.2')
     >>> pofile_es_humpy = potemplate_humpy.getPOFileByLang('es')
-    >>> UTC = pytz.timezone('UTC')
+
+    >>> class Clock:
+    ...     """Simulated clock that's guaranteed to proceed beween checks."""
+    ...     time = datetime.datetime.now(pytz.timezone('UTC'))
+    ...
+    ...     def __call__(self):
+    ...         """Check time.  Guaranteed to be more than at previous call."""
+    ...         self.time += datetime.datetime.resolution
+    ...         return self.time
+    >>> now = Clock()
 
 The one submitting the string will be Carlos. He's an editor for this POFile.
 
@@ -612,43 +634,54 @@ Update a string in the parent release.
     >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'evolution addressbook')
     >>> pomsgset_hoary.updateTranslationSet(
     ...     carlos, { 0: u'hoary updated string' }, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     published=False, lock_timestamp=now())
 
-And another update in a string that is untranslated.
+And another update in a string that was previously untranslated.
 
     >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'has ')
     >>> pomsgset_hoary.updateTranslationSet(
     ...     carlos, { 0: u'empty string translated' }, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     published=False, lock_timestamp=now())
 
-Update a string in the children release.
+Update a string in the child release.
 
     >>> pomsgset_humpy = pofile_es_humpy.getPOMsgSet(
     ...     u'current addressbook folder')
     >>> pomsgset_humpy.updateTranslationSet(
     ...     carlos, { 0: u'humpy updated string' }, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+    ...     published=False, lock_timestamp=now())
 
-Let's update the statistics, and print out the values for the number
-of translated, changed in Launchpad, newly translated in Launchpad,
-and with unreviewed suggestions.
+These are the respective expected numbers of translated messages, messages
+whose translations have changed in Launchpad, ones that are newly translated
+in Launchpad, and ones with unreviewed suggestions.
+
+We update these statistics first, since we have not gone through the regular
+UI for updating translations, and receive the current numbers as a byproduct.
 
     >>> pofile_es_hoary.updateStatistics()
     (7, 2, 1, 1)
     >>> pofile_es_humpy.updateStatistics()
     (7, 2, 0, 0)
 
-We can also see that the statistics show differences between each distribution
-release for the rosetta count of translations:
+The statistics for messages translated in Launchpad reflect the fact that we
+translated one previously untranslated string in Hoary.  The number for this
+category of message is called rosettaCount.
 
-    >>> pofile_es_hoary.currentCount() == pofile_es_humpy.currentCount()
-    True
-    >>> pofile_es_hoary.updatesCount() == pofile_es_humpy.updatesCount()
-    True
-    >>> pofile_es_hoary.rosettaCount() == pofile_es_humpy.rosettaCount()
-    False
+    >>> pofile_es_hoary.currentCount()
+    7
+    >>> pofile_es_humpy.currentCount()
+    7
+    >>> pofile_es_hoary.updatesCount()
+    2
+    >>> pofile_es_humpy.updatesCount()
+    2
+    >>> pofile_es_hoary.rosettaCount()
+    1
+    >>> pofile_es_humpy.rosettaCount()
+    0
 
-We can see now that the changes are detected.
+When we compare the full translations for hoary and humpy, we see exactly the
+changes we just made, and nothing else.
 
     >>> print compare_translations(hoary, humpy)
     Output doesn't match:
@@ -682,11 +715,12 @@ We can see now that the changes are detected.
      #: a11y/addressbook/ea-minicard-view.c:104
      msgid " cards"
 
-Let's migrate the updates.
+Let's migrate the updates from Hoary to Humpy.
 
     >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
 
-Now, we should have only the update from Humpy as a difference
+Our updates are copied to Humpy.  The one remaining difference between Hoary's
+and Humpy's translations is that we updated one translation in Humpy itself.
 
     >>> print compare_translations(hoary, humpy)
     Output doesn't match:
@@ -704,20 +738,16 @@ Now, we should have only the update from Humpy as a difference
      #: a11y/addressbook/ea-minicard-view.c:102
      #, fuzzy
 
-What would happen now, if the same string that is changed in Humpy is also
-changed in Hoary?
+That change in Humpy supersedes any translation changes that may be made in
+its parent distroseries for that same message.  So even if someone now
+translate the message in Hoary as well, Humpy will retain its own translation
+of that string when we next migrate updates.
 
     >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'current addressbook folder')
     >>> pomsgset_hoary.updateTranslationSet(
     ...     carlos, { 0: u'second hoary updated string' }, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
-
-We copy missing translations...
-
+    ...     published=False, lock_timestamp=now())
     >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
-
-And we can see that the change is not migrated to Humpy because we already got
-a change directly there that we should not overwrite.
 
     >>> print compare_translations(hoary, humpy)
     Output doesn't match:
