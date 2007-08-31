@@ -501,7 +501,7 @@ class ChooseAffectedProductView(MultiStepBaseView):
             except WidgetsError, errors:
                 for error in errors:
                     self.setFieldError('product', error.snippet())
-                return
+            return
 
         entered_product = self.request.form.get(self.widgets['product'].name)
         if not entered_product:
