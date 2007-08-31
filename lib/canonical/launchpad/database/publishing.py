@@ -409,8 +409,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def meta_distroseriessourcepackagerelease(self):
         """see ISourcePackagePublishingHistory."""
-        return self.distroseries.getSourcePackageRelease( 
-            self.sourcepackagerelease 
+        return self.distroseries.getSourcePackageRelease(
+            self.sourcepackagerelease
             )
 
     @property
