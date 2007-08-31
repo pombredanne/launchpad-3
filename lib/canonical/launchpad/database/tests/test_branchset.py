@@ -99,8 +99,10 @@ class TestBranchSet(TestCase):
             logout()
 
 
-class TestMirroring(BranchTestCase):
+class TestMirroringForHostedBranches(BranchTestCase):
     """Tests for mirroring methods of a branch."""
+
+    branch_type = BranchType.HOSTED
 
     def setUp(self):
         BranchTestCase.setUp(self)
@@ -120,6 +122,9 @@ class TestMirroring(BranchTestCase):
     def getNow(self):
         """Return a datetime representing 'now' in UTC."""
         return datetime.now(pytz.timezone('UTC'))
+
+    def makeBranch(self):
+        return BranchTestCase.makeBranch(self, self.branch_type)
 
     def test_requestMirror(self):
         """requestMirror sets the mirror request time to 'now'."""
@@ -154,59 +159,17 @@ class TestMirroring(BranchTestCase):
         self.assertEqual(
             [], list(self.branch_set.getPullQueue(branch.branch_type)))
 
-    def test_mirroringResetsMirrorRequestForHostedBranches(self):
+    def test_mirroringResetsMirrorRequest(self):
         """Mirroring hosted branches resets their mirror request times."""
-        branch = self.makeBranch(BranchType.HOSTED)
+        branch = self.makeBranch()
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
         self.assertEqual(None, branch.mirror_request_time)
 
-    def test_mirroringResetsMirrorRequestForImportedBranches(self):
-        """Mirroring hosted branches resets their mirror request times."""
-        branch = self.makeBranch(BranchType.IMPORTED)
-        branch.requestMirror()
-        branch.startMirroring()
-        branch.mirrorComplete('rev1')
-        self.assertEqual(None, branch.mirror_request_time)
-
-    def test_mirroringResetsMirrorRequestForMirroredBranches(self):
-        """Mirroring 'mirrored' branches sets their mirror request time to six
-        hours in the future.
-        """
+    def test_mirrorFailureResetsMirrorRequest(self):
         before_request = self.getNow()
-        branch = self.makeBranch(BranchType.MIRRORED)
-        branch.requestMirror()
-        branch.startMirroring()
-        branch.mirrorComplete('rev1')
-        after_request = self.getNow()
-        self.assertBetween(
-            before_request, branch.mirror_request_time - timedelta(hours=6),
-            after_request)
-
-    def test_mirrorFailureResetsMirrorRequestForHostedBranches(self):
-        before_request = self.getNow()
-        branch = self.makeBranch(BranchType.HOSTED)
-        branch.requestMirror()
-        branch.mirrorFailed('No particular reason')
-        after_request = self.getNow()
-        self.assertBetween(
-            before_request, branch.mirror_request_time - timedelta(hours=6),
-            after_request)
-
-    def test_mirrorFailureResetsMirrorRequestForImportedBranches(self):
-        before_request = self.getNow()
-        branch = self.makeBranch(BranchType.IMPORTED)
-        branch.requestMirror()
-        branch.mirrorFailed('No particular reason')
-        after_request = self.getNow()
-        self.assertBetween(
-            before_request, branch.mirror_request_time - timedelta(hours=6),
-            after_request)
-
-    def test_mirrorFailureResetsMirrorRequestForMirroredBranches(self):
-        before_request = self.getNow()
-        branch = self.makeBranch(BranchType.MIRRORED)
+        branch = self.makeBranch()
         branch.requestMirror()
         branch.mirrorFailed('No particular reason')
         after_request = self.getNow()
@@ -216,9 +179,8 @@ class TestMirroring(BranchTestCase):
 
     def test_pullQueueEmpty(self):
         """Branches with no mirror_request_time are not in the pull queue."""
-        for branch_type in BranchType.items:
-            self.assertEqual(
-                [], list(self.branch_set.getPullQueue(branch_type)))
+        self.assertEqual(
+            [], list(self.branch_set.getPullQueue(self.branch_type)))
 
     def test_pastMirrorRequestTimeInQueue(self):
         """Branches with mirror_request_time in the past are mirrored."""
@@ -247,13 +209,37 @@ class TestMirroring(BranchTestCase):
         """Pull queue has the oldest mirror request times first."""
         branches = []
         for i in range(3):
-            branch = removeSecurityProxy(self.makeBranch(BranchType.HOSTED))
+            branch = removeSecurityProxy(self.makeBranch())
             branch.mirror_request_time = self.getNow() - timedelta(hours=i+1)
             branch.sync()
             branches.append(branch)
         self.assertEqual(
             list(reversed(branches)),
-            list(self.branch_set.getPullQueue(BranchType.HOSTED)))
+            list(self.branch_set.getPullQueue(self.branch_type)))
+
+
+class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
+
+    branch_type = BranchType.MIRRORED
+
+    def test_mirroringResetsMirrorRequest(self):
+        """Mirroring 'mirrored' branches sets their mirror request time to six
+        hours in the future.
+        """
+        before_request = self.getNow()
+        branch = self.makeBranch()
+        branch.requestMirror()
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
+        after_request = self.getNow()
+        self.assertBetween(
+            before_request, branch.mirror_request_time - timedelta(hours=6),
+            after_request)
+
+        
+class TestMirroringForImportedBranches(TestMirroringForHostedBranches):
+
+    branch_type = BranchType.IMPORTED
 
 
 class BranchVisibilityPolicyTestCase(TestCase):
