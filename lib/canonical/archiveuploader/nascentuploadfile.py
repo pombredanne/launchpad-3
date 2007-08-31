@@ -846,10 +846,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
         # XXX: dsilvers 2005-10-14 bug 3160: erm, need to work shlibdeps out.
         shlibdeps = ""
-        # XXX: dsilvers 2005-10-14 bug 3161: erm, source should have
-        # a copyright but not binaries.
-        copyright = ""
-        licence = ""
 
         is_essential = encoded.get('Essential', '').lower() == 'yes'
         architecturespecific = not self.is_archindep
@@ -875,8 +871,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
             provides=encoded.get('Provides', ''),
             essential=is_essential,
             installedsize=installedsize,
-            copyright=copyright,
-            licence=licence,
             architecturespecific=architecturespecific)
 
         library_file = self.librarian.create(self.filename,

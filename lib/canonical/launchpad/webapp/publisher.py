@@ -275,8 +275,8 @@ def canonical_url(
     the request.  If a request is not provided, but a web-request is in
     progress, the protocol, host and port are taken from the current request.
 
-    If there is no request available, the protocol, host and port are taken from
-    the root_url given in launchpad.conf.
+    If there is no request available, the protocol, host and port are taken
+    from the root_url given in launchpad.conf.
 
     Raises NoCanonicalUrl if a canonical url is not available.
     """

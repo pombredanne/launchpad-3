@@ -2,18 +2,24 @@
 
 There is a simple CodeImportMachine table in the database that records
 the machines that can perform imports and whether they are online (that
-is, currently capable of performing imports).  Adding new machines is
-considered an admin task, so requires that we switch to a database
-administrator.
+is, currently capable of performing imports).
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ICodeImportMachine, ICodeImportMachineSet, CodeImportMachineState)
+
+Adding new machines is considered an admin task, so requires that we switch to
+a database administrator.
 
 Adding a machine is very simple SQL, for which there will probably be a
 shell script.
 
-    >>> from canonical.database.sqlbase import connect
+    >>> from canonical.database.sqlbase import connect, quote
     >>> connection = connect('testadmin')
     >>> cur = connection.cursor()
-    >>> cur.execute('''INSERT INTO CodeImportMachine (hostname, online)
-    ...                VALUES ('frobisher.example.com', false);''')
+    >>> cur.execute("""
+    ...     INSERT INTO CodeImportMachine (hostname, state)
+    ...     VALUES ('frobisher.example.com', %s)
+    ...     """ % quote(CodeImportMachineState.OFFLINE))
     >>> connection.commit()
 
 The webapp only has rights to examine, not modify, the CodeImportMachine
@@ -21,8 +27,6 @@ table.  The table is represented by an utility that provides the
 ICodeImportMachineSet interface.  Currently we hide all aspects of the
 new system from anonymous and regular users.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...      ICodeImportMachine, ICodeImportMachineSet)
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> machine_set.getAll()
     Traceback (most recent call last):
@@ -47,7 +51,7 @@ hostname and to all machines.
     True
 
     >>> machine_set = getUtility(ICodeImportMachineSet)
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.security.proxy import removeSecurityProxy
     >>> verifyObject(ICodeImportMachineSet, removeSecurityProxy(machine_set))
     True
@@ -62,24 +66,25 @@ database.
     None
 
 Machine objects themselves provide ICodeImportMachine, which includes
-hostname and online status information.
+hostname and online state information.
 
     >>> verifyObject(ICodeImportMachine, removeSecurityProxy(machine))
     True
     >>> machine.hostname
     u'frobisher.example.com'
-    >>> machine.online
-    False
+    >>> print machine.state.name
+    OFFLINE
 
 The web app cannot edit this information.
 
-    >>> machine.online = True
+    >>> from canonical.launchpad.interfaces import CodeImportMachineState
+    >>> machine.state = CodeImportMachineState.ONLINE
     Traceback (most recent call last):
       ...
     ForbiddenAttribute: ...
 
 Jobs running on the machine itself will connect as the 'importd' user,
-which has rights to update the table so it can update the online status.
+which has rights to update the table so it can update the machine state.
 
 XXX: MichaelHudson 2007-07-03, it would be nice to be able to use
 SQLObject here.  But the test framework doesn't appear to support this
@@ -87,8 +92,10 @@ SQLObject here.  But the test framework doesn't appear to support this
 
     >>> connection = connect('importd')
     >>> cur = connection.cursor()
-    >>> cur.execute('''UPDATE CodeImportMachine SET online = true
-    ...                WHERE hostname = 'frobisher.example.com';''')
+    >>> cur.execute("""
+    ...     UPDATE CodeImportMachine SET state=%s
+    ...     WHERE hostname='frobisher.example.com'
+    ...     """ % quote(CodeImportMachineState.ONLINE))
     >>> connection.commit()
 
 Now we abort the implicit transaction and flush SQLObject's caches so
@@ -104,5 +111,6 @@ the status is indeed updated.
 
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> machine = machine_set.getByHostname('frobisher.example.com')
-    >>> machine.online
-    True
+    >>> print machine.state.name
+    ONLINE
+
