@@ -535,17 +535,18 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         """A method that is overridden in the derived classes."""
         return data['author']
 
+    def hasProduct(self, data):
+        """Is the product defined in the data dict."""
+        return 'product' in data
+
     def getProduct(self, data):
         """A method that is overridden in the derived classes."""
         return data.get('product')
 
     def validate(self, data):
-        product = self.getProduct(data)
-        # If 'product' is in data, it may be None, but it is still valid.
-        # If product failed it's validation, then it isn't in the data dict.
-        valid_product = 'product' in data or product is not None
-        if valid_product and 'name' in data:
-            self.validate_branch_name(self.user, product, data['name'])
+        if self.hasProduct(data) and 'name' in data:
+            self.validate_branch_name(
+                self.user, self.getProduct(data), data['name'])
 
         branch_type = data.get('branch_type')
         # If branch_type failed to validate, then the rest of the method
@@ -609,6 +610,9 @@ class ProductBranchAddView(BranchAddView):
         fields = list(BranchAddView.field_names)
         fields.remove('product')
         return fields
+
+    def hasProduct(self, data):
+        return True
 
     def getProduct(self, data):
         return self.context
