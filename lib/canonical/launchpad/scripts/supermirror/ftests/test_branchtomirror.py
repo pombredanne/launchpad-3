@@ -16,7 +16,7 @@ import urllib2
 import bzrlib.branch
 from bzrlib import bzrdir
 from bzrlib.revision import NULL_REVISION
-from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
+from bzrlib.tests import TestCaseInTempDir
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
 from bzrlib.transport import get_transport
@@ -124,15 +124,6 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
     def tearDown(self):
         self.authserver.tearDown()
         super(TestBranchToMirrorFormats, self).tearDown()
-        test_root = TestCaseWithMemoryTransport.TEST_ROOT
-        if test_root is not None and os.path.exists(test_root):
-            shutil.rmtree(test_root)
-        # Set the TEST_ROOT back to None, to tell TestCaseWithMemoryTransport
-        # we need it to create a new root when the next test is run.
-        # The TestCaseWithMemoryTransport is part of bzr's test infrastructure
-        # and the bzr test runner normally does this cleanup, but here we have
-        # to do that ourselves.
-        TestCaseWithMemoryTransport.TEST_ROOT = None
 
     def testMirrorKnitAsKnit(self):
         # Create a source branch in knit format, and check that the mirror is in
@@ -225,15 +216,6 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
     def tearDown(self):
         self.authserver.tearDown()
         TestCaseInTempDir.tearDown(self)
-        test_root = TestCaseWithMemoryTransport.TEST_ROOT
-        if test_root is not None and os.path.exists(test_root):
-            shutil.rmtree(test_root)
-        # Set the TEST_ROOT back to None, to tell TestCaseWithMemoryTransport
-        # we need it to create a new root when the next test is run.
-        # The TestCaseWithMemoryTransport is part of bzr's test infrastructure
-        # and the bzr test runner normally does this cleanup, but here we have
-        # to do that ourselves.
-        TestCaseWithMemoryTransport.TEST_ROOT = None
 
     def testUnopenableSourceDoesNotCreateMirror(self):
         non_existant_branch = os.path.abspath('nonsensedir')
