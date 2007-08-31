@@ -506,6 +506,22 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Expected email containing 'OK: foocomm_1.0-2_i386.deb', got:\n%s"
             % raw_msg)
 
+    def testCommercialUploadToProposedPocket(self):
+        """Upload a commercial package to the proposed pocket."""
+        self.setupBreezy()
+        self.breezy.status = DistroSeriesStatus.CURRENT
+        self.layer.txn.commit()
+        self.options.context = 'insecure'
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload a package for Breezy.
+        upload_dir = self.queueUpload("foocomm_1.0-1_proposed")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check that it was successful.
+        self._checkCommercialUploadEmail()
+
     def _uploadCommercialToNonReleasePocketAndCheck(self):
         """Upload commercial package to non-release pocket.
 
@@ -521,7 +537,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.processUpload(uploadprocessor, upload_dir)
 
         # Check it is rejected.
-        expect_msg = "Commercial uploads must be for the RELEASE pocket."
+        expect_msg = ("Commercial uploads must be for the RELEASE or "
+                      "PROPOSED pocket.")
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         self.assertTrue(
             expect_msg in raw_msg,
@@ -530,7 +547,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
 
-    def testCommercialUploadToNonReleasePocket(self):
+    def testCommercialUploadToNonReleaseOrProposedPocket(self):
         """Test commercial upload pockets.
 
         Commercial uploads must be targeted to the RELEASE pocket only,

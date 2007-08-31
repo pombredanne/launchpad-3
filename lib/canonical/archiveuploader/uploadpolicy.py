@@ -120,10 +120,13 @@ class AbstractUploadPolicy:
                 upload.reject(
                     "PPA uploads must be for the RELEASE pocket.")
         elif (self.archive.purpose == ArchivePurpose.COMMERCIAL and
-              self.pocket != PackagePublishingPocket.RELEASE):
-              # Commercial uploads can only go to the release pocket.
+              self.pocket != PackagePublishingPocket.RELEASE and
+              self.pocket != PackagePublishingPocket.PROPOSED):
+              # Commercial uploads can only go to the release or proposed
+              # pockets.
               upload.reject(
-                "Commercial uploads must be for the RELEASE pocket.")
+                "Commercial uploads must be for the RELEASE or "
+                "PROPOSED pocket.")
         else:
             # XXX julian 2005-05-29 bug=117557:
             # This is a greasy hack until bug #117557 is fixed.
