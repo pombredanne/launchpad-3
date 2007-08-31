@@ -49,12 +49,13 @@ class BranchToMirror:
     """
 
     def __init__(self, src, dest, branch_status_client, branch_id,
-                 branch_unique_name):
+                 branch_unique_name, traverse_references):
         self.source = src
         self.dest = dest
         self.branch_status_client = branch_status_client
         self.branch_id = branch_id
         self.branch_unique_name = branch_unique_name
+        self.traverse_references = traverse_references
         self._source_branch = None
         self._dest_branch = None
 
