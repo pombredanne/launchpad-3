@@ -31,7 +31,7 @@ from canonical.launchpad.interfaces import (
 
 
 class DistroArchSeriesBinaryPackage:
-    """A Binary Package in the context of a Distro Arch Series. 
+    """A Binary Package in the context of a Distro Arch Series.
 
     Binary Packages are "magic": they don't really exist in the
     database. Instead, they are synthesized based on information from

@@ -74,11 +74,11 @@ class GPGKeySet:
         """See IGPGKeySet"""
         if active is False:
             query = """
-                active = false 
-                AND fingerprint NOT IN 
-                    (SELECT fingerprint FROM LoginToken 
-                     WHERE fingerprint IS NOT NULL 
-                           AND requester = %s 
+                active = false
+                AND fingerprint NOT IN
+                    (SELECT fingerprint FROM LoginToken
+                     WHERE fingerprint IS NOT NULL
+                           AND requester = %s
                            AND date_consumed is NULL
                     )
                 """ % sqlvalues(ownerid)
