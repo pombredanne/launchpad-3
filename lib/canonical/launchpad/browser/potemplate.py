@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Browser code for PO templates."""
 
@@ -43,6 +43,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
     GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lp.dbschema import TranslationFileFormat
 
@@ -591,7 +592,36 @@ class POTemplateSetNavigation(GetitemNavigation):
     usedfor = IPOTemplateSet
 
 
-class POTemplateSubsetNavigation(GetitemNavigation):
+class POTemplateSubsetNavigation(Navigation):
 
     usedfor = IPOTemplateSubset
 
+    def traverse(self, name):
+        """Return the IPOTemplate associated with the given name."""
+
+        assert self.request.method in ['GET', 'HEAD', 'POST'], (
+            'We only know about GET, HEAD, and POST')
+
+        # Get the requested potemplate.
+        potemplate = self.context.getPOTemplateByName(name)
+        if potemplate is None:
+            # The template doesn't exist.
+            raise NotFoundError(name)
+
+        # Get whether the target for the requested template is officially
+        # using Launchpad Translations.
+        if potemplate.distribution is not None:
+            official_rosetta = potemplate.distribution.official_rosetta
+        elif potemplate.product is not None:
+            official_rosetta = potemplate.product.official_rosetta
+        else:
+            official_rosetta = False
+
+        if ((official_rosetta and potemplate.iscurrent) or
+            check_permission('launchpad.Admin', self.context)):
+            # The target is using officially Launchpad Translations and the
+            # template is available to be translated, or is an admin which
+            # is browsing the system, in which case we show everything.
+            return potemplate
+        else:
+            raise NotFoundError(name)
