@@ -686,7 +686,8 @@ class ShippingRequestsView:
         else:
             flavour = ShipItFlavour.items[self.selectedFlavourName]
 
-        orderby = str(request.get('orderby'))
+        # Sort as directed by form, but also by id as a tie-breaker
+        orderby = [str(request.get('orderby')), 'id']
         self.recipient_text = request.get('recipient_text')
 
         requestset = getUtility(IShippingRequestSet)
