@@ -654,8 +654,12 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
             # comment, which were probably produced by
             # double-submissions or user errors, and which don't add
             # anything useful to the bug itself.
-            if previous_comment and previous_comment.isIdenticalTo(comment):
+            # Also omit comments with no body text or attachments to display.
+            if (comment.isEmpty() or
+                previous_comment and
+                previous_comment.isIdenticalTo(comment)):
                 continue
+
             visible_comments.append(comment)
             previous_comment = comment
 
@@ -1495,6 +1499,13 @@ class BugTaskSearchListingView(LaunchpadFormView):
             except KeyError:
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)
+
+    def setUpWidgets(self):
+        """Customize the onKeyPress event of the assignee chooser."""
+        LaunchpadFormView.setUpWidgets(self)
+
+        self.widgets["assignee"].onKeyPress = (
+            "selectWidget('assignee_option', event)")
 
     def validate(self, data):
         """Validates the form."""

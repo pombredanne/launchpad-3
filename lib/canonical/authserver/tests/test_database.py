@@ -14,7 +14,7 @@ from zope.interface.verify import verifyObject
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
+from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
@@ -56,14 +56,6 @@ class DatabaseTest(unittest.TestCase):
     def tearDown(self):
         setSecurityPolicy(self._old_policy)
         super(DatabaseTest, self).tearDown()
-
-    def isBranchInPullQueue(self, branch_id):
-        """Whether the branch with this id is present in the pull queue."""
-        storage = DatabaseBranchDetailsStorage(None)
-        results = storage._getBranchPullQueueInteraction()
-        return branch_id in (
-            result_branch_id
-            for result_branch_id, result_pull_url, unique_name in results)
 
     def getMirrorRequestTime(self, branch_id):
         """Return the value of mirror_request_time for the branch with the
@@ -584,21 +576,6 @@ class HostedBranchStorageTest(DatabaseTest):
 
         self.assertEqual(None, self.getMirrorRequestTime(25))
 
-    def test_requested_hosted_branches(self):
-        # Hosted branches that HAVE had a mirror requested should be in
-        # the branch queue
-
-        # Mark 25 (a hosted branch) as recently mirrored.
-        storage = DatabaseBranchDetailsStorage(None)
-        storage._startMirroringInteraction(25)
-        storage._mirrorCompleteInteraction(25, 'rev-1')
-
-        # Request a mirror
-        storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(25)
-
-        self.failUnless(self.isBranchInPullQueue(25), "Should be in queue")
-
 
 class UserDetailsStorageV2Test(DatabaseTest):
     """Test the implementation of `IUserDetailsStorageV2`."""
@@ -793,22 +770,6 @@ class BranchDetailsStorageTest(DatabaseTest):
         self.assertEqual(row[0], row[1])
         self.assertEqual(row[2], 0)
 
-    def test_unrequested_hosted_branches(self):
-        # Hosted branches that haven't had a mirror requested should NOT be
-        # included in the branch queue
-
-        # Branch 25 is a hosted branch.
-        # Double check that its mirror_request_time is NULL. The sample data
-        # should guarantee this.
-        self.assertEqual(None, self.getMirrorRequestTime(25))
-
-        # Mark 25 as recently mirrored.
-        self.storage._startMirroringInteraction(25)
-        self.storage._mirrorCompleteInteraction(25, 'rev-1')
-
-        self.failIf(self.isBranchInPullQueue(25),
-                    "Shouldn't be in queue until mirror requested")
-
     def test_recordSuccess(self):
         # recordSuccess must insert the given data into BranchActivity.
         started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
@@ -828,80 +789,58 @@ class BranchDetailsStorageTest(DatabaseTest):
         self.assertEqual(row[2], started.replace(tzinfo=None))
         self.assertEqual(row[3], completed.replace(tzinfo=None))
 
-    def test_getBranchPullQueue(self):
-        # Set up the database so the vcs-import branch will appear in the queue.
+
+class BranchPullQueueTest(BranchTestCase):
+    """Tests for the pull queue methods of `IBranchDetailsStorage`."""
+
+    layer = LaunchpadScriptLayer
+
+    def setUp(self):
+        LaunchpadScriptLayer.switchDbConfig('authserver')
+        super(BranchPullQueueTest, self).setUp()
+        self.restrictSecurityPolicy()
+        self.emptyPullQueues()
+        self.storage = DatabaseBranchDetailsStorage(None)
+
+    def assertBranchQueues(self, hosted, mirrored, imported):
+        login(ANONYMOUS)
+        self.assertEqual(
+            map(self.storage._getBranchPullInfo, hosted),
+            self.storage._getBranchPullQueueInteraction('HOSTED'))
+        login(ANONYMOUS)
+        self.assertEqual(
+            map(self.storage._getBranchPullInfo, mirrored),
+            self.storage._getBranchPullQueueInteraction('MIRRORED'))
+        login(ANONYMOUS)
+        self.assertEqual(
+            map(self.storage._getBranchPullInfo, imported),
+            self.storage._getBranchPullQueueInteraction('IMPORTED'))
+
+    def test_pullQueuesEmpty(self):
+        """getBranchPullQueue returns an empty list when there are no branches
+        to pull.
+        """
+        self.assertBranchQueues([], [], [])
+
+    def makeBranchAndRequestMirror(self, branch_type):
+        """Make a branch of the given type and call requestMirror on it."""
         transaction.begin()
-        self.setSeriesDateLastSynced(3, now_minus='1 second')
-        self.setMirrorRequestTime(14, UTC_NOW)
-        self.setMirrorRequestTime(25, UTC_NOW)
-        self.setMirrorRequestTime(15, UTC_NOW)
+        branch = self.makeBranch(branch_type)
+        branch.requestMirror()
         transaction.commit()
+        return branch
 
-        results = self.storage._getBranchPullQueueInteraction()
+    def test_requestMirrorPutsBranchInQueue_hosted(self):
+        branch = self.makeBranchAndRequestMirror(BranchType.HOSTED)
+        self.assertBranchQueues([branch], [], [])
 
-        # The first item in the row is the id.
-        results_dict = dict((row[0], row) for row in results)
+    def test_requestMirrorPutsBranchInQueue_mirrored(self):
+        branch = self.makeBranchAndRequestMirror(BranchType.MIRRORED)
+        self.assertBranchQueues([], [branch], [])
 
-        # We verify that a selection of expected branches are included
-        # in the results, each triggering a different pull_url algorithm.
-        #   a vcs-imports branch:
-        self.assertEqual(results_dict[14],
-                         (14, 'http://escudero.ubuntu.com:680/0000000e',
-                          u'vcs-imports/evolution/main'))
-        #   a pull branch:
-        self.assertEqual(results_dict[15],
-                         (15, 'http://example.com/gnome-terminal/main',
-                          u'name12/gnome-terminal/main'))
-        #   a hosted SFTP push branch:
-        self.assertEqual(results_dict[25],
-                         (25, '/tmp/sftp-test/branches/00/00/00/19',
-                          u'name12/gnome-terminal/pushed'))
-
-    def test_getBranchPullQueueNoLinkedProduct(self):
-        # If a branch doesn't have an associated product the unique name
-        # returned should have +junk in the product segment. See
-        # Branch.unique_name for precedent.
-        transaction.begin()
-        self.setMirrorRequestTime(3, UTC_NOW)
-        transaction.commit()
-
-        results = self.storage._getBranchPullQueueInteraction()
-
-        # The first item in the row is the id.
-        results_dict = dict((row[0], row) for row in results)
-
-        # branch 3 is a branch without a product.
-        branch_id, url, unique_name = results_dict[3]
-        self.assertEqual(unique_name, 'spiv/+junk/trunk')
-
-    def test_getBranchPullQueueOrdering(self):
-        # Rows are ordered so that ones with older mirror_request_times are
-        # listed earlier.
-        transaction.begin()
-
-        # Set last_mirror_attempt on 10 rows, with distinct values.
-        expected_branch_ids = range(25, 15, -1)
-        for branch_id in expected_branch_ids:
-            # The higher the ID, the older the branch, so the earlier it should
-            # appear in the queue.
-            self.cursor.execute("""
-                UPDATE Branch
-                SET mirror_request_time = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-                                           - interval '%d hours')
-                WHERE id = %d"""
-                % (branch_id, branch_id))
-        transaction.commit()
-
-        # Call getBranchPullQueue
-        results = self.storage._getBranchPullQueueInteraction()
-
-        # Get the branch IDs from the results for the branches we modified:
-        observed_branch_ids = [
-            row[0] for row in results if row[0] in expected_branch_ids]
-
-        # All 10 branches should be in the list in order of descending
-        # ID due to the last_mirror_attempt values.
-        self.assertEqual(expected_branch_ids, observed_branch_ids)
+    def test_requestMirrorPutsBranchInQueue_imported(self):
+        branch = self.makeBranchAndRequestMirror(BranchType.IMPORTED)
+        self.assertBranchQueues([], [], [branch])
 
 
 def test_suite():
