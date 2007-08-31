@@ -165,7 +165,7 @@ class ExternalBugTracker:
         # For some reason, bugs.kde.org doesn't allow the regular urllib
         # user-agent string (Python-urllib/2.x) to access their
         # bugzilla, so we send our own instead.
-        request = urllib2.Request("%s/%s" % (self.baseurl, url),
+        request = urllib2.Request("%s/%s" % (self.baseurl, page),
                                   headers={'User-agent': LP_USER_AGENT})
         return self._fetchPage(request).read()
 
