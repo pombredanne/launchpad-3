@@ -625,7 +625,7 @@ Get the needed objects to prepare this test.
     ...         return self.time
     >>> now = Clock()
 
-The one submitting the string will be Carlos. He's an editor for this POFile.
+The one submitting the string will be Carlos.  He's an editor for this POFile.
 
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
 
@@ -743,7 +743,8 @@ its parent distroseries for that same message.  So even if someone now
 translate the message in Hoary as well, Humpy will retain its own translation
 of that string when we next migrate updates.
 
-    >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'current addressbook folder')
+    >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(
+    ...     u'current addressbook folder')
     >>> pomsgset_hoary.updateTranslationSet(
     ...     carlos, { 0: u'second hoary updated string' }, fuzzy=False,
     ...     published=False, lock_timestamp=now())
@@ -765,8 +766,12 @@ of that string when we next migrate updates.
      #: a11y/addressbook/ea-minicard-view.c:102
      #, fuzzy
 
-We can also see that the statistics are updated and both distributions have
-the same values:
+The Hoary message is updated, but even though the Humpy version is older, it is
+not overwritten by the copy.
+
+We can also see that the statistics are updated and both distributions show
+the same numbers (though one of the messages in the rosettaCount actually
+differs between the two distro series).
 
     >>> pofile_es_hoary.currentCount() == pofile_es_humpy.currentCount()
     True
