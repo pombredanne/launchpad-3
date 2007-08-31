@@ -19,8 +19,8 @@ from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
     BranchType, BranchLifecycleStatus, BranchCreationForbidden,
     BranchCreatorNotMemberOfOwnerTeam, BranchVisibilityRule,
-    IBranchSet, IPersonSet, IProductSet, MIRROR_TIME_INCREMENT,
-    PersonCreationRationale, TeamSubscriptionPolicy)
+    IBranchSet, IPersonSet, IProductSet, MAXIMUM_MIRROR_FAILURES,
+    MIRROR_TIME_INCREMENT, PersonCreationRationale, TeamSubscriptionPolicy)
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -200,6 +200,16 @@ class TestMirroringForHostedBranches(BranchTestCase):
         self.assertInFuture(
             branch.mirror_request_time,
             (MIRROR_TIME_INCREMENT * 2 ** (num_failures - 1)))
+
+    def test_repeatedMirrorFailuresDisablesMirroring(self):
+        """If a branch's mirror failures exceed the maximum, disable mirroring.
+        """
+        branch = self.makeBranch()
+        for i in range(MAXIMUM_MIRROR_FAILURES):
+            branch.requestMirror()
+            branch.mirrorFailed('No particular reason')
+        self.assertEqual(MAXIMUM_MIRROR_FAILURES, branch.mirror_failures)
+        self.assertEqual(None, branch.mirror_request_time)
 
     def test_pullQueueEmpty(self):
         """Branches with no mirror_request_time are not in the pull queue."""

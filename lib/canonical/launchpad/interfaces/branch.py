@@ -18,6 +18,7 @@ __all__ = [
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchLifecycleFilter',
+    'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
     'UnknownBranchTypeError'
     ]
@@ -140,6 +141,9 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.DEVELOPMENT,
     BranchLifecycleStatus.MATURE)
 
+
+# The maximum number of failures before we disable mirroring.
+MAXIMUM_MIRROR_FAILURES = 5
 
 # How frequently we mirror branches.
 MIRROR_TIME_INCREMENT = timedelta(hours=6)

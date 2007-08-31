@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal,
-    MIRROR_TIME_INCREMENT, NotFoundError)
+    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, NotFoundError)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -412,9 +412,12 @@ class Branch(SQLBase):
         """See `IBranch`."""
         self.mirror_failures += 1
         self.mirror_status_message = reason
-        self.mirror_request_time = (
-            datetime.now(pytz.timezone('UTC'))
-            + MIRROR_TIME_INCREMENT * 2 ** (self.mirror_failures - 1))
+        if self.mirror_failures < MAXIMUM_MIRROR_FAILURES:
+            self.mirror_request_time = (
+                datetime.now(pytz.timezone('UTC'))
+                + MIRROR_TIME_INCREMENT * 2 ** (self.mirror_failures - 1))
+        else:
+            self.mirror_request_time = None
         self.syncUpdate()
 
 
