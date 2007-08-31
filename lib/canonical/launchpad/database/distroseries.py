@@ -1872,8 +1872,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # since it should not change for main archive.
         # We allow RELEASE publishing for PPAs.
         # We also allow RELEASE publishing for commercial.
-        if (not self.isUnstable() and archive.purpose != ArchivePurpose.PPA and
-            archive.purpose != ArchivePurpose.COMMERCIAL):
+        if (not self.isUnstable() and
+            not archive.allowUpdatesToReleasePocket()):
             queries.append(
             'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
@@ -1908,12 +1908,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if is_careful:
             return True
 
-        # PPA allows everything (aka Hotel California).
-        if publication.archive.purpose == ArchivePurpose.PPA:
-            return True
-
-        # Commercial allows everything.
-        if publication.archive.purpose == ArchivePurpose.COMMERCIAL:
+        # PPA and COMMERCIAL allow everything.
+        if publication.archive.allowUpdatesToReleasePocket():
             return True
 
         # FROZEN state also allow all pockets to be published.

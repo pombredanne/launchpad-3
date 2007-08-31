@@ -14,7 +14,8 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher.diskpool import DiskPool
-from canonical.archivepublisher.publishing import getPublisher
+from canonical.archivepublisher.publishing import (
+    getPublisher, Publisher)
 from canonical.config import config
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.launchpad.interfaces import (
@@ -43,7 +44,6 @@ class TestPublisher(TestNativePublishingBase):
 
     def testInstantiate(self):
         """Publisher should be instantiatable"""
-        from canonical.archivepublisher.publishing import Publisher
         Publisher(self.logger, self.config, self.disk_pool,
                   self.ubuntutest.main_archive)
 
@@ -52,7 +52,6 @@ class TestPublisher(TestNativePublishingBase):
 
         With one PENDING record, respective pocket *dirtied*.
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -72,7 +71,6 @@ class TestPublisher(TestNativePublishingBase):
 
     def testPublishCommercial(self):
         """Test that a commercial package is published to the right place."""
-        from canonical.archivepublisher.publishing import Publisher
         archive = self.ubuntutest.getArchiveByComponent('commercial')
         config = removeSecurityProxy(archive.getPubConfig())
         config.setupArchiveDirs()
@@ -108,10 +106,9 @@ class TestPublisher(TestNativePublishingBase):
     def testCommercialReleasePocketPublishing(self):
         """Test commercial package RELEASE pocket publishing.
 
-        Publishing commercial packages out of the RELEASE pocket in a stable
+        Publishing commercial packages to the RELEASE pocket in a stable
         distroseries is always allowed, so check for that here.
         """
-        from canonical.archivepublisher.publishing import Publisher
         archive = self.ubuntutest.getArchiveByComponent('commercial')
         config = removeSecurityProxy(archive.getPubConfig())
         config.setupArchiveDirs()
@@ -121,7 +118,7 @@ class TestPublisher(TestNativePublishingBase):
             archive=archive, filecontent="I am commercial",
             status=PackagePublishingStatus.PENDING)
 
-        publisher.A_publish(False)
+        publisher.A_publish(force_publishing=False)
 
         # The pocket was dirtied:
         self.assertDirtyPocketsContents(
@@ -135,7 +132,6 @@ class TestPublisher(TestNativePublishingBase):
 
         To publish a specific distroseries.
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive,
@@ -159,7 +155,6 @@ class TestPublisher(TestNativePublishingBase):
 
         To publish a specific pocket.
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive,
@@ -190,7 +185,6 @@ class TestPublisher(TestNativePublishingBase):
 
         With one PUBLISHED record, no pockets *dirtied*.
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -212,7 +206,6 @@ class TestPublisher(TestNativePublishingBase):
 
         With one PUBLISHED record, pocket gets *dirtied*.
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -237,7 +230,6 @@ class TestPublisher(TestNativePublishingBase):
         Ignore pending publishing records targeted to another archive.
         Nothing gets published, no pockets get *dirty*
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -260,7 +252,6 @@ class TestPublisher(TestNativePublishingBase):
 
     def testPublishingWorksForOtherArchives(self):
         """Publisher also works as expected for another archives."""
-        from canonical.archivepublisher.publishing import Publisher
 
         test_archive = getUtility(IArchiveSet).new(
             distribution=self.ubuntutest,
@@ -496,7 +487,6 @@ class TestPublisher(TestNativePublishingBase):
         Check if it works on a development series.
         A SUPERSEDED published source should be moved to PENDINGREMOVAL.
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -524,7 +514,6 @@ class TestPublisher(TestNativePublishingBase):
         Check if it works on a obsolete series.
         A SUPERSEDED published source should be moved to PENDINGREMOVAL.
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -566,7 +555,6 @@ class TestPublisher(TestNativePublishingBase):
         The release file should contain the MD5, SHA1 and SHA256 for each
         index created for a given distroseries.
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
