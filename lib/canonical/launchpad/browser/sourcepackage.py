@@ -248,8 +248,8 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
         """Default build state for sourcepackage builds.
 
         This overrides the default that is set on BuildRecordsView."""
-        # None maps to "all states".  We require all states on sourcepackage
-        # builds because the list of architectures is not big enough to
-        # fill more than one page, so presenting all builds makes more sense.
+        # None maps to "all states". The reason we display all states on
+        # this page is because it's unlikely that there will be so
+        # many builds that the listing will be overwhelming.
         return None
 
