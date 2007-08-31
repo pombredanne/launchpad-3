@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# LPCONFIG will come from the environment so this script can run unaltered
+# on dogfood.
 if [ -z $LPCONFIG ]; then
     echo LPCONFIG must be set to run this script.
     exit 1
@@ -18,23 +20,20 @@ OVERRIDEROOT=$ARCHIVEROOT/../ubuntu-overrides
 CACHEROOT=$ARCHIVEROOT/../ubuntu-cache
 DISTSCOPYROOT=$ARCHIVEROOT/../ubuntu-distscopy
 INDICES=$ARCHIVEROOT/indices
-if [ "$LPCONFIG" = "ftpmaster" ]; then
+PRODUCTION_CONFIG=ftpmaster
+
+if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     ARCHIVEROOT_COMMERCIAL=/srv/launchpad.net/ubuntu-archive/ubuntu-commercial
+    GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
 else
     ARCHIVEROOT_COMMERCIAL=/srv/launchpad.net/ppa/ubuntu-commercial
 fi
 DISTSROOT_COMMERCIAL=$ARCHIVEROOT_COMMERCIAL/dists
 
 # Configuration options
-#LPCONFIG=ftpmaster
-# LPCONFIG will come from the environment so this script can run unaltered
-# on dogfood.
 LAUNCHPADROOT=/srv/launchpad.net/codelines/current
 LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
 DISTRONAME=ubuntu
-if [ "$LPCONFIG" = "ftpmaster" ]; then
-    GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
-fi
 TOUCHLIST=$ARCHIVEROOT/project/trace/$(hostname --fqdn)
 DSYNCLIST=$CACHEROOT/dsync.list
 MD5LIST=$INDICES/md5sums.gz
@@ -95,7 +94,7 @@ rsync -aH --delete ${DISTSROOT}/ ${ARCHIVEROOT}/dists.new
 # satisfactory correction in the publisher we just touch the Packages
 # files to ensure that the Release files get generated properly.
 
-if [ "$LPCONFIG" = "ftpmaster" ]; then
+if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     for DIST in dapper breezy; do
       for COMP in restricted universe; do
        for ARCH in i386 amd64 powerpc hppa sparc ia64; do
@@ -127,8 +126,7 @@ for CANDIDATE in $(find ${DISTSROOT}.new -maxdepth 2 -name Release) \
     echo "Not re-signing $CANDIDATE"
   fi
 done
-for CANDIDATE in $(find ${DISTSROOT_COMMERCIAL} -maxdepth 2 -name Release) \
-       $(find ${DISTSROOT_COMMERCIAL}/*/*/dist-upgrader* -name "*.tar.gz"); do
+for CANDIDATE in $(find ${DISTSROOT_COMMERCIAL} -maxdepth 2 -name Release); do
   #  [ Release.gpg missing   ] or [ Release is newer than Release.gpg ]
   if [ ! -f $CANDIDATE.gpg ] || [ $CANDIDATE -nt $CANDIDATE.gpg ]; then
     echo "(re-)signing $CANDIDATE"
@@ -146,7 +144,7 @@ find ${DISTSROOT}.new \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
 find ${DISTSROOT_COMMERCIAL} \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
 
 # Copy in the indices
-if [ "$LPCONFIG" = "ftpmaster" ]; then
+if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     echo Copying the indices into place.
     rm -f $INDICES/override.*
     cp $OVERRIDEROOT/override.* $INDICES
@@ -162,7 +160,7 @@ DONEPUB=yes
 mv ${DISTSROOT}.old ${DISTSCOPYROOT}/dists
 
 # Touch everything you asked us to do
-if [ "$LPCONFIG" = "ftpmaster" ]; then
+if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     for FILE in $TOUCHLIST; do
       touch "$FILE"
     done
@@ -194,7 +192,7 @@ find $ARCHIVEROOT_COMMERCIAL -type d -empty | xargs -r rmdir
 cron.germinate
 
 # Trigger master mirrors
-if [ "$LPCONFIG" = "ftpmaster" ];
+if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ];
     ssh archvsync@syowa
     ssh archvsync@frei
 fi
