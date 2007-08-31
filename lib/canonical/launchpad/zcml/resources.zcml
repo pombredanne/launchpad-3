@@ -136,7 +136,9 @@
     <resource name="meeting-logo" file="../images/meeting-logo.png" />
     <resource name="meeting-mugshot" file="../images/meeting-mugshot.png" />
     <resource name="subscriber-essential" file="../images/subscriber-essential.png" />
-    <resource name="subscriber-inessential" file="../images/subscriber-inessential.png" />
+    <resource name="subscriber-essential-mini" file="../images/subscriber-essential-mini.png" />
+    <resource name="subscriber-inessential" file="../images/person.png" />
+    <resource name="subscriber-inessential-mini" file="../images/person-badge.png" />
     <resource name="team" file="../images/team.png" />
     <resource name="team-badge" file="../images/team-badge.png" />
     <resource name="team-logo" file="../images/team-logo.png" />
