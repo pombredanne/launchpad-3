@@ -15,8 +15,9 @@ import urllib2
 
 import bzrlib.branch
 from bzrlib import bzrdir
+from bzrlib.branch import BranchReferenceFormat
 from bzrlib.revision import NULL_REVISION
-from bzrlib.tests import TestCaseInTempDir
+from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
 from bzrlib.transport import get_transport
@@ -355,6 +356,70 @@ class TestBadUrl(ErrorHandlingTestCase):
         self._runMirrorAndCheckError(expected_msg)
         self.branch.source = 'http://launchpad.net/foo'
         self._runMirrorAndCheckError(expected_msg)
+
+
+class TestReferenceMirroring(TestCaseWithTransport):
+    """Tests for the behaviour of mirroring branch references."""
+
+    def setUp(self):
+        super(TestReferenceMirroring, self).setUp()
+        client = BranchStatusClient()
+        self.branch = BranchToMirror(
+            'foo', 'bar', client, 1, 'owner/product/foo', None)
+        # Stub out everything that we don't need to test
+        client.startMirroring = lambda branch_id: None
+        def mockMirrorFailed(logger, err):
+            self.errors.append(err)
+        self.branch._mirrorFailed = mockMirrorFailed
+        def mockOpenSourceBranch():
+            self.open_call_count += 1
+        self.branch._openSourceBranch = mockOpenSourceBranch
+        self.branch._mirrorToDestBranch = lambda: None
+        # We set the log level to CRITICAL so that the log messages
+        # are suppressed.
+        logging.basicConfig(level=logging.CRITICAL)
+        self.errors = []
+        self.open_call_count = 0
+
+    def testCreateBranchReference(self):
+        """Test that our createBranchReference helper works correctly."""
+        # First create a bzrdir with a branch and repository.
+        t = get_transport(self.get_url('.'))
+        t.mkdir('repo')
+        dir = bzrdir.BzrDir.create(self.get_url('repo'))
+        dir.create_repository()
+        target_branch = dir.create_branch()
+
+        # Then create a pure branch reference using our custom helper.
+        reference_url = self.createBranchReference(self.get_url('repo'))
+
+        # Open the branch reference and check that the result is indeed the
+        # branch we wanted it to point at.
+        opened_branch = bzrlib.branch.Branch.open(reference_url)
+        self.assertEqual(opened_branch.base, target_branch.base)
+
+
+    def createBranchReference(self, url):
+        """Create a pure branch reference that points to the specified URL.
+
+        We do this manually because the bzrlib API does not support creating a
+        branch reference without opening it (see
+        `bzrlib.branch.BranchReferenceFormat.initialize`).
+
+        :param path: relative path to the branch reference.
+        :param url: target of the branch reference.
+        :return: file url to the created pure branch reference.
+        """
+        t = get_transport(self.get_url('.'))
+        t.mkdir('reference')
+        a_bzrdir = bzrdir.BzrDir.create(self.get_url('reference'))
+        branch_reference_format = BranchReferenceFormat()
+        branch_transport = a_bzrdir.get_branch_transport(
+            branch_reference_format)
+        branch_transport.put_bytes('location', url)
+        branch_transport.put_bytes(
+            'format', branch_reference_format.get_format_string())
+        return a_bzrdir.root_transport.base
 
 
 class TestErrorHandling(ErrorHandlingTestCase):
