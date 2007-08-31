@@ -413,7 +413,8 @@ class Branch(SQLBase):
         self.mirror_failures += 1
         self.mirror_status_message = reason
         self.mirror_request_time = (
-            datetime.now(pytz.timezone('UTC')) + MIRROR_TIME_INCREMENT)
+            datetime.now(pytz.timezone('UTC'))
+            + MIRROR_TIME_INCREMENT * 2 ** (self.mirror_failures - 1))
         self.syncUpdate()
 
 

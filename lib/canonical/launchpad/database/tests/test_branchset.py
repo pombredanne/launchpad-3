@@ -108,6 +108,8 @@ class TestMirroringForHostedBranches(BranchTestCase):
         BranchTestCase.setUp(self)
         login(ANONYMOUS)
         self.emptyPullQueues()
+        # The absolute minimum value for any time field set to 'now'.
+        self._now_minimum = self.getNow()
 
     def tearDown(self):
         logout()
@@ -118,6 +120,17 @@ class TestMirroringForHostedBranches(BranchTestCase):
         self.assertTrue(
             lower_bound < variable < upper_bound,
             "%r < %r < %r" % (lower_bound, variable, upper_bound))
+
+    def assertInFuture(self, time, delta):
+        """Assert that 'time' is set (roughly) to 'now' + 'delta'.
+
+        We do not want to assert that 'time' is exactly 'delta' in the future
+        as this assertion is executing after whatever changed the value of
+        'time'.
+        """
+        now_maximum = self.getNow()
+        self.assertBetween(
+            self._now_minimum + delta, time, now_maximum + delta)
 
     def getNow(self):
         """Return a datetime representing 'now' in UTC."""
@@ -168,15 +181,25 @@ class TestMirroringForHostedBranches(BranchTestCase):
         self.assertEqual(None, branch.mirror_request_time)
 
     def test_mirrorFailureResetsMirrorRequest(self):
-        """If a branch fails to mirror then schedule one..."""
-        before_request = self.getNow()
+        """If a branch fails to mirror then mirror again later."""
         branch = self.makeBranch()
         branch.requestMirror()
         branch.mirrorFailed('No particular reason')
-        after_request = self.getNow()
-        self.assertBetween(
-            before_request, branch.mirror_request_time - MIRROR_TIME_INCREMENT,
-            after_request)
+        self.assertEqual(1, branch.mirror_failures)
+        self.assertInFuture(branch.mirror_request_time, MIRROR_TIME_INCREMENT)
+
+    def test_mirrorFailureBacksOffExponentially(self):
+        """If a branch repeatedly fails to mirror then back off exponentially.
+        """
+        branch = self.makeBranch()
+        num_failures = 3
+        for i in range(num_failures):
+            branch.requestMirror()
+            branch.mirrorFailed('No particular reason')
+        self.assertEqual(num_failures, branch.mirror_failures)
+        self.assertInFuture(
+            branch.mirror_request_time,
+            (MIRROR_TIME_INCREMENT * 2 ** (num_failures - 1)))
 
     def test_pullQueueEmpty(self):
         """Branches with no mirror_request_time are not in the pull queue."""
@@ -227,15 +250,12 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         """Mirroring 'mirrored' branches sets their mirror request time to six
         hours in the future.
         """
-        before_request = self.getNow()
         branch = self.makeBranch()
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
-        after_request = self.getNow()
-        self.assertBetween(
-            before_request, branch.mirror_request_time - MIRROR_TIME_INCREMENT,
-            after_request)
+        self.assertInFuture(
+            branch.mirror_request_time, MIRROR_TIME_INCREMENT)
 
         
 class TestMirroringForImportedBranches(TestMirroringForHostedBranches):
