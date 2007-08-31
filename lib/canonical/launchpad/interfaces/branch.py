@@ -18,9 +18,11 @@ __all__ = [
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchLifecycleFilter',
+    'MIRROR_TIME_INCREMENT',
     'UnknownBranchTypeError'
     ]
 
+from datetime import timedelta
 from zope.interface import Interface, Attribute
 
 from zope.component import getUtility
@@ -137,6 +139,10 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.EXPERIMENTAL,
     BranchLifecycleStatus.DEVELOPMENT,
     BranchLifecycleStatus.MATURE)
+
+
+# How frequently we mirror branches.
+MIRROR_TIME_INCREMENT = timedelta(hours=6)
 
 
 class BranchCreationException(Exception):

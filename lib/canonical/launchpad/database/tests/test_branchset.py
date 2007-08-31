@@ -19,8 +19,8 @@ from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
     BranchType, BranchLifecycleStatus, BranchCreationForbidden,
     BranchCreatorNotMemberOfOwnerTeam, BranchVisibilityRule,
-    IBranchSet, IPersonSet, IProductSet, PersonCreationRationale,
-    TeamSubscriptionPolicy)
+    IBranchSet, IPersonSet, IProductSet, MIRROR_TIME_INCREMENT,
+    PersonCreationRationale, TeamSubscriptionPolicy)
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -160,7 +160,7 @@ class TestMirroringForHostedBranches(BranchTestCase):
             [], list(self.branch_set.getPullQueue(branch.branch_type)))
 
     def test_mirroringResetsMirrorRequest(self):
-        """Mirroring hosted branches resets their mirror request times."""
+        """Mirroring branches resets their mirror request times."""
         branch = self.makeBranch()
         branch.requestMirror()
         branch.startMirroring()
@@ -168,13 +168,14 @@ class TestMirroringForHostedBranches(BranchTestCase):
         self.assertEqual(None, branch.mirror_request_time)
 
     def test_mirrorFailureResetsMirrorRequest(self):
+        """If a branch fails to mirror then schedule one..."""
         before_request = self.getNow()
         branch = self.makeBranch()
         branch.requestMirror()
         branch.mirrorFailed('No particular reason')
         after_request = self.getNow()
         self.assertBetween(
-            before_request, branch.mirror_request_time - timedelta(hours=6),
+            before_request, branch.mirror_request_time - MIRROR_TIME_INCREMENT,
             after_request)
 
     def test_pullQueueEmpty(self):
@@ -233,7 +234,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         branch.mirrorComplete('rev1')
         after_request = self.getNow()
         self.assertBetween(
-            before_request, branch.mirror_request_time - timedelta(hours=6),
+            before_request, branch.mirror_request_time - MIRROR_TIME_INCREMENT,
             after_request)
 
         

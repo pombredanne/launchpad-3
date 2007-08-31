@@ -6,7 +6,7 @@ __all__ = [
     'BranchSet',
     ]
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import re
 import os
 
@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal,
-    NotFoundError)
+    MIRROR_TIME_INCREMENT, NotFoundError)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -402,7 +402,7 @@ class Branch(SQLBase):
             # No mirror was requested since we started mirroring.
             if self.branch_type == BranchType.MIRRORED:
                 self.mirror_request_time = (
-                    datetime.now(pytz.timezone('UTC')) + timedelta(hours=6))
+                    datetime.now(pytz.timezone('UTC')) + MIRROR_TIME_INCREMENT)
             else:
                 self.mirror_request_time = None
         self.last_mirrored_id = last_revision_id
@@ -413,7 +413,7 @@ class Branch(SQLBase):
         self.mirror_failures += 1
         self.mirror_status_message = reason
         self.mirror_request_time = (
-            datetime.now(pytz.timezone('UTC')) + timedelta(hours=6))
+            datetime.now(pytz.timezone('UTC')) + MIRROR_TIME_INCREMENT)
         self.syncUpdate()
 
 
