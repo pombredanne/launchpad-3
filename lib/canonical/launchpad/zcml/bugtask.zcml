@@ -248,13 +248,13 @@
     <browser:page
         name="+choose-affected-product"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.BugAddAffectedProductMetaView"
+        class="canonical.launchpad.browser.BugAlsoAffectsProductMetaView"
         permission="launchpad.AnyPerson" />
 
     <browser:page
         name="+distrotask"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.BugAddAffectedDistroView"
+        class="canonical.launchpad.browser.BugAlsoAffectsDistroMetaView"
         permission="launchpad.AnyPerson" />
 
     <browser:page

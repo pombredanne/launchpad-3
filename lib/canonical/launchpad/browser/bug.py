@@ -3,10 +3,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'BugAlsoReportInDistributionView',
-    'BugAlsoReportInUpstreamView',
-    'BugAlsoReportInDistributionWithBugTrackerCreationView',
-    'BugAlsoReportInUpstreamWithBugTrackerCreationView',
+    'BugAlsoAffectsProductMetaView',
+    'BugAlsoAffectsDistroMetaView',
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
@@ -19,7 +17,6 @@ __all__ = [
     'BugURL',
     'BugView',
     'BugWithoutContextView',
-    'ChooseAffectedProductView',
     'DeprecatedAssignedBugsView',
     'MaloneView',
     ]
@@ -374,7 +371,48 @@ class BugWithoutContextView:
         self.request.response.redirect(canonical_url(bugtasks[0]))
 
 
-class MultiStepBaseView(LaunchpadFormView):
+class BugAlsoAffectsProductMetaView(LaunchpadView):
+    """Meta view for adding an affected product to an existing bug.
+
+    This view implements a wizard-like workflow in which you specify the first
+    step and then each step is responsible for specifying the next one or None
+    if, for some reason, we need to stay at the current step.
+
+    Any views used as steps here must inherit from AlsoAffectsStep. The
+    views are also responsible for injecting into the request anything they
+    may want to be available to the next view.
+    """
+
+    @property
+    def first_step_view(self):
+        return AlsoAffectsChooseProductStep
+
+    def initialize(self):
+        view = self.first_step_view(self.context, self.request)
+        # The first time this view is rendered the request won't contain a
+        # visited_steps key, but we need it to be in the HTML (in order to be
+        # submitted together with the rest of the data), so we inject it
+        # in the request before setupWidgets is called (through initialize).
+        view.injectStepNameInRequest()
+        view.initialize()
+        while view.next_view is not None:
+            view = view.next_view(self.context, self.request)
+            view.initialize()
+            view.injectStepNameInRequest()
+        self.view = view
+
+    def render(self):
+        return self.view.render()
+
+
+class BugAlsoAffectsDistroMetaView(BugAlsoAffectsProductMetaView):
+
+    @property
+    def first_step_view(self):
+        return AlsoAffectsDistroBugTaskCreationStep
+
+
+class AlsoAffectsStep(LaunchpadFormView):
     """Base view for all steps of the bug-also-affects workflow."""
 
     next_view = None
@@ -393,14 +431,14 @@ class MultiStepBaseView(LaunchpadFormView):
 
     def injectStepNameInRequest(self):
         visited_steps = self.request.form.get('field.visited_steps')
-        if visited_steps is None:
+        if not visited_steps:
             self.request.form['field.visited_steps'] = self.step_name
         elif self.step_name not in visited_steps:
             self.request.form['field.visited_steps'] = (
                 "%s, %s" % (visited_steps, self.step_name))
         else:
             # Already visited this step, so there's no need to inject our
-            # step_name in the request anymore.
+            # step_name in the request again.
             pass
 
     def shouldProcess(self, data):
@@ -413,8 +451,7 @@ class MultiStepBaseView(LaunchpadFormView):
         that to find out whether or not to process them, so we use an extra
         hidden input to store the views the user has visited already.
         """
-        visited_steps = data['visited_steps']
-        if visited_steps is not None and self.step_name not in visited_steps:
+        if self.step_name not in data['visited_steps']:
             # First time we visit this page, so there's no point in validating
             # its data.
             return False
@@ -429,10 +466,10 @@ class MultiStepBaseView(LaunchpadFormView):
                 action.label = self.main_action_label
             actions.append(action)
         self.actions = actions
-        return super(MultiStepBaseView, self).render()
+        return super(AlsoAffectsStep, self).render()
 
 
-class ChooseAffectedProductView(MultiStepBaseView):
+class AlsoAffectsChooseProductStep(AlsoAffectsStep):
     """View for choosing a product that is affected by a given bug."""
 
     # Need to define this here because we will render this view manually.
@@ -457,12 +494,23 @@ class ChooseAffectedProductView(MultiStepBaseView):
             return None
 
     def initialize(self):
-        super(ChooseAffectedProductView, self).initialize()
+        super(AlsoAffectsChooseProductStep, self).initialize()
         bugtask = self.context
         if (self.widgets['product'].hasInput() or
             not IDistributionSourcePackage.providedBy(bugtask.target)):
             return
 
+        self.maybeAddNotificationOrTeleport()
+
+    def maybeAddNotificationOrTeleport(self):
+        """If we can't infer the upstream and the target distribution has a
+        currentseries we add a notification message telling the user the
+        package could be linked to an upstream to avoid this extra step.
+
+        On the other hand, if the upstream can be infered and there's no task
+        for it yet, we teleport the user straight to the next step.
+        """
+        bugtask = self.context
         upstream = self._getUpstream(bugtask.target)
         if upstream is None:
             distroseries = bugtask.distribution.currentseries
@@ -489,7 +537,7 @@ class ChooseAffectedProductView(MultiStepBaseView):
                 # bug URL.
                 self.request.form['field.product'] = urllib.quote(
                     upstream.name)
-                self.next_view = BugAlsoReportInUpstreamView
+                self.next_view = AlsoAffectsProductBugTaskCreationStep
 
     def validate(self, data):
         if not self.shouldProcess(data):
@@ -526,47 +574,19 @@ class ChooseAffectedProductView(MultiStepBaseView):
         be used by our meta view.
         """
         self.request.form['field.product'] = urllib.quote(data['product'].name)
-        self.next_view = BugAlsoReportInUpstreamView
+        self.next_view = AlsoAffectsProductBugTaskCreationStep
 
 
-class BugAddAffectedProductMetaView(LaunchpadView):
-    """Meta view for adding an affected product to an existing bug.
-
-    This view implements a wizard-like workflow in which you specify the first
-    step and then each step is responsible for specifying the next one or None
-    if, for some reason, we need to stay at the current step.
-
-    Any views used as steps here must inherit from MultiStepBaseView. The
-    views are also responsible for injecting into the request anything they
-    may want to be available for the next view.
-    """
-
-    first_step_view = ChooseAffectedProductView
-
-    def initialize(self):
-        view = self.first_step_view(self.context, self.request)
-        view.initialize()
-        view.injectStepNameInRequest()
-        while view.next_view is not None:
-            view = view.next_view(self.context, self.request)
-            view.initialize()
-            view.injectStepNameInRequest()
-        self.view = view
-
-    def render(self):
-        return self.view.render()
-
-
-# XXX: FIX docstring and rename.
-class BugAlsoReportInView(MultiStepBaseView):
-    """View class for reporting a bug in other contexts.
+class AlsoAffectsBugTaskCreationStep(AlsoAffectsStep):
+    """The bug task creation step of the AlsoAffects workflow.
 
     In this view the user specifies the URL for the remote bug and we create
     the new bugtask/bugwatch.
     
     If the bugtracker in the given URL is not registered in Launchpad, we
-    delegate its creation to another view. This other view is then responsible
-    for calling back this view's @action method to create the bugtask/bugwatch.
+    delegate its creation to another view. This other view should then
+    delegate the bug task creation to this one once the bugtracker is
+    registered.
     """
 
     schema = IAddBugTaskForm
@@ -578,17 +598,16 @@ class BugAlsoReportInView(MultiStepBaseView):
     task_added = None
     available_action_names = None
     target_field_names = ()
-    should_ask_for_confirmation = False
     __launchpad_facetname__ = 'bugs'
 
     def __init__(self, context, request):
-        super(BugAlsoReportInView, self).__init__(context, request)
+        super(AlsoAffectsBugTaskCreationStep, self).__init__(context, request)
         self.notifications = []
         self.field_names = ['bug_url', 'visited_steps'] + list(
             self.target_field_names)
 
     def setUpWidgets(self):
-        super(BugAlsoReportInView, self).setUpWidgets()
+        super(AlsoAffectsBugTaskCreationStep, self).setUpWidgets()
         self.target_widgets = [
             self.widgets[field_name]
             for field_name in self.field_names
@@ -628,21 +647,21 @@ class BugAlsoReportInView(MultiStepBaseView):
                 " URL to the related bug report." % cgi.escape(
                     target.displayname))
 
-        if target.official_malone:
-            # The rest of the validation applies only to targets not
-            # using Malone.
-            return
+    def main_action(self, action, data):
+        """Create the new bug task.
 
-        if len(self.errors) > 0:
-            # The checks below should be made only if the form doesn't
-            # contain any errors.
-            return
+        If a remote bug URL is given and there's no bug watch registered with
+        that URL we create a bug watch and link it to the newly created bug
+        task.
+        """
+        bug_url = self.request.form.get('field.bug_url', '')
+        target = self.getTarget(data)
+        if (not self.request.get('ignore_missing_remote_bug') and 
+            not target.official_malone and not bug_url):
+            # We have no URL for the remote bug and the target does not use
+            # Launchpad for bug tracking, so we warn the user this is not
+            # optimal and ask for his confirmation.
 
-        if self.request.get('ignore_missing_remote_bug'):
-            # The user confirmed that he does want to add the task without a
-            # bug watch.
-            return
-        if not target.official_malone and not bug_url:
             # Add a hidden field to fool LaunchpadFormView into thinking we
             # submitted the action it expected when in fact we're submiting
             # something else to indicate the user has confirmed.
@@ -663,19 +682,6 @@ class BugAlsoReportInView(MultiStepBaseView):
                 " Are you sure you want to request a fix anyway?"
                 " %s"
                 % (cgi.escape(self.getTarget().displayname), confirm_button))
-            self.should_ask_for_confirmation = True
-
-    # XXX: Fix docstring
-    def main_action(self, action, data):
-        """Create new bug task.
-
-        Only one of product and distribution may be not None, and
-        if distribution is None, sourcepackagename has to be None.
-        """
-        bug_url = self.request.form.get('field.bug_url', '')
-        if self.should_ask_for_confirmation:
-            assert not bug_url, ("We should only ask for confirmation when "
-                                 "a bug url is not provided")
             return None
 
         extracted_bug = None
@@ -689,14 +695,11 @@ class BugAlsoReportInView(MultiStepBaseView):
                 # Delegate to another view which will ask the user if (s)he
                 # wants to create the bugtracker now.
                 if list(self.target_field_names) == ['product']:
-                    self.next_view = (
-                        BugAlsoReportInUpstreamWithBugTrackerCreationView)
-                    return
+                    self.next_view = AlsoAffectsUpstreamBugTrackerCreationStep
                 else:
                     assert 'distribution' in self.target_field_names
-                    self.next_view = (
-                        BugAlsoReportInDistributionWithBugTrackerCreationView)
-                    return
+                    self.next_view = AlsoAffectsDistroBugTrackerCreationStep
+                return
 
         product = data.get('product')
         distribution = data.get('distribution')
@@ -705,7 +708,6 @@ class BugAlsoReportInView(MultiStepBaseView):
             self.context.bug, getUtility(ILaunchBag).user, product=product,
             distribution=distribution, sourcepackagename=sourcepackagename)
 
-        target = self.getTarget(data)
         if extracted_bug:
             assert extracted_bugtracker is not None, (
                 "validate() should have ensured that bugtracker is not None.")
@@ -730,9 +732,10 @@ class BugAlsoReportInView(MultiStepBaseView):
         self.next_url = canonical_url(self.task_added)
 
 
-# XXX: FIX docstring and rename.
-class BugAlsoReportInDistributionView(BugAlsoReportInView):
-    """Specialized BugAlsoReportInView for reporting a bug in a distro."""
+class AlsoAffectsDistroBugTaskCreationStep(AlsoAffectsBugTaskCreationStep):
+    """Specialized AlsoAffectsBugTaskCreationStep for reporting a bug in a
+    distribution.
+    """
 
     # Need to define this here because we will render this view manually.
     template = ViewPageTemplateFile('../templates/bugtask-requestfix.pt')
@@ -776,12 +779,13 @@ class BugAlsoReportInDistributionView(BugAlsoReportInView):
                 self.widgets['sourcepackagename'].setRenderedValue(
                     bugtask.sourcepackagename)
                 break
-        return super(BugAlsoReportInDistributionView, self).render()
+        return super(AlsoAffectsDistroBugTaskCreationStep, self).render()
 
 
-# XXX: FIX docstring and rename.
-class BugAlsoReportInUpstreamView(BugAlsoReportInView):
-    """Specialized BugAlsoReportInView for reporting a bug in an upstream."""
+class AlsoAffectsProductBugTaskCreationStep(AlsoAffectsBugTaskCreationStep):
+    """Specialized AlsoAffectsBugTaskCreationStep for reporting a bug in an
+    upstream.
+    """
 
     # Need to define this here because we will render this view manually.
     template = ViewPageTemplateFile(
@@ -798,24 +802,12 @@ class BugAlsoReportInUpstreamView(BugAlsoReportInView):
             return self.widgets['product'].getInputValue()
 
 
-class BugAddAffectedDistroView(BugAddAffectedProductMetaView):
-
-    first_step_view = BugAlsoReportInDistributionView
-
-
-# XXX: Must rename the 3 views below as they don't actually do anything other
-# than creating the bugtracker.
-# XXX: Must also fix the docstring.
-class BugAlsoReportInWithBugTrackerCreationView(MultiStepBaseView):
-    """A view to be used in conjunction with BugAlsoReportInView.
+class AlsoAffectsBugTrackerCreationStep(AlsoAffectsStep):
+    """View for creating a bugtracker from the given URL.
 
     This view will ask the user if he really wants to register the new bug
-    tracker, perform the registration and call BugAlsoReportInView's
-    continue_action method to create the new bugtask/bugwatch.
-
-    NOTE: Since we want any subclass which doesn't define an action_url
-          property to use this view's one, it must always come first than
-          any other view defining that property in the inheritance list.
+    tracker, perform the registration and then delegate to one of
+    AlsoAffectsBugTaskCreationStep's subclasses.
     """
 
     schema = IAddBugTaskForm
@@ -838,8 +830,8 @@ class BugAlsoReportInWithBugTrackerCreationView(MultiStepBaseView):
                 error.base_url, self.user, error.bugtracker_type)
 
 
-class BugAlsoReportInDistributionWithBugTrackerCreationView(
-        BugAlsoReportInWithBugTrackerCreationView):
+class AlsoAffectsDistroBugTrackerCreationStep(
+        AlsoAffectsBugTrackerCreationStep):
 
     field_names = [
         'distribution', 'sourcepackagename', 'bug_url', 'visited_steps']
@@ -851,13 +843,13 @@ class BugAlsoReportInDistributionWithBugTrackerCreationView(
         '../templates/bugtask-confirm-bugtracker-creation.pt')
 
     def main_action(self, action, data):
-        super(BugAlsoReportInDistributionWithBugTrackerCreationView,
+        super(AlsoAffectsDistroBugTrackerCreationStep,
               self).create_task_and_bugtracker_action(action, data)
-        self.next_view = BugAlsoReportInDistributionView
+        self.next_view = AlsoAffectsDistroBugTaskCreationStep
 
 
-class BugAlsoReportInUpstreamWithBugTrackerCreationView(
-        BugAlsoReportInWithBugTrackerCreationView):
+class AlsoAffectsUpstreamBugTrackerCreationStep(
+        AlsoAffectsBugTrackerCreationStep):
 
     field_names = ['product', 'bug_url', 'visited_steps']
     custom_widget('product', DropdownWidget, visible=False)
@@ -867,9 +859,9 @@ class BugAlsoReportInUpstreamWithBugTrackerCreationView(
         '../templates/bugtask-confirm-bugtracker-creation.pt')
 
     def main_action(self, action, data):
-        super(BugAlsoReportInUpstreamWithBugTrackerCreationView,
+        super(AlsoAffectsUpstreamBugTrackerCreationStep,
               self).create_task_and_bugtracker_action(action, data)
-        self.next_view = BugAlsoReportInUpstreamView
+        self.next_view = AlsoAffectsProductBugTaskCreationStep
 
 
 class BugEditViewBase(LaunchpadEditFormView):
