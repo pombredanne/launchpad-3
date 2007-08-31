@@ -58,12 +58,14 @@ class ILanguage(Interface):
     def addCountry(country):
         """Adds a country language is spoken in.
 
-        Provided by SQLObject."""
+        Provided by SQLObject.
+        """
 
     def removeCountry(country):
         """Removes a country language is spoken in.
 
-        Provided by SQLObject."""
+        Provided by SQLObject.
+        """
 
     visible = Bool(
         title=u'Visible',

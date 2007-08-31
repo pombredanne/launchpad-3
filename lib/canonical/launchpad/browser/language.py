@@ -158,11 +158,6 @@ class LanguageAdminView(LaunchpadEditFormView):
         self.form_fields = self.form_fields + self.createCountryField()
 
     @property
-    def all_countries(self):
-        """Return a list of all countries sorted by name."""
-        return list(getUtility(ICountrySet))
-
-    @property
     def initial_values(self):
         """Default to countries a language is currently set as being spoken in.
         """
@@ -174,7 +169,8 @@ class LanguageAdminView(LaunchpadEditFormView):
         Create a specialized vocabulary based on countries this language
         is spoken in.
         """
-        countries = self.all_countries
+        # Get a list of all countries sorted by name
+        countries = list(getUtility(ICountrySet))
         terms = []
         for country in countries:
             terms.append(SimpleTerm(country, country.iso3166code2,
@@ -184,7 +180,6 @@ class LanguageAdminView(LaunchpadEditFormView):
                  title=_(u'Spoken in'),
                  value_type=Choice(vocabulary=SimpleVocabulary(terms)),
                  required=False,
-                 default=list(self.context.countries),
                  description=_(
                      u'The countries this language is officially spoken in.')),
             name='country',

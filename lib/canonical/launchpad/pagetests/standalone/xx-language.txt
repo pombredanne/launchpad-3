@@ -177,7 +177,8 @@ An admin, though, will see the link and will be able to edit it.
   ['Left to Right']
   >>> spokenin_control = admin_browser.getControl(name='field.country')
   >>> print [country for country in spokenin_control.value]
-  ['AR', 'BO', 'CL', 'CO', 'CR', 'DO', 'EC', 'SV', 'GT', 'HN', 'MX', 'NI', 'PA', 'PY', 'PE', 'PR', 'ES', 'US', 'UY', 'VE']
+  ['AR', 'BO', 'CL', 'CO', 'CR', 'DO', 'EC', 'SV', 'GT', 'HN', 'MX',
+   'NI', 'PA', 'PY', 'PE', 'PR', 'ES', 'US', 'UY', 'VE']
 
 Changing values and submitting the form will allow the admin to change values.
 
@@ -216,7 +217,8 @@ And we can validate it:
   Changed field
   >>> spokenin_control = admin_browser.getControl(name='field.country')
   >>> print [country for country in spokenin_control.value]
-  ['BO', 'CL', 'CO', 'CR', 'DO', 'EC', 'SV', 'FR', 'GT', 'HN', 'MX', 'NI', 'PA', 'PY', 'PE', 'PR', 'ES', 'US', 'UY', 'VE']
+  ['BO', 'CL', 'CO', 'CR', 'DO', 'EC', 'SV', 'FR', 'GT', 'HN', 'MX',
+   'NI', 'PA', 'PY', 'PE', 'PR', 'ES', 'US', 'UY', 'VE']
 
 That was a renaming action, which means that language code 'es' doesn't
 exist anymore.
