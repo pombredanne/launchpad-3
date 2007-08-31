@@ -1058,4 +1058,8 @@ class Roundup(ExternalBugTracker):
         except KeyError:
             raise BugNotFound(bug_id)
         else:
-            return remote_bug['status']
+            try:
+                return remote_bug['status']
+            except KeyError:
+                raise UnparseableBugData(
+                    "Remote bug %s dose not define a status.")
