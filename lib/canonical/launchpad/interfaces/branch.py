@@ -235,11 +235,16 @@ class IBranch(IHasOwner):
 
     id = Int(title=_('ID'), readonly=True, required=True)
 
+    # XXX: TimPenhey 2007-08-31
     # The vocabulary set for branch_type is only used for the creation
     # of branches through the automatically generated forms, and doesn't
     # actually represent the complete range of real values that branch_type
     # may actually hold.  Import branches are not created in the same
     # way as Hosted, Mirrored or Remote branches.
+    # There are two option:
+    #   1) define a separate schema to use in the UI (sledgehammer solution)
+    #   2) work out some way to specify a restricted vocabulary in the view
+    # Personally I'd like a LAZR way to do number 2.
     branch_type = Choice(
         title=_("Branch Type"), required=True,
         vocabulary=UICreatableBranchType,
