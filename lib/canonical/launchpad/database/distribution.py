@@ -945,8 +945,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             active_statuses = (PackagePublishingStatus.PUBLISHED,
                                PackagePublishingStatus.PENDING)
             clauses.append("""
-            EXISTS (SELECT pub.id FROM SourcePackagePublishingHistory pub
-               WHERE pub.archive = Archive.id AND pub.status IN %s)
+            Archive.id IN (
+                SELECT DISTINCT archive FROM SourcepackagePublishingHistory
+                WHERE status IN %s)
             """ % sqlvalues(active_statuses))
 
         if text:
