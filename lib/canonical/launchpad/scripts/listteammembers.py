@@ -36,7 +36,7 @@ def process_team(teamname, display_option='simple'):
             email = member.preferredemail.email
         else:
             email = '--none--'
-        if template == 'email':
+        if display_option == 'email':
             for validatedemail in member.validatedemails:
                 params = dict(
                     email=validatedemail.email,
