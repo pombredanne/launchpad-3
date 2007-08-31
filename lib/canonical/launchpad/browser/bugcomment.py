@@ -100,7 +100,8 @@ class BugComment:
 
     def isEmpty(self):
         """Return True if text_for_display is empty."""
-        return (len(self.text_for_display) == 0 and len(self.bugattachments) == 0)
+        return (len(self.text_for_display) == 0 and
+            len(self.bugattachments) == 0)
 
 
 class BugCommentView(LaunchpadView):
