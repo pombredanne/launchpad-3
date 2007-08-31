@@ -11,7 +11,7 @@ from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)
 from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
-from canonical.launchpad.scripts.supermirror.ftests import createbranch
+from canonical.launchpad.scripts.supermirror.tests import createbranch
 from canonical.launchpad.scripts.supermirror import jobmanager
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
