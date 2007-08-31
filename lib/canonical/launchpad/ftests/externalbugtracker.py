@@ -23,22 +23,30 @@ def read_test_file(name):
     return test_file.read()
 
 
-def add_watches_to_tracker(remote_bugs, tracker):
-    """Add a set of bug watches to a tracker.
+def print_bugwatches(bug_watches, convert_remote_status=None):
+    """Print the bug watches for a BugTracker, ordered by remote bug id.
 
-    :remote_bugs: A list of remote bug IDs to add as bug watches to the
-        bug tracker.
+    :bug_watches: A set of BugWatches to print.
 
-    :tracker: A BugTracker instance to which the bug watches should be
-        added.
+    :convert_remote_status: A convertRemoteStatus method from an
+        ExternalBugTracker instance, which will convert a bug's remote
+        status into a Launchpad BugTaskStatus. See
+        `ExternalBugTracker.convertRemoteStatus()`.
+
+    Bug watches will be printed in the form: Remote bug <id>:
+    <remote_status>. If convert_remote_status is callable it will be
+    used to convert the watches' remote statuses to Launchpad
+    BugTaskStatuses and these will be output instead.
     """
-    bug_watch_set = getUtility(IBugWatchSet)
-    for remote_bug in remote_bugs:
-         bug_watch = bug_watch_set.createBugWatch(
-             bug=example_bug, owner=sample_person,
-             bugtracker=example_bug_tracker,
-             remotebug=str(remote_bug_id))
-         bug_watches[remote_bug_id] = bug_watch
+    watches = dict((int(bug_watch.remotebug), bug_watch)
+        for bug_watch in bug_watches)
+
+    for remote_bug_id in sorted(watches.keys()):
+        status = watches[remote_bug_id].remotestatus
+        if callable(convert_remote_status):
+            status = convert_remote_status(status)
+
+        print 'Remote bug %d: %s' % (remote_bug_id, status)
 
 
 class TestBugzilla(Bugzilla):
