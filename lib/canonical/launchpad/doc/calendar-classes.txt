@@ -73,7 +73,7 @@ The owner of the calendar is taken from the parent object:
 Calendar objects implement the ILaunchpadCalendar interface, which
 inherits from ICalendar:
 
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> verifyObject(ILaunchpadCalendar, person_calendar)
   True
   >>> verifyObject(ICalendar, person_calendar)
