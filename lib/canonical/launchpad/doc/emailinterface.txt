@@ -1689,6 +1689,10 @@ and assigning the bug to `name19`.
 
     >>> submit_commands(ff_bug,
     ...     'affects ubuntu/mozilla-firefox', 'assignee name19')
+
+The email was handled correctly - A new bugtask was added and assigned
+to the specified team.
+
     >>> print ff_bug.bugtasks[-1].assignee.name
     name19
 
