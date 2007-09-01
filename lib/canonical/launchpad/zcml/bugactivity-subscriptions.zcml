@@ -5,7 +5,7 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
-    
+
     <subscriber
         for="canonical.launchpad.interfaces.IBug
              zope.app.event.interfaces.IObjectCreatedEvent"
@@ -15,7 +15,7 @@
         for="canonical.launchpad.interfaces.IBug
              canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
         handler="canonical.launchpad.subscribers.bugactivity.record_bug_edited" />
- 
+
     <subscriber
         for="canonical.launchpad.interfaces.IBugTask
              zope.app.event.interfaces.IObjectCreatedEvent"
@@ -25,32 +25,32 @@
         for="canonical.launchpad.interfaces.IBugTask
              canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
         handler="canonical.launchpad.subscribers.bugactivity.record_bug_task_edited" />
-        
+
   <subscriber
      for="canonical.launchpad.interfaces.IBugProductInfestation
           zope.app.event.interfaces.IObjectCreatedEvent"
      handler="canonical.launchpad.subscribers.bugactivity.record_product_infestation_added" />
-  
+
   <subscriber
      for="canonical.launchpad.interfaces.IBugProductInfestation
           canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
      handler="canonical.launchpad.subscribers.bugactivity.record_product_infestation_edited" />
-  
+
   <subscriber
      for="canonical.launchpad.interfaces.IBugPackageInfestation
           zope.app.event.interfaces.IObjectCreatedEvent"
      handler="canonical.launchpad.subscribers.bugactivity.record_package_infestation_added" />
-  
+
   <subscriber
      for="canonical.launchpad.interfaces.IBugPackageInfestation
           canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
      handler="canonical.launchpad.subscribers.bugactivity.record_package_infestation_edited" />
-  
+
   <subscriber
      for="canonical.launchpad.interfaces.IBugSubscription
           zope.app.event.interfaces.IObjectCreatedEvent"
      handler="canonical.launchpad.subscribers.bugactivity.record_bugsubscription_added" />
-  
+
   <subscriber
      for="canonical.launchpad.interfaces.IBugSubscription
           canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
@@ -66,7 +66,7 @@
      for="canonical.launchpad.interfaces.IBugExternalRef
           zope.app.event.interfaces.IObjectCreatedEvent"
      handler="canonical.launchpad.mailnotification.notify_bug_external_ref_added" />
-  
+
 -->
 
 </configure>
