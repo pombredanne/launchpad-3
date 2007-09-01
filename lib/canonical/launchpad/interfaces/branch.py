@@ -550,6 +550,9 @@ class IBranchSet(Interface):
 
         Raises BranchCreationForbidden if the creator is not allowed
         to create a branch for the specified product.
+
+        If product is None (indicating a +junk branch) then the owner must not
+        be a team, except for the special case of the ~vcs-imports celebrity.
         """
 
     def delete(branch):

@@ -119,11 +119,11 @@ def _can_edit_translations(pofile, person):
     if person is None:
         return False
 
-    # XXX Carlos Perello Marin 2006-02-07 bug=4814: 
+    # XXX Carlos Perello Marin 2006-02-07 bug=4814:
     # We should not check the permissions here but use the standard
     # security system.
 
-    # XXX Carlos Perello Marin 2006-02-08 bug=30789: 
+    # XXX Carlos Perello Marin 2006-02-08 bug=30789:
     # The check person.id == rosetta_experts.id must be removed as soon as
     # the is closed.
 
