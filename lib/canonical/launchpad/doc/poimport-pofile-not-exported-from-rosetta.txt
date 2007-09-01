@@ -153,6 +153,8 @@ We need to fetch again some SQLObjects because we did a transaction commit.
   >>> series = release.productseries
   >>> subset = POTemplateSubset(productseries=series)
   >>> potemplate = subset.getPOTemplateByName('firefox')
+  >>> # potemplate remembers having no cy translation, so clear its cache.
+  >>> potemplate._cached_pofiles_by_language = None
   >>> pofile = potemplate.getPOFileByLang('cy')
   >>> person = person_set.getByName('sabdfl')
 

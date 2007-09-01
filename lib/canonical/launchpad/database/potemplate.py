@@ -109,6 +109,10 @@ class POTemplate(SQLBase, RosettaStats):
     # joins
     pofiles = SQLMultipleJoin('POFile', joinColumn='potemplate')
 
+    # In-memory cache: maps (language code, variant) to list of POFiles
+    # translating this template to that language (variant).
+    _cached_pofiles_by_language = None
+
     def __iter__(self):
         """See IPOTemplate."""
         for potmsgset in self.getPOTMsgSets():
@@ -348,6 +352,16 @@ class POTemplate(SQLBase, RosettaStats):
 
     def getPOFileByLang(self, language_code, variant=None):
         """See IPOTemplate."""
+        # Consult cache first.
+        language_spec = (language_code, variant)
+        if self._cached_pofiles_by_language is None:
+            self._cached_pofiles_by_language = {}
+        elif language_spec in self._cached_pofiles_by_language:
+            # Cache contains a remembered POFile for this language.  Don't do
+            # the usual get() followed by "is None"; the dict may contain None
+            # values to indicate we looked for a POFile and found none.
+            return self._cached_pofiles_by_language[language_spec]
+
         if variant is None:
             variantspec = 'IS NULL'
         elif isinstance(variant, unicode):
@@ -355,7 +369,7 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             raise TypeError('Variant must be None or unicode.')
 
-        return POFile.selectOne("""
+        self._cached_pofiles_by_language[language_spec] = POFile.selectOne("""
             POFile.potemplate = %d AND
             POFile.language = Language.id AND
             POFile.variant %s AND
@@ -366,6 +380,8 @@ class POTemplate(SQLBase, RosettaStats):
             clauseTables=['Language'],
             prejoinClauseTables=['Language'],
             prejoins=["last_touched_pomsgset"])
+
+        return self._cached_pofiles_by_language[language_spec]
 
     def messageCount(self):
         """See IRosettaStats."""
