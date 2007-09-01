@@ -8,6 +8,7 @@ import tarfile
 from StringIO import StringIO
 import datetime
 import pytz
+import re
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -327,7 +328,20 @@ class SourcePackageRelease(SQLBase):
     @property
     def change_summary(self):
         """See ISourcePackageRelease"""
-        return self.changelog
+        # this regex is copied from apt-listchanges.py courtesy of MDZ
+        new_stanza_line = re.compile('^\S+ \((?P<version>.*)\) .*;.*urgency=(?P<urgency>\w+).*')
+        logfile = StringIO(self.changelog)
+        change = ''
+        top_stanza = False
+        for line in logfile.readlines():
+            match = new_stanza_line.match(line)
+            if match:
+                if top_stanza:
+                    break
+                top_stanza = True
+            change += line
+
+        return change
 
     def attachTranslationFiles(self, tarball_alias, is_published,
         importer=None):

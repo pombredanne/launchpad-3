@@ -20,24 +20,24 @@
 
   <h1>Publishing history</h1>
   <table class="listing">
-        <thead>
-          <tr>
-            <th>When</th>
-            <th>Status</th>
-            <th>Target</th>
-            <th>Pocket</th>
-            <th>Component</th>
-            <th>Section</th>
-            <th>Version</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tal:block repeat="publishing context/publishing_history"
-                     replace="structure publishing/@@+listing-detailed">
-          </tal:block>
-        </tbody>
-      </table>
-    </div>
-  </body>
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Status</th>
+        <th>Target</th>
+        <th>Pocket</th>
+        <th>Component</th>
+        <th>Section</th>
+        <th>Version</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tal:block repeat="publishing context/publishing_history"
+                 replace="structure publishing/@@+listing-detailed">
+      </tal:block>
+    </tbody>
+  </table>
+</div>
+</body>
 </html>
 

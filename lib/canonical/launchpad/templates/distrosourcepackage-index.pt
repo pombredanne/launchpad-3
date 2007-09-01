@@ -8,7 +8,6 @@
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-bugcontacts" />
-    <div tal:replace="structure context/@@+portlet-releases" />
     <div tal:replace="structure context/@@+portlet-latestbugs" />
     <div tal:replace="structure context/@@+portlet-latestquestions" />
   </metal:leftportlets>
@@ -18,7 +17,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Package overview</h1>
+  <h1><span tal:replace="context/name" /> source package history</h1>
 
   <tal:block
     repeat="dspr context/releases"
