@@ -192,7 +192,7 @@ find $ARCHIVEROOT_COMMERCIAL -type d -empty | xargs -r rmdir
 cron.germinate
 
 # Trigger master mirrors
-if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ];
+if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     ssh archvsync@syowa
     ssh archvsync@frei
 fi
