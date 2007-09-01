@@ -60,7 +60,7 @@ class ProjectMilestoneTest(unittest.TestCase):
 
     def test_milestone_name(self):
         """The names of project milestones.
-        
+
         A project milestone named `A` exists, if at least one product of this
         project has a milestone named `A`.
         """
@@ -144,7 +144,7 @@ class ProjectMilestoneTest(unittest.TestCase):
         # ... while project.all_milestones lists invisible milestones too.
         self.assertEqual(
             [milestone.name for milestone in gnome.all_milestones], ['1.1'])
-        
+
     def test_no_foreign_milestones(self):
         """Milestones in "foreign" products.
 
@@ -154,11 +154,11 @@ class ProjectMilestoneTest(unittest.TestCase):
         # firefox does not belong to the Gnome project.
         firefox = getUtility(IProductSet)['firefox']
         self.assertNotEqual(firefox.project.name, 'gnome')
-        
+
         self.createProductMilestone('1.1', 'firefox', None)
         gnome = getUtility(IProjectSet)['gnome']
         self.assertEqual(list(gnome.all_milestones), [])
-            
+
     def createSpecification(self, milestone_name, product_name):
         """Create a specification, assigned to a milestone, for a product."""
         specset = getUtility(ISpecificationSet)
@@ -237,7 +237,7 @@ class ProjectMilestoneTest(unittest.TestCase):
             [bugtask.bug.title for bugtask in bugtasks],
             ['Milestone test bug for evolution',
              'Milestone test bug for gnomebaker'])
- 
+
     def setUpProjectMilestoneTests(self):
         """Create product milestones for project milestone doctests."""
         self.createProductMilestone('1.1', 'evolution', datetime(2010, 4, 1))
