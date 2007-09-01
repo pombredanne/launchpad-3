@@ -113,6 +113,10 @@ class POTemplate(SQLBase, RosettaStats):
     # translating this template to that language (variant).
     _cached_pofiles_by_language = None
 
+    # In-memory cache: code of last-requested language, and its Language.
+    _cached_language_code = None
+    _cached_language = None
+
     def __iter__(self):
         """See IPOTemplate."""
         for potmsgset in self.getPOTMsgSets():
@@ -445,18 +449,32 @@ class POTemplate(SQLBase, RosettaStats):
         for potmsgset in self:
             potmsgset.sequence = 0
 
+    def _lookupLanguage(self, language_code):
+        """Look up named `Language` object, or raise `LanguageNotFound`."""
+        # Caches last-requested language to deal with repetitive requests.
+        if self._cached_language_code == language_code:
+            assert self._cached_language is not None, (
+                "Cached None as language in POTemplate.")
+            return self._cached_language
+
+        try:
+            self._cached_language = Language.byCode(language_code)
+        except SQLObjectNotFound:
+            self._cached_language_code = None
+            raise LanguageNotFound(language_code)
+
+        self._cached_language_code = language_code
+        return self._cached_language
+
     def newPOFile(self, language_code, variant=None, requester=None):
-        """See IPOTemplate."""
-        # see if one exists already
+        """See `IPOTemplate`."""
+        # See if one exists already.
         existingpo = self.getPOFileByLang(language_code, variant)
         assert existingpo is None, (
             'There is already a valid IPOFile (%s)' % existingpo.title)
 
-        # since we don't have one, create one
-        try:
-            language = Language.byCode(language_code)
-        except SQLObjectNotFound:
-            raise LanguageNotFound(language_code)
+        # Since we don't have one, create one.
+        language = self._lookupLanguage(language_code)
 
         now = datetime.datetime.now()
         data = {
@@ -520,11 +538,7 @@ class POTemplate(SQLBase, RosettaStats):
         assert existingpo is None, (
             'There is already a valid IPOFile (%s)' % existingpo.title)
 
-        try:
-            language = Language.byCode(language_code)
-        except SQLObjectNotFound:
-            raise LanguageNotFound(language_code)
-
+        language = self._lookupLanguage(language_code)
         return DummyPOFile(self, language, owner=requester)
 
     def createMessageIDSighting(self, potmsgset, messageID):
