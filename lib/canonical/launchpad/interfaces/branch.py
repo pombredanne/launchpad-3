@@ -11,12 +11,14 @@ __all__ = [
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchType',
+    'CannotDeleteBranch',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchLifecycleFilter',
+    'UnknownBranchTypeError'
     ]
 
 from zope.interface import Interface, Attribute
@@ -122,6 +124,13 @@ class BranchType(DBEnumeratedType):
         control system into bzr and are made available through the supermirror.
         """)
 
+    REMOTE = DBItem(4, """
+        Remote
+
+        Remote branches are those that are registered in Launchpad
+        with an external location, but are not to be mirrored.
+        """)
+
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.NEW,
@@ -132,6 +141,14 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
 
 class BranchCreationException(Exception):
     """Base class for branch creation exceptions."""
+
+
+class CannotDeleteBranch(Exception):
+    """The branch cannot be deleted at this time."""
+
+
+class UnknownBranchTypeError(Exception):
+    """Raised when the user specifies an unrecognized branch type."""
 
 
 class BranchCreationForbidden(BranchCreationException):
@@ -357,8 +374,57 @@ class IBranch(IHasOwner):
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
 
+    landing_targets = Attribute(
+        "The BranchMergeProposals where this branch is the source branch.")
+    landing_candidates = Attribute(
+        "The BranchMergeProposals where this branch is the target branch. "
+        "Only active merge proposals are returned (those that have not yet "
+        "been merged).")
+    dependent_branches = Attribute(
+        "The BranchMergeProposals where this branch is the dependent branch. "
+        "Only active merge proposals are returned (those that have not yet "
+        "been merged).")
+    def addLandingTarget(registrant, target_branch, dependent_branch=None,
+                         whiteboard=None, date_created=None):
+        """Create a new BranchMergeProposal with this branch as the source.
+
+        Both the target_branch and the dependent_branch, if it is there,
+        must be branches of the same project as the source branch.
+
+        Branches without associated projects, junk branches, cannot
+        specify landing targets.
+
+        :param registrant: The person who is adding the landing target.
+        :param target_branch: Must be another branch, and different to self.
+        :param dependent_branch: Optional but if it is not None, it must be
+            another branch.
+        :param whiteboard: Optional.  Just text, notes or instructions
+            pertinant to the landing such as testing notes.
+        :param date_created: Used to specify the date_created value of the
+            merge request.
+        """
+
     def revisions_since(timestamp):
         """Revisions in the history that are more recent than timestamp."""
+
+    code_is_browseable = Attribute(
+        "Is the code in this branch accessable through codebrowse?")
+
+    def canBeDeleted():
+        """Can this branch be deleted in its current state.
+
+        A branch is considered deletable if it has no revisions, is not
+        linked to any bugs, specs, productseries, or code imports, and
+        has no subscribers.
+        """
+
+    def associatedProductSeries():
+        """Return the product series that this branch is associated with.
+
+        A branch may be associated with a product series as either a
+        user_branch or import_branch.  Also a branch can be associated
+        with more than one product series as a user_branch.
+        """
 
     # subscription-related methods
     def subscribe(person, notification_level, max_diff_lines):
@@ -421,6 +487,9 @@ class IBranch(IHasOwner):
                the corresponding BranchRevision rows for this branch.
         """
 
+    def getPullURL():
+        """Return the URL used to pull the branch into the mirror area."""
+
     def requestMirror():
         """Request that this branch be mirrored on the next run of the branch
         puller.
@@ -481,7 +550,13 @@ class IBranchSet(Interface):
 
         Raises BranchCreationForbidden if the creator is not allowed
         to create a branch for the specified product.
+
+        If product is None (indicating a +junk branch) then the owner must not
+        be a team, except for the special case of the ~vcs-imports celebrity.
         """
+
+    def delete(branch):
+        """Delete the specified branch."""
 
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
@@ -515,45 +590,71 @@ class IBranchSet(Interface):
         and only non import branches are counted.
         """
 
-    def getRecentlyChangedBranches(branch_count, visible_by_user=None):
-        """Return a list of branches that have been recently updated.
+    def getRecentlyChangedBranches(
+        branch_count=None, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
+        """Return a result set of branches that have been recently updated.
 
-        The list will contain at most branch_count items, and excludes
-        branches owned by the vcs-imports user.
+        Only HOSTED and MIRRORED branches are returned in the result set.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
+        If branch_count is specified, the result set will contain at most
+        branch_count items.
 
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
-    def getRecentlyImportedBranches(branch_count, visible_by_user=None):
-        """Return a list of branches that have been recently imported.
+    def getRecentlyImportedBranches(
+        branch_count=None, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
+        """Return a result set of branches that have been recently imported.
 
-        The list will contain at most branch_count items, and only
-        has branches owned by the vcs-imports user.
+        The result set only contains IMPORTED branches.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
+        If branch_count is specified, the result set will contain at most
+        branch_count items.
 
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
-    def getRecentlyRegisteredBranches(branch_count, visible_by_user=None):
-        """Return a list of branches that have been recently registered.
+    def getRecentlyRegisteredBranches(
+        branch_count=None, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
+        """Return a result set of branches that have been recently registered.
 
-        The list will contain at most branch_count items.
+        If branch_count is specified, the result set will contain at most
+        branch_count items.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
 
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
     def getLastCommitForBranches(branches):
@@ -586,12 +687,12 @@ class IBranchSet(Interface):
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
-
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
     def getBranchesAuthoredByPerson(
@@ -606,12 +707,12 @@ class IBranchSet(Interface):
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
-
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
     def getBranchesRegisteredByPerson(
@@ -627,12 +728,12 @@ class IBranchSet(Interface):
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
-
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
     def getBranchesSubscribedByPerson(
@@ -648,12 +749,12 @@ class IBranchSet(Interface):
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
-
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
     def getBranchesForProduct(
@@ -666,12 +767,12 @@ class IBranchSet(Interface):
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
-
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
     def getHostedBranchesForPerson(person):
@@ -684,25 +785,19 @@ class IBranchSet(Interface):
         merged or abandoned don't appear in the results -- only branches that
         match `DEFAULT_BRANCH_STATUS_IN_LISTING`.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
-
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
-    def getHostedPullQueue():
-        """Return the queue of hosted branches to mirror using the puller."""
+    def getPullQueue(branch_type):
+        """Return a queue of branches to mirror using the puller.
 
-    def getMirroredPullQueue():
-        """Return the queue of mirrored branches to mirror using the puller."""
-
-    def getImportedPullQueue():
-        """Return the queue of imported branches to mirror using the puller."""
-
-    def getPullQueue():
-        """Return the entire queue of branches to mirror using the puller."""
+        :param branch_type: A value from the `BranchType` enum.
+        """
 
 
 class IBranchDelta(Interface):

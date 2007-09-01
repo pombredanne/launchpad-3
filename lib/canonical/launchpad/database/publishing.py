@@ -11,11 +11,10 @@ __all__ = ['SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
            ]
 
 from warnings import warn
-import operator
 import os
 
 from zope.interface import implements
-from sqlobject import ForeignKey, StringCol, BoolCol, IntCol
+from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -365,12 +364,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 BinaryPackageName.id AND
             Build.sourcepackagerelease=%s AND
             DistroArchRelease.distrorelease=%s AND
-            BinaryPackagePublishingHistory.archive=%s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.status=%s
-            """ % sqlvalues(self.sourcepackagerelease,
-                            self.distroseries,
-                            self.distroseries.main_archive,
-                            PackagePublishingStatus.PUBLISHED)
+            """ % sqlvalues(
+                    self.sourcepackagerelease,
+                    self.distroseries,
+                    self.distroseries.distribution.all_distro_archive_ids,
+                    PackagePublishingStatus.PUBLISHED)
 
         orderBy = ['BinaryPackageName.name',
                    'DistroArchRelease.architecturetag']
@@ -409,8 +409,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def meta_distroseriessourcepackagerelease(self):
         """see ISourcePackagePublishingHistory."""
-        return self.distroseries.getSourcePackageRelease( 
-            self.sourcepackagerelease 
+        return self.distroseries.getSourcePackageRelease(
+            self.sourcepackagerelease
             )
 
     @property
@@ -550,7 +550,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         fields = IndexStanzaFields()
         fields.append('Package', bpr.name)
-        fields.append('Priority', self.priority.title)
+        fields.append('Priority', self.priority.title.lower())
         fields.append('Section', self.section.name)
         fields.append('Installed-Size', bpr.installedsize)
         fields.append('Maintainer', spr.dsc_maintainer_rfc822)

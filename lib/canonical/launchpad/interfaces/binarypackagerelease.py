@@ -37,8 +37,6 @@ class IBinaryPackageRelease(Interface):
     provides = Text(required=False)
     essential = Bool(required=False)
     installedsize = Int(required=False)
-    copyright = Text(required=False)
-    licence = Text(required=False)
     architecturespecific = Bool(required=True)
     datecreated = Datetime(required=True, readonly=True)
 
@@ -66,13 +64,6 @@ class IBinaryPackageRelease(Interface):
     def addFile(file):
         """Create a BinaryPackageFile record referencing this build
         and attach the provided library file alias (file).
-        """
-
-    def publish(priority, status, pocket, embargo, distroarchseries=None):
-        """Publish this BinaryPackageRelease according the given parameters.
-
-        The optional distroarchseries argument defaults to the one choosen
-        originally for the build record (helps on derivative procedures).
         """
 
     def override(component=None, section=None, priority=None):

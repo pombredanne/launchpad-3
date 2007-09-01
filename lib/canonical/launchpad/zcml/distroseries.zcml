@@ -198,8 +198,8 @@
       template="../templates/object-milestones.pt"
       />
     <browser:page
-      name="+latest-uploads"
-      template="../templates/distroseries-latest-uploads.pt"
+      name="+portlet-latestuploads"
+      template="../templates/distroseries-portlet-latestuploads.pt"
       />
   </browser:pages>
 
@@ -255,6 +255,16 @@
     name="+admin"
     facet="translations"
     template="../templates/distroseries-translationsadmin.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 

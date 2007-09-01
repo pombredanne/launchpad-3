@@ -39,20 +39,27 @@ usage of each application:
     >>> print admin_browser.title
     Launchpad usage by Ubuntu Linux
       
-    >>> print admin_browser.getControl('Uses Translations Officially').selected
+    >>> print admin_browser.getControl(
+    ...     'Translations for this distribution are done in Launchpad').selected
     True
-    >>> print admin_browser.getControl('Uses Bugs Officially').selected
+    >>> print admin_browser.getControl(
+    ...     'Bugs in this distribution are tracked in Launchpad').selected
     True
-    >>> print admin_browser.getControl('Uses Answers Officially').selected
+    >>> print admin_browser.getControl(
+    ...     'People can ask questions in Launchpad Answers').selected
     True
      
 Foo Bar can edit the values as well. Afterwards he gets redirected to
 the distribution index page:
 
     >>> admin_browser.getControl(
-    ...     'Uses Translations Officially').selected = False
-    >>> admin_browser.getControl('Uses Bugs Officially').selected = False
-    >>> admin_browser.getControl('Uses Answers Officially').selected = False
+    ...     'Translations for this distribution are done in ' +
+    ...     'Launchpad').selected = False
+    >>> admin_browser.getControl(
+    ...     'Bugs in this distribution are tracked in Launchpad').selected \
+    ...     = False
+    >>> admin_browser.getControl(
+    ...     'People can ask questions in Launchpad Answers').selected = False
     >>> admin_browser.getControl('Change').click()
 
 On the distribution page, the new usage was updated.
