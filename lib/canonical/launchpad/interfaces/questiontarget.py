@@ -92,7 +92,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         :language: an ILanguage or None. When language is none, all
                    answer contacts are returned.
 
-        Return an INotificationRecipientSet of the answer contacts and the 
+        Return an INotificationRecipientSet of the answer contacts and the
         reason they are recipients of an email. The answer contacts are
         selected by their language and the fact that they are answer contacts
         for the QuestionTarget.
