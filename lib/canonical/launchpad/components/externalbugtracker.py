@@ -310,9 +310,9 @@ class Bugzilla(ExternalBugTracker):
         elif remote_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:
             if resolution in ['CODE_FIX', 'CURRENTRELEASE', 'ERRATA',
-                              'FIXED', 'NEXTRELEASE', 
+                              'FIXED', 'NEXTRELEASE',
                               'PATCH_ALREADY_AVAILABLE', 'RAWHIDE']:
- 
+
                 # The following resolutions come from bugzilla.redhat.com.
                 # All of them map to Malone's FIXRELEASED status:
                 #     CODE_FIX, CURRENTRELEASE, ERRATA, NEXTRELEASE,
@@ -698,7 +698,7 @@ class Mantis(ExternalBugTracker):
         # with the fact that the bug summary can contain embedded "\r\n"
         # characters! I don't see a better way to handle this short of
         # not using the CSV module and forcing all lines to have the
-        # same number as fields as the header. 
+        # same number as fields as the header.
         # XXX: kiko 2007-07-05: Report Mantis bug.
         csv_data = csv_data.strip().split("\r\n0")
 

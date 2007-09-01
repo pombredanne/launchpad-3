@@ -14,7 +14,7 @@ class Library:
     # The following methods are read-only queries.
 
     def lookupBySHA1(self, digest):
-        return [fc.id for fc in 
+        return [fc.id for fc in
                 LibraryFileContent.selectBy(sha1=digest, deleted=False)]
 
     def getAlias(self, aliasid):

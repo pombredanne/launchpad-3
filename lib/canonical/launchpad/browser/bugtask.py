@@ -1014,7 +1014,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         elif milestone_ignored:
             self.request.response.addWarningNotification(
                 "The milestone setting was ignored because "
-                "you reassigned the bug to %s." % 
+                "you reassigned the bug to %s." %
                 bugtask.bugtargetdisplayname)
 
         if comment_on_change:

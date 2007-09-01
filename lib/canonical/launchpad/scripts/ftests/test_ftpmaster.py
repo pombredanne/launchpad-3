@@ -80,9 +80,9 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         commercial_component = getUtility(IComponentSet)['commercial']
         self.ubuntu_warty = self.ubuntu['warty']
         self.ubuntu_hoary = self.ubuntu['hoary']
-        ComponentSelection(distroseries=self.ubuntu_warty, 
+        ComponentSelection(distroseries=self.ubuntu_warty,
                            component=commercial_component)
-        ComponentSelection(distroseries=self.ubuntu_hoary, 
+        ComponentSelection(distroseries=self.ubuntu_hoary,
                            component=commercial_component)
 
     def test_initialize_success(self):
@@ -258,7 +258,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         # Apply the override.
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
-            component_name='commercial', section_name='base', 
+            component_name='commercial', section_name='base',
             priority_name='extra')
         changer.initialize()
         self.assertRaises(
