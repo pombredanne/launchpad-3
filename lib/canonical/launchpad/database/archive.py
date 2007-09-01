@@ -66,7 +66,7 @@ class Archive(SQLBase):
 
         if self.purpose == ArchivePurpose.PPA:
             return urlappend(
-                config.personalpackagearchive.base_url, 
+                config.personalpackagearchive.base_url,
                 self.owner.name + '/' + self.distribution.name)
 
         try:
