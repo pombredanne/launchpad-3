@@ -193,7 +193,7 @@
     permission="launchpad.AnyPerson"
     template="../templates/question-linkfaq.pt"
     />
-  
+
   <browser:page
     name="+createfaq"
     for="canonical.launchpad.interfaces.IQuestion"
@@ -201,7 +201,7 @@
     permission="launchpad.Moderate"
     template="../templates/question-createfaq.pt"
     />
-  
+
   <browser:page
     name="+display"
     for="canonical.launchpad.interfaces.IQuestionMessage"
