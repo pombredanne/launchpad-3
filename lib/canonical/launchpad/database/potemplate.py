@@ -505,6 +505,9 @@ class POTemplate(SQLBase, RosettaStats):
             variant=variant,
             path=path)
 
+        # Make cache reflect the change immediately, without further querying.
+        self._cached_pofiles_by_language[language_code, variant] = pofile
+
         # Store the changes.
         flush_database_updates()
 
