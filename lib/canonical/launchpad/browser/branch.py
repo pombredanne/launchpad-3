@@ -521,7 +521,8 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 lifecycle_status=data['lifecycle_status'],
                 home_page=data['home_page'],
                 whiteboard=data['whiteboard'])
-            self.branch.requestMirror()
+            if self.branch.branch_type == BranchType.MIRRORED:
+                self.branch.requestMirror()
         except BranchCreationForbidden:
             self.setForbiddenError(self.getProduct(data))
         else:
@@ -567,9 +568,13 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         url = data.get('url')
         if branch_type == UICreatableBranchType.MIRRORED:
             if url is None:
-                self.setFieldError(
-                    'url',
-                    'Branch URLs are required for Mirrored branches.')
+                # If the url is not set due to url validation errors,
+                # there will be an error set for it.
+                error = self.getWidgetError('url')
+                if not error:
+                    self.setFieldError(
+                        'url',
+                        'Branch URLs are required for Mirrored branches.')
         elif branch_type == UICreatableBranchType.HOSTED:
             if url is not None:
                 self.setFieldError(
