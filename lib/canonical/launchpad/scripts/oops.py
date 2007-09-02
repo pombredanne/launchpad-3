@@ -94,7 +94,7 @@ def unwanted_oops_files(root_path, days, log=None):
 def old_oops_files(root_path, days):
     '''Generate a list of all OOPS files found under root_path that
        are older than 'days' days old.
-    
+
        root_path defaults to the config.launchpad.errorreports.errordir
     '''
     now = date.today()

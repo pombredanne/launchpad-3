@@ -15,9 +15,9 @@ syntax should look familiar.
 The IDistributionSet utility is accessed in the usual fashion:
 
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistribution, IDistributionSet)
+    ...     IDistribution, IDistributionSet, IHasTranslationImports)
     >>> from canonical.lp.dbschema import PackagePublishingPocket
     >>> distroset = getUtility(IDistributionSet)
 
@@ -36,6 +36,10 @@ Let's make sure a distribution object properly implements its interfaces.
     >>> IDistribution.providedBy(gentoo)
     True
     >>> verifyObject(IDistribution, gentoo)
+    True
+    >>> IHasTranslationImports.providedBy(gentoo)
+    True
+    >>> verifyObject(IHasTranslationImports, gentoo)
     True
 
 Once you've got a distribution, you can retrieve a source package if you

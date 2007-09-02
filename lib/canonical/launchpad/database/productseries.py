@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -7,30 +7,18 @@ __all__ = [
     'ProductSeriesSet',
     ]
 
-
 import datetime
-from warnings import warn
-
-from zope.interface import implements
 from sqlobject import (
     IntervalCol, ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
+from warnings import warn
+from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, sqlvalues)
-
-from canonical.lp.dbschema import (
-    ImportStatus, PackagingType, RevisionControlSystems,
-    SpecificationSort, SpecificationGoalStatus, SpecificationFilter,
-    SpecificationDefinitionStatus, SpecificationImplementationStatus)
-
 from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.interfaces import (
-    IProductSeries, IProductSeriesSet, IProductSeriesSourceAdmin,
-    NotFoundError)
-
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTaskSet
@@ -39,6 +27,15 @@ from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
+from canonical.launchpad.database.translationimportqueue import (
+    HasTranslationImportsMixin)
+from canonical.launchpad.interfaces import (
+    IProductSeries, IProductSeriesSet, IProductSeriesSourceAdmin,
+    NotFoundError)
+from canonical.lp.dbschema import (
+    ImportStatus, PackagingType, RevisionControlSystems, SpecificationSort,
+    SpecificationGoalStatus, SpecificationFilter,
+    SpecificationDefinitionStatus, SpecificationImplementationStatus)
 
 
 class NoImportBranchError(Exception):
@@ -59,7 +56,8 @@ class DatePublishedSyncError(Exception):
     """
 
 
-class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
+class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
+                    HasTranslationImportsMixin):
     """A series of product releases."""
     implements(IProductSeries, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
@@ -526,7 +524,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 and self.datelastsynced < self.import_branch.last_mirrored):
             self.datepublishedsync = self.datelastsynced
         self.datelastsynced = UTC_NOW
-
+        self.import_branch.requestMirror()
 
     def newMilestone(self, name, dateexpected=None):
         """See IProductSeries."""

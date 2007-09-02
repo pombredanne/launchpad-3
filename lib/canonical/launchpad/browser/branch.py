@@ -24,12 +24,8 @@ import cgi
 from datetime import datetime, timedelta
 import pytz
 
-from zope.app.form.browser.widget import BrowserWidget, renderElement
-from zope.app.form.browser import UnicodeDisplayWidget
-from zope.app.form.interfaces import IDisplayWidget
 from zope.event import notify
 from zope.component import getUtility
-from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -60,6 +56,9 @@ def quote(text):
 
 class BranchSOP(StructuralObjectPresentation):
     """Provides the structural heading for `IBranch`."""
+
+    def isPrivate(self):
+        return self.context.private
 
     def getMainHeading(self):
         """See `IStructuralHeaderPresentation`."""
@@ -270,6 +269,55 @@ class BranchView(LaunchpadView):
         return truncate_text(
             message, self.MAXIMUM_STATUS_MESSAGE_LENGTH) + ' ...'
 
+    def mirror_disabled(self):
+        """Has mirroring this branch been disabled?"""
+        return self.context.mirror_request_time is None
+
+    def mirror_in_future(self):
+        """Is the branch going to be mirrored in the future?"""
+        return (not self.mirror_disabled()
+                and self.context.mirror_request_time > datetime.now(pytz.UTC))
+
+    @cachedproperty
+    def landing_targets(self):
+        """Return a decorated filtered list of landing targets."""
+        targets = []
+        targets_added = set()
+        for proposal in self.context.landing_targets:
+            # Only show the must recent proposal for any given target.
+            target_id = proposal.target_branch.id
+            if target_id in targets_added:
+                continue
+            targets.append(DecoratedMergeProposal(proposal))
+            targets_added.add(target_id)
+        return targets
+
+    @cachedproperty
+    def latest_landing_candidates(self):
+        """Return a decorated filtered list of landing candidates."""
+        # Only show the most recent 5 landing_candidates
+        candidates = self.context.landing_candidates[:5]
+        return [DecoratedMergeProposal(proposal) for proposal in candidates]
+
+    @cachedproperty
+    def landing_candidates(self):
+        """Return a decorated list of landing candidates."""
+        candidates = self.context.landing_candidates
+        return [DecoratedMergeProposal(proposal) for proposal in candidates]
+
+
+class DecoratedMergeProposal:
+    """Provide some additional functionality to a normal branch merge proposal.
+    """
+    decorates(IBranchMergeProposal)
+
+    def __init__(self, context):
+        self.context = context
+
+    def show_registrant(self):
+        """Show the registrant if it was not the branch owner."""
+        return self.context.registrant != self.source_branch.owner
+
     @cachedproperty
     def landing_targets(self):
         """Return a decorated filtered list of landing targets."""
@@ -431,6 +479,13 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             self.form_fields = self.form_fields.omit('private')
 
     def validate(self, data):
+        # Check that we're not moving a team branch to the +junk
+        # pseudo project.
+        if ('product' in data and data['product'] is None
+            and self.context.owner.isTeam()):
+            self.setFieldError(
+                'product',
+                "Team-owned branches must be associated with a project.")
         if 'product' in data and 'name' in data:
             self.validate_branch_name(self.context.owner,
                                       data['product'],
@@ -465,6 +520,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 lifecycle_status=data['lifecycle_status'],
                 home_page=data['home_page'],
                 whiteboard=data['whiteboard'])
+            self.branch.requestMirror()
         except BranchCreationForbidden:
             self.setForbiddenError(self.getProduct(data))
         else:
@@ -569,6 +625,11 @@ class BranchReassignmentView(ObjectReassignmentView):
     def isValidOwner(self, new_owner):
         if self.context.product is None:
             product_name = None
+            if new_owner.isTeam():
+                self.errormessage = (
+                    "You cannot assign a +junk branch to a team. Create a "
+                    "project first.")
+                return False
         else:
             product_name = self.context.product.name
         branch_name = self.context.name
@@ -591,6 +652,8 @@ class BranchReassignmentView(ObjectReassignmentView):
                 % (quote(new_owner.browsername),
                    quote(branch.product.displayname),
                    branch.name))
+            # XXX 2007-08-07 MichaelHudson, branch.product can be None in the
+            # lines above.  See bug 133126.
             return False
 
 

@@ -108,24 +108,11 @@ class BugSetNavigation(Navigation):
 
     usedfor = IBugSet
 
-    # XXX Daf 2006-02-01 bug=30238:
-    # The browser:page declaration should be sufficient, but the traversal
-    # takes priority. This is a workaround.
-
     @stepthrough('+text')
     def text(self, name):
         try:
             return getUtility(IBugSet).getByNameOrID(name)
         except (NotFoundError, ValueError):
-            return None
-
-    def traverse(self, name):
-        try:
-            return getUtility(IBugSet).getByNameOrID(name)
-        except (NotFoundError, ValueError):
-            # If the bug is not found, we expect a NotFoundError. If the
-            # value of name is not a value that can be used to retrieve
-            # a specific bug, we expect a ValueError.
             return None
 
 
@@ -146,7 +133,7 @@ class BugContextMenu(ContextMenu):
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
-        text = 'Visibility/security'
+        text = 'Set privacy/security'
         return Link('+secrecy', text, icon='edit')
 
     def markduplicate(self):

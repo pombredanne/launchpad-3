@@ -26,21 +26,25 @@
           tal:attributes="title context/bug/datecreated/fmt:datetime"
           tal:content="context/bug/datecreated/fmt:displaydate" />
         by <tal:reporter replace="structure context/bug/owner/fmt:link" />
-        <strong tal:condition="context/bug/security_related"
-        >- security vulnerability</strong>
       </div>
       <div id="bug-properties" style="float: right;">
         <img
           tal:condition="context/bug/security_related"
-          alt=""
-          src="/@@/warning-large"
+          alt="(Security vulnerability)"
+          src="/@@/security-large"
+          title="This bug report is about a security vulnerability"
         />
-        <img src="/@@/locked-large" title="Private"
-             tal:condition="context/bug/private" />
-        <img src="/@@/mentoring-large" title="Mentoring available"
+        <img src="/@@/mentoring-large" title="(Mentoring available)"
              tal:condition="context/bug/mentoring_offers/count" />
-        <img src="/@@/branch-large" title="Branch available"
+        <img src="/@@/branch-large" title="(Branch available)"
              tal:condition="context/bug/bug_branches/count" />
+        <img
+          tal:condition="context/bug/private"
+          alt="(Private)"
+          id="privatebadge"
+          src="/@@/private-large"
+          title="This bug report is private"
+        />
       </div>
       <h1 style="clear: left;" tal:content="context/bug/title">Bug summary</h1>
 

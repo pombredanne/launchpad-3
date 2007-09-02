@@ -139,7 +139,7 @@ def siteowner(value):
 
     >>> siteowner('email:password')
     ('email', 'password')
-    
+
     If an empty string is given (the default), we use a random password and a
     random local part, with the domain forced to example.com.
 

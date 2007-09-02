@@ -18,6 +18,7 @@ __all__ = [
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchLifecycleFilter',
+    'UnknownBranchTypeError'
     ]
 
 from zope.interface import Interface, Attribute
@@ -123,6 +124,13 @@ class BranchType(DBEnumeratedType):
         control system into bzr and are made available through the supermirror.
         """)
 
+    REMOTE = DBItem(4, """
+        Remote
+
+        Remote branches are those that are registered in Launchpad
+        with an external location, but are not to be mirrored.
+        """)
+
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.NEW,
@@ -137,6 +145,10 @@ class BranchCreationException(Exception):
 
 class CannotDeleteBranch(Exception):
     """The branch cannot be deleted at this time."""
+
+
+class UnknownBranchTypeError(Exception):
+    """Raised when the user specifies an unrecognized branch type."""
 
 
 class BranchCreationForbidden(BranchCreationException):
@@ -475,6 +487,9 @@ class IBranch(IHasOwner):
                the corresponding BranchRevision rows for this branch.
         """
 
+    def getPullURL():
+        """Return the URL used to pull the branch into the mirror area."""
+
     def requestMirror():
         """Request that this branch be mirrored on the next run of the branch
         puller.
@@ -535,6 +550,9 @@ class IBranchSet(Interface):
 
         Raises BranchCreationForbidden if the creator is not allowed
         to create a branch for the specified product.
+
+        If product is None (indicating a +junk branch) then the owner must not
+        be a team, except for the special case of the ~vcs-imports celebrity.
         """
 
     def delete(branch):
@@ -775,17 +793,11 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
-    def getHostedPullQueue():
-        """Return the queue of hosted branches to mirror using the puller."""
+    def getPullQueue(branch_type):
+        """Return a queue of branches to mirror using the puller.
 
-    def getMirroredPullQueue():
-        """Return the queue of mirrored branches to mirror using the puller."""
-
-    def getImportedPullQueue():
-        """Return the queue of imported branches to mirror using the puller."""
-
-    def getPullQueue():
-        """Return the entire queue of branches to mirror using the puller."""
+        :param branch_type: A value from the `BranchType` enum.
+        """
 
 
 class IBranchDelta(Interface):
