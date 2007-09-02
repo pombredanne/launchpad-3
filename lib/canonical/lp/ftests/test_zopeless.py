@@ -55,12 +55,12 @@ class TestInitZopeless(PgTestCase):
         finally:
             # Put the warnings module back the way we found it.
             warnings.warn_explicit = warn_explicit
-            
+
     def expectedWarning(self, message, category, filename, lineno,
                         module=None, registry=None):
         self.failUnlessEqual(alreadyInstalledMsg, str(message))
         self.warned = True
-        
+
 
 class TestZopeless(PgTestCase):
     layer = LaunchpadLayer

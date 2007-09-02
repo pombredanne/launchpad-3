@@ -54,7 +54,7 @@ class TestPushDoneNotification(AvatarTestCase):
             '/~%s/%s' % (avatar.avatarId, productID))
         d = defer.maybeDeferred(productDir.createDirectory, branchName)
         return d
-    
+
     def test_no_writes(self):
         # 'connect' and disconnect
         self.server.connectionLost(None)

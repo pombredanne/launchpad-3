@@ -85,7 +85,7 @@ class TestBranchToMirror(unittest.TestCase):
         # Check that we can mirror an empty branch, and that the
         # last_mirrored_id for an empty branch can be distinguished
         # from an unmirrored branch.
-        
+
         # Create a branch
         srcbranchdir = self._getBranchDir("branchtomirror-testmirror-src")
         destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
@@ -97,7 +97,7 @@ class TestBranchToMirror(unittest.TestCase):
         # create empty source branch
         os.makedirs(srcbranchdir)
         tree = bzrdir.BzrDir.create_standalone_workingtree(srcbranchdir)
-        
+
         to_mirror.mirror(logging.getLogger())
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(None, mirrored_branch.last_revision())
@@ -161,7 +161,7 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
         self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
         self._createSourceBranch()
         self._mirror()
-        
+
         # Change the branch to knit format.
         shutil.rmtree('src-branch')
         self.repository_format = bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
@@ -194,7 +194,7 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
 
     def _testMirrorFormat(self):
         tree = self._createSourceBranch()
-        
+
         mirrored_branch = self._mirror()
         self.assertEqual(tree.last_revision(),
                          mirrored_branch.last_revision())
@@ -265,7 +265,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         tree.add(['afile'], ['myid'])
         tree.commit('start')
         # now we have a good branch with a file called afile and id myid
-        # we need to figure out the actual path for the weave.. or 
+        # we need to figure out the actual path for the weave.. or
         # deliberately corrupt it. like this.
         tree.branch.repository.weave_store.put_weave(
             "myid", Weave(weave_name="myid"),
@@ -385,7 +385,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
     def testHTTPError(self):
         def stubOpenSourceBranch():
             raise urllib2.HTTPError(
-                'http://something', httplib.UNAUTHORIZED, 
+                'http://something', httplib.UNAUTHORIZED,
                 'Authorization Required', 'some headers',
                 open(tempfile.mkstemp()[1]))
         self.branch._openSourceBranch = stubOpenSourceBranch

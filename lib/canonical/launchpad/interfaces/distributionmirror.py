@@ -280,7 +280,7 @@ class IDistributionMirror(Interface):
         title=_('Location'), required=True, readonly=False,
         vocabulary='CountryName')
     content = Choice(
-        title=_('Content'), required=True, readonly=False, 
+        title=_('Content'), required=True, readonly=False,
         description=_(
             'Choose "CD Image" if this mirror contains CD images of '
             'this distribution. Choose "Archive" if this is a '
@@ -316,7 +316,7 @@ class IDistributionMirror(Interface):
             raise Invalid('A mirror must have at least an HTTP or FTP URL.')
 
     def getSummarizedMirroredSourceSerieses():
-        """Return a summarized list of this distribution_mirror's 
+        """Return a summarized list of this distribution_mirror's
         MirrorDistroSeriesSource objects.
 
         Summarized, in this case, means that it ignores pocket and components
@@ -325,7 +325,7 @@ class IDistributionMirror(Interface):
         """
 
     def getSummarizedMirroredArchSerieses():
-        """Return a summarized list of this distribution_mirror's 
+        """Return a summarized list of this distribution_mirror's
         MirrorDistroArchSeries objects.
 
         Summarized, in this case, means that it ignores pocket and components
@@ -414,7 +414,7 @@ class IDistributionMirror(Interface):
         """
 
     def deleteMirrorCDImageSeries(arch_series, flavour):
-        """Delete the MirrorCDImageDistroSeries with the given arch 
+        """Delete the MirrorCDImageDistroSeries with the given arch
         series and flavour, in case it exists.
         """
 
@@ -456,7 +456,7 @@ class IDistributionMirrorSet(Interface):
         it wasn't probed in the last PROBE_INTERVAL hours.
 
         If ignore_last_probe is True, then all official mirrors of the given
-        content type will be probed even if they were probed in the last 
+        content type will be probed even if they were probed in the last
         PROBE_INTERVAL hours.
 
         If limit is not None, then return at most limit mirrors, giving

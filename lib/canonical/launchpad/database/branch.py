@@ -576,6 +576,14 @@ class BranchSet:
             home_page = None
         if date_created is None:
             date_created = UTC_NOW
+
+        if product is None and owner.isTeam():
+            # We disallow team-owned junk branches -- with the exception of
+            # ~vcs-imports, to allow the eventual creation of code imports not
+            # yet associated with a product.
+            assert owner == getUtility(ILaunchpadCelebrities).vcs_imports, (
+                "Cannot create team-owned junk branches.")
+
         # Check the policy for the person creating the branch.
         private, implicit_subscription = self._checkVisibilityPolicy(
             creator, owner, product)

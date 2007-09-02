@@ -347,6 +347,19 @@ archive.
   set(['commercial'])
 
 
+IArchive.allowUpdatesToReleasePocket returns whether the archive is allowed
+to publish to the RELEASE pocket no matter what state the distroseries is in.
+
+  >>> commercial_archive.allowUpdatesToReleasePocket()
+  True
+
+  >>> cprov_archive.allowUpdatesToReleasePocket()
+  True
+
+  >>> getUtility(IArchiveSet).getByDistroPurpose(
+  ...     ubuntutest, ArchivePurpose.PRIMARY).allowUpdatesToReleasePocket()
+  False
+
 Iteration over the own utility is performed against all archives,
 including the *main_archives*:
 

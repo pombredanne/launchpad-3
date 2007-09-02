@@ -99,7 +99,7 @@ def _validate_ascii_printable_text(text):
 
 def shipit_postcode_required(country):
     """Return True if a postcode is required to ship CDs to country.
-    
+
     >>> class MockCountry: pass
     >>> brazil = MockCountry
     >>> brazil.iso3166code2 = 'BR'
@@ -128,7 +128,7 @@ class ShipItAddressValidator:
         >>> ShipItAddressValidator('somefield', 4)(u'some value')
         Traceback (most recent call last):
         ...
-        LaunchpadValidationError: The somefield can't have more than 4 characters. 
+        LaunchpadValidationError: The somefield can't have more than 4 characters.
         >>> ShipItAddressValidator('somefield', 14)(u'some value')
         True
         >>> custom_msg = "some custom message"
@@ -144,7 +144,7 @@ class ShipItAddressValidator:
                             % (self.fieldname, self.length))
             raise LaunchpadValidationError(_(self.msg))
         return True
-    
+
 validate_shipit_organization = ShipItAddressValidator('organization', 30)
 
 validate_shipit_recipientdisplayname = ShipItAddressValidator(
@@ -164,7 +164,7 @@ validate_shipit_phone = ShipItAddressValidator('phone number', 16)
 
 validate_shipit_province = ShipItAddressValidator('province', 30)
 
-# XXX Guilherme Salgado 2006-05-22: 
+# XXX Guilherme Salgado 2006-05-22:
 # For now we only check if the postcode is valid ascii, as we haven't
 # heard back from MediaMotion on the length constraint.
 def validate_shipit_postcode(value):
@@ -172,8 +172,8 @@ def validate_shipit_postcode(value):
     return True
 
 
-# XXX matsubara 2006-03-15 bug=35077: 
-# The validations functions that deals with URLs should be in 
+# XXX matsubara 2006-03-15 bug=35077:
+# The validations functions that deals with URLs should be in
 # validators/ and we should have them as separete constraints in trusted.sql.
 def validate_url(url, valid_schemes):
     """Returns a boolean stating whether 'url' is a valid URL.
@@ -322,7 +322,7 @@ def validate_new_team_email(email):
 def validate_new_person_email(email):
     """Check that the given email is valid and not registered to
     another launchpad account.
-    
+
     This validator is supposed to be used only when creating a new profile
     using the /people/+newperson page, as the message will say clearly to the
     user that the profile he's trying to create already exists, so there's no
@@ -388,7 +388,7 @@ def validate_distrotask(bug, distribution, sourcepackagename=None):
         raise LaunchpadValidationError(_(
                 'This bug has already been reported on %s (%s).') % (
                 sourcepackagename.name, distribution.name))
-    elif (sourcepackagename is None and 
+    elif (sourcepackagename is None and
           bug.getBugTask(distribution) is not None):
         # Don't allow two distribution tasks with no source package.
         raise LaunchpadValidationError(_(
@@ -416,7 +416,7 @@ def valid_upstreamtask(bug, product):
         raise WidgetsError(errors)
 
 
-# XXX Guilherme Salgado 2006-04-25: 
+# XXX Guilherme Salgado 2006-04-25:
 # Not sure if this is the best place for this, but it'll sit here for
 # now, as it's not used anywhere else.
 _countries_where_postcode_is_required = """
@@ -524,7 +524,7 @@ _countries_where_postcode_is_required = """
     ZM Zambia
     """
 country_codes_where_postcode_is_required = set(
-    line.strip().split(' ', 1)[0] 
+    line.strip().split(' ', 1)[0]
     for line in _countries_where_postcode_is_required.strip().splitlines())
 
 
