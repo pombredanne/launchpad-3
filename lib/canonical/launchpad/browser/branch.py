@@ -209,6 +209,12 @@ class BranchView(LaunchpadView):
         """Is the branch author set and equal to the registrant?"""
         return self.context.author == self.context.owner
 
+    @property
+    def codebrowse_url(self):
+        """Return the link to codebrowse for this branch."""
+        return config.launchpad.codebrowse_root + self.context.unique_name
+
+
     def supermirror_url(self):
         """Public URL of the branch on the Supermirror."""
         # Private branches are not available through anonymous http,

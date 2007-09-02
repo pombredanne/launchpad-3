@@ -6,6 +6,16 @@
       i18n:domain="launchpad">
 <body>
 
+<style metal:fill-slot="head_epilogue">
+div.revision {
+  padding-bottom: 1em;
+}
+
+div.revision p {
+  margin-left: 2.5em;
+}
+</style>
+
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
@@ -262,9 +272,9 @@
     </div>
   </tal:landing-candidates>
 
-  <h2 style="clear: both;">Recent revisions</h2>
-
   <div id="recent-revisions">
+  <h2 style="clear: both">Recent revisions</h2>
+
   <p tal:condition="not:context/revision_count">
     <tal:not-mirrored condition="not:context/last_mirrored">
       <tal:mirror condition="context/url">
@@ -285,10 +295,21 @@
   </p>
 
   <tal:history-available condition="context/revision_count">
-  <ol>
-    <li tal:repeat="rev_no context/latest_revisions"
-        tal:attributes="value rev_no/sequence; id string:rev${rev_no/sequence}">
+    <div class="revision"
+         tal:repeat="rev_no context/latest_revisions"
+         tal:attributes="id string:rev${rev_no/sequence}">
       <div>
+        <tal:comment condition="nothing">
+          The end of the anchor and the start of the next tal expression
+          has no whitespace between the elements as we do not want any
+          space between the number and the fullstop.
+        </tal:comment>
+        <a tal:attributes="href string:${view/codebrowse_url}/revision/${rev_no/sequence}"
+           tal:content="rev_no/sequence"
+           tal:condition="context/code_is_browseable">
+          1
+        </a><tal:revno condition="not: context/code_is_browseable"
+                       replace="rev_no/sequence">1</tal:revno>.
         By
         <strong>
           <tal:not-anonymous condition="view/user">
@@ -312,8 +333,7 @@
       <p tal:replace="structure rev_no/revision/log_body/fmt:text-to-html">
         The revision commit message.
       </p>
-    </li>
-  </ol>
+    </div>
   </tal:history-available>
   </div>
 
