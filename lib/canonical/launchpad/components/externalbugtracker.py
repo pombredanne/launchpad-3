@@ -1094,7 +1094,7 @@ class Python(Roundup):
     # Python bugtracker statuses come in two parts: status and
     # resolution. Both of these are integer values. We can look them up
     # in the form status_map[status][resolution]
-    status_map {
+    status_map = {
         # Open issues (status=1). We also use this as a fallback for
         # statuses 2 and 3, for which the mappings are different only in
         # a few instances.
@@ -1112,7 +1112,7 @@ class Python(Roundup):
             10: BugTaskStatus.WONTFIX,     # Resolution: wontfix
             11: BugTaskStatus.INVALID,     # Resolution: works for me
             UNKNOWN_REMOTE_STATUS: BugTaskStatus.UNKNOWN
-        }
+        },
 
         # Closed issues (status=2)
         2: {
@@ -1120,13 +1120,13 @@ class Python(Roundup):
             1: BugTaskStatus.FIXCOMMITTED, # Resolution: accepted
             3: BugTaskStatus.FIXRELEASED,  # Resolution: fixed
             7: BugTaskStatus.WONTFIX,      # Resolution: postponed
-        }
+        },
 
         # Pending issues (status=3)
         3: {
             None: BugTaskStatus.INCOMPLETE,# No resolution
             7: BugTaskStatus.WONTFIX,      # Resolution: postponed
-        }
+        },
     }
 
     def getRemoteStatus(self, bug_id):
@@ -1151,7 +1151,7 @@ class Python(Roundup):
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`.
 
-        :remote_status: A bugs.python.org status in the form
+        :remote_status: A bugs.python.org status string in the form
             '<status>:<resolution>', where status is an integer and
             resolution is an integer or None. An AssertionError will be
             raised if these conditions are not met.
@@ -1167,9 +1167,9 @@ class Python(Roundup):
             resolution = int(resolution)
         elif resolution == 'None':
             resolution = None
-        else
+        else:
             raise AssertionError(
-                "The resolution must be an integer or 'None'."
+                "The resolution must be an integer or 'None'.")
 
         # We look the status/resolution mapping up first in the status's
         # dict then in the dict for status #1 (open) if we can't find
