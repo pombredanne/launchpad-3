@@ -35,7 +35,7 @@ class PGSessionBase:
 
 class PGSessionDataContainer(PGSessionBase):
     """An ISessionDataContainer that stores data in PostgreSQL
-    
+
     PostgreSQL Schema:
 
     CREATE TABLE SessionData (
@@ -124,7 +124,7 @@ class PGSessionData(PGSessionBase):
 
     def __setitem__(self, product_id, session_pkg_data):
         """See zope.app.session.interfaces.ISessionData
-        
+
         This is a noop in the RDBMS implementation.
         """
         pass
@@ -185,7 +185,7 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
 
     def __delitem__(self, key):
         """Delete an item.
-        
+
         Note that this will never fail in order to avoid
         race conditions in code using the session machinery
         """

@@ -1387,7 +1387,7 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         """Add a References header."""
         headers = QuestionNotification.getHeaders(self)
         if self.new_message:
-            # XXX flacoste 2007-02-02 bug=83846: 
+            # XXX flacoste 2007-02-02 bug=83846:
             # The first message cannot contain a References
             # because we don't create a Message instance for the
             # question description, so we don't have a Message-ID.
@@ -1829,7 +1829,7 @@ def notify_specification_subscription_modified(specsub, event):
     else:
         specsub_type = 'Participation non-essential'
     mailwrapper = MailWrapper(width=72)
-    body = mailwrapper.format(        
+    body = mailwrapper.format(
         'Your subscription to the blueprint '
         '%(blueprint_name)s - %(blueprint_title)s '
         'has changed to [%(specsub_type)s].\n\n'
