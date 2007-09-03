@@ -1086,4 +1086,43 @@ class Python(Roundup):
         "issue?@action=export_csv&@columns=title,id,activity,status,resolution"
         "&@sort=activity&@group=priority&@pagesize=50&@startwith=0")
 
+    # Python bugtracker statuses come in two parts: status and
+    # resolution. Both of these are integer values. We can look them up
+    # in the form status_map[status][resolution]
+    status_map {
+        # Resolution mappings that are common to > 1 status. These may
+        # be overridden for individual statuses.
+        'common': {
+            1: BugTaskStatus.CONFIRMED,    # Resolution: accepted
+            2: BugTaskStatus.CONFIRMED,    # Resolution: duplicate
+            3: BugTaskStatus.FIXCOMMITTED, # Resolution: fixed
+            4: BugTaskStatus.INVALID,      # Resolution: invalid
+            7: BugTaskStatus.CONFIRMED,    # Resolution: postponed
+            8: BugTaskStatus.WONTFIX,      # Resolution: rejected
+            9: BugTaskStatus.CONFIRMED,    # Resolution: remind
+            10: BugTaskStatus.WONTFIX,     # Resolution: wontfix
+            11: BugTaskStatus.INVALID,     # Resolution: works for me
+        }
+
+        # Open issues (status=1)
+        1: {
+            None: BugTaskStatus.NEW,
+            5: BugTaskStatus.CONFIRMED,    # Resolution: later
+            6: BugTaskStatus.INVALID,      # Resolution: out-of-date
+        }
+
+        # Closed issues (status=2)
+        2: {
+            None: BugTaskStatus.WONTFIX,   # No resolution
+            1: BugTaskStatus.FIXCOMMITTED, # Resolution: accepted
+            3: BugTaskStatus.FIXRELEASED,  # Resolution: fixed
+            7: BugTaskStatus.WONTFIX,      # Resolution: postponed
+        }
+
+        # Pending issues (status=3)
+        3: {
+            None: BugTaskStatus.INCOMPLETE,# No resolution
+            7: BugTaskStatus.WONTFIX,      # Resolution: postponed
+        }
+    }
 
