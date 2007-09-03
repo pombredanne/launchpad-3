@@ -30,7 +30,7 @@ class TestPgSession(unittest.TestCase):
 
     def setUp(self):
         self.sdc = PGSessionDataContainer()
-        
+
     def tearDown(self):
         del self.sdc
 
@@ -67,7 +67,7 @@ class TestPgSession(unittest.TestCase):
         # Create a session
         self.sdc[client_id1] = 'whatever'
         self.sdc[client_id2] = 'whatever'
-        
+
         # Store some session data to ensure we can clean up sessions
         # with data.
         spd = self.sdc[client_id1][product_id]
@@ -79,7 +79,7 @@ class TestPgSession(unittest.TestCase):
         self.failUnlessEqual(client_ids, [client_id1, client_id2])
         cursor.execute("SELECT COUNT(*) FROM SessionPkgData")
         self.failUnlessEqual(cursor.fetchone()[0], 1)
-        
+
         # Push the session into the past. There is fuzzyness involved
         # in when the sweeping actually happens (to minimize concurrency
         # issues), so we just push it into the far past for testing.
@@ -169,7 +169,7 @@ class TestPgSession(unittest.TestCase):
         self.assertRaises(KeyError, session1a_dupe.__getitem__, 'key1')
         self.failUnlessEqual(session1a_dupe['key2'], 'new value2')
         self.failUnlessEqual(session1a_dupe.keys(), ['key2'])
-        
+
 
 def test_suite():
     suite = unittest.TestSuite()

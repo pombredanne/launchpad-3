@@ -7,7 +7,7 @@ __all__ = [
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey 
+from sqlobject import ForeignKey
 
 from canonical.launchpad.interfaces import IDevelopmentManifest
 

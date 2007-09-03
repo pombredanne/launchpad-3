@@ -36,7 +36,7 @@
             />
     </browser:pages>
 
-    <browser:page 
+    <browser:page
         name="+download"
         for="canonical.launchpad.interfaces.ICodeOfConduct"
         class="canonical.launchpad.browser.CodeOfConductDownloadView"

@@ -21,6 +21,17 @@ The attachment is now visible on the bug page.
     ...     print li.a.renderContents()
     Great deal
 
+There will also be a comment with a link to the attachment in its body.
+
+    >>> print_comments(user_browser.contents)
+    <p>This would be a real killer feature...</p>
+    ----------------------------------------
+    <p>Oddly enough the bug system seems only capable...</p>
+    ----------------------------------------
+    Attachment: Great deal
+    <BLANKLINE>
+    ----------------------------------------
+
 If we go to the attachment edit page, there's an option to delete the
 attachment.
 
@@ -46,3 +57,12 @@ arent' any other attachments, the portlet won't show up at all.
 
     >>> print find_portlet(user_browser.contents, 'Bug attachments')
     None
+
+Since the attachment has been deleted, the comment referencing it will no
+longer be visible.
+
+    >>> print_comments(user_browser.contents)
+    <p>This would be a real killer feature...</p>
+    ----------------------------------------
+    <p>Oddly enough the bug system seems only capable...</p>
+    ----------------------------------------

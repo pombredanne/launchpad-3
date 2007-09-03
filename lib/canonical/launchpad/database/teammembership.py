@@ -461,12 +461,12 @@ def _fillTeamParticipation(member, team):
     """Add relevant entries in TeamParticipation for given member and team.
 
     Add a tuple "member, team" in TeamParticipation for the given team and all
-    of its superteams. More information on how to use the TeamParticipation 
+    of its superteams. More information on how to use the TeamParticipation
     table can be found in the TeamParticipationUsage spec.
     """
     members = [member]
     if member.isTeam():
-        # The given member is, in fact, a team, and in this case we must 
+        # The given member is, in fact, a team, and in this case we must
         # add all of its members to the given team and to its superteams.
         members.extend(member.allmembers)
 

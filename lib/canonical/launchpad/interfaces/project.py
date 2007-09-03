@@ -51,7 +51,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     name = ProjectNameField(
         title=_('Name'),
         required=True,
-        description=_("""A unique name, used in URLs, identifying the project 
+        description=_("""A unique name, used in URLs, identifying the project
             group.  All lowercase, no special characters.
             Examples: apache, mozilla, gimp."""),
         constraint=name_validator)
@@ -75,7 +75,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     description = Text(
         title=_('Description'),
         description=_("""A detailed description of the project group,
-            including details like when it was founded, 
+            including details like when it was founded,
             how many contributors there are,
             and how it is organised and coordinated."""))
 

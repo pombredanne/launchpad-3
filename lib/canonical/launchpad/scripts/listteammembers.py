@@ -18,7 +18,7 @@ OUTPUT_TEMPLATES = {
    }
 
 
-class NoSuchTeamError(Exception): 
+class NoSuchTeamError(Exception):
     """Used if non-existent team name is specified."""
 
 
@@ -36,7 +36,7 @@ def process_team(teamname, display_option='simple'):
             email = member.preferredemail.email
         else:
             email = '--none--'
-        if template == 'email':
+        if display_option == 'email':
             for validatedemail in member.validatedemails:
                 params = dict(
                     email=validatedemail.email,
@@ -50,7 +50,7 @@ def process_team(teamname, display_option='simple'):
                     ubuntite = "yes"
                     break
         params = dict(
-            email=email, 
+            email=email,
             name=member.name,
             teamname=teamname,
             id=member.id,

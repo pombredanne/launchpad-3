@@ -25,7 +25,7 @@
     />
 
   <browser:pages
-    for="canonical.launchpad.database.BinaryPackageRelease" 
+    for="canonical.launchpad.database.BinaryPackageRelease"
     class="canonical.launchpad.browser.BinaryPackageView"
     facet="overview"
     permission="zope.Public">

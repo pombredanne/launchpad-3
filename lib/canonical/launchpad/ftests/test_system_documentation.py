@@ -15,7 +15,7 @@ from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.testing.doctest import DocFileSuite
 
-from canonical.authserver.ftests.harness import AuthserverTacTestSetup
+from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.config import config
 from canonical.database.sqlbase import (
     flush_database_updates, READ_COMMITTED_ISOLATION)
