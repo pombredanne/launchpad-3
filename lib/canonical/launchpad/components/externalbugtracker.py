@@ -894,7 +894,11 @@ class Trac(ExternalBugTracker):
         return bugs
 
     def initializeRemoteBugDB(self, bug_ids):
-        """Do any initialization before each bug watch is updated.
+        """See `ExternalBugTracker`.
+
+        This method overrides ExternalBugTracker.initializeRemoteBugDB()
+        so that the remote Trac instance's support for single ticket
+        exports can be taken into account.
 
         If the URL specified for the bugtracker is not valid a
         BugTrackerConnectError will be raised.
@@ -916,6 +920,7 @@ class Trac(ExternalBugTracker):
         # For large lists of bug ids we retrieve bug statuses as a batch from
         # the remote bug tracker so as to avoid effectively DOSing it.
         else:
+            self.bugs = self.getRemoteBugBatch(bug_ids)
 
     def getRemoteStatus(self, bug_id):
         """Return the remote status for the given bug id.
