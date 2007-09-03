@@ -27,9 +27,8 @@ It should not be possible to add the same distrotask again.
     'http://bugs.launchpad.dev/ubuntu/+bug/6/+distrotask'
     >>> print get_feedback_messages(browser)
     [u'There is 1 error.',
-     u'This bug is already open on Ubuntu or packages in Ubuntu.
-       Please specify an affected package in which the bug has not yet
-       been reported.']
+     u'This bug is already on Ubuntu. Please specify an affected package 
+       in which the bug has not yet been reported.']
 
 You also can't add another task on a distro source package, when there's
 already a distro task open. (Instead, you should target the existing

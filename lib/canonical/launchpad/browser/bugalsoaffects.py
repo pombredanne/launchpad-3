@@ -48,10 +48,13 @@ class BugAlsoAffectsProductMetaView(LaunchpadView):
 
     def initialize(self):
         view = self.first_step_view(self.context, self.request)
-        # The first time this view is rendered the request won't contain a
-        # visited_steps key, but we need it to be in the HTML (in order to be
-        # submitted together with the rest of the data), so we inject it
-        # in the request before setupWidgets is called (through initialize).
+        # In fact we should be calling injectStepNameInRequest after
+        # initialize() in both cases, otherwise the form will be processed
+        # when it's first rendered, thus showing warning/error messages before
+        # the user submits it. For the first step, though, this won't happen
+        # because the request won't contain the action name, but it also won't
+        # contain the visited_steps key and thus the HTML won't contain the
+        # hidden widget unless I inject before calling initialize().
         view.injectStepNameInRequest()
         view.initialize()
         while view.next_view is not None:
@@ -466,7 +469,6 @@ class BugTrackerCreationStep(AlsoAffectsStep):
     """
 
     custom_widget('bug_url', StrippedTextWidget, displayWidth=50)
-
     step_name = "bugtracker_creation"
     main_action_label = u'Register Bug Tracker and Add to Bug Report'
     _next_view = None

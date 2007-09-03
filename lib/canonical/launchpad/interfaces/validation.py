@@ -370,10 +370,9 @@ def validate_new_distrotask(bug, distribution, sourcepackagename=None):
 
         if len(distribution_tasks_for_bug) > 0:
             raise LaunchpadValidationError(_(
-                    'This bug is already open on %s or packages in %s. '
-                    'Please specify an affected package in which the bug '
-                    'has not yet been reported.') % (
-                    distribution.displayname, distribution.displayname))
+                    'This bug is already on %s. Please specify an affected '
+                    'package in which the bug has not yet been reported.')
+                    % distribution.displayname)
     validate_distrotask(bug, distribution, sourcepackagename)
 
 
