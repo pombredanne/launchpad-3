@@ -1005,6 +1005,23 @@ class Roundup(ExternalBugTracker):
         # requesting a URL that Roundup can't handle.
         self.baseurl = baseurl.rstrip('/')
 
+    def _getBug(self, bug_id):
+        """Return the bug with the ID bug_id from the internal bug list.
+
+        BugNotFound will be raised if the bug does not exist.
+        InvalidBugId will be raised if bug_id is not of a valid format.
+        """
+        try:
+            bug_id = int(bug_id)
+        except ValueError:
+            raise InvalidBugId(
+                "bug_id must be convertable an integer: %s" % str(bug_id))
+
+        try:
+            return self.bugs[bug_id]
+        except KeyError:
+            raise BugNotFound(bug_id)
+
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
         if remote_status == UNKNOWN_REMOTE_STATUS:
@@ -1047,22 +1064,12 @@ class Roundup(ExternalBugTracker):
 
     def getRemoteStatus(self, bug_id):
         """See `ExternalBugTracker`."""
+        remote_bug = self._getBug(bug_id)
         try:
-            bug_id = int(bug_id)
-        except ValueError:
-            raise InvalidBugId(
-                "bug_id must be convertable an integer: %s" % str(bug_id))
-
-        try:
-            remote_bug = self.bugs[bug_id]
+            return remote_bug['status']
         except KeyError:
-            raise BugNotFound(bug_id)
-        else:
-            try:
-                return remote_bug['status']
-            except KeyError:
-                raise UnparseableBugData(
-                    "Remote bug %s does not define a status.")
+            raise UnparseableBugData(
+                "Remote bug %s does not define a status.")
 
 
 class Python(Roundup):
@@ -1088,25 +1095,23 @@ class Python(Roundup):
     # resolution. Both of these are integer values. We can look them up
     # in the form status_map[status][resolution]
     status_map {
-        # Resolution mappings that are common to > 1 status. These may
-        # be overridden for individual statuses.
-        'common': {
+        # Open issues (status=1). We also use this as a fallback for
+        # statuses 2 and 3, for which the mappings are different only in
+        # a few instances.
+        1 : {
+            None: BugTaskStatus.NEW,       # No resolution
             1: BugTaskStatus.CONFIRMED,    # Resolution: accepted
             2: BugTaskStatus.CONFIRMED,    # Resolution: duplicate
             3: BugTaskStatus.FIXCOMMITTED, # Resolution: fixed
             4: BugTaskStatus.INVALID,      # Resolution: invalid
+            5: BugTaskStatus.CONFIRMED,    # Resolution: later
+            6: BugTaskStatus.INVALID,      # Resolution: out-of-date
             7: BugTaskStatus.CONFIRMED,    # Resolution: postponed
             8: BugTaskStatus.WONTFIX,      # Resolution: rejected
             9: BugTaskStatus.CONFIRMED,    # Resolution: remind
             10: BugTaskStatus.WONTFIX,     # Resolution: wontfix
             11: BugTaskStatus.INVALID,     # Resolution: works for me
-        }
-
-        # Open issues (status=1)
-        1: {
-            None: BugTaskStatus.NEW,
-            5: BugTaskStatus.CONFIRMED,    # Resolution: later
-            6: BugTaskStatus.INVALID,      # Resolution: out-of-date
+            UNKNOWN_REMOTE_STATUS: BugTaskStatus.UNKNOWN
         }
 
         # Closed issues (status=2)
@@ -1123,4 +1128,57 @@ class Python(Roundup):
             7: BugTaskStatus.WONTFIX,      # Resolution: postponed
         }
     }
+
+    def getRemoteStatus(self, bug_id):
+        """See `ExternalBugTracker`."""
+        remote_bug = self._getBug(bug_id)
+
+        # A remote bug must define a status and a resolution, even if
+        # that resolution is 'None', otherwise we can't accurately
+        # assign a BugTaskStatus to it.
+        try:
+            status = remote_bug['status']
+            resolution = remote_bug['resolution']
+        except KeyError:
+            raise UnparseableBugData(
+                "Remote bug %s does not define both a status and a "
+                "resolution." % bug_id)
+
+        # Remote status is stored as a string, so for sanity's sake we
+        # return an easily-parseable string.
+        return '%s:%s' % (status, resolution)
+
+    def convertRemoteStatus(self, remote_status):
+        """See `IExternalBugTracker`.
+
+        :remote_status: A bugs.python.org status in the form
+            '<status>:<resolution>', where status is an integer and
+            resolution is an integer or None. An AssertionError will be
+            raised if these conditions are not met.
+        """
+        status, resolution = remote_status.split(':')
+
+        try:
+            status = int(status)
+        except ValueError:
+            raise AssertionError("The remote status must be an integer.")
+
+        if resolution.isdigit():
+            resolution = int(resolution)
+        elif resolution == 'None':
+            resolution = None
+        else
+            raise AssertionError(
+                "The resolution must be an integer or 'None'."
+
+        # We look the status/resolution mapping up first in the status's
+        # dict then in the dict for status #1 (open) if we can't find
+        # it.
+        if resolution in self.status_map[status]:
+            return self.status_map[status][resolution]
+        elif resolution in self.status_map[1]:
+            return self.status_map[1][resolution]
+        else:
+            log.warn("Unknown status '%s'" % remote_status)
+            return BugTaskStatus.UNKNOWN
 
