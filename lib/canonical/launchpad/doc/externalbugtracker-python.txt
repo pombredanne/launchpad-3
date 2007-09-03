@@ -1,7 +1,7 @@
 = ExternalBugTracker: Python =
 
 This covers the implementation of the ExternalBugTracker class for Python
-bugtracker bugwatches.
+bugwatches.
 
 
 == Basics ==
@@ -13,14 +13,14 @@ implements IExternalBugTracker.
     >>> from canonical.launchpad.components.externalbugtracker import Python
     >>> from canonical.launchpad.interfaces.externalbugtracker import (
     ...     IExternalBugtracker)
-    >>> from zope.interface.verify import verifyObject
-    >>> verifyObject(IExternalBugtracker, Python('http://python.foo.com'))
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(IExternalBugtracker, Python('http://bugs.foo.com'))
     True
 
 
 == Status Conversion ==
 
-The basic Python bug statuses (i.e. those available by default in new Python instances) map to Launchpad bug statuses. Roundup.convertRemoteStatus() handles the conversion.
+The basic Python bug statuses (i.e. those available by default in new Python instances) map to Launchpad bug statuses. Python.convertRemoteStatus() handles the conversion.
 
     >>> python = Python('http://spam.eggs')
     >>> python.convertRemoteStatus(1).title
@@ -66,17 +66,12 @@ We use a test-oriented implementation for the purposes of these tests, which
 overrides ExternalBugTracker.urlopen() so that we don't have to rely on a
 working network connection.
 
-    >>> from canonical.launchpad.ftests.externalbugtracker import TestPython
-    >>> python = TestPython('http://test.roundup')
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestPython, print_bugwatches)
+    >>> python = TestPython('http://test.python')
     >>> python.initializeRemoteBugDB([1])
     >>> sorted(python.bugs.keys())
     [1]
-
-If we initialise with a different set of keys we overwrite the first set:
-
-    >>> python.initializeRemoteBugDB([6,7,8,9,10,11,12])
-    >>> sorted(python.bugs.keys())
-    [6, 7, 8, 9, 10, 11, 12]
 
 
 == Export Methods ==
@@ -134,31 +129,22 @@ First, we create some bug watches to test with:
 
 Collect the Example.com watches:
 
-    >>> for bug_watch in example_bug_tracker.watches:
-    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
-    1: None
+    >>> print_bugwatches(example_bug_tracker.watches)
+    Remote bug 1: None
 
 And have a Python instance process them:
 
     >>> python = TestPython(example_bug_tracker.baseurl)
     >>> python.updateBugWatches(example_bug_tracker.watches)
-    >>> for bug_watch in example_bug_tracker.watches:
-    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
-    1: 1
+    >>> print_bugwatches(example_bug_tracker.watches)
+    Remote bug 1: 1
 
 We'll add some more watches now.
 
     >>> from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
-
-    >>> bug_watch_set = getUtility(IBugWatchSet)
-    >>> bug_watches = dict(
-    ...     (int(bug_watch.remotebug), bug_watch)
-    ...     for bug_watch in example_bug_tracker.watches)
-
-    >>> for remote_bug, bug_watch in bug_watches.items():
-    ...     print "%s: %s" % (remote_bug, 
-    ...          python.convertRemoteStatus(bug_watch.remotestatus))
-    1: New
+    >>> print_bugwatches(example_bug_tracker.watches,
+    ...     python.convertRemoteStatus)
+    Remote bug 1: New
 
     >>> remote_bugs = [
     ...     (2, 'Confirmed'),
@@ -173,21 +159,19 @@ We'll add some more watches now.
     ...     (14, 'In Progress')
     ... ]
 
+    >>> bug_watch_set = getUtility(IBugWatchSet)
     >>> for remote_bug_id, remote_status in remote_bugs:
     ...     bug_watch = bug_watch_set.createBugWatch(
     ...         bug=example_bug, owner=sample_person,
     ...         bugtracker=example_bug_tracker,
     ...         remotebug=str(remote_bug_id))
-    ...     bug_watches[remote_bug_id] = bug_watch
 
     >>> python.trace_calls = True
     >>> python.updateBugWatches(example_bug_tracker.watches)
     CALLED urlopen(u'http://bugs.example.com/issue?...@startwith=0')
 
-    >>> for remote_bug_id in sorted(bug_watches.keys()):
-    ...     remote_status = bug_watches[remote_bug_id].remotestatus
-    ...     print 'Remote bug %d: %s' % (remote_bug_id,
-    ...         python.convertRemoteStatus(remote_status))
+    >>> print_bugwatches(example_bug_tracker.watches,
+    ...     python.convertRemoteStatus)
     Remote bug 1: New
     Remote bug 2: Confirmed
     Remote bug 3: Incomplete
@@ -199,27 +183,4 @@ We'll add some more watches now.
     Remote bug 12: Incomplete
     Remote bug 13: Incomplete
     Remote bug 14: In Progress
-
-updateBugWatches() updates the lastchecked attribute on the watches, so
-now no bug watches are in need of updating:
-
-    >>> flush_database_updates()
-    >>> example_bug_tracker.getBugWatchesNeedingUpdate(23).count()
-    0
-
-If the status isn't different, the lastchanged attribute doesn't get
-updated. If we set a bug watch's lastchanged timestamp manually and call
-update, lastchanged shouldn't be affected because the remote status of the bug
-watch hasn't altered:
-
-    >>> import pytz
-    >>> from datetime import datetime, timedelta
-    >>> bug_watch = example_bug_tracker.watches[0]
-    >>> now = datetime.now(pytz.timezone('UTC'))
-    >>> bug_watch.lastchanged = now - timedelta(weeks=2)
-    >>> old_last_changed = bug_watch.lastchanged
-    >>> python.trace_calls = False
-    >>> python.updateBugWatches(example_bug_tracker.watches)
-    >>> bug_watch.lastchanged == old_last_changed
-    True
 
