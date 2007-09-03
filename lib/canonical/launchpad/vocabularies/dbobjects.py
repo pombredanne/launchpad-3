@@ -84,7 +84,7 @@ from canonical.launchpad.database import (
 from canonical.launchpad.interfaces import (
     IBugTask, IDistribution, IDistributionSourcePackage,
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IFAQ, IFAQTarget,
-    IEmailAddressSet, ILaunchBag, IMilestoneSet, IPerson, IPersonSet,
+    IEmailAddressSet, ILanguage, ILaunchBag, IMilestoneSet, IPerson, IPersonSet,
     IPillarName, IProduct, IProject, ISourcePackage, ISpecification, ITeam,
     IUpstreamBugTask, EmailAddressStatus)
 
@@ -304,7 +304,8 @@ class TranslatableLanguageVocabulary(LanguageVocabulary):
 
     def __contains__(self, language):
         """See `IVocabulary`."""
-        if language.code == 'en':
+        if ((ILanguage.providedBy(language) and language.code == 'en')
+            or (u'en' == language)):
             return False
         return super(
             TranslatableLanguageVocabulary, self).__contains__(language)

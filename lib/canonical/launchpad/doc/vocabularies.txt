@@ -676,6 +676,8 @@ return a LookupError when it is passed the English.
     >>> english = language_set['en']
     >>> english in translatable_language_vocabulary
     False
+    >>> u'en' in translatable_language_vocabulary
+    False
 
     >>> translatable_language_vocabulary.getTerm(english)
     Traceback (most recent call last):
