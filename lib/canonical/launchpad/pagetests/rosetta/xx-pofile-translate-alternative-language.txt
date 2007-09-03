@@ -1,47 +1,95 @@
 = PO file alternative language selection =
 
-We can see that the alternative language selection is working:
+The translation forms allow the user to select an alternative language.  The
+form will suggest translations from this alternative language as well as those
+in the form's main language.
 
-Let's identify us first.
+An anonymous user is offered all available languages except English for
+alternative suggestions.  We do not offer suggestions from standard English
+since that is the one language we always translate from, never to.
+
+    >>> def get_alternative_languages_widget(browser):
+    ...     """Check and return alternative languages widget offered on page.
+    ...
+    ...     If a url is given, it will be opened in the browser.  If not, the
+    ...     current page is used.  This function also verifies that English
+    ...     is never offered as an alternative.  We translate from English,
+    ...     but never to English (except in variants like 'en_AU').
+    ...     """
+    ...     if not browser.url.endswith('+translate'):
+    ...         raise AssertionError("Not at +translate page.")
+    ...     try:
+    ...         browser.getControl('English (en)', index=0).selected
+    ...         raise AssertionError(
+    ...             "Looking up English among alternative languages "
+    ...             "should have failed, but didn't.")
+    ...     except LookupError:
+    ...         pass
+    ...
+    ...     return browser.getControl(
+    ...         name='field.alternative_language')
+
+    >>> translate_page = (
+    ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+    ...     '+pots/evolution-2.2/es/+translate')
+    >>> anon_browser.open(translate_page)
+    >>> print anon_browser.title
+    Translating evolution-2.2 in Ubuntu Hoary package "evolution" into Spanish
+    >>> get_alternative_languages_widget(anon_browser).displayOptions[:4]
+    ['(no value)', 'Abkhazian (ab)', 'Achinese (ace)', 'Acoli (ach)']
+
+The same goes for a user who has no preferred languages set.
+
+    >>> user_browser.addHeader(
+    ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> user_browser.open(translate_page)
+    >>> get_alternative_languages_widget(user_browser).displayOptions[:4]
+    ['(no value)', 'Abkhazian (ab)', 'Achinese (ace)', 'Acoli (ach)']
+
+Carlos, however, has configured his preferred languages.  Besides English he
+ speaks Spanish and Catalan.
 
     >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
 
-And open the translation form:
+When Carlos looks at the same translation page, only Spanish and Catalan are
+offered.  No alternative language is selected initially.
 
-    >>> browser.open(
-    ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
-    ...     '+pots/evolution-2.2/es/+translate')
-    >>> print browser.title
-    Translating evolution-2.2 in Ubuntu Hoary package "evolution" into Spanish
+    >>> browser.open(translate_page)
+    >>> dropdown = get_alternative_languages_widget(browser)
+    >>> dropdown.displayOptions
+    ['(no value)', 'Catalan (ca)', 'Spanish (es)']
 
-The 'Make suggestions from' control lists the translatable languages.
-Japanese is a translatable language.
-    
-    >>> browser.getControl(
-    ...     name='field.alternative_language').displayOptions[:4]
-    ['(no value)', 'Abkhazian (ab)', 'Achinese (ace)', 'Acoli (ach)']
-
-    >>> browser.getControl(name='field.alternative_language').value
+    >>> dropdown.value
     ['']
 
-    >>> browser.getControl('Japanese (ja)').selected = True
+
+=== Suggestions ===
+
+Carlos also visits the Catalan equivalent of the same translation page, using
+Spanish as an alternative language.
+
+    >>> import re
+    >>> browser.open(re.sub('/es/', '/ca/', translate_page))
+    >>> browser.getControl('Spanish (es)').selected = True
     >>> browser.getControl(name='select_alternate_language').click()
-    >>> print browser.title
-    Translating evolution-2.2 in Ubuntu Hoary package "evolution" into Spanish
 
-    >>> browser.getControl(name='field.alternative_language', index=0).value
-    ['ja']
+The Spanish translations now show up as suggestions.  For example, where
+"cards" might translate to Catalan as "targetas," the Spanish equivalent is
+"tarjetas."
 
-English is not among the items in the 'Make suggestions from' list.
-The English templates are hidden in the UI because it is not a
-translatable language; the source messages are stored in English.
+    >>> extract_text(find_main_content(browser.contents))
+    u'Template "evolution-2.2" in Ubuntu Hoary package "evolution"...
+    ...cards...
+    ...Current...Catalan:...(no translation yet)...tarjetas...
+    ...'
 
-    >>> browser.getControl('English (en)', index=0).selected
-    Traceback (most recent call last):
-    ...
-    LookupError: label 'English (en)'
+    tarjetas Spanish volution-2.2 in Ubuntu Hoary package "evolution"
+    ...'
 
-This page also allows the user to filter the translatable strings to
+
+== Filtering & Navigation ==
+
+The translate page also allows the user to filter the translatable strings to
 show only the strings he is interested in.
 
     >>> browser.getControl('Show').displayOptions
@@ -53,10 +101,13 @@ to see whether the final url is correct. We don't need to change any
 translation, just a submitting is enough. We can also set the filter
 to display only the untranslated strings.
 
+    >>> browser.open(translate_page)
+    >>> browser.getControl('Catalan (ca)').selected = True
+    >>> browser.getControl(name='select_alternate_language').click()
     >>> browser.getControl('untranslated').selected = True
     >>> browser.getControl('Filter').click()
     >>> browser.url
-    '...+translate?field.alternative_language=ja...show=untranslated'
+    '...+translate?field.alternative_language=ca...show=untranslated'
 
 The navigation indicates are seeing only the first page of results.
 
@@ -77,7 +128,7 @@ UnexpectedFormData exception:
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
     ...     '+pots/evolution-2.2/es/+translate'
-    ...     '?field.alternative_language=ja&field.alternative_language=aj')
+    ...     '?field.alternative_language=ca&field.alternative_language=aj')
     Traceback (most recent call last):
     ...
     UnexpectedFormData: You specified...
