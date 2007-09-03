@@ -696,14 +696,19 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     @invariant
     def defaultRenewalPeriodIsRequiredForSomeTeams(person):
-        """Teams for which memberships can be renewed automatically or by
-        the members themselves must specify a default renewal period.
+        """Teams may specify a default renewal period.
+        
+        The team renewal period cannot be less than 1 day, and when the
+        renewal policy is is On Demand or Automatic, it cannot be None.
         """
+        if person.teamowner is None:
+            return
+        renewal_period = person.defaultrenewalperiod
         automatic, ondemand = [TeamMembershipRenewalPolicy.AUTOMATIC,
                                TeamMembershipRenewalPolicy.ONDEMAND]
-        if (person.teamowner is not None
-                and person.renewal_policy in [automatic, ondemand]
-                and person.defaultrenewalperiod <= 0):
+        cannot_be_none = person.renewal_policy in [automatic, ondemand]
+        if ((renewal_period is None and cannot_be_none)
+            or (renewal_period is not None and renewal_period <= 0)):
             raise Invalid(
                 'You must specify a default renewal period greater than 0.')
 
