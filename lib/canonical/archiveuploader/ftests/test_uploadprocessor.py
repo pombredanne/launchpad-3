@@ -522,6 +522,26 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Check that it was successful.
         self._checkCommercialUploadEmail()
 
+    def testCommercialUploadToReleasePocketInStableDistroseries(self):
+        """Commercial package upload to release pocket in stable distroseries.
+
+        Uploading a commercial package to the release pocket in a stable
+        distroseries is allowed.
+        """
+        self.setupBreezy()
+        self.breezy.status = DistroSeriesStatus.CURRENT
+        self.layer.txn.commit()
+        self.options.context = 'insecure'
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload a package for Breezy.
+        upload_dir = self.queueUpload("foocomm_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check that it was successful.
+        self._checkCommercialUploadEmail()
+
     def _uploadCommercialToNonReleasePocketAndCheck(self):
         """Upload commercial package to non-release pocket.
 
