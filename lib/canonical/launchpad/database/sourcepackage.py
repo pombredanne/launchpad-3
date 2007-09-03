@@ -51,7 +51,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
     def getTargetTypes(self):
         """See `QuestionTargetMixin`.
-        
+
         Defines distribution and sourcepackagename as this object's
         distribution and sourcepackagename.
         """
@@ -60,7 +60,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
     def questionIsForTarget(self, question):
         """See `QuestionTargetMixin`.
-        
+
         Return True when the question's distribution and sourcepackagename
         are this object's distribution and sourcepackagename.
         """

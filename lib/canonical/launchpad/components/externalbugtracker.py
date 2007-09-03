@@ -150,6 +150,16 @@ class ExternalBugTracker:
         """
         raise NotImplementedError(self.getRemoteStatus)
 
+    def _fetchPage(self, page):
+        """Fetch a page from the remote server.
+
+        A BugTrackerConnectError will be raised if anything goes wrong.
+        """
+        try:
+            return self.urlopen(page)
+        except (urllib2.HTTPError, urllib2.URLError), val:
+            raise BugTrackerConnectError(self.baseurl, val)
+
     def _getPage(self, page):
         """GET the specified page on the remote HTTP server."""
         # For some reason, bugs.kde.org doesn't allow the regular urllib
@@ -157,12 +167,7 @@ class ExternalBugTracker:
         # bugzilla, so we send our own instead.
         request = urllib2.Request("%s/%s" % (self.baseurl, page),
                                   headers={'User-agent': LP_USER_AGENT})
-        try:
-            url = self.urlopen(request)
-        except (urllib2.HTTPError, urllib2.URLError), val:
-            raise BugTrackerConnectError(self.baseurl, val)
-        page_contents = url.read()
-        return page_contents
+        return self._fetchPage(request).read()
 
     def _postPage(self, page, form):
         """POST to the specified page.
@@ -305,9 +310,9 @@ class Bugzilla(ExternalBugTracker):
         elif remote_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:
             if resolution in ['CODE_FIX', 'CURRENTRELEASE', 'ERRATA',
-                              'FIXED', 'NEXTRELEASE', 
+                              'FIXED', 'NEXTRELEASE',
                               'PATCH_ALREADY_AVAILABLE', 'RAWHIDE']:
- 
+
                 # The following resolutions come from bugzilla.redhat.com.
                 # All of them map to Malone's FIXRELEASED status:
                 #     CODE_FIX, CURRENTRELEASE, ERRATA, NEXTRELEASE,
@@ -693,7 +698,7 @@ class Mantis(ExternalBugTracker):
         # with the fact that the bug summary can contain embedded "\r\n"
         # characters! I don't see a better way to handle this short of
         # not using the CSV module and forcing all lines to have the
-        # same number as fields as the header. 
+        # same number as fields as the header.
         # XXX: kiko 2007-07-05: Report Mantis bug.
         csv_data = csv_data.strip().split("\r\n0")
 
@@ -965,9 +970,9 @@ class Trac(ExternalBugTracker):
 class Roundup(ExternalBugTracker):
     """An ExternalBugTracker descendant for handling Roundup bug trackers."""
 
-    # Our mapping of Roundup => Launchpad statuses.
-    # Roundup statuses are integer-only and highly configurable. Therefore we
-    # map the statuses available by default so that they can be overridden by
+    # Our mapping of Roundup => Launchpad statuses.  Roundup statuses
+    # are integer-only and highly configurable. Therefore we map the
+    # statuses available by default so that they can be overridden by
     # subclassing the Roundup class.
     status_map = {
         1: BugTaskStatus.NEW,          # Roundup status 'unread'
@@ -983,10 +988,10 @@ class Roundup(ExternalBugTracker):
 
     # XXX: 2007-08-29 Graham Binns
     #      I really don't like these URLs but Roundup seems to be very
-    #      sensitive to changing them. These are the only ones that I can find
-    #      that work consistently on all the roundup instances I can find to
-    #      test them against, but I think that refining these should be looked
-    #      into at some point.
+    #      sensitive to changing them. These are the only ones that I
+    #      can find that work consistently on all the roundup instances
+    #      I can find to test them against, but I think that refining
+    #      these should be looked into at some point.
     single_bug_export_url = (
         "issue?@action=export_csv&@columns=title,id,activity,status"
         "&@sort=id&@group=priority&@filter=id&@pagesize=50"
@@ -1016,30 +1021,19 @@ class Roundup(ExternalBugTracker):
         bug_id = int(bug_id)
         query_url = '%s/%s' % (
             self.baseurl, self.single_bug_export_url % bug_id)
-
-        try:
-            csv_data = self.urlopen(query_url)
-        except (urllib2.HTTPError, urllib2.URLError), val:
-            raise BugTrackerConnectError(self.baseurl, val)
-
-        reader = csv.DictReader(csv_data)
+        reader = csv.DictReader(self._fetchPage(query_url))
         return (bug_id, reader.next())
 
     def getRemoteBugBatch(self, bug_ids):
         """See `ExternalBugTracker`"""
         # XXX: 2007-08-28 Graham Binns
-        #      At present, Roundup does not support exporting only a subset of
-        #      bug ids as a batch (bug 135317). When this bug is fixed we
-        #      need to change this method to only export the bug ids needed
-        #      rather than hitting the remote tracker for a potentially
-        #      massive number of bugs.
-        query_url = "%s/%s" % (self.baseurl, self.batch_bug_export_url)
-        try:
-            csv_data = self.urlopen(query_url)
-        except (urllib2.HTTPError, urllib2.URLError), val:
-            raise BugTrackerConnectError(query_url, val)
-
-        remote_bugs = csv.DictReader(csv_data)
+        #      At present, Roundup does not support exporting only a
+        #      subset of bug ids as a batch (launchpad bug 135317). When
+        #      this bug is fixed we need to change this method to only
+        #      export the bug ids needed rather than hitting the remote
+        #      tracker for a potentially massive number of bugs.
+        query_url = '%s/%s' % (self.baseurl, self.batch_bug_export_url)
+        remote_bugs = csv.DictReader(self._fetchPage(query_url))
         bugs = {}
         for remote_bug in remote_bugs:
             # We're only interested in the bug if it's one of the ones in
@@ -1064,7 +1058,11 @@ class Roundup(ExternalBugTracker):
         except KeyError:
             raise BugNotFound(bug_id)
         else:
-            return remote_bug['status']
+            try:
+                return remote_bug['status']
+            except KeyError:
+                raise UnparseableBugData(
+                    "Remote bug %s does not define a status.")
 
 
 class Python(Roundup):

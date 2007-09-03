@@ -75,7 +75,7 @@ class IBinaryPackageRelease(Interface):
 
 class IBinaryPackageReleaseSet(Interface):
     """A set of binary packages"""
-    
+
     def findByNameInDistroSeries(distroseries, pattern,
                                   archtag=None, fti=False):
         """Returns a set of binarypackagereleases that matchs pattern
