@@ -135,11 +135,16 @@ class ExternalBugTracker:
         The bug is returned as a tuple in the form (id, bug). This ensures
         that bug ids are formatted correctly for the current
         ExternalBugTracker.
+
+        A BugTrackerConnectError will be raised if anything goes wrong.
         """
         raise NotImplementedError(self.getRemoteBug)
 
     def getRemoteBugBatch(self, bug_ids):
-        """Retrieve and return a set of bugs from the remote database."""
+        """Retrieve and return a set of bugs from the remote database.
+
+        A BugTrackerConnectError will be raised if anything goes wrong.
+        """
         raise NotImplementedError(self.getRemoteBugBatch)
 
     def getRemoteStatus(self, bug_id):
