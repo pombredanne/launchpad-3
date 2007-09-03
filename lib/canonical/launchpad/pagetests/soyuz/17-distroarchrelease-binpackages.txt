@@ -116,12 +116,12 @@ file is available:
   </div>
 
 
-= DistroArchSeries Commercial Binary Package Pages =
+= DistroArchSeries Partner Binary Package Pages =
 
-Binary commercial packages in Launchpad differ from regular packages by two 
+Binary partner packages in Launchpad differ from regular packages by two 
 things:
-1. Their component is 'commercial'
-2. Their archive is the commercial archive, rather than the primary archive.
+1. Their component is 'partner'
+2. Their archive is the partner archive, rather than the primary archive.
 
 Their page functionality is identical to regular packages, which is described
 in the previous section of this page.
@@ -135,7 +135,7 @@ this architecture:
 
   >>> print extract_text(find_tag_by_id(browser.contents, 'publishings'))
   breezy-autotest i386 Release:
-  Published version 1.0-1 in component commercial and section devel
+  Published version 1.0-1 in component partner and section devel
 
 It also provides a link to the currently published version:
   >>> browser.getLink("1.0-1").click()

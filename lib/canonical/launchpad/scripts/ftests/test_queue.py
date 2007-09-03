@@ -518,15 +518,15 @@ class TestQueueTool(TestQueueBase):
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         breezy_autotest = ubuntu['breezy-autotest']
 
-        # Test that it changes to commercial when required.
+        # Test that it changes to partner when required.
         queue_action = self.execute_command('override source alsa-utils',
-            component_name='commercial')
+            component_name='partner')
         self.assertEqual(1, queue_action.items_size)
         [queue_item] = breezy_autotest.getQueueItems(
             status=PackageUploadStatus.NEW, name="alsa-utils")
         [source] = queue_item.sources
         self.assertEqual(source.sourcepackagerelease.upload_archive.purpose,
-            ArchivePurpose.COMMERCIAL)
+            ArchivePurpose.PARTNER)
 
         # Test that it changes back to primary when required.
         queue_action = self.execute_command('override source alsa-utils',
@@ -548,14 +548,14 @@ class TestQueueTool(TestQueueBase):
 
         LaunchpadZopelessLayer.switchDbUser("testadmin")
         proxied_archive = getUtility(IArchiveSet).getByDistroPurpose(
-            ubuntu, ArchivePurpose.COMMERCIAL)
+            ubuntu, ArchivePurpose.PARTNER)
         comm_archive = removeSecurityProxy(proxied_archive)
         comm_archive.purpose = ArchivePurpose.EMBARGOED
         LaunchpadZopelessLayer.txn.commit()
         self.assertRaises(CommandRunnerError,
                           self.execute_command,
                           'override source alsa-utils',
-                          component_name='commercial')
+                          component_name='partner')
 
     def testOverrideBinary(self):
         """Check if overriding binaries works.
@@ -612,10 +612,10 @@ class TestQueueTool(TestQueueBase):
         """
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
-        # Test that it changes to commercial when required.
+        # Test that it changes to partner when required.
         self.assertRaises(
             CommandRunnerError, self.execute_command, 'override binary pmount',
-            component_name='commercial')
+            component_name='partner')
 
 
 class TestQueueToolInJail(TestQueueBase):

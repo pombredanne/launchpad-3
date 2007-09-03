@@ -19,6 +19,6 @@ Changes:
  .
    * Version 2 testing
 Files: 
- ac571974c4d57d1be00e3d9adc027d52 528 commercial/devel optional foocomm_1.0-2.dsc
- 4d3b1f10b1cca022977e520b9ec601db 596 commercial/devel optional foocomm_1.0-2.diff.gz
- ad436f97a58df5b233209857439f1e7c 171 commercial/devel optional foocomm_1.0.orig.tar.gz
+ ef5bf669d990ce27aea38164b2c89779 291 partner/devel optional foocomm_1.0-2.dsc
+ e03c530973064ebbbde9226e03868cb1 595 partner/devel optional foocomm_1.0-2.diff.gz
+ ad436f97a58df5b233209857439f1e7c 171 partner/devel optional foocomm_1.0.orig.tar.gz

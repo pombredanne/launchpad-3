@@ -140,12 +140,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def components(self):
         """See `IDistroSeries`."""
         # XXX julian 2007-06-25
-        # This is filtering out the commercial component for now, until
-        # the second stage of the commercial repo arrives in 1.1.8.
+        # This is filtering out the partner component for now, until
+        # the second stage of the partner repo arrives in 1.1.8.
         return Component.select("""
             ComponentSelection.distrorelease = %s AND
             Component.id = ComponentSelection.component AND
-            Component.name != 'commercial'
+            Component.name != 'partner'
             """ % self.id,
             clauseTables=["ComponentSelection"])
 
@@ -1268,14 +1268,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         We copy all PENDING and PUBLISHED records as PENDING into our own
         publishing records.
 
-        We copy only the RELEASE pocket in the PRIMARY and COMMERCIAL
+        We copy only the RELEASE pocket in the PRIMARY and PARTNER
         archives.
         """
         archive_set = getUtility(IArchiveSet)
         for archive in self.parentseries.distribution.all_distro_archives:
-            # We only want to copy PRIMARY and COMMERCIAL archives.
+            # We only want to copy PRIMARY and PARTNER archives.
             if archive.purpose not in (
-                    ArchivePurpose.PRIMARY, ArchivePurpose.COMMERCIAL):
+                    ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER):
                 continue
             target_archive = archive_set.ensure(
                 distribution=self.distribution, purpose=archive.purpose,
@@ -1307,14 +1307,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         We copy all PENDING and PUBLISHED records as PENDING into our own
         publishing records.
 
-        We copy only the RELEASE pocket in the PRIMARY and COMMERCIAL
+        We copy only the RELEASE pocket in the PRIMARY and PARTNER
         archives.
         """
         archive_set = getUtility(IArchiveSet)
         for archive in self.parentseries.distribution.all_distro_archives:
-            # We only want to copy PRIMARY and COMMERCIAL archives.
+            # We only want to copy PRIMARY and PARTNER archives.
             if archive.purpose not in (
-                    ArchivePurpose.PRIMARY, ArchivePurpose.COMMERCIAL):
+                    ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER):
                 continue
             target_archive = archive_set.ensure(
                 distribution=self.distribution, purpose=archive.purpose,
@@ -1871,7 +1871,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Exclude RELEASE pocket if the distroseries was already released,
         # since it should not change for main archive.
         # We allow RELEASE publishing for PPAs.
-        # We also allow RELEASE publishing for commercial.
+        # We also allow RELEASE publishing for partner.
         if (not self.isUnstable() and
             not archive.allowUpdatesToReleasePocket()):
             queries.append(
@@ -1908,7 +1908,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if is_careful:
             return True
 
-        # PPA and COMMERCIAL allow everything.
+        # PPA and PARTNER allow everything.
         if publication.archive.allowUpdatesToReleasePocket():
             return True
 

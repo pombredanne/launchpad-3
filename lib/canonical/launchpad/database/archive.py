@@ -61,7 +61,7 @@ class Archive(SQLBase):
         """See `IArchive`."""
         archive_postfixes = {
             ArchivePurpose.PRIMARY : '',
-            ArchivePurpose.COMMERCIAL : '-commercial',
+            ArchivePurpose.PARTNER : '-partner',
         }
 
         if self.purpose == ArchivePurpose.PPA:
@@ -92,17 +92,17 @@ class Archive(SQLBase):
             pubconf.overrideroot = None
             pubconf.cacheroot = None
             pubconf.miscroot = None
-        elif self.purpose == ArchivePurpose.COMMERCIAL:
-            # Reset the list of components to commercial only.  This prevents
+        elif self.purpose == ArchivePurpose.PARTNER:
+            # Reset the list of components to partner only.  This prevents
             # any publisher runs from generating components not related to
-            # the commercial archive.
+            # the partner archive.
             for distroseries in pubconf._distroserieses.keys():
                 pubconf._distroserieses[
-                    distroseries]['components'] = ['commercial']
+                    distroseries]['components'] = ['partner']
 
             pubconf.distroroot = config.archivepublisher.root
             pubconf.archiveroot = os.path.join(pubconf.distroroot,
-                self.distribution.name + '-commercial')
+                self.distribution.name + '-partner')
             pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
             pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
             pubconf.overrideroot = None
@@ -253,7 +253,7 @@ class Archive(SQLBase):
     def allowUpdatesToReleasePocket(self):
         """See `IArchive`."""
         purposeToPermissionMap = {
-            ArchivePurpose.COMMERCIAL : True,
+            ArchivePurpose.PARTNER : True,
             ArchivePurpose.PPA : True,
             ArchivePurpose.PRIMARY : False,
         }

@@ -13,6 +13,6 @@ Description:
 Changes: 
  foocomm (1.0-2) breezy; urgency=low
  .
-   * Version 2
+   * Initial version
 Files: 
- d43cb6db190b16e381f1bf7acc743821 652 commercial/devel optional foocomm_1.0-2_i386.deb
+ 4179d951890fc16560b0c16b617cc98e 650 partner/devel optional foocomm_1.0-2_i386.deb

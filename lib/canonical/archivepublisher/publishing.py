@@ -461,8 +461,8 @@ class Publisher(object):
         # Only the primary archive has uncompressed and bz2 archives.
         if self.archive.purpose == ArchivePurpose.PRIMARY:
             index_suffixes = ('', '.gz', '.bz2')
-        elif self.archive.purpose == ArchivePurpose.COMMERCIAL:
-            # The commercial archive needs uncompressed files for
+        elif self.archive.purpose == ArchivePurpose.PARTNER:
+            # The partner archive needs uncompressed files for
             # compatibility with signed Release files.
             index_suffixes = ('', '.gz')
         else:

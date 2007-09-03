@@ -966,8 +966,8 @@ builder will pass an 'archives' property that instructs the slave
 to set up the sources.list appropriately.
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-  >>> commercial_archive = ubuntu.getArchiveByComponent('commercial')
-  >>> removeSecurityProxy(a_build).archive = commercial_archive
+  >>> partner_archive = ubuntu.getArchiveByComponent('partner')
+  >>> removeSecurityProxy(a_build).archive = partner_archive
   >>> local_transaction.commit()
   >>> bqItem3 = a_build.createBuildQueueEntry()
   >>> setupBuildQueue(bqItem3, a_builder)
@@ -977,7 +977,7 @@ to set up the sources.list appropriately.
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
-  Archives: [u'deb http://launchpad.dev/ubuntu-commercial hoary main', u'deb http://ftpmaster.internal/ubuntu hoary main restricted']
+  Archives: [u'deb http://launchpad.dev/ubuntu-partner hoary main', u'deb http://ftpmaster.internal/ubuntu hoary main restricted']
 
 Clean up before continuing:
 

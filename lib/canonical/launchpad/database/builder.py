@@ -263,7 +263,7 @@ class Builder(SQLBase):
                 'restricted': 'main restricted',
                 'universe': 'main restricted universe',
                 'multiverse': 'main restricted universe multiverse',
-                'commercial' : 'commercial',
+                'partner' : 'partner',
                 }
             ogre_components = ogre_map[build_queue_item.component_name]
             dist_name = build_queue_item.archseries.distroseries.name
@@ -276,11 +276,11 @@ class Builder(SQLBase):
             else:
                 ubuntu_components = ogre_components
                 if (build_queue_item.build.archive.purpose ==
-                        ArchivePurpose.COMMERCIAL):
+                        ArchivePurpose.PARTNER):
                     # XXX julian 2007-08-07 - this is a greasy hack.
                     # See comment above about not modelling Ogre here.
-                    # Commercial is a very special case because the commercial
-                    # component is only in the commercial archive, so we have
+                    # Partner is a very special case because the partner
+                    # component is only in the partner archive, so we have
                     # to be careful with the sources.list archives.
                     ubuntu_components = 'main restricted'
                 ubuntu_source_line = (
