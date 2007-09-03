@@ -89,9 +89,9 @@ class TestJobManager(unittest.TestCase):
             config.supermirror.branchesdest + '/00/00/00/0e',
             None, None, None, None)
         self.assertEqual(import_manager.branches_to_mirror, [expected_branch])
-        traverse_flags = [branch.traverse_references
-                          for branch in import_manager.branches_to_mirror]
-        self.assertEqual(traverse_flags, [False])
+        branch_types = [branch.branch_type
+                        for branch in import_manager.branches_to_mirror]
+        self.assertEqual(branch_types, [BranchType.IMPORTED])
 
     def testUploadAddBranches(self):
         client = self.makeFakeClient(
@@ -104,9 +104,9 @@ class TestJobManager(unittest.TestCase):
             config.supermirror.branchesdest + '/00/00/00/19',
             None, None, None, None)
         self.assertEqual(upload_manager.branches_to_mirror, [expected_branch])
-        traverse_flags = [branch.traverse_references
-                          for branch in upload_manager.branches_to_mirror]
-        self.assertEqual(traverse_flags, [False])
+        branch_types = [branch.branch_type
+                        for branch in upload_manager.branches_to_mirror]
+        self.assertEqual(branch_types, [BranchType.HOSTED])
 
     def testMirrorAddBranches(self):
         client = self.makeFakeClient(
@@ -120,9 +120,9 @@ class TestJobManager(unittest.TestCase):
             config.supermirror.branchesdest + '/00/00/00/0f',
             None, None, None, None)
         self.assertEqual(mirror_manager.branches_to_mirror, [expected_branch])
-        traverse_flags = [branch.traverse_references
-                          for branch in mirror_manager.branches_to_mirror]
-        self.assertEqual(traverse_flags, [True])
+        branch_types = [branch.branch_type
+                        for branch in mirror_manager.branches_to_mirror]
+        self.assertEqual(branch_types, [BranchType.MIRRORED])
 
 
 class TestJobManagerInLaunchpad(unittest.TestCase):

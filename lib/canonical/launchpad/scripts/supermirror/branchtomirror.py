@@ -49,13 +49,13 @@ class BranchToMirror:
     """
 
     def __init__(self, src, dest, branch_status_client, branch_id,
-                 branch_unique_name, traverse_references):
+                 branch_unique_name, branch_type):
         self.source = src
         self.dest = dest
         self.branch_status_client = branch_status_client
         self.branch_id = branch_id
         self.branch_unique_name = branch_unique_name
-        self.traverse_references = traverse_references
+        self.branch_type = branch_type
         self._source_branch = None
         self._dest_branch = None
 
@@ -76,6 +76,18 @@ class BranchToMirror:
             raise BadUrlSsh(self.source)
         if uri.host == 'launchpad.net' or uri.host.endswith('.launchpad.net'):
             raise BadUrlLaunchpad(self.source)
+
+    def _getTraverseReferences(self):
+        """Whether we should traverse branch references when opening the source
+        branch."""
+        traverse_references_from_branch_type = {
+            BranchType.HOSTED: False,
+            BranchType.MIRRORED: True,
+            BranchType.IMPORTED: False,
+            }
+        # This will intentionally raise a KeyError for if the branch_type is
+        # REMOTE or anything else that we do not know about.
+        return traverse_references_from_branch_type[self.branch_type]
 
     def _openSourceBranch(self):
         """Open the branch to pull from, useful to override in tests."""

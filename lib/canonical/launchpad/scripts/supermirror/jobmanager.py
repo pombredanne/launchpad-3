@@ -42,23 +42,10 @@ class JobManager:
             branch_src = branch_src.strip()
             path = branchtarget(branch_id)
             branch_dest = os.path.join(destination, path)
-            traverse_references = self.getTraverseReferences()
             branch = BranchToMirror(
                 branch_src, branch_dest, branch_status_client, branch_id,
-                unique_name, traverse_references)
+                unique_name, self.branch_type)
             self.branches_to_mirror.append(branch)
-
-    def getTraverseReferences(self):
-        """Whether we should traverse branch references when opening the source
-        branch."""
-        traverse_references_from_branch_type = {
-            BranchType.HOSTED: False,
-            BranchType.MIRRORED: True,
-            BranchType.IMPORTED: False,
-            }
-        # This will intentionally raise a KeyError for if the branch_type is
-        # REMOTE or anything else that we do not know about.
-        return traverse_references_from_branch_type[self.branch_type]
 
     def lock(self):
         self.actualLock = GlobalLock(self.lockfilename)
