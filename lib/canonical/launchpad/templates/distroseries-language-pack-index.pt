@@ -1,0 +1,23 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+  <body>
+    <metal:rightportlets fill-slot="portlets_two">
+      <div tal:replace="structure context/@@+portlet-details" />
+    </metal:rightportlets>
+
+    <div metal:fill-slot="main">
+      <h1 tal:condition="view/label"
+          tal:content="view/label">
+        Language packs available for $context
+      </h1>
+
+      <p id="description">
+        These language packs are the last ones generated or in use 
+        <tal:displayname replace="context/displayname">Foo</tal:displayname>.
+      </p>
+    </div>
+  </body>
+</html>
+

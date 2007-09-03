@@ -1085,3 +1085,41 @@ class ViewEntitlement(AuthorizationBase):
         return (user.inTeam(self.obj.person) or
                 user.inTeam(self.obj.registrant) or
                 user.inTeam(admins))
+
+
+class AdminDistroSeriesLanguagePacks(
+    OnlyRosettaExpertsAndAdmins,
+    EditDistroSeriesByOwnersOrDistroOwnersOrAdmins):
+    permission = 'launchpad.LanguagePacksAdmin'
+    usedfor = IDistroSeries
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IDistroSeries` language packs?
+
+        Any Launchpad/Launchpad Translations administrator, people allowed to
+        edit distroseries or members of IDistribution.language_pack_admin team
+        are able to change the language packs available.
+        """
+        return (
+            OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+            EditDistroSeriesByOwnersOrDistroOwnersOrAdmins.checkAuthenticated(
+                self, user) or
+            user.inTeam(self.context.distribution.language_pack_admin))
+
+
+class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
+                                    EditDistributionByDistroOwnersOrAdmins):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IDistribution
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IDistribution` translations settings?
+
+        Any Launchpad/Launchpad Translations administrator or people allowed
+        to edit distribution details are able to change translation settings
+        for a distribution.
+        """
+        return (
+            OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+            EditDistributionByDistroOwnersOrAdmins.checkAuthenticated(
+                self, user))

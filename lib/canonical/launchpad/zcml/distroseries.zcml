@@ -14,6 +14,12 @@
         permission="launchpad.TranslationsAdmin"
         set_attributes="hide_all_translations defer_translation_imports"
         />
+    <require
+        permission="launchpad.LanguagePackAdmin"
+        set_attributes="language_pack_base language_pack_delta
+                        language_pack_proposed
+                        language_pack_full_export_requested"
+        />
     <!-- NB: check with SABDFL before modifying these, there is potential to
          make a huge mess if these get changed and Soyuz has to republish
          shedloads of data. -->

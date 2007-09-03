@@ -114,8 +114,10 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "this series.")
     distroserieslanguages = Attribute("The set of dr-languages in this "
         "series.")
+
     datelastlangpack = Attribute(
         "The date of the last base language pack export for this series.")
+
     hide_all_translations = Bool(
         title=u'Hide translations for this release', required=True,
         description=(
@@ -125,6 +127,38 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
              " being imported from a previous series so that translators"
              " will not be confused by imports that are in progress."),
         default=True)
+
+    language_pack_base = Choice(
+        title=u'Language pack base', required=False,
+        description=(u'''
+            Language pack export with the export of all translations available
+            for this `IDistroSeries` when it was generated. Next delta exports
+            will be generated based on this one.
+            '''), vocabulary='FilteredFullLanguagePack')
+
+    language_pack_delta = Choice(
+        title=u'Language pack delta', required=False,
+        description=(u'''
+            Language pack export with the export of all translation updates
+            available for this `IDistroSeries` since language_pack_base was
+            generated.
+            '''), vocabulary='FilteredDeltaLanguagePack')
+
+    language_pack_proposed = Choice(
+        title=u'Proposed language pack update', required=False,
+        description=(u'''
+            Base or delta language pack export that is being tested and
+            proposed to be used as the new language_pack_base or
+            language_pack_delta for this `IDistroSeries`.
+            '''), vocabulary='FilteredLanguagePack')
+
+    language_pack_full_export_requested = Bool(
+        title=u'Request a full language pack export', required=True,
+        description=(u'''
+            Whether next language pack generation will be a full export. This
+            is useful when delta packages are too big and want to merge all
+            those changes in the base package.
+            '''))
 
     # related joins
     packagings = Attribute("All of the Packaging entries for this "

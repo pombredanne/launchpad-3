@@ -185,6 +185,11 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         required=False,
         vocabulary='FilteredDistroSeriesVocabulary')
 
+    language_pack_admin = Choice(
+        title=_("Language Pack Administrator"),
+        description=_("The distribution language pack administrator."),
+        required=False, vocabulary='ValidPersonOrTeam')
+
     main_archive = Object(
         title=_('Distribution Main Archive.'), readonly=True, schema=IArchive
         )

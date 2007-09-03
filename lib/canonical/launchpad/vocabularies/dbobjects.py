@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Vocabularies pulling stuff from the database.
 
@@ -23,8 +23,11 @@ __all__ = [
     'DistributionUsingMaloneVocabulary',
     'DistroSeriesVocabulary',
     'FAQVocabulary',
+    'FilteredDeltaLanguagePack',
     'FilteredDistroArchSeriesVocabulary',
     'FilteredDistroSeriesVocabulary',
+    'FilteredFullLanguagePack',
+    'FilteredLanguagePack',
     'FilteredProductSeriesVocabulary',
     'FutureSprintVocabulary',
     'KarmaCategoryVocabulary',
@@ -59,34 +62,31 @@ __all__ = [
 
 import cgi
 from operator import attrgetter
-
+from sqlobject import AND, CONTAINSSTRING, OR, SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from zope.security.proxy import isinstance as zisinstance
 
-from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectNotFound
-
+from canonical.launchpad.database import (
+    Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component, Country,
+    Distribution, DistroArchSeries, DistroSeries, KarmaCategory, Language,
+    LanguagePack, Milestone, Person, PillarName, POTemplateName, Processor,
+    ProcessorFamily, Product, ProductRelease, ProductSeries, Project,
+    SourcePackageRelease, Specification, Sprint, TranslationGroup)
+from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces import (
+    EmailAddressStatus, IBugTask, IDistribution, IDistributionSourcePackage,
+    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
+    IFAQ, IFAQTarget, ILaunchBag, IMilestoneSet, IPerson, IPersonSet,
+    IPillarName, IProduct, IProject, ISourcePackage, ISpecification, ITeam,
+    IUpstreamBugTask, LanguagePackType)
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary, 
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
-from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import DistroSeriesStatus
-from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
-from canonical.launchpad.database import (
-    Distribution, DistroSeries, Person, SourcePackageRelease, Branch,
-    BranchSet, BugWatch, Sprint, DistroArchSeries, KarmaCategory, Language,
-    Milestone, Product, Project, ProductRelease, ProductSeries,
-    TranslationGroup, BugTracker, POTemplateName, Bounty, Country,
-    Specification, Bug, Processor, ProcessorFamily, Component,
-    PillarName)
-from canonical.launchpad.interfaces import (
-    IBugTask, IDistribution, IDistributionSourcePackage,
-    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IFAQ, IFAQTarget,
-    IEmailAddressSet, ILaunchBag, IMilestoneSet, IPerson, IPersonSet,
-    IPillarName, IProduct, IProject, ISourcePackage, ISpecification, ITeam,
-    IUpstreamBugTask, EmailAddressStatus)
 
 
 class BasePersonVocabulary:
@@ -298,7 +298,7 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
 
 class TranslatableLanguageVocabulary(LanguageVocabulary):
     """All the translatable languages known by Launchpad.
-    
+
     English is not a translatable language. It is excluded from the terms.
     """
 
@@ -1427,3 +1427,62 @@ class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
         else:
             return IDistribution.providedBy(obj)
 
+
+class FilteredLanguagePackBase(SQLObjectVocabularyBase):
+    """Base vocabulary class to retrieve language packs for a distroseries."""
+    displayname = 'Needs to be overridden'
+    _table = LanguagePack
+    _orderBy = '-date_exported'
+    _language_pack_type = None
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.date_exported.isoformat())
+
+    def __iter__(self):
+        query = []
+        if not IDistroSeries.providedBy(self.context):
+            # This vocabulary is only useful from a DistroSeries context.
+            return
+        language_pack_type_delta_query = ('''
+            (language_pack_type = %s AND language_pack_that_updates = %s)
+            ''' % sqlvalues(
+                LanguagePackType.DELTA, self.context.language_pack_base))
+        language_pack_type_full_query = (
+            'language_pack_type = %s' % sqlvalues(LanguagePackType.FULL))
+
+        if self._language_pack_type is None:
+            # We are interested on any language pack type.
+            query.append('(%s OR %s)' % (
+                language_pack_type_delta_query, language_pack_type_full_query)
+                )
+        elif self._language_pack_type == LanguagePackType.DELTA:
+            query.append(language_pack_type_delta_query)
+        elif self._language_pack_type == LanguagePackType.FULL:
+            query.append(language_pack_type_full_query)
+        else:
+            raise AssertionError(
+                'Unknown language pack type: %s' %
+                    self._language_pack_type.name)
+
+        query.append('distro_release = %s' % sqlvalues(self.context))
+        language_packs = self._table.select(
+            ' AND '.join(query), orderBy=self._orderBy)
+
+        for language_pack in language_packs:
+            yield self.toTerm(language_pack)
+
+
+class FilteredFullLanguagePack(FilteredLanguagePackBase):
+    """Full export Language Pack for a distribution series."""
+    displayname = 'Select a full export language pack'
+    _language_pack_type = LanguagePackType.FULL
+
+
+class FilteredDeltaLanguagePack(FilteredLanguagePackBase):
+    """Delta export Language Pack for a distribution series."""
+    displayname = 'Select a delta export language pack'
+    _language_pack_type = LanguagePackType.DELTA
+
+
+class FilteredLanguagePack(FilteredLanguagePack):
+    displayname = 'Select a language pack'

@@ -19,6 +19,10 @@
                       mirror_admin homepage_content icon logo
                       mugshot"
       />
+    <require
+      permission="launchpad.TranslationsAdmin"
+      set_attribute="language_pack_admin"
+      />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getSupportedLanguages
