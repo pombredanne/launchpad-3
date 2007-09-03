@@ -868,6 +868,13 @@ class Trac(ExternalBugTracker):
             # assume that CSV exports of single tickets aren't supported.
             return False
 
+    def getRemoteBug(self, bug_id):
+        """See `ExternalBugTracker`.""" 
+        bug_id = int(bug_id)
+        query_url = "%s/%s" % (self.baseurl, self.ticket_url % bug_id)
+        reader = csv.DictReader(self._fetchPage(query_url))
+        return (bug_id, reader.next())
+
     def initializeRemoteBugDB(self, bug_ids):
         """Do any initialization before each bug watch is updated.
 
@@ -885,18 +892,8 @@ class Trac(ExternalBugTracker):
             for bug_id in bug_ids:
                 # If we can't get the remote bug for any reason a
                 # BugTrackerConnectError will be raised at this point.
-                # We don't use _getPage at this point for the simple reason
-                # that it doesn't return a file-like object, so we can't use
-                # the csv module's helpful DictReader on its output.
-                bug_id = int(bug_id)
-                try:
-                    csv_data = self.urlopen(
-                        "%s/%s" % (self.baseurl, self.ticket_url % bug_id))
-                except (urllib2.HTTPError, urllib2.URLError), val:
-                    raise BugTrackerConnectError(self.baseurl, val)
-
-                reader = csv.DictReader(csv_data)
-                self.bugs[bug_id] = reader.next()
+                remote_id, remote_bug = self.getRemoteBug(bug_id)
+                self.bugs[remote_id] = remote_bug
 
         # For large lists of bug ids we retrieve bug statuses as a batch from
         # the remote bug tracker so as to avoid effectively DOSing it.
