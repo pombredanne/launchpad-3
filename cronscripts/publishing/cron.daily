@@ -23,12 +23,12 @@ INDICES=$ARCHIVEROOT/indices
 PRODUCTION_CONFIG=ftpmaster
 
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
-    ARCHIVEROOT_COMMERCIAL=/srv/launchpad.net/ubuntu-archive/ubuntu-commercial
+    ARCHIVEROOT_PARTNER=/srv/launchpad.net/ubuntu-archive/ubuntu-partner
     GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
 else
-    ARCHIVEROOT_COMMERCIAL=/srv/launchpad.net/ppa/ubuntu-commercial
+    ARCHIVEROOT_PARTNER=/srv/launchpad.net/ppa/ubuntu-partner
 fi
-DISTSROOT_COMMERCIAL=$ARCHIVEROOT_COMMERCIAL/dists
+DISTSROOT_PARTNER=$ARCHIVEROOT_PARTNER/dists
 
 # Configuration options
 LAUNCHPADROOT=/srv/launchpad.net/codelines/current
@@ -126,7 +126,8 @@ for CANDIDATE in $(find ${DISTSROOT}.new -maxdepth 2 -name Release) \
     echo "Not re-signing $CANDIDATE"
   fi
 done
-for CANDIDATE in $(find ${DISTSROOT_COMMERCIAL} -maxdepth 2 -name Release); do
+SIGNLIST_PARTNER=$(find ${DISTSROOT_PARTNER} -maxdepth 2 -name Release)
+for CANDIDATE in $SIGNLIST_PARTNER; do
   #  [ Release.gpg missing   ] or [ Release is newer than Release.gpg ]
   if [ ! -f $CANDIDATE.gpg ] || [ $CANDIDATE -nt $CANDIDATE.gpg ]; then
     echo "(re-)signing $CANDIDATE"
@@ -141,7 +142,7 @@ done
 # Release files.
 echo Removing uncompressed Packages and Sources files
 find ${DISTSROOT}.new \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
-find ${DISTSROOT_COMMERCIAL} \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
+find ${DISTSROOT_PARTNER} \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
 
 # Copy in the indices
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
@@ -172,7 +173,7 @@ LSLR=ls-lR.gz
   rm -f .$LSLR.new ; \
   TZ=UTC ls -lR  | gzip -9n > .$LSLR.new ; \
   mv -f .$LSLR.new $LSLR )
-( cd $ARCHIVEROOT_COMMERCIAL ; \
+( cd $ARCHIVEROOT_PARTNER ; \
   rm -f .$LSLR.new ; \
   TZ=UTC ls -lR  | gzip -9n > .$LSLR.new ; \
   mv -f .$LSLR.new $LSLR )
@@ -186,7 +187,7 @@ LSLR=ls-lR.gz
 
 # Clear out empty and thus redundant dirs
 find $ARCHIVEROOT -type d -empty | xargs -r rmdir
-find $ARCHIVEROOT_COMMERCIAL -type d -empty | xargs -r rmdir
+find $ARCHIVEROOT_PARTNER -type d -empty | xargs -r rmdir
 
 # invoke cron.germinate to fill ubuntu tasks
 cron.germinate
