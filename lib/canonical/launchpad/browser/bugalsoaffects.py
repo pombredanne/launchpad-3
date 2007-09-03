@@ -72,15 +72,24 @@ class BugAlsoAffectsDistroMetaView(BugAlsoAffectsProductMetaView):
 
 
 class AlsoAffectsStep(LaunchpadFormView):
-    """Base view for all steps of the bug-also-affects workflow."""
+    """Base view for all steps of the bug-also-affects workflow.
+    
+    Subclasses must override step_name, _field_names and define a
+    main_action() method which processes the form data.
+    """
 
     __launchpad_facetname__ = 'bugs'
     schema = IAddBugTaskForm
     custom_widget('visited_steps', TextWidget, visible=False)
 
+    _field_names = []
     next_view = None
     step_name = ""
     main_action_label = u'Continue'
+
+    @property
+    def field_names(self):
+        return self._field_names + ['visited_steps']
 
     def validateStep(self, data):
         """Validation specific to a given step.
@@ -141,6 +150,7 @@ class AlsoAffectsStep(LaunchpadFormView):
         # action in subclasses.
         actions = []
         for action in self.actions:
+            # Only change the label of our 'continue' action.
             if action.__name__ == 'field.actions.continue':
                 action.label = self.main_action_label
             actions.append(action)
@@ -154,7 +164,7 @@ class ChooseProductStep(AlsoAffectsStep):
     template = ViewPageTemplateFile(
         '../templates/bugtask-choose-affected-product.pt')
 
-    field_names = ['product', 'visited_steps']
+    _field_names = ['product']
     label = u"Record as affecting another project"
     step_name = "choose_product"
 
@@ -268,8 +278,7 @@ class BugTaskCreationStep(AlsoAffectsStep):
     def __init__(self, context, request):
         super(BugTaskCreationStep, self).__init__(context, request)
         self.notifications = []
-        self.field_names = ['bug_url', 'visited_steps'] + list(
-            self.target_field_names)
+        self._field_names = ['bug_url'] + list(self.target_field_names)
 
     def setUpWidgets(self):
         super(BugTaskCreationStep, self).setUpWidgets()
@@ -477,8 +486,7 @@ class BugTrackerCreationStep(AlsoAffectsStep):
 class DistroBugTrackerCreationStep(BugTrackerCreationStep):
 
     _next_view = DistroBugTaskCreationStep
-    field_names = [
-        'distribution', 'sourcepackagename', 'bug_url', 'visited_steps']
+    _field_names = ['distribution', 'sourcepackagename', 'bug_url']
     custom_widget('distribution', DropdownWidget, visible=False)
     custom_widget('sourcepackagename', DropdownWidget, visible=False)
     label = "Also affects distribution/package"
@@ -489,7 +497,7 @@ class DistroBugTrackerCreationStep(BugTrackerCreationStep):
 class UpstreamBugTrackerCreationStep(BugTrackerCreationStep):
 
     _next_view = ProductBugTaskCreationStep
-    field_names = ['product', 'bug_url', 'visited_steps']
+    _field_names = ['product', 'bug_url']
     custom_widget('product', DropdownWidget, visible=False)
     label = "Confirm project"
     template = ViewPageTemplateFile(
