@@ -2,25 +2,26 @@ SET client_min_messages=ERROR;
 
 CREATE TABLE LanguagePack (
     id serial NOT NULL PRIMARY KEY,
-    file integer NOT NULL REFERENCES libraryfilealias(id),
+    language_pack_file integer NOT NULL REFERENCES libraryfilealias(id),
     date_exported timestamp without time zone NOT NULL
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
     date_last_use timestamp without time zone
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
     distro_release integer NOT NULL REFERENCES DistroRelease(id),
-    type integer NOT NULL DEFAULT 0,
+    language_pack_type integer NOT NULL DEFAULT 1,
     language_pack_that_updates integer REFERENCES LanguagePack(id)
 );
 
 ALTER TABLE LanguagePack
     ADD CONSTRAINT language_pack_type_update_has_reference_when_needed
-    CHECK ((type = 1 AND language_pack_that_updates IS NOT NULL) OR
-           (type = 0 AND language_pack_that_updates IS NULL));
+    CHECK ((language_pack_type = 2 AND
+            language_pack_that_updates IS NOT NULL) OR
+           (language_pack_type = 1 AND language_pack_that_updates IS NULL));
 
 COMMENT ON TABLE LanguagePack IS 'Store exported language packs for
 DistroReleases.';
-COMMENT ON COLUMN LanguagePack.file IS 'Librarian file where the language pack
-is stored.';
+COMMENT ON COLUMN LanguagePack.language_pack_file IS 'Librarian file where the
+language pack is stored.';
 COMMENT ON COLUMN LanguagePack.date_exported IS 'When was exported the
 language pack.';
 COMMENT ON COLUMN LanguagePack.date_last_use IS 'When did we stop using the
@@ -28,8 +29,8 @@ language pack. It\'s used to decide whether we can remove it completely from
 the system. When it\'s being used, its value is NULL';
 COMMENT ON COLUMN LanguagePack.distro_release IS 'The distribution release
 from where this language pack was exported.';
-COMMENT ON COLUMN LanguagePack.type IS 'Type of language pack. There are two
-types available, 0: Full export, 1: Update export based on
+COMMENT ON COLUMN LanguagePack.language_pack_type IS 'Type of language pack.
+There are two types available, 1: Full export, 2: Update export based on
 language_pack_that_updates export.';
 COMMENT ON COLUMN LanguagePack.language_pack_that_updates IS 'The LanguagePack
 that this one updates.';
