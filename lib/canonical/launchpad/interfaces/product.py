@@ -111,7 +111,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     displayname = TextLine(
         title=_('Display Name'),
-        description=_("""The name of the project as it would appear in a 
+        description=_("""The name of the project as it would appear in a
             paragraph."""))
 
     title = Title(

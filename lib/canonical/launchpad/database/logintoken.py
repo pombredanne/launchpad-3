@@ -96,7 +96,7 @@ class LoginToken(SQLBase):
         template = get_email_template('validate-gpg.txt')
         replacements = {'requester': self.requester.browsername,
                         'requesteremail': self.requesteremail,
-                        'displayname': key.displayname, 
+                        'displayname': key.displayname,
                         'fingerprint': key.fingerprint,
                         'uids': formatted_uids,
                         'token_url': canonical_url(self)}
@@ -217,7 +217,7 @@ The Launchpad Team"""
         profile = getUtility(IPersonSet).getByEmail(self.email)
         replacements = {'profile_name': (
                             "%s (%s)" % (profile.browsername, profile.name)),
-                        'email': self.email, 
+                        'email': self.email,
                         'token_url': canonical_url(self)}
         message = template % replacements
 

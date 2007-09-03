@@ -596,7 +596,7 @@ class BaseTranslationView(LaunchpadView):
 
         fallback_language = self.pofile.language.alt_suggestion_language
         if (second_lang_code is None
-            and fallback_language is not None 
+            and fallback_language is not None
             and fallback_language.code != 'en'):
             # If there's a standard alternative language and no user-specified
             # language was provided, preselect it (so long as it is not
@@ -612,7 +612,7 @@ class BaseTranslationView(LaunchpadView):
                 alternative_language = getUtility(ILanguageSet)[
                     second_lang_code]
             except NotFoundError:
-                # Oops, a bogus code was provided! 
+                # Oops, a bogus code was provided!
                 # XXX: kiki 2006-09-28: Should this be UnexpectedFormData too?
                 second_lang_code = None
             else:
@@ -931,7 +931,7 @@ class POMsgSetView(LaunchpadView):
             pomsgset.pofile.canEditTranslations(self.user))
         self.form_is_writeable = form_is_writeable
 
-        # Set up alternative language variables. 
+        # Set up alternative language variables.
         # XXX: kiko 2006-09-27:
         # This could be made much simpler if we built suggestions externally
         # in the parent view, as suggested in initialize() below.
