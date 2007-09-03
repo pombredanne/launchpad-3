@@ -32,7 +32,6 @@ from canonical.launchpad.webapp import (
 
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
-
 class LanguageSetNavigation(GetitemNavigation):
     usedfor = ILanguageSet
 
@@ -147,44 +146,11 @@ class LanguageAdminView(LaunchpadEditFormView):
     """Handle an admin form submission."""
     schema = ILanguage
 
-    custom_widget('country', LabeledMultiCheckBoxWidget,
+    custom_widget('countries', LabeledMultiCheckBoxWidget,
                   orientation='vertical')
 
     field_names = ['code', 'englishname', 'nativename', 'pluralforms',
-                   'pluralexpression', 'visible', 'direction']
-
-    def setUpFields(self):
-        LaunchpadFormView.setUpFields(self)
-        self.form_fields = self.form_fields + self.createCountryField()
-
-    @property
-    def initial_values(self):
-        """Default to countries a language is currently set as being spoken in.
-        """
-        return {'country': list(self.context.countries)}
-
-    def createCountryField(self):
-        """Create a field to choose a set of countries.
-
-        Create a specialized vocabulary based on countries this language
-        is spoken in.
-        """
-        # Get a list of all countries sorted by name
-        countries = list(getUtility(ICountrySet))
-        terms = []
-        for country in countries:
-            terms.append(SimpleTerm(country, country.iso3166code2,
-                                    country.name))
-        return form.Fields(
-            List(__name__='country',
-                 title=_(u'Spoken in'),
-                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
-                 required=False,
-                 description=_(
-                     u'The countries this language is officially spoken in.')),
-            name='country',
-            custom_widget=self.custom_widgets['country'],
-            render_context=self.render_context)
+                   'pluralexpression', 'visible', 'direction', 'countries']
 
     def initialize(self):
         LaunchpadEditFormView.initialize(self)
@@ -200,17 +166,6 @@ class LanguageAdminView(LaunchpadEditFormView):
 
     @action("Admin Language", name="admin")
     def admin_action(self, action, data):
-        # We are special-casing country handling, since this has to
-        # modify a different (`SpokenIn`) table
-        countries = data['country']
-        for country in self.context.countries:
-            if country not in countries:
-                self.context.removeCountry(country)
-        for country in countries:
-            if country not in self.context.countries:
-                self.context.addCountry(country)
-        del data['country']
-
         self.updateContextFromData(data)
 
     def validate(self, data):

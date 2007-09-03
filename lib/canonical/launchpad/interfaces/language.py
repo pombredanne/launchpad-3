@@ -9,7 +9,7 @@ __all__ = [
     'ILanguageSet',
     ]
 
-from zope.schema import TextLine, Int, Choice, Bool, Field
+from zope.schema import TextLine, Int, Choice, Bool, Field, List, Set
 from zope.interface import Interface, Attribute
 
 from canonical.lp.dbschema import TextDirection
@@ -51,9 +51,11 @@ class ILanguage(Interface):
         title=u'List of Teams that translate into this language.',
         required=True)
 
-    countries = Field(
-        title=u'A list of Countries where this language is spoken in.',
-        required=True)
+    countries = Set(
+        title=u'Spoken in',
+        description=u'List of countries this language is spoken in.',
+        required=True,
+        value_type=Choice(vocabulary="CountryName"))
 
     def addCountry(country):
         """Adds a country language is spoken in.
