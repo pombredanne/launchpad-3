@@ -1070,13 +1070,14 @@ class Roundup(ExternalBugTracker):
 class Python(Roundup):
     """An ExternalBugTracker descendant to handle the Python bugtracker.
 
-    This class descends from the Roundup ExternalBugTracker because the Python
-    bugtracker is, at base, a Roundup instance with some modifications.
+    This class descends from the Roundup ExternalBugTracker because the
+    Python bugtracker is, at base, a Roundup instance with some
+    modifications.
     """
 
-    # The bug export URLs differ only from the base Roundup ones insofar as
-    # they need to include the resolution column in order for us to be able to
-    # successfully export it.
+    # The bug export URLs differ only from the base Roundup ones insofar
+    # as they need to include the resolution column in order for us to
+    # be able to successfully export it.
     single_bug_export_url = (
         "issue?@action=export_csv&@columns=title,id,activity,status,resolution"
         "&@sort=id&@group=priority&@filter=id&@pagesize=50"
