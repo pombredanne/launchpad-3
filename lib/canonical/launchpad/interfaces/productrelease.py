@@ -77,7 +77,6 @@ class IProductRelease(Interface):
         "Launchpad."), required=True, readonly=True)
     displayname = Attribute('Constructed displayname for a product release.')
     title = Attribute('Constructed title for a product release.')
-    manifest = Attribute(_('Manifest Information.'))
     product = Attribute(_('The upstream project of this release.'))
     files = Attribute(_('Iterable of product release files.'))
 

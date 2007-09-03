@@ -480,7 +480,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             urgency=self.changes.converted_urgency,
             dsc=encoded['filecontents'],
             dscsigningkey=self.signingkey,
-            manifest=None,
             dsc_maintainer_rfc822=encoded['maintainer'],
             dsc_format=encoded['format'],
             dsc_binaries=encoded['binary'],

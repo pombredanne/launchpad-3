@@ -1,5 +1,9 @@
 SET client_min_messages=ERROR;
 
+ALTER TABLE SourcePackageRelease
+  DROP COLUMN manifest;
+
+
 -- Not used any more (if ever).
 DROP TABLE DevelopmentManifest;
 DROP TABLE ManifestAncestry;

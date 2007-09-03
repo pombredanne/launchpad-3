@@ -565,7 +565,6 @@ class SourcePackageHandler:
             sourcepackagename=name.id,
             maintainer=maintainer.id,
             dscsigningkey=key,
-            manifest=None,
             urgency=urgencymap[src.urgency],
             dateuploaded=src.date_uploaded,
             dsc=src.dsc,

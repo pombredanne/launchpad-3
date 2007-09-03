@@ -117,7 +117,6 @@ createMissingBuilds() method. Additionally if the target is an already
 released distroseries it can only be visible if published in in
 special pocket (UPDATES, SECURITY or BACKPORTS)
 
-  >>> from canonical.launchpad.database import Manifest
   >>> count = 1
   >>> def createPackageAndPublication(name, series, architecturehintlist,
   ...     archive=None):
@@ -126,7 +125,6 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
   ...     Return a tuple with (SourcePackageRelease, publication)
   ...     """
   ...     global count
-  ...     manifest = Manifest(uuid="fake %d" % count)
   ...     tar = SourcePackageFileType.TARBALL
   ...     published = PackagePublishingStatus.PUBLISHED
   ...     release_pocket = PackagePublishingPocket.UPDATES
@@ -146,7 +144,6 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
   ...         dsc=None,
   ...         copyright='placeholder ...',
   ...         changelog=None,
-  ...         manifest=manifest,
   ...         dscsigningkey=None,
   ...         dsc_format="1.0",
   ...         dsc_maintainer_rfc822="mark <mark@mark.com>",
