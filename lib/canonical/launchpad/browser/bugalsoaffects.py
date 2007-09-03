@@ -42,7 +42,7 @@ class BugAlsoAffectsProductMetaView(LaunchpadView):
 
     @property
     def first_step_view(self):
-        return AlsoAffectsChooseProductStep
+        return ChooseProductStep
 
     def initialize(self):
         view = self.first_step_view(self.context, self.request)
@@ -66,7 +66,7 @@ class BugAlsoAffectsDistroMetaView(BugAlsoAffectsProductMetaView):
 
     @property
     def first_step_view(self):
-        return AlsoAffectsDistroBugTaskCreationStep
+        return DistroBugTaskCreationStep
 
 
 class AlsoAffectsStep(LaunchpadFormView):
@@ -136,7 +136,7 @@ class AlsoAffectsStep(LaunchpadFormView):
         return super(AlsoAffectsStep, self).render()
 
 
-class AlsoAffectsChooseProductStep(AlsoAffectsStep):
+class ChooseProductStep(AlsoAffectsStep):
     """View for choosing a product that is affected by a given bug."""
 
     # Need to define this here because we will render this view manually.
@@ -161,7 +161,7 @@ class AlsoAffectsChooseProductStep(AlsoAffectsStep):
             return None
 
     def initialize(self):
-        super(AlsoAffectsChooseProductStep, self).initialize()
+        super(ChooseProductStep, self).initialize()
         bugtask = self.context
         if (self.widgets['product'].hasInput() or
             not IDistributionSourcePackage.providedBy(bugtask.target)):
@@ -204,7 +204,7 @@ class AlsoAffectsChooseProductStep(AlsoAffectsStep):
                 # bug URL.
                 self.request.form['field.product'] = urllib.quote(
                     upstream.name)
-                self.next_view = AlsoAffectsProductBugTaskCreationStep
+                self.next_view = ProductBugTaskCreationStep
 
     def validateStep(self, data):
         if data.get('product'):
@@ -238,10 +238,10 @@ class AlsoAffectsChooseProductStep(AlsoAffectsStep):
         be used by our meta view.
         """
         self.request.form['field.product'] = urllib.quote(data['product'].name)
-        self.next_view = AlsoAffectsProductBugTaskCreationStep
+        self.next_view = ProductBugTaskCreationStep
 
 
-class AlsoAffectsBugTaskCreationStep(AlsoAffectsStep):
+class BugTaskCreationStep(AlsoAffectsStep):
     """The bug task creation step of the AlsoAffects workflow.
 
     In this view the user specifies the URL for the remote bug and we create
@@ -258,20 +258,19 @@ class AlsoAffectsBugTaskCreationStep(AlsoAffectsStep):
     custom_widget('visited_steps', TextWidget, visible=False)
 
     step_name = 'specify_remote_bug_url'
-    next_view = None
     task_added = None
     available_action_names = None
     target_field_names = ()
     __launchpad_facetname__ = 'bugs'
 
     def __init__(self, context, request):
-        super(AlsoAffectsBugTaskCreationStep, self).__init__(context, request)
+        super(BugTaskCreationStep, self).__init__(context, request)
         self.notifications = []
         self.field_names = ['bug_url', 'visited_steps'] + list(
             self.target_field_names)
 
     def setUpWidgets(self):
-        super(AlsoAffectsBugTaskCreationStep, self).setUpWidgets()
+        super(BugTaskCreationStep, self).setUpWidgets()
         self.target_widgets = [
             self.widgets[field_name]
             for field_name in self.field_names
@@ -347,10 +346,10 @@ class AlsoAffectsBugTaskCreationStep(AlsoAffectsStep):
                 # Delegate to another view which will ask the user if (s)he
                 # wants to create the bugtracker now.
                 if list(self.target_field_names) == ['product']:
-                    self.next_view = AlsoAffectsUpstreamBugTrackerCreationStep
+                    self.next_view = UpstreamBugTrackerCreationStep
                 else:
                     assert 'distribution' in self.target_field_names
-                    self.next_view = AlsoAffectsDistroBugTrackerCreationStep
+                    self.next_view = DistroBugTrackerCreationStep
                 return
 
         product = data.get('product')
@@ -384,9 +383,8 @@ class AlsoAffectsBugTaskCreationStep(AlsoAffectsStep):
         self.next_url = canonical_url(self.task_added)
 
 
-class AlsoAffectsDistroBugTaskCreationStep(AlsoAffectsBugTaskCreationStep):
-    """Specialized AlsoAffectsBugTaskCreationStep for reporting a bug in a
-    distribution.
+class DistroBugTaskCreationStep(BugTaskCreationStep):
+    """Specialized BugTaskCreationStep for reporting a bug in a distribution.
     """
 
     # Need to define this here because we will render this view manually.
@@ -424,7 +422,7 @@ class AlsoAffectsDistroBugTaskCreationStep(AlsoAffectsBugTaskCreationStep):
             except LaunchpadValidationError, error:
                 self.setFieldError('sourcepackagename', error.snippet())
 
-        super(AlsoAffectsDistroBugTaskCreationStep, self).validateStep(data)
+        super(DistroBugTaskCreationStep, self).validateStep(data)
 
     def render(self):
         for bugtask in IBug(self.context).bugtasks:
@@ -433,13 +431,11 @@ class AlsoAffectsDistroBugTaskCreationStep(AlsoAffectsBugTaskCreationStep):
                 self.widgets['sourcepackagename'].setRenderedValue(
                     bugtask.sourcepackagename)
                 break
-        return super(AlsoAffectsDistroBugTaskCreationStep, self).render()
+        return super(DistroBugTaskCreationStep, self).render()
 
 
-class AlsoAffectsProductBugTaskCreationStep(AlsoAffectsBugTaskCreationStep):
-    """Specialized AlsoAffectsBugTaskCreationStep for reporting a bug in an
-    upstream.
-    """
+class ProductBugTaskCreationStep(BugTaskCreationStep):
+    """Specialized BugTaskCreationStep for reporting a bug in an upstream."""
 
     # Need to define this here because we will render this view manually.
     template = ViewPageTemplateFile(
@@ -456,12 +452,12 @@ class AlsoAffectsProductBugTaskCreationStep(AlsoAffectsBugTaskCreationStep):
             return self.widgets['product'].getInputValue()
 
 
-class AlsoAffectsBugTrackerCreationStep(AlsoAffectsStep):
+class BugTrackerCreationStep(AlsoAffectsStep):
     """View for creating a bugtracker from the given URL.
 
     This view will ask the user if he really wants to register the new bug
     tracker, perform the registration and then delegate to one of
-    AlsoAffectsBugTaskCreationStep's subclasses.
+    BugTaskCreationStep's subclasses.
     """
 
     schema = IAddBugTaskForm
@@ -470,10 +466,9 @@ class AlsoAffectsBugTrackerCreationStep(AlsoAffectsStep):
 
     __launchpad_facetname__ = 'bugs'
     step_name = "bugtracker_creation"
-    next_view = None
     main_action_label = u'Register Bug Tracker and Add to Bug Report'
 
-    def create_task_and_bugtracker_action(self, action, data):
+    def main_action(self, action, data):
         bug_url = data.get('bug_url')
         assert bug_url is not None and len(bug_url) != 0
         bug_url = bug_url.strip()
@@ -482,11 +477,12 @@ class AlsoAffectsBugTrackerCreationStep(AlsoAffectsStep):
         except NoBugTrackerFound, error:
             getUtility(IBugTrackerSet).ensureBugTracker(
                 error.base_url, self.user, error.bugtracker_type)
+        self.next_view = self._next_view
 
 
-class AlsoAffectsDistroBugTrackerCreationStep(
-        AlsoAffectsBugTrackerCreationStep):
+class DistroBugTrackerCreationStep(BugTrackerCreationStep):
 
+    _next_view = DistroBugTaskCreationStep
     field_names = [
         'distribution', 'sourcepackagename', 'bug_url', 'visited_steps']
     custom_widget('distribution', DropdownWidget, visible=False)
@@ -496,24 +492,14 @@ class AlsoAffectsDistroBugTrackerCreationStep(
     template = ViewPageTemplateFile(
         '../templates/bugtask-confirm-bugtracker-creation.pt')
 
-    def main_action(self, action, data):
-        super(AlsoAffectsDistroBugTrackerCreationStep,
-              self).create_task_and_bugtracker_action(action, data)
-        self.next_view = AlsoAffectsDistroBugTaskCreationStep
 
+class UpstreamBugTrackerCreationStep(BugTrackerCreationStep):
 
-class AlsoAffectsUpstreamBugTrackerCreationStep(
-        AlsoAffectsBugTrackerCreationStep):
-
+    _next_view = ProductBugTaskCreationStep
     field_names = ['product', 'bug_url', 'visited_steps']
     custom_widget('product', DropdownWidget, visible=False)
     label = "Confirm project"
     # Need to define this here because we will render this view manually.
     template = ViewPageTemplateFile(
         '../templates/bugtask-confirm-bugtracker-creation.pt')
-
-    def main_action(self, action, data):
-        super(AlsoAffectsUpstreamBugTrackerCreationStep,
-              self).create_task_and_bugtracker_action(action, data)
-        self.next_view = AlsoAffectsProductBugTaskCreationStep
 
