@@ -875,6 +875,24 @@ class Trac(ExternalBugTracker):
         reader = csv.DictReader(self._fetchPage(query_url))
         return (bug_id, reader.next())
 
+    def getRemoteBugBatch(self, bug_ids):
+        """See `ExternalBugTracker`."""
+        id_string = '&'.join(['id=%s' % id for id in bug_ids])
+        query_url = "%s/%s" % (self.baseurl, self.batch_url % id_string)
+        remote_bugs = csv.DictReader(self._fetchPage(query_url))
+
+        bugs = {}
+        for remote_bug in remote_bugs:
+            # We're only interested in the bug if it's one of the ones in
+            # bug_ids, just in case we get all the tickets in the Trac
+            # instance back instead of only the ones we want.
+            if remote_bug['id'] not in bug_ids:
+                continue
+
+            bugs[int(remote_bug['id'])] = remote_bug
+
+        return bugs
+
     def initializeRemoteBugDB(self, bug_ids):
         """Do any initialization before each bug watch is updated.
 
@@ -898,22 +916,6 @@ class Trac(ExternalBugTracker):
         # For large lists of bug ids we retrieve bug statuses as a batch from
         # the remote bug tracker so as to avoid effectively DOSing it.
         else:
-            id_string = '&'.join(['id=%s' % id for id in bug_ids])
-            query_url = "%s/%s" % (self.baseurl, self.batch_url % id_string)
-            try:
-                csv_data = self.urlopen(query_url)
-            except (urllib2.HTTPError, urllib2.URLError), val:
-                raise BugTrackerConnectError(query_url, val)
-
-            remote_bugs = csv.DictReader(csv_data)
-            for remote_bug in remote_bugs:
-                # We're only interested in the bug if it's one of the ones in
-                # bug_ids, just in case we get all the tickets in the Trac
-                # instance back instead of only the ones we want.
-                if remote_bug['id'] not in bug_ids:
-                    continue
-
-                self.bugs[int(remote_bug['id'])] = remote_bug
 
     def getRemoteStatus(self, bug_id):
         """Return the remote status for the given bug id.
