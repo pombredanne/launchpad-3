@@ -6,6 +6,7 @@ __all__ = ['BugAlsoAffectsProductMetaView', 'BugAlsoAffectsDistroMetaView']
 
 import cgi
 import urllib
+from textwrap import dedent
 
 from zope.app.form.browser import DropdownWidget, TextWidget
 from zope.app.form.interfaces import WidgetsError
@@ -13,6 +14,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, IBugTaskSet, IBugTrackerSet, IBugWatchSet,
     IDistributionSourcePackage, ILaunchBag, ILaunchpadCelebrities,
@@ -72,12 +74,19 @@ class BugAlsoAffectsDistroMetaView(BugAlsoAffectsProductMetaView):
 class AlsoAffectsStep(LaunchpadFormView):
     """Base view for all steps of the bug-also-affects workflow."""
 
+    __launchpad_facetname__ = 'bugs'
+    schema = IAddBugTaskForm
+    custom_widget('visited_steps', TextWidget, visible=False)
+
     next_view = None
     step_name = ""
     main_action_label = u'Continue'
 
     def validateStep(self, data):
-        """To be overriden in subclasses."""
+        """Validation specific to a given step.
+
+        To be overridden in subclasses, if necessary.
+        """
         pass
 
     @action(u'Continue', name='continue')
@@ -91,12 +100,19 @@ class AlsoAffectsStep(LaunchpadFormView):
         return self.main_action(action, data)
 
     def validate(self, data):
+        """Call self.validateStep() if the form should be processed.
+
+        Subclasses /must not/ override this method. They should override
+        validateStep() if they have any custom validation they need to
+        perform.
+        """
         if not self.shouldProcess(data):
             return
 
         self.validateStep(data)
 
     def injectStepNameInRequest(self):
+        """Inject this step's name into the request if necessary."""
         visited_steps = self.request.form.get('field.visited_steps')
         if not visited_steps:
             self.request.form['field.visited_steps'] = self.step_name
@@ -118,11 +134,7 @@ class AlsoAffectsStep(LaunchpadFormView):
         that to find out whether or not to process them, so we use an extra
         hidden input to store the views the user has visited already.
         """
-        if self.step_name not in data['visited_steps']:
-            # First time we visit this page, so there's no point in validating
-            # its data.
-            return False
-        return True
+        return self.step_name in data['visited_steps']
 
     def render(self):
         # This is a hack to make it possible to change the label of our main
@@ -139,15 +151,11 @@ class AlsoAffectsStep(LaunchpadFormView):
 class ChooseProductStep(AlsoAffectsStep):
     """View for choosing a product that is affected by a given bug."""
 
-    # Need to define this here because we will render this view manually.
     template = ViewPageTemplateFile(
         '../templates/bugtask-choose-affected-product.pt')
-    __launchpad_facetname__ = 'bugs'
 
-    schema = IAddBugTaskForm
     field_names = ['product', 'visited_steps']
     label = u"Record as affecting another project"
-    custom_widget('visited_steps', TextWidget, visible=False)
     step_name = "choose_product"
 
     def _getUpstream(self, distro_package):
@@ -162,9 +170,8 @@ class ChooseProductStep(AlsoAffectsStep):
 
     def initialize(self):
         super(ChooseProductStep, self).initialize()
-        bugtask = self.context
         if (self.widgets['product'].hasInput() or
-            not IDistributionSourcePackage.providedBy(bugtask.target)):
+            not IDistributionSourcePackage.providedBy(self.context.target)):
             return
 
         self.maybeAddNotificationOrTeleport()
@@ -179,20 +186,7 @@ class ChooseProductStep(AlsoAffectsStep):
         """
         bugtask = self.context
         upstream = self._getUpstream(bugtask.target)
-        if upstream is None:
-            distroseries = bugtask.distribution.currentseries
-            if distroseries is not None:
-                sourcepackage = distroseries.getSourcePackage(
-                    bugtask.sourcepackagename)
-                self.request.response.addInfoNotification(
-                    'Please select the appropriate upstream project.'
-                    ' This step can be avoided by'
-                    ' <a href="%(package_url)s/+edit-packaging">updating'
-                    ' the packaging information for'
-                    ' %(full_package_name)s</a>.',
-                    full_package_name=bugtask.bugtargetdisplayname,
-                    package_url=canonical_url(sourcepackage))
-        else:
+        if upstream is not None:
             try:
                 valid_upstreamtask(bugtask.bug, upstream)
             except WidgetsError:
@@ -205,6 +199,19 @@ class ChooseProductStep(AlsoAffectsStep):
                 self.request.form['field.product'] = urllib.quote(
                     upstream.name)
                 self.next_view = ProductBugTaskCreationStep
+            return
+
+        distroseries = bugtask.distribution.currentseries
+        if distroseries is not None:
+            sourcepackage = distroseries.getSourcePackage(
+                bugtask.sourcepackagename)
+            self.request.response.addInfoNotification(_(dedent("""
+                Please select the appropriate upstream project. This step can
+                be avoided by <a href="%(package_url)s/+edit-packaging"
+                >updating the packaging information for
+                %(full_package_name)s</a>.""")),
+                full_package_name=bugtask.bugtargetdisplayname,
+                package_url=canonical_url(sourcepackage))
 
     def validateStep(self, data):
         if data.get('product'):
@@ -253,15 +260,10 @@ class BugTaskCreationStep(AlsoAffectsStep):
     registered.
     """
 
-    schema = IAddBugTaskForm
     custom_widget('bug_url', StrippedTextWidget, displayWidth=50)
-    custom_widget('visited_steps', TextWidget, visible=False)
 
     step_name = 'specify_remote_bug_url'
-    task_added = None
-    available_action_names = None
     target_field_names = ()
-    __launchpad_facetname__ = 'bugs'
 
     def __init__(self, context, request):
         super(BugTaskCreationStep, self).__init__(context, request)
@@ -286,18 +288,6 @@ class BugTaskCreationStep(AlsoAffectsStep):
         """
         raise NotImplementedError()
 
-    def validateStep(self, data):
-        """Check there's no bug_url if the target uses malone."""
-        target = self.getTarget(data)
-        bug_url = data.get('bug_url')
-        if bug_url and target.official_malone:
-            self.addError(
-                "Bug watches can not be added for %s, as it uses Launchpad"
-                " as its official bug tracker. Alternatives are to add a"
-                " watch for another project, or a comment containing a"
-                " URL to the related bug report." % cgi.escape(
-                    target.displayname))
-
     def main_action(self, action, data):
         """Create the new bug task.
 
@@ -321,18 +311,11 @@ class BugTaskCreationStep(AlsoAffectsStep):
                 '<input style="font-size: smaller" type="submit"'
                 ' value="Yes, Add Anyway" name="ignore_missing_remote_bug" />'
                 % self.continue_action.__name__)
-            #XXX: Bjorn Tillenius 2006-09-13:
-            #     This text should be re-written to be more compact. I'm not
-            #     doing it now, though, since it might go away completely
-            #     soon.
-            self.notifications.append(
-                "%s doesn't use Launchpad as its bug tracker. If you don't add"
-                " a bug watch now you have to keep track of the status"
-                " manually. You can however link to an external bug tracker"
-                " at a later stage in order to get automatic status updates."
-                " Are you sure you want to request a fix anyway?"
-                " %s"
-                % (cgi.escape(self.getTarget().displayname), confirm_button))
+            self.notifications.append(_(dedent("""
+                %s doesn't use Launchpad as its bug tracker. Without a bug
+                URL to watch, status will need to be tracked manually.
+                Request a fix anyway?  %s""" %
+                (cgi.escape(self.getTarget().displayname), confirm_button))))
             return None
 
         extracted_bug = None
@@ -355,7 +338,7 @@ class BugTaskCreationStep(AlsoAffectsStep):
         product = data.get('product')
         distribution = data.get('distribution')
         sourcepackagename = data.get('sourcepackagename')
-        self.task_added = getUtility(IBugTaskSet).createTask(
+        task_added = getUtility(IBugTaskSet).createTask(
             self.context.bug, getUtility(ILaunchBag).user, product=product,
             distribution=distribution, sourcepackagename=sourcepackagename)
 
@@ -363,31 +346,29 @@ class BugTaskCreationStep(AlsoAffectsStep):
             assert extracted_bugtracker is not None, (
                 "validate() should have ensured that bugtracker is not None.")
             # Make sure that we don't add duplicate bug watches.
-            bug_watch = self.task_added.bug.getBugWatch(
+            bug_watch = task_added.bug.getBugWatch(
                 extracted_bugtracker, extracted_bug)
             if bug_watch is None:
-                bug_watch = self.task_added.bug.addWatch(
+                bug_watch = task_added.bug.addWatch(
                     extracted_bugtracker, extracted_bug, self.user)
                 notify(SQLObjectCreatedEvent(bug_watch))
             if not target.official_malone:
-                self.task_added.bugwatch = bug_watch
+                task_added.bugwatch = bug_watch
 
-        if not target.official_malone and self.task_added.bugwatch is not None:
+        if not target.official_malone and task_added.bugwatch is not None:
             # A remote bug task gets its status from a bug watch, so we want
             # its status/importance to be UNKNOWN when created.
-            self.task_added.transitionToStatus(
-                BugTaskStatus.UNKNOWN, self.user)
-            self.task_added.importance = BugTaskImportance.UNKNOWN
+            task_added.transitionToStatus(BugTaskStatus.UNKNOWN, self.user)
+            task_added.importance = BugTaskImportance.UNKNOWN
 
-        notify(SQLObjectCreatedEvent(self.task_added))
-        self.next_url = canonical_url(self.task_added)
+        notify(SQLObjectCreatedEvent(task_added))
+        self.next_url = canonical_url(task_added)
 
 
 class DistroBugTaskCreationStep(BugTaskCreationStep):
     """Specialized BugTaskCreationStep for reporting a bug in a distribution.
     """
 
-    # Need to define this here because we will render this view manually.
     template = ViewPageTemplateFile('../templates/bugtask-requestfix.pt')
 
     label = "Also affects distribution/package"
@@ -400,6 +381,22 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
             return self.widgets['distribution'].getInputValue()
 
     def validateStep(self, data):
+        """Check that
+
+        1. there's no bug_url if the target uses malone;
+        2. there is a package with the given name;
+        3. it's possible to create a new task for the given package/distro.
+        """
+        target = self.getTarget(data)
+        bug_url = data.get('bug_url')
+        if bug_url and target.official_malone:
+            self.addError(
+                "Bug watches can not be added for %s, as it uses Launchpad"
+                " as its official bug tracker. Alternatives are to add a"
+                " watch for another project, or a comment containing a"
+                " URL to the related bug report." % cgi.escape(
+                    target.displayname))
+
         distribution = data.get('distribution')
         sourcepackagename = data.get('sourcepackagename')
         entered_package = self.request.form.get(
@@ -437,7 +434,6 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
 class ProductBugTaskCreationStep(BugTaskCreationStep):
     """Specialized BugTaskCreationStep for reporting a bug in an upstream."""
 
-    # Need to define this here because we will render this view manually.
     template = ViewPageTemplateFile(
         '../templates/bugtask-requestfix-upstream.pt')
 
@@ -460,18 +456,16 @@ class BugTrackerCreationStep(AlsoAffectsStep):
     BugTaskCreationStep's subclasses.
     """
 
-    schema = IAddBugTaskForm
     custom_widget('bug_url', StrippedTextWidget, displayWidth=50)
-    custom_widget('visited_steps', TextWidget, visible=False)
 
-    __launchpad_facetname__ = 'bugs'
     step_name = "bugtracker_creation"
     main_action_label = u'Register Bug Tracker and Add to Bug Report'
+    _next_view = None
 
     def main_action(self, action, data):
-        bug_url = data.get('bug_url')
-        assert bug_url is not None and len(bug_url) != 0
-        bug_url = bug_url.strip()
+        assert self._next_view is not None, (
+            "_next_view must be specified in subclasses.")
+        bug_url = data.get('bug_url').strip()
         try:
             getUtility(IBugWatchSet).extractBugTrackerAndBug(bug_url)
         except NoBugTrackerFound, error:
@@ -488,7 +482,6 @@ class DistroBugTrackerCreationStep(BugTrackerCreationStep):
     custom_widget('distribution', DropdownWidget, visible=False)
     custom_widget('sourcepackagename', DropdownWidget, visible=False)
     label = "Also affects distribution/package"
-    # Need to define this here because we will render this view manually.
     template = ViewPageTemplateFile(
         '../templates/bugtask-confirm-bugtracker-creation.pt')
 
@@ -499,7 +492,6 @@ class UpstreamBugTrackerCreationStep(BugTrackerCreationStep):
     field_names = ['product', 'bug_url', 'visited_steps']
     custom_widget('product', DropdownWidget, visible=False)
     label = "Confirm project"
-    # Need to define this here because we will render this view manually.
     template = ViewPageTemplateFile(
         '../templates/bugtask-confirm-bugtracker-creation.pt')
 

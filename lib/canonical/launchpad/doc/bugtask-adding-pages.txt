@@ -240,7 +240,7 @@ watch.
     >>> len(add_task_view.errors)
     0
     >>> print add_task_view.notifications
-    [u'alsa-utils doesn\'t use Launchpad as its bug tracker...]
+    [...alsa-utils doesn\'t use Launchpad as its bug tracker...]
     >>> add_task_view.next_url is None
     True
 
