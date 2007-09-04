@@ -1696,7 +1696,7 @@ to the specified team.
     >>> print ff_bug.bugtasks[-1].assignee.name
     name19
 
-We don't use thr preffered email address to refer to the assignee in
+We don't use the preffered email address to refer to the assignee in
 any email notifications. Instead, we always use the unique
 displayname - a combination of the user's display name and their unique
 Launchpad username.
