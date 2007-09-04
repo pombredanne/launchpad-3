@@ -314,7 +314,7 @@ class ZopelessTransactionManager(object):
 
     def set_isolation_level(self, level):
         """Set the transaction isolation level.
-        
+
         Level can be one of AUTOCOMMIT_ISOLATION, READ_COMMITTED_ISOLATION
         or SERIALIZABLE_ISOLATION. As changing the isolation level must be
         done before any other queries are issued in the current transaction,
@@ -624,7 +624,7 @@ def flush_database_caches():
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid
 # passing the transaction manager all through your code.
-# XXX Andrew Bennetts 2005-02-11: 
+# XXX Andrew Bennetts 2005-02-11:
 # Make these use and work with Zope 3's transaction machinery instead!
 
 def begin():
@@ -689,7 +689,7 @@ class FakeZopelessTransactionManager:
         FakeZopelessConnectionDescriptor.uninstall()
         ZopelessTransactionManager._installed = None
 
-    # XXX Andrew Bennetts 2005-07-12: 
+    # XXX Andrew Bennetts 2005-07-12:
     #      Ideally I'd be able to re-use some of the ZopelessTransactionManager
     #      implementation of begin, commit and abort.
     def begin(self):

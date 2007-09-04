@@ -73,7 +73,7 @@ class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
             'Basic %s' % base64.encodestring('%s:%s' % (login, pwd))}
         request = TestRequest(**dict)
         return getUtility(IPlacelessAuthUtility), request
-        
+
     def test_authenticate_ok(self):
         authsvc, request = self._make('bruce', 'bruce!')
         self.assertEqual(authsvc.authenticate(request), Bruce)

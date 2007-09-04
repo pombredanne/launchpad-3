@@ -283,7 +283,7 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
         self.failUnless(should_skip_host(self.host))
 
     def test_connect_is_called_if_not_many_timeouts(self):
-        # If the ratio is not too small we consider it's safe to keep 
+        # If the ratio is not too small we consider it's safe to keep
         # issuing connections on that host.
         requests = MIN_REQUESTS_TO_CONSIDER_RATIO
         timeouts = (
@@ -392,7 +392,7 @@ class TestMultiLock(TestCase):
         # Keep lock_one busy.
         deferred = defer.Deferred()
         self.lock_one.run(lambda: deferred)
- 
+
         # Run self.callback when self.multi_lock is acquired.
         self.multi_lock.run(self.callback)
         self.assertEquals(
@@ -410,7 +410,7 @@ class TestMultiLock(TestCase):
         # Keep lock_two busy.
         deferred = defer.Deferred()
         self.lock_two.run(lambda: deferred)
- 
+
         # Run self.callback when self.multi_lock is acquired.
         self.multi_lock.run(self.callback)
         self.assertEquals(
@@ -424,13 +424,13 @@ class TestMultiLock(TestCase):
         self.assertEquals(self.count, 1, "self.callback should have run.")
 
     def test_run_waits_for_current_task(self):
-        """MultiLock.run waits the end of the current task before running the 
+        """MultiLock.run waits the end of the current task before running the
         next.
         """
         # Keep multi_lock busy.
         deferred = defer.Deferred()
         self.multi_lock.run(lambda: deferred)
- 
+
         # Run self.callback when self.multi_lock is acquired.
         self.multi_lock.run(self.callback)
         self.assertEquals(

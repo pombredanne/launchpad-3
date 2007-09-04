@@ -45,7 +45,7 @@ class ConnectionWrapper(object):
     def rollback(self, InterfaceError=psycopg.InterfaceError):
         # In our test suites, rollback ends up being called twice in some
         # circumstances. Silently ignoring this is probably not correct,
-        # but the alternative is wasting further time chasing this 
+        # but the alternative is wasting further time chasing this
         # and probably refactoring sqlos and/or zope3
         # -- StuartBishop 2005-01-11
         # Need to store InterfaceError cleverly, otherwise it may have been
@@ -79,7 +79,7 @@ class ConnectionWrapper(object):
 
 class CursorWrapper:
     """A wrapper around cursor objects.
-    
+
     Acts like a normal cursor object, except if CursorWrapper.record_sql is set,
     then queries that pass through CursorWrapper.execute will be appended to
     CursorWrapper.last_executed_sql.  This is useful for tests that want to
@@ -147,7 +147,7 @@ class PgTestSetup(object):
     def __init__(self, template=None, dbname=None, dbuser=None,
             host=None, port=None):
         '''Construct the PgTestSetup
-        
+
         Note that dbuser is not used for setting up or tearing down
         the database - it is only used by the connect() method
         '''
@@ -247,7 +247,7 @@ class PgTestSetup(object):
 
     def dropDb(self):
         '''Drop the database if it exists.
-        
+
         Raises an exception if there are open connections
         '''
         attempts = 100
@@ -291,7 +291,7 @@ class PgTestSetup(object):
 
     def force_dirty_database(self):
         """flag the database as being dirty
-        
+
         This ensures that the database will be recreated for the next test.
         Tearing down the database is done automatically when we detect
         changes. Currently, however, not all changes are detectable (such

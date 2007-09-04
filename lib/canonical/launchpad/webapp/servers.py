@@ -342,7 +342,7 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
 
 class BrowserFormNG:
     """Wrapper that provides IBrowserFormNG around a regular form dict."""
-    
+
     implements(IBrowserFormNG)
 
     def __init__(self, form):
@@ -356,7 +356,7 @@ class BrowserFormNG:
     def __iter__(self):
         """See IBrowserFormNG."""
         return iter(self.form)
-    
+
     def getOne(self, name, default=None):
         """See IBrowserFormNG."""
         value = self.form.get(name, default)
@@ -364,7 +364,7 @@ class BrowserFormNG:
             raise UnexpectedFormData(
                 'Expected only one value form field %s: %s' % (name, value))
         return value
-    
+
     def getAll(self, name, default=None):
         """See IBrowserFormNG."""
         # We don't want a mutable as a default parameter, so we use None as a
@@ -388,7 +388,7 @@ class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
     """
 
     installed = False
-    
+
     @classmethod
     def install(cls):
         """Install the monkey patch."""
@@ -412,7 +412,7 @@ class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
         SimpleInputWidget._getFormInput = _getFormInput_single
         MultiDataHelper._getFormInput = _getFormInput_multi
         cls.installed = True
-        
+
     @classmethod
     def uninstall(cls):
         """Uninstall the monkey patch."""

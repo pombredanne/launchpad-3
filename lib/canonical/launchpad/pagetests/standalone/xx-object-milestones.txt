@@ -95,9 +95,9 @@ associated with that milestone for products of this project:
     >>> anon_browser.getLink('1.1').click()
     >>> specs = find_tag_by_id(anon_browser.contents, 'milestone_specs')
     >>> print extract_text(specs)
-    Priority Product Specification Assignee Delivery ...
-    High Evolution Evolution Title evolution specification ... Unknown ...
-    High gnomebaker gnomebaker Title gnomebaker specification ... Unknown
+    Specification Product Priority Assignee Delivery
+    Title evolution specification Evolution Evolution ... High ...  Unknown
+    Title gnomebaker specification gnomebaker gnomebaker ... High ... Unknown
 
     >>> bugtasks = find_tag_by_id(anon_browser.contents, 'milestone_bugtasks')
     >>> print extract_text(bugtasks)

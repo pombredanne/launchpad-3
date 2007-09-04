@@ -14,7 +14,7 @@ interesting one):
 
 Verify if the object follows its interface contracts:
 
- >>> from zope.interface.verify import verifyObject
+ >>> from canonical.launchpad.webapp.testing import verifyObject
  >>> from canonical.launchpad.interfaces import (
  ...     ISourcePackageRelease, IDistroSeries,
  ...     ISourcePackagePublishingHistory,
