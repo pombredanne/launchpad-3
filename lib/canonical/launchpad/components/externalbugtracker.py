@@ -611,31 +611,174 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
 
 
 class Mantis(ExternalBugTracker):
-    # Example sites (tested 2007-08-2X):
-    #   http://www.atutor.ca/atutor/mantis/         1.0.7       NOT OK (no anon access)
-    #   http://bugs.mantisbt.org/                   1.1.0a4-CVS OK
-    #   http://bugs.endian.it/                      -           OK
-    #   http://www.co-ode.org/mantis/               1.0.0rc1    OK
-    #   http://acme.able.cs.cmu.edu/mantis/         1.0.6       OK
-    #   http://bugs.netmrg.net/                     1.0.7       OK
-    #   http://bugs.busybox.net/                    ??? 2006    OK
-    #   https://bugtrack.alsa-project.org/alsa-bug/ 1.0.6       OK
-    #   https://gnunet.org/mantis/                  ??? 2006    OK
+    # Example sites (tested 2007-08-2X):            Version      Scrape  CSV Export
+    #   http://www.atutor.ca/atutor/mantis/         1.0.7        NOT OK  NOT OK (no anon access)
+    #   http://bugs.mantisbt.org/                   1.1.0a4-CVS  OK      OK
+    #   http://bugs.endian.it/                      -            OK      OK
+    #   http://www.co-ode.org/mantis/               1.0.0rc1     OK      OK
+    #   http://acme.able.cs.cmu.edu/mantis/         1.0.6        OK      OK
+    #   http://bugs.netmrg.net/                     1.0.7        OK      OK
+    #   http://bugs.busybox.net/                    ??? 2006     OK      NOT OK (empty)
+    #   https://bugtrack.alsa-project.org/alsa-bug/ 1.0.6        OK      NOT OK (empty)
+    #   https://gnunet.org/mantis/                  ??? 2006     OK      OK
+    #   http://www.futureware.biz/mantisdemo/       1.1.0rc1-CVS OK      OK
 
     # Custom opener that automatically sends anonymous credentials to
     # Mantis if (and only if) needed.
     _opener = ClientCookie.build_opener(MantisLoginHandler)
 
     def __init__(self, baseurl):
-        self.baseurl = baseurl
+        self.baseurl = baseurl.rstrip('/')
+        # Bugs maps an integer bug ID to a dictionary with bug data that
+        # we snarf from the CSV. We use an integer bug ID because the
+        # bug ID for mantis comes prefixed with a bunch of zeroes and it
+        # could get hard to match if we really wanted to format it
+        # exactly the same (and also because of the way we split lines
+        # below in initializeRemoteBugDB().
+        self.bugs = {}
 
     def urlopen(self, request, data=None):
         # We use ClientCookie to make following cookies transparent.
-        # This is required for certain bugtrackers that require cookies
-        # that actually do anything (as is the case with Mantis). It's
-        # basically a drop-in replacement for urllib.urlopen() that
-        # tracks cookies.
+        # This is required for certain bugtrackers that require
+        # cookies that actually do anything (as is the case with
+        # Mantis). It's basically a drop-in replacement for
+        # urllib2.urlopen() that tracks cookies. We also have a
+        # customised ClientCookie opener to handle transparent
+        # authentication.
         return self._opener.open(request, data)
+
+    def initializeRemoteBugDB(self, bug_ids):
+        pass #self._fetchCSVExport(bug_ids)
+
+    def _fetchCSVExport(self, bug_ids):
+        # It's unfortunate that Mantis offers no way of limiting its CSV
+        # export to a set of bugs; we end up having to pull the CSV for
+        # the entire bugtracker at once (and some of them actually blow
+        # up in the process!); this is why we ignore the bug_ids
+        # argument here.
+
+        if not bug_ids:
+            # Well, not completely: if we have no ids to refresh from
+            # this Mantis instance, don't even start the process and
+            # save us some time and bandwidth.
+            return
+
+        # Next step is getting our query filter cookie set up; we need
+        # to do this weird submit in order to get the closed bugs
+        # included in the results; the default Mantis filter excludes
+        # them. It's unlikely that all these parameters are actually
+        # necessary, but it's easy to prepare the complete set from a
+        # view_all_bugs.php form dump so let's keep it complete.
+        data = {
+           'type': '1',
+           'page_number': '1',
+           'view_type': 'simple',
+           'reporter_id[]': '0',
+           'user_monitor[]': '0',
+           'handler_id[]': '0',
+           'show_category[]': '0',
+           'show_severity[]': '0',
+           'show_resolution[]': '0',
+           'show_profile[]': '0',
+           'show_status[]': '0',
+           # Some of the more modern Mantis trackers use
+           # a value of 'hide_status[]': '-2' here but it appears that
+           # [none] works. Oops, older Mantis uses 'none' here. Gross!
+           'hide_status[]': '[none]',
+           'show_build[]': '0',
+           'show_version[]': '0',
+           'fixed_in_version[]': '0',
+           'show_priority[]': '0',
+           'per_page': '50',
+           'view_state': '0',
+           'sticky_issues': 'on',
+           'highlight_changed': '6',
+           'relationship_type': '-1',
+           'relationship_bug': '0',
+           # Hack around the fact that the sorting parameter has
+           # changed over time.
+           'sort': 'last_updated',
+           'sort_0': 'last_updated',
+           'dir': 'DESC',
+           'dir_0': 'DESC',
+           'search': '',
+           'filter': 'Apply Filter',
+        }
+        self.page = self._postPage("view_all_set.php?f=3", data)
+
+        # Finally grab the full CSV export, which uses the
+        # MANTIS_VIEW_ALL_COOKIE set in the previous step to specify
+        # what's being viewed.
+        csv_data = self._getPage("csv_export.php")
+        # We store CSV in the instance just to make debugging easier.
+        self.csv_data = csv_data
+
+        # You may find this zero in "\r\n0" funny. Well I don't. This is
+        # to work around the fact that Mantis' CSV export doesn't cope
+        # with the fact that the bug summary can contain embedded "\r\n"
+        # characters! I don't see a better way to handle this short of
+        # not using the CSV module and forcing all lines to have the
+        # same number as fields as the header.
+        # XXX: kiko 2007-07-05: Report Mantis bug.
+        csv_data = csv_data.strip().split("\r\n0")
+
+        if not csv_data:
+            raise UnparseableBugData("Empty CSV for %s" % self.baseurl)
+
+        # Clean out stray, unquoted newlines inside csv_data to avoid
+        # the CSV module blowing up.
+        csv_data = [s.replace("\r", "") for s in csv_data]
+        csv_data = [s.replace("\n", "") for s in csv_data]
+
+        # The first line of the CSV file is the header. We need to read
+        # it because different Mantis instances have different header
+        # ordering and even different columns in the export.
+        self.headers = [h.lower() for h in csv_data.pop(0).split(",")]
+        if len(self.headers) < 2:
+            raise UnparseableBugData("CSV header mangled: %r" % self.headers)
+
+        if not csv_data:
+            # A file with a header and no bugs is also useless.
+            raise UnparseableBugData("CSV for %s contained no bugs!"
+                                     % self.baseurl)
+
+        try:
+            # Using the CSV reader is pretty much essential since the
+            # data that comes back can include title text which can in
+            # turn contain field separators -- you don't want to handle
+            # the unquoting yourself.
+            for bug_line in csv.reader(csv_data):
+                self._processBugLine(bug_line)
+        except csv.Error, e:
+            log.warn("Exception parsing CSV file: %s" % e)
+
+    def _processBugLine(self, bug_line):
+        """Processes a single line of the CSV.
+
+        Adds the bug it represents to self.bugs.
+        """
+        required_fields = ['id', 'status', 'resolution']
+        bug = {}
+        for header in self.headers:
+            try:
+                data = bug_line.pop(0)
+            except IndexError:
+                log.warn("Line %r incomplete" % bug_line)
+                return
+            bug[header] = data
+        for field in required_fields:
+            if field not in bug:
+                log.warn("Bug %s lacked field %r" % (bug['id'], field))
+                return
+            try:
+                # See __init__ for an explanation of why we use integer
+                # IDs in the internal data structure.
+                bug_id = int(bug['id'])
+            except ValueError:
+                log.warn("Bug with invalid ID: %r" % bug['id'])
+                return
+
+        self.bugs[bug_id] = bug
 
     def _checkForApplicationError(self, page_soup):
         """If Mantis does not find the bug it still returns a 200 OK
