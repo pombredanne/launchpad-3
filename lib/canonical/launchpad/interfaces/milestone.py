@@ -26,7 +26,7 @@ class MilestoneNameField(ContentNameField):
     @property
     def _content_iface(self):
         return IMilestone
-    
+
     def _getByName(self, name):
         if IMilestone.providedBy(self.context):
             milestone = self.context.target.getMilestone(name)
@@ -100,7 +100,7 @@ class IMilestoneSet(Interface):
     def getByNameAndProduct(name, product, default=None):
         """Get a milestone by its name and product.
 
-        If no milestone is found, default will be returned. 
+        If no milestone is found, default will be returned.
         """
 
     def getByNameAndDistribution(name, distribution, default=None):

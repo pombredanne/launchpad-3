@@ -29,7 +29,7 @@ class BugActivity(SQLBase):
 
 class BugActivitySet:
     """See IBugActivitySet."""
-    
+
     implements(IBugActivitySet)
 
     def new(self, bug, datechanged, person, whatchanged,

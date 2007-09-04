@@ -13,7 +13,7 @@ from canonical.librarian.storage import _relFileLocation
 
 class LibrarianTestSetup(TacTestSetup):
     r"""Set up a librarian for use by functional tests.
-    
+
     >>> from urllib import urlopen
     >>> from canonical.config import config
     >>> host = config.librarian.download_host
@@ -22,12 +22,12 @@ class LibrarianTestSetup(TacTestSetup):
     >>> LibrarianTestSetup().setUp()
 
     Set a socket timeout, so that this test cannot hang indefinitely.
-    
+
     >>> import socket
     >>> print socket.getdefaulttimeout()
     None
     >>> socket.setdefaulttimeout(1)
-    
+
     Make sure the server is running.
 
     >>> 'Copyright' in urlopen('http://%s:%d/' % (host, port)).read()
@@ -40,7 +40,7 @@ class LibrarianTestSetup(TacTestSetup):
     Traceback (most recent call last):
     ...
     IOError: ...
-    
+
     And again for luck.
 
     >>> LibrarianTestSetup().setUp()
@@ -48,7 +48,7 @@ class LibrarianTestSetup(TacTestSetup):
     True
 
     Tidy up.
-    
+
     >>> LibrarianTestSetup().tearDown()
     >>> socket.setdefaulttimeout(None)
 

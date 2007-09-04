@@ -86,22 +86,6 @@ class MilestoneView(LaunchpadView):
     def specifications(self):
         return list(self.context.specifications)
 
-    @property
-    def bugtask_count_text(self):
-        count = len(self.bugtasks)
-        if count == 1:
-            return "1 bug"
-        else:
-            return "%d bugs" % count
-
-    @property
-    def specification_count_text(self):
-        count = len(self.specifications)
-        if count == 1:
-            return "1 specification"
-        else:
-            return "%d specifications" % count
-
     @cachedproperty
     def bugtasks(self):
         user = getUtility(ILaunchBag).user
@@ -116,12 +100,32 @@ class MilestoneView(LaunchpadView):
         return [task for task in tasks if task.conjoined_master is None]
 
     @property
+    def bugtask_count_text(self):
+        count = len(self.bugtasks)
+        if count == 1:
+            return "1 bug targeted"
+        else:
+            return "%d bugs targeted" % count
+
+    @property
+    def specification_count_text(self):
+        count = len(self.specifications)
+        if count == 1:
+            return "1 blueprint targeted"
+        else:
+            return "%d blueprints targeted" % count
+
+    @property
     def is_project_milestone(self):
         """Check, if the current milestone is a project milestone.
 
         Return true, if the current milestone is a project milestone,
         else return False."""
         return IProjectMilestone.providedBy(self.context)
+
+    @property
+    def has_bugs_or_specs(self):
+        return self.bugtasks or self.specifications
 
 
 class MilestoneAddView:
