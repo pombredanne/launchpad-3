@@ -233,7 +233,7 @@ class CalendarEvent(SQLBase, CalendarEventMixin):
     calendar = ForeignKey(dbName='calendar', notNull=True,
                           foreignKey='Calendar')
     dtstart = UtcDateTimeCol(dbName='dtstart', notNull=True)
-        
+
     # actually an interval ...
     duration = IntervalCol(dbName='duration', notNull=True)
     title = StringCol(dbName='title', notNull=True)

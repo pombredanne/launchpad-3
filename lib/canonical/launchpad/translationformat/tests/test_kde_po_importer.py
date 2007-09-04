@@ -9,7 +9,7 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
 from canonical.launchpad.translationformat.kde_po_importer import (
-    KdePoImporter)
+    KdePOImporter)
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, ITranslationFormatImporter,
     ITranslationImportQueue)
@@ -45,7 +45,7 @@ msgstr ""
 '''
 
 
-class KdePoImporterTestCase(unittest.TestCase):
+class KdePOImporterTestCase(unittest.TestCase):
     """Class test for gettext's .po file imports"""
     layer = LaunchpadZopelessLayer
 
@@ -78,10 +78,11 @@ class KdePoImporterTestCase(unittest.TestCase):
             productseries=firefox_10)
 
         transaction.commit()
-        self.template_importer = KdePoImporter()
-        self.template_importer.parse(template_entry)
-        self.translation_importer = KdePoImporter()
-        self.translation_importer.parse(translation_entry)
+        self.template_importer = KdePOImporter()
+        self.template_file = self.template_importer.parse(template_entry)
+        self.translation_importer = KdePOImporter()
+        self.translation_file = self.translation_importer.parse(
+            translation_entry)
 
         self.gettext_template_entry = gettext_template_entry
 
@@ -89,45 +90,45 @@ class KdePoImporterTestCase(unittest.TestCase):
         """Check whether the object follows the interface."""
         self.failUnless(
             verifyObject(ITranslationFormatImporter, self.template_importer),
-            "KdePoImporter doesn't conform to ITranslationFormatImporter"
+            "KdePOImporter doesn't conform to ITranslationFormatImporter"
                 "interface.")
 
     def testFormat(self):
-        """Check whether KdePoImporter say that handles KDEPO file format."""
+        """Check whether KdePOImporter say that handles KDEPO file format."""
         format = self.template_importer.format(test_kde_template)
         self.failUnless(
             format == TranslationFileFormat.KDEPO,
-            'KdePoImporter format expected KDEPO but got %s' % format.name)
+            'KdePOImporter format expected KDEPO but got %s' % format.name)
 
     def testGettextPOFileFormat(self):
         """Check whether non-KDE PO files are recognized as regular PO files."""
         format = self.gettext_template_entry.format
         self.failUnless(format == TranslationFileFormat.PO,
-                        ('KdePoImporter format expected PO '
+                        ('KdePOImporter format expected PO '
                          'but got %s for non-KDE PO file.' % format.name))
 
     def testTemplatePlurals(self):
         """Check whether legacy KDE plural forms are correctly imported."""
-        message = self.template_importer.messages[0]
+        message = self.template_file.messages[0]
         msgid = message.msgid
         msgid_plural = message.msgid_plural
         self.failUnless(
             (msgid == u'%1 foo' and msgid_plural == u'%1 foos'),
-            "KdePoImporter didn't import KDE plural forms correctly.")
+            "KdePOImporter didn't import KDE plural forms correctly.")
 
     def testTranslationPlurals(self):
         """Check whether translated legacy KDE plural forms are correctly imported."""
-        message = self.translation_importer.messages[0]
-        msgstrs = message.msgstr_plurals
+        message = self.translation_file.messages[0]
+        translations = message.translations
         self.failUnless(
-            (msgstrs[0] == u'1st plural form %1' and
-             msgstrs[1] == u'2nd plural form %1' and
-             msgstrs[2] == u'3rd plural form %1'),
-            "KdePoImporter didn't import translated KDE plural forms correctly.")
+            (translations[0] == u'1st plural form %1' and
+             translations[1] == u'2nd plural form %1' and
+             translations[2] == u'3rd plural form %1'),
+            "KdePOImporter didn't import translated KDE plural forms correctly.")
 
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(KdePoImporterTestCase))
+    suite.addTest(unittest.makeSuite(KdePOImporterTestCase))
     return suite
 

@@ -464,7 +464,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "exception to this is when we allow users to create Launchpad "
             "profiles through the /people/+newperson page."),
         required=False, readonly=False)
-    # XXX Guilherme Salgado 2006-11-10: 
+    # XXX Guilherme Salgado 2006-11-10:
     # We can't use a Choice field here because we don't have a vocabulary
     # which contains valid people but not teams, and we don't really need one
     # appart from here.
@@ -684,7 +684,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     @invariant
     def personCannotHaveIcon(person):
-        # XXX Guilherme Salgado 2007-05-28: 
+        # XXX Guilherme Salgado 2007-05-28:
         # This invariant is busted! The person parameter provided to this
         # method will always be an instance of zope.formlib.form.FormData
         # containing only the values of the fields included in the POSTed
@@ -814,7 +814,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """Return the latest karma actions for this person, up to the number
         given as quantity."""
 
-    def iterTopProjectsContributedTo(self, limit=10):
+    def iterTopProjectsContributedTo(limit=10):
         """Iterate over the top projects contributed to, up to the given limit.
         """
 
@@ -1189,7 +1189,7 @@ class IPersonSet(Interface):
     def getPOFileContributors(pofile):
         """Return people that have contributed to the specified POFile."""
 
-    def getPOFileContributorsByDistroSeries(self, distroseries, language):
+    def getPOFileContributorsByDistroSeries(distroseries, language):
         """Return people who translated strings in distroseries to language.
 
         The people that translated only IPOTemplate objects that are not

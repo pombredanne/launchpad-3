@@ -57,6 +57,26 @@
       </tal:comment>
         <tr><th>Location:</th><td tal:content="context/url" /></tr>
         <tr><th>Mirror:</th><td tal:content="view/supermirror_url" /></tr>
+        <tal:mirrored-yet tal:condition="context/last_mirrored">
+          <tr>
+            <th>Last mirrored:</th>
+            <td tal:attributes="title context/last_mirrored/fmt:datetime"
+                tal:content="context/last_mirrored/fmt:approximatedate"/></tr>
+        </tal:mirrored-yet>
+        <tr><th>Next mirror:</th>
+          <tal:mirror-disabled tal:condition="view/mirror_disabled">
+            <td>Disabled</td>
+          </tal:mirror-disabled>
+          <tal:mirror-enabled tal:condition="not:view/mirror_disabled">
+            <tal:mirror-in-future tal:condition="view/mirror_in_future">
+              <td tal:attributes="title context/last_mirrored/fmt:datetime"
+                  tal:content="context/mirror_request_time/fmt:approximatedate"/>
+            </tal:mirror-in-future>
+            <tal:mirror-in-past tal:condition="not:view/mirror_in_future">
+              <td>As soon as possible</td>
+            </tal:mirror-in-past>
+          </tal:mirror-enabled>
+        </tr>
     </tal:mirrored-branch>
     <tal:hosted-or-imported-branch 
         tal:condition="not: context/branch_type/enumvalue:MIRRORED">
@@ -370,17 +390,22 @@
     team, the URL will change.</p>
 
   <p>Subscribing to a branch will make it appear in your personal branch
-    listings.</p>
+    listings, and if you choose to, Launchpad will email you when the branch
+    is updated.</p>
 
-  <p>Once you have registered or uploaded a branch, it cannot be deleted. But
-    you can set its status to &ldquo;Abandoned&rdquo;.</p>
+  <p>A branch that has no revisions, and is not linked to any other branches,
+    bugs or blueprints, and has no subscribers may be deleted.  If the branch
+    cannot be deleted, you can set its status to
+    &ldquo;<strong><span class="branchstatusABANDONED">Abandoned</span></strong>&rdquo;,
+    and this will stop the branch appearing by default in listing views.</p>
 
   <p>A mirror branch cannot be converted to an upload branch, and conversely,
     you cannot convert an upload branch to a mirror branch. However you can
     rename a branch and create a new one in its place.<p>
 
-  <p>There no browsable web content on <code>bazaar.launchpad.net<code>. This
-    host only serves data for use with the Bazaar version control system.</p>
+  <p>There is no browsable web content on <code>bazaar.launchpad.net</code>.
+    This host only serves data for use with the Bazaar version control system.
+  </p>
 
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
 

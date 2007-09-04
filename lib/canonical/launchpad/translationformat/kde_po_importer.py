@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'KdePoImporter'
+    'KdePOImporter'
     ]
 
 from zope.interface import implements
@@ -11,20 +11,19 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import ITranslationFormatImporter
 from canonical.launchpad.translationformat.gettext_po_parser import POParser
 from canonical.launchpad.translationformat.gettext_po_importer import (
-    GettextPoImporter)
+    GettextPOImporter)
 from canonical.lp.dbschema import TranslationFileFormat
 
 
-class KdePoImporter(GettextPoImporter):
+class KdePOImporter(GettextPOImporter):
     """Support class to import KDE .po files."""
     implements(ITranslationFormatImporter)
 
     def format(self, content):
         """See `ITranslationFormatImporter`."""
         parser = POParser()
-        parser.write(content)
-        parser.finish()
-        for message in parser.messages:
+        translation_file = parser.parse(content)
+        for message in translation_file.messages:
             msgid = message.msgid
             if msgid.lower().startswith('_n: ') and '\n' in msgid:
                 return TranslationFileFormat.KDEPO
@@ -37,9 +36,10 @@ class KdePoImporter(GettextPoImporter):
 
     def parse(self, translation_import_queue_entry):
         """See `ITranslationFormatImporter`."""
-        GettextPoImporter.parse(self, translation_import_queue_entry)
+        translation_file = GettextPOImporter.parse(
+            self, translation_import_queue_entry)
 
-        for message in self.messages:
+        for message in translation_file.messages:
             msgid = message.msgid
             if msgid.lower().startswith('_n:') and '\n' in msgid:
                 # This is a KDE plural form
@@ -47,5 +47,9 @@ class KdePoImporter(GettextPoImporter):
 
                 message.msgid = singular
                 message.msgid_plural = plural
-                message.msgstr_plurals = message.msgstr.split('\n')
+                msgstrs = message._translations
+                if len(msgstrs)>0:
+                    message._translations = msgstrs[0].split('\n')
+
                 self.internal_format = TranslationFileFormat.KDEPO
+        return translation_file

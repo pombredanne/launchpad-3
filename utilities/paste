@@ -5,13 +5,10 @@ import httplib
 import os
 import sys
 import urllib
-import urllib2
+from urlparse import urljoin
 
-from MimeWriter import MimeWriter
-from StringIO import StringIO
-
-paste_host = 'devpad.canonical.com'
-paste_path = '/~andrew/paste/'
+paste_host = 'pastebin.canonical.com'
+paste_path = ''
 auth_file = os.path.expanduser('~/.canonical_paste_auth')
 
 def read_auth_file(path):
@@ -37,16 +34,18 @@ def https_post_form_with_auth(host, path, form, auth):
     return connection.getresponse()
 
 if __name__ == '__main__':
+    poster = os.environ.get("USER")
+    syntax = 'text'
     if len(sys.argv) > 1:
         title = sys.argv[1]
     else:
-        title = "The loser %s didn't even add a title" % os.environ.get("USER")
-    form = (('title', title), ('content', sys.stdin.read()))
+        title = "The loser %s didn't even add a title" % poster
+    form = (('poster', poster), ('title', title), ('syntax', syntax), ('content', sys.stdin.read()))
     username, password = read_auth_file(auth_file)
     auth = make_basic_auth_header(username, password)
     response = https_post_form_with_auth(paste_host, paste_path, form, auth)
-    refresh = response.getheader('refresh')
-
-    if refresh:
-        print refresh.split('=')[1]
-
+    location = response.getheader('Location')
+    if location:
+      print urljoin('https://' + paste_host, location)
+    else:
+      print 'Unexpected response:\n%s' % response.getheaders()

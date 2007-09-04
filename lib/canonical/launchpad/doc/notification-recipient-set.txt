@@ -15,7 +15,7 @@ canonical.launchpad.mailnotification.NotificationRecipientSet.
 You can use it as is or derive from it
 (see bugnotificationrecipients.txt for an example of a derivation).
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import INotificationRecipientSet
     >>> from canonical.launchpad.mailnotification import (
     ...     NotificationRecipientSet)

@@ -39,6 +39,8 @@ more than one target (https://launchpad.net/bugs/1357).
         mozilla-firefox (Debian) Low Confirmed
     2 Blackhole Trash folder
         Ubuntu Hoary Undecided New
+    13 Launchpad CSS and JS is not testible
+        Launchpad Undecided New
 
 This report is also the default page in the person context on the bugs
 virtual host:
@@ -117,6 +119,8 @@ for us to test for the first instances of each here. This is an instance of Bug
         mozilla-firefox (Debian) Low Confirmed
     2 Blackhole Trash folder
         mozilla-firefox (Debian) Low Confirmed
+    13 Launchpad CSS and JS is not testible
+        Launchpad Undecided New
 
 
 === Subscribed bugs ===
@@ -138,3 +142,5 @@ for us to test for the first instances of each here. This is an instance of Bug
         Mozilla Firefox Low New
     1 Firefox does not support SVG
         mozilla-firefox (Debian) Low Confirmed
+    13 Launchpad CSS and JS is not testible
+        Launchpad Undecided New
