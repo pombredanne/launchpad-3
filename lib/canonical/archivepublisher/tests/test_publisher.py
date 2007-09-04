@@ -110,6 +110,7 @@ class TestPublisher(TestNativePublishingBase):
         distroseries is always allowed, so check for that here.
         """
         archive = self.ubuntutest.getArchiveByComponent('partner')
+        self.ubuntutest['breezy-autotest'].status = DistroSeriesStatus.CURRENT
         config = removeSecurityProxy(archive.getPubConfig())
         config.setupArchiveDirs()
         disk_pool = DiskPool(config.poolroot, config.temproot, self.logger)
@@ -126,6 +127,13 @@ class TestPublisher(TestNativePublishingBase):
         # The file was published:
         foo_path = "%s/main/f/foo/foo.dsc" % config.poolroot
         self.assertEqual(open(foo_path).read().strip(), 'I am partner')
+
+        # Nothing to test from these two calls other than that they don't blow
+        # up as there is an assertion in the code to make sure it's not
+        # publishing out of a release pocket in a stable distroseries,
+        # excepting PPA and commercial which are allowed to do that.
+        publisher.C_writeIndexes(is_careful=False)
+        publisher.D_writeReleaseFiles(is_careful=False)
 
     def testPublishingSpecificDistroSeries(self):
         """Test the publishing procedure with the suite argument.
