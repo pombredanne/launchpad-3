@@ -132,7 +132,7 @@ important to accomplish building-accepted-sources specification:
 
    https://launchpad.net/soyuz/+spec/build-unpublished-source
 
-This will give us only 4 of the test publications:
+This will give us only 6 of the test publications:
 
     >>> probe_candidates(warty)
     PUBLISHED UPDATES PRIMARY
