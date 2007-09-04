@@ -143,47 +143,47 @@ First, we create some bug watches to test with:
 
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, 1, sample_person)
+    ...     example_bug_tracker, 1008, sample_person)
 
     >>> login('no-priv@canonical.com')
 
 Collect the Example.com watches:
 
     >>> print_bugwatches(example_bug_tracker.watches)
-    Remote bug 1: None
+    Remote bug 1008: None
 
 And have a Python instance process them:
 
     >>> python = TestPython(example_bug_tracker.baseurl)
     >>> python.updateBugWatches(example_bug_tracker.watches)
     >>> print_bugwatches(example_bug_tracker.watches)
-    Remote bug 1: 1
+    Remote bug 1008: 1:None
 
 We'll add some more watches now.
 
     >>> from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
     >>> print_bugwatches(example_bug_tracker.watches,
     ...     python.convertRemoteStatus)
-    Remote bug 1: New
+    Remote bug 1008: New
 
     >>> remote_bugs = [
-    ...     (1008, '1:2'),
-    ...     (1010, '1:None'),
-    ...     (1011, '1:1'),
-    ...     (1013, '1:3'),
-    ...     (1014, '1:8'),
-    ...     (1018, '1:6'),
-    ...     (1020, '1:4'),
-    ...     (1021, '1:5'),
-    ...     (1025, '1:7'),
-    ...     (1028, '1:10'),
-    ...     (1031, '1:9'),
-    ...     (1033, '1:11'),
-    ...     (1036, '2:None'),
-    ...     (1042, '1:12'),
-    ...     (1046, '2:1'),
-    ...     (1048, '3:7'),
-    ...     (1053, '2:3'),
+    ...     (1008, 'Confirmed'),
+    ...     (1010, 'New'),
+    ...     (1011, 'Confirmed'),
+    ...     (1013, 'Fix Committed'),
+    ...     (1014, "Won't Fix"),
+    ...     (1018, 'Invalid'),
+    ...     (1020, 'Invalid'),
+    ...     (1021, 'Confirmed'),
+    ...     (1025, 'Confirmed'),
+    ...     (1028, "Won't Fix"),
+    ...     (1031, 'Confirmed'),
+    ...     (1033, 'Invalid'),
+    ...     (1036, "Won't Fix"),
+    ...     (1042, "Won't Fix"),
+    ...     (1046, 'Fix Committed'),
+    ...     (1048, "Won't Fix"),
+    ...     (1053, 'Fix Released'),
     ... ]
 
     >>> bug_watch_set = getUtility(IBugWatchSet)
@@ -199,15 +199,22 @@ We'll add some more watches now.
 
     >>> print_bugwatches(example_bug_tracker.watches,
     ...     python.convertRemoteStatus)
-    Remote bug 1: New
-    Remote bug 2: Confirmed
-    Remote bug 3: Incomplete
-    Remote bug 4: Incomplete
-    Remote bug 5: In Progress
-    Remote bug 9: In Progress
-    Remote bug 10: Fix Committed
-    Remote bug 11: Fix Released
-    Remote bug 12: Incomplete
-    Remote bug 13: Incomplete
-    Remote bug 14: In Progress
+    Remote bug 1008: Confirmed
+    Remote bug 1010: New
+    Remote bug 1011: Confirmed
+    Remote bug 1013: Fix Committed
+    Remote bug 1014: Won't Fix
+    Remote bug 1018: Invalid
+    Remote bug 1020: Invalid
+    Remote bug 1021: Confirmed
+    Remote bug 1025: Confirmed
+    Remote bug 1028: Won't Fix
+    Remote bug 1031: Confirmed
+    Remote bug 1033: Invalid
+    Remote bug 1036: Won't Fix
+    Remote bug 1042: Won't Fix
+    Remote bug 1046: Fix Committed
+    Remote bug 1048: Won't Fix
+    Remote bug 1053: Fix Released
+
 

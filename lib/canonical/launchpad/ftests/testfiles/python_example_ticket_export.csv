@@ -11,7 +11,7 @@ cgi:  parse_qs and parse_qsl misbehave on empty strings,1014,2007-08-26.17:49:52
 py3k: compilation with VC2005,1031,2007-08-26.23:48:22,1,9
 Tkinter binding involving Control-spacebar raises unicode error,1028,2007-08-27.01:57:04,1,10
 Support for newline and encoding in tempfile module,1033,2007-08-28.03:30:24,1,11
-test_glob fails with UnicodeDecodeError,1042,2007-08-28.06:11:28,1,12
+test_glob fails with UnicodeDecodeError,1042,2007-08-28.06:11:28,2,None
 py3k _bsddb.c patch to use the new buffer API,1036,2007-08-28.08:24:57,2,None
 HTMLCalendar.formatyearpage not behaving as documented,1046,2007-08-28.16:38:50,2,1
 bogus attributes reported in asyncore doc,1053,2007-08-29.01:04:27,2,3
