@@ -33,16 +33,20 @@ class LanguagePackType(DBEnumeratedType):
 
 class ILanguagePack(Interface):
     """Language pack store."""
+
     language_pack_file = Object(
         title=_('Librarian file where the language pack is stored.'),
         required=True, schema=ILibraryFileAlias)
+
     date_exported = Datetime(
         title=_('When this language pack was exported.'),
         required=True)
+
     distro_release = Choice(
         title=_('The distribution series from where it was exported.'),
         required=True, vocabulary='FilteredDistroSeries')
-    language_pack_type  = Choice(
+
+    language_pack_type = Choice(
         title=_('Language pack type'), required=True,
         vocabulary=LanguagePackType,
         description=_("""
@@ -50,6 +54,7 @@ class ILanguagePack(Interface):
             export, 2: Update export based on language_pack_that_updates
             export.
             """))
+
     language_pack_that_updates = Object(
         title=_('The LanguagePack that this one updates.'),
         required=True, schema=ILanguagePack)
