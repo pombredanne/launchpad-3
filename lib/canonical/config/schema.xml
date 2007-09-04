@@ -408,6 +408,15 @@ k            </description>
             </description>
         </key>
 
+        <key name="componentoverride" datatype="string" required="no">
+            <description>
+                If specified, override packages' components to this value.
+                This only affects the publisher tables and may also override
+                the archive according to the existing component/archive
+                overriding rules.
+            </description>
+        </key>
+
         <key name="katie_dbname" datatype="string" required="no">
             <description>
                 The Katie database that should be used to extract extra
@@ -1027,6 +1036,10 @@ k            </description>
         <key name="xmlrpc_runner_sleep" datatype="integer" default="10" />
     </sectiontype>
 
+    <sectiontype name="checkwatches">
+        <key name="batch_query_threshold" datatype="integer" default="10" />
+    </sectiontype>
+
     <sectiontype name="canonical" extends="database_options">
         <key name="chunkydiff" datatype="boolean"
             required="no" default="true" />
@@ -1076,6 +1089,7 @@ k            </description>
         <section name="*" type="mailman" attribute="mailman" />
         <section name="*" type="archivepublisher" 
             attribute="archivepublisher" />
+        <section name="*" type="checkwatches" attribute="checkwatches" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file

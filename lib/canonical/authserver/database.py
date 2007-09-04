@@ -408,6 +408,9 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         if (requester.inTeam(branch.owner)
             and branch.branch_type == BranchType.HOSTED):
             return branch_id, WRITABLE
+        elif branch.branch_type == BranchType.REMOTE:
+            # Can't even read remote branches.
+            return '', ''
         else:
             return branch_id, READ_ONLY
 
@@ -436,6 +439,9 @@ class DatabaseBranchDetailsStorage:
             `unique_name` property without the initial '~'.
         """
         branch = removeSecurityProxy(branch)
+        if branch.branch_type == BranchType.REMOTE:
+            raise AssertionError(
+                'Remote branches should never be in the pull queue.')
         return (branch.id, branch.getPullURL(), branch.unique_name[1:])
 
     def getBranchPullQueue(self, branch_type):

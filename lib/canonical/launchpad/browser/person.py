@@ -613,7 +613,7 @@ class PersonBugsMenu(ApplicationMenu):
         summary = ('Lists all bug reports which %s reported, is assigned to, '
                    'or is subscribed to.' % self.context.displayname)
         return Link('', text, summary=summary)
-        
+
     def assignedbugs(self):
         text = 'List assigned bugs'
         summary = 'Lists bugs assigned to %s.' % self.context.displayname
@@ -2770,7 +2770,7 @@ class RequestPeopleMergeView(AddView):
                                   LoginTokenType.ACCOUNTMERGE)
 
         # XXX: SteveAlexander 2006-03-07: An experiment to see if this
-        #      improves problems with merge people tests.  
+        #      improves problems with merge people tests.
         import canonical.database.sqlbase
         canonical.database.sqlbase.flush_database_updates()
         token.sendMergeRequestEmail()
