@@ -6,9 +6,9 @@ bugwatches.
 
 == Basics ==
 
-The ExternalBugTracker descendant class which implements methods for updating
-bug watches on Python bug trackers is externalbugtracker.Python, which
-implements IExternalBugTracker.
+The ExternalBugTracker descendant class which implements methods for
+updating bug watches on Python bug trackers is
+externalbugtracker.Python, which implements IExternalBugTracker.
 
     >>> from canonical.launchpad.components.externalbugtracker import Python
     >>> from canonical.launchpad.interfaces.externalbugtracker import (
@@ -20,7 +20,9 @@ implements IExternalBugTracker.
 
 == Status Conversion ==
 
-The basic Python bug statuses (i.e. those available by default in new Python instances) map to Launchpad bug statuses. Python.convertRemoteStatus() handles the conversion.
+The basic Python bug statuses (i.e. those available by default in new
+Python instances) map to Launchpad bug statuses.
+Python.convertRemoteStatus() handles the conversion.
 
     >>> python = Python('http://spam.eggs.ham')
     >>> python.convertRemoteStatus('1:None').title
@@ -68,8 +70,8 @@ understand, Unknown will be returned and a warning logged.
     'Unknown'
 
 UNKNOWN_REMOTE_STATUS maps to Unknown without generating a warning. This
-handles the case where we've tried to probe for a bug but didn't succeed. For
-example, if the bug number was invalid.
+handles the case where we've tried to probe for a bug but didn't
+succeed. For example, if the bug number was invalid.
 
     >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
     >>> python.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
@@ -78,13 +80,13 @@ example, if the bug number was invalid.
 
 == Initialization ==
 
-Calling initializeRemoteBugDB() on our Python instance and passing it a set
-of remote bug IDs will fetch those bug IDs from the server and file them in a
-local variable for later use.
+Calling initializeRemoteBugDB() on our Python instance and passing it a
+set of remote bug IDs will fetch those bug IDs from the server and file
+them in a local variable for later use.
 
-We use a test-oriented implementation for the purposes of these tests, which 
-overrides ExternalBugTracker.urlopen() so that we don't have to rely on a
-working network connection.
+We use a test-oriented implementation for the purposes of these tests,
+which overrides ExternalBugTracker.urlopen() so that we don't have to
+rely on a working network connection.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestPython, print_bugwatches)
@@ -97,9 +99,9 @@ working network connection.
 == Export Methods ==
 
 There are two means by which we can export Python bug statuses: on a
-bug-by-bug basis and as a batch. When the number of bugs that need updating is
-less than a given bug pythonker's batch_query_threshold the bugs will be
-fetched one-at-a-time:
+bug-by-bug basis and as a batch. When the number of bugs that need
+updating is less than a given bug pythonker's batch_query_threshold the
+bugs will be fetched one-at-a-time:
 
     >>> python.batch_query_threshold
     10
@@ -112,8 +114,8 @@ fetched one-at-a-time:
     CALLED urlopen('http://test.python/issue?...&id=9')
     CALLED urlopen('http://test.python/issue?...&id=10')
 
-If there are more than batch_query_threshold bugs to update then they are
-fetched as a batch:
+If there are more than batch_query_threshold bugs to update then they
+are fetched as a batch:
 
     >>> python.batch_query_threshold = 4
     >>> python.initializeRemoteBugDB([6, 7, 8, 9, 10])
@@ -128,7 +130,8 @@ First, we create some bug watches to test with:
     >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
     >>> from canonical.lp.dbschema import BugTrackerType
 
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
 
     >>> example_bug_tracker = BugTracker(
     ...     name="example-bugs",
