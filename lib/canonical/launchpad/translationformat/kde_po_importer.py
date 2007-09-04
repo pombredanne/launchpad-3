@@ -1,4 +1,13 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+"""Import module for legacy KDE .po files.
+
+This is an extension of standard gettext PO files.
+You can read more about this file format from:
+
+ * http://l10n.kde.org/docs/translation-howto/gui-peculiarities.html
+ * http://docs.kde.org/development/en/kdesdk/kbabel/kbabel-pluralforms.html
+ * http://websvn.kde.org/branches/KDE/3.5/kdelibs/kdecore/klocale.cpp
+"""
 
 __metaclass__ = type
 
@@ -16,7 +25,7 @@ from canonical.lp.dbschema import TranslationFileFormat
 
 
 class KdePOImporter(GettextPOImporter):
-    """Support class to import KDE .po files."""
+    """Support class for importing KDE .po files."""
     implements(ITranslationFormatImporter)
 
     def format(self, content):
