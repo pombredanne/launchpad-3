@@ -280,15 +280,24 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
     _table = Language
     _orderBy = 'englishname'
 
+    def __contains__(self, language):
+        """See `IVocabulary`."""
+        if not ILanguage.providedBy(language):
+            return False
+        return super(LanguageVocabulary, self).__contains__(language)
+
     def toTerm(self, obj):
+        """See `IVocabulary`."""
         return SimpleTerm(obj, obj.code, obj.displayname)
 
     def getTerm(self, obj):
+        """See `IVocabulary`."""
         if obj not in self:
             raise LookupError(obj)
         return SimpleTerm(obj, obj.code, obj.displayname)
 
     def getTermByToken(self, token):
+        """See `IVocabulary`."""
         try:
             found_language = Language.byCode(token)
         except SQLObjectNotFound:
@@ -304,8 +313,7 @@ class TranslatableLanguageVocabulary(LanguageVocabulary):
 
     def __contains__(self, language):
         """See `IVocabulary`."""
-        if ((ILanguage.providedBy(language) and language.code == 'en')
-            or (u'en' == language)):
+        if ILanguage.providedBy(language) and language.code == 'en':
             return False
         return super(
             TranslatableLanguageVocabulary, self).__contains__(language)

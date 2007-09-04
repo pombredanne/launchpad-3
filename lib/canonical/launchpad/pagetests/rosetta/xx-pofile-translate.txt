@@ -9,6 +9,7 @@ xx-pofile-translate-empty-strings-without-validation.txt
 xx-pofile-translate-gettext-error-middle-page.txt
 xx-pofile-translate-html-tags-escape.txt
 xx-pofile-translate-lang-direction.txt
+xx-pofile-translate-alternative-language.txt
 xx-pofile-translate-message-filtering.txt
 xx-pofile-translate-newlines-check.txt
 xx-pofile-translate-performance.txt
@@ -55,8 +56,12 @@ submissions.
 == Requesting English and its variant languages ==
 
 English is not translatable since we store the untranslated messages
-as English. If someone were to attempt an English translation, he
-will get an error:
+as English. The translate view uses often uses two languages during
+the translation, one for the PO message set, and the other to 'make
+suggestions from'. English cannot be either of these. 
+
+If someone were to attempt an English translation, to create an en
+PO message set, he will get an error:
 
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
@@ -65,16 +70,8 @@ will get an error:
     ...
     NotFound: Object: ... name: u'en'
 
-Authenticated users can translate templates to an English variant that
-does not have any messages. Sample Person does not have en_GB among his
-Preferred Languges. He pastes a URL given to him by a friend to into
-his borwsers location bar. The form is displayed for him to edit
-
-    >>> user_browser.open(
-    ...     'http://translations.launchpad.dev/alsa-utils/trunk/'
-    ...     '+pots/alsa-utils/en_GB/+translate')
-    >>> find_main_content(user_browser.contents).h1
-    <h1>...Translating into English (United Kingdom)...</h1>
+See xx-pofile-translate-alternative-language.txt for details about
+the 'make suggestions from' feature.
 
 
 == Form elements ==

@@ -625,7 +625,6 @@ All the languages known by Launchpad.
     ...
     LookupError:...
 
-
 === TranslatableLanguageVocabulary ===
 
 All the translatable languages known by Launchpad. English is not
@@ -655,6 +654,13 @@ to LanguageVocabulary in tests when the language is not English.
     >>> term = translatable_language_vocabulary.getTermByToken('pt_BR')
     >>> print term.token, term.value.displayname, term.title
     pt_BR Portuguese (Brazil) (pt_BR) Portuguese (Brazil) (pt_BR)
+
+    >>> # The vocabulary supports value (Language) container tests, not
+    >>> # token (string) tests.
+    >>> es in translatable_language_vocabulary
+    True
+    >>> u'es' in translatable_language_vocabulary
+    False
 
     >>> translatable_language_vocabulary.getTermByToken('foo')
     Traceback (most recent call last):
