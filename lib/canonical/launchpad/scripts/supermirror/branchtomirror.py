@@ -14,6 +14,7 @@ import bzrlib.errors
 from bzrlib.revision import NULL_REVISION
 
 from canonical.config import config
+from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.uri import URI
 
@@ -77,7 +78,7 @@ class BranchToMirror:
         if uri.host == 'launchpad.net' or uri.host.endswith('.launchpad.net'):
             raise BadUrlLaunchpad(self.source)
 
-    def _getTraverseReferences(self):
+    def _canTraverseReferences(self):
         """Whether we should traverse branch references when opening the source
         branch."""
         traverse_references_from_branch_type = {
@@ -85,8 +86,8 @@ class BranchToMirror:
             BranchType.MIRRORED: True,
             BranchType.IMPORTED: False,
             }
-        # This will intentionally raise a KeyError for if the branch_type is
-        # REMOTE or anything else that we do not know about.
+        assert self.branch_type in traverse_references_from_branch_type, (
+            'Unexpected branch type: %r' % (self.branch_type,))
         return traverse_references_from_branch_type[self.branch_type]
 
     def _openSourceBranch(self):

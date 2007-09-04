@@ -28,6 +28,7 @@ from bzrlib.errors import (
 
 import transaction
 from canonical.launchpad import database
+from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.scripts.supermirror.tests import createbranch
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
@@ -398,7 +399,6 @@ class TestReferenceMirroring(TestCaseWithTransport):
         opened_branch = bzrlib.branch.Branch.open(reference_url)
         self.assertEqual(opened_branch.base, target_branch.base)
 
-
     def createBranchReference(self, url):
         """Create a pure branch reference that points to the specified URL.
 
@@ -420,6 +420,35 @@ class TestReferenceMirroring(TestCaseWithTransport):
         branch_transport.put_bytes(
             'format', branch_reference_format.get_format_string())
         return a_bzrdir.root_transport.base
+
+
+class TestCanTraverseReferences(unittest.TestCase):
+
+    def setUp(self):
+        self.client = BranchStatusClient()
+
+    def makeBranch(self, branch_type):
+        """Helper to create a BranchToMirror with a specified branch_type."""
+        return BranchToMirror(
+            'foo', 'bar', self.client, 1, 'owner/product/foo', branch_type)
+
+    def testCanTraverseReferences(self):
+        """Unit tests for BranchToMirror._canTraverseReferences."""
+        # We can only traverse branch references when pulling mirror branches.
+        mirror_branch = self.makeBranch(BranchType.MIRRORED)
+        self.assertEqual(mirror_branch._canTraverseReferences(), True)
+        # We cannot traverse branch references when pulling import branches and
+        # hosted branches.
+        import_branch = self.makeBranch(BranchType.IMPORTED)
+        self.assertEqual(import_branch._canTraverseReferences(), False)
+        hosted_branch = self.makeBranch(BranchType.HOSTED)
+        self.assertEqual(hosted_branch._canTraverseReferences(), False)
+        # We do not pull REMOTE branches. If the branch type is this, or any
+        # other bogus value, an AssertionError is raised.
+        remote_branch = self.makeBranch(BranchType.REMOTE)
+        self.assertRaises(AssertionError, remote_branch._canTraverseReferences)
+        bogus_branch = self.makeBranch(None)
+        self.assertRaises(AssertionError, bogus_branch._canTraverseReferences)
 
 
 class TestErrorHandling(ErrorHandlingTestCase):
