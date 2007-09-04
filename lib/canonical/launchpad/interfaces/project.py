@@ -14,10 +14,17 @@ from zope.schema import Bool, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, URIField
-from canonical.launchpad.interfaces import (
-    IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy, IHasIcon,
-    IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
-    IHasSpecifications, IKarmaContext, PillarNameField)
+from canonical.launchpad.interfaces.branchvisibilitypolicy import (
+    IHasBranchVisibilityPolicy)
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.karma import IKarmaContext
+from canonical.launchpad.interfaces.launchpad import (
+    IHasAppointedDriver, IHasIcon, IHasLogo, IHasMugshot, IHasOwner)
+from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
+from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.pillar import PillarNameField
+from canonical.launchpad.interfaces.specificationtarget import (
+    IHasSpecifications)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
@@ -51,7 +58,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     name = ProjectNameField(
         title=_('Name'),
         required=True,
-        description=_("""A unique name, used in URLs, identifying the project 
+        description=_("""A unique name, used in URLs, identifying the project
             group.  All lowercase, no special characters.
             Examples: apache, mozilla, gimp."""),
         constraint=name_validator)
@@ -75,7 +82,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     description = Text(
         title=_('Description'),
         description=_("""A detailed description of the project group,
-            including details like when it was founded, 
+            including details like when it was founded,
             how many contributors there are,
             and how it is organised and coordinated."""))
 

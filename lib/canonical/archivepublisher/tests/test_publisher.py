@@ -83,14 +83,14 @@ class TestPublisher(TestNativePublishingBase):
         publisher.A_publish(False)
 
         # Did the file get published in the right place?
-        self.assertEqual(config.poolroot, 
+        self.assertEqual(config.poolroot,
             "/var/tmp/archive/ubuntutest-commercial/pool")
         foo_path = "%s/main/f/foo/foo.dsc" % config.poolroot
         self.assertEqual(open(foo_path).read().strip(), "I am commercial")
 
         # Check that the index is in the right place.
         publisher.C_writeIndexes(False)
-        self.assertEqual(config.distsroot, 
+        self.assertEqual(config.distsroot,
             "/var/tmp/archive/ubuntutest-commercial/dists")
         index_path = os.path.join(
             config.distsroot, 'breezy-autotest', 'commercial', 'source',

@@ -362,7 +362,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     # The similar items will be held in the following properties.
     similar_questions = None
     similar_faqs = None
-    
+
     def setUpFields(self):
         """Set up the form_fields from the schema and custom_widgets."""
         # Add our language field with a vocabulary specialized for
@@ -415,7 +415,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
                 self.form_fields.select('description'), self.prefix,
                  self.context, self.request, data=self.initial_values,
                  ignore_request=False)
-        
+
         faqs = IFAQTarget(self.question_target).findSimilarFAQs(data['title'])
         self.similar_faqs = list(faqs[:self._MAX_SIMILAR_FAQS])
 
@@ -998,7 +998,7 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
     searchDisplayWidth = 30
 
     searchButtonLabel = _('Search')
-    
+
     @property
     def search_field_name(self):
         """Return the name to use for the search field."""

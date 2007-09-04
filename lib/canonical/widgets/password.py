@@ -43,7 +43,7 @@ class PasswordChangeWidget(PasswordWidget):
 
     def hasInput(self):
         """We always have input if there is an existing value
-        
+
         No input indicates unchanged.
         """
         if PasswordWidget.hasInput(self):
@@ -77,7 +77,7 @@ class PasswordChangeWidget(PasswordWidget):
         >>> encryptor.validate(u'My Password', crypted_pw)
         True
 
-        Otherwise it raises the exception required by IInputWidget 
+        Otherwise it raises the exception required by IInputWidget
 
         >>> request = LaunchpadTestRequest(form={
         ...     'field.foo': u'My Password', 'field.foo_dupe': u'No Match'})

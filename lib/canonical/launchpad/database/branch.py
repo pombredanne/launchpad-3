@@ -381,17 +381,23 @@ class Branch(SQLBase):
 
     def requestMirror(self):
         """See `IBranch`."""
+        if self.branch_type == BranchType.REMOTE:
+            raise BranchTypeError
         self.mirror_request_time = UTC_NOW
         self.syncUpdate()
         return self.mirror_request_time
 
     def startMirroring(self):
         """See `IBranch`."""
+        if self.branch_type == BranchType.REMOTE:
+            raise BranchTypeError
         self.last_mirror_attempt = UTC_NOW
         self.syncUpdate()
 
     def mirrorComplete(self, last_revision_id):
         """See `IBranch`."""
+        if self.branch_type == BranchType.REMOTE:
+            raise BranchTypeError
         assert self.last_mirror_attempt != None, (
             "startMirroring must be called before mirrorComplete.")
         self.last_mirrored = self.last_mirror_attempt
@@ -410,6 +416,8 @@ class Branch(SQLBase):
 
     def mirrorFailed(self, reason):
         """See `IBranch`."""
+        if self.branch_type == BranchType.REMOTE:
+            raise BranchTypeError
         self.mirror_failures += 1
         self.mirror_status_message = reason
         self.mirror_request_time = (
@@ -653,10 +661,11 @@ class BranchSet:
         # so are included.
 
         return Branch.select('''
+            Branch.branch_type <> %s AND
             Branch.last_mirrored_id IS NOT NULL AND
             (Branch.last_scanned_id IS NULL OR
              Branch.last_scanned_id <> Branch.last_mirrored_id)
-            ''')
+            ''' % quote(BranchType.REMOTE))
 
     def getProductDevelopmentBranches(self, products):
         """See `IBranchSet`."""
@@ -911,12 +920,12 @@ class BranchSet:
     def getHostedBranchesForPerson(self, person):
         """See `IBranchSet`."""
         branches = Branch.select("""
-            Branch.url IS NULL
+            Branch.branch_type = %s
             AND Branch.owner IN (
             SELECT TeamParticipation.team
             FROM TeamParticipation
             WHERE TeamParticipation.person = %s)
-            """ % sqlvalues(person))
+            """ % sqlvalues(BranchType.HOSTED, person))
         return branches
 
     def getLatestBranchesForProduct(self, product, quantity,

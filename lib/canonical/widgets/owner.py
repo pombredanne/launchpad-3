@@ -83,7 +83,7 @@ class HiddenUserWidget(RequestWidget):
     implements(IUserWidget)
     def __init__(self, context, vocabulary, request=None):
         '''Construct the HiddenUserWidget.
-        
+
         Zope 3.2 changed the signature of widget constructors used
         with Choice fields. This broke a number of our widgets, and
         causes problems for widgets like this one that were being used

@@ -67,7 +67,7 @@ class CanonicalConfig(object):
 
     def setDefaultSection(self, section):
         """Set the name of the config file section returned by getConfig.
-        
+
         This method is used by the test runner to switch on the test
         configuration. It may be used in the future to store the production
         configs in the one common file. It also sets the LPCONFIG_SECTION
@@ -135,7 +135,7 @@ def url(value):
     '''ZConfig validator for urls
 
     We enforce the use of protocol.
-    
+
     >>> url('http://localhost:8086')
     'http://localhost:8086'
     >>> url('im-a-file-but-not-allowed')
@@ -151,7 +151,7 @@ def url(value):
 
 def urlbase(value):
     """ZConfig validator for url bases
-    
+
     url bases are valid urls that can be appended to using urlparse.urljoin.
 
     url bases always end with '/'
