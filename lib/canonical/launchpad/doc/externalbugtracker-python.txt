@@ -29,6 +29,28 @@ The basic Python bug statuses (i.e. those available by default in new Python ins
     'Confirmed'
     >>> python.convertRemoteStatus('3:None').title
     'Incomplete'
+    >>> python.convertRemoteStatus('1:1').title
+    'Confirmed'
+    >>> python.convertRemoteStatus('1:2').title
+    'Confirmed'
+    >>> python.convertRemoteStatus('1:3').title
+    'Fix Committed'
+    >>> python.convertRemoteStatus('1:4').title
+    'Invalid'
+    >>> python.convertRemoteStatus('1:5').title
+    'Confirmed'
+    >>> python.convertRemoteStatus('1:6').title
+    'Invalid'
+    >>> python.convertRemoteStatus('1:7').title
+    'Confirmed'
+    >>> python.convertRemoteStatus('1:8').title
+    "Won't Fix"
+    >>> python.convertRemoteStatus('1:9').title
+    'Confirmed'
+    >>> python.convertRemoteStatus('1:10').title
+    "Won't Fix"
+    >>> python.convertRemoteStatus('1:11').title
+    'Invalid'
 
 If the status isn't something that our Python ExternalBugTracker can
 understand, Unknown will be returned and a warning logged.
