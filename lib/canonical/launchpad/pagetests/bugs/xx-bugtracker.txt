@@ -28,6 +28,7 @@ and SourceForge because there is only one instance (SourceForge.net).
   ...     print control.optionValue
   Bugzilla
   Roundup
+  Roundup (bugs.python.org style)
   Trac
   Mantis
 
