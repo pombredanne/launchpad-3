@@ -120,6 +120,8 @@ retrieve the following publications:
    pocket, since we don't allow post-release pocket in PPA).
  * Only those targeted to post-release pockets (UPDATES, SECURITY,
    BACKPORTS and PROPOSED) in main_archive (default ubuntu archive)
+ * All Partner archive publications since these can be targeted to
+   RELEASE.
 
     >>> warty = ubuntu['warty']
     >>> warty.status.name
@@ -130,13 +132,15 @@ important to accomplish building-accepted-sources specification:
 
    https://launchpad.net/soyuz/+spec/build-unpublished-source
 
-This will give us only 4 of the test publications:
+This will give us only 6 of the test publications:
 
     >>> probe_candidates(warty)
     PUBLISHED UPDATES PRIMARY
     PENDING UPDATES PRIMARY
     PUBLISHED RELEASE PPA
     PENDING RELEASE PPA
+    PUBLISHED RELEASE PARTNER
+    PENDING RELEASE PARTNER
 
 
 == DEVELOPMENT DistroSeries ==
