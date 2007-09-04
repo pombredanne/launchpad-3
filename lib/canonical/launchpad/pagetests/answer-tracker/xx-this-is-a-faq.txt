@@ -155,7 +155,7 @@ with an error message.
 
     >>> print user_browser.url
     http://answers.launchpad.dev/firefox/+question/2/+linkfaq
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
     You didn't modify the linked FAQ.

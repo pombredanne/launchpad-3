@@ -25,7 +25,7 @@ Branch URLs are not valid for hosted branches.
     >>> browser.getControl('Branch URL').value = (
     ...     'http://example.com/hosted-branch')
     >>> browser.getControl('Add Branch').click()
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     There is 1 error.
     Branch URLs cannot be set for Hosted branches.
@@ -57,7 +57,7 @@ mirrors the branch.
 Branch URLs are required for mirrored branches.
 
     >>> browser.getControl('Add Branch').click()
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     There is 1 error.
     Branch URLs are required for Mirrored branches.

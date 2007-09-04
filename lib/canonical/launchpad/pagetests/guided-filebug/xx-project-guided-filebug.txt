@@ -90,7 +90,7 @@ This one matches, so we subscribe.
 
 But, of course, we're already subscribed because we created it.
 
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     You are already subscribed to this bug.
 

@@ -20,7 +20,7 @@ So let's login and add a comment.
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/1
 
-    >>> get_feedback_messages(user_browser)
+    >>> get_feedback_messages(user_browser.contents)
     [u'Thank you for your comment.']
 
 When an attachment is submitted, the comment and description are optional.
@@ -33,7 +33,7 @@ When an attachment is submitted, the comment and description are optional.
     ...     StringIO("a test file"), "text/plain", "foo.txt")
     >>> user_browser.getControl("Save Changes").click()
 
-    >>> get_feedback_messages(user_browser)
+    >>> get_feedback_messages(user_browser.contents)
     [u'Attachment foo.txt added to bug.']
 
 A comment and attachment can be submitted in one request.
@@ -49,7 +49,7 @@ A comment and attachment can be submitted in one request.
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/1
 
-    >>> get_feedback_messages(user_browser)
+    >>> get_feedback_messages(user_browser.contents)
     [u'Thank you for your comment.', u'Attachment bar.txt added to bug.']
 
 You cannot upload an empty attachment.
@@ -63,7 +63,7 @@ You cannot upload an empty attachment.
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/1/+addcomment
 
-    >>> for msg in get_feedback_messages(user_browser):
+    >>> for msg in get_feedback_messages(user_browser.contents):
     ...     print msg
     There is 1 error.
     Cannot upload empty file.
@@ -74,7 +74,7 @@ You cannot add a comment without a subject.
     ...     "http://bugs.launchpad.dev/firefox/+bug/1/+addcomment-form")
     >>> user_browser.getControl("Subject").value = ""
     >>> user_browser.getControl("Save Changes").click()
-    >>> for msg in get_feedback_messages(user_browser):
+    >>> for msg in get_feedback_messages(user_browser.contents):
     ...     print msg
     There is 1 error.
     Required input is missing.
@@ -93,7 +93,7 @@ option in launchpad.conf. In our example, the size is limited to 1024.
     ...     StringIO("x"*1025), "text/plain", "foo.txt")
     >>> user_browser.getControl("Save Changes").click()
 
-    >>> for msg in get_feedback_messages(user_browser):
+    >>> for msg in get_feedback_messages(user_browser.contents):
     ...     print msg
     There is 1 error.
     Cannot upload files larger than 1024 bytes
@@ -111,7 +111,7 @@ The comment/attach file form is available from a link on the bug page.
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/1
 
-    >>> get_feedback_messages(user_browser)
+    >>> get_feedback_messages(user_browser.contents)
     [u'Attachment foo.txt added to bug.']
 
 And directly on the bug page (after the comments.)
@@ -132,5 +132,5 @@ And directly on the bug page (after the comments.)
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/1
 
-    >>> get_feedback_messages(user_browser)
+    >>> get_feedback_messages(user_browser.contents)
     [u'Thank you for your comment.']

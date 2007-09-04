@@ -73,7 +73,7 @@ XXX: Less ideally, the error message should include hyperlinks to the conflict
 branch and the +edit form of the context branch, but ObjectReassignmentView
 will not let us have even that. -- David Allouche 2005-08-17
 
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Branch name conflict. ... try changing its registrant again.
 
@@ -92,7 +92,7 @@ a +junk branch from yourself to a team.
     >>> browser.getControl('Change Registrant').click()
     >>> browser.url
     'http://code.launchpad.dev/~name12/+junk/junk.contrib/+reassign'
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     You cannot assign a +junk branch to a team. Create a project first.
 

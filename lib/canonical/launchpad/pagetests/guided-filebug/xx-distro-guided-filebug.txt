@@ -34,7 +34,7 @@ Subscribing to one of the similar bugs takes us to the bug page.
     >>> print user_browser.url
     http://bugs.launchpad.dev/thunderbird/+bug/9
 
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     You have been subscribed to this bug.
 

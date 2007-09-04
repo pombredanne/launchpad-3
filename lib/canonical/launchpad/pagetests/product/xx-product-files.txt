@@ -120,7 +120,7 @@ Create a file to upload.
     >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
     ...    ["Installer file"]
     >>> firefox_owner.getControl("Add file").click()
-    >>> get_feedback_messages(firefox_owner)
+    >>> get_feedback_messages(firefox_owner.contents)
     [u"Your file 'foo.txt' has been uploaded."]
 
 Let's go back to the page where the files are listed and ensure it
@@ -147,7 +147,7 @@ Create a file to upload.
     >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
     ...    ["Installer file"]
     >>> firefox_owner.getControl("Add file").click()
-    >>> for msg in get_feedback_messages(firefox_owner):
+    >>> for msg in get_feedback_messages(firefox_owner.contents):
     ...     print msg
     There is 1 error.
     Required input is missing.
@@ -166,7 +166,7 @@ Create a file to upload.
     >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
     ...    ["Installer file"]
     >>> firefox_owner.getControl("Add file").click()
-    >>> for msg in get_feedback_messages(firefox_owner):
+    >>> for msg in get_feedback_messages(firefox_owner.contents):
     ...     print msg
     There is 1 error.
     Cannot upload empty file.
@@ -182,7 +182,7 @@ Now let's successfully upload two more files.
     >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
     ...    ["Installer file"]
     >>> firefox_owner.getControl("Add file").click()
-    >>> get_feedback_messages(firefox_owner)
+    >>> get_feedback_messages(firefox_owner.contents)
     [u"Your file 'foo2.txt' has been uploaded."]
 
     >>> firefox_owner.open('http://launchpad.dev/firefox/1.0/1.0.0/')
@@ -194,7 +194,7 @@ Now let's successfully upload two more files.
     >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
     ...    ["Installer file"]
     >>> firefox_owner.getControl("Add file").click()
-    >>> get_feedback_messages(firefox_owner)
+    >>> get_feedback_messages(firefox_owner.contents)
     [u"Your file 'foo3.txt' has been uploaded."]
 
 Add a file to a different release on the same project.
@@ -208,7 +208,7 @@ Add a file to a different release on the same project.
     >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
     ...    ["README File"]
     >>> firefox_owner.getControl("Add file").click()
-    >>> get_feedback_messages(firefox_owner)
+    >>> get_feedback_messages(firefox_owner.contents)
     [u"Your file 'foo09.txt' has been uploaded."]
 
 Examine all of the available files for download for firefox now.  They
@@ -261,7 +261,7 @@ Delete the file foo2.txt.
     ...     name="checkbox_0_0_1")
     >>> checkbox.value = checkbox.options
     >>> firefox_owner.getControl("Delete Files").click()
-    >>> get_feedback_messages(firefox_owner)
+    >>> get_feedback_messages(firefox_owner.contents)
     [u'1 file has been deleted.']
 
 Ensure the file is no longer listed.
