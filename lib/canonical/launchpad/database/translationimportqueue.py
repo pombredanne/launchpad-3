@@ -620,6 +620,7 @@ class TranslationImportQueue:
                 entry.status = RosettaImportStatus.NEEDS_REVIEW
 
             entry.date_status_changed = UTC_NOW
+            entry.format = format
             entry.sync()
         else:
             # It's a new row.

@@ -424,6 +424,11 @@ class MozillaXpiImporter:
         return TranslationFileFormat.XPI
 
     @property
+    def try_this_format_before(self):
+        """See `ITranslationFormatImporter`."""
+        return None
+
+    @property
     def content_type(self):
         """See `ITranslationFormatImporter`."""
         # using "application/x-xpinstall" would trigger installation in

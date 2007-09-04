@@ -84,8 +84,12 @@ class TranslationImporter:
 
     def getTranslationFileFormatByFileExtension(self, file_extension, content):
         """See `ITranslationImporter`."""
-        for importer in importers.itervalues():
-            if file_extension in importer.file_extensions:
+        for format in importers:
+            if file_extension in importers[format].file_extensions:
+                for try_first_format in importers:
+                    if (format ==
+                        importers[try_first_format].try_this_format_before):
+                        return importers[try_first_format].format(content)
                 return importer.format(content)
 
         return None
@@ -109,7 +113,7 @@ class TranslationImporter:
             translation_import_queue_entry.format)
         exporter = getUtility(ITranslationExporter)
         format_exporter = exporter.getTranslationFormatExporterByFileFormat(
-            importer.format)
+            translation_import_queue_entry.format)
 
         assert importer is not None, (
             'There is no importer available for %s files' % (

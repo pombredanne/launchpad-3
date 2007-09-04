@@ -45,7 +45,7 @@ msgid "_n: %1 foo\n%1 foos"
 msgstr ""
 "1st plural form %1\n"
 "2nd plural form %1\n"
-"3rd plural form %1\n"
+"3rd plural form %1"
 
 msgid "_: Context\nMessage"
 msgstr "Contextual translation"

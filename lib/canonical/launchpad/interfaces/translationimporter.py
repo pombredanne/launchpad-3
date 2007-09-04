@@ -121,6 +121,18 @@ class ITranslationFormatImporter(Interface):
         vocabulary='TranslationFileFormat',
         required=True)
 
+    # Example of this: KdePOImporter is based off GettextPOImporter, and
+    # it knows that a .format(content) check should be done on that first.
+    try_this_format_before = Choice(
+        title=u'File format this importer should have higher priority from.',
+        description=u'''
+            When two file formats match on the same file extensions,
+            one is to be done first.  When this format knows what it
+            has precedence from, it should set it here.
+            ''',
+        vocabulary='TranslationFileFormat',
+        required=True)
+
     content_type = TextLine(
         title=u'Content type string for this file format.',
         required=True, readonly=True)

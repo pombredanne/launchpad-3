@@ -33,6 +33,11 @@ class GettextPOImporter:
         return TranslationFileFormat.PO
 
     @property
+    def try_this_format_before(self):
+        """See `ITranslationFormatImporter`."""
+        return None
+
+    @property
     def content_type(self):
         """See `ITranslationFormatImporter`."""
         return 'application/x-po'

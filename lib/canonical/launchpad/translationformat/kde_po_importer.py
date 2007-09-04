@@ -45,6 +45,11 @@ class KdePOImporter(GettextPOImporter):
         return TranslationFileFormat.PO
 
     @property
+    def try_this_format_before(self):
+        """See `ITranslationFormatImporter`."""
+        return TranslationFileFormat.PO
+
+    @property
     def content_type(self):
         """See `ITranslationFormatImporter`."""
         return 'application/x-po'
@@ -69,7 +74,7 @@ class KdePOImporter(GettextPOImporter):
                 self.internal_format = TranslationFileFormat.KDEPO
             elif msgid.lower().startswith('_: ') and '\n' in msgid:
                 # This is a KDE context message
-                message.context, message.msgid = msgid[3:].split('\n')
+                message.context, message.msgid = msgid[3:].split('\n', 1)
                 self.internal_format = TranslationFileFormat.KDEPO
             else:
                 # Other messages are left as they are parsed by

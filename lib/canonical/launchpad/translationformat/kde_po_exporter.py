@@ -18,6 +18,8 @@ __all__ = [
 
 from zope.interface import implements
 
+from canonical.launchpad.interfaces import ITranslationFormatExporter
+
 from canonical.launchpad.translationformat.gettext_po_exporter import (
     GettextPOExporter)
 from canonical.lp.dbschema import TranslationFileFormat
