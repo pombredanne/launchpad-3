@@ -21,12 +21,18 @@ class KdePOImporter(GettextPOImporter):
 
     def format(self, content):
         """See `ITranslationFormatImporter`."""
-        parser = POParser()
-        translation_file = parser.parse(content)
-        for message in translation_file.messages:
-            msgid = message.msgid
-            if msgid.lower().startswith('_n: ') and '\n' in msgid:
-                return TranslationFileFormat.KDEPO
+        # XXX DaniloSegan 20070904: I first tried using POParser()
+        # to check if the file is a legacy KDE PO file or not, but
+        # that is too slow in some cases like tarball uploads (processing
+        # of all PO files in a tarball is done in the same transaction,
+        # and with extremely big PO files, this will be too slow).  Thus,
+        # a heuristic verified to be correct on all PO files from
+        # Ubuntu language packs.
+        if ("""msgid "_n: """ in content or
+            """msgid ""\n"_n: """ in content or
+            """msgid "_: """ in content or
+            """msgid ""\n"_: """ in content):
+            return TranslationFileFormat.KDEPO
         return TranslationFileFormat.PO
 
     @property
@@ -41,7 +47,7 @@ class KdePOImporter(GettextPOImporter):
 
         for message in translation_file.messages:
             msgid = message.msgid
-            if msgid.lower().startswith('_n:') and '\n' in msgid:
+            if msgid.lower().startswith('_n: ') and '\n' in msgid:
                 # This is a KDE plural form
                 singular, plural = msgid[4:].split('\n')
 
@@ -52,4 +58,13 @@ class KdePOImporter(GettextPOImporter):
                     message._translations = msgstrs[0].split('\n')
 
                 self.internal_format = TranslationFileFormat.KDEPO
+            elif msgid.lower().startswith('_: ') and '\n' in msgid:
+                # This is a KDE context message
+                message.context, message.msgid = msgid[3:].split('\n')
+                self.internal_format = TranslationFileFormat.KDEPO
+            else:
+                # Other messages are left as they are parsed by
+                # GettextPOImporter
+                pass
+
         return translation_file

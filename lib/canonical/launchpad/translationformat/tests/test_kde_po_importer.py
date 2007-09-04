@@ -26,7 +26,11 @@ msgstr ""
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 
-msgid "_n: %1 foo\n%1 foos"
+msgid ""
+"_n: %1 foo\n%1 foos"
+msgstr ""
+
+msgid "_: Context\nMessage"
 msgstr ""
 '''
 
@@ -42,6 +46,9 @@ msgstr ""
 "1st plural form %1\n"
 "2nd plural form %1\n"
 "3rd plural form %1\n"
+
+msgid "_: Context\nMessage"
+msgstr "Contextual translation"
 '''
 
 
@@ -125,6 +132,26 @@ class KdePOImporterTestCase(unittest.TestCase):
              translations[1] == u'2nd plural form %1' and
              translations[2] == u'3rd plural form %1'),
             "KdePOImporter didn't import translated KDE plural forms correctly.")
+
+    def testTemplateContext(self):
+        """Check whether legacy KDE context is correctly imported."""
+        message = self.template_file.messages[1]
+        msgid = message.msgid
+        context = message.context
+        self.failUnless(
+            (msgid == u'Message' and context == u'Context'),
+            "KdePOImporter didn't import KDE context correctly.")
+
+    def testTranslationContext(self):
+        """Check whether legacy KDE context is correctly imported."""
+        message = self.translation_file.messages[1]
+        msgid = message.msgid
+        context = message.context
+        translations = message.translations
+        self.failUnless(
+            (msgid == u'Message' and context == u'Context' and
+             translations[0] == u'Contextual translation'),
+            "KdePOImporter didn't import translated KDE context correctly.")
 
 
 def test_suite():
