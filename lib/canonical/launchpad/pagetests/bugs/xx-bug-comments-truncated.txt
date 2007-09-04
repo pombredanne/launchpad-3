@@ -22,7 +22,7 @@ truncated.
     >>> from BeautifulSoup import BeautifulSoup
     >>> def print_comments(page):
     ...     """Print all the comments on the page."""
-    ...     soup = BeautifulSoup(page)
+    ...     soup = find_main_content(page)
     ...     comment_divs = soup('div', 'boardCommentBody')
     ...     for div_tag in comment_divs:
     ...         print div_tag

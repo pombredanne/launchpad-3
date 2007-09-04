@@ -13,7 +13,7 @@ He was wondering who created that when he saw a very proeminent link, saying
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> import re
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> print re.sub(r'\s+', ' ', soup('h1')[0].findNext('p').renderContents())
     Alexander Limi does not use Launchpad. This page was created...
     ...2005-06-06...<strong>when importing bugs from 
@@ -32,7 +32,7 @@ given email address is not associated with that profile.
 
     >>> browser.getControl('Email address').value = 'non@existent.org'
     >>> browser.getControl('E-mail Me').click()
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> for tag in soup('div', 'message'):
     ...     print tag.renderContents()
     We couldn't find this email address. Please try another one that could
@@ -44,7 +44,7 @@ Then he tries with Sample Person's email address.
 
     >>> browser.getControl('Email address').value = 'test@canonical.com'
     >>> browser.getControl('E-mail Me').click()
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> for tag in soup('div', 'message'):
     ...     print tag.renderContents()
     This email address is associated with yet another Launchpad profile,
@@ -59,7 +59,7 @@ this one is associated with an unvalidated profile.
 
     >>> browser.getControl('Email address').value = 'morten@wtf.dk'
     >>> browser.getControl('E-mail Me').click()
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> for tag in soup('div', 'message'):
     ...     print tag.renderContents()
     Although this email address is not associated with this profile, it's
@@ -93,7 +93,7 @@ Now he finally remembered his email address.
 
     >>> browser.url
     'http://launchpad.dev/~limi'
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> for tag in soup('div', 'informational message'):
     ...     print tag.renderContents()
     Profile claimed successfully
@@ -139,7 +139,7 @@ can be claimed) they /do/ have a preferred email and we need to handle this.
 
     >>> anon_browser.url
     'http://launchpad.dev/~spiv'
-    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> soup = find_main_content(anon_browser.contents)
     >>> for tag in soup('div', 'informational message'):
     ...     print tag.renderContents()
     Profile claimed successfully

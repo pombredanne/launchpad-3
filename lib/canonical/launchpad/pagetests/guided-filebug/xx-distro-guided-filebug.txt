@@ -63,7 +63,7 @@ description.
     >>> from BeautifulSoup import BeautifulSoup
     >>> import re
 
-    >>> page_soup = BeautifulSoup(user_browser.contents)
+    >>> page_soup = find_main_content(user_browser.contents)
     >>> field_labels = page_soup.findAll(
     ...     'label', text=re.compile('Further information'))
     >>> for field_label in field_labels:

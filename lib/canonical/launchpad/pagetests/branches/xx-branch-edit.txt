@@ -178,7 +178,7 @@ but that is just for the needs of the demonstration.
 This should have displayed an error message next to the name field.
 
   >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
   Name already in use. ...
 
@@ -199,7 +199,7 @@ branch, and changing the product and the branch name at the same time.
   >>> browser.url
   'http://launchpad.dev/%7Ename12/gnome-terminal/main/+edit'
   >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
   Name already in use. ...
 
@@ -216,7 +216,7 @@ combinations of changing name and product that can cause an error.
   >>> browser.url
   'http://launchpad.dev/%7Ename12/gnome-terminal/main/+edit'
   >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
   Name already in use. ...
 
@@ -228,6 +228,6 @@ know if it conflicts or not:
   >>> browser.getControl('Change Branch').click()
   >>> browser.url
   'http://launchpad.dev/%7Ename12/gnome-terminal/main/+edit'
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
   Invalid value

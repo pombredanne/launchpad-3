@@ -75,7 +75,7 @@ they must adhere religiously to an agreed-to format.
     ...     """Extract tag "attributes" in page that begin with "prefix"."""
     ...     from BeautifulSoup import BeautifulSoup
     ...     import re
-    ...     soup = BeautifulSoup(browser.contents)
+    ...     soup = find_main_content(browser.contents)
     ...     ids = [
     ...         tag.get(attribute)
     ...         for tag in soup.findAll()

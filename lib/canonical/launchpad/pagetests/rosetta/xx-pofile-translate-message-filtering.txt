@@ -18,7 +18,7 @@ with the ids between 130 and 151 and, by default, the batch are of 10 items.
   ...     # Map msgset_ids to HTML tags
   ...     translations = {}
   ...
-  ...     soup = BeautifulSoup(browser.contents)
+  ...     soup = find_main_content(browser.contents)
   ...     for tag in soup.findAll('label'):
   ...         id = tag.get('id')
   ...         if id is not None:

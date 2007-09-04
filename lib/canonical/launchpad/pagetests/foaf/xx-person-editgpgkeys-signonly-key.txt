@@ -32,7 +32,7 @@ Claim a sign-only OpenPGP key:
   >>> browser.getControl('Import Key').click()
 
   >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> for tag in soup('p', 'informational message'):
   ...     print tag.renderContents()
    A message has been sent to ...test@canonical.com... To confirm the
@@ -93,7 +93,7 @@ This should make us immune to replay attacks and encoding issues.
   >>> browser.title
   'Confirm sign-only OpenPGP key'
 
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> for tag in soup('pre'):
   ...     print tag.string
   Please register 447DBF38C4F9C4ED752246B77D88913717B05A8F to the
@@ -202,7 +202,7 @@ Mark the key as inactive.
   >>> browser.getControl(name="DEACTIVATE_GPGKEY").value = ['2']
   >>> browser.getControl('Deactivate Key').click()
 
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> for tag in soup('p', 'informational message'):
   ...     print tag.renderContents()
   Deactivated key(s): 1024D/17B05A8F
@@ -212,7 +212,7 @@ Ask for a re-validation of the key.
   >>> browser.getControl(name="REACTIVATE_GPGKEY").value = ['2']
   >>> browser.getControl('Reactivate Key').click()
 
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> for tag in soup('p', 'informational message'):
   ...     print tag.renderContents()
   A message has been sent to test@canonical.com with instructions to reactivate...
