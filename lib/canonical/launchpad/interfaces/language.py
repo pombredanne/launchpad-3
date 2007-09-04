@@ -9,7 +9,7 @@ __all__ = [
     'ILanguageSet',
     ]
 
-from zope.schema import TextLine, Int, Choice, Bool, Field, List, Set
+from zope.schema import TextLine, Int, Choice, Bool, Field, Set
 from zope.interface import Interface, Attribute
 
 from canonical.lp.dbschema import TextDirection

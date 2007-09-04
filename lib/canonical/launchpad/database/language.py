@@ -42,6 +42,8 @@ class Language(SQLBase):
         'Country', joinColumn='language', otherColumn='country',
         intermediateTable='SpokenIn')
 
+    # Define a read/write property `countries` so it can be passed
+    # to language administration `LaunchpadFormView`.
     def _getCountries(self):
         return self._countries
 
@@ -52,7 +54,6 @@ class Language(SQLBase):
         for country in countries:
             if country not in self._countries:
                 self.addCountry(country)
-
     countries = property(_getCountries, _setCountries)
 
     @property

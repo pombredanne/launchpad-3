@@ -19,12 +19,10 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
-from zope.schema import Choice, List
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    ILanguageSet, ILanguage, ICountrySet, NotFoundError)
+    ILanguageSet, ILanguage, NotFoundError)
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, LaunchpadFormView,
     LaunchpadEditFormView, action, canonical_url, ContextMenu,
