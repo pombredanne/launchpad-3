@@ -301,7 +301,7 @@ class BuilderGroup:
         # Explode before collect a binary that is denied in this
         # distroseries/pocket
         build = queueItem.build
-        if build.archive.purpose != dbschema.ArchivePurpose.PPA:
+        if not build.archive.allowUpdatesToReleasePocket():
             assert build.distroseries.canUploadToPocket(build.pocket), (
                 "%s (%s) can not be built for pocket %s: illegal status"
                 % (build.title, build.id,

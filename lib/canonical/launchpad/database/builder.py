@@ -218,8 +218,10 @@ class Builder(SQLBase):
             raise CannotBuild
         # The main distribution has policies prevent uploads to some pockets
         # (e.g. security) during different parts of the distribution series
-        # lifecycle. These do not apply to PPA builds (which are untrusted).
-        if build_queue_item.is_trusted:
+        # lifecycle. These do not apply to PPA builds (which are untrusted)
+        # nor any archive that allows release pocket updates.
+        if (build_queue_item.is_trusted and
+            not build_queue_item.build.archive.allowUpdatesToReleasePocket()):
             build = build_queue_item.build
             # XXX Robert Collins 2007-05-26: not an explicit CannotBuild
             # exception yet because the callers have not been audited
