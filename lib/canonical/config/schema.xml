@@ -916,8 +916,6 @@ k            </description>
         <key name="dbuser" datatype="string" default="supermirror" />
         <key name="branchesdest" datatype="string" default="/var/tmp/sm-ng/mirrors" />
         <key name="masterlock" datatype="string" default="/var/tmp/sm-ng/masterlock" />
-        <key name="branchlistsource" datatype="string"
-             default="http://gangotri.ubuntu.com:9000/supermirror-pull-list.txt" />
         <key name="authserver_url" datatype="canonical.config.urlbase"
              default="http://localhost:8999/branch/">
             <description>
