@@ -15,11 +15,17 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, ProductBugTracker, Summary, Title, URIField)
-from canonical.launchpad.interfaces import (
-    IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy, IHasDrivers,
-    IHasIcon, IHasLogo, IHasMilestones, IHasMugshot, IHasOwner,
-    IHasSecurityContact, IKarmaContext, ISpecificationTarget,
-    PillarNameField)
+from canonical.launchpad.interfaces.branchvisibilitypolicy import (
+    IHasBranchVisibilityPolicy)
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.karma import IKarmaContext
+from canonical.launchpad.interfaces.launchpad import (
+    IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
+    IHasOwner, IHasSecurityContact)
+from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.pillar import PillarNameField
+from canonical.launchpad.interfaces.specificationtarget import (
+    ISpecificationTarget)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
