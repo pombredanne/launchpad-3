@@ -101,7 +101,7 @@ class UserAuthServerMixin:
                 break
         else:
             self.fail("No banner logged.")
-                
+
 
 class TestUserAuthServer(UserAuthServerMixin, unittest.TestCase):
 
@@ -236,7 +236,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
             config.codehosting.banner = None
             return ignored
         return d.addCallback(check).addBoth(cleanup)
-    
+
     def test_configuredBannerSentOnlyOnce(self):
         # We don't send the banner on each authentication attempt, just on the
         # first one. It is usual for there to be many authentication attempts
@@ -245,7 +245,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
 
         d = self.requestUnsupportedAuthentication()
         d.addCallback(lambda ignored: self.requestSuccessfulAuthentication())
-        
+
         def check(ignored):
             # Check that no banner was sent to the user.
             self.assertMessageOrder(

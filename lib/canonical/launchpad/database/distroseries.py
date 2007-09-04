@@ -677,7 +677,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             sqlvalues(self)]
         main_clauses.append(
             'Archive.id=SourcePackagePublishingHistory.archive')
-        main_clauses.append('Archive.purpose!=%s' % 
+        main_clauses.append('Archive.purpose!=%s' %
             sqlvalues(ArchivePurpose.PPA))
         main_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
         if not self.isUnstable():
@@ -690,7 +690,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         ppa_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
             sqlvalues(self)]
         ppa_clauses.append('Archive.id=SourcePackagePublishingHistory.archive')
-        ppa_clauses.append('Archive.purpose=%s' % 
+        ppa_clauses.append('Archive.purpose=%s' %
             sqlvalues(ArchivePurpose.PPA))
         ppa_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
         ppa_sources = SourcePackagePublishingHistory.select(
@@ -1322,7 +1322,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             cur.execute('''
                 INSERT INTO SecureSourcePackagePublishingHistory (
                     sourcepackagerelease, distrorelease, status, component,
-                    section, archive, datecreated, datepublished, pocket, 
+                    section, archive, datecreated, datepublished, pocket,
                     embargo)
                 SELECT spph.sourcepackagerelease, %s as distrorelease,
                        spph.status, spph.component, spph.section, %s as archive,
@@ -1870,8 +1870,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # Exclude RELEASE pocket if the distroseries was already released,
         # since it should not change for main archive.
-        # We allow RELEASE uploads for PPAs.
-        if not self.isUnstable() and archive.purpose != ArchivePurpose.PPA:
+        # We allow RELEASE publishing for PPAs.
+        # We also allow RELEASE publishing for commercial.
+        if (not self.isUnstable() and
+            not archive.allowUpdatesToReleasePocket()):
             queries.append(
             'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
@@ -1906,8 +1908,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if is_careful:
             return True
 
-        # PPA allows everything (aka Hotel California).
-        if publication.archive.purpose == ArchivePurpose.PPA:
+        # PPA and COMMERCIAL allow everything.
+        if publication.archive.allowUpdatesToReleasePocket():
             return True
 
         # FROZEN state also allow all pockets to be published.

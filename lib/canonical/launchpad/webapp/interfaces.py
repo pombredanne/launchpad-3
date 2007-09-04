@@ -392,7 +392,7 @@ class IBrowserFormNG(Interface):
         If the field wasn't submitted return the default value. (If default
         is None, an empty list will be returned. It is an error to use
         something else than None or a list as default value.
-        
+
         This method should always return a list, if only one value was
         submitted, it will be returned in a list.
         """
@@ -525,7 +525,7 @@ class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
     """The Launchpad customized database adapter"""
     def readonly():
         """Set the connection to read only.
-        
+
         This should only be called at the start of the transaction to
         avoid confusing code that defers making database changes until
         transaction commit time.
@@ -534,7 +534,7 @@ class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
     def switchUser(self, dbuser=None):
         """Change the PostgreSQL user we are connected as, defaulting to the
         default Launchpad user.
-       
+
         This involves closing the existing connection and reopening it;
         uncommitted changes will be lost. The new connection will also open
         in read/write mode so calls to readonly() will need to be made
@@ -641,7 +641,7 @@ class INotificationResponse(Interface):
         are preserved.
         """
 
- 
+
 class IErrorReport(Interface):
     id = TextLine(description=u"the name of this error report")
     type = TextLine(description=u"the type of the exception that occurred")
@@ -655,7 +655,7 @@ class IErrorReport(Interface):
 
 class IErrorReportRequest(Interface):
     oopsid = TextLine(
-        description=u"""an identifier for the exception, or None if no 
+        description=u"""an identifier for the exception, or None if no
         exception has occurred""")
 
 #

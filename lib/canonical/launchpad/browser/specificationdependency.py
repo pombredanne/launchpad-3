@@ -18,7 +18,7 @@ from canonical.launchpad.webapp import (
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.launchpad.interfaces.specificationdependency import (
     ISpecificationDependency)
-     
+
 from zope.formlib import form
 from zope.schema import Choice
 
@@ -45,12 +45,12 @@ class SpecificationDependencyAddView(LaunchpadFormView):
             custom_widget=self.custom_widgets['dependency'])
 
     def validate(self, data):
-        is_valid = True        
+        is_valid = True
         token = self.request.form.get(self.widgets['dependency'].name)
         try:
             self.widgets['dependency'].vocabulary.getTermByToken(token)
         except LookupError:
-            is_valid = False            
+            is_valid = False
         if not is_valid:
             self.setFieldError(
                 'dependency',
@@ -63,7 +63,7 @@ class SpecificationDependencyAddView(LaunchpadFormView):
     @action(_('Continue'), name='linkdependency')
     def linkdependency_action(self, action, data):
         self.context.createDependency(data['dependency'])
-        
+
     @property
     def next_url(self):
         return canonical_url(self.context)

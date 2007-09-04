@@ -11,8 +11,8 @@ import pytz
 
 import transaction
 
+from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
@@ -93,25 +93,24 @@ class TestBranchSet(TestCase):
             expected_branches = branch_set.getBranchesForOwners(
                 list(branch_owner.teams_participated_in) + [branch_owner])
             expected_branches = [
-                branch for branch in expected_branches if branch.url is None]
+                branch for branch in expected_branches
+                if branch.branch_type == BranchType.HOSTED]
             self.assertEqual(expected_branches, branches)
         finally:
             logout()
 
 
-class TestMirroring(TestCase):
-
-    layer = LaunchpadFunctionalLayer
+class TestMirroring(BranchTestCase):
+    """Tests for mirroring methods of a branch."""
 
     def setUp(self):
-        TestCase.setUp(self)
+        BranchTestCase.setUp(self)
         login(ANONYMOUS)
-        self.resetMirrorRequestTimes()
-        self.branch_set = BranchSet()
+        self.emptyPullQueues()
 
     def tearDown(self):
         logout()
-        TestCase.tearDown(self)
+        BranchTestCase.tearDown(self)
 
     def assertBetween(self, lower_bound, variable, upper_bound):
         """Assert that 'variable' is strictly between two boundaries."""
@@ -119,33 +118,13 @@ class TestMirroring(TestCase):
             lower_bound < variable < upper_bound,
             "%r < %r < %r" % (lower_bound, variable, upper_bound))
 
-    def getArbitraryBranch(self, branch_type=None):
-        """Return an arbitrary branch."""
-        id_query = "SELECT id FROM Branch %s ORDER BY random() LIMIT 1"
-        if branch_type is None:
-            id_query = id_query % ''
-        else:
-            id_query = id_query % (
-                "WHERE branch_type = %s" % sqlvalues(branch_type))
-        cur = cursor()
-        cur.execute(id_query)
-        [branch_id] = cur.fetchone()
-        return self.branch_set.get(branch_id)
-
     def getNow(self):
         """Return a datetime representing 'now' in UTC."""
         return datetime.now(pytz.timezone('UTC'))
 
-    def resetMirrorRequestTimes(self):
-        """Set all mirror_request_times to NULL."""
-        transaction.begin()
-        cur = cursor()
-        cur.execute("UPDATE Branch SET mirror_request_time = NULL")
-        transaction.commit()
-
     def test_requestMirror(self):
         """requestMirror sets the mirror request time to 'now'."""
-        branch = self.getArbitraryBranch()
+        branch = self.makeBranch()
         branch.requestMirror()
         self.assertEqual(UTC_NOW, branch.mirror_request_time)
 
@@ -156,7 +135,7 @@ class TestMirroring(TestCase):
         """
         # We run these in separate transactions so as to have the times set to
         # different values. This is closer to what happens in production.
-        branch = self.getArbitraryBranch()
+        branch = self.makeBranch()
         branch.startMirroring()
         transaction.commit()
         branch.requestMirror()
@@ -169,15 +148,16 @@ class TestMirroring(TestCase):
 
     def test_mirrorCompleteRemovesFromPullQueue(self):
         """Completing the mirror removes the branch from the pull queue."""
-        branch = self.getArbitraryBranch()
+        branch = self.makeBranch()
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
-        self.assertEqual([], list(self.branch_set.getPullQueue()))
+        self.assertEqual(
+            [], list(self.branch_set.getPullQueue(branch.branch_type)))
 
     def test_mirroringResetsMirrorRequestForHostedBranches(self):
         """Mirroring hosted branches resets their mirror request times."""
-        branch = self.getArbitraryBranch(BranchType.HOSTED)
+        branch = self.makeBranch(BranchType.HOSTED)
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
@@ -185,7 +165,7 @@ class TestMirroring(TestCase):
 
     def test_mirroringResetsMirrorRequestForImportedBranches(self):
         """Mirroring hosted branches resets their mirror request times."""
-        branch = self.getArbitraryBranch(BranchType.IMPORTED)
+        branch = self.makeBranch(BranchType.IMPORTED)
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
@@ -196,7 +176,7 @@ class TestMirroring(TestCase):
         hours in the future.
         """
         before_request = self.getNow()
-        branch = self.getArbitraryBranch(BranchType.MIRRORED)
+        branch = self.makeBranch(BranchType.MIRRORED)
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
@@ -207,7 +187,7 @@ class TestMirroring(TestCase):
 
     def test_mirrorFailureResetsMirrorRequestForHostedBranches(self):
         before_request = self.getNow()
-        branch = self.getArbitraryBranch(BranchType.HOSTED)
+        branch = self.makeBranch(BranchType.HOSTED)
         branch.requestMirror()
         branch.mirrorFailed('No particular reason')
         after_request = self.getNow()
@@ -217,7 +197,7 @@ class TestMirroring(TestCase):
 
     def test_mirrorFailureResetsMirrorRequestForImportedBranches(self):
         before_request = self.getNow()
-        branch = self.getArbitraryBranch(BranchType.IMPORTED)
+        branch = self.makeBranch(BranchType.IMPORTED)
         branch.requestMirror()
         branch.mirrorFailed('No particular reason')
         after_request = self.getNow()
@@ -227,7 +207,7 @@ class TestMirroring(TestCase):
 
     def test_mirrorFailureResetsMirrorRequestForMirroredBranches(self):
         before_request = self.getNow()
-        branch = self.getArbitraryBranch(BranchType.MIRRORED)
+        branch = self.makeBranch(BranchType.MIRRORED)
         branch.requestMirror()
         branch.mirrorFailed('No particular reason')
         after_request = self.getNow()
@@ -237,28 +217,44 @@ class TestMirroring(TestCase):
 
     def test_pullQueueEmpty(self):
         """Branches with no mirror_request_time are not in the pull queue."""
-        self.assertEqual([], list(self.branch_set.getPullQueue()))
+        for branch_type in BranchType.items:
+            self.assertEqual(
+                [], list(self.branch_set.getPullQueue(branch_type)))
 
     def test_pastMirrorRequestTimeInQueue(self):
         """Branches with mirror_request_time in the past are mirrored."""
         transaction.begin()
-        branch = self.getArbitraryBranch()
+        branch = self.makeBranch()
         branch.requestMirror()
         branch_id = branch.id
         transaction.commit()
         self.assertEqual(
             [branch_id],
-            [branch.id for branch in self.branch_set.getPullQueue()])
+            [branch.id
+             for branch in self.branch_set.getPullQueue(branch.branch_type)])
 
     def test_futureMirrorRequestTimeInQueue(self):
         """Branches with mirror_request_time in the future are not mirrored."""
         transaction.begin()
-        branch = self.getArbitraryBranch()
+        branch = removeSecurityProxy(self.makeBranch())
         tomorrow = self.getNow() + timedelta(1)
         branch.mirror_request_time = tomorrow
         branch.syncUpdate()
         transaction.commit()
-        self.assertEqual([], list(self.branch_set.getPullQueue()))
+        self.assertEqual(
+            [], list(self.branch_set.getPullQueue(branch.branch_type)))
+
+    def test_pullQueueOrder(self):
+        """Pull queue has the oldest mirror request times first."""
+        branches = []
+        for i in range(3):
+            branch = removeSecurityProxy(self.makeBranch(BranchType.HOSTED))
+            branch.mirror_request_time = self.getNow() - timedelta(hours=i+1)
+            branch.sync()
+            branches.append(branch)
+        self.assertEqual(
+            list(reversed(branches)),
+            list(self.branch_set.getPullQueue(BranchType.HOSTED)))
 
 
 class BranchVisibilityPolicyTestCase(TestCase):

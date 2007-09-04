@@ -28,7 +28,7 @@ def ipaddress_from_request(request):
     """Determine the IP address for this request.
 
     Returns None if the IP address cannot be determined or is localhost.
-    
+
     The remote IP address is determined by the X-Forwarded-For: header,
     or failing that, the REMOTE_ADDR CGI environment variable.
 

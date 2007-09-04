@@ -12,8 +12,9 @@ well.
     >>> browser.getControl(name="field.comment").value = "a public bug"
     >>> browser.getControl("Submit Bug Report").click()
 
-    >>> print browser.url
-    http://bugs.launchpad.dev/firefox/+bug/14
+    >>> bug_id = browser.url.split("/")[-1]
+    >>> print browser.url.replace(bug_id, "BUG-ID")
+    http://bugs.launchpad.dev/firefox/+bug/BUG-ID
 
 Now sabdfl, because he's the bug reporter, and guadamen, because they
 are the product bug contact are subscribed to this bug:
@@ -29,7 +30,7 @@ are the product bug contact are subscribed to this bug:
 
     >>> login(ANONYMOUS)
     >>> bugset = getUtility(IBugSet)
-    >>> subscriber_names(bugset.get(14))
+    >>> subscriber_names(bugset.get(bug_id))
     [u'GuadaMen', u'Mark Shuttleworth']
     >>> logout()
 
@@ -52,13 +53,14 @@ subscribed, because Firefox does not have a security contact.
     ...     "This bug is a security vulnerability").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
-    >>> print browser.url
-    http://bugs.launchpad.dev/firefox/+bug/15
+    >>> other_bug_id = browser.url.split("/")[-1]
+    >>> print browser.url.replace(other_bug_id, "BUG-ID")
+    http://bugs.launchpad.dev/firefox/+bug/BUG-ID
 
     >>> logout()
     >>> login("mark@hbd.com")
 
-    >>> subscriber_names(bugset.get(15))
+    >>> subscriber_names(bugset.get(other_bug_id))
     [u'Mark Shuttleworth', u'Sample Person']
 
     >>> logout()

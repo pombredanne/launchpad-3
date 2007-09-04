@@ -11,9 +11,10 @@ import pytz
 
 from twisted.application import strports
 from canonical.authserver.interfaces import WRITABLE
-from canonical.authserver.ftests.harness import AuthserverTacTestSetup
+from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.launchpad.ftests.harness import (
     LaunchpadTestCase, LaunchpadTestSetup)
+from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.config import config
 
@@ -198,7 +199,7 @@ class BranchAPITestCase(LaunchpadTestCase):
         LaunchpadTestCase.tearDown(self)
 
     def testGetBranchPullQueue(self):
-        results = self.server.getBranchPullQueue()
+        results = self.server.getBranchPullQueue(BranchType.MIRRORED.name)
         # Check whether one of the expected branches is in the results:
         self.assertTrue(
             [15, 'http://example.com/gnome-terminal/main',

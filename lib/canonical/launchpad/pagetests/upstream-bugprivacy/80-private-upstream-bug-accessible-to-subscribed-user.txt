@@ -1,9 +1,0 @@
-Sample Person accesses the bug page of a private bug. He is allowed to
-view the page because he is an explicit subscriber on the bug.
-
-  >>> print http(r"""
-  ... GET /firefox/+bug/9 HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
