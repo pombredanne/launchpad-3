@@ -677,8 +677,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             sqlvalues(self)]
         main_clauses.append(
             'Archive.id=SourcePackagePublishingHistory.archive')
-        main_clauses.append('Archive.purpose!=%s' %
-            sqlvalues(ArchivePurpose.PPA))
+        main_clauses.append('Archive.purpose=%s' %
+            sqlvalues(ArchivePurpose.PRIMARY))
         main_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
         if not self.isUnstable():
             main_clauses.append(
@@ -686,18 +686,21 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         main_sources = SourcePackagePublishingHistory.select(
             " AND ".join(main_clauses), clauseTables=['Archive'], orderBy="id")
 
-        # PPA candidates.
-        ppa_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
+        # PPA and partner repo candidates.
+        # These archives do not exclude sources in the release pocket for
+        # a stable distroseries.
+        other_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
             sqlvalues(self)]
-        ppa_clauses.append('Archive.id=SourcePackagePublishingHistory.archive')
-        ppa_clauses.append('Archive.purpose=%s' %
-            sqlvalues(ArchivePurpose.PPA))
-        ppa_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
-        ppa_sources = SourcePackagePublishingHistory.select(
-            " AND ".join(ppa_clauses), clauseTables=['Archive'], orderBy="id")
+        other_clauses.append(
+            'Archive.id=SourcePackagePublishingHistory.archive')
+        other_clauses.append('Archive.purpose IN %s' %
+            sqlvalues([ArchivePurpose.PPA, ArchivePurpose.COMMERCIAL]))
+        other_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
+        other_sources = SourcePackagePublishingHistory.select(
+            " AND ".join(other_clauses), clauseTables=['Archive'], orderBy="id")
 
         # Return all candidates.
-        return main_sources.union(ppa_sources)
+        return main_sources.union(other_sources)
 
     def getSourcePackagePublishing(self, status, pocket, component=None,
                                    archive=None):
