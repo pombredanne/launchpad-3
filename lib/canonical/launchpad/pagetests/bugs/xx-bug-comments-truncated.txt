@@ -19,7 +19,6 @@ the first one will be displayed as it is, and the other two will be
 truncated.
 
     >>> browser.open('http://localhost/bugs/2')
-    >>> from BeautifulSoup import BeautifulSoup
     >>> def print_comments(page):
     ...     """Print all the comments on the page."""
     ...     soup = find_main_content(page)

@@ -8,7 +8,6 @@ The owner of a project can edit its details.
   >>> browser.title
   'The GNOME Project project group details'
 
-  >>> from BeautifulSoup import BeautifulSoup
   >>> soup = find_main_content(browser.contents)
   >>> print soup.first('h1').renderContents()
   Change project details

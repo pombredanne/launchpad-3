@@ -19,7 +19,6 @@ the Firefox product which was filed by 'Sample Person'.
 
     # Define some utility functions to retrieve easily the last comment
     # added and the status of the question.
-    >>> from BeautifulSoup import BeautifulSoup
     >>> def find_request_status(contents):
     ...     soup = find_main_content(contents)
     ...     return soup.find('b', text='Status:').next.strip()

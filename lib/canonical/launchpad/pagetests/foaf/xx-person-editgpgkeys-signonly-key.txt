@@ -31,7 +31,6 @@ Claim a sign-only OpenPGP key:
   >>> browser.getControl(name="fingerprint").value = fingerprint
   >>> browser.getControl('Import Key').click()
 
-  >>> from BeautifulSoup import BeautifulSoup
   >>> soup = find_main_content(browser.contents)
   >>> for tag in soup('p', 'informational message'):
   ...     print tag.renderContents()

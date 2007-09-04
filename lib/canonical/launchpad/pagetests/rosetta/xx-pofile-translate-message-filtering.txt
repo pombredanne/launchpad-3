@@ -13,7 +13,6 @@ with the ids between 130 and 151 and, by default, the batch are of 10 items.
   >>> def print_shown_messages(browser):
   ...     """Print the id/value of all shown translations on the page."""
   ...     import re
-  ...     from BeautifulSoup import BeautifulSoup
   ...
   ...     # Map msgset_ids to HTML tags
   ...     translations = {}

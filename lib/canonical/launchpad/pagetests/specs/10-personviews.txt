@@ -10,7 +10,6 @@ involving that person.
   >>> browser.open('http://blueprints.launchpad.dev/~name16')
   >>> browser.title
   'Blueprints involving Foo Bar'
-  >>> from BeautifulSoup import BeautifulSoup
   >>> soup = find_main_content(browser.contents)
   >>> soup('h1')
   [<h1>Blueprints involving Foo Bar</h1>]

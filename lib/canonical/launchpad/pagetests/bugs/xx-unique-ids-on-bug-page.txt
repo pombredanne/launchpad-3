@@ -16,7 +16,6 @@ For example, bug one has more than one Package field.
 
 Still, the ids of the fields are unique.
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> soup = find_main_content(user_browser.contents)
     >>> non_unique_ids = []
     >>> found_ids = set()

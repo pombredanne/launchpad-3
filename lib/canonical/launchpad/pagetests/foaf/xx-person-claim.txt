@@ -11,7 +11,6 @@ himself, even though he has never used Launchpad.
 He was wondering who created that when he saw a very proeminent link, saying
 'Hey, I'm Alexander Limi'.  He promptly clicked on it.
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> import re
     >>> soup = find_main_content(browser.contents)
     >>> print re.sub(r'\s+', ' ', soup('h1')[0].findNext('p').renderContents())

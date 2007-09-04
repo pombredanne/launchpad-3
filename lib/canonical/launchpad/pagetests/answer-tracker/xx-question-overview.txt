@@ -42,7 +42,6 @@ available from the 'Answers' facet.
     >>> browser.open('http://launchpad.dev/firefox')
     >>> browser.getLink('Answers').click()
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> soup = find_main_content(browser.contents)
     >>> print soup.first('h1').renderContents()
     Questions for Mozilla Firefox

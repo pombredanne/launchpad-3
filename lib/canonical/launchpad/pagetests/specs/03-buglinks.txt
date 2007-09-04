@@ -13,7 +13,6 @@ the 'Related Bugs' portlet.
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/firefox/+spec/svg-support')
-    >>> from BeautifulSoup import BeautifulSoup
     >>> soup = find_main_content(anon_browser.contents)
     >>> soup.first('li', 'bug')
     <li class="bug">

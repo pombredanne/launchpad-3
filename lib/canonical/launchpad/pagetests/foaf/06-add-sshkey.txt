@@ -18,7 +18,6 @@ Any key must be of the form "keytype keytext comment", where keytype must be
 either ssh-rsa or ssh-dss.  If the key doesn't match the expected format, an
 error message will be shown.
 
-    >>> from BeautifulSoup import BeautifulSoup
 
     >>> sshkey = "ssh-rsa   "
     >>> browser.getControl(name='sshkey').value = sshkey

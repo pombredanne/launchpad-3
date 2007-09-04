@@ -73,7 +73,6 @@ XXX: Less ideally, the error message should include hyperlinks to the conflict
 branch and the +edit form of the context branch, but ObjectReassignmentView
 will not let us have even that. -- David Allouche 2005-08-17
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> soup = find_main_content(browser.contents)
     >>> for p_tag in soup('p', 'error message'):
     ...     print p_tag.renderContents()

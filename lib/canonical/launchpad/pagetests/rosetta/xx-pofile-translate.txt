@@ -73,7 +73,6 @@ they must adhere religiously to an agreed-to format.
 
     >>> def get_tags(browser, attribute, prefix):
     ...     """Extract tag "attributes" in page that begin with "prefix"."""
-    ...     from BeautifulSoup import BeautifulSoup
     ...     import re
     ...     soup = find_main_content(browser.contents)
     ...     ids = [

@@ -96,7 +96,6 @@ From the edit page we can also create a new bug watch:
 
 The Debian task is linked to the newly created bug watch.
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> soup = find_main_content(browser.contents)
     >>> debian_link = soup.first(
     ...     'a',

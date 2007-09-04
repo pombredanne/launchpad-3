@@ -29,7 +29,6 @@ When we post the form, we should be redirected back to the question page.
 
 And viewing that page should show the updated information.
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> soup = find_main_content(user_browser.contents)
     >>> print soup.first('div', 'report').renderContents().strip()
     <p>Hi! I'm trying to learn about SVG but I can't get it to work at
@@ -41,7 +40,6 @@ You can even modify the title and description of 'Answered' and
 'Invalid' questions:
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/+question/3')
-    >>> from BeautifulSoup import BeautifulSoup
     >>> soup = find_main_content(user_browser.contents)
     >>> soup.first('b', text='Status:').next.strip()
     u'Invalid'

@@ -32,7 +32,6 @@ button.
 When the user makes a mistake and uses an invalid bug number, an error
 message is displayed:
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> soup = find_main_content(user_browser.contents)
     >>> soup.first('div', 'message')
     <div class="message">Not a valid bug number or nickname.</div>

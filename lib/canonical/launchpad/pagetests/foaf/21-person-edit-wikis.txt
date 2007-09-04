@@ -64,7 +64,6 @@
   This new wiki is added in 'Other wiki names' section.
 
   >>> import re
-  >>> from BeautifulSoup import BeautifulSoup
   >>> soup = find_main_content(browser.contents)
   >>> other_wiki_names_row = soup.first(
   ...     'h2', text='Other wiki names').findParent('tr')

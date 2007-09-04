@@ -14,7 +14,6 @@ Now Sample Person will deactivate his key...
 
 ... but he forgot to select the checkbox of the key he wants to remove.
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> browser.getControl('Deactivate Key').click()
     >>> for tag in find_main_content(browser.contents)('p', 'error message'):
     ...     print tag.renderContents()

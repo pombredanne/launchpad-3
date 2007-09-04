@@ -12,7 +12,6 @@ Let's start by viewing the list of sprints registered.
   >>> user_browser.title
   'Meetings and sprints registered in Launchpad'
 
-  >>> from BeautifulSoup import BeautifulSoup
   >>> soup = find_main_content(user_browser.contents)
   >>> print soup('p')[0].string
   <BLANKLINE>

@@ -60,7 +60,6 @@ filing a bug, but it is optional when subscribing to a similar
 bug. Nevertheless, we don't show an "(Optional)" hint next to the
 description.
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> import re
 
     >>> page_soup = find_main_content(user_browser.contents)

@@ -27,7 +27,6 @@ displayed:
     >>> owner_browser.url
     'http://.../firefox/+question/2'
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> soup = find_main_content(owner_browser.contents)
     >>> print soup.first('div', 'error message').renderContents()
     The question is not in a state where you can confirm an

@@ -25,7 +25,6 @@ bug.
 
   >>> browser.getControl('Description').value= ''
   >>> browser.getControl('Create').click()
-  >>> from BeautifulSoup import BeautifulSoup
   >>> soup = find_main_content(browser.contents)
   >>> for tag in soup('div', 'message'):
   ...   print tag.string
@@ -42,7 +41,6 @@ and description and redirects the user to the bug page.
   >>> browser.getControl('Create').click()
   >>> browser.url
   '.../firefox/+bug/...'
-  >>> from BeautifulSoup import BeautifulSoup
   >>> soup = find_main_content(browser.contents)
   >>> for tag in soup('h1'):
   ...     print tag.string

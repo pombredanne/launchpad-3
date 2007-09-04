@@ -14,7 +14,6 @@ Sample Person already has a deactivated key.
 
 Now he'll request his key to be reactivated.
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> browser.getControl('Reactivate Key').click()
     >>> soup = find_main_content(browser.contents)
     >>> for tag in soup('p', 'error message'):

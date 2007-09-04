@@ -90,7 +90,6 @@ as he revises the summary after reading the similar questions.
 An error message in the page informs the user that the summary is
 missing:
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> soup = find_main_content(user_browser.contents)
     >>> print soup.first('div', 'message').renderContents()
     You must enter a summary of your problem.

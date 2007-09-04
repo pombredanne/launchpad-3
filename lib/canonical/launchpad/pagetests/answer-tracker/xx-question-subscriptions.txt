@@ -17,7 +17,6 @@ they want to subscribe by clicking on the 'Subscribe' button.
     >>> print user_browser.title
     Subscription to question #2
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> soup = find_main_content(user_browser.contents)
     >>> soup.first('h1')
     <h1>Subscribe to question</h1>

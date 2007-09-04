@@ -13,7 +13,6 @@ password page.
     ...     'test@canonical.com')
     >>> browser.getControl('Register').click()
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> soup = find_main_content(browser.contents)
     >>> for tag in soup('p', 'error message'):
     ...     print tag.renderContents()

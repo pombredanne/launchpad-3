@@ -143,7 +143,6 @@ That should give us the form back with an error message.
 
   >>> browser.url
   'http://launchpad.dev/gnome-terminal/+addbranch'
-  >>> from BeautifulSoup import BeautifulSoup
   >>> soup = find_main_content(browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
   Name already in use. ...
