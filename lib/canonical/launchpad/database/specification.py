@@ -443,7 +443,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         delta.recordListAddedAndRemoved("bugs",
                                         "bugs_linked",
                                         "bugs_unlinked")
-        
+
         if delta.changes:
             changes = delta.changes
             changes["specification"] = self
@@ -623,7 +623,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def getBranchLink(self, branch):
         return SpecificationBranch.selectOneBy(
             specificationID=self.id, branchID=branch.id)
-        
+
     def linkBranch(self, branch, summary=None):
         branchlink = self.getBranchLink(branch)
         if branchlink is not None:

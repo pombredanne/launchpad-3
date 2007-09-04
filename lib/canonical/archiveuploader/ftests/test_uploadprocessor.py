@@ -202,7 +202,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         self.assertEqual(to_addrs, [daniel])
         self.assertTrue("Unhandled exception processing upload: Exception "
-                        "raised by BrokenUploadPolicy for testing." 
+                        "raised by BrokenUploadPolicy for testing."
                         in msg)
 
     def testUploadToFrozenDistro(self):
@@ -491,7 +491,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Check it is in the accepted queue.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         self.assertTrue(
-            "OK: foocomm_1.0-2.dsc" in raw_msg, 
+            "OK: foocomm_1.0-2.dsc" in raw_msg,
             "Expected email containing 'OK: foocomm_1.0-2.dsc', got:\n%s"
             % raw_msg)
 
@@ -502,7 +502,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Check it is in the accepted queue.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         self.assertTrue(
-            "OK: foocomm_1.0-2_i386.deb" in raw_msg, 
+            "OK: foocomm_1.0-2_i386.deb" in raw_msg,
             "Expected email containing 'OK: foocomm_1.0-2_i386.deb', got:\n%s"
             % raw_msg)
 

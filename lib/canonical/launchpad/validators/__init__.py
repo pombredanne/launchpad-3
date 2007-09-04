@@ -59,10 +59,10 @@ class LaunchpadValidationError(ValidationError):
     u'<a title="&quot;Quoted&quot;">Oops</a>'
     """
     implements(ILaunchpadValidationError)
-    
+
     def __init__(self, message, *args, **kw):
         """Create a LaunchpadValidationError instance.
-   
+
         `message` should be an HTML quoted string. Extra arguments
         will be HTML quoted and merged into the message using standard
         Python string interpolation.
@@ -102,7 +102,7 @@ class WidgetInputErrorView(Z3WidgetInputErrorView):
     """Display an input error as a snippet of text.
 
     This is used to override the default Z3 one which blindly HTML encodes
-    error messages. 
+    error messages.
     """
     implements(ILaunchpadWidgetInputErrorView)
 

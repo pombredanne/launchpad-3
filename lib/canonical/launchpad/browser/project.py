@@ -250,7 +250,7 @@ class ProjectOverviewMenu(ApplicationMenu):
         # We disable this link if the project has no products. This is for
         # consistency with the way the overview buttons behave in the same
         # circumstances.
-        return Link('+mentoring', text, icon='info', 
+        return Link('+mentoring', text, icon='info',
                     enabled=self.context.hasProducts())
 
     def rdf(self):
@@ -524,7 +524,7 @@ class ProjectAddQuestionView(QuestionAddView):
         # Add a 'product' field to the beginning of the form.
         QuestionAddView.setUpFields(self)
         self.form_fields = self.createProductField() + self.form_fields
-        
+
     def setUpWidgets(self):
         # Only setup the widgets that needs validation
         if not self.add_action.submitted():
@@ -534,7 +534,7 @@ class ProjectAddQuestionView(QuestionAddView):
 
         # We need to initialize the widget in two phases because
         # the language vocabulary factory will try to access the product
-        # widget to find the final context.        
+        # widget to find the final context.
         self.widgets = form.setUpWidgets(
             fields.select('product'),
             self.prefix, self.context, self.request,
