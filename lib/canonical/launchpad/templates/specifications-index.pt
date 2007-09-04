@@ -76,7 +76,7 @@
         <tal:nomatches condition="not: specs"
                        replace="structure context/@@+nomatches" />
 
-        <table>
+        <table id="specs-table">
           <tr tal:repeat="spec specs"
               tal:replace="structure spec/@@+listing-simple" />
         </table>
