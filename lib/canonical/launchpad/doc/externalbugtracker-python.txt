@@ -25,10 +25,6 @@ The basic Python bug statuses (i.e. those available by default in new Python ins
     >>> python = Python('http://spam.eggs.ham')
     >>> python.convertRemoteStatus('1:None').title
     'New'
-    >>> python.convertRemoteStatus('2:None').title
-    'Confirmed'
-    >>> python.convertRemoteStatus('3:None').title
-    'Incomplete'
     >>> python.convertRemoteStatus('1:1').title
     'Confirmed'
     >>> python.convertRemoteStatus('1:2').title
@@ -51,12 +47,24 @@ The basic Python bug statuses (i.e. those available by default in new Python ins
     "Won't Fix"
     >>> python.convertRemoteStatus('1:11').title
     'Invalid'
+    >>> python.convertRemoteStatus('2:None').title
+    "Won't Fix"
+    >>> python.convertRemoteStatus('2:1').title
+    'Fix Committed'
+    >>> python.convertRemoteStatus('2:3').title
+    'Fix Released'
+    >>> python.convertRemoteStatus('2:7').title
+    "Won't Fix"
+    >>> python.convertRemoteStatus('3:None').title
+    'Incomplete'
+    >>> python.convertRemoteStatus('3:7').title
+    "Won't Fix"
 
 If the status isn't something that our Python ExternalBugTracker can
 understand, Unknown will be returned and a warning logged.
 
-    >>> python.convertRemoteStatus('eggs').title
-    WARNING:...:Unknown status 'eggs'
+    >>> python.convertRemoteStatus('7:13').title
+    WARNING:...:Unknown status '7:13'
     'Unknown'
 
 UNKNOWN_REMOTE_STATUS maps to Unknown without generating a warning. This

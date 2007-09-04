@@ -1156,10 +1156,31 @@ class Python(Roundup):
             resolution is an integer or None. An AssertionError will be
             raised if these conditions are not met.
         """
-        status, resolution = remote_status.split(':')
+        # XXX: 2007-09-04 Graham Binns
+        #      We really shouldn't have to do this here because we
+        #      should logically never be passed UNKNOWN_REMOTE_STATUS as
+        #      a status to convert in the first place. Unfortunately,
+        #      that's exactly what ExternalBugTracker.updateBugWatches()
+        #      does (LP bug 136391), so until that bug is fixed we make
+        #      this check here for the sake of avoiding silly errors.
+        if remote_status == UNKNOWN_REMOTE_STATUS:
+            return BugTaskStatus.UNKNOWN
+
+        try:
+            status, resolution = remote_status.split(':')
+        except ValueError:
+            raise AssertionError(
+                "remote_status must be a string of the form "
+                "<status>:<resolution>")
 
         try:
             status = int(status)
+
+            # If we can't find the status in our status map we can give
+            # up now.
+            if status not in self.status_map:
+                log.warn("Unknown status '%s'" % remote_status)
+                return BugTaskStatus.UNKNOWN
         except ValueError:
             raise AssertionError("The remote status must be an integer.")
 
