@@ -34,9 +34,9 @@ _enable_sftp_in_urlparse()
 
 def _enable_bzr_ssh_in_urlparse():
     """Teach the urlparse module about the bzr+ssh scheme.
-    
+
     That allows the helpers in this module to operate usefully on bzr+ssh URLs
-    
+
     >>> urlparse('bzr+ssh://example.com/code/branch')
     ('bzr+ssh', 'example.com', '/code/branch', '', '', '')
     """

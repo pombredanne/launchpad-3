@@ -41,7 +41,7 @@ class QuestionFactory:
 
         project_name should be the name of a pillar providing
         `IQuestionTarget`.
-    
+
         question_count is the number of questions to create on the target.
 
         Questions will appear as posted by the currently logged in user.

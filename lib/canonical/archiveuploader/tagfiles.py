@@ -9,7 +9,7 @@ __all__ = [
 
 class TagFile(object):
     """Provide an iterable interface to the apt_pkg.TagFile object"""
-    
+
     def __init__(self, f):
         """Initialise apt_pkg and parse the tagfile provided by f"""
         if not isinstance(f, file):
@@ -31,7 +31,7 @@ class TagFile(object):
 
 class TagStanza(object):
     """Provide an iterable interface to apt_pkg.TagStanza"""
-    
+
     def __init__(self, stanza):
         """Initialise given a stanza (usually from TagFile.__iter__)"""
         self.stanza = stanza

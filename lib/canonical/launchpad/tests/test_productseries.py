@@ -17,7 +17,6 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import IProductSet
 from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
-from canonical.launchpad.interfaces import IProductSet
 from canonical.lp.dbschema import RevisionControlSystems
 
 

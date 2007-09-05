@@ -103,6 +103,8 @@ archive_admin = ContextTitle('Administer %s')
 
 archive_activate = 'Activate Personal Package Archive'
 
+archive_view_tos = 'Personal Package Archive Terms of Service'
+
 archive_builds = ContextTitle('Builds for %s')
 
 archive_edit = ContextTitle('Edit %s')
@@ -263,6 +265,11 @@ bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
 bugtask_choose_affected_product = LaunchbagBugID(
     'Bug #%d - Record as affecting another project')
+
+# This page is used for both projects/distros so we have to say 'software'
+# rather than distro or project here.
+bugtask_confirm_bugtracker_creation = LaunchbagBugID(
+    'Bug #%d - Record as affecting another software')
 
 bugtask_edit = BugTaskPageTitle()
 

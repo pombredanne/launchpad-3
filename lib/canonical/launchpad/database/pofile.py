@@ -115,11 +115,11 @@ def _can_edit_translations(pofile, person):
     if person is None:
         return False
 
-    # XXX Carlos Perello Marin 2006-02-07 bug=4814: 
+    # XXX Carlos Perello Marin 2006-02-07 bug=4814:
     # We should not check the permissions here but use the standard
     # security system.
 
-    # XXX Carlos Perello Marin 2006-02-08 bug=30789: 
+    # XXX Carlos Perello Marin 2006-02-08 bug=30789:
     # The check person.id == rosetta_experts.id must be removed as soon as
     # the is closed.
 
@@ -738,7 +738,7 @@ class POFile(SQLBase, POFileMixIn):
             else:
                 # we absolutely don't know it; only complain if
                 # a plural translation is present
-                # XXX Carlos Perello Marin 2005-06-15 bugs=1186: 
+                # XXX Carlos Perello Marin 2005-06-15 bugs=1186:
                 # We should implement this bug instead of
                 # set it to this default value...
                 new_header['Plural-Forms'] = 1
@@ -1182,31 +1182,36 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return self.emptySelectResults()
 
-
     def hasMessageID(self, msgid):
         """See `IPOFile`."""
         raise NotImplementedError
 
-    def currentCount(self):
+    def currentCount(self, language=None):
+        """See `IRosettaStats`."""
         return 0
 
-    def rosettaCount(self):
+    def rosettaCount(self, language=None):
+        """See `IRosettaStats`."""
         return 0
 
-    def updatesCount(self):
+    def updatesCount(self, language=None):
+        """See `IRosettaStats`."""
         return 0
 
-    def unreviewedCount(self):
+    def unreviewedCount(self, language=None):
         """See `IPOFile`."""
         return 0
 
-    def nonUpdatesCount(self):
+    def nonUpdatesCount(self, language=None):
+        """See `IRosettaStats`."""
         return 0
 
-    def translatedCount(self):
+    def translatedCount(self, language=None):
+        """See `IRosettaStats`."""
         return 0
 
-    def untranslatedCount(self):
+    def untranslatedCount(self, language=None):
+        """See `IRosettaStats`."""
         return self.messageCount()
 
     @property
@@ -1214,22 +1219,28 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return 0
 
-    def currentPercentage(self):
+    def currentPercentage(self, language=None):
+        """See `IRosettaStats`."""
         return 0.0
 
-    def rosettaPercentage(self):
+    def rosettaPercentage(self, language=None):
+        """See `IRosettaStats`."""
         return 0.0
 
-    def updatesPercentage(self):
+    def updatesPercentage(self, language=None):
+        """See `IRosettaStats`."""
         return 0.0
 
-    def nonUpdatesPercentage(self):
+    def nonUpdatesPercentage(self, language=None):
+        """See `IRosettaStats`."""
         return 0.0
 
-    def translatedPercentage(self):
+    def translatedPercentage(self, language=None):
+        """See `IRosettaStats`."""
         return 0.0
 
-    def untranslatedPercentage(self):
+    def untranslatedPercentage(self, language=None):
+        """See `IRosettaStats`."""
         return 100.0
 
     def validExportCache(self):

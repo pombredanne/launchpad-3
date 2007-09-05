@@ -33,4 +33,4 @@ class SpecificationBranchStatusView(LaunchpadEditFormView):
         self.next_url = canonical_url(self.context.specification)
         self.context.destroySelf()
 
-   
+
