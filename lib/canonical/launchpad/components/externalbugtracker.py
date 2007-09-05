@@ -627,15 +627,22 @@ class Mantis(ExternalBugTracker):
     # Mantis if (and only if) needed.
     _opener = ClientCookie.build_opener(MantisLoginHandler)
 
-    def __init__(self, baseurl):
+    def __init__(self, baseurl, use_csv_export=False):
         self.baseurl = baseurl.rstrip('/')
-        # Bugs maps an integer bug ID to a dictionary with bug data that
-        # we snarf from the CSV. We use an integer bug ID because the
-        # bug ID for mantis comes prefixed with a bunch of zeroes and it
-        # could get hard to match if we really wanted to format it
-        # exactly the same (and also because of the way we split lines
-        # below in initializeRemoteBugDB().
-        self.bugs = {}
+
+        # Use the CSV export method to get bug statuses. This is
+        # disabled by default because there have been problems with
+        # some Mantis installations sending empty exports.
+        self.use_csv_export = use_csv_export
+        if self.use_csv_export:
+            # Bugs maps an integer bug ID to a dictionary with bug
+            # data that we snarf from the CSV. We use an integer bug
+            # ID because the bug ID for mantis comes prefixed with a
+            # bunch of zeroes and it could get hard to match if we
+            # really wanted to format it exactly the same (and also
+            # because of the way we split lines below in
+            # initializeRemoteBugDB().
+            self.bugs = {}
 
     def urlopen(self, request, data=None):
         # We use ClientCookie to make following cookies transparent.
@@ -648,7 +655,8 @@ class Mantis(ExternalBugTracker):
         return self._opener.open(request, data)
 
     def initializeRemoteBugDB(self, bug_ids):
-        pass #self._fetchCSVExport(bug_ids)
+        if self.use_csv_export:
+            self._fetchCSVExport(bug_ids)
 
     def _fetchCSVExport(self, bug_ids):
         # It's unfortunate that Mantis offers no way of limiting its CSV
@@ -748,11 +756,11 @@ class Mantis(ExternalBugTracker):
             # turn contain field separators -- you don't want to handle
             # the unquoting yourself.
             for bug_line in csv.reader(csv_data):
-                self._processBugLine(bug_line)
+                self._processCSVBugLine(bug_line)
         except csv.Error, e:
             log.warn("Exception parsing CSV file: %s" % e)
 
-    def _processBugLine(self, bug_line):
+    def _processCSVBugLine(self, bug_line):
         """Processes a single line of the CSV.
 
         Adds the bug it represents to self.bugs.
@@ -899,6 +907,25 @@ class Mantis(ExternalBugTracker):
                 "Mantis (%s) bug number not an integer: %s" % (
                     self.baseurl, bug_id))
 
+        if self.use_csv_export:
+            status, resolution = self._getStatusFromCSV(bug_id)
+        else:
+            status, resolution = self._getStatusFromScrape(bug_id)
+
+        # Use a colon and a space to join status and resolution because
+        # there is a chance that statuses contain spaces, and because
+        # it makes display of the data nicer.
+        return "%s: %s" % (status, resolution)
+
+    def _getStatusFromCSV(self, bug_id):
+        try:
+            bug = self.bugs[int(bug_id)]
+        except KeyError:
+            raise BugNotFound(bug_id)
+        else:
+            return bug['status'], bug['resolution']
+
+    def _getStatusFromScrape(self, bug_id):
         bug_page = BeautifulSoup(
             self._getPage('view.php?id=%s' % bug_id),
             convertEntities=BeautifulSoup.HTML_ENTITIES)
@@ -914,15 +941,12 @@ class Mantis(ExternalBugTracker):
             else:
                 raise BugWatchUpdateError(
                     "Mantis APPLICATION ERROR #%s: %s" % (
-                        app_error_code, app_error_message))
+                    app_error_code, app_error_message))
 
         status = self._findValueRightOfKey(bug_page, 'Status')
         resolution = self._findValueRightOfKey(bug_page, 'Resolution')
 
-        # Use a colon and a space to join status and resolution because
-        # there is a chance that statuses contain spaces, and because
-        # it makes display of the data nicer.
-        return "%s: %s" % (status, resolution)
+        return status, resolution
 
     def convertRemoteStatus(self, status_and_resolution):
         if (not status_and_resolution or
