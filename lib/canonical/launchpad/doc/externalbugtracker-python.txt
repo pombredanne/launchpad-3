@@ -6,16 +6,15 @@ bugwatches.
 
 == Basics ==
 
-The ExternalBugTracker descendant class which implements methods for
-updating bug watches on Python bug trackers is
-externalbugtracker.Python, which implements IExternalBugTracker.
+The Python bug tracker is a slight modification of the Roundup
+bugtracker and as such the functionality for importing bugs from it is
+housed within the Roundup ExternalBugTracker.
 
 
 == Status Conversion ==
 
-The basic Python bug statuses (i.e. those available by default in new
-Python instances) map to Launchpad bug statuses.
-Python.convertRemoteStatus() handles the conversion.
+The basic Python bug statuses map to Launchpad bug statuses.
+Roundup.convertRemoteStatus() handles the conversion.
 
 Because Python bugtracker statuses are entirely numeric, we use the
 convert_python_status() helper function to make the test more readable.
@@ -96,50 +95,6 @@ succeed. For example, if the bug number was invalid.
     'Unknown'
 
 
-== Initialization ==
-
-Calling initializeRemoteBugDB() on our Python instance and passing it a
-set of remote bug IDs will fetch those bug IDs from the server and file
-them in a local variable for later use.
-
-We use a test-oriented implementation for the purposes of these tests,
-which overrides ExternalBugTracker.urlopen() so that we don't have to
-rely on a working network connection.
-
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     TestRoundup, print_bugwatches)
-    >>> python = TestRoundup('http://test.python')
-    >>> python.initializeRemoteBugDB([1])
-    >>> sorted(python.bugs.keys())
-    [1]
-
-
-== Export Methods ==
-
-There are two means by which we can export Python bug statuses: on a
-bug-by-bug basis and as a batch. When the number of bugs that need
-updating is less than a given bug pythonker's batch_query_threshold the
-bugs will be fetched one-at-a-time:
-
-    >>> python.batch_query_threshold
-    10
-
-    >>> python.trace_calls = True
-    >>> python.initializeRemoteBugDB([6, 7, 8, 9, 10])
-    CALLED urlopen('http://test.python/issue?...&id=6')
-    CALLED urlopen('http://test.python/issue?...&id=7')
-    CALLED urlopen('http://test.python/issue?...&id=8')
-    CALLED urlopen('http://test.python/issue?...&id=9')
-    CALLED urlopen('http://test.python/issue?...&id=10')
-
-If there are more than batch_query_threshold bugs to update then they
-are fetched as a batch:
-
-    >>> python.batch_query_threshold = 4
-    >>> python.initializeRemoteBugDB([6, 7, 8, 9, 10])
-    CALLED urlopen('http://test.python/issue?...@startwith=0')
-
-
 == Updating Bug Watches ==
 
 First, we create some bug watches to test with:
@@ -173,8 +128,10 @@ Collect the Example.com watches:
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1008: None
 
-And have a Python instance process them:
+And have a Python instance process them (we use a test-oriented Roundup
+instance to save us from requiring a network connection):
 
+    >>> from canonical.ftests.externalbugtracker import TestRoundup
     >>> python = TestRoundup(example_bug_tracker.baseurl)
     >>> python.updateBugWatches(example_bug_tracker.watches)
     >>> print_bugwatches(example_bug_tracker.watches)
@@ -237,5 +194,4 @@ We'll add some more watches now.
     Remote bug 1046: Fix Committed
     Remote bug 1048: Won't Fix
     Remote bug 1053: Fix Released
-
 
