@@ -12,7 +12,7 @@ keysdir = os.path.join(os.path.dirname(__file__), 'keys')
 
 class ZecaTestSetup(TacTestSetup):
     r"""Setup a zeca for use by functional tests
-    
+
     >>> from urllib import urlopen
     >>> host = config.gpghandler.host
     >>> port = config.gpghandler.port
@@ -25,7 +25,7 @@ class ZecaTestSetup(TacTestSetup):
     'Copyright 2004-2005 Canonical Ltd.\n'
 
     >>> ZecaTestSetup().tearDown()
-    
+
     And again for luck
 
     >>> ZecaTestSetup().setUp()

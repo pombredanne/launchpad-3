@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """This module is used by the Launchpad webapp to determine titles for pages.
 
@@ -102,6 +102,8 @@ class ContextBugId(SubstitutionHelper):
 archive_admin = ContextTitle('Administer %s')
 
 archive_activate = 'Activate Personal Package Archive'
+
+archive_view_tos = 'Personal Package Archive Terms of Service'
 
 archive_builds = ContextTitle('Builds for %s')
 
@@ -263,6 +265,11 @@ bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
 bugtask_choose_affected_product = LaunchbagBugID(
     'Bug #%d - Record as affecting another project')
+
+# This page is used for both projects/distros so we have to say 'software'
+# rather than distro or project here.
+bugtask_confirm_bugtracker_creation = LaunchbagBugID(
+    'Bug #%d - Record as affecting another software')
 
 bugtask_edit = BugTaskPageTitle()
 
@@ -881,6 +888,8 @@ productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
 products_index = 'Projects registered in Launchpad'
+
+productseries_export = ContextTitle('Download translations for "%s"')
 
 productseries_index = ContextTitle('Overview of %s')
 

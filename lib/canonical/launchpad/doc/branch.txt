@@ -27,7 +27,7 @@ Bazaar model does not forbid users from replacing the history of a branch.
 
 == Interfaces ==
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     BranchType, IBranch, IBranchSet, IBranchSubscription)
     >>> from canonical.launchpad.database import (
@@ -38,6 +38,33 @@ Bazaar model does not forbid users from replacing the history of a branch.
     True
     >>> verifyObject(IBranchSubscription, BranchSubscription.get(1))
     True
+
+
+== Branch types ==
+
+There are four different types of branches:
+ * Hosted
+ * Mirrored
+ * Imported
+ * Remote
+
+Hosted branches use the Launchpad codehosting as a primary location for
+the branch.  The branch (as far as Launchpad is concerned) can be pushed
+to and pulled from.
+
+Mirrored branches have a main location outside of Launchpad, and Launchpad
+pulls the branch into the codehosting area.  Mirrored branches can be
+pulled from but not pushed to.  Launchpad keeps the branch up to date
+using the `branch_puller` script.
+
+Imported branches are those where a bazaar branch is built from a CVS or
+Subversion repository.  Imported branches have to be requested and go
+through a testing and verification process.
+
+Remote branches are registered in Launchpad, but the branch is not stored in
+the Launchpad codehosting service, and as such are not accessible using the
+anonymous http access, nor through the Launchpad SFTP or smart server.  The
+remote branches can still be linked to bugs and blueprints.
 
 
 == Creating branches ==
@@ -57,7 +84,7 @@ utility.
     >>> print branchset.get(-1)
     None
 
-A branch is retrievable via BranchSet's __getitem__ 
+A branch is retrievable via BranchSet's __getitem__
 
     >>> branchset[24].name
     u'launchpad'
@@ -102,7 +129,7 @@ date_created values from the database.
 
 Branches must implement the IBranch interface.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import IBranch
     >>> verifyObject(IBranch, gterm_dev)
     True
@@ -130,15 +157,40 @@ Branches with no URL are primarily hosted on the supermirror.
     >>> print repr(junkcode.url)
     None
 
+A branch that is not associated with a product may not be owned by a
+team, however.
+
+    >>> team = personset.getByName('simple-team')
+    >>> teamjunkcode = branchset.new(
+    ...     BranchType.HOSTED, 'junkcode', ddaa, team, None, None,
+    ...     date_created=now.next())
+    Traceback (most recent call last):
+      ...
+    AssertionError: Cannot create team-owned junk branches.
+
+The ~vcs-imports celebrity team is exempt from this restriction to
+allow the creation of code import branches without an associated
+product.
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+    >>> vcs_imports_junkcode = branchset.new(
+    ...     BranchType.HOSTED, 'junkcode', ddaa, vcs_imports, None, None,
+    ...     date_created=now.next())
+    >>> print repr(vcs_imports_junkcode.product)
+    None
+    >>> print vcs_imports_junkcode.owner.name
+    vcs-imports
+
 
 == Determining the number of branches ==
 
 The IBranchSet can tell us how many public branches there are registered.
 
     >>> branchset.count()
-    32
+    33
 
-(30 public branches in the sample data, and two added above.)
+(30 public branches in the sample data, and three added above.)
 
 # XXX thumper 2007-05-28
 # Rework example so it doesn't get stuffed everytime we update sample data.
@@ -214,8 +266,9 @@ interesting results.
     ...   print branch.unique_name
     ~vcs-imports/evolution/main
 
-    >>> for branch in branchset.getRecentlyRegisteredBranches(2):
+    >>> for branch in branchset.getRecentlyRegisteredBranches(3):
     ...   print branch.unique_name
+    ~vcs-imports/+junk/junkcode
     ~ddaa/+junk/junkcode
     ~ddaa/gnome-terminal/dev
 
@@ -641,6 +694,16 @@ so is included in the branch pull list:
     >>> syncUpdate(branch)
     >>> branch in branchset.getBranchesToScan()
     True
+
+Remote branches are not scanned.
+
+    >>> old_type = branch.branch_type
+    >>> branch.branch_type = BranchType.REMOTE
+    >>> syncUpdate(branch)
+    >>> branch in branchset.getBranchesToScan()
+    False
+    >>> branch.branch_type = old_type
+    >>> syncUpdate(branch)
 
 If a branch has not been mirrored, it will have a null mirrored ID.
 There is no point in mirroring such branches, whatever the last

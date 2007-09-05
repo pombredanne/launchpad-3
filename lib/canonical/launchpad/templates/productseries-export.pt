@@ -1,0 +1,60 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+<body>
+
+<div metal:fill-slot="main">
+
+  <h1>
+    Download translations for
+    <tal:title replace="context/title">
+      Evolution trunk
+    </tal:title>
+  </h1>
+
+  <div tal:condition="context/potemplates">
+    <p>
+      This will export <em>all</em> translations for the
+      <tal:name replace="context/name">trunk</tal:name> product series.  They
+      will be made available for download as a single tarball.
+    </p>
+
+    <h2>Select file format</h2>
+
+    <form action="" method="post">
+      <div class="field" style="clear: left">
+        <label>
+          Format:
+            <select name="format">
+              <option
+                tal:repeat="format view/formats"
+                tal:content="format/title"
+                tal:attributes="value format/value">PO format</option>
+            </select>
+        </label>
+      </div>
+
+      <p>
+        When these translations have been exported, a message will be sent to
+        <code tal:content="view/user/preferredemail/email">user@domain</code>.
+        This message will tell you where you can download your file.
+      </p>
+
+      <div class="formControls">
+         <input type="submit" value="Request Download" />
+      </div>
+    </form>
+  </div>
+
+  <p tal:condition="not: context/potemplates" class="informational message">
+    This product series does not have any translation files available for
+    download.
+  </p>
+
+</div>
+
+</body>
+</html>
+

@@ -24,6 +24,10 @@
                     product product_widget/getInputValue">
 
 
+      <div tal:define="widgets view/compulsory_widgets">
+        <div metal:use-macro="context/@@launchpad_form/widget_rows" />
+      </div>
+
       <div class="field">
 
         <label tal:content="product_widget/label">Label</label>

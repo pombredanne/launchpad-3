@@ -117,7 +117,7 @@ class Database:
                        match.group('originator'),
                        match.group('severity'),
                        match.group('tags').split(' '))
-                       
+
     def load(self, bug, name):
         if name in ('originator', 'date', 'subject', 'msgid', 'package',
                     'tags', 'done', 'forwarded', 'mergedwith', 'severity'):
