@@ -78,6 +78,7 @@ class BranchToMirror:
         self.branch_type = branch_type
         self._source_branch = None
         self._dest_branch = None
+        self.traversed_references = None
 
     def _checkSourceUrl(self):
         """Check the validity of the source URL.
@@ -99,17 +100,21 @@ class BranchToMirror:
 
     def _checkBranchReference(self):
         """Check whether the source branch is a branch reference."""
+        self.traversed_references = []
         source_location = self.source
-        reference_value = self._getBranchReference(source_location)
-        if reference_value is None:
-            return
-        if not self._canTraverseReferences():
-            raise BranchReferenceForbidden(reference_value)
-        if reference_value == source_location:
-            raise BranchReferenceLoopError()
-        reference_value_uri = URI(reference_value)
-        if reference_value_uri.scheme == 'file':
-            raise BranchReferenceValueError(reference_value)
+        while True:
+            reference_value = self._getBranchReference(source_location)
+            if reference_value is None:
+                break
+            if not self._canTraverseReferences():
+                raise BranchReferenceForbidden(reference_value)
+            self.traversed_references.append(source_location)
+            if reference_value in self.traversed_references:
+                raise BranchReferenceLoopError()
+            reference_value_uri = URI(reference_value)
+            if reference_value_uri.scheme == 'file':
+                raise BranchReferenceValueError(reference_value)
+            source_location = reference_value
 
     def _canTraverseReferences(self):
         """Whether we should traverse branch references when opening the source

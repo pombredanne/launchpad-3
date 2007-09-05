@@ -557,34 +557,54 @@ class TestCheckBranchReference(unittest.TestCase):
         true and the source URL points to a branch reference to a remote
         location.
         """
-        self.branch.source = 'http://example.com/reference'
+        reference_location = 'http://example.com/reference'
+        branch_location = 'http://example.com/branch'
+        self.branch.source = reference_location
         self.can_traverse_references = True
-        self.reference_values[self.branch.source] = 'http://example.com/branch'
+        self.reference_values[reference_location] = branch_location
+        self.reference_values[branch_location] = None
         self.branch._checkBranchReference() # This must not raise.
-        self.assertGetBranchReferenceCallsEqual([self.branch.source])
+        self.assertGetBranchReferenceCallsEqual(
+            [reference_location, branch_location])
 
     def testFileReference(self):
         """_checkBranchReference raises BranchReferenceValueError if
         _canTraverseReferences is true and the source url points to a 'file'
         branch reference.
         """
-        self.branch.source = 'http://example.com/reference'
+        reference_location = 'http://example.com/reference'
+        reference_value = 'file://local/branch'
+        self.branch.source = reference_location
         self.can_traverse_references = True
-        self.reference_values[self.branch.source] = 'file://local/branch'
+        self.reference_values[reference_location] = reference_value
         self.assertRaises(
             BranchReferenceValueError, self.branch._checkBranchReference)
-        self.assertGetBranchReferenceCallsEqual([self.branch.source])
+        self.assertGetBranchReferenceCallsEqual([reference_location])
 
-    def testReferenceLoop(self):
+    def testSelfReferencingBranch(self):
         """_checkBranchReference raise BranchReferenceLoopError if
         _canTraverseReferences is true and the source url points to a
-        self-referencing branch reference."""
+        self-referencing branch."""
         self.branch.source = 'http://example.com/reference'
         self.can_traverse_references = True
         self.reference_values[self.branch.source] = self.branch.source
         self.assertRaises(
             BranchReferenceLoopError, self.branch._checkBranchReference)
         self.assertGetBranchReferenceCallsEqual([self.branch.source])
+
+    def testBranchReferenceLoop(self):
+        """_checkBranchReference raises BranchReferenceLoopError if
+        _canTraverseReferences is true and the source url points to a loop of
+        branch references."""
+        reference_1 = 'http://example.com/reference-1'
+        reference_2 = 'http://example.com/reference-2'
+        self.branch.source = reference_1
+        self.can_traverse_references = True
+        self.reference_values[reference_1] = reference_2
+        self.reference_values[reference_2] = reference_1
+        self.assertRaises(
+            BranchReferenceLoopError, self.branch._checkBranchReference)
+        self.assertGetBranchReferenceCallsEqual([reference_1, reference_2])
 
 
 class TestErrorHandling(ErrorHandlingTestCase):
