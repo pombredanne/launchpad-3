@@ -981,7 +981,7 @@ class Roundup(ExternalBugTracker):
             # Python bugtracker statuses come in two parts: status and
             # resolution. Both of these are integer values. We can look
             # them up in the form status_map[status][resolution]
-            status_map = {
+            return {
                 # Open issues (status=1). We also use this as a fallback
                 # for statuses 2 and 3, for which the mappings are
                 # different only in a few instances.
@@ -1021,7 +1021,7 @@ class Roundup(ExternalBugTracker):
             # statuses are integer-only and highly configurable.
             # Therefore we map the statuses available by default so that
             # they can be overridden by subclassing the Roundup class.
-            status_map = {
+            return {
                 1: BugTaskStatus.NEW,          # Roundup status 'unread'
                 2: BugTaskStatus.CONFIRMED,    # Roundup status 'deferred'
                 3: BugTaskStatus.INCOMPLETE,   # Roundup status 'chatting'
@@ -1043,11 +1043,11 @@ class Roundup(ExternalBugTracker):
             # The bug export URLs differ only from the base Roundup ones
             # insofar as they need to include the resolution column in
             # order for us to be able to successfully export it.
-            single_bug_export_url = (
+            self.single_bug_export_url = (
                 "issue?@action=export_csv&@columns=title,id,activity,"
                 "status,resolution&@sort=id&@group=priority&@filter=id"
                 "&@pagesize=50&@startwith=0&id=%i")
-            batch_bug_export_url = (
+            self.batch_bug_export_url = (
                 "issue?@action=export_csv&@columns=title,id,activity,"
                 "status,resolution&@sort=activity&@group=priority"
                 "&@pagesize=50&@startwith=0")
@@ -1059,11 +1059,11 @@ class Roundup(ExternalBugTracker):
             #      all the roundup instances I can find to test them
             #      against, but I think that refining these should be
             #      looked into at some point.
-            single_bug_export_url = (
+            self.single_bug_export_url = (
                 "issue?@action=export_csv&@columns=title,id,activity,"
                 "status&@sort=id&@group=priority&@filter=id"
                 "&@pagesize=50&@startwith=0&id=%i")
-            batch_bug_export_url = (
+            self.batch_bug_export_url = (
                 "issue?@action=export_csv&@columns=title,id,activity,"
                 "status&@sort=activity&@group=priority&@pagesize=50"
                 "&@startwith=0")
@@ -1187,7 +1187,7 @@ class Roundup(ExternalBugTracker):
 
             # If we can't find the status in our status map we can give
             # up now.
-            if self.status_map.has_key(status):
+            if not self.status_map.has_key(status):
                 log.warn("Unknown status '%s'" % remote_status)
                 return BugTaskStatus.UNKNOWN
         except ValueError:

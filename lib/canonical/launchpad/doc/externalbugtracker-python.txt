@@ -17,44 +17,67 @@ The basic Python bug statuses (i.e. those available by default in new
 Python instances) map to Launchpad bug statuses.
 Python.convertRemoteStatus() handles the conversion.
 
+Because Python bugtracker statuses are entirely numeric, we use the
+convert_python_status() helper function to make the test more readable.
+
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     Roundup)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     convert_python_status)
     >>> python = Roundup('http://bugs.python.org')
-    >>> python.convertRemoteStatus('1:None').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'None')).title
     'New'
-    >>> python.convertRemoteStatus('1:1').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'accepted')).title
     'Confirmed'
-    >>> python.convertRemoteStatus('1:2').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'duplicate')).title
     'Confirmed'
-    >>> python.convertRemoteStatus('1:3').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'fixed')).title
     'Fix Committed'
-    >>> python.convertRemoteStatus('1:4').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'invalid')).title
     'Invalid'
-    >>> python.convertRemoteStatus('1:5').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'later')).title
     'Confirmed'
-    >>> python.convertRemoteStatus('1:6').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'out-of-date')).title
     'Invalid'
-    >>> python.convertRemoteStatus('1:7').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'postponed')).title
     'Confirmed'
-    >>> python.convertRemoteStatus('1:8').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'rejected')).title
     "Won't Fix"
-    >>> python.convertRemoteStatus('1:9').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'remind')).title
     'Confirmed'
-    >>> python.convertRemoteStatus('1:10').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'wontfix')).title
     "Won't Fix"
-    >>> python.convertRemoteStatus('1:11').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('open', 'worksforme')).title
     'Invalid'
-    >>> python.convertRemoteStatus('2:None').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('closed', 'None')).title
     "Won't Fix"
-    >>> python.convertRemoteStatus('2:1').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('closed', 'accepted')).title
     'Fix Committed'
-    >>> python.convertRemoteStatus('2:3').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('closed', 'fixed')).title
     'Fix Released'
-    >>> python.convertRemoteStatus('2:7').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('closed', 'postponed')).title
     "Won't Fix"
-    >>> python.convertRemoteStatus('3:None').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('pending', 'None')).title
     'Incomplete'
-    >>> python.convertRemoteStatus('3:7').title
+    >>> python.convertRemoteStatus(
+    ...     convert_python_status('pending', 'postponed')).title
     "Won't Fix"
 
 If the status isn't something that our Python ExternalBugTracker can
@@ -84,8 +107,8 @@ which overrides ExternalBugTracker.urlopen() so that we don't have to
 rely on a working network connection.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     TestPython, print_bugwatches)
-    >>> python = TestPython('http://test.python')
+    ...     TestRoundup, print_bugwatches)
+    >>> python = TestRoundup('http://test.python')
     >>> python.initializeRemoteBugDB([1])
     >>> sorted(python.bugs.keys())
     [1]
@@ -132,7 +155,7 @@ First, we create some bug watches to test with:
     ...     name="example-bugs",
     ...     title="Example.com Python",
     ...     bugtrackertype=BugTrackerType.ROUNDUP,
-    ...     baseurl="http://bugs.example.com",
+    ...     baseurl="http://bugs.python.org",
     ...     summary="Contains bugs for Example.com",
     ...     contactdetails="foo.bar@example.com",
     ...     owner=sample_person)
@@ -152,7 +175,7 @@ Collect the Example.com watches:
 
 And have a Python instance process them:
 
-    >>> python = TestPython(example_bug_tracker.baseurl)
+    >>> python = TestRoundup(example_bug_tracker.baseurl)
     >>> python.updateBugWatches(example_bug_tracker.watches)
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1008: 1:None
@@ -193,7 +216,7 @@ We'll add some more watches now.
 
     >>> python.trace_calls = True
     >>> python.updateBugWatches(example_bug_tracker.watches)
-    CALLED urlopen(u'http://bugs.example.com/issue?...@startwith=0')
+    CALLED urlopen(u'http://bugs.python.org/issue?...@startwith=0')
 
     >>> print_bugwatches(example_bug_tracker.watches,
     ...     python.convertRemoteStatus)
