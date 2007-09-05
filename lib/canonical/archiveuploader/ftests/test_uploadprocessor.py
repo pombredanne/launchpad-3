@@ -539,7 +539,6 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.kinnison_recipient = (
             "Daniel Silverstone <daniel.silverstone@canonical.com>")
         self.name16_recipient = "Foo Bar <foo.bar@canonical.com>"
-        self.default_recipients = [self.name16_recipient]
 
         # Set up the uploadprocessor with appropriate options and logger
         self.options.context = 'insecure'
@@ -549,7 +548,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
     def assertEmail(self, contents=None, recipients=None):
         """Check email last email content and recipients."""
         if not recipients:
-            recipients = self.default_recipients
+            recipients = [self.name16_recipient]
         if not contents:
             contents = []
 
