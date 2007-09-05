@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = ['cmd_launchpad_server']
 
 
+import logging
 import signal
 import sys
 import thread
@@ -24,6 +25,22 @@ from bzrlib.transport import chroot, get_transport, remote
 
 from canonical.config import config
 from canonical.codehosting import transport
+
+
+def set_up_logging():
+    log = logging.getLogger('codehosting')
+    if config.codehosting.debug_logfile is None:
+        handler = logging.StreamHandler()
+    else:
+        handler = logging.FileHandler(config.codehosting.debug_logfile)
+    handler.setLevel(logging.DEBUG)
+    log.addHandler(handler)
+    log.setLevel(logging.DEBUG)
+    return log
+
+
+def get_logger():
+    return logging.getLogger('codehosting')
 
 
 class cmd_launchpad_server(Command):
