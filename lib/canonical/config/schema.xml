@@ -957,6 +957,7 @@ k            </description>
         <key name="launch" datatype="boolean" required="no" default="no" />
         <key name="spew" datatype="boolean" required="no" default="no" />
         <key name="logfile" datatype="string" required="no" default="-" />
+        <key name="debug_logfile" datatype="string" required="no" />
     </sectiontype>
 
     <sectiontype name="authserver" extends="database_options">
