@@ -20,7 +20,13 @@ from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.uri import URI
 
 
-__all__ = ['BranchToMirror', 'BadUrlSsh', 'BadUrlLaunchpad']
+__all__ = [
+    'BadUrlSsh',
+    'BadUrlLaunchpad',
+    'BranchReferenceForbidden',
+    'BranchReferenceValueError',
+    'BranchToMirror',
+    ]
 
 
 class BadUrlSsh(Exception):
@@ -29,6 +35,14 @@ class BadUrlSsh(Exception):
 
 class BadUrlLaunchpad(Exception):
     """Raised when trying to mirror a branch from lanchpad.net."""
+
+class BranchReferenceForbidden(Exception):
+    """Raised when trying to mirror a branch reference and the branch type does
+    not allow references.
+    """
+
+class BranchReferenceValueError(Exception):
+    """Raised when encountering a branch reference with a dangerous value."""
 
 
 def identical_formats(branch_one, branch_two):
@@ -78,6 +92,14 @@ class BranchToMirror:
             raise BadUrlSsh(self.source)
         if uri.host == 'launchpad.net' or uri.host.endswith('.launchpad.net'):
             raise BadUrlLaunchpad(self.source)
+
+    def _checkBranchReference(self):
+        """Check whether the source branch is a branch reference."""
+        reference_value = self._getBranchReference(self.source)
+        if reference_value is None:
+            return
+        if not self._canTraverseReferences():
+            raise BranchReferenceForbidden(reference_value)
 
     def _canTraverseReferences(self):
         """Whether we should traverse branch references when opening the source

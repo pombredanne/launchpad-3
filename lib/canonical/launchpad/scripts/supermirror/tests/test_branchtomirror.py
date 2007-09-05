@@ -32,7 +32,8 @@ from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.scripts.supermirror.tests import createbranch
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
-    BranchToMirror, BadUrlSsh, BadUrlLaunchpad)
+    BranchToMirror, BadUrlSsh, BadUrlLaunchpad,
+    BranchReferenceForbidden, BranchReferenceValueError)
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.testing import LaunchpadFunctionalLayer, reset_logging
@@ -376,7 +377,7 @@ class TestBadUrl(ErrorHandlingTestCase):
 
 
 class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
-    """Tests for the behaviour of mirroring branch references."""
+    """Feature tests for mirroring of branch references."""
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
@@ -447,7 +448,6 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
         self.assertIs(
             self.branch._getBranchReference(branch_url), None)
 
-
     def testHostedBranchReference(self):
         """A branch reference for a hosted branch must cause an error."""
         reference_url = self.createBranchReference('http://example.com/branch')
@@ -476,6 +476,7 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
 
 
 class TestCanTraverseReferences(unittest.TestCase):
+    """Unit tests for BranchToMirror._canTraverseReferences."""
 
     def setUp(self):
         self.client = BranchStatusClient()
@@ -502,6 +503,44 @@ class TestCanTraverseReferences(unittest.TestCase):
         self.assertRaises(AssertionError, remote_branch._canTraverseReferences)
         bogus_branch = self.makeBranch(None)
         self.assertRaises(AssertionError, bogus_branch._canTraverseReferences)
+
+
+class TestCheckBranchReference(unittest.TestCase):
+    """Unit tests for BranchToMirror._checkBranchReference."""
+
+    def setUp(self):
+        client = BranchStatusClient()
+        self.branch = BranchToMirror(
+            'foo', 'bar', client, 1, 'owner/product/foo', None)
+        def mockGetBranchReference(url):
+            self.get_branch_reference_calls.append(url)
+            return self.reference_values[url]
+        self.get_branch_reference_calls = []
+        self.reference_values = {}
+        self.branch._getBranchReference = mockGetBranchReference
+        def mockCanTraverseReferences():
+            assert self.can_traverse_references is not None
+            return self.can_traverse_references
+        self.can_traverse_references = None
+        self.branch._canTraverseReferences = mockCanTraverseReferences
+
+    def assertGetBranchReferenceCallsEqual(self, calls):
+        """Assert that _getBranchReference was called a given number of times
+        and for the given urls.
+        """
+        self.assertEqual(self.get_branch_reference_calls, calls)
+
+    def testBranchReferenceForbidden(self):
+        """_checkBranchReference raises BranchReferenceForbidden if
+        _canTraverseReferences is false and the source url points to a branch
+        reference.
+        """
+        self.branch.source = 'file:///local/branch'
+        self.can_traverse_references = False
+        self.reference_values[self.branch.source] = 'http://example.com/branch'
+        self.assertRaises(
+            BranchReferenceForbidden, self.branch._checkBranchReference)
+        self.assertGetBranchReferenceCallsEqual([self.branch.source])
 
 
 class TestErrorHandling(ErrorHandlingTestCase):
