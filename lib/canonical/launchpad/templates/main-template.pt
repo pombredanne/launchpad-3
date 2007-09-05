@@ -233,13 +233,6 @@
                               use-macro="context/@@+main-template-macros/notifications" />
                           </tal:notifications>
                           <metal:block define-slot="main" />
-                          <tal:no_children replace="nothing">
-                          <div
-                            tal:define="structuralfooterobject CONTEXTS/lp:structuralfooterobject" 
-                            tal:condition="structuralfooterobject"
-                            tal:replace="structure structuralfooterobject/@@+structural-footer"
-                            />
-                          </tal:no_children>
                         </div>
                         <div
                           id="portlets" xml:lang="en" lang="en" dir="ltr"

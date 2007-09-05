@@ -359,14 +359,6 @@ these URLs in Apache.
   />
 
 <browser:page
-  for="zope.interface.Interface"
-  class="canonical.launchpad.browser.StructuralFooterPresentationView"
-  permission="zope.Public"
-  name="+structural-footer"
-  template="../templates/launchpad-structuralfooter.pt"
-  />
-
-<browser:page
   for="*"
   name="+applicationbuttons"
   permission="zope.Public"
