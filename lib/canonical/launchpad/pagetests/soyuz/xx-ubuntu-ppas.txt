@@ -192,44 +192,15 @@ Publish mozilla-firefox to ubuntu-team's PPA and ensure that it is signed
 by name16 (Foo Bar) who is a member - the signer is presented as the uploader
 in the list.
 
+    >>> from canonical.launchpad.ftests.ppa import publishToTeamPPA
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
-    >>> from zope.component import getUtility
-    >>> from canonical.lp.dbschema import (
-    ...     ArchivePurpose, PackagePublishingStatus, PackagePublishingPocket)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet, IArchiveSet, ISourcePackageNameSet,
-    ...     IComponentSet)
-    >>> from canonical.database.constants import UTC_NOW
-    >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-    >>> ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
-    >>> name16 = getUtility(IPersonSet).getByName("name16")
-    >>> ubuntu_team_ppa = ubuntu_team.archive
-    >>> firefox_name = getUtility(ISourcePackageNameSet)['mozilla-firefox']
-    >>> from canonical.launchpad.database.sourcepackagerelease import (
-    ...     SourcePackageRelease)
-    >>> firefox = SourcePackageRelease.selectOneBy(
-    ...     sourcepackagenameID=firefox_name.id, version='0.9')
-    >>> firefox.dscsigningkey = name16.gpgkeys[0]
-    >>> main_component = getUtility(IComponentSet)['main']
-    >>> from canonical.launchpad.database.publishing import(
-    ...     SecureSourcePackagePublishingHistory)
-    >>> sspph = SecureSourcePackagePublishingHistory(
-    ...     distroseries=ubuntutest['breezy-autotest'],
-    ...     sourcepackagerelease=firefox,
-    ...     component=main_component,
-    ...     section=firefox.section,
-    ...     status=PackagePublishingStatus.PENDING,
-    ...     datecreated=UTC_NOW,
-    ...     pocket=PackagePublishingPocket.RELEASE,
-    ...     embargo=False,
-    ...     archive=ubuntu_team_ppa)
+    >>> publishToTeamPPA()
     >>> logout()
     >>> import transaction
     >>> transaction.commit()
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-
 
 Access ubuntu-team's PPA page:
 
@@ -265,3 +236,9 @@ The package row data shows the uploader:
     Release
     main
     base
+
+The uploader name is linkified to that user's home page:
+
+    >>> browser.getLink(id="uploader").click()
+    >>> browser.url
+    'http://launchpad.dev/~name16'
