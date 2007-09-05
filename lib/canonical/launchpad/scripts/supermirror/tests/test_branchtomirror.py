@@ -530,6 +530,16 @@ class TestCheckBranchReference(unittest.TestCase):
         """
         self.assertEqual(self.get_branch_reference_calls, calls)
 
+    def testNotReference(self):
+        """_checkBranchReference does not raise if the source url does not
+        point to a branch reference.
+        """
+        self.branch.source = 'file:///local/branch'
+        self.can_traverse_references = False
+        self.reference_values[self.branch.source] = None
+        self.branch._checkBranchReference() # This must not raise.
+        self.assertGetBranchReferenceCallsEqual([self.branch.source])
+
     def testBranchReferenceForbidden(self):
         """_checkBranchReference raises BranchReferenceForbidden if
         _canTraverseReferences is false and the source url points to a branch
@@ -540,6 +550,16 @@ class TestCheckBranchReference(unittest.TestCase):
         self.reference_values[self.branch.source] = 'http://example.com/branch'
         self.assertRaises(
             BranchReferenceForbidden, self.branch._checkBranchReference)
+        self.assertGetBranchReferenceCallsEqual([self.branch.source])
+
+    def testAllowedReference(self):
+        """_checkBranchReference does not raise if _canTraverseReferences is
+        true and the source URL points to a remote branch reference.
+        """
+        self.branch.source = 'http://example.com/reference'
+        self.can_traverse_references = True
+        self.reference_values[self.branch.source] = 'http://example.com/branch'
+        self.branch._checkBranchReference() # This must not raise.
         self.assertGetBranchReferenceCallsEqual([self.branch.source])
 
 
