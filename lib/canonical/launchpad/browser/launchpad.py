@@ -42,7 +42,6 @@ from zope.app.publisher.browser.fileresource import setCacheControl
 from zope.app.datetimeutils import rfc1123_date
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
-from zope.security.proxy import isinstance as zope_isinstance
 
 from BeautifulSoup import BeautifulStoneSoup, Comment
 
