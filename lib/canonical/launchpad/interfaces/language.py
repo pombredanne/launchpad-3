@@ -58,13 +58,13 @@ class ILanguage(Interface):
         value_type=Choice(vocabulary="CountryName"))
 
     def addCountry(country):
-        """Adds a country language is spoken in.
+        """Add a country to a list of countries this language is spoken in.
 
         Provided by SQLObject.
         """
 
     def removeCountry(country):
-        """Removes a country language is spoken in.
+        """Remove a country from a list of countries this language is spoken in.
 
         Provided by SQLObject.
         """
