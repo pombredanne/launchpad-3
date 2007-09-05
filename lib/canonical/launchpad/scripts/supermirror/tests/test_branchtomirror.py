@@ -271,7 +271,11 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
 class ErrorHandlingTestCase(unittest.TestCase):
 
     def setUp(self):
-        super(ErrorHandlingTestCase, self).setUp()
+        unittest.TestCase.setUp(self)
+        self._errorHandlingSetUp()
+
+    def _errorHandlingSetUp(self):
+        """Setup code that is specific to ErrorHandlingTestCase."""
         client = BranchStatusClient()
         self.branch = BranchToMirror(
             'foo', 'bar', client, 1, 'owner/product/foo', None)
@@ -292,8 +296,12 @@ class ErrorHandlingTestCase(unittest.TestCase):
         self.open_call_count = 0
 
     def tearDown(self):
+        self._errorHandlingTearDown()
+        unittest.TestCase.tearDown(self)
+
+    def _errorHandlingTearDown(self):
+        """Teardown code that is specific to ErrorHandlingTestCase."""
         reset_logging()
-        super(ErrorHandlingTestCase, self).setUp()
 
     def _runMirrorAndCheckError(self, expected_error):
         """Run mirror and check that we receive exactly one error, the str() of
@@ -369,6 +377,17 @@ class TestBadUrl(ErrorHandlingTestCase):
 
 class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
     """Tests for the behaviour of mirroring branch references."""
+
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+        ErrorHandlingTestCase._errorHandlingSetUp(self)
+
+    def tearDown(self):
+        TestCaseWithTransport.tearDown(self)
+        # errorHandlingTearDown must be called after
+        # TestCaseWithTransport.tearDown otherwise it prevents the latter fails
+        # to uninstall its log handlers.
+        ErrorHandlingTestCase._errorHandlingTearDown(self)
 
     def testCreateBranchReference(self):
         """Test that our createBranchReference helper works correctly."""
