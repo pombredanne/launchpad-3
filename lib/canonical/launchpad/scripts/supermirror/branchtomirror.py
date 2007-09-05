@@ -23,6 +23,7 @@ from canonical.launchpad.webapp.uri import URI
 __all__ = [
     'BadUrlSsh',
     'BadUrlLaunchpad',
+    'BranchReferenceLoopError',
     'BranchReferenceForbidden',
     'BranchReferenceValueError',
     'BranchToMirror',
@@ -43,6 +44,9 @@ class BranchReferenceForbidden(Exception):
 
 class BranchReferenceValueError(Exception):
     """Raised when encountering a branch reference with a dangerous value."""
+
+class BranchReferenceLoopError(Exception):
+    """Raised when encountering a branch reference loop."""
 
 
 def identical_formats(branch_one, branch_two):
@@ -95,11 +99,14 @@ class BranchToMirror:
 
     def _checkBranchReference(self):
         """Check whether the source branch is a branch reference."""
-        reference_value = self._getBranchReference(self.source)
+        source_location = self.source
+        reference_value = self._getBranchReference(source_location)
         if reference_value is None:
             return
         if not self._canTraverseReferences():
             raise BranchReferenceForbidden(reference_value)
+        if reference_value == source_location:
+            raise BranchReferenceLoopError()
         reference_value_uri = URI(reference_value)
         if reference_value_uri.scheme == 'file':
             raise BranchReferenceValueError(reference_value)

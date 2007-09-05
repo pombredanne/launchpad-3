@@ -32,7 +32,7 @@ from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.scripts.supermirror.tests import createbranch
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
-    BranchToMirror, BadUrlSsh, BadUrlLaunchpad,
+    BranchToMirror, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
     BranchReferenceForbidden, BranchReferenceValueError)
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
@@ -554,7 +554,8 @@ class TestCheckBranchReference(unittest.TestCase):
 
     def testAllowedReference(self):
         """_checkBranchReference does not raise if _canTraverseReferences is
-        true and the source URL points to a remote branch reference.
+        true and the source URL points to a branch reference to a remote
+        location.
         """
         self.branch.source = 'http://example.com/reference'
         self.can_traverse_references = True
@@ -572,6 +573,17 @@ class TestCheckBranchReference(unittest.TestCase):
         self.reference_values[self.branch.source] = 'file://local/branch'
         self.assertRaises(
             BranchReferenceValueError, self.branch._checkBranchReference)
+        self.assertGetBranchReferenceCallsEqual([self.branch.source])
+
+    def testReferenceLoop(self):
+        """_checkBranchReference raise BranchReferenceLoopError if
+        _canTraverseReferences is true and the source url points to a
+        self-referencing branch reference."""
+        self.branch.source = 'http://example.com/reference'
+        self.can_traverse_references = True
+        self.reference_values[self.branch.source] = self.branch.source
+        self.assertRaises(
+            BranchReferenceLoopError, self.branch._checkBranchReference)
         self.assertGetBranchReferenceCallsEqual([self.branch.source])
 
 
