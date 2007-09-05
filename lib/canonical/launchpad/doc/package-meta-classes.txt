@@ -33,7 +33,7 @@ Combining Distribution and SourcePackageRelease:
  >>> sourcepackagerelease.name
  u'pmount'
 
- >>> from zope.interface.verify import verifyObject
+ >>> from canonical.launchpad.webapp.testing import verifyObject
  >>> dspr = DistributionSourcePackageRelease(distribution,
  ...                                         sourcepackagerelease)
  >>> verifyObject(IDistributionSourcePackageRelease, dspr)

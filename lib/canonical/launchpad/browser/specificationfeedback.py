@@ -40,7 +40,7 @@ class SpecificationFeedbackAddView(AddView):
                 "You can't request feedback from yourself"))
         elif not self.valid_feedback_request(self.context, reviewer, requester):
             self.top_of_page_errors.append(_(
-                "You've already requested feedback from %s" 
+                "You've already requested feedback from %s"
                 % reviewer.displayname))
         if self.top_of_page_errors:
             raise WidgetsError(self.top_of_page_errors)
@@ -110,7 +110,7 @@ class SpecificationFeedbackClearingView:
             # only a single item was selected, but we want to deal with a
             # list for the general case, so convert it to a list
             clearedreqs = [clearedreqs,]
-        
+
         queue_length = len(self.context.getFeedbackRequests(self.user))
         number_cleared = 0
         msg = 'Cleared requests from: '

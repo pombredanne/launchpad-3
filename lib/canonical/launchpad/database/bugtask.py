@@ -424,6 +424,28 @@ class BugTask(SQLBase, BugTaskMixin):
         """See `IBugTask`."""
         return self.bug.isSubscribed(person)
 
+    def _syncSourcePackages(self, prev_sourcepackagename):
+        """Synchronize changes to source packages with other distrotasks.
+
+        If one distroseriestask's source package is changed, all the
+        other distroseriestasks with the same distribution and source
+        package has to be changed, as well as the corresponding
+        distrotask.
+        """
+        if self.distroseries is not None:
+            distribution = self.distroseries.distribution
+        else:
+            distribution = self.distribution
+        if distribution is not None:
+            for bugtask in self.related_tasks:
+                if bugtask.distroseries:
+                    related_distribution = bugtask.distroseries.distribution
+                else:
+                    related_distribution = bugtask.distribution
+                if (related_distribution == distribution and
+                    bugtask.sourcepackagename == prev_sourcepackagename):
+                    bugtask.sourcepackagename = self.sourcepackagename
+
     @property
     def conjoined_master(self):
         """See `IBugTask`."""
@@ -510,28 +532,6 @@ class BugTask(SQLBase, BugTaskMixin):
         old_sourcepackagename = self.sourcepackagename
         self._setValueAndUpdateConjoinedBugTask("sourcepackagename", value)
         self._syncSourcePackages(old_sourcepackagename)
-
-    def _syncSourcePackages(self, prev_sourcepackagename):
-        """Synchronize changes to source packages with other distrotasks.
-
-        If one distroseriestask's source package is changed, all the
-        other distroseriestasks with the same distribution and source
-        package has to be changed, as well as the corresponding
-        distrotask.
-        """
-        if self.distroseries is not None:
-            distribution = self.distroseries.distribution
-        else:
-            distribution = self.distribution
-        if distribution is not None:
-            for bugtask in self.related_tasks:
-                if bugtask.distroseries:
-                    related_distribution = bugtask.distroseries.distribution
-                else:
-                    related_distribution = bugtask.distribution
-                if (related_distribution == distribution and
-                    bugtask.sourcepackagename == prev_sourcepackagename):
-                    bugtask.sourcepackagename = self.sourcepackagename
 
     def _set_date_assigned(self, value):
         """Set date_assigned, and update conjoined BugTask."""
@@ -1043,7 +1043,7 @@ class BugTaskSet:
         # * a dbschema item
         # * None (meaning no filter criteria specified for that arg_name)
         #
-        # XXX: kiko 2006-03-16: 
+        # XXX: kiko 2006-03-16:
         # Is this a good candidate for becoming infrastructure in
         # canonical.database.sqlbase?
         for arg_name, arg_value in standard_args.items():
@@ -1088,6 +1088,10 @@ class BugTaskSet:
 
         if params.omit_dupes:
             extra_clauses.append("Bug.duplicateof is NULL")
+
+        if params.omit_targeted:
+            extra_clauses.append("BugTask.distrorelease is NULL AND "
+                                 "BugTask.productseries is NULL")
 
         if params.has_cve:
             extra_clauses.append("BugTask.bug IN "
@@ -1229,7 +1233,7 @@ class BugTaskSet:
 
     def _buildUpstreamClause(self, params):
         """Return an clause for returning upstream data if the data exists.
-        
+
         This method will handles BugTasks that do not have upstream BugTasks
         as well as thoses that do.
         """
@@ -1494,7 +1498,7 @@ class BugTaskSet:
 
     def _processOrderBy(self, params):
         """Process the orderby parameter supplied to search().
-        
+
         This method ensures the sort order will be stable, and converting
         the string supplied to actual column names.
         """

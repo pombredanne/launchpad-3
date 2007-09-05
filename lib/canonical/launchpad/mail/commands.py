@@ -92,7 +92,7 @@ class EmailCommand:
     def _ensureNumberOfArguments(self):
         """Check that the number of arguments is correct.
 
-        Raise an EmailProcessingError 
+        Raise an EmailProcessingError
         """
         if self._numberOfArguments is not None:
             num_arguments_got = len(self.string_args)
@@ -448,7 +448,7 @@ class AffectsEmailCommand(EmailCommand):
             name, ignore_inactive=True)
         if pillar is None:
             raise BugTargetNotFound(
-                "There is no project named '%s' registered in Launchpad." % 
+                "There is no project named '%s' registered in Launchpad." %
                     name)
 
         # We can't check for IBugTarget, since Project is an IBugTarget
@@ -750,7 +750,7 @@ class TagEmailCommand(EmailCommand):
                 tags.append(arg)
 
         # Duplicates are dealt with when the tags are stored in the DB (which
-        # incidentally uses a set to achieve this). Since the code already 
+        # incidentally uses a set to achieve this). Since the code already
         # exists we don't duplicate it here.
 
         # Bug.tags expects to be given a Python list, so there is no need to

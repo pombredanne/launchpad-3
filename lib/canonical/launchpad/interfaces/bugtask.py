@@ -25,6 +25,7 @@ __all__ = [
     'UNRESOLVED_BUGTASK_STATUSES',
     'BUG_CONTACT_BUGTASK_STATUSES']
 
+from zope.component import getUtility
 from zope.interface import Attribute, Interface
 from zope.schema import (
     Bool, Choice, Datetime, Int, Text, TextLine, List, Field)
@@ -39,6 +40,7 @@ from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 
 
@@ -312,6 +314,9 @@ class IBugTaskSearchBase(Interface):
     omit_dupes = Bool(
         title=_('Omit duplicate bugs'), required=False,
         default=True)
+    omit_targeted = Bool(
+        title=_('Omit bugs targeted to series'), required=False,
+        default=True)
     statusexplanation = TextLine(
         title=_("Status notes"), required=False)
     has_patch = Bool(
@@ -523,7 +528,7 @@ class BugTaskSearchParams:
                  resolved_upstream=False, open_upstream=False,
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
                  bug_contact=None, bug_reporter=None, nominated_for=None,
-                 bug_commenter=None):
+                 bug_commenter=None, omit_targeted=False):
         self.bug = bug
         self.searchtext = searchtext
         self.fast_searchtext = fast_searchtext
@@ -538,6 +543,7 @@ class BugTaskSearchParams:
         self.user = user
         self.orderby = orderby
         self.omit_dupes = omit_dupes
+        self.omit_targeted = omit_targeted
         self.subscriber = subscriber
         self.component = component
         self.pending_bugwatch_elsewhere = pending_bugwatch_elsewhere
@@ -674,6 +680,20 @@ class IBugTaskSet(Interface):
         update-bugtask-targetnamecaches.
         """
 
+
+def valid_remote_bug_url(value):
+    from canonical.launchpad.interfaces.bugwatch import (
+        IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
+    try:
+        tracker, bug = getUtility(IBugWatchSet).extractBugTrackerAndBug(value)
+    except NoBugTrackerFound:
+        pass
+    except UnrecognizedBugTrackerURL:
+        raise LaunchpadValidationError(
+            "Launchpad does not recognize the bug tracker at this URL.")
+    return True
+
+
 class IAddBugTaskForm(Interface):
     """Form for adding an upstream bugtask."""
     # It is tempting to replace the first three attributes here with their
@@ -689,8 +709,12 @@ class IAddBugTaskForm(Interface):
                       "Leave blank if you are not sure."),
         vocabulary='SourcePackageName')
     bug_url = StrippedTextLine(
-        title=_('URL'), required=False,
+        title=_('URL'), required=False, constraint=valid_remote_bug_url,
         description=_("The URL of this bug in the remote bug tracker."))
+    visited_steps = TextLine(
+        title=_('Visited steps'), required=False,
+        description=_("Used to keep track of the steps we visited in a "
+                      "wizard-like form."))
 
 
 class INominationsReviewTableBatchNavigator(ITableBatchNavigator):
