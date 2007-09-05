@@ -1,6 +1,11 @@
 = ExternalBugTracker: Mantis =
 
-This covers the implementation of the Mantis bug watch updater.
+This covers the implementation of the Mantis bug watch updater when
+used in the "CSV export" mode. The default mode is to page-scrape
+individual bug reports, but this mode downloads all bug information in
+a CSV format. This is not currently enabled because not all Mantis
+installations work with it (at least two prominent installations
+return empty exports).
 
 
 == Basics ==
@@ -11,7 +16,9 @@ stores a base URL which it will use to construct URLs to pull a CSV
 export from.
 
     >>> from canonical.launchpad.components.externalbugtracker import Mantis
-    >>> alsa_mantis = Mantis("https://bugtrack.alsa-project.org/alsa-bug/")
+    >>> alsa_mantis = Mantis(
+    ...     "https://bugtrack.alsa-project.org/alsa-bug/",
+    ...     use_csv_export=True)
 
 As with all ExternalBugTrackers, Mantis contains a function for converting one
 of its own status to a Malone status. Mantis' function takes a string
