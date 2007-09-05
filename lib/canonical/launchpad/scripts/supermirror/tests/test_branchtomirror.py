@@ -271,21 +271,29 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
 class ErrorHandlingTestCase(unittest.TestCase):
 
     def setUp(self):
+        super(ErrorHandlingTestCase, self).setUp()
         client = BranchStatusClient()
         self.branch = BranchToMirror(
             'foo', 'bar', client, 1, 'owner/product/foo', None)
         # Stub out everything that we don't need to test
         client.startMirroring = lambda branch_id: None
-        self.branch._mirrorFailed = lambda logger, err: self.errors.append(err)
-        self.branch._openSourceBranch = lambda: None
+        def mockMirrorFailed(logger, err):
+            self.errors.append(err)
+        self.branch._mirrorFailed = mockMirrorFailed
+        self.branch._mirrorSuccessful = lambda logger: None
+        def mockOpenSourceBranch():
+            self.open_call_count += 1
+        self.branch._openSourceBranch = mockOpenSourceBranch
         self.branch._mirrorToDestBranch = lambda: None
         # We set the log level to CRITICAL so that the log messages
         # are suppressed.
         logging.basicConfig(level=logging.CRITICAL)
         self.errors = []
+        self.open_call_count = 0
 
     def tearDown(self):
         reset_logging()
+        super(ErrorHandlingTestCase, self).setUp()
 
     def _runMirrorAndCheckError(self, expected_error):
         """Run mirror and check that we receive exactly one error, the str() of
@@ -359,28 +367,8 @@ class TestBadUrl(ErrorHandlingTestCase):
         self._runMirrorAndCheckError(expected_msg)
 
 
-class TestReferenceMirroring(TestCaseWithTransport):
+class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
     """Tests for the behaviour of mirroring branch references."""
-
-    def setUp(self):
-        super(TestReferenceMirroring, self).setUp()
-        client = BranchStatusClient()
-        self.branch = BranchToMirror(
-            'foo', 'bar', client, 1, 'owner/product/foo', None)
-        # Stub out everything that we don't need to test
-        client.startMirroring = lambda branch_id: None
-        def mockMirrorFailed(logger, err):
-            self.errors.append(err)
-        self.branch._mirrorFailed = mockMirrorFailed
-        def mockOpenSourceBranch():
-            self.open_call_count += 1
-        self.branch._openSourceBranch = mockOpenSourceBranch
-        self.branch._mirrorToDestBranch = lambda: None
-        # We set the log level to CRITICAL so that the log messages
-        # are suppressed.
-        logging.basicConfig(level=logging.CRITICAL)
-        self.errors = []
-        self.open_call_count = 0
 
     def testCreateBranchReference(self):
         """Test that our createBranchReference helper works correctly."""
@@ -420,6 +408,32 @@ class TestReferenceMirroring(TestCaseWithTransport):
         branch_transport.put_bytes(
             'format', branch_reference_format.get_format_string())
         return a_bzrdir.root_transport.base
+
+    def testHostedBranchReference(self):
+        """A branch reference for a hosted branch must cause an error."""
+        reference_url = self.createBranchReference('http://example.com/branch')
+        self.branch.branch_type = BranchType.HOSTED
+        self.branch.source = reference_url
+        self._runMirrorAndCheckError('Branch references are not allowed ')
+        self.assertEqual(self.open_call_count, 0)
+
+    def testMirrorBranchReference(self):
+        """Most branch reference in mirror branches are accepted."""
+        reference_url = self.createBranchReference('http://example.com/branch')
+        self.branch.branch_type = BranchType.MIRRORED
+        self.branch.source = reference_url
+        self.branch.mirror(logging.getLogger())
+        self.assertEqual(len(self.errors), 0)
+        self.assertEqual(self.open_call_count, 1)
+
+    def testMirrorLocalBranchReference(self):
+        """A file:// branch reference for a mirror branch must cause an error.
+        """
+        reference_url = self.createBranchReference('file:///sauces/sikrit')
+        self.branch.branch_type = BranchType.MIRRORED
+        self.branch.source = reference_url
+        self._runMirrorAndCheckError('Bad branch reference value: ')
+        self.assertEqual(self.open_call_count, 0)
 
 
 class TestCanTraverseReferences(unittest.TestCase):

@@ -145,6 +145,14 @@ class BranchToMirror:
         self.branch_status_client.mirrorFailed(self.branch_id, str(error_msg))
         logger.info('Recorded failure: %s', str(error_msg))
 
+    def _mirrorSuccessful(self, logger):
+        """Log that the mirroring of this branch was successful."""
+        last_rev = self._dest_branch.last_revision()
+        if last_rev is None:
+            last_rev = NULL_REVISION
+        self.branch_status_client.mirrorComplete(self.branch_id, last_rev)
+        logger.info('Successfully mirrored to rev %s', last_rev)
+
     def _record_oops(self, logger, message=None):
         """Record an oops for the current exception.
 
@@ -247,11 +255,7 @@ class BranchToMirror:
             raise
 
         else:
-            last_rev = self._dest_branch.last_revision()
-            if last_rev is None:
-                last_rev = NULL_REVISION
-            self.branch_status_client.mirrorComplete(self.branch_id, last_rev)
-            logger.info('Successfully mirrored to rev %s', last_rev)
+            self._mirrorSuccessful(logger)
 
     def __eq__(self, other):
         return self.source == other.source and self.dest == other.dest
