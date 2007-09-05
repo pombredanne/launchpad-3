@@ -40,7 +40,7 @@ class PackagingAddView(GeneralFormView):
         # Invoke utility to create a packaging entry
         util = getUtility(IPackagingUtil)
         util.createPackaging(
-            productseries, sourcepackagename, distroseries, 
+            productseries, sourcepackagename, distroseries,
             packaging, owner=user)
 
     def nextURL(self):

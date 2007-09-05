@@ -71,7 +71,7 @@
           <option value="-daterequested" 
             tal:attributes="selected python: orderby == '-daterequested'">
             newest first</option>
-          <option value="highpriority"
+          <option value="-highpriority"
             tal:attributes="selected python: orderby == '-highpriority'">
             priority</option>
         </select>
@@ -105,9 +105,9 @@
             <th>Recipient</th>
             <th>Date</th>
             <th>Country</th>
-            <th style="text-align: right">requested</th>
-            <th style="text-align: right">approved</th>
-            <th>status</th>
+            <th style="text-align: right">Requested</th>
+            <th style="text-align: right">Approved</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody id="results-body">

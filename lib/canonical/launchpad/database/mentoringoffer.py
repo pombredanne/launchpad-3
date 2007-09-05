@@ -97,7 +97,7 @@ class MentoringOfferSet:
         via_specs = MentoringOffer.select("""
             MentoringOffer.date_created > %s AND
             """ % sqlvalues(yearago) + """
-            Specification.id = MentoringOffer.specification AND 
+            Specification.id = MentoringOffer.specification AND
             (""" + Specification.completeness_clause +")",
             clauseTables=['Specification'],
             distinct=True)

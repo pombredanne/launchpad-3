@@ -25,6 +25,7 @@ __all__ = [
     'UNRESOLVED_BUGTASK_STATUSES',
     'BUG_CONTACT_BUGTASK_STATUSES']
 
+from zope.component import getUtility
 from zope.interface import Attribute, Interface
 from zope.schema import (
     Bool, Choice, Datetime, Int, Text, TextLine, List, Field)
@@ -39,15 +40,16 @@ from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 
 
-# XXX: Brad Bollenbach 2005-12-02 bugs=5320: 
+# XXX: Brad Bollenbach 2005-12-02 bugs=5320:
 # In theory, INCOMPLETE belongs in UNRESOLVED_BUGTASK_STATUSES, but the
 # semantics of our current reports would break if it were added to the
 # list below.
 
-# XXX: matsubara 2006-02-02 bug=4201: 
+# XXX: matsubara 2006-02-02 bug=4201:
 # I added the INCOMPLETE as a short-term solution.
 UNRESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.NEW,
@@ -89,7 +91,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         vocabulary='DistroSeries')
     milestone = Choice(
         title=_('Milestone'), required=False, vocabulary='Milestone')
-    # XXX kiko 2006-03-23: 
+    # XXX kiko 2006-03-23:
     # The status and importance's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
     # bugwatch; this would be better described in a separate interface,
@@ -195,7 +197,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         """Set the Launchpad BugTask importance on the basis of a debbugs
         severity.  This maps from the debbugs severity values ('normal',
         'important', 'critical', 'serious', 'minor', 'wishlist', 'grave') to
-        the Launchpad importance values, and returns the relevant Launchpad 
+        the Launchpad importance values, and returns the relevant Launchpad
         importance.
         """
 
@@ -312,6 +314,9 @@ class IBugTaskSearchBase(Interface):
     omit_dupes = Bool(
         title=_('Omit duplicate bugs'), required=False,
         default=True)
+    omit_targeted = Bool(
+        title=_('Omit bugs targeted to series'), required=False,
+        default=True)
     statusexplanation = TextLine(
         title=_("Status notes"), required=False)
     has_patch = Bool(
@@ -337,6 +342,9 @@ class IBugTaskSearchBase(Interface):
         title=_('Bug contact'), vocabulary='ValidPersonOrTeam', required=False)
     bug_commenter = Choice(
         title=_('Bug commenter'), vocabulary='ValidPersonOrTeam',
+        required=False)
+    subscriber = Choice(
+        title=_('Bug subscriber'), vocabulary='ValidPersonOrTeam',
         required=False)
 
 
@@ -425,7 +433,7 @@ class IBugTaskDelta(Interface):
     bugwatch = Attribute("The bugwatch which governs this task.")
 
 
-# XXX Brad Bollenbach 2006-08-03 bugs=55089: 
+# XXX Brad Bollenbach 2006-08-03 bugs=55089:
 # This interface should be renamed.
 class IUpstreamBugTask(IBugTask):
     """A bug needing fixing in a product."""
@@ -460,7 +468,7 @@ class IProductSeriesBugTask(IBugTask):
         vocabulary='ProductSeries')
 
 
-# XXX: Brad Bollenbach 2005-02-03 bugs=121: 
+# XXX: Brad Bollenbach 2005-02-03 bugs=121:
 # This interface should be removed when spiv pushes a fix upstream for
 # the bug that makes this hackery necessary.
 class ISelectResultsSlicable(ISelectResults):
@@ -520,7 +528,7 @@ class BugTaskSearchParams:
                  resolved_upstream=False, open_upstream=False,
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
                  bug_contact=None, bug_reporter=None, nominated_for=None,
-                 bug_commenter=None):
+                 bug_commenter=None, omit_targeted=False):
         self.bug = bug
         self.searchtext = searchtext
         self.fast_searchtext = fast_searchtext
@@ -535,6 +543,7 @@ class BugTaskSearchParams:
         self.user = user
         self.orderby = orderby
         self.omit_dupes = omit_dupes
+        self.omit_targeted = omit_targeted
         self.subscriber = subscriber
         self.component = component
         self.pending_bugwatch_elsewhere = pending_bugwatch_elsewhere
@@ -658,7 +667,7 @@ class IBugTaskSet(Interface):
         If the col_name is unrecognized, a KeyError is raised.
         """
 
-    # XXX kiko 2006-03-23: 
+    # XXX kiko 2006-03-23:
     # get rid of this kludge when we have proper security for scripts.
     def dangerousGetAllTasks():
         """DO NOT USE THIS METHOD UNLESS YOU KNOW WHAT YOU ARE DOING
@@ -670,6 +679,20 @@ class IBugTaskSet(Interface):
         to do gardening over all bug tasks; the current example is
         update-bugtask-targetnamecaches.
         """
+
+
+def valid_remote_bug_url(value):
+    from canonical.launchpad.interfaces.bugwatch import (
+        IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
+    try:
+        tracker, bug = getUtility(IBugWatchSet).extractBugTrackerAndBug(value)
+    except NoBugTrackerFound:
+        pass
+    except UnrecognizedBugTrackerURL:
+        raise LaunchpadValidationError(
+            "Launchpad does not recognize the bug tracker at this URL.")
+    return True
+
 
 class IAddBugTaskForm(Interface):
     """Form for adding an upstream bugtask."""
@@ -686,8 +709,12 @@ class IAddBugTaskForm(Interface):
                       "Leave blank if you are not sure."),
         vocabulary='SourcePackageName')
     bug_url = StrippedTextLine(
-        title=_('URL'), required=False,
+        title=_('URL'), required=False, constraint=valid_remote_bug_url,
         description=_("The URL of this bug in the remote bug tracker."))
+    visited_steps = TextLine(
+        title=_('Visited steps'), required=False,
+        description=_("Used to keep track of the steps we visited in a "
+                      "wizard-like form."))
 
 
 class INominationsReviewTableBatchNavigator(ITableBatchNavigator):

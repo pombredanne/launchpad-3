@@ -26,12 +26,14 @@ for a particular bugtracker.
     >>> from canonical.launchpad.scripts import log
     >>> from canonical.lp.dbschema import BugTrackerType
 
-get_external_bugtracker supports three external bug tracker types:
+get_external_bugtracker supports four external bug tracker types:
 
     >>> bugtracker_types = [
     ...     BugTrackerType.BUGZILLA,
     ...     BugTrackerType.DEBBUGS,
-    ...     BugTrackerType.MANTIS]
+    ...     BugTrackerType.MANTIS,
+    ...     BugTrackerType.ROUNDUP,
+    ...     BugTrackerType.TRAC]
 
     >>> for bugtracker_type in bugtracker_types:
     ...     bugtracker = BugTracker(
@@ -53,3 +55,5 @@ get_external_bugtracker supports three external bug tracker types:
     Bugzilla --> <...externalbugtracker.Bugzilla object at ...>
     Debbugs --> <...externalbugtracker.DebBugs object at ...>
     Mantis --> <...externalbugtracker.Mantis object at ...>
+    Roundup --> <...externalbugtracker.Roundup object at ...>
+    Trac --> <...externalbugtracker.Trac object at ...>

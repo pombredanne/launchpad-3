@@ -60,7 +60,7 @@ class UtilsTestCase(unittest.TestCase):
         node = ET.fromstring('<a>x<b/></a>')
         self.assertRaises(bugimport.BugXMLSyntaxError,
                           bugimport.get_text, node)
-        
+
 
     def test_get_enum_value(self):
         # Test that the get_enum_value() function returns the
@@ -132,7 +132,7 @@ class UtilsTestCase(unittest.TestCase):
         # list items are bar elements:
         self.assertEqual(bugimport.get_all(node, 'bar')[0].tag,
                          '{https://launchpad.net/xmlns/2006/bugs}bar')
-        
+
 
 class GetPersonTestCase(unittest.TestCase):
     """Tests for the BugImporter.getPerson() method."""

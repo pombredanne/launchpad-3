@@ -28,7 +28,7 @@ from canonical.archiveuploader.nascentuploadfile import (
     BaseBinaryUploadFile)
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
-    NotFoundError, IDistributionSet, IArchiveSet, QueueInconsistentStateError)
+    NotFoundError, IDistributionSet, QueueInconsistentStateError)
 from canonical.launchpad.scripts.processaccepted import closeBugsForQueueItem
 from canonical.lp.dbschema import PackagePublishingPocket, ArchivePurpose
 
@@ -551,9 +551,14 @@ class NascentUpload:
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
 
         for pocket in lookup_pockets:
+            archive = self.policy.archive
+            if not self.is_ppa:
+                # We must check all the archives as the archive on the upload
+                # may have been overridden on previous uploads.
+                archive = None
             candidates = self.policy.distroseries.getPublishedReleases(
                 source_name, include_pending=True, pocket=pocket,
-                archive=self.policy.archive)
+                archive=archive)
             if candidates:
                 return candidates[0]
 
@@ -588,10 +593,15 @@ class NascentUpload:
 
         # See the comment below, in getSourceAncestry
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
+        archive = self.policy.archive
+        if not self.is_ppa:
+            # We must check all the archives as the archive on the upload
+            # may have been overridden on previous uploads.
+            archive = None
         for pocket in lookup_pockets:
             candidates = dar.getReleasedPackages(
                 binary_name, include_pending=True, pocket=pocket,
-                archive=self.policy.archive)
+                archive=archive)
 
             if candidates:
                 return candidates[0]
@@ -606,7 +616,7 @@ class NascentUpload:
             for other_dar in other_dars:
                 candidates = other_dar.getReleasedPackages(
                     binary_name, include_pending=True, pocket=pocket,
-                    archive=self.policy.archive)
+                    archive=archive)
 
                 if candidates:
                     return candidates[0]
@@ -936,14 +946,15 @@ class NascentUpload:
         includes decisions such as moving the package to the commercial
         archive if the package's component is 'commercial'.
 
-        PPA uploads with commercial files and normal uploads with a mixture 
+        PPA uploads with commercial files and normal uploads with a mixture
         of commercial and non-commercial files will be rejected.
         """
 
         # Get a set of the components used in this upload:
         components = set(file.component_name for file in self.changes.files)
 
-        if 'commercial' in components:
+        commercial_component_name = 'commercial'
+        if commercial_component_name in components:
             # Reject commercial uploads to PPAs.
             if self.is_ppa:
                 self.reject("PPA does not support commercial uploads.")
@@ -953,18 +964,19 @@ class NascentUpload:
                 self.reject("Cannot mix commercial files with non-commercial.")
                 return
 
-            # Reset the archive in the policy to the commercial archive.
-            archive = getUtility(IArchiveSet).getByDistroPurpose(
-                self.policy.distroseries.distribution, 
-                ArchivePurpose.COMMERCIAL
+            # See if there is an archive to override with.
+            distribution = self.policy.distroseries.distribution
+            archive = distribution.getArchiveByComponent(
+                commercial_component_name
                 )
 
             # Check for data problems:
             if not archive:
                 # Don't override the archive to None here or the rest of the
                 # processing will throw exceptions.
-                self.reject("Commercial archive for distro '%s' not found" % 
+                self.reject("Commercial archive for distro '%s' not found" %
                     self.policy.distroseries.distribution.name)
             else:
+                # Reset the archive in the policy to the commercial archive.
                 self.policy.archive = archive
 

@@ -1,4 +1,5 @@
-<div class="portlet" tal:condition="context/milestones">
+<div class="portlet" id="portlet-milestones"
+     tal:condition="context/milestones">
   <h2>Active milestones</h2>
   <div class="portletBody portletContent">
     <ul tal:condition="context/milestones">

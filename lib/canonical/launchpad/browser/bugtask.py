@@ -654,8 +654,12 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
             # comment, which were probably produced by
             # double-submissions or user errors, and which don't add
             # anything useful to the bug itself.
-            if previous_comment and previous_comment.isIdenticalTo(comment):
+            # Also omit comments with no body text or attachments to display.
+            if (comment.isEmpty() or
+                previous_comment and
+                previous_comment.isIdenticalTo(comment)):
                 continue
+
             visible_comments.append(comment)
             previous_comment = comment
 
@@ -1010,7 +1014,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         elif milestone_ignored:
             self.request.response.addWarningNotification(
                 "The milestone setting was ignored because "
-                "you reassigned the bug to %s." % 
+                "you reassigned the bug to %s." %
                 bugtask.bugtargetdisplayname)
 
         if comment_on_change:
@@ -1119,11 +1123,8 @@ class BugTaskStatusView(LaunchpadView):
             field_names += ['milestone']
             self.bugwatch_widget = None
 
-        if IUpstreamBugTask.providedBy(self.context):
-            self.label = 'Project fix request'
-        else:
+        if not IUpstreamBugTask.providedBy(self.context):
             field_names += ['sourcepackagename']
-            self.label = 'Source package fix request'
 
         self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
         self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
@@ -1192,14 +1193,12 @@ class BugListingPortletView(LaunchpadView):
     def getOpenBugsURL(self):
         """Return the URL for open bugs on this bug target."""
         return get_buglisting_search_filter_url(
-            self.request.URL,
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
 
     def getBugsAssignedToMeURL(self):
         """Return the URL for bugs assigned to the current user on target."""
         if self.user:
-            return get_buglisting_search_filter_url(
-                self.request.URL, assignee=self.user.name)
+            return get_buglisting_search_filter_url(assignee=self.user.name)
         else:
             return str(self.request.URL) + "/+login"
 
@@ -1217,14 +1216,12 @@ class BugListingPortletView(LaunchpadView):
     def getCriticalBugsURL(self):
         """Return the URL for critical bugs on this bug target."""
         return get_buglisting_search_filter_url(
-            self.request.URL,
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
             importance=dbschema.BugTaskImportance.CRITICAL.title)
 
     def getUnassignedBugsURL(self):
         """Return the URL for critical bugs on this bug target."""
         unresolved_tasks_query_string = get_buglisting_search_filter_url(
-            self.request.URL,
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
 
         return unresolved_tasks_query_string + "&assignee_option=none"
@@ -1232,19 +1229,19 @@ class BugListingPortletView(LaunchpadView):
     def getNewBugsURL(self):
         """Return the URL for new bugs on this bug target."""
         return get_buglisting_search_filter_url(
-            self.request.URL, status=dbschema.BugTaskStatus.NEW.title)
+            status=dbschema.BugTaskStatus.NEW.title)
 
     def getAllBugsEverReportedURL(self):
         all_statuses = UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES
         all_status_query_string = get_buglisting_search_filter_url(
-            self.request.URL, status=[status.title for status in all_statuses])
+            status=[status.title for status in all_statuses])
 
         # Add the bit that simulates the "omit dupes" checkbox being unchecked.
         return all_status_query_string + "&field.omit_dupes.used="
 
 
 def get_buglisting_search_filter_url(
-        url, assignee=None, importance=None, status=None):
+        assignee=None, importance=None, status=None):
     """Return the given URL with the search parameters specified."""
     search_params = []
 
@@ -1257,7 +1254,7 @@ def get_buglisting_search_filter_url(
 
     query_string = urllib.urlencode(search_params, doseq=True)
 
-    search_filter_url = str(url) + "?search=Search"
+    search_filter_url = "+bugs?search=Search"
     if query_string:
         search_filter_url += "&" + query_string
 
@@ -1503,6 +1500,13 @@ class BugTaskSearchListingView(LaunchpadFormView):
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)
 
+    def setUpWidgets(self):
+        """Customize the onKeyPress event of the assignee chooser."""
+        LaunchpadFormView.setUpWidgets(self)
+
+        self.widgets["assignee"].onKeyPress = (
+            "selectWidget('assignee_option', event)")
+
     def validate(self, data):
         """Validates the form."""
         self.validateVocabulariesAdvancedForm()
@@ -1676,6 +1680,10 @@ class BugTaskSearchListingView(LaunchpadFormView):
         """Should the assignee widget be shown on the advanced search page?"""
         return True
 
+    def shouldShowCommenterWidget(self):
+        """Should the commenter widget be shown on the advanced search page?"""
+        return True
+
     def shouldShowComponentWidget(self):
         """Should the component widget be shown on the advanced search page?"""
         context = self.context
@@ -1684,6 +1692,10 @@ class BugTaskSearchListingView(LaunchpadFormView):
              context.currentseries is not None) or
             IDistroSeries.providedBy(context) or
             ISourcePackage.providedBy(context))
+
+    def shouldShowContactWidget(self):
+        """Should the contact widget be shown on the advanced search page?"""
+        return True
 
     def shouldShowNoPackageWidget(self):
         """Should the widget to filter on bugs with no package be shown?
@@ -1707,6 +1719,10 @@ class BugTaskSearchListingView(LaunchpadFormView):
             IDistroSeries.providedBy(self.context) or
             IProduct.providedBy(self.context) and self.context.serieses or
             IProductSeries.providedBy(self.context))
+
+    def shouldShowSubscriberWidget(self):
+        """Should the subscriber widget be shown on the advanced search page?"""
+        return True
 
     def shouldShowUpstreamStatusBox(self):
         """Should the upstream status filtering widgets be shown?"""
@@ -1811,7 +1827,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
             "There's no person with the name or email address '%s'.")
 
         for name in ('assignee', 'bug_reporter', 'bug_contact',
-                     'bug_commenter'):
+                     'bug_commenter', 'subscriber'):
             if self.getWidgetError(name):
                 self.setFieldError(
                     name, error_message %
@@ -1879,7 +1895,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
         params.resolved_upstream = True
         fixed_elsewhere = self.context.searchTasks(params)
         search_url = (
-            "%s/+bugs?field.status_upstream=resolved_upstream" % 
+            "%s/+bugs?field.status_upstream=resolved_upstream" %
                 canonical_url(self.context))
         return dict(count=fixed_elsewhere.count(), url=search_url)
 
@@ -2180,6 +2196,9 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
 
 
 class BugTaskSOP(StructuralObjectPresentation):
+
+    def isPrivate(self):
+        return self.context.bug.private
 
     def getIntroHeading(self):
         return None

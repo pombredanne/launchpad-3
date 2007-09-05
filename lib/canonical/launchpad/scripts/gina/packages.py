@@ -32,9 +32,6 @@ from canonical.launchpad.scripts.gina import call
 
 from canonical.launchpad.validators.version import valid_debian_version
 
-# Keep a licence_cache around to avoid needing to unpack the source
-# twice.
-licence_cache = {}
 
 #
 # Data setup
@@ -45,7 +42,7 @@ urgencymap = {
     "medium": SourcePackageUrgency.MEDIUM,
     "high": SourcePackageUrgency.HIGH,
     "emergency": SourcePackageUrgency.EMERGENCY,
-    }   
+    }
 
 prioritymap = {
     "required": PackagePublishingPriority.REQUIRED,
@@ -121,37 +118,22 @@ def read_dsc(package, version, component, archive_root):
         changelog = parse_changelog(clfile)
         clfile.close()
     else:
-        log.warn("No changelog file found for %s in %s" % 
+        log.warn("No changelog file found for %s in %s" %
                  (package, source_dir))
         changelog = None
 
-    # Welcome to the world's biggest hack. Source packages contain the
-    # licence files, but they may be specific to a certain binary
-    # package, and we store them in the binary package release table,
-    # anyway. To avoid unpacking the debian source multiple times, we
-    # save the licence in a cache, keying it appropriately.
-    licence = None
+    copyright = None
     globpath = os.path.join(source_dir, "debian", "*copyright")
     for fullpath in glob.glob(globpath):
         if not os.path.exists(fullpath):
             continue
-        licence = open(fullpath).read().strip()
-        file_name = os.path.basename(fullpath)
-        if "." in file_name:
-            binpkg = file_name.split(".")[0]
-        else:
-            binpkg = None
-        licence = encoding.guess(licence)
-        licence_cache[(package, version, binpkg)] = licence
+        copyright = open(fullpath).read().strip()
 
-    if licence is None:
-        log.warn("No copyright file found for %s in %s" % 
-                 (package, source_dir))
-        # Cache we didn't find it and avoid looking it up again later
-        licence_cache[(package, version, None)] = None
+    if copyright is None:
+        log.warn("No copyright file found for %s in %s" % (package, source_dir))
+        copyright = ''
 
-    return dsc, changelog
-
+    return dsc, changelog, copyright
 
 def parse_person(val):
     if "," in val:
@@ -398,9 +380,11 @@ class SourcePackageData(AbstractPackageData):
         If successful processing of the package occurs, this method
         sets the changelog and urgency attributes.
         """
-        dsc, changelog = read_dsc(self.package, self.version,
-                                  self.component, archive_root)
+        dsc, changelog, copyright = read_dsc(
+            self.package, self.version, self.component, archive_root)
+
         self.dsc = encoding.guess(dsc)
+        self.copyright = encoding.guess(copyright)
 
         self.urgency = None
         self.changelog = None
