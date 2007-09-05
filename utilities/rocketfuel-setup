@@ -247,6 +247,7 @@ echo "
 " | sudo tee /etc/apache2/sites-available/bazaar.launchpad.dev > /dev/null
 
 # Create an empty rewritemap file so that Apache will start.
+mkdir -p /var/tmp/sm-ng/config
 touch /var/tmp/sm-ng/config/launchpad-lookup.txt
 
 sudo a2enmod proxy > /dev/null
