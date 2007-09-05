@@ -15,25 +15,32 @@ from canonical.launchpad.interfaces import (
 from canonical.lp.dbschema import PackagePublishingStatus, PackagePublishingPocket
 
 
-def publishToTeamPPA(team=None, distroseries=None, sourcepackagerelease=None,
-                     team_member=None):
+def publishToTeamPPA(team_name=None, distroseries_name=None, sourcepackage_name=None,
+                     sourcepackage_version=None, team_member_name=None):
     """Publish a signed package in a team PPA.
 
-    It defaults to publishing mozilla-firefox signed by name16 in the ubuntu-team PPA for
-    the ubuntutest distroseries.
+    It defaults to publishing mozilla-firefox 0.9 signed by name16 in the ubuntu-team
+    PPA for the ubuntutest distroseries.
 
     The team PPA must already be created.
     """
-    if team is None:
-        team = getUtility(IPersonSet).getByName("ubuntu-team")
-    if distroseries is None:
-        distroseries = getUtility(IDistributionSet)['ubuntutest']
-    if sourcepackagerelease is None:
-        firefox_name = getUtility(ISourcePackageNameSet)['mozilla-firefox']
-        sourcepackagerelease = SourcePackageRelease.selectOneBy(
-            sourcepackagenameID=firefox_name.id, version='0.9')
-    if team_member is None:
-        team_member = getUtility(IPersonSet).getByName("name16")
+    if team_name is None:
+        team_name = "ubuntu-team"
+    if distroseries_name is None:
+        distroseries_name = "ubuntutest"
+    if sourcepackage_name is None:
+        sourcepackage_name = "mozilla-firefox"
+    if sourcepackage_version is None:
+        sourcepackage_version = "0.9"
+    if team_member_name is None:
+        team_member_name = "name16"
+
+    team = getUtility(IPersonSet).getByName(team_name)
+    distroseries = getUtility(IDistributionSet)[distroseries_name]
+    name = getUtility(ISourcePackageNameSet)[sourcepackage_name]
+    sourcepackagerelease = SourcePackageRelease.selectOneBy(
+            sourcepackagenameID=name.id, version=sourcepackage_version)
+    team_member = getUtility(IPersonSet).getByName(team_member_name)
 
     sourcepackagerelease.dscsigningkey = team_member.gpgkeys[0]
     main_component = getUtility(IComponentSet)['main']

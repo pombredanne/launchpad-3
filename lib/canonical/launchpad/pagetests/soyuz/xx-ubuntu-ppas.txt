@@ -195,7 +195,7 @@ in the list.
     >>> from canonical.launchpad.ftests.ppa import publishToTeamPPA
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
-    >>> publishToTeamPPA()
+    >>> publishToTeamPPA(team_name="ubuntu-team")
     >>> logout()
     >>> import transaction
     >>> transaction.commit()
