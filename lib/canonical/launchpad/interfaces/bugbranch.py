@@ -21,7 +21,6 @@ class IBugBranch(IHasDateCreated, IHasBug):
     """A branch linked to a bug."""
 
     id = Int(title=_("Bug Branch #"))
-    # bug = Int(title=_("Bug"))
     bug = BugField(
         title=_("The bug that is linked to."), required=True, readonly=True)
     branch = Choice(
