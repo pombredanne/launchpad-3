@@ -10,13 +10,6 @@ The ExternalBugTracker descendant class which implements methods for
 updating bug watches on Python bug trackers is
 externalbugtracker.Python, which implements IExternalBugTracker.
 
-    >>> from canonical.launchpad.components.externalbugtracker import Python
-    >>> from canonical.launchpad.interfaces.externalbugtracker import (
-    ...     IExternalBugtracker)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> verifyObject(IExternalBugtracker, Python('http://bugs.foo.com'))
-    True
-
 
 == Status Conversion ==
 
@@ -24,7 +17,9 @@ The basic Python bug statuses (i.e. those available by default in new
 Python instances) map to Launchpad bug statuses.
 Python.convertRemoteStatus() handles the conversion.
 
-    >>> python = Python('http://spam.eggs.ham')
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     Roundup)
+    >>> python = Roundup('http://bugs.python.org')
     >>> python.convertRemoteStatus('1:None').title
     'New'
     >>> python.convertRemoteStatus('1:1').title
