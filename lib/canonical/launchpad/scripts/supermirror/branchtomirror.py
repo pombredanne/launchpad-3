@@ -100,6 +100,9 @@ class BranchToMirror:
             return
         if not self._canTraverseReferences():
             raise BranchReferenceForbidden(reference_value)
+        reference_value_uri = URI(reference_value)
+        if reference_value_uri.scheme == 'file':
+            raise BranchReferenceValueError(reference_value)
 
     def _canTraverseReferences(self):
         """Whether we should traverse branch references when opening the source

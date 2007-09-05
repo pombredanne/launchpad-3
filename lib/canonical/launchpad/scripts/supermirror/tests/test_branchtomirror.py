@@ -562,6 +562,18 @@ class TestCheckBranchReference(unittest.TestCase):
         self.branch._checkBranchReference() # This must not raise.
         self.assertGetBranchReferenceCallsEqual([self.branch.source])
 
+    def testFileReference(self):
+        """_checkBranchReference raises BranchReferenceValueError if
+        _canTraverseReferences is true and the source url points to a 'file'
+        branch reference.
+        """
+        self.branch.source = 'http://example.com/reference'
+        self.can_traverse_references = True
+        self.reference_values[self.branch.source] = 'file://local/branch'
+        self.assertRaises(
+            BranchReferenceValueError, self.branch._checkBranchReference)
+        self.assertGetBranchReferenceCallsEqual([self.branch.source])
+
 
 class TestErrorHandling(ErrorHandlingTestCase):
 
