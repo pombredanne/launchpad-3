@@ -252,10 +252,12 @@ class Branch(SQLBase):
         from canonical.launchpad.database.codeimport import CodeImportSet
         code_import = CodeImportSet().getByBranch(self)
         if (code_import is not None or
-            self.revision_history.count() > 0 or
             self.subscriptions.count() > 0 or
             self.bug_branches.count() > 0 or
             self.spec_links.count() > 0 or
+            self.landing_targets.count() > 0 or
+            self.landing_candidates.count() > 0 or
+            self.dependent_branches.count() > 0 or
             self.associatedProductSeries().count() > 0):
             # Can't delete if the branch is associated with anything.
             return False
@@ -608,6 +610,11 @@ class BranchSet:
     def delete(self, branch):
         """See `IBranchSet`."""
         if branch.canBeDeleted():
+            # Delete any branch revisions.
+            branch_ancestry = BranchRevision.selectBy(branch=branch)
+            for branch_revision in branch_ancestry:
+                BranchRevision.delete(branch_revision.id)
+            # Now delete the branch itself.
             Branch.delete(branch.id)
         else:
             raise CannotDeleteBranch(
