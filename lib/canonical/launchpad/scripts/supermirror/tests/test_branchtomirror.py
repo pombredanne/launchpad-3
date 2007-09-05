@@ -428,6 +428,26 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
             'format', branch_reference_format.get_format_string())
         return a_bzrdir.root_transport.base
 
+    def testGetBranchReference(self):
+        """Test that BranchToMirror._getBranchReference works."""
+        # _getBranchReference gives the reference value for a branch reference.
+        reference_value = 'http://example.com/branch'
+        reference_url = self.createBranchReference(reference_value)
+        self.branch.source = reference_url
+        self.assertEqual(
+            self.branch._getBranchReference(reference_url), reference_value)
+        # _getBranchReference gives None for a normal branch.
+        t = get_transport(self.get_url('.'))
+        t.mkdir('repo')
+        branch_url = self.get_url('repo')
+        dir = bzrdir.BzrDir.create(branch_url)
+        dir.create_repository()
+        dir.create_branch()
+        self.branch.source = branch_url
+        self.assertIs(
+            self.branch._getBranchReference(branch_url), None)
+
+
     def testHostedBranchReference(self):
         """A branch reference for a hosted branch must cause an error."""
         reference_url = self.createBranchReference('http://example.com/branch')

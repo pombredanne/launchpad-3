@@ -10,6 +10,7 @@ import sys
 import urllib2
 
 import bzrlib.branch
+from bzrlib.bzrdir import BzrDir
 import bzrlib.errors
 from bzrlib.revision import NULL_REVISION
 
@@ -89,6 +90,14 @@ class BranchToMirror:
         assert self.branch_type in traverse_references_from_branch_type, (
             'Unexpected branch type: %r' % (self.branch_type,))
         return traverse_references_from_branch_type[self.branch_type]
+
+    def _getBranchReference(self, url):
+        """Get the branch-reference value at the specified url.
+
+        This method is useful to override in unit tests.
+        """
+        bzrdir = BzrDir.open(url)
+        return bzrdir.get_branch_reference()
 
     def _openSourceBranch(self):
         """Open the branch to pull from, useful to override in tests."""
