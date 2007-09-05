@@ -968,7 +968,7 @@ Branches with revisions are now deletable.
 
     >>> branch = branchset.getByUniqueName('~sabdfl/firefox/release--0.9.1')
     >>> branch.revision_count
-    6
+    1
     >>> branch.canBeDeleted()
     True
     >>> branchset.delete(branch)
