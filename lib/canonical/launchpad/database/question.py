@@ -54,6 +54,8 @@ from canonical.launchpad.mailnotification import (
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr import DBItem, Item
 
+from canonical.lp.dbschema import BugTaskStatus
+
 
 class notify_question_modified:
     """Decorator that sends a SQLObjectModifiedEvent after a workflow action.
@@ -538,17 +540,31 @@ class QuestionSet:
 
     def findExpiredQuestions(self, days_before_expiration):
         """See `IQuestionSet`."""
-        return Question.select(
-            """status IN (%s, %s)
-                    AND (datelastresponse IS NULL
-                         OR datelastresponse < (
-                            current_timestamp -interval '%s days'))
-                    AND
-                    datelastquery  < (current_timestamp - interval '%s days')
-                    AND assignee IS NULL
+        return Question.select("""
+            id in (SELECT Question.id
+                FROM Question
+                    LEFT JOIN QuestionBug
+                        ON Question.id = QuestionBug.question
+                WHERE
+                    Question.status IN (%s, %s)
+                    AND (Question.datelastresponse IS NULL
+                         OR Question.datelastresponse < 
+                            (current_timestamp - interval '%s days'))
+                    AND Question.datelastquery < 
+                        (current_timestamp - interval '%s days')
+                    AND Question.assignee IS NULL
+                    AND (QuestionBug.bug IS NULL
+                         OR NOT EXISTS (
+                            SELECT TRUE
+                            FROM BugTask
+                            WHERE
+                                BugTask.bug = QuestionBug.bug
+                                AND BugTask.status != %s
+                            LIMIT 1)))
             """ % sqlvalues(
                 QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
-                days_before_expiration, days_before_expiration))
+                days_before_expiration, days_before_expiration,
+                BugTaskStatus.INVALID))
 
     def searchQuestions(self, search_text=None, language=None,
                       status=QUESTION_STATUS_DEFAULT_SEARCH, sort=None):
