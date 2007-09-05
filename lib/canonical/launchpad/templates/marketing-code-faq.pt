@@ -31,8 +31,9 @@
           branches.</li>
       <li>Free hosting for your Bazaar branches.</li>
       <li>Free backup for your and other people's Bazaar branches.</li>
-      <li>Daily imports from CVS and Subversion, allowing you to use Bazaar to
-          work on projects using other systems.</li>
+      <li><a href="https://help.launchpad.net/VcsImports">Daily imports</a>
+      from CVS and Subversion, allowing you to use Bazaar to work on projects
+          using other revision control systems.</li>
       <li>Attach branches to bugs reported using Launchpad's Bug Tracker.</li>
       <li>Attach branches to blueprints in Launchpad's Feature Tracker.</li>
     </ul>

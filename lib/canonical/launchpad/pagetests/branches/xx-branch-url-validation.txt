@@ -30,6 +30,11 @@ Try to create branches with URLs in bazaar.launchpad.dev.
     There is 1 error.
     Don't manually register a bzr branch on bazaar.launchpad.dev...
 
+    >>> add_branch('sftp://bazaar.launchpad.dev/~me/that/this')
+    >>> for message in get_feedback_messages(user_browser):
+    ...     print message
+    There is 1 error.
+    Don't manually register a bzr branch on bazaar.launchpad.dev...
 
 Try to create a branch with a URL that is already registered.
 
