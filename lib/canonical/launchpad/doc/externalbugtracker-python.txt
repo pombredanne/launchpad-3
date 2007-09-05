@@ -8,7 +8,10 @@ bugwatches.
 
 The Python bug tracker is a slight modification of the Roundup
 bugtracker and as such the functionality for importing bugs from it is
-housed within the Roundup ExternalBugTracker.
+housed within the Roundup ExternalBugTracker. As such, we only test the
+ways in which it differs from standard Roundup status imports. For the
+tests common to Roundup and Python instances, see
+externalbugtracker-roundup.txt
 
 
 == Status Conversion ==
@@ -93,105 +96,4 @@ succeed. For example, if the bug number was invalid.
     >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
     >>> python.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
     'Unknown'
-
-
-== Updating Bug Watches ==
-
-First, we create some bug watches to test with:
-
-    >>> from canonical.launchpad.database import BugTracker
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
-    >>> from canonical.lp.dbschema import BugTrackerType
-
-    >>> sample_person = getUtility(IPersonSet).getByEmail(
-    ...     'test@canonical.com')
-
-    >>> example_bug_tracker = BugTracker(
-    ...     name="example-bugs",
-    ...     title="Example.com Python",
-    ...     bugtrackertype=BugTrackerType.ROUNDUP,
-    ...     baseurl="http://bugs.python.org",
-    ...     summary="Contains bugs for Example.com",
-    ...     contactdetails="foo.bar@example.com",
-    ...     owner=sample_person)
-
-    >>> login('test@canonical.com')
-
-    >>> example_bug = getUtility(IBugSet).get(10)
-    >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, 1008, sample_person)
-
-    >>> login('no-priv@canonical.com')
-
-Collect the Example.com watches:
-
-    >>> print_bugwatches(example_bug_tracker.watches)
-    Remote bug 1008: None
-
-And have a Python instance process them (we use a test-oriented Roundup
-instance to save us from requiring a network connection):
-
-    >>> from canonical.ftests.externalbugtracker import TestRoundup
-    >>> python = TestRoundup(example_bug_tracker.baseurl)
-    >>> python.updateBugWatches(example_bug_tracker.watches)
-    >>> print_bugwatches(example_bug_tracker.watches)
-    Remote bug 1008: 1:None
-
-We'll add some more watches now.
-
-    >>> from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
-    >>> print_bugwatches(example_bug_tracker.watches,
-    ...     python.convertRemoteStatus)
-    Remote bug 1008: New
-
-    >>> remote_bugs = [
-    ...     (1008, 'Confirmed'),
-    ...     (1010, 'New'),
-    ...     (1011, 'Confirmed'),
-    ...     (1013, 'Fix Committed'),
-    ...     (1014, "Won't Fix"),
-    ...     (1018, 'Invalid'),
-    ...     (1020, 'Invalid'),
-    ...     (1021, 'Confirmed'),
-    ...     (1025, 'Confirmed'),
-    ...     (1028, "Won't Fix"),
-    ...     (1031, 'Confirmed'),
-    ...     (1033, 'Invalid'),
-    ...     (1036, "Won't Fix"),
-    ...     (1042, "Won't Fix"),
-    ...     (1046, 'Fix Committed'),
-    ...     (1048, "Won't Fix"),
-    ...     (1053, 'Fix Released'),
-    ... ]
-
-    >>> bug_watch_set = getUtility(IBugWatchSet)
-    >>> for remote_bug_id, remote_status in remote_bugs:
-    ...     bug_watch = bug_watch_set.createBugWatch(
-    ...         bug=example_bug, owner=sample_person,
-    ...         bugtracker=example_bug_tracker,
-    ...         remotebug=str(remote_bug_id))
-
-    >>> python.trace_calls = True
-    >>> python.updateBugWatches(example_bug_tracker.watches)
-    CALLED urlopen(u'http://bugs.python.org/issue?...@startwith=0')
-
-    >>> print_bugwatches(example_bug_tracker.watches,
-    ...     python.convertRemoteStatus)
-    Remote bug 1008: Confirmed
-    Remote bug 1010: New
-    Remote bug 1011: Confirmed
-    Remote bug 1013: Fix Committed
-    Remote bug 1014: Won't Fix
-    Remote bug 1018: Invalid
-    Remote bug 1020: Invalid
-    Remote bug 1021: Confirmed
-    Remote bug 1025: Confirmed
-    Remote bug 1028: Won't Fix
-    Remote bug 1031: Confirmed
-    Remote bug 1033: Invalid
-    Remote bug 1036: Won't Fix
-    Remote bug 1042: Won't Fix
-    Remote bug 1046: Fix Committed
-    Remote bug 1048: Won't Fix
-    Remote bug 1053: Fix Released
 
