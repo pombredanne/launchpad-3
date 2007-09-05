@@ -11,13 +11,14 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database.productseries import (
     DatePublishedSyncError, ProductSeries, NoImportBranchError)
 from canonical.launchpad.ftests import login
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
-from canonical.launchpad.interfaces import IProductSet
+from canonical.launchpad.interfaces import IProductSeriesSet, IProductSet
 from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
-from canonical.lp.dbschema import RevisionControlSystems
+from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
 
 class ImportdTestCase(TestCase):
@@ -212,6 +213,54 @@ class SyncIntervalTestCase(LaunchpadZopelessTestCase):
         series.cvsbranch = 'MAIN'
         series.certifyForSync()
         self.assertEquals(series.syncinterval, datetime.timedelta(hours=12))
+
+
+class TestProductSeriesSearch(LaunchpadZopelessTestCase):
+    """
+    """
+
+    def setUp(self):
+        for series in ProductSeries.select():
+            series.deleteImport()
+        flush_database_updates()
+
+    def addDetailsToSeries(self, series):
+        series.rcstype = RevisionControlSystems.CVS
+        series.cvsroot = ':pserver:anonymous@cvs.example.com:/cvsroot'
+        series.cvsmodule = 'hello'
+        series.cvsbranch = 'MAIN'
+        series.importstatus = ImportStatus.SYNCING
+
+    def testEmpty(self):
+        """Test that our setUp method ensures that .search() initally returns
+        no productseries.
+        """
+        results = getUtility(IProductSeriesSet).search(forimport=True)
+        self.assertEquals(list(results), [])
+
+    def testOneSeries(self):
+        """
+        """
+        firefox = getUtility(IProductSet).getByName(
+            'firefox')
+        series = firefox.getSeries("trunk")
+        self.addDetailsToSeries(series)
+        flush_database_updates()
+        results = getUtility(IProductSeriesSet).search(forimport=True)
+        self.assertEquals(list(results), [series])
+
+    def testExcludeDeactivatedProducts(self):
+        """
+        """
+        disabled_product = getUtility(IProductSet).getByName(
+            'python-gnome2-dev')
+        self.failIf(disabled_product.active)
+        series = disabled_product.getSeries("trunk")
+        self.addDetailsToSeries(series)
+        flush_database_updates()
+        results = getUtility(IProductSeriesSet).search(forimport=True)
+        self.assertEquals(list(results), [])
+
 
 
 def test_suite():

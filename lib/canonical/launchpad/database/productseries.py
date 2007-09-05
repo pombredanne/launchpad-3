@@ -553,21 +553,21 @@ class ProductSeriesSet:
 
     def search(self, ready=None, text=None, forimport=None, importstatus=None,
                start=None, length=None):
-        query, clauseTables = self._querystr(
+        query = self._querystr(
             ready, text, forimport, importstatus)
         return ProductSeries.select(query, distinct=True,
-                   clauseTables=clauseTables)[start:length]
+                   clauseTables=['Product', 'Project'])[start:length]
 
     def importcount(self, status=None):
         return self.search(forimport=True, importstatus=status).count()
 
     def _querystr(self, ready=None, text=None,
                   forimport=None, importstatus=None):
-        """Return a querystring and clauseTables for use in a search or a
-        get or a query. Arguments:
+        """Return a querystring for use in a search or a get or a query.
+
+        Arguments:
           ready - boolean indicator of whether or not to limit the search
-                  to products and projects that have been reviewed and are
-                  active.
+                  to products and projects that have been reviewed.
           text - text to search for in the product and project titles and
                  descriptions
           forimport - whether or not to limit the search to series which
@@ -576,30 +576,25 @@ class ProductSeriesSet:
                          import status.
         """
         queries = []
-        clauseTables = set()
         # deal with the cases which require project and product
-        if ( ready is not None ) or text:
-            if text:
-                queries.append('Product.fti @@ ftq(%s)' % quote(text))
-            if ready is not None:
-                queries.append('Product.active IS TRUE')
-                queries.append('Product.reviewed IS TRUE')
-            queries.append("ProductSeries.product = Product.id")
+        if text:
+            queries.append('Product.fti @@ ftq(%s)' % quote(text))
+        queries.append('Product.active IS TRUE')
+        if ready is not None:
+            queries.append('Product.reviewed IS TRUE')
+        queries.append("ProductSeries.product = Product.id")
 
-            # The subquery restricts the query to a project that matches
-            # the text supplied.
-            subqueries = []
-            subqueries.append('Product.project = Project.id')
-            if text:
-                subqueries.append('Project.fti @@ ftq(%s) ' % quote(text))
-            if ready is not None:
-                subqueries.append('Project.active IS TRUE')
-                subqueries.append('Project.reviewed IS TRUE')
-            queries.append('(Product.project IS NULL OR (%s))' %
-                           " AND ".join(subqueries))
-
-            clauseTables.add('Project')
-            clauseTables.add('Product')
+        # The subquery restricts the query to a project that matches
+        # the text supplied.
+        subqueries = []
+        subqueries.append('Product.project = Project.id')
+        if text:
+            subqueries.append('Project.fti @@ ftq(%s) ' % quote(text))
+        subqueries.append('Project.active IS TRUE')
+        if ready is not None:
+            subqueries.append('Project.reviewed IS TRUE')
+        queries.append('(Product.project IS NULL OR (%s))' %
+                       " AND ".join(subqueries))
 
         # now just add filters on import status
         if forimport or importstatus:
@@ -608,7 +603,7 @@ class ProductSeriesSet:
             queries.append('ProductSeries.importstatus = %d' % importstatus)
 
         query = " AND ".join(queries)
-        return query, clauseTables
+        return query
 
     def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):
         """See IProductSeriesSet."""
