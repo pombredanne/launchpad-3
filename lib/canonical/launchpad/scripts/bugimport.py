@@ -124,7 +124,7 @@ class BugImporter:
         """Get the Launchpad user corresponding to the given XML node"""
         if node is None:
             return None
-        
+
         # special case for "nobody"
         name = node.get('name')
         if name == 'nobody':
@@ -139,7 +139,7 @@ class BugImporter:
         displayname = get_text(node)
         if not displayname:
             displayname = None
-        
+
         launchpad_id = self.person_id_cache.get(email)
         if launchpad_id is not None:
             person = getUtility(IPersonSet).get(launchpad_id)

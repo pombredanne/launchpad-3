@@ -23,7 +23,7 @@ class TestLibrarianWrapper(unittest.TestCase):
         ## Create archive and cache dir ...
         os.mkdir(datadir('archive'))
         os.mkdir(datadir('cache'))
-                
+
     def tearDown(self):
         shutil.rmtree(datadir('archive'))
         shutil.rmtree(datadir('cache'))
@@ -49,9 +49,9 @@ class TestLibrarianWrapper(unittest.TestCase):
         size = os.stat(path).st_size
         digest = sha.sha(open(path, 'rb').read()).hexdigest()
 
-        ## Use Fake Librarian class 
+        ## Use Fake Librarian class
         uploader = FakeUploadClient()
-        
+
         fileid, filealias = lib.addFile(name, size, fileobj,
                                         contentType='test/test',
                                         digest=digest,
@@ -68,7 +68,7 @@ class TestLibrarianWrapper(unittest.TestCase):
 
         from canonical.archivepublisher.library import Librarian
         lib = Librarian('localhost', 9090, 8000, datadir('cache'))
-        ## Use Fake Librarian Class 
+        ## Use Fake Librarian Class
         downloader = FakeDownloadClient()
 
         lib.downloadFileToDisk(filealias, archive, downloader=downloader)

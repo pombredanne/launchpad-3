@@ -113,7 +113,7 @@ class ProductReleaseImporter:
             % (self.product, quote(filename)),
             clauseTables=['ProductRelease', 'LibraryFileAlias']
         )
-        
+
         return bool(existingFiles.count())
 
     def getReleases(self):

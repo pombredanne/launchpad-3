@@ -170,7 +170,7 @@ class TestDistributionMirror(LaunchpadFunctionalTestCase):
         transaction.commit()
         self.failUnlessEqual(len(stub.test_emails), 1)
         stub.test_emails = []
-        
+
         mirror.enabled = False
         mirror.disable(notify_owner=True)
         # No notifications were sent this time

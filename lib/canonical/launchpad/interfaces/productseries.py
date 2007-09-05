@@ -20,9 +20,12 @@ from zope.interface import Interface, Attribute
 from CVS.protocol import CVSRoot, CvsRootError
 
 from canonical.launchpad.fields import ContentNameField, URIField
-from canonical.launchpad.interfaces import (
-    IBugTarget, ISpecificationGoal, IHasAppointedDriver, IHasOwner,
-    IHasDrivers, validate_url)
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.launchpad import (
+    IHasAppointedDriver, IHasOwner, IHasDrivers)
+from canonical.launchpad.interfaces.specificationtarget import (
+    ISpecificationGoal)
+from canonical.launchpad.interfaces.validation import validate_url
 
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -56,6 +59,7 @@ def validate_cvs_root(cvsroot):
             'Please use a fully qualified host name.')
     return True
 
+
 def validate_cvs_module(cvsmodule):
     valid_module = re.compile('^[a-zA-Z][a-zA-Z0-9_/.+-]*$')
     if not valid_module.match(cvsmodule):
@@ -65,11 +69,13 @@ def validate_cvs_module(cvsmodule):
         raise LaunchpadValidationError('A CVS module can not be called "CVS".')
     return True
 
+
 def validate_cvs_branch(branch):
     if branch and re.match('^[a-zA-Z][a-zA-Z0-9_-]*$', branch):
         return True
     else:
         raise LaunchpadValidationError('Your CVS branch name is invalid.')
+
 
 def validate_release_glob(value):
     if validate_url(value, ["http", "https", "ftp"]):
