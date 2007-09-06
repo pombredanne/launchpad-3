@@ -1,0 +1,21 @@
+= ExternalBugTracker: SourceForge =
+
+This covers the implementation of the ExternalBugTracker class for SourceForge
+bugwatches.
+
+
+== Basics ==
+
+The ExternalBugTracker descendant class which implements methods for updating
+bug watches on SourceForge bug trackers is externalbugtracker.Roundup, which
+implements IExternalBugTracker.
+
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     SourceForge)
+    >>> from canonical.launchpad.interfaces.externalbugtracker import (
+    ...     IExternalBugtracker)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(IExternalBugtracker,
+    ...     SourceForge('http://sourceforge.net/'))
+    True
+
