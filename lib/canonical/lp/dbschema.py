@@ -187,15 +187,6 @@ class BugTrackerType(DBSchema):
         tracker written in Python.
         """)
 
-    PYTHON = Item(7, """
-        Roundup (bugs.python.org style)
-
-        Roundup is a lightweight, customisable and fast web/email based bug
-        tracker written in Python. This version, adapted for the use of
-        the Python project, offers finer-grained control over the status
-        and resolutions of bugs.
-        """)
-
     TRAC = Item(4, """
         Trac
 

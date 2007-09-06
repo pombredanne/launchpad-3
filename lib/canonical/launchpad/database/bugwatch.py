@@ -65,7 +65,6 @@ class BugWatch(SQLBase):
             BugTrackerType.ROUNDUP:     'issue%s',
             BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
             BugTrackerType.MANTIS:      'view.php?id=%s',
-            BugTrackerType.PYTHON:      'issue%s',
         }
         bt = self.bugtracker.bugtrackertype
         if not url_formats.has_key(bt):
