@@ -80,3 +80,21 @@ example, if the bug number was invalid.
     'Unknown'
 
 
+== Initialization ==
+
+Calling initializeRemoteBugDB() on our SourceForge instance and passing
+it a set of remote bug IDs will fetch those bug IDs from the server and
+file them in a local variable for later use.
+
+We use a test-oriented implementation for the purposes of these tests,
+which overrides ExternalBugTracker.urlopen() so that we don't have to
+rely on a working network connection.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestSourceForge, print_bugwatches)
+    >>> sourceforge = TestSourceForge('http://test.sourceforge')
+    >>> sourceforge.initializeRemoteBugDB([1])
+    >>> sorted(sourceforge.bugs.keys())
+    [1]
+
+

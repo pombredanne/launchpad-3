@@ -245,3 +245,4 @@ class TestRoundup(Roundup):
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
         return open(file_path + '/' + 'roundup_example_ticket_export.csv', 'r')
 
+
