@@ -54,7 +54,7 @@ def process_team(teamname, display_option='simple'):
             name=member.name,
             teamname=teamname,
             id=member.id,
-            displayname=member.displayname,
+            displayname=member.displayname.encode("ascii", "replace"),
             ubuntite=ubuntite
             )
         output.append(template % params)

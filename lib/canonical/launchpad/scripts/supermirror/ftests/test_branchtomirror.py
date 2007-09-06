@@ -355,13 +355,11 @@ class TestBadUrl(ErrorHandlingTestCase):
     def testBadUrlLaunchpadDomain(self):
         # If the host of the source branch is in the launchpad.net domain,
         # _openSourceBranch raises BadUrlLaunchpad.
-        self.branch.source = 'http://bazaar.launchpad.net/foo'
+        self.branch.source = 'http://bazaar.launchpad.dev/foo'
         self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
-
-    def testBadUrlLaunchpadHost(self):
-        # If the host of the source branch is launchpad.net, _openSourceBranch
-        # raises BadUrlLaunchpad.
-        self.branch.source = 'http://launchpad.net/foo'
+        self.branch.source = 'sftp://bazaar.launchpad.dev/bar'
+        self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
+        self.branch.source = 'http://launchpad.dev/baz'
         self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
 
     def testBadUrlLaunchpadCaught(self):
@@ -369,9 +367,9 @@ class TestBadUrl(ErrorHandlingTestCase):
         # or a host in this domain is caught, and an informative error message
         # is displayed to the user.
         expected_msg = "Launchpad does not mirror branches from Launchpad."
-        self.branch.source = 'http://bazaar.launchpad.net/foo'
+        self.branch.source = 'http://bazaar.launchpad.dev/foo'
         self._runMirrorAndCheckError(expected_msg)
-        self.branch.source = 'http://launchpad.net/foo'
+        self.branch.source = 'http://launchpad.dev/foo'
         self._runMirrorAndCheckError(expected_msg)
 
 

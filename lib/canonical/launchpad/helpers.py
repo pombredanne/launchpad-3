@@ -27,7 +27,6 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     ILaunchBag, IRequestPreferredLanguages,
     IRequestLocalLanguages, ITeam)
-from canonical.launchpad.translationformat.gettext_po_parser import POParser
 
 
 def text_replaced(text, replacements, _cache={}):
@@ -368,18 +367,6 @@ def is_english_variant(language):
     # We would not need to use this function so often if variant languages
     # knew their parent language.
     return language.code[0:3] in ['en_']
-
-
-def check_po_syntax(s):
-    parser = POParser()
-
-    try:
-        parser.write(s)
-        parser.finish()
-    except:
-        return False
-
-    return True
 
 
 def is_tar_filename(filename):

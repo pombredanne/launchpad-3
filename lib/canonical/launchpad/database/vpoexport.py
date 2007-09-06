@@ -80,19 +80,16 @@ class VPOExportSet:
             else:
                 break
 
-    def get_pofile_rows(self, potemplate, language, variant=None,
-                        included_obsolete=True):
+    def get_pofile_rows(self, pofile):
         """See IVPOExportSet."""
         where = ('potemplate = %s AND language = %s' %
-            sqlvalues(potemplate.id, language.id))
+            sqlvalues(pofile.potemplate, pofile.language))
 
-        if variant:
-            where += ' AND variant = %s' % sqlvalues(variant.encode('UTF-8'))
+        if pofile.variant:
+            where += ' AND variant = %s' % sqlvalues(
+                pofile.variant.encode('UTF-8'))
         else:
             where += ' AND variant is NULL'
-
-        if not included_obsolete:
-            where += ' AND potsequence > 0'
 
         return self._select(where=where)
 
@@ -123,14 +120,12 @@ class VPOExportSet:
 
         if date is not None:
             join += '''
-                  JOIN POMsgSet ON POMsgSet.pofile = POFile.id
+                  JOIN POMsgSet ON
+                    POMsgSet.pofile = POFile.id AND
+                    POMsgSet.date_reviewed > %s
                   JOIN POSubmission ON
                     POSubmission.pomsgset = POMsgset.id AND
-                    POSubmission.active IS TRUE'''
-
-            where += ''' AND
-                  POSubmission.datecreated > %s
-                ''' % sqlvalues(date)
+                    POSubmission.active IS TRUE''' % sqlvalues(date)
 
         if component is not None:
             join += '''
@@ -244,15 +239,14 @@ class VPOExportSet:
             join = [
                 'POFile ON POFile.id = POExport.pofile',
                 'POTemplate ON POFile.potemplate = POTemplate.id',
-                'POMsgSet ON POMsgSet.pofile = POFile.id',
+                'POMsgSet ON '
+                    'POMsgSet.pofile = POFile.id AND '
+                    'POMsgSet.date_reviewed > %s' % sqlvalues(date),
                 'POSubmission ON '
-                    'POSubmission.pomsgset = POMsgSet.id AND'
+                    'POSubmission.pomsgset = POMsgSet.id AND '
                     'POSubmission.active IS TRUE',
             ]
-            where = '''
-                 POSubmission.datecreated > %s AND
-                 POTemplate.distrorelease = %s
-            ''' % sqlvalues(date, series.id)
+            where = 'POTemplate.distrorelease = %s' % sqlvalues(series)
 
         return self._select(join=join, where=where)
 
