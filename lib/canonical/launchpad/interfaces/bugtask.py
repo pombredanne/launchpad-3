@@ -12,6 +12,7 @@ __all__ = [
     'IBugTaskSearch',
     'IAddBugTaskForm',
     'IPersonBugTaskSearch',
+    'IUpstreamProductBugTaskSearch',
     'IFrontPageBugTaskSearch',
     'IBugTaskDelta',
     'IUpstreamBugTask',
@@ -281,8 +282,8 @@ class INullBugTask(IBugTask):
 UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
     [SimpleTerm(
         "pending_bugwatch",
-        title="Show bugs that need to be forwarded to an upstream bug"
-        "tracker"),
+        title="Show bugs that need to be forwarded to an upstream "
+              "bug tracker"),
     SimpleTerm(
         "hide_upstream",
         title="Show bugs that are not known to affect upstream"),
@@ -371,6 +372,19 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
         vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+
+
+class IUpstreamProductBugTaskSearch(IBugTaskSearch):
+    """The schema used by the bug task search form for upstream products.
+    
+    This schema is the same as IBugTaskSearch, except that it has only
+    one choice for Status Upstream.
+    """
+    status_upstream = List(
+        title=_('Status Upstream'),
+        value_type=Choice(vocabulary=SimpleVocabulary(
+            [UPSTREAM_STATUS_VOCABULARY.getTerm('pending_bugwatch')])),
+        required=False)
 
 
 class IFrontPageBugTaskSearch(IBugTaskSearchBase):
