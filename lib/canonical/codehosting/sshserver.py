@@ -2,6 +2,7 @@
 
 import binascii
 import os
+import logging
 
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
@@ -24,6 +25,7 @@ from twisted.vfs.adapters import sftp
 
 from canonical.codehosting.bazaarfs import SFTPServerRoot
 from canonical.codehosting.smartserver import launch_smart_server
+from canonical.codehosting.transport import set_up_logging
 from canonical.config import config
 
 from zope.interface import implements
@@ -51,10 +53,12 @@ class LaunchpadAvatar(avatar.ConchUser):
         self.homeDirsRoot = homeDirsRoot
         self._launchpad = launchpad
 
-        # Fetch user details from the authserver
         self.lpid = userDict['id']
         self.lpname = userDict['name']
         self.teams = userDict['teams']
+
+        self.logger = logging.getLogger('codehosting.ssh.%s' % self.lpname)
+        self.logger.info('Logged in')
 
         # Extract the initial branches from the user dict.
         branches_by_team = dict(userDict['initialBranches'])
@@ -101,6 +105,8 @@ class LaunchpadAvatar(avatar.ConchUser):
 
         Returns a Deferred with the new branch ID.
         """
+        self.logger.info(
+            'Creating branch: (%r, %r, %r)', userName, productName, branchName)
         return self._launchpad.createBranch(
             loginID, userName, productName, branchName)
 
@@ -246,6 +252,7 @@ class Factory(factory.SSHFactory):
         self.privateKeys = {
             'ssh-rsa': hostPrivateKey
         }
+        set_up_logging()
 
     def startFactory(self):
         factory.SSHFactory.startFactory(self)
@@ -330,4 +337,5 @@ class BazaarFileTransferServer(filetransfer.FileTransferServer):
         return defer.gatherResults(deferreds)
 
     def connectionLost(self, reason):
+        self.avatar.logger.info('Connection lost: %s', reason)
         self.sendMirrorRequests()

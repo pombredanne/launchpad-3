@@ -44,6 +44,7 @@ class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
                                             parent=self, junkAllowed=False))
 
     def createDirectory(self, childName):
+        self.avatar.logger.debug("Trying to create directory %r", childName)
         raise PermissionError(
             "Branches must be inside a person or team directory.")
 
@@ -94,10 +95,15 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         self.junkAllowed = junkAllowed
 
     def rename(self, newName):
+        self.avatar.logger.debug(
+            "Trying to rename user directory %r to %r", self.name, newName)
         raise PermissionError(
             "renaming user directory %r is not allowed." % self.name)
 
     def createFile(self, childName):
+        self.avatar.logger.debug(
+            "Trying to create file %r in user directory %r", childName,
+            self.name)
         raise PermissionError(
             "creating files in user directory %r is not allowed." % self.name)
 
@@ -108,6 +114,9 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         # still does the right thing despite this, but that's not guaranteed.
         assert childName != '+junk', "+junk already exists (if it's allowed)."
         # Check that childName is a product name registered in Launchpad.
+        self.avatar.logger.debug(
+            "Creating virtual product directory for %r in user directory %r",
+            childName, self.name)
         deferred = self.avatar.fetchProductID(childName)
         def cb(productID):
             if productID is None:
@@ -137,6 +146,8 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         return SFTPServerProductDirPlaceholder(childName, self)
 
     def remove(self):
+        self.avatar.logger.debug(
+            "Trying to remove user directory %r", self.name)
         raise PermissionError(
             "removing user directory %r is not allowed." % self.name)
 
@@ -169,7 +180,13 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
         # We should ensure that if createBranch fails for some reason
         # (e.g. invalid name),that we report a useful error to the client.
         if self.exists(childName):
+            self.avatar.logger.debug(
+                'Tried to create branch directory %r under product %r. '
+                'Already exists', childName, self.name)
             return self.child(childName)
+        self.avatar.logger.debug(
+            'Create branch directory %r under product %r. Already exists',
+            childName, self.name)
         deferred = self.avatar.createBranch(
             self.avatar.avatarId, self.userName, self.productName, childName)
         def cb(branchID):
@@ -265,6 +282,7 @@ class WriteLoggingDirectory(osfs.OSDirectory):
         osfs.OSDirectory.rename(self, newName)
 
     def touch(self):
+        self.avatar.logger.debug('Marking directory %r as dirty', self.name)
         self._flagAsDirty()
 
 
@@ -282,6 +300,7 @@ class WriteLoggingFile(osfs.OSFile):
         osfs.OSFile.open(self, flags)
 
     def touch(self):
+        self.avatar.logger.debug('Marking file %r as dirty', self.name)
         self._flagAsDirty()
 
     def writeChunk(self, offset, data):

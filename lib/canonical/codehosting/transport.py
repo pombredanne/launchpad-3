@@ -90,10 +90,6 @@ def set_up_logging():
     return log
 
 
-def get_logger():
-    return logging.getLogger('codehosting')
-
-
 class UntranslatablePath(BzrError):
 
     _fmt = ("Could not translate %(path)s onto backing transport for "
