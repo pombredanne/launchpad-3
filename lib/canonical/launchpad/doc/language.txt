@@ -128,3 +128,45 @@ language.
   >>> for translator in es.translators:
   ...     print translator.name
   carlos
+
+== countries ==
+
+Property holding a list of countries a language is spoken in, and allowing
+reading and setting them.
+
+  >>> es = language_set.getLanguageByCode('es')
+  >>> print [country.name for country in es.countries]
+  [u'Argentina', u'Bolivia', u'Chile', u'Colombia', u'Costa Rica',
+   u'Dominican Republic', u'Ecuador', u'El Salvador', u'Guatemala',
+   u'Honduras', u'Mexico', u'Nicaragua', u'Panama', u'Paraguay', u'Peru',
+   u'Puerto Rico', u'Spain', u'United States', u'Uruguay', u'Venezuela']
+
+We can add countries using `ILanguage.addCountry` method.
+
+  >>> from canonical.launchpad.interfaces import ICountrySet
+  >>> country_set = getUtility(ICountrySet)
+  >>> germany = country_set['DE']
+  >>> es.addCountry(germany)
+  >>> print [country.name for country in es.countries]
+  [u'Argentina', u'Bolivia', u'Chile', u'Colombia', u'Costa Rica',
+   u'Dominican Republic', u'Ecuador', u'El Salvador', u'Germany', u'Guatemala',
+   u'Honduras', u'Mexico', u'Nicaragua', u'Panama', u'Paraguay', u'Peru',
+   u'Puerto Rico', u'Spain', u'United States', u'Uruguay', u'Venezuela']
+
+Or, we can remove countries using `ILanguage.removeCountry` method.
+
+  >>> argentina = country_set['AR']
+  >>> es.removeCountry(argentina)
+  >>> print [country.name for country in es.countries]
+  [u'Bolivia', u'Chile', u'Colombia', u'Costa Rica', u'Dominican Republic',
+   u'Ecuador', u'El Salvador', u'Germany', u'Guatemala', u'Honduras',
+   u'Mexico', u'Nicaragua', u'Panama', u'Paraguay', u'Peru', u'Puerto Rico',
+   u'Spain', u'United States', u'Uruguay', u'Venezuela']
+
+We can also assign a complete set of languages directly to `countries`,
+but we need to log in as a translations administrator first.
+
+  >>> login('carlos@canonical.com')
+  >>> es.countries = set([argentina, germany])
+  >>> print [country.name for country in es.countries]
+  [u'Argentina', u'Germany']

@@ -88,7 +88,6 @@
     <include file="packaging.zcml" />
     <include file="pillar.zcml" />
     <include file="person.zcml" />
-    <include file="poexport.zcml" />
     <include file="poexportrequest.zcml" />
     <include file="pofile.zcml" />
     <include file="poll.zcml" />
@@ -130,12 +129,14 @@
     <include file="teamparticipation.zcml" />
     <include file="team-subscriptions.zcml" />
     <include file="temporaryblobstorage.zcml" />
-    <include file="translationimportexport.zcml" />
+    <include file="translationexport.zcml" />
+    <include file="translationimport.zcml" />
     <include file="question.zcml" />
     <include file="question-events.zcml" />
     <include file="questionreopening.zcml" />
     <include file="questionsubscription.zcml" />
     <include file="questiontarget.zcml" />
+    <include file="translationcommonformat.zcml" />
     <include file="translationgroup.zcml" />
     <include file="translationimportqueue.zcml" />
     <include file="translator.zcml" />

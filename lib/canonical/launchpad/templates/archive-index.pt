@@ -83,6 +83,7 @@
         <thead>
           <tr>
             <th>Source</th>
+            <th tal:condition="context/owner/isTeam">Uploader</th>
             <th>Published</th>
             <th>Status</th>
             <th>Target</th>
