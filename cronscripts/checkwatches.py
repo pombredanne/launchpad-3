@@ -39,6 +39,14 @@ class CheckWatches(LaunchpadCronScript):
                 else:
                     update_bug_tracker(bug_tracker, self.logger)
                 self.txn.commit()
+            except socket.timeout:
+                # We don't want to die on a timeout, since most likely
+                # it's just a problem for this iteration. Nevertheless
+                # we log the problem.
+                self.logger.error(
+                    "Connection timed out when updating %s" %
+                    bug_tracker_url)
+                self.txn.abort()
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
                 raise
@@ -53,7 +61,7 @@ class CheckWatches(LaunchpadCronScript):
                 self.txn.abort()
 
         run_time = time.time() - start_time
-        self.logger.info("This run of checkwatches took %.3f seconds." %
+        self.logger.info("Time for this run: %.3f seconds." %
             run_time)
 
 if __name__ == '__main__':
