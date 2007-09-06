@@ -1089,9 +1089,6 @@ class SourceForge(ExternalBugTracker):
             query_url = "%s/%s" % (self.baseurl, self.export_url)
             page_data = self._getPage(query_url)
 
-    def getRemoteBug(self, bug_id):
-        """See `ExternalBugTracker`."""
-
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
         # XXX: 2007-09-06 Graham Binns
