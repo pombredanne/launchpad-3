@@ -17,6 +17,8 @@
         <th>Status</th>
         <th>Contributors</th>
         <th>Untranslated</th>
+        <th>Need review</th>
+        <th>Changed</th>
       </tr>
     </thead>
 
@@ -33,6 +35,8 @@
         </td>
         <td tal:content="drlang/contributor_count">16</td>
         <td tal:content="drlang/untranslatedCount">42344</td>
+        <td tal:content="drlang/unreviewedCount">100</td>
+        <td tal:content="drlang/updatesCount">42344</td>
       </tr>
     </tbody>
   </table>
