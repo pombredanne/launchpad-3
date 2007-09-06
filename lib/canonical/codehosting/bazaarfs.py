@@ -21,7 +21,18 @@ FORBIDDEN_DIRECTORY_ERROR = (
     "Cannot create '%s'. Only Bazaar branches are allowed.")
 
 
-class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
+class LoggingMixin:
+    """Provides features used for logging information about VFS objects."""
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self.getAbsolutePath())
+
+    def getAbsolutePath(self):
+        """Return the absolute path to this object."""
+        return os.path.join(self.parent.getAbsolutePath(), self.name)
+
+
+class SFTPServerRoot(adhoc.AdhocDirectory, LoggingMixin):
     """For /
 
     Shows ~username and ~teamname directories for the user.
@@ -43,9 +54,6 @@ class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
                           SFTPServerUserDir(avatar, team['id'], team['name'],
                                             parent=self, junkAllowed=False))
 
-    def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, self.getAbsolutePath())
-
     def createDirectory(self, childName):
         self.avatar.logger.debug("Trying to create directory %r", childName)
         raise PermissionError(
@@ -59,7 +67,7 @@ class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
         self.listenerFactory = factory
 
 
-class SFTPServerUserDir(adhoc.AdhocDirectory):
+class SFTPServerUserDir(adhoc.AdhocDirectory, LoggingMixin):
     """For /~username
 
     Ensures subdirectories are a launchpad product name, or possibly '+junk' if
@@ -100,9 +108,6 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         self.userID = lpid
         self.userName = lpname
         self.junkAllowed = junkAllowed
-
-    def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, self.getAbsolutePath())
 
     def rename(self, newName):
         self.avatar.logger.debug(
@@ -166,7 +171,7 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
             "removing user directory %r is not allowed." % self.name)
 
 
-class SFTPServerProductDir(adhoc.AdhocDirectory):
+class SFTPServerProductDir(adhoc.AdhocDirectory, LoggingMixin):
     """For /~username/product
 
     Inside a product dir there can only be directories, which will be
@@ -185,9 +190,6 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
             self.putChild(branchName,
                           SFTPServerBranch(avatar, branchID, branchName,
                                            parent))
-
-    def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, self.getAbsolutePath())
 
     def createDirectory(self, childName):
         # XXX AndrewBennetts 2006-02-06: Same comment as
@@ -214,12 +216,8 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
             return branchDirectory
         return deferred.addCallback(cb)
 
-    def getAbsolutePath(self):
-        """Return the absolute path to this directory."""
-        return os.path.join(self.parent.getAbsolutePath(), self.name)
 
-
-class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory):
+class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory, LoggingMixin):
     """A placeholder for non-existant /~username/product directories.
 
     This node type is intended as a placeholder for an
@@ -236,9 +234,6 @@ class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory):
     def __init__(self, productName, parent):
         adhoc.AdhocDirectory.__init__(self, name=productName, parent=parent)
 
-    def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, self.getAbsolutePath())
-
     def createDirectory(self, childName):
         # XXX James Henstridge 2006-08-22: Same comment as
         # SFTPServerUserDir.createDirectory (see
@@ -251,11 +246,8 @@ class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory):
             return productdir.createDirectory(childName)
         return deferred.addCallback(cb)
 
-    def getAbsolutePath(self):
-        return os.path.join(self.parent.getAbsolutePath(), self.name)
 
-
-class WriteLoggingDirectory(osfs.OSDirectory):
+class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
     """VFS directory that keeps track of whether it has been written to.
 
     Useful within, say, an SFTP server to see if a particular directory has
@@ -273,9 +265,6 @@ class WriteLoggingDirectory(osfs.OSDirectory):
         """
         osfs.OSDirectory.__init__(self, path, name, parent)
         self._flagAsDirty = flagAsDirty
-
-    def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, self.getAbsolutePath())
 
     def childFileFactory(self):
         """Return a child file which uses the same listener.
@@ -303,9 +292,6 @@ class WriteLoggingDirectory(osfs.OSDirectory):
         self.touch()
         return osfs.OSDirectory.createFile(self, name, exclusive)
 
-    def getAbsolutePath(self):
-        return os.path.join(self.parent.getAbsolutePath(), self.name)
-
     def remove(self):
         self.touch()
         osfs.OSDirectory.remove(self)
@@ -318,20 +304,13 @@ class WriteLoggingDirectory(osfs.OSDirectory):
         self._flagAsDirty()
 
 
-class WriteLoggingFile(osfs.OSFile):
+class WriteLoggingFile(osfs.OSFile, LoggingMixin):
     """osfs.OSFile that keeps track of whether it has been written to.
     """
 
     def __init__(self, listener, path, name=None, parent=None):
         self._flagAsDirty = listener
         osfs.OSFile.__init__(self, path, name, parent)
-
-    def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, self.getAbsolutePath())
-
-    def getAbsolutePath(self):
-        return os.path.join(
-            self.parent.getAbsolutePath(), self.name)
 
     def open(self, flags):
         if os.O_TRUNC & flags:
