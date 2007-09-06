@@ -4,6 +4,7 @@ Cron job to run daily to check all of the BugWatches
 """
 
 import socket
+import time
 import _pythonpath
 
 from zope.component import getUtility
@@ -16,6 +17,8 @@ from canonical.launchpad.interfaces import (
 
 class CheckWatches(LaunchpadCronScript):
     def main(self):
+        start_time = time.time()
+        socket.setdefaulttimeout(config.checkwatches.default_socket_timeout)
         ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
 
         # Set up an interaction as the Bug Watch Updater since the
@@ -31,7 +34,8 @@ class CheckWatches(LaunchpadCronScript):
                 if bug_tracker == ubuntu_bugzilla:
                     # No need updating Ubuntu Bugzilla watches since all bugs
                     # have been imported into Malone, and thus won't change.
-                    self.logger.info("Skipping updating Ubuntu Bugzilla watches.")
+                    self.logger.info(
+                        "Skipping updating Ubuntu Bugzilla watches.")
                 else:
                     update_bug_tracker(bug_tracker, self.logger)
                 self.txn.commit()
@@ -43,9 +47,14 @@ class CheckWatches(LaunchpadCronScript):
                 # continue: a failure shouldn't break the updating of
                 # the other bug trackers.
                 self.logger.error(
-                    "An exception was raised when updating %s" % bug_tracker_url,
+                    "An exception was raised when updating %s" %
+                        bug_tracker_url,
                     exc_info=True)
                 self.txn.abort()
+
+        run_time = time.time() - start_time
+        self.logger.info("This run of checkwatches took %.3f seconds." %
+            run_time)
 
 if __name__ == '__main__':
     script = CheckWatches("checkwatches")
