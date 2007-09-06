@@ -100,8 +100,7 @@ class LaunchpadCelebrities:
     launchpad = CelebrityDescriptor(IProductSet, 'launchpad')
     launchpad_beta_testers = CelebrityDescriptor(
         IPersonSet, 'launchpad-beta-testers')
-    launchpad_janitor = CelebrityDescriptor(
-        IPersonSet, 'launchpad-janitor')
+    janitor = CelebrityDescriptor(IPersonSet, 'janitor')
 
     @property
     def ubuntu_archive_mirror(self):

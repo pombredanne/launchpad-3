@@ -43,7 +43,7 @@ class BugJanitor:
         self.days_before_expiration = days_before_expiration
         self.log = log
 
-        self.janitor = getUtility(ILaunchpadCelebrities).launchpad_janitor
+        self.janitor = getUtility(ILaunchpadCelebrities).janitor
 
     def expireBugTasks(self, transaction_manager):
         """Expire old, unassigned, Incomplete BugTasks.

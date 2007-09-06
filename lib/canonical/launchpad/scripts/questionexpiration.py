@@ -39,7 +39,7 @@ class QuestionJanitor:
         self.log = log
 
         self.janitor = (
-            getUtility(ILaunchpadCelebrities).launchpad_janitor)
+            getUtility(ILaunchpadCelebrities).janitor)
 
     def expireQuestions(self, transaction_manager):
         """Expire old questions.
