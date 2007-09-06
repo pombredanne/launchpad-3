@@ -1,6 +1,6 @@
 # Copyright 2005 Canonical Ltd
 
-# XXX 20060914 mpt: All Calendar pages should return HTTP 410 Gone.
+# XXX mpt 2006-09-14: All Calendar pages should return HTTP 410 Gone.
 
 __metaclass__ = type
 
@@ -304,7 +304,7 @@ class CalendarView:
     range)
     """
     __used_for__ = ICalendar
-    
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -356,7 +356,7 @@ class CalendarAppMenu(ApplicationMenu):
         else:
             user_timezone = getUtility(ILaunchBag).timezone
             self.date = datetime.now(user_timezone)
-    
+
     def day(self):
         target =  canonical_url(CalendarDay(self.context, self.date))
         text = 'Day'
@@ -821,7 +821,7 @@ class CalendarSubscribeView:
     def setUpUserSubscriptions(self):
         user = getUtility(ILaunchBag).user
         self._subscriptions = ICalendarSubscriptionSubset(user)
-        
+
     def isSubscribed(self):
         return self.context in self._subscriptions
 

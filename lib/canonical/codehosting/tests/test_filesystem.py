@@ -14,8 +14,9 @@ from canonical.codehosting.tests.servers import (
     make_launchpad_server, make_sftp_server)
 
 from canonical.codehosting.tests.helpers import (
-    CodeHostingTestProviderAdapter, ServerTestCase, TwistedBzrlibLayer,
-    adapt_suite, deferToThread)
+    CodeHostingTestProviderAdapter, ServerTestCase, adapt_suite, deferToThread)
+
+from canonical.testing import TwistedLayer
 
 
 def wait_for_disconnect(method):
@@ -35,10 +36,10 @@ def wait_for_disconnect(method):
 
 class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
-    layer = TwistedBzrlibLayer
+    layer = TwistedLayer
 
     def _cleanUp(self, result):
-        # XXX: JonathanLange 2007-06-13 bug=120156 
+        # XXX: JonathanLange 2007-06-13 bug=120156
         # Override Twisted's post-test cleanup.
         # The tests fail badly if this is removed, for unknown reasons.
         from twisted.internet import defer
@@ -245,7 +246,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
 class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
 
-    layer = TwistedBzrlibLayer
+    layer = TwistedLayer
 
     def _cleanUp(self, result):
         # XXX: JonathanLange 2007-06-13 bug=120156: Override Twisted's

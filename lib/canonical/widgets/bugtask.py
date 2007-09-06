@@ -297,7 +297,7 @@ class BugTaskBugWatchWidget(RadioWidget):
     #     http://www.zope.org/Collectors/Zope3-dev/592
     def renderItems(self, value):
         """Render the items with with the correct radio button selected."""
-        # XXX: Bjorn Tillenius 2006-04-26 
+        # XXX: Bjorn Tillenius 2006-04-26
         #      This works around the fact that we incorrectly gets the form
         #      value instead of a valid field value.
         if value == self._missing:

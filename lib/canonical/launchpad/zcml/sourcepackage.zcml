@@ -8,6 +8,7 @@
   <content class="canonical.launchpad.database.SourcePackage">
     <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getQuestionLanguages
@@ -152,6 +153,16 @@
       template="../templates/object-potemplatenames.pt"
       />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISourcePackage"

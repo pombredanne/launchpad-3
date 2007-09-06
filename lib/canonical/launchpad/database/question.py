@@ -841,7 +841,7 @@ class QuestionTargetSearch(QuestionSearch):
 
     def getConstraints(self):
         """See `QuestionSearch`.
-        
+
         Return target and language constraints in addition to the base class
         constraints.
         """
@@ -945,7 +945,7 @@ class QuestionPersonSearch(QuestionSearch):
 
     def getConstraints(self):
         """See `QuestionSearch`.
-        
+
         Return the base class constraints plus additional constraints upon
         the Person's participation in Questions.
         """

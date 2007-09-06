@@ -17,7 +17,7 @@ the structuralheader area.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IStructuralObjectPresentation)
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.security.proxy import removeSecurityProxy
 
     >>> login(ANONYMOUS)

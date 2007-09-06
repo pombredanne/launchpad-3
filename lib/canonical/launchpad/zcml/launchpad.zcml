@@ -69,7 +69,7 @@
       template="../templates/launchpad-unexpectedformdata.pt"
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
- 
+
   <!-- UnsafeFormGetSubmissionError -->
   <browser:page
       for="canonical.launchpad.webapp.interfaces.UnsafeFormGetSubmissionError"
@@ -216,7 +216,7 @@
   <!-- Common menus -->
   <browser:menus
       module="canonical.launchpad.browser.launchpad"
-      classes="LaunchpadRootFacets RosettaContextMenu MaloneContextMenu"
+      classes="LaunchpadRootFacets MaloneContextMenu"
       />
 
   <!-- This is a view on TALES CONTEXTS rather than all dicts. -->
@@ -274,6 +274,27 @@
       name="+project-cloud"
       class="canonical.launchpad.browser.BazaarProductView"
       template="../templates/product-code-index.pt"
+      permission="zope.Public"
+      />
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+recently-registered-branches"
+      class="canonical.launchpad.browser.RecentlyRegisteredBranchesView"
+      template="../templates/branch-listing-cross-product.pt"
+      permission="zope.Public"
+      />
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+recently-imported-branches"
+      class="canonical.launchpad.browser.RecentlyImportedBranchesView"
+      template="../templates/branch-listing-cross-product.pt"
+      permission="zope.Public"
+      />
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+recently-changed-branches"
+      class="canonical.launchpad.browser.RecentlyChangedBranchesView"
+      template="../templates/branch-listing-cross-product.pt"
       permission="zope.Public"
       />
 

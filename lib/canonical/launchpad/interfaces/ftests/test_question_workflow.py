@@ -428,7 +428,7 @@ class GiveAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
 
     def test_giveAnswerByOwner(self):
         """Test giveAnswerByOwner().
-        
+
         Test that giveAnswer can be called by the questions owner when the
         question status is one of OPEN, NEEDSINFO or ANSWERED and check
         that it returns a valid IQuestionMessage.
@@ -504,7 +504,7 @@ class LinkFAQTestCase(BaseAnswerTrackerWorkflowTestCase):
         def checkFAQ(message):
             """Check that the FAQ attribute was set correctly."""
             self.assertEquals(self.question.faq, self.faq)
-    
+
         self._testValidTransition(
             [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
              QuestionStatus.ANSWERED],
@@ -526,7 +526,7 @@ class LinkFAQTestCase(BaseAnswerTrackerWorkflowTestCase):
             checkFAQ(message)
             self.assertEquals(self.owner, self.question.answerer)
             self.assertEquals(message.datecreated, self.question.date_solved)
-            
+
         self._testValidTransition(
             [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
              QuestionStatus.ANSWERED],
@@ -718,7 +718,7 @@ class ReopenTestCase(BaseAnswerTrackerWorkflowTestCase):
 
     def test_reopenFromSOLVEDByOwner(self):
         """Test that reopen() can be called when the question is in the
-        SOLVED state (by the question owner) and that it returns an 
+        SOLVED state (by the question owner) and that it returns an
         appropriate IQuestionMessage. This transition should also clear
         the date_solved, answered and answerer attributes.
         """

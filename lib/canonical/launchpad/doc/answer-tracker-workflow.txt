@@ -95,7 +95,7 @@ the creation date of the question (which defaults to now).
 It returns the IQuestionMessage that was added to the question messages
 history:
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import IQuestionMessage
     >>> verifyObject(IQuestionMessage, request_message)
     True

@@ -37,8 +37,6 @@ class IBinaryPackageRelease(Interface):
     provides = Text(required=False)
     essential = Bool(required=False)
     installedsize = Int(required=False)
-    copyright = Text(required=False)
-    licence = Text(required=False)
     architecturespecific = Bool(required=True)
     datecreated = Datetime(required=True, readonly=True)
 
@@ -68,13 +66,6 @@ class IBinaryPackageRelease(Interface):
         and attach the provided library file alias (file).
         """
 
-    def publish(priority, status, pocket, embargo, distroarchseries=None):
-        """Publish this BinaryPackageRelease according the given parameters.
-
-        The optional distroarchseries argument defaults to the one choosen
-        originally for the build record (helps on derivative procedures).
-        """
-
     def override(component=None, section=None, priority=None):
         """Uniform method to override binarypackagerelease attribute.
 
@@ -84,7 +75,7 @@ class IBinaryPackageRelease(Interface):
 
 class IBinaryPackageReleaseSet(Interface):
     """A set of binary packages"""
-    
+
     def findByNameInDistroSeries(distroseries, pattern,
                                   archtag=None, fti=False):
         """Returns a set of binarypackagereleases that matchs pattern

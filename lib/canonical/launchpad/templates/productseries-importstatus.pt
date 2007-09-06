@@ -1,5 +1,6 @@
 <tal:block condition="not: context/rcstype">
-<tal:block condition="not: context/user_branch">
+<tal:block condition="not: view/user_branch_visible">
+  <div id="branch-details">
   <p id="no-rcs-details">
     No revision control details recorded for <span
     tal:replace="context/displayname">evolution MAIN</span>.
@@ -8,16 +9,16 @@
   <p>If upstream is maintained in CVS or SVN, you can
   specify the location of the upstream branch to
   <a tal:attributes="href string:${context/fmt:url}/+source">
-  import</a> it as a Bazaar branch.
-
+  import</a> it as a Bazaar branch.</p>
+  </div>
 </tal:block>
 </tal:block>
 
-<tal:block tal:condition="context/user_branch">
+<tal:block tal:condition="view/user_branch_visible">
   <p>The following branch has been registered as the mainline branch
   for this release series:</p>
 
-  <ul class="branch"
+  <ul class="branch" id="branch-details"
       tal:content="structure context/user_branch/@@+product-summary-listing" />
 </tal:block>
 

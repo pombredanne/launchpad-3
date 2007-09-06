@@ -226,8 +226,9 @@ class TeamMembershipStatus(DBEnumeratedType):
     PROPOSED = DBItem(1, """
         Proposed
 
-        You are a proposed member of this team. To become an active member your
-        subscription has to be approved by one of the team's administrators.
+        You are a proposed member of this team. To become an active member
+        your subscription has to be approved by one of the team's
+        administrators.
         """)
 
     APPROVED = DBItem(2, """
@@ -304,14 +305,17 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
 
 
 class PersonNameField(BlacklistableContentNameField):
+    """A Person's name, which is unique."""
 
     errormessage = _("%s is already in use by another person or team.")
 
     @property
     def _content_iface(self):
+        """Return the interface this field belongs to."""
         return IPerson
 
     def _getByName(self, name):
+        """Return a Person by looking up his name."""
         return getUtility(IPersonSet).getByName(name, ignore_merged=False)
 
 
@@ -464,7 +468,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "exception to this is when we allow users to create Launchpad "
             "profiles through the /people/+newperson page."),
         required=False, readonly=False)
-    # XXX Guilherme Salgado 2006-11-10: 
+    # XXX Guilherme Salgado 2006-11-10:
     # We can't use a Choice field here because we don't have a vocabulary
     # which contains valid people but not teams, and we don't really need one
     # appart from here.
@@ -473,7 +477,8 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     ownedBounties = Attribute('Bounties issued by this person.')
     reviewerBounties = Attribute('Bounties reviewed by this person.')
     claimedBounties = Attribute('Bounties claimed by this person.')
-    subscribedBounties = Attribute('Bounties to which this person subscribes.')
+    subscribedBounties = Attribute(
+        'Bounties to which this person subscribes.')
 
     sshkeys = Attribute(_('List of SSH keys'))
 
@@ -684,7 +689,8 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     @invariant
     def personCannotHaveIcon(person):
-        # XXX Guilherme Salgado 2007-05-28: 
+        """Only Persons can have icons."""
+        # XXX Guilherme Salgado 2007-05-28:
         # This invariant is busted! The person parameter provided to this
         # method will always be an instance of zope.formlib.form.FormData
         # containing only the values of the fields included in the POSTed
@@ -811,11 +817,15 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """
 
     def latestKarma(quantity=25):
-        """Return the latest karma actions for this person, up to the number
-        given as quantity."""
+        """Return the latest karma actions for this person.
+        
+        Return no more than the number given as quantity.
+        """
 
-    def iterTopProjectsContributedTo(self, limit=10):
-        """Iterate over the top projects contributed to, up to the given limit.
+    def iterTopProjectsContributedTo(limit=10):
+        """Iterate over the top projects contributed to.
+        
+        Iterate no more than the given limit.
         """
 
     def inTeam(team):
@@ -893,14 +903,18 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         this person will keep their old preferred email.
 
         This method is meant to be the only one to change the status of an
-        email address, but as we all know the real world is far from ideal and
-        we have to deal with this in one more place, which is the case when
-        people explicitly want to change their preferred email address. On
-        that case, though, all we have to do is use person.setPreferredEmail().
+        email address, but as we all know the real world is far from ideal
+        and we have to deal with this in one more place, which is the case
+        when people explicitly want to change their preferred email address.
+        On that case, though, all we have to do is use
+        person.setPreferredEmail().
         """
 
     def hasParticipationEntryFor(team):
-        """Tell if this person is a direct/indirect member of the given team."""
+        """Return True when this person is a member of the given team.
+        
+        The person's membership may be direct or indirect.
+        """
 
     def join(team):
         """Join the given team if its subscriptionpolicy is not RESTRICTED.
@@ -1054,10 +1068,10 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """
 
     def getTeamAnswerQuestionTargets():
-        """Return a list of IQuestionTargets that are indirectly subscribed to.
+        """Return a list of IQuestionTargets that are indirect subscriptions.
 
-        This will return IQuestionTargets that the person or is registered
-        as an answer contact because of his membership in a team.
+        This will return IQuestionTargets that the person or team is
+        registered as an answer contact because of his membership in a team.
         """
 
     def searchQuestions(search_text=None,
@@ -1070,15 +1084,15 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         parameters.
 
         :participation: A list of QuestionParticipation that defines the set
-        of relationship to questions that will be searched. If None or an empty
-        sequence, all relationships are considered.
+        of relationship to questions that will be searched. If None or an
+        empty sequence, all relationships are considered.
 
-        :needs_attention: If this flag is true, only questions needing attention
-        from the person will be included. Questions needing attention are those
-        owned by the person in the ANSWERED or NEEDSINFO state, as well as,
-        those not owned by the person but on which the person requested for
-        more information or gave an answer and that are back in the OPEN
-        state.
+        :needs_attention: If this flag is true, only questions needing
+        attention from the person will be included. Questions needing
+        attention are those owned by the person in the ANSWERED or NEEDSINFO
+        state, as well as, those not owned by the person but on which the
+        person requested for more information or gave an answer and that are
+        back in the OPEN state.
         """
 
 
@@ -1095,9 +1109,9 @@ class ITeam(IPerson, IHasIcon):
         default_image_resource='/@@/team-logo',
         description=_(
             "An image of exactly 64x64 pixels that will be displayed in "
-            "the heading of all pages related to the team. Traditionally this "
-            "is a logo, a small picture or a personal mascot. It should be "
-            "no bigger than 50kb in size."))
+            "the heading of all pages related to the team. Traditionally "
+            "this is a logo, a small picture or a personal mascot. It "
+            "should be no bigger than 50kb in size."))
     mugshot = MugshotImageUpload(
         title=_("Mugshot"), required=False,
         default_image_resource='/@@/team-mugshot',
@@ -1189,7 +1203,7 @@ class IPersonSet(Interface):
     def getPOFileContributors(pofile):
         """Return people that have contributed to the specified POFile."""
 
-    def getPOFileContributorsByDistroSeries(self, distroseries, language):
+    def getPOFileContributorsByDistroSeries(distroseries, language):
         """Return people who translated strings in distroseries to language.
 
         The people that translated only IPOTemplate objects that are not
@@ -1330,7 +1344,8 @@ class IObjectReassignment(Interface):
 class ITeamReassignment(Interface):
     """The schema used by the team reassignment page."""
 
-    owner = Choice(title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
+    owner = Choice(
+        title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
 
 
 class ITeamCreation(ITeam):
@@ -1344,10 +1359,10 @@ class ITeamCreation(ITeam):
         title=_("Contact Email Address"), required=False, readonly=False,
         description=_(
             "This is the email address we'll send all notifications to this "
-            "team. If no contact address is chosen, notifications directed to "
-            "this team will be sent to all team members. After finishing the "
-            "team creation, a new message will be sent to this address with "
-            "instructions on how to finish its registration."),
+            "team. If no contact address is chosen, notifications directed "
+            "to this team will be sent to all team members. After finishing "
+            "the team creation, a new message will be sent to this address "
+            "with instructions on how to finish its registration."),
         constraint=validate_new_team_email)
 
 

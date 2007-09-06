@@ -1,4 +1,4 @@
-<div class="portlet" tal:condition="context/bounties">
+<div class="portlet" id="portlet-bounties" tal:condition="context/bounties">
 
   <h2><span tal:replace="context/displayname">Ubuntu</span> bounties</h2>
 

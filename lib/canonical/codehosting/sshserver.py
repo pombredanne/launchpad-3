@@ -24,6 +24,7 @@ from twisted.vfs.adapters import sftp
 
 from canonical.codehosting.bazaarfs import SFTPServerRoot
 from canonical.codehosting.smartserver import launch_smart_server
+from canonical.config import config
 
 from zope.interface import implements
 
@@ -106,7 +107,7 @@ class LaunchpadAvatar(avatar.ConchUser):
     def _cbRememberProductID(self, productID, productName):
         if productID is None:
             return None
-        # XXX: Andrew Bennetts 2007-01-26: 
+        # XXX: Andrew Bennetts 2007-01-26:
         # Why convert the number to a string here?
         productID = str(productID)
         self._productIDs[productName] = productID
@@ -188,11 +189,19 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
 
     def __init__(self, transport=None):
         self.transport = transport
+        self._configured_banner_sent = False
 
     def sendBanner(self, text, language='en'):
         bytes = '\r\n'.join(text.encode('UTF8').splitlines() + [''])
         self.transport.sendPacket(userauth.MSG_USERAUTH_BANNER,
                                   NS(bytes) + NS(language))
+
+    def _sendConfiguredBanner(self, passed_through):
+        if (not self._configured_banner_sent
+            and config.codehosting.banner is not None):
+            self._configured_banner_sent = True
+            self.sendBanner(config.codehosting.banner)
+        return passed_through
 
     # XXX Jonathan Lange 2007-03-19: Copied from
     # twisted/conch/ssh/userauth.py, with modifications noted.
@@ -209,6 +218,7 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         if not d:
             self._ebBadAuth(failure.Failure(ConchError('auth returned none')))
             return
+        d.addCallback(self._sendConfiguredBanner)
         d.addCallbacks(self._cbFinishedAuth)
         d.addErrback(self._ebMaybeBadAuth)
         # The following line does not appear in the original Twisted source.
