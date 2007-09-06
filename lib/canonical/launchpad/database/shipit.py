@@ -942,13 +942,8 @@ class ShippingRequestSet:
                         COUNT(DISTINCT request) AS approved_requests,
                         SUM(quantityapproved) AS approved_cds_per_user
                     FROM RequestedCDs
-<<<<<<< TREE
-                        JOIN ShippingRequestWithKarma ON 
+                        JOIN ShippingRequestWithKarma ON
                             ShippingRequestWithKarma.id = RequestedCDs.request
-=======
-                        JOIN ShippingRequest ON
-                            ShippingRequest.id = RequestedCDs.request
->>>>>>> MERGE-SOURCE
                     WHERE distrorelease = %(current_series)s
                         AND status IN (%(approved)s, %(shipped)s)
                         AND recipient != %(shipit_admins)s
@@ -1161,8 +1156,8 @@ class ShippingRequestSet:
         header1 = ['', '', '', 'Current Series Only', '', '', '',
                    '', '', '', 'Previous Series Only', '', '', '']
         header2 = ['',
-                   'requests', '', '', 'shipped', '', '',
-                   'requests', '', '', 'shipped', '', '']
+                   'requests', '', '', '', 'shipments', '', '', '',
+                   'requests', '', '', '', 'shipments', '', '', '']
         header3 = [
             '# of requests',
             '# of people', '%', 'people with karma', 'avg CDs per request',

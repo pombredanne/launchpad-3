@@ -1009,7 +1009,7 @@ and to the previous one.
   >>> print header1
   "","","","Current Series Only","","","","","","","Previous Series Only","","",""
   >>> print header2
-  "","requests","","","shipped","","","requests","","","shipped","",""
+  "","requests","","","","shipments","","","","requests","","","","shipments","","",""
   >>> pprint_csv(content)
   ------------------------------------------------------------ Line 1
          # of requests: 0
