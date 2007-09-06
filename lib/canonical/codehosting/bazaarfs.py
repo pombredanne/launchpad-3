@@ -48,6 +48,10 @@ class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
         raise PermissionError(
             "Branches must be inside a person or team directory.")
 
+    def getAbsolutePath(self):
+        """Return the absolute path to this directory."""
+        return '/'
+
     def setListenerFactory(self, factory):
         self.listenerFactory = factory
 
@@ -145,6 +149,10 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         # directory.
         return SFTPServerProductDirPlaceholder(childName, self)
 
+    def getAbsolutePath(self):
+        """Return the absolute path to this directory."""
+        return os.path.join(self.parent.getAbsolutePath(), '~' + self.name)
+
     def remove(self):
         self.avatar.logger.debug(
             "Trying to remove user directory %r", self.name)
@@ -197,6 +205,10 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
             return branchDirectory
         return deferred.addCallback(cb)
 
+    def getAbsolutePath(self):
+        """Return the absolute path to this directory."""
+        return os.path.join(self.parent.getAbsolutePath(), self.name)
+
 
 class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory):
     """A placeholder for non-existant /~username/product directories.
@@ -226,6 +238,9 @@ class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory):
         def cb(productdir):
             return productdir.createDirectory(childName)
         return deferred.addCallback(cb)
+
+    def getAbsolutePath(self):
+        return os.path.join(self.parent.getAbsolutePath(), self.name)
 
 
 class WriteLoggingDirectory(osfs.OSDirectory):
@@ -273,6 +288,9 @@ class WriteLoggingDirectory(osfs.OSDirectory):
         self.touch()
         return osfs.OSDirectory.createFile(self, name, exclusive)
 
+    def getAbsolutePath(self):
+        return os.path.join(self.parent.getAbsolutePath(), self.name)
+
     def remove(self):
         self.touch()
         osfs.OSDirectory.remove(self)
@@ -282,7 +300,6 @@ class WriteLoggingDirectory(osfs.OSDirectory):
         osfs.OSDirectory.rename(self, newName)
 
     def touch(self):
-        self.avatar.logger.debug('Marking directory %r as dirty', self.name)
         self._flagAsDirty()
 
 
@@ -293,6 +310,10 @@ class WriteLoggingFile(osfs.OSFile):
     def __init__(self, listener, path, name=None, parent=None):
         self._flagAsDirty = listener
         osfs.OSFile.__init__(self, path, name, parent)
+
+    def getAbsolutePath(self):
+        return os.path.join(
+            self.parent.getAbsolutePath(), self.name)
 
     def open(self, flags):
         if os.O_TRUNC & flags:
@@ -337,7 +358,6 @@ class SFTPServerBranch(WriteLoggingDirectory):
 
     def __init__(self, avatar, branchID, branchName, parent):
         self.branchID = branchID
-        self.avatar = avatar
         # XXX AndrewBennetts 2006-02-06: this snippet is duplicated in a few
         # places, such as librarian.storage._relFileLocation and
         # supermirror_rewritemap.split_branch_id.
@@ -361,6 +381,9 @@ class SFTPServerBranch(WriteLoggingDirectory):
         raise PermissionError(
             "Can only create Bazaar control directories directly beneath a "
             "branch directory.")
+
+    def getAbsolutePath(self):
+        return os.path.join(self.parent.getAbsolutePath(), self.name)
 
     def remove(self):
         raise PermissionError(

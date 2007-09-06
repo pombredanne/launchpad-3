@@ -52,6 +52,11 @@ class TestTopLevelDir(AvatarTestCase):
             'alice', self.tmpdir, self.aliceUserDict, None)
         self.bob = LaunchpadAvatar('bob', self.tmpdir, self.bobUserDict, None)
 
+    def test_abspath(self):
+        """getAbsolutePath on the top-level directory returns '/'."""
+        root = SFTPServerRoot(self.alice)
+        self.assertEqual('/', root.getAbsolutePath())
+
     def testListDirNoTeams(self):
         # list only user dir + team dirs
         root = SFTPServerRoot(self.alice)
@@ -85,11 +90,20 @@ class TestTopLevelDir(AvatarTestCase):
 
 
 class UserDirsTestCase(AvatarTestCase):
+    def setUp(self):
+        AvatarTestCase.setUp(self)
+        self.alice = LaunchpadAvatar(
+            'alice', self.tmpdir, self.aliceUserDict, FakeLaunchpad(self))
+
+    def test_getAbsolutePath(self):
+        """The absolute path of a user directory is "/~<username>"."""
+        root = self.alice.makeFileSystem().root
+        user_directory = root.child('~alice')
+        self.assertEqual('/~alice', user_directory.getAbsolutePath())
+
     def testCreateValidProduct(self):
         # Test creating a product dir.
-        avatar = LaunchpadAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                 FakeLaunchpad(self))
-        root = avatar.makeFileSystem().root
+        root = self.alice.makeFileSystem().root
         userDir = root.child('~alice')
         self.assertEqual(
             [name for name, child in userDir.children()],
@@ -104,9 +118,7 @@ class UserDirsTestCase(AvatarTestCase):
         return deferred
 
     def testCreateInvalidProduct(self):
-        avatar = LaunchpadAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                 FakeLaunchpad(self))
-        root = avatar.makeFileSystem().root
+        root = self.alice.makeFileSystem().root
         userDir = root.child('~alice')
 
         d = defer.maybeDeferred(userDir.createDirectory, 'no-such-product')
@@ -149,10 +161,13 @@ class UserDirsTestCase(AvatarTestCase):
 
 
 class ProductDirsTestCase(AvatarTestCase):
+    def setUp(self):
+        AvatarTestCase.setUp(self)
+        self.avatar = LaunchpadAvatar(
+            'alice', self.tmpdir, self.aliceUserDict, FakeLaunchpad(self))
+
     def testCreateBranch(self):
-        avatar = LaunchpadAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                 FakeLaunchpad(self))
-        root = avatar.makeFileSystem().root
+        root = self.avatar.makeFileSystem().root
         userDir = root.child('~alice')
 
         # First create ~alice/mozilla-firefox.  This will trigger a call to
@@ -184,6 +199,18 @@ class ProductDirsTestCase(AvatarTestCase):
         deferred.addCallback(_cb1).addCallback(_cb2)
         return deferred
 
+    def test_getAbsolutePath(self):
+        """getAbsolutePath on a product folder returns '/~<user>/product'."""
+        root = self.avatar.makeFileSystem().root
+        user_dir = root.child('~alice')
+
+        d = defer.maybeDeferred(user_dir.createDirectory, 'mozilla-firefox')
+        d.addCallback(
+            lambda product_dir:
+            self.assertEqual(
+                '/~alice/mozilla-firefox', product_dir.getAbsolutePath()))
+        return d
+
     def testRmdirBranchDenied(self):
         # Deleting a branch directory should fail with a permission error.
 
@@ -201,34 +228,41 @@ class ProductDirsTestCase(AvatarTestCase):
 
 class ProductPlaceholderTestCase(AvatarTestCase):
 
-    def _setUpFilesystem(self):
-        avatar = LaunchpadAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                 FakeLaunchpad(self))
-        return avatar.makeFileSystem()
+    def setUp(self):
+        AvatarTestCase.setUp(self)
+        self.avatar = LaunchpadAvatar(
+            'alice', self.tmpdir, self.aliceUserDict, FakeLaunchpad(self))
+        self.filesystem = self.avatar.makeFileSystem()
+
+    def test_getAbsolutePath(self):
+        """The absolute path of a product placeholder is the same as on
+        the product itself.
+        """
+        firefox = self.filesystem.fetch('/~alice/mozilla-firefox')
+        self.failUnless(isinstance(firefox, SFTPServerProductDirPlaceholder),
+                        "%r should be an instance of %r"
+                        % (firefox, SFTPServerProductDirPlaceholder))
+        self.assertEqual('/~alice/mozilla-firefox', firefox.getAbsolutePath())
 
     def testBranchInPlaceholderNotFound(self):
         # Test that we get a NotFoundError when trying to access
         # non-existant branches for products with no branches.
-        filesystem = self._setUpFilesystem()
-
         # first try a registered product name:
         self.failUnless('mozilla-firefox' not in
-                        filesystem.fetch('/~alice').children())
-        self.assertRaises(NotFoundError, filesystem.fetch,
+                        self.filesystem.fetch('/~alice').children())
+        self.assertRaises(NotFoundError, self.filesystem.fetch,
                           '/~alice/mozilla-firefox/new-branch/.bzr')
 
         # now try a non-existant product name:
         self.failUnless('no-such-product' not in
-                        filesystem.fetch('/~alice').children())
-        self.assertRaises(NotFoundError, filesystem.fetch,
+                        self.filesystem.fetch('/~alice').children())
+        self.assertRaises(NotFoundError, self.filesystem.fetch,
                           '/~alice/no-such-product/new-branch/.bzr')
 
     def testCreateDirInProductPlaceholder(self):
         # Test that we can create a branch directory under a product
         # placeholder provided the product exists.
-        filesystem = self._setUpFilesystem()
-
-        firefox = filesystem.fetch('/~alice/mozilla-firefox')
+        firefox = self.filesystem.fetch('/~alice/mozilla-firefox')
         self.failUnless(isinstance(firefox, SFTPServerProductDirPlaceholder))
         self.failUnless(not firefox.exists('new-branch'))
 
@@ -252,7 +286,7 @@ class ProductPlaceholderTestCase(AvatarTestCase):
         deferred.addCallback(_cb)
 
         # check that the product dir has been filled in
-        firefox = filesystem.fetch('/~alice/mozilla-firefox')
+        firefox = self.filesystem.fetch('/~alice/mozilla-firefox')
         self.failUnless(isinstance(firefox, SFTPServerProductDir))
 
         # and that the branch is available in that directory
@@ -261,9 +295,7 @@ class ProductPlaceholderTestCase(AvatarTestCase):
     def testCreateDirInNonExistantProductPlaceholder(self):
         # Test that we get an error if we try to create a branch
         # inside a product placeholder for a non-existant product.
-        filesystem = self._setUpFilesystem()
-
-        noproduct = filesystem.fetch('/~alice/no-such-product')
+        noproduct = self.filesystem.fetch('/~alice/no-such-product')
         self.failUnless(isinstance(noproduct, SFTPServerProductDirPlaceholder))
         return self.assertFailure(defer.maybeDeferred(
             noproduct.createDirectory, 'new-branch'), PermissionError)
@@ -286,6 +318,22 @@ class TestSFTPServerBranch(AvatarTestCase):
             self.server_branch = branchDirectory
 
         return d.addCallback(_storeServerBranch)
+
+    def test_getAbsolutePath(self):
+        """The absolute path of a branch is '/~user/product/branch'."""
+        self.assertEqual(
+            '/~alice/mozilla-firefox/new-branch',
+            self.server_branch.getAbsolutePath())
+
+    def test_getAbsolutePathOnChildren(self):
+        child_dir = self.server_branch.createDirectory('.bzr')
+        self.assertEqual(
+            '/~alice/mozilla-firefox/new-branch/.bzr',
+            child_dir.getAbsolutePath())
+        child_file = child_dir.createFile('README')
+        self.assertEqual(
+            '/~alice/mozilla-firefox/new-branch/.bzr/README',
+            child_file.getAbsolutePath())
 
     def testCreateBazaarDirectoryWorks(self):
         """Creating a '.bzr' directory underneath a branch directory works."""
