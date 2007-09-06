@@ -71,10 +71,11 @@ class BranchToMirror:
         if self.source.startswith('/'):
             return
         uri = URI(self.source)
+        launchpad_domain = config.launchpad.vhosts.mainsite.hostname
+        if uri.underDomain(launchpad_domain):
+            raise BadUrlLaunchpad(self.source)
         if uri.scheme in ['sftp', 'bzr+ssh']:
             raise BadUrlSsh(self.source)
-        if uri.host == 'launchpad.net' or uri.host.endswith('.launchpad.net'):
-            raise BadUrlLaunchpad(self.source)
 
     def _openSourceBranch(self):
         """Open the branch to pull from, useful to override in tests."""
