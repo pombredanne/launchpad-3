@@ -111,14 +111,13 @@ class SFTPServerUserDir(adhoc.AdhocDirectory, LoggingMixin):
 
     def rename(self, newName):
         self.avatar.logger.debug(
-            "Trying to rename user directory %r to %r", self.name, newName)
+            "Trying to rename %r to %r", self, newName)
         raise PermissionError(
             "renaming user directory %r is not allowed." % self.name)
 
     def createFile(self, childName):
         self.avatar.logger.debug(
-            "Trying to create file %r in user directory %r", childName,
-            self.name)
+            "Trying to create file %r in %r", childName, self)
         raise PermissionError(
             "creating files in user directory %r is not allowed." % self.name)
 
@@ -130,8 +129,7 @@ class SFTPServerUserDir(adhoc.AdhocDirectory, LoggingMixin):
         assert childName != '+junk', "+junk already exists (if it's allowed)."
         # Check that childName is a product name registered in Launchpad.
         self.avatar.logger.debug(
-            "Creating virtual product directory for %r in user directory %r",
-            childName, self.name)
+            "Creating virtual product directory for %r in %r", childName, self)
         deferred = self.avatar.fetchProductID(childName)
         def cb(productID):
             if productID is None:
@@ -165,8 +163,7 @@ class SFTPServerUserDir(adhoc.AdhocDirectory, LoggingMixin):
         return os.path.join(self.parent.getAbsolutePath(), '~' + self.name)
 
     def remove(self):
-        self.avatar.logger.debug(
-            "Trying to remove user directory %r", self.name)
+        self.avatar.logger.debug("Trying to remove %r", self)
         raise PermissionError(
             "removing user directory %r is not allowed." % self.name)
 
@@ -200,12 +197,12 @@ class SFTPServerProductDir(adhoc.AdhocDirectory, LoggingMixin):
         # (e.g. invalid name),that we report a useful error to the client.
         if self.exists(childName):
             self.avatar.logger.debug(
-                'Tried to create branch directory %r under product %r. '
-                'Already exists', childName, self.name)
+                'Tried to create branch directory %r under %r. Already exists',
+                childName, self)
             return self.child(childName)
         self.avatar.logger.debug(
-            'Create branch directory %r under product %r. Already exists',
-            childName, self.name)
+            'Create branch directory %r under %r. Already exists',
+            childName, self)
         deferred = self.avatar.createBranch(
             self.avatar.avatarId, self.userName, self.productName, childName)
         def cb(branchID):
@@ -318,7 +315,6 @@ class WriteLoggingFile(osfs.OSFile, LoggingMixin):
         osfs.OSFile.open(self, flags)
 
     def touch(self):
-        self.avatar.logger.debug('Marking file %r as dirty', self.name)
         self._flagAsDirty()
 
     def writeChunk(self, offset, data):
