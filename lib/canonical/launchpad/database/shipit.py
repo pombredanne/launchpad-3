@@ -199,9 +199,8 @@ class ShippingRequest(SQLBase):
 
         Also set this request's status to indicate whether it's a standard or
         custom one.
-
-        :quantities: A dictionary like the described in
-                     IShippingRequestSet.setQuantities.
+            :param quantities: A dictionary like the described in
+                               IShippingRequestSet.setQuantities.
         """
         assert set_approved or set_requested
         standardrequestset = getUtility(IStandardShipItRequestSet)
