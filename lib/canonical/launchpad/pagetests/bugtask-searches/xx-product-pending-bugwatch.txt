@@ -4,14 +4,14 @@ Users can search for product bugs that need a bugwatch to track an
 upstream bug. This is a workflow feature for users who are adopting
 upstream products. The general flow assumes a bug is marked as 'Affects
 upstream', during the first round of triage. Another user can choose
-'Show bugs that need to be forwarded to an upstream bugtracker' to
+'Show bugs that need to be forwarded to an upstream bug tracker' to
 locate the bugs that need a bugwatch setup.
 
 
 == Common searches on a product's bug page (part 1) ==
 
 No Privileges Person vists the alsa-utils front page on Launchpad.
-He wants to link Launchpad bugs to to the upstream bugtracker. He can
+He wants to link Launchpad bugs to to the upstream bug tracker. He can
 see that there are '0 bugs need forwarding upstream'.
 
     >>> user_browser.open('http://bugs.launchpad.dev/alsa-utils/')
