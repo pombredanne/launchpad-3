@@ -3,10 +3,12 @@
 Cron job to run daily to check all of the BugWatches
 """
 
+import socket
 import _pythonpath
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.checkwatches import update_bug_tracker
 from canonical.launchpad.interfaces import (
