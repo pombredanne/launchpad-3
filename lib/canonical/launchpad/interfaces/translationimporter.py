@@ -36,7 +36,7 @@ class TranslationFormatBaseError(TranslationImportExportBaseException):
 
         :param filename: The file name that is being parsed.
         :param line_number: The line number where the error was found.
-        :param message: The concrete syntax error found. If we get a None
+        :param message: The concrete syntax error found. If we get a not None
             value here, filename and line_number are ignored.
         """
         assert filename is not None, 'filename cannot be None'
@@ -116,6 +116,8 @@ class ITranslationImporter(Interface):
 class ITranslationFormatImporter(Interface):
     """Translation file format importer."""
 
+    # XXX CarlosPerelloMarin 20070905: This should be moved to use the new
+    # Enum infrastructure. See bug #135853 for more information.
     format = Choice(
         title=u'The file format of the import.',
         vocabulary='TranslationFileFormat',

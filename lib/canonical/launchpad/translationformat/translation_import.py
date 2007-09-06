@@ -105,7 +105,7 @@ class TranslationImporter:
         importer = self.getTranslationFormatImporter(
             translation_import_queue_entry.format)
         exporter = getUtility(ITranslationExporter)
-        format_exporter = exporter.getTranslationFormatExporterByFileFormat(
+        format_exporter = exporter.getExporterProducingTargetFileFormat(
             importer.format)
 
         assert importer is not None, (

@@ -76,7 +76,7 @@ def get_header_dictionary(raw_header, handled_keys_order):
     :return: dictionary with all key/values in raw_header.
     """
     header_dictionary = {}
-    for line in raw_header.strip().splitlines():
+    for line in raw_header.splitlines():
         line = line.strip()
         if not line:
             continue

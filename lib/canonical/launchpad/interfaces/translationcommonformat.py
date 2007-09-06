@@ -54,7 +54,7 @@ class ITranslationHeader(Interface):
         required=True)
 
     launchpad_export_date = Datetime(
-        title=u'when this file was last exported from Launchpad or None.',
+        title=u'When this file was last exported from Launchpad or None.',
         required=True)
 
     comment = Text(

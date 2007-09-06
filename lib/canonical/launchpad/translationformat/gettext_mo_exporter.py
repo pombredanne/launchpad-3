@@ -14,7 +14,6 @@ import subprocess
 from cStringIO import StringIO
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces import (
     ITranslationExporter, ITranslationFormatExporter,
@@ -51,12 +50,10 @@ class GettextMOExporter:
     implements(ITranslationFormatExporter)
 
     def __init__(self, context=None):
-        # 'context' is ignored here because we don't need it, although we use
-        # zope.component.subscribers from TranslationExporter class to get all
-        # exporters available, which require that each exporter have a
-        # 'context' argument.
+        # 'context' is ignored because it's only required by the way the
+        # exporters are instantiated but it isn't used by this class.
         self.format = TranslationFileFormat.MO
-        self.supported_formats = [TranslationFileFormat.PO]
+        self.supported_source_formats = [TranslationFileFormat.PO]
 
     def exportTranslationMessage(self, translation_message):
         """See `ITranslationFormatExporter`."""
@@ -71,7 +68,7 @@ class GettextMOExporter:
 
         translation_exporter = getUtility(ITranslationExporter)
         gettext_po_exporter = (
-            translation_exporter.getTranslationFormatExporterByFileFormat(
+            translation_exporter.getExporterProducingTargetFileFormat(
                 TranslationFileFormat.PO))
         exported_files = {}
         for translation_file in translation_file_list:
@@ -79,8 +76,7 @@ class GettextMOExporter:
             # generate the MO one.
             template_exported = gettext_po_exporter.exportTranslationFiles(
                 [translation_file], ignore_obsolete, force_utf8)
-            exported_file_content = removeSecurityProxy(
-                template_exported.content_file).read()
+            exported_file_content = template_exported.read()
             if translation_file.is_template:
                 # This exporter is not able to handle template files. In that
                 # case, we leave it as .po file. For this file format exported
@@ -102,28 +98,29 @@ class GettextMOExporter:
                 mo_compiler = POCompiler()
                 mo_content = mo_compiler.compile(exported_file_content)
                 exported_file_content = mo_content
+                # We use x-gmo for consistency with other .po editors like
+                # GTranslator.
                 content_type = 'application/x-gmo'
 
             exported_files[file_path] = exported_file_content
 
-        exported_file = ExportedTranslationFile()
         if len(exported_files) == 1:
             # It's a single file export. Return it directly.
+            exported_file = ExportedTranslationFile(
+                StringIO(exported_file_content))
             exported_file.path = file_path
-            exported_file.content_file = StringIO(exported_file_content)
             exported_file.content_type = content_type
             exported_file.file_extension = file_extension
         else:
             # There are multiple files being exported. We need to generate an
             # archive that include all them.
-            exported_file.content_file = LaunchpadWriteTarFile.files_to_stream(
-                exported_files)
+            exported_file = ExportedTranslationFile(
+                LaunchpadWriteTarFile.files_to_stream(exported_files))
             # For tar.gz files, the standard content type is
             # application/x-gtar. You can see more info on
             # http://en.wikipedia.org/wiki/List_of_archive_formats
             exported_file.content_type = 'application/x-gtar'
             exported_file.file_extension = 'tar.gz'
-            # We cannot give a proper file path for the tarball, that's why we
-            # don't set it. We leave that decision to the caller.
+            # By leaving path set to None, we let the caller decide.
 
         return exported_file

@@ -1,6 +1,6 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""SQLObject implementation of IPOFile interface."""
+"""`SQLObject` implementation of `IPOFile` interface."""
 
 __metaclass__ = type
 __all__ = [
@@ -21,7 +21,6 @@ from sqlobject import (
     )
 from zope.interface import implements
 from zope.component import getUtility
-from zope.proxy import removeAllProxies
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -961,7 +960,7 @@ class POFile(SQLBase, POFileMixIn):
         # Get the exporter for this translation.
         translation_exporter = getUtility(ITranslationExporter)
         translation_format_exporter = (
-            translation_exporter.getTranslationFormatExporterByFileFormat(
+            translation_exporter.getExporterProducingTargetFileFormat(
                 self.potemplate.source_file_format))
 
         translation_file = ITranslationFile(self)
@@ -983,7 +982,13 @@ class POFile(SQLBase, POFileMixIn):
         # Get the export file.
         exported_file = translation_format_exporter.exportTranslationFiles(
             [translation_file], ignore_obsolete, force_utf8)
-        return removeAllProxies(exported_file.content_file).read()
+
+        try:
+            file_content = exported_file.read()
+        finally:
+            exported_file.close()
+
+        return file_content
 
     def export(self, ignore_obsolete=False):
         """See `IPOFile`."""
@@ -1501,10 +1506,10 @@ class POFileToTranslationFileAdapter:
             elif (row.msgidpluralform == TranslationConstants.PLURAL_FORM and
                 msgset.msgid_plural is None):
                 msgset.msgid_plural = row.msgid
-            elif row.msgidpluralform is None:
-                # This row has no
-                pass
             else:
+                # msgset.msgid or msgset.msgid_plural could be not None,
+                # because we don't need to set it again, thus, we only check
+                # that row.msgidpluralform is correct.
                 assert row.msgidpluralform in (
                     TranslationConstants.SINGULAR_FORM,
                     TranslationConstants.PLURAL_FORM), (

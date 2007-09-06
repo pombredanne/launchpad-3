@@ -46,12 +46,12 @@ def test_suite():
     # problems difficult.  Ideally the test harness would stop the tests from
     # being able to interfere with each other in the first place.
     #   -- Andrew Bennetts, 2005-03-01.
-    filenames = sorted([
+    filenames = sorted(
         filename
         for filename in os.listdir(testsdir)
             if (os.path.splitext(filename)[1] == '.txt' and
                 filename not in special)
-        ])
+        )
 
     for filename in filenames:
         path = os.path.join('../doc/', filename)
