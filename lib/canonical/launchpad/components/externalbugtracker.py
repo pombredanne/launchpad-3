@@ -14,7 +14,7 @@ import ClientCookie
 import xml.parsers.expat
 from xml.dom import minidom
 
-from BeautifulSoup import BeautifulSoup, Comment
+from BeautifulSoup import BeautifulSoup, Comment, SoupStrainer
 from zope.interface import implements
 
 from canonical.config import config
@@ -926,9 +926,14 @@ class Mantis(ExternalBugTracker):
             return bug['status'], bug['resolution']
 
     def _getStatusFromScrape(self, bug_id):
+        # Only parse tables to save time and memory. If we didn't have
+        # to check for application errors in the page (using
+        # _checkForApplicationError) then we could be much more
+        # specific than this.
         bug_page = BeautifulSoup(
             self._getPage('view.php?id=%s' % bug_id),
-            convertEntities=BeautifulSoup.HTML_ENTITIES)
+            convertEntities=BeautifulSoup.HTML_ENTITIES,
+            parseOnlyThese=SoupStrainer('table'))
 
         app_error = self._checkForApplicationError(bug_page)
         if app_error:
