@@ -58,8 +58,9 @@ class IBuild(Interface):
     is_trusted = Attribute(
         "whether or not the record corresponds to a source targeted to "
         "the distribution main_archive (archive == distro.main_archive).")
-    packageupload = Attribute(
-        "The PackageUpload record for this build.")
+    upload_status = Attribute(
+        "The PackageUpload status for this build, or None if there is "
+        "no build.")
 
     def retry():
         """Restore the build record to its initial state.

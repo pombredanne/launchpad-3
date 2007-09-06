@@ -165,13 +165,13 @@ class Build(SQLBase):
         return self.datebuilt - self.buildduration
 
     @property
-    def packageupload(self):
+    def upload_status(self):
         """See `IBuild`."""
         packageuploadbuild = PackageUploadBuild.selectOneBy(build=self.id)
         if packageuploadbuild is None:
             return None
         else:
-            return packageuploadbuild.packageupload
+            return packageuploadbuild.packageupload.status
 
     def retry(self):
         """See `IBuild`."""
