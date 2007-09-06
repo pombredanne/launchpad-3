@@ -337,6 +337,7 @@ class SFTPServerBranch(WriteLoggingDirectory):
 
     def __init__(self, avatar, branchID, branchName, parent):
         self.branchID = branchID
+        self.avatar = avatar
         # XXX AndrewBennetts 2006-02-06: this snippet is duplicated in a few
         # places, such as librarian.storage._relFileLocation and
         # supermirror_rewritemap.split_branch_id.

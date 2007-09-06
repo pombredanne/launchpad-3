@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 __all__ = ['branch_id_to_path', 'LaunchpadServer', 'LaunchpadTransport',
-           'UntranslatablePath']
+           'set_up_logging', 'UntranslatablePath']
 
 import logging
 
