@@ -83,7 +83,7 @@ def set_up_logging():
     else:
         handler = logging.FileHandler(config.codehosting.debug_logfile)
     handler.setFormatter(
-        logging.Formatter('%(asctime)s %(levelname)-8s %(message)s'))
+        logging.Formatter('%(asctime)s %(levelname)-8s %(name)s\t%(message)s'))
     handler.setLevel(logging.DEBUG)
     log.addHandler(handler)
     log.setLevel(logging.DEBUG)
