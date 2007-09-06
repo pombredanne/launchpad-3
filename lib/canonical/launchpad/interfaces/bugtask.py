@@ -603,6 +603,7 @@ class BugTaskSearchParams:
 
 
 class IBugTaskSet(Interface):
+    """Locate, retrieve, and create BugTasks."""
 
     title = Attribute('Title')
 

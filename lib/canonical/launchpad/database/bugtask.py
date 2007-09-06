@@ -49,7 +49,6 @@ from canonical.launchpad.interfaces import (
     IDistroSeriesBugTask,
     ILaunchpadCelebrities,
     INullBugTask,
-    IProduct,
     IProductSeries,
     IProductSeriesBugTask,
     IProjectMilestone,
