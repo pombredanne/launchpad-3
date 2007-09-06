@@ -1005,7 +1005,8 @@ and to the previous one.
 
   # Skip the first two lines since they have headers which are supposed to
   # span across multiple columns, screwing our pprint_csv() function.
-  >>> header1, header2, content = csv_file.read().split('\n', 2)
+  >>> header1, blankline1, header2, blankline2, content = (
+  ...     csv_file.read().split('\n', 4))
   >>> print header1
   "","","","Current Series Only","","","","","","","Previous Series Only","","",""
   >>> print header2

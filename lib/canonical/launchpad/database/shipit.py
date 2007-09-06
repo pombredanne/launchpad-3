@@ -1164,8 +1164,12 @@ class ShippingRequestSet:
             '# of people', '%', 'people with karma', 'avg CDs per shipment',
             '# of people', '%', 'people with karma', 'avg CDs per request',
             '# of people', '%', 'people with karma', 'avg CDs per shipment']
+        # Write the headers with empty lines in between to make them stand
+        # out.
         csv_writer.writerow(header1)
+        csv_writer.writerow(['']*len(header3))
         csv_writer.writerow(header2)
+        csv_writer.writerow(['']*len(header3))
         csv_writer.writerow(header3)
 
         # XXX: Guilherme Salgado 2007-04-25:
