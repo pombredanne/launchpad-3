@@ -41,7 +41,7 @@ class TestOptimization(unittest.TestCase):
             con = PgTestSetup().connect()
             cur = con.cursor()
             # This tests that the table still exists, as well as modifying the
-            # db 
+            # db
             cur.execute('INSERT INTO foo VALUES (1)')
             con.commit()
         finally:

@@ -117,7 +117,7 @@ class Poll(SQLBase):
     def _assertEverythingOkAndGetVoter(self, person, when=None):
         """Use assertions to Make sure all pre-conditions for a person to vote
         are met.
-        
+
         Return the person if this is not a secret poll or None if it's a
         secret one.
         """
@@ -192,7 +192,7 @@ class Poll(SQLBase):
         assert self.type == PollAlgorithm.SIMPLE
         query = ("SELECT option FROM Vote WHERE poll = %d GROUP BY option "
                  "HAVING COUNT(*) = (SELECT COUNT(*) FROM Vote WHERE poll = %d "
-                 "GROUP BY option ORDER BY COUNT(*) DESC LIMIT 1)" 
+                 "GROUP BY option ORDER BY COUNT(*) DESC LIMIT 1)"
                  % (self.id, self.id))
         results = self._connection.queryAll(query)
         if not results:
@@ -208,12 +208,12 @@ class Poll(SQLBase):
             pairwise_row = []
             for option2 in options:
                 points_query = """
-                    SELECT COUNT(*) FROM Vote as v1, Vote as v2 WHERE 
+                    SELECT COUNT(*) FROM Vote as v1, Vote as v2 WHERE
                         v1.token = v2.token AND
                         v1.option = %s AND v2.option = %s AND
                         (
                          (
-                          v1.preference IS NOT NULL AND 
+                          v1.preference IS NOT NULL AND
                           v2.preference IS NOT NULL AND
                           v1.preference < v2.preference
                          )
