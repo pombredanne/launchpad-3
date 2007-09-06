@@ -46,43 +46,40 @@ class FakeLaunchpad:
 
 
 class TestTopLevelDir(AvatarTestCase):
+    def setUp(self):
+        AvatarTestCase.setUp(self)
+        self.alice = LaunchpadAvatar(
+            'alice', self.tmpdir, self.aliceUserDict, None)
+        self.bob = LaunchpadAvatar('bob', self.tmpdir, self.bobUserDict, None)
+
     def testListDirNoTeams(self):
         # list only user dir + team dirs
-        avatar = LaunchpadAvatar(
-            'alice', self.tmpdir, self.aliceUserDict, None)
-        root = SFTPServerRoot(avatar)
+        root = SFTPServerRoot(self.alice)
         self.assertEqual(
             [name for name, child in root.children()],
             ['.', '..', '~alice'])
 
     def testListDirTeams(self):
         # list only user dir + team dirs
-        avatar = LaunchpadAvatar(
-            'bob', self.tmpdir, self.bobUserDict, None)
-        root = SFTPServerRoot(avatar)
+        root = SFTPServerRoot(self.bob)
         self.assertEqual(
             [name for name, child in root.children()],
             ['.', '..', '~bob', '~test-team'])
 
     def testAllWriteOpsForbidden(self):
-        avatar = LaunchpadAvatar(
-            'alice', self.tmpdir, self.aliceUserDict, None)
-        root = SFTPServerRoot(avatar)
+        root = SFTPServerRoot(self.alice)
         self.assertRaises(PermissionError, root.createFile, 'xyz')
         self.assertRaises(PermissionError, root.child('~alice').remove)
         return self.assertFailure(
             defer.maybeDeferred(root.createDirectory, 'xyz'), PermissionError)
 
     def testUserDirPlusJunk(self):
-        avatar = LaunchpadAvatar(
-            'alice', self.tmpdir, self.aliceUserDict, None)
-        root = avatar.makeFileSystem().root
+        root = self.alice.makeFileSystem().root
         userDir = root.child('~alice')
         self.assertIn('+junk', [name for name, child in userDir.children()])
 
     def testTeamDirPlusJunk(self):
-        avatar = LaunchpadAvatar('bob', self.tmpdir, self.bobUserDict, None)
-        root = avatar.makeFileSystem().root
+        root = self.bob.makeFileSystem().root
         userDir = root.child('~test-team')
         self.assertNotIn('+junk', [name for name, child in userDir.children()])
 
