@@ -224,7 +224,9 @@ def copy_active_translations_as_update(child, transaction, logger):
             (ptms1.alternative_msgid = ptms2.alternative_msgid OR
              (ptms1.alternative_msgid IS NULL AND
               ptms2.alternative_msgid IS NULL AND
-              ptms1.primemsgid = ptms2.primemsgid))
+              ptms1.primemsgid = ptms2.primemsgid AND
+              (ptms1.context = ptms2.context OR
+               (ptms1.context IS NULL AND ptms2.context IS NULL))))
         """)
     cur.execute(
         "CREATE UNIQUE INDEX temp_equiv_potmsgset_pkey "
