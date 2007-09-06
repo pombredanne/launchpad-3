@@ -43,6 +43,9 @@ class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
                           SFTPServerUserDir(avatar, team['id'], team['name'],
                                             parent=self, junkAllowed=False))
 
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self.getAbsolutePath())
+
     def createDirectory(self, childName):
         self.avatar.logger.debug("Trying to create directory %r", childName)
         raise PermissionError(
@@ -97,6 +100,9 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         self.userID = lpid
         self.userName = lpname
         self.junkAllowed = junkAllowed
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self.getAbsolutePath())
 
     def rename(self, newName):
         self.avatar.logger.debug(
@@ -180,6 +186,9 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
                           SFTPServerBranch(avatar, branchID, branchName,
                                            parent))
 
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self.getAbsolutePath())
+
     def createDirectory(self, childName):
         # XXX AndrewBennetts 2006-02-06: Same comment as
         # SFTPServerUserDir.createDirectory (see
@@ -227,6 +236,9 @@ class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory):
     def __init__(self, productName, parent):
         adhoc.AdhocDirectory.__init__(self, name=productName, parent=parent)
 
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self.getAbsolutePath())
+
     def createDirectory(self, childName):
         # XXX James Henstridge 2006-08-22: Same comment as
         # SFTPServerUserDir.createDirectory (see
@@ -261,6 +273,9 @@ class WriteLoggingDirectory(osfs.OSDirectory):
         """
         osfs.OSDirectory.__init__(self, path, name, parent)
         self._flagAsDirty = flagAsDirty
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self.getAbsolutePath())
 
     def childFileFactory(self):
         """Return a child file which uses the same listener.
@@ -310,6 +325,9 @@ class WriteLoggingFile(osfs.OSFile):
     def __init__(self, listener, path, name=None, parent=None):
         self._flagAsDirty = listener
         osfs.OSFile.__init__(self, path, name, parent)
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self.getAbsolutePath())
 
     def getAbsolutePath(self):
         return os.path.join(
