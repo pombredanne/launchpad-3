@@ -345,16 +345,29 @@ class IProductSeriesSet(Interface):
         Return the default value if there is no such series.
         """
 
-    def search(ready=None, text=None, forimport=None, importstatus=None,
-               start=None, length=None):
-        """return a list of series matching the arguments, which are passed
-        through to _querystr to generate the query."""
+    def search(text=None, importstatus=None):
+        """Search through the series with import data.
+
+        Note that this method will never return a series for a deactivated
+        product.
+
+        :param text: If specifed, filter the results to those with contain
+            ``text`` in the in the product or project titles and descriptions.
+        :param importstatus: If specified, limit the list to series which have
+            the given import status; if not specified or None, limit to series
+            with non-NULL import status.
+        """
 
     def importcount(status=None):
-        """Return the number of series that are in the process of being
-        imported and published as baz branches. If status is None then all
-        the statuses are included, otherwise the count reflects the number
-        of branches with that importstatus."""
+        """Count the series with import data of a given status.
+
+        Note that this method will not count series for a deactivated
+        products.
+
+        :param status: If specified, count the series which have the given
+            import status; if not specified or None, count all series with
+            non-NULL import status.
+        """
 
     def getByCVSDetails(cvsroot, cvsmodule, cvsbranch, default=None):
         """Return the ProductSeries with the given CVS details.

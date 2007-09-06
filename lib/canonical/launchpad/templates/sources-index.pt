@@ -17,9 +17,6 @@
             <span tal:replace="structure view/sourcestateselector">
                 StateSelector
             </span>
-            <input type="checkbox" name="ready" id="ready"
-                   tal:attributes="checked view/ready">
-            <label for="ready">Ready</label>
             <input type="submit" name="search" value="search" />
             <br />
         </div>

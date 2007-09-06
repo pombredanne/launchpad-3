@@ -768,23 +768,17 @@ class ProductSeriesSourceSetView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.ready = request.form.get('ready', None)
-        self.text = request.form.get('text', None)
+        text = request.form.get('text', None)
         try:
-            self.importstatus = int(request.form.get('state', None))
+            importstatus = int(request.form.get('state', None))
         except (ValueError, TypeError):
-            self.importstatus = None
+            importstatus = None
         # setup the initial values if there was no form submitted
         if request.form.get('search', None) is None:
-            self.ready = 'on'
-            self.importstatus = ImportStatus.TESTING.value
+            importstatus = ImportStatus.TESTING
 
-        self.batchnav = BatchNavigator(self.search(), request)
-
-    def search(self):
-        return self.context.search(ready=self.ready, text=self.text,
-                                   forimport=True,
-                                   importstatus=self.importstatus)
+        results = self.context.search(text=text, importstatus=importstatus)
+        self.batchnav = BatchNavigator(results, request)
 
     def sourcestateselector(self):
         html = '<select name="state">\n'
@@ -799,30 +793,6 @@ class ProductSeriesSourceSetView:
             html += '>' + str(enum.title) + '</option>\n'
         html += '</select>\n'
         return html
-        html += '  <option value="DONTSYNC"'
-        if self.importstatus == 'DONTSYNC':
-            html += ' selected'
-        html += '>Do Not Sync</option>\n'
-        html += '  <option value="TESTING"'
-        if self.importstatus == 'TESTING':
-            html += ' selected'
-        html += '>Testing</option>\n'
-        html += '  <option value="AUTOTESTED"'
-        if self.importstatus == 'AUTOTESTED':
-            html += ' selected'
-        html += '>Auto-Tested</option>\n'
-        html += '  <option value="PROCESSING"'
-        if self.importstatus == 'PROCESSING':
-            html += ' selected'
-        html += '>Processing</option>\n'
-        html += '  <option value="SYNCING"'
-        if self.importstatus == 'SYNCING':
-            html += ' selected'
-        html += '>Syncing</option>\n'
-        html += '  <option value="STOPPED"'
-        if self.importstatus == 'STOPPED':
-            html += ' selected'
-        html += '>Stopped</option>\n'
 
 
 class ProductSeriesShortLink(DefaultShortLink):

@@ -551,56 +551,48 @@ class ProductSeriesSet:
         except SQLObjectNotFound:
             return default
 
-    def search(self, ready=None, text=None, forimport=None, importstatus=None,
-               start=None, length=None):
-        query = self._querystr(
-            ready, text, forimport, importstatus)
-        return ProductSeries.select(query, distinct=True,
-                   clauseTables=['Product', 'Project'])[start:length]
+    def search(self, text=None, importstatus=None):
+        query = self._querystr(text, importstatus)
+        return ProductSeries.select(
+            query, distinct=True, clauseTables=['Product', 'Project'])
 
     def importcount(self, status=None):
-        return self.search(forimport=True, importstatus=status).count()
+        """See `IProductSeriesSet`."""
+        return self.search(status=status).count()
 
-    def _querystr(self, ready=None, text=None,
-                  forimport=None, importstatus=None):
-        """Return a querystring for use in a search or a get or a query.
+    def _querystr(self, text=None, importstatus=None):
+        """Return a querystring for use in a query.
 
-        Arguments:
-          ready - boolean indicator of whether or not to limit the search
-                  to products and projects that have been reviewed.
-          text - text to search for in the product and project titles and
-                 descriptions
-          forimport - whether or not to limit the search to series which
-                      have RCS data on file
-          importstatus - limit the list to series which have the given
-                         import status.
+        :param text: Text to search for in the product and project titles and
+            descriptions.
+        :param importstatus: If specified, limit the list to series which have
+            the given import status; if not specified or None, limit to series
+            with non-NULL import status.
         """
         queries = []
-        # deal with the cases which require project and product
+        # First filter on product: match text, if necessary, and only consider
+        # active projects.
         if text:
             queries.append('Product.fti @@ ftq(%s)' % quote(text))
         queries.append('Product.active IS TRUE')
-        if ready is not None:
-            queries.append('Product.reviewed IS TRUE')
         queries.append("ProductSeries.product = Product.id")
 
-        # The subquery restricts the query to a project that matches
+        # The subquery restricts the query to an active project that matches
         # the text supplied.
         subqueries = []
         subqueries.append('Product.project = Project.id')
         if text:
             subqueries.append('Project.fti @@ ftq(%s) ' % quote(text))
         subqueries.append('Project.active IS TRUE')
-        if ready is not None:
-            subqueries.append('Project.reviewed IS TRUE')
         queries.append('(Product.project IS NULL OR (%s))' %
                        " AND ".join(subqueries))
 
-        # now just add filters on import status
-        if forimport or importstatus:
+        # Now just add the filter on import status.
+        if importstatus is None:
             queries.append('ProductSeries.importstatus IS NOT NULL')
-        if importstatus:
-            queries.append('ProductSeries.importstatus = %d' % importstatus)
+        else:
+            queries.append('ProductSeries.importstatus = %d'
+                           % sqlvalues(importstatus))
 
         query = " AND ".join(queries)
         return query
