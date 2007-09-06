@@ -3,14 +3,11 @@
 This covers the implementation of the ExternalBugTracker class for Python
 bugwatches.
 
-
-== Basics ==
-
 The Python bug tracker is a slight modification of the Roundup
-bugtracker and as such the functionality for importing bugs from it is
-housed within the Roundup ExternalBugTracker. As such, we only test the
-ways in which it differs from standard Roundup status imports. For the
-tests common to Roundup and Python instances, see
+bugtracker and the functionality for importing bugs from it is housed
+within the Roundup ExternalBugTracker. As such, we only test the ways in
+which it differs from standard Roundup status imports. For the tests
+common to Roundup and Python instances, see
 externalbugtracker-roundup.txt
 
 
@@ -20,7 +17,8 @@ The basic Python bug statuses map to Launchpad bug statuses.
 Roundup.convertRemoteStatus() handles the conversion.
 
 Because Python bugtracker statuses are entirely numeric, we use the
-convert_python_status() helper function to make the test more readable.
+convert_python_status() helper function, which accepts parameters for
+status and resolution, to make the test more readable.
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     Roundup)
