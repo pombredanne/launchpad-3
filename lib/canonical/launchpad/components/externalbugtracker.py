@@ -1063,3 +1063,7 @@ class Roundup(ExternalBugTracker):
             except KeyError:
                 raise UnparseableBugData(
                     "Remote bug %s does not define a status.")
+
+
+class SourceForge(ExternalBugTracker):
+    """An ExternalBugTracker for Sourceforge bugs."""
