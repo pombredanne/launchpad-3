@@ -19,3 +19,38 @@ implements IExternalBugTracker.
     ...     SourceForge('http://sourceforge.net/'))
     True
 
+
+== Status Conversion ==
+
+The basic SourceForge bug statuses (i.e. those available by default in new
+SourceForge instances) map to Launchpad bug statuses.
+SourceForge.convertRemoteStatus() handles the conversion.
+
+There are three statuses for SourceForge bugs: Open, Pending and Closed.
+Closed can be supplemented by a resolution, but this is not always the
+case as this field can be customised. 
+
+    >>> sourceforge = SourceForge('http://sourceforge.eggs')
+    >>> sourceforge.convertRemoteStatus('Open').title
+    'New'
+    >>> sourceforge.convertRemoteStatus('Closed').title
+    'Fix Released'
+    >>> sourceforge.convertRemoteStatus('Pending').title
+    'Incomplete'
+
+If the status isn't something that our SourceForge ExternalBugTracker can
+understand, Unknown will be returned and a warning logged.
+
+    >>> sourceforge.convertRemoteStatus('eggs').title
+    WARNING:...:Unknown status 'eggs'
+    'Unknown'
+
+UNKNOWN_REMOTE_STATUS maps to Unknown without generating a warning. This
+handles the case where we've tried to probe for a bug but didn't succeed. For
+example, if the bug number was invalid.
+
+    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
+    >>> sourceforge.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
+    'Unknown'
+
+

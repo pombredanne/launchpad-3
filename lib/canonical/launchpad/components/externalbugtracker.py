@@ -1094,10 +1094,65 @@ class SourceForge(ExternalBugTracker):
 
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
+        # XXX: 2007-09-06 Graham Binns
+        #      We shouldn't have to do this, but
+        #      ExternalBugTracker.updateBugWatches() will pass us
+        #      UNKNOWN_BUG_STATUS if it gets it from getRemoteStatus()
+        #      (Launchpad bug 136391).
+        if remote_status == UNKNOWN_REMOTE_STATUS:
+            return BugTaskStatus.UNKNOWN
+
+        # SourceForge statuses come in two parts: status and
+        # resolution. Both of these are strings. We can look
+        # them up in the form status_map[status][resolution]
         status_map = {
-            'Open': BugTaskStatus.NEW,
-            'Closed': BugTaskStatus.FIXRELEASED,
-            'Pending': BugTaskStatus.INCOMPLETE
+            # We use the open status as a fallback when we can't find an
+            # exact mapping for the other statuses.
+            'Open' : {
+                None: BugTaskStatus.NEW,
+                'Accepted': BugTaskStatus.CONFIRMED,
+                'Duplicate': BugTaskStatus.CONFIRMED,
+                'Fixed': BugTaskStatus.FIXCOMMITTED,
+                'Invalid': BugTaskStatus.INVALID,
+                'Later': BugTaskStatus.CONFIRMED,
+                'Out of Date': BugTaskStatus.INVALID,
+                'Postponed': BugTaskStatus.CONFIRMED,
+                'Rejected': BugTaskStatus.WONTFIX,
+                'Remind': BugTaskStatus.CONFIRMED,
+                "Won't Fix": BugTaskStatus.WONTFIX,
+                'Works For Me': BugTaskStatus.INVALID,
+            },
+
+            'Closed': {
+                None: BugTaskStatus.FIXRELEASED,
+                'Accepted': BugTaskStatus.FIXCOMMITTED,
+                'Fixed': BugTaskStatus.FIXRELEASED,
+                'Postponed': BugTaskStatus.WONTFIX,
+            },
+
+            'Pending': {
+                None: BugTaskStatus.INCOMPLETE,
+                'Postponed': BugTaskStatus.WONTFIX,
+            },
         }
 
+        # We have to deal with situations where we can't get a
+        # resolution to go with the status, so we define both even if we
+        # can't get both from SourceForge.
+        if ':' in remote_status:
+            status, resolution = remote_status.split(':')
+        else:
+            status = remote_status
+            resolution = None
+
+        if status not in status_map:
+            log.warn("Unknown status '%s'" % remote_status)
+            return BugTaskStatus.UNKNOWN
+        elif resolution in status_map[status]:
+            return status_map[status][resolution]
+        elif resolution in status_map['Open']:
+            return status_map['Open'][resolution]
+        else:
+            log.warn("Unknown status '%s'" % remote_status)
+            return BugTaskStatus.UNKNOWN
 
