@@ -349,15 +349,6 @@
     template="../templates/object-branding.pt"
     />
 
-  <browser:page
-    name="+launchpad"
-    for="canonical.launchpad.interfaces.IDistribution"
-    class="canonical.launchpad.browser.DistributionLaunchpadUsageEditView"
-    facet="overview"
-    permission="launchpad.Edit"
-    template="../templates/object-launchpadusage.pt"
-    />
-
   <browser:editform
     name="+uploadadmin"
     for="canonical.launchpad.interfaces.IDistribution"

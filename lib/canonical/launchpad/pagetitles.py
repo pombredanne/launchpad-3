@@ -675,8 +675,6 @@ object_branding = ContextDisplayName('Change the images used to represent '
 
 object_driver = ContextTitle('Appoint the driver for %s')
 
-object_launchpadusage = ContextTitle('Launchpad usage by %s')
-
 object_milestones = ContextTitle(smartquote("%s's milestones"))
 
 # object_pots is a fragment.

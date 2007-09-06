@@ -25,7 +25,6 @@ __all__ = [
     'DistributionArchiveMirrorsRSSView',
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
-    'DistributionLaunchpadUsageEditView',
     'DistributionSetFacets',
     'DistributionSetNavigation',
     'DistributionSetContextMenu',
@@ -191,7 +190,7 @@ class DistributionOverviewMenu(ApplicationMenu):
              'mirror_admin', 'reassign', 'addseries', 'top_contributors',
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
              'disabled_mirrors', 'unofficial_mirrors', 'newmirror',
-             'launchpad_usage', 'upload_admin', 'ppas']
+             'upload_admin', 'ppas']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -292,11 +291,6 @@ class DistributionOverviewMenu(ApplicationMenu):
     def ppas(self):
         text = 'Personal Package Archives'
         return Link('+ppas', text, icon='info')
-
-    @enabled_with_permission('launchpad.Edit')
-    def launchpad_usage(self):
-        text = 'Define Launchpad usage'
-        return Link('+launchpad', text, icon='edit')
 
 
 class DistributionBugsMenu(ApplicationMenu):
@@ -480,22 +474,6 @@ class DistributionBrandingView(BrandingChangeView):
 
     schema = IDistribution
     field_names = ['icon', 'logo', 'mugshot']
-
-
-class DistributionLaunchpadUsageEditView(LaunchpadEditFormView):
-    """View class for defining Launchpad usage."""
-
-    schema = IDistribution
-    field_names = ["official_answers", "official_malone", "official_rosetta"]
-    label = "Describe Launchpad usage"
-
-    @action("Change", name='change')
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
 
 
 class DistributionSetView:
