@@ -2,7 +2,8 @@ SET client_min_messages=ERROR;
 
 DROP INDEX unique_entry_per_importer;
 
-CREATE UNIQUE INDEX unique_entry_per_importer ON TranslationImportQueueEntry (
+CREATE UNIQUE INDEX translationimportqueueentry__entry_per_importer__unq
+ON TranslationImportQueueEntry (
                         importer,
                         path,
                         (COALESCE(potemplate, -1)),
@@ -11,4 +12,4 @@ CREATE UNIQUE INDEX unique_entry_per_importer ON TranslationImportQueueEntry (
                         (COALESCE(productseries, -1))
                         );
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 52, 0);
