@@ -1067,3 +1067,14 @@ class Roundup(ExternalBugTracker):
 
 class SourceForge(ExternalBugTracker):
     """An ExternalBugTracker for Sourceforge bugs."""
+
+    def __init__(self, baseurl):
+        self.baseurl = baseurl.rstrip('/')
+
+    def convertRemoteStatus(self, remote_status):
+        """See `IExternalBugTracker`."""
+
+
+
+
+
