@@ -192,14 +192,13 @@ COMMENT ON COLUMN CodeImport.cvs_module IS 'The module in cvs_root to import, of
 COMMENT ON COLUMN CodeImport.date_last_successful IS 'When this code import last succeeded. NULL if this import has never succeeded.';
 COMMENT ON COLUMN CodeImport.assignee IS 'The person in charge of delivering this code import and interacting with the owner.';
 COMMENT ON COLUMN Codeimport.update_interval IS 'How often should this import be updated. If NULL, defaults to a system-wide value set by the Launchpad administrators.';
-COMMENT ON COLUMN CodeImport.modified_by IS 'The user modifying the CodeImport.  This column is never actually set in the database -- it is only present to communicate to the trigger that creates the event, which will intercept and remove the value for this column.';
+--COMMENT ON COLUMN CodeImport.modified_by IS 'The user modifying the CodeImport.  This column is never actually set in the database -- it is only present to communicate to the trigger that creates the event, which will intercept and remove the value for this column.';
 
 -- CodeImportEvent
 
 COMMENT ON TABLE CodeImportEvent IS 'A record of events in the code import system.  Rows in this table are created by triggers on other code import tables.';
 COMMENT ON COLUMN CodeImportEvent.entry_type IS 'The type of event that is recorded by this entry. Legal values are defined by the CodeImportEventType enumeration.';
 COMMENT ON COLUMN CodeImportEvent.code_import IS 'The code import that was associated to this event, if any and if it has not been deleted.';
-COMMENT ON COLUMN CodeImportEvent.log_file IS 'The log file in the Librarian associated to some events, such as import completion.';
 COMMENT ON COLUMN CodeImportEvent.person IS 'The user who caused the event, if the event is not automatically generated.';
 COMMENT ON COLUMN CodeImportEvent.machine IS 'The code import machine that was concerned by this event, if any.';
 
@@ -210,30 +209,29 @@ COMMENT ON COLUMN CodeImportEventData.event IS 'The event the data is associated
 COMMENT ON COLUMN CodeImportEventData.data_type IS 'The type of additional data, from the CodeImportEventDataType enumeration.';
 COMMENT ON COLUMN CodeImportEventData.data_value IS 'The value of the additional data.  A string.';
 
--- CodeImportJobCurrent
+-- CodeImportJob
 
-COMMENT ON TABLE CodeImportJobCurrent IS 'A pending or active code import job.  There is always such a row for any active import, but it will not run until date_due is in the past.';
-COMMENT ON COLUMN CodeImportJobCurrent.code_import IS 'The code import that is being worked upon.';
-COMMENT ON COLUMN CodeImportJobCurrent.machine IS 'The machine job is currently scheduled to run on, or where the job is currently running.';
-COMMENT ON COLUMN CodeImportJobCurrent.date_due IS 'When the import should happen.';
-COMMENT ON COLUMN CodeImportJobCurrent.state IS 'One of PENDING (waiting until its due or a machine is online), SCHEDULED (assigned to a machine, but not yet running) or RUNNING (actually in the process of being imported now).';
-COMMENT ON COLUMN CodeImportJobCurrent.reason IS 'Why the import is being run.  One of INTERVAL (the default "update every N hours" case) or REQUEST (a user has requested this import be run as soon as possible).';
-COMMENT ON COLUMN CodeImportJobCurrent.requesting_user IS 'The user who requested the import, if any. Set if and only if reason = REQUEST.';
-COMMENT ON COLUMN CodeImportJobCurrent.ordering IS 'A measure of how urgent the job is -- queue entries with lower "ordering" should be processed first, or in other works "ORDER BY ordering" returns the most import jobs first.';
-COMMENT ON COLUMN CodeImportJobCurrent.heartbeat IS 'While the job is running, this field should be updated frequently to indicate that the import job hasn''t crashed.';
-COMMENT ON COLUMN CodeImportJobCurrent.logtail IS 'The last few lines of output produced by the running job. It should be updated at the same time as the heartbeat.';
-COMMENT ON COLUMN CodeImportJobCurrent.date_started IS 'When the import began to be processed.';
+COMMENT ON TABLE CodeImportJob IS 'A pending or active code import job.  There is always such a row for any active import, but it will not run until date_due is in the past.';
+COMMENT ON COLUMN CodeImportJob.code_import IS 'The code import that is being worked upon.';
+COMMENT ON COLUMN CodeImportJob.machine IS 'The machine job is currently scheduled to run on, or where the job is currently running.';
+COMMENT ON COLUMN CodeImportJob.date_due IS 'When the import should happen.';
+COMMENT ON COLUMN CodeImportJob.state IS 'One of PENDING (waiting until its due or a machine is online), SCHEDULED (assigned to a machine, but not yet running) or RUNNING (actually in the process of being imported now).';
+COMMENT ON COLUMN CodeImportJob.requesting_user IS 'The user who requested the import, if any. Set if and only if reason = REQUEST.';
+COMMENT ON COLUMN CodeImportJob.ordering IS 'A measure of how urgent the job is -- queue entries with lower "ordering" should be processed first, or in other works "ORDER BY ordering" returns the most import jobs first.';
+COMMENT ON COLUMN CodeImportJob.heartbeat IS 'While the job is running, this field should be updated frequently to indicate that the import job hasn''t crashed.';
+COMMENT ON COLUMN CodeImportJob.logtail IS 'The last few lines of output produced by the running job. It should be updated at the same time as the heartbeat.';
+COMMENT ON COLUMN CodeImportJob.date_started IS 'When the import began to be processed.';
 
--- CodeImportJobPast
+-- CodeImportResult
 
-COMMENT ON TABLE CodeImportJobPast IS 'A completed code import job.';
-COMMENT ON COLUMN CodeImportJobPast.code_import IS 'The code import for which the job was run.';
-COMMENT ON COLUMN CodeImportJobPast.machine IS 'The machine the job ran on.';
-COMMENT ON COLUMN CodeImportJobPast.log_file IS 'A partial log of the job for users to see. It is normally only recorded if the job failed in a step that interacts with the remote repository. If a job was successful, or failed in a houskeeping step, the log file would not contain information useful to the user.';
-COMMENT ON COLUMN CodeImportJobPast.log_excerpt IS 'The last few lines of the partial log, in case it is set.';
-COMMENT ON COLUMN CodeImportJobPast.status IS 'How the job ended. Success, some kind of failure, or some kind of interruption before completion.';
-COMMENT ON COLUMN CodeImportJobPast.date_started IS 'When the job started to run (date_created is when it finished).';
-COMMENT ON COLUMN CodeImportJobPast.killing_user IS 'The user who killed the job.';
+COMMENT ON TABLE CodeImportResult IS 'A completed code import job.';
+COMMENT ON COLUMN CodeImportResult.code_import IS 'The code import for which the job was run.';
+COMMENT ON COLUMN CodeImportResult.machine IS 'The machine the job ran on.';
+COMMENT ON COLUMN CodeImportResult.log_file IS 'A partial log of the job for users to see. It is normally only recorded if the job failed in a step that interacts with the remote repository. If a job was successful, or failed in a houskeeping step, the log file would not contain information useful to the user.';
+COMMENT ON COLUMN CodeImportResult.log_excerpt IS 'The last few lines of the partial log, in case it is set.';
+COMMENT ON COLUMN CodeImportResult.status IS 'How the job ended. Success, some kind of failure, or some kind of interruption before completion.';
+COMMENT ON COLUMN CodeImportResult.date_started IS 'When the job started to run (date_created is when it finished).';
+--COMMENT ON COLUMN CodeImportResult.killing_user IS 'The user who killed the job.';
 
 -- CodeImportMachine
 
@@ -241,9 +239,9 @@ COMMENT ON TABLE CodeImportMachine IS 'The record of a machine capable of perfor
 COMMENT ON COLUMN CodeImportMachine.hostname IS 'The (unique) hostname of the machine.';
 COMMENT ON COLUMN CodeImportMachine.heartbeat IS 'When the code-import-controller daemon was last known to be running on this machine. If it is not updated for a long time the machine state will change to offline.';
 COMMENT ON COLUMN CodeImportMachine.state IS 'Whether the controller daemon on this machine is offline, online, or quiescing (running but not accepting new jobs).';
-COMMENT ON COLUMN CodeImportMachine.quiescing_requested_by IS 'The user who put this machine in the quiescing state.';
-COMMENT ON COLUMN CodeImportMachine.quiescing_message IS 'The reason for the quiescing request.';
-COMMENT ON COLUMN CodeImportMachine.offline_reason IS 'The reason the machine was taken offline, from the CodeImportMachineOfflineReason enumeration.';
+--COMMENT ON COLUMN CodeImportMachine.quiescing_requested_by IS 'The user who put this machine in the quiescing state.';
+--COMMENT ON COLUMN CodeImportMachine.quiescing_message IS 'The reason for the quiescing request.';
+--COMMENT ON COLUMN CodeImportMachine.offline_reason IS 'The reason the machine was taken offline, from the CodeImportMachineOfflineReason enumeration.';
 
 -- CVE
 
