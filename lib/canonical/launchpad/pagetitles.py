@@ -388,7 +388,8 @@ distribution_change_mirror_admin = 'Change mirror administrator'
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
 
-distribution_edit = ContextTitle('Edit %s')
+distribution_edit = 'Change distribution details'
+# We don't mention its name here, because that might be what you're changing.
 
 distribution_members = ContextTitle('%s distribution members')
 
@@ -861,7 +862,8 @@ product_code_index = 'Projects with active branches'
 
 product_cvereport = ContextTitle('CVE reports for %s')
 
-product_edit = ContextTitle('%s in Launchpad')
+product_edit = 'Change project details'
+# We don't mention its name here, because that might be what you're changing.
 
 product_index = ContextTitle('%s in Launchpad')
 
@@ -909,7 +911,8 @@ project_branches = ContextTitle('Bazaar branches for %s')
 
 project_bugs = ContextTitle('Bugs in %s')
 
-project_edit = ContextTitle('%s project group details')
+project_edit = ContextTitle('Change project group details')
+# We don't mention its name here, because that might be what you're changing.
 
 project_filebug_search = bugtarget_filebug_advanced
 
