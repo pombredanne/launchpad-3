@@ -2,5 +2,5 @@ SET client_min_messages=ERROR;
 
 ALTER TABLE ShippingRequest ADD COLUMN type integer;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 77, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 49, 0);
 
