@@ -116,7 +116,7 @@ download the requested files. If we don't set it, the export will fail:
   >>> result.notify(carlos)
   Traceback (most recent call last):
   ...
-  AssertionError: We neither have the exported URL nor we got a failure.
+  AssertionError: On success, an exported URL is expected.
 
 So let's add it:
 
