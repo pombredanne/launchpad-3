@@ -157,7 +157,7 @@ class LaunchpadServer(Server):
         the branch in the database then create a matching directory on the
         backing transport.
         """
-        self.logger.debug('mkdir(%r)', virtual_path)
+        self.logger.info('mkdir(%r)', virtual_path)
         path_segments = get_path_segments(virtual_path)
         if len(path_segments) != 3:
             raise NoSuchFile(
@@ -370,12 +370,14 @@ class LaunchpadTransport(Transport):
 
     # Transport methods
     def abspath(self, relpath):
+        self.server.logger.debug('abspath(%s)', relpath)
         return urlutils.join(self.server.scheme, relpath)
 
     def append_file(self, relpath, f, mode=None):
         return self._writing_call('append_file', relpath, f, mode)
 
     def clone(self, relpath):
+        self.server.logger.debug('clone(%s)', relpath)
         return LaunchpadTransport(
             self.server, urlutils.join(self.base, relpath))
 
@@ -392,11 +394,13 @@ class LaunchpadTransport(Transport):
         return self._call('has', relpath)
 
     def iter_files_recursive(self):
+        self.server.logger.debug('iter_files_recursive()')
         path, ignored = self._translate_virtual_path('.')
         backing_transport = self.server.backing_transport.clone(path)
         return backing_transport.iter_files_recursive()
 
     def listable(self):
+        self.server.logger.debug('listable()')
         return self.server.backing_transport.listable()
 
     def list_dir(self, relpath):
