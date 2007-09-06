@@ -8,7 +8,6 @@ __all__ = [
     'LoginStatus',
     'MaintenanceMessage',
     'MenuBox',
-    'RosettaContextMenu',
     'MaloneContextMenu',
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
@@ -70,6 +69,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot,
     ILaunchpadStatisticSet,
     ILoginTokenSet,
+    IMailingListApplication,
     IMaloneApplication,
     IMentoringOfferSet,
     IPersonSet,
@@ -94,6 +94,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
     LaunchpadFormView, Navigation, stepto, canonical_url, custom_widget)
 from canonical.launchpad.webapp.publisher import RedirectionView
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
@@ -141,7 +142,11 @@ class MaloneApplicationNavigation(Navigation):
     def traverse(self, name):
         # Make /bugs/$bug.id, /bugs/$bug.name /malone/$bug.name and
         # /malone/$bug.id Just Work
-        return getUtility(IBugSet).getByNameOrID(name)
+        bug = getUtility(IBugSet).getByNameOrID(name)
+        if not check_permission("launchpad.View", bug):
+            raise Unauthorized("Bug %s is private" % name)
+        return bug
+
 
 
 class MenuBox(LaunchpadView):
@@ -317,30 +322,6 @@ class MaloneContextMenu(ContextMenu):
         return Link('cve/', text, icon='cve')
 
 
-class RosettaContextMenu(ContextMenu):
-    # XXX mpt 2006-03-27: No longer visible on Translations front page.
-    usedfor = IRosettaApplication
-    links = ['about', 'import_queue', 'translation_groups']
-
-    def about(self):
-        text = 'About Launchpad Translations'
-        rosetta_application = getUtility(IRosettaApplication)
-        url = '/'.join([canonical_url(rosetta_application), '+about'])
-        return Link(url, text)
-
-    def import_queue(self):
-        text = 'Import queue'
-        import_queue = getUtility(ITranslationImportQueue)
-        url = canonical_url(import_queue)
-        return Link(url, text)
-
-    def translation_groups(self):
-        text = 'Translation groups'
-        translation_group_set = getUtility(ITranslationGroupSet)
-        url = canonical_url(translation_group_set)
-        return Link(url, text)
-
-
 class LoginStatus:
 
     def __init__(self, context, request):
@@ -435,7 +416,9 @@ class LaunchpadRootNavigation(Navigation):
         'codeofconduct': ICodeOfConductSet,
         'distros': IDistributionSet,
         'karmaaction': IKarmaActionSet,
+        '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
+        'mailinglists': IMailingListApplication,
         '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,
         'potemplatenames': IPOTemplateNameSet,
@@ -833,6 +816,9 @@ class StructuralHeaderPresentation:
 
     def __init__(self, context):
         self.context = context
+
+    def isPrivate(self):
+        return False
 
     def getIntroHeading(self):
         return None

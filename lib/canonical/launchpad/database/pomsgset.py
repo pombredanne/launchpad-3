@@ -5,6 +5,7 @@ __all__ = ['POMsgSet', 'DummyPOMsgSet']
 
 import gettextpo
 
+from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
@@ -12,12 +13,13 @@ from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import (flush_database_updates, quote,
-                                        SQLBase, sqlvalues)
+from canonical.database.sqlbase import (
+    flush_database_updates, quote, SQLBase, sqlvalues)
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IPOMsgSet, TranslationConflict
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
+from canonical.launchpad.interfaces import (
+    IPOMsgSet, TranslationConflict, IPOSubmissionSet)
 from canonical.lp.dbschema import (RosettaTranslationOrigin,
     TranslationValidationStatus)
 
@@ -59,32 +61,22 @@ class POMsgSetMixIn:
         This retrieves all POSubmissions that form useful suggestions for self
         from the database, as well as any POSubmissions that are already
         attached to self, all in new-to-old order of datecreated."""
-        # An SQL clause matching a POMsgSet to our own identity.  It goes into
-        # an OR expression, so default is false.
-        match_self_sql = 'false'
-        if self.id is not None:
-            match_self_sql = 'POMsgSet.id=%s' % quote(self)
+        dummy_pomsgset = []
+        stored_pomsgset = []
+        if self.id is None:
+            dummy_pomsgset = [self]
+        else:
+            stored_pomsgset = [self]
 
-        parameters = sqlvalues(
-            language=self.pofile.language,
-            primemsgid=self.potmsgset.primemsgid_ID)
+        subs = getUtility(IPOSubmissionSet).getSubmissionsFor(
+            stored_pomsgset, dummy_pomsgset)
 
-        parameters['match_self'] = match_self_sql
-
-        joins = ['POMsgSet', 'POTMsgSet']
-        query = """
-                POSubmission.pomsgset = POMsgSet.id AND
-                POMsgSet.language = %(language)s AND
-                POMsgSet.potmsgset = POTMsgSet.id AND
-                (%(match_self)s OR NOT POMsgSet.isfuzzy) AND
-                POTMsgSet.primemsgid = %(primemsgid)s
-            """ % parameters
-
-        return POSubmission.select(
-            query, clauseTables=joins, orderBy='-datecreated', distinct=True)
+        assert len(subs) == 1, (
+            "Received suggestions for unexpected POMsgSet.")
+        return subs[self]
 
     def initializeSubmissionsCaches(self, related_submissions=None):
-        """See `IPOMsgSet`.""" 
+        """See `IPOMsgSet`."""
         if self._hasSubmissionsCaches():
             return
 
@@ -125,12 +117,10 @@ class POMsgSetMixIn:
 
         # Now that we know what our active posubmissions are, filter out any
         # suggestions that refer to the same potranslations.
-        # XXX: JeroenVermeulen 2007-08-02, can we move this selection into SQL
-        # to speed up the big expensive queries on POSubmission by making them
-        # return less data?  (bug 30602)
         for pluralform in self.suggestions.keys():
             active = self.getActiveSubmission(pluralform)
             if active is not None and active.potranslation is not None:
+                active_translation = active.potranslationID
                 self.suggestions[pluralform] = [
                     submission
                     for submission in self.suggestions.get(pluralform)
@@ -851,7 +841,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         pluralforms = self.pluralforms
 
         # Calculate the number of published plural forms.
-        # XXX: JeroenVermeulen 2007-06-10: Why the cap on pluralform?
+        # Since every POFile may have its own plural expression, it's possible
+        # for submissions to have plural-form numbers that the language itself
+        # does not define.  That's fine, and people have used it for some edge
+        # cases, but they must not count towards the msgset's completeness.
         published_count = 0
         for (plural, published) in self.published_submissions.items():
             if plural < pluralforms and published.id is not None:
@@ -864,7 +857,6 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             self.publishedfuzzy = False
 
         # Calculate the number of active plural forms.
-        # XXX: JeroenVermeulen 2007-06-10: Why the cap on pluralform?
         active_count = 0
         for (plural, active) in self.active_submissions.items():
             if plural < pluralforms and active.id is not None:

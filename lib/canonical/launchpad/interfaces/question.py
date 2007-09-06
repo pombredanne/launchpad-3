@@ -252,7 +252,7 @@ class IQuestion(IHasOwner):
 
         Exactly like giveAnswer() but also link the IFAQ faq object to this
         question.
-        
+
         Return the created IQuestionMessage.
 
         This method should fire an ISQLObjectCreatedEvent for the created
@@ -412,7 +412,7 @@ class IQuestion(IHasOwner):
 
     def getDirectSubscribers():
         """Return the set of persons who are subscribed to this question.
-        
+
         :return: An `INotificationRecipientSet` containing the persons to
             notify along the rationale for doing so.
         """
@@ -423,7 +423,7 @@ class IQuestion(IHasOwner):
 
         That includes  the answer contacts for the question's target as well
         as the question's assignee.
-        
+
         :return: An `INotificationRecipientSet` containing the persons to
             notify along the rationale for doing so.
         """

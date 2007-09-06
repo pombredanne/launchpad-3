@@ -8,9 +8,10 @@ translations, version control, etc. We call these entities
 ProductSeries.
 
 >>> from zope.component import getUtility
->>> from zope.interface.verify import verifyObject
+>>> from canonical.launchpad.webapp.testing import verifyObject
 >>> from canonical.launchpad.interfaces import (
-...     IPersonSet, IProductSeries, IProductSet, NotFoundError, IProjectSet)
+...     IHasTranslationImports, IPersonSet, IProductSeries, IProductSet,
+...     IProjectSet, NotFoundError)
 >>> from canonical.database.sqlbase import flush_database_updates
 
 First, get a product that has some ProductSeries in the sample data.
@@ -29,6 +30,13 @@ interface.
 >>> verifyObject(IProductSeries, trunk)
 True
 >>> IProductSeries.providedBy(trunk)
+True
+
+and IHasTranslationImports.
+
+>>> verifyObject(IHasTranslationImports, trunk)
+True
+>>> IHasTranslationImports.providedBy(trunk)
 True
 
 And verify that it looks like the series we think it should be.

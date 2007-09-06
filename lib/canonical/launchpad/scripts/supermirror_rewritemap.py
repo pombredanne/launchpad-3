@@ -6,7 +6,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IBranchSet
+from canonical.launchpad.interfaces import BranchType, IBranchSet
 
 
 def write_map(outfile):
@@ -14,11 +14,12 @@ def write_map(outfile):
 
     The file will be written in a format suitable for use with Apache's
     RewriteMap directive.  Only publicly visible branchs have rewrite
-    entries.
+    entries.  Remote branches are not mirrored, so are not stored in
+    the codehosting facility, so not available through http.
     """
     branches = getUtility(IBranchSet)
     for branch in branches:
-        if not branch.private:
+        if not branch.private and branch.branch_type != BranchType.REMOTE:
             line = generate_mapping_for_branch(branch)
             outfile.write(line)
 

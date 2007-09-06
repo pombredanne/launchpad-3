@@ -95,9 +95,9 @@ associated with that milestone for products of this project:
     >>> anon_browser.getLink('1.1').click()
     >>> specs = find_tag_by_id(anon_browser.contents, 'milestone_specs')
     >>> print extract_text(specs)
-    Priority Product Specification Assignee Delivery ...
-    High Evolution Title evolution specification ... Unknown ...
-    High gnomebaker Title gnomebaker specification ... Unknown
+    Specification Product Priority Assignee Delivery
+    Title evolution specification Evolution Evolution ... High ...  Unknown
+    Title gnomebaker specification gnomebaker gnomebaker ... High ... Unknown
 
     >>> bugtasks = find_tag_by_id(anon_browser.contents, 'milestone_bugtasks')
     >>> print extract_text(bugtasks)
@@ -119,7 +119,7 @@ Firefox product:
     >>> browser.getLink('Report a bug').click()
     >>> browser.getLink('complicated bug filing form').click()
     >>> print extract_text(find_main_content(browser.contents))
-    Report a new bug...
+    Report a bug...
     >>> report_bug_url = browser.url
 
     >>> browser.getControl('Summary').value = 'Test Bug 1'

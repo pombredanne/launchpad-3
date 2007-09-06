@@ -163,7 +163,6 @@ class LaunchpadRequestPublicationFactory:
             self.publicationfactory = publicationfactory
             # Add data from launchpad.conf
             self.vhostconfig = allvhosts.configs[self.conffilename]
-
             self.allhostnames = set(self.vhostconfig.althostnames
                                     + [self.vhostconfig.hostname])
 
@@ -190,8 +189,8 @@ class LaunchpadRequestPublicationFactory:
             ShipItPublication))
         vhrps.append(VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest,
             ShipItPublication))
-        vhrps.append(VHRP('xmlrpc', LaunchpadXMLRPCRequest,
-            XMLRPCLaunchpadPublication))
+        vhrps.append(VHRP('xmlrpc',
+                          PublicXMLRPCRequest, PublicXMLRPCPublication))
         # Done with using the short form of VirtualHostRequestPublication, so
         # clean up, as we won't need to use it again later.
         del VHRP
@@ -210,7 +209,8 @@ class LaunchpadRequestPublicationFactory:
         self._thread_local = threading.local()
 
     def _defaultFactories(self):
-        from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
+        from canonical.launchpad.webapp.publication import (
+            LaunchpadBrowserPublication)
         return LaunchpadBrowserRequest, LaunchpadBrowserPublication
 
     def canHandle(self, environment):
@@ -342,7 +342,7 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
 
 class BrowserFormNG:
     """Wrapper that provides IBrowserFormNG around a regular form dict."""
-    
+
     implements(IBrowserFormNG)
 
     def __init__(self, form):
@@ -356,7 +356,7 @@ class BrowserFormNG:
     def __iter__(self):
         """See IBrowserFormNG."""
         return iter(self.form)
-    
+
     def getOne(self, name, default=None):
         """See IBrowserFormNG."""
         value = self.form.get(name, default)
@@ -364,7 +364,7 @@ class BrowserFormNG:
             raise UnexpectedFormData(
                 'Expected only one value form field %s: %s' % (name, value))
         return value
-    
+
     def getAll(self, name, default=None):
         """See IBrowserFormNG."""
         # We don't want a mutable as a default parameter, so we use None as a
@@ -388,7 +388,7 @@ class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
     """
 
     installed = False
-    
+
     @classmethod
     def install(cls):
         """Install the monkey patch."""
@@ -412,7 +412,7 @@ class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
         SimpleInputWidget._getFormInput = _getFormInput_single
         MultiDataHelper._getFormInput = _getFormInput_multi
         cls.installed = True
-        
+
     @classmethod
     def uninstall(cls):
         """Uninstall the monkey patch."""
@@ -718,8 +718,8 @@ class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
 
 # ---- xmlrpc
 
-class XMLRPCLaunchpadPublication(LaunchpadBrowserPublication):
-    """The publication used for XML-RPC requests."""
+class PublicXMLRPCPublication(LaunchpadBrowserPublication):
+    """The publication used for public XML-RPC requests."""
     def handleException(self, object, request, exc_info, retry_allowed=True):
         LaunchpadBrowserPublication.handleException(
                 self, object, request, exc_info, retry_allowed
@@ -731,16 +731,16 @@ class XMLRPCLaunchpadPublication(LaunchpadBrowserPublication):
         return LaunchpadBrowserPublication.endRequest(self, request, object)
 
 
-class LaunchpadXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
-                             ErrorReportRequest):
-    """Request type for doing XMLRPC in Launchpad."""
+class PublicXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
+                          ErrorReportRequest):
+    """Request type for doing public XML-RPC in Launchpad."""
 
     def _createResponse(self):
-        return LaunchpadXMLRPCResponse()
+        return PublicXMLRPCResponse()
 
 
-class LaunchpadXMLRPCResponse(XMLRPCResponse):
-    """Response type for doing XMLRPC in Launchpad."""
+class PublicXMLRPCResponse(XMLRPCResponse):
+    """Response type for doing public XML-RPC in Launchpad."""
 
     def handleException(self, exc_info):
         # If we don't have a proper xmlrpclib.Fault, and we have

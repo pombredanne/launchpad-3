@@ -9,15 +9,16 @@ __all__ = [
     'CodeImportMachineSet',
     ]
 
-from sqlobject import BoolCol, StringCol
+from sqlobject import StringCol
 
 from zope.interface import implements
 
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
-    ICodeImportMachine, ICodeImportMachineSet)
+    ICodeImportMachine, ICodeImportMachineSet, CodeImportMachineState)
 
 
 class CodeImportMachine(SQLBase):
@@ -28,8 +29,9 @@ class CodeImportMachine(SQLBase):
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
     hostname = StringCol(default=None)
-
-    online = BoolCol(default=False)
+    state = EnumCol(enum=CodeImportMachineState, notNull=True,
+        default=CodeImportMachineState.OFFLINE)
+    heartbeat = UtcDateTimeCol(notNull=False)
 
 
 class CodeImportMachineSet(object):

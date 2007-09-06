@@ -38,7 +38,7 @@ def guess(s):
     number of meaningful characters (using the unicodedata module to
     let us know what are control characters, letters, printable characters
     etc.).
-    
+
 
     ASCII is easy
 
@@ -70,7 +70,7 @@ def guess(s):
     u'Ol\xe9'
 
     However, if the string contains ISO-8859-1 control characters, it is
-    probably a CP1252 document (Windows). 
+    probably a CP1252 document (Windows).
 
     >>> u = u'Show me the \N{EURO SIGN}'
     >>> u.encode('UTF-8') == u.encode('CP1252')
@@ -87,8 +87,8 @@ def guess(s):
     >>> guess(u.encode('iso-8859-15'))
     u'\u0161'
 
-    Strings with a BOM are unambiguous. 
-    
+    Strings with a BOM are unambiguous.
+
     >>> guess(u'hello'.encode('UTF-16'))
     u'hello'
 
@@ -97,7 +97,7 @@ def guess(s):
     asian languages and in these cases other encodings we don't support
     at the moment like ISO-2022-jp, BIG5, SHIFT-JIS etc. will be a bigger
     problem.
-    
+
     >>> guess(u'hello'.encode('UTF-16be'))
     u'\x00h\x00e\x00l\x00l\x00o'
 
@@ -152,7 +152,7 @@ def guess(s):
 # def unicode_to_unaccented_str(text):
 #     """Converts a unicode string into an ascii-only str, converting accented
 #     characters to their plain equivalents.
-# 
+#
 #     >>> unicode_to_unaccented_str(u'')
 #     ''
 #     >>> unicode_to_unaccented_str(u'foo bar 123')
@@ -231,7 +231,7 @@ def ascii_smash(unicode_string):
 
 def ascii_char_smash(char):
     """Smash a single Unicode character into an ASCII representation.
-    
+
     >>> ascii_char_smash(u"\N{KATAKANA LETTER SMALL A}")
     'a'
     >>> ascii_char_smash(u"\N{KATAKANA LETTER A}")
@@ -285,7 +285,7 @@ def ascii_char_smash(char):
 
     >>> ascii_char_smash(u"\N{VULGAR FRACTION ONE HALF}")
     '1/2'
-    
+
     """
     mapping = {
         u"\N{LATIN CAPITAL LETTER AE}": "AE",
