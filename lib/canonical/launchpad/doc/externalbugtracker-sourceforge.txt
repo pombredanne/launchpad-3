@@ -26,10 +26,6 @@ The basic SourceForge bug statuses (i.e. those available by default in new
 SourceForge instances) map to Launchpad bug statuses.
 SourceForge.convertRemoteStatus() handles the conversion.
 
-There are three statuses for SourceForge bugs: Open, Pending and Closed.
-Closed can be supplemented by a resolution, but this is not always the
-case as this field can be customised. 
-
     >>> sourceforge = SourceForge('http://sourceforge.eggs')
     >>> sourceforge.convertRemoteStatus('Open').title
     'New'
@@ -37,6 +33,36 @@ case as this field can be customised.
     'Fix Released'
     >>> sourceforge.convertRemoteStatus('Pending').title
     'Incomplete'
+    >>> sourceforge.convertRemoteStatus('Open:Accepted').title
+    'Confirmed'
+    >>> sourceforge.convertRemoteStatus('Open:Duplicate').title
+    'Confirmed'
+    >>> sourceforge.convertRemoteStatus('Open:Fixed').title
+    'Fix Committed'
+    >>> sourceforge.convertRemoteStatus('Open:Invalid').title
+    'Invalid'
+    >>> sourceforge.convertRemoteStatus('Open:Later').title
+    'Confirmed'
+    >>> sourceforge.convertRemoteStatus('Open:Out of Date').title
+    'Invalid'
+    >>> sourceforge.convertRemoteStatus('Open:Postponed').title
+    'Confirmed'
+    >>> sourceforge.convertRemoteStatus('Open:Rejected').title
+    "Won't Fix"
+    >>> sourceforge.convertRemoteStatus('Open:Remind').title
+    'Confirmed'
+    >>> sourceforge.convertRemoteStatus("Open:Won't Fix").title
+    "Won't Fix"
+    >>> sourceforge.convertRemoteStatus('Open:Works For Me').title
+    'Invalid'
+    >>> sourceforge.convertRemoteStatus('Closed:Accepted').title
+    'Fix Committed'
+    >>> sourceforge.convertRemoteStatus('Closed:Fixed').title
+    'Fix Released'
+    >>> sourceforge.convertRemoteStatus('Closed:Postponed').title
+    "Won't Fix"
+    >>> sourceforge.convertRemoteStatus('Pending:Postponed').title
+    "Won't Fix"
 
 If the status isn't something that our SourceForge ExternalBugTracker can
 understand, Unknown will be returned and a warning logged.
