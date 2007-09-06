@@ -11,6 +11,7 @@ import urllib2
 import ClientCookie
 import xml.parsers.expat
 from xml.dom import minidom
+from BeautifulSoup import BeautifulSoup
 
 from zope.interface import implements
 
@@ -1068,13 +1069,35 @@ class Roundup(ExternalBugTracker):
 class SourceForge(ExternalBugTracker):
     """An ExternalBugTracker for Sourceforge bugs."""
 
+    export_url = 'support/tracker.php?aid=%s'
+
     def __init__(self, baseurl):
         self.baseurl = baseurl.rstrip('/')
 
+    def initializeRemoteBugDB(self, bug_ids):
+        """See `ExternalBugTracker`.
+
+        We override this method because SourceForge does not provide a
+        nice way for us to export bug statuses en masse. Instead, we
+        resort to screen-scraping on a per-bug basis. Therefore the
+        usual choice of batch vs. single export does not apply here and
+        we only perform single exports.
+        """
+        self.bugs = {}
+
+        for bug_id in bug_ids:
+            query_url = "%s/%s" % (self.baseurl, self.export_url)
+            page_data = self._getPage(query_url)
+
+    def getRemoteBug(self, bug_id):
+        """See `ExternalBugTracker`."""
+
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
-
-
-
+        status_map = {
+            'Open': BugTaskStatus.NEW,
+            'Closed': BugTaskStatus.FIXRELEASED,
+            'Pending': BugTaskStatus.INCOMPLETE
+        }
 
 
