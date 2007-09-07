@@ -131,7 +131,11 @@
               </td>
               <td tal:content="structure bug_branch/branch/owner/fmt:link" />
               <td>
-                <a
+                <a tal:condition="bug_branch/required:launchpad.Edit"
+                  tal:attributes="href string:${bug_branch/fmt:url}/+edit"
+                  tal:content="bug_branch/status/title"
+                >Under Development</a>
+                <a tal:condition="not: bug_branch/required:launchpad.Edit"
                   tal:attributes="href string:${bug_branch/fmt:url}/+status"
                   tal:content="bug_branch/status/title"
                 >Under Development</a>

@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     "BranchLinkToBugView",
     "BugBranchAddView",
+    "BugBranchEditView",
     "BugBranchStatusView",
     ]
 
@@ -16,10 +17,12 @@ from zope.event import notify
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import IBugBranch
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView)
+    action, canonical_url, custom_widget, LaunchpadEditFormView,
+    LaunchpadFormView)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.authorization import check_permission
 
+from canonical.widgets.link import LinkWidget
 
 class BugBranchAddView:
     """Browser view for linking a bug to a branch."""
@@ -83,6 +86,31 @@ class BugBranchStatusView:
 
     def nextURL(self):
         return canonical_url(self.context.bug)
+
+
+class BugBranchEditView(LaunchpadEditFormView):
+    """View to update a BugBranch."""
+    schema = IBugBranch
+
+    field_names = ['branch', 'status', 'whiteboard']
+
+    custom_widget('branch', LinkWidget)
+
+    def initialize(self):
+        self.bug = self.context.bug
+        super(BugBranchEditView, self).initialize()
+
+    @property
+    def next_url(self):
+        return canonical_url(self.bug)
+
+    @action('Update', name='update')
+    def update_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @action('Delete', name='delete')
+    def delete_action(self, action, data):
+        self.context.destroySelf()
 
 
 class BranchLinkToBugView(LaunchpadFormView):
