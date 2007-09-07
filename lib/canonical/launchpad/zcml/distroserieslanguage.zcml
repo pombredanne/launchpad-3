@@ -28,7 +28,8 @@
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroSeriesLanguage"
     permission="zope.Public"
-    facet="translations">
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer" >
     <browser:page
       name="+portlet-stats"
       template="../templates/distroserieslanguage-portlet-stats.pt" />
@@ -43,7 +44,8 @@
     for="canonical.launchpad.interfaces.IDistroSeriesLanguage"
     template="../templates/distroserieslanguage-index.pt"
     class="canonical.launchpad.browser.DistroSeriesLanguageView"
-    facet="translations" />
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer" />
 
   <!-- DistroSeriesLanguageSet -->
   <securedutility

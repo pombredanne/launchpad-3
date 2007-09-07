@@ -140,15 +140,6 @@
         class="canonical.launchpad.browser.ProductSeriesView"
         permission="zope.Public">
         <browser:page
-            name="+translations"
-            facet="translations"
-            template="../templates/object-translations.pt"
-            />
-        <browser:page
-            name="+potlist"
-            facet="translations"
-            template="../templates/object-pots.pt" />
-        <browser:page
             name="+ubuntupkg"
             facet="overview"
             template="../templates/productseries-ubuntupkg.pt"
@@ -157,6 +148,22 @@
             name="+importstatus"
             template="../templates/productseries-importstatus.pt"
             />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProductSeries"
+        class="canonical.launchpad.browser.ProductSeriesView"
+        permission="zope.Public"
+        layer="canonical.launchpad.layers.TranslationsLayer" >
+        <browser:page
+            name="+translations"
+            facet="translations"
+            template="../templates/object-translations.pt"
+            />
+        <browser:page
+            name="+potlist"
+            facet="translations"
+            template="../templates/object-pots.pt" />
     </browser:pages>
 
     <browser:page
@@ -256,7 +263,8 @@
         for="canonical.launchpad.interfaces.IProductSeries"
         class="canonical.launchpad.browser.ProductSeriesView"
         facet="translations"
-        permission="launchpad.Edit">
+        permission="launchpad.Edit"
+        layer="canonical.launchpad.layers.TranslationsLayer" >
         <browser:page
             name="+translations-upload"
             template="../templates/productseries-translations-upload.pt"

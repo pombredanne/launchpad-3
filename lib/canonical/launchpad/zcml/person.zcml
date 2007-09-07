@@ -236,6 +236,7 @@
     class="canonical.launchpad.browser.PersonTranslationView"
     permission="zope.Public"
     template="../templates/person-translations.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
   <browser:page
