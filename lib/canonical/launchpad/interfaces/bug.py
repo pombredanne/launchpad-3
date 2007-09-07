@@ -296,6 +296,17 @@ class IBug(IMessageTarget, ICanBeMentored):
         The user is the one linking to the CVE.
         """
 
+    def createQuestionFromBug(question_target, person):
+        """Create a question from this Bug.
+        
+        The question_target or its distribution have official_malone set
+        to True. All the Bug's BugTasks will be set to Invalid status with
+        an explaination that the bug is a question in the statusexplanation.
+        
+        :question_target: An IQuestionTarget.
+        :person: An IPerson
+        """
+
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""
 

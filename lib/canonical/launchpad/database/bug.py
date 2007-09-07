@@ -55,7 +55,8 @@ from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import BugAttachmentType, DistroSeriesStatus
+from canonical.lp.dbschema import (
+    BugAttachmentType, BugTaskStatus, DistroSeriesStatus)
 
 
 _bug_tag_query_template = """
@@ -553,6 +554,28 @@ class Bug(SQLBase):
     # cargo culted into Product, Distribution, ProductSeries etc
     completeness_clause =  """
         BugTask.bug = Bug.id AND """ + BugTask.completeness_clause
+
+    def createQuestionFromBug(self, question_target, person):
+        """See `IBug`."""
+        assert question_target.pillar.official_malone, (
+            '%s official_malone must be True.' % question_target.pillar.name)
+
+        # XXX sinzui 2007-09-06:
+        # Checking the questions for the same owner, title, and
+        # description is not reliable. A schema change may be required
+        # to check that a bug can only be made into a question once.
+        for question in self.questions:
+            if (question.owner == self.owner
+                and question.title == self.title
+                and question.description == self.description):
+                raise AssertionError(
+                    'This bug was already converted to question #%s.'
+                    % question.id)
+        question = question_target.createQuestionFromBug(self)
+        for bugtask in self.bugtasks:
+            bugtask.transitionToStatus(BugTaskStatus.INVALID, person)
+            bugtask.statusexplanation = 'This is not a bug. It is a question.'
+        return question
 
     def canMentor(self, user):
         """See `ICanBeMentored`."""

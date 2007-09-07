@@ -1,0 +1,142 @@
+Bugs can be converted into questions when a person ascertains that
+that is the nature of the issue. The bug's target must be adaptable
+to IQuestionTarget and must use Launchpad track bugs.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     CreateBugParams, IBugSet, IBugTaskSet, IDistributionSet,
+    ...     IDistributionSourcePackage, IDistroSeries, IPersonSet,
+    ...     IProductSet, IProductSeries, IQuestionTarget,
+    ...     ISourcePackageNameSet)
+
+    # Some parts of the IQuestionTarget interface are only accessible
+    # to a registered user.
+    >>> login('no-priv@canonical.com')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+
+A Firefox bug in Debian cannot be converted to a question because the
+Distribution does not use Launchpad to track bugs.
+
+    >>> firefox_bug = getUtility(IBugSet).get(8)
+    >>> firefox_package = firefox_bug.bugtasks[0].target
+    >>> verifyObject(IQuestionTarget, firefox_package)
+    True
+    >>> firefox_bug.bugtasks[0].target_uses_malone
+    False
+
+    >>> firefox_bug.createQuestionFromBug(firefox_package, sample_person)
+    Traceback (most recent call last):
+    ...
+    AssertionError: debian official_malone must be True.
+
+Jokosher does use Launchpad to track bugs; its bugs can be converted
+to questions.
+
+    >>> jokosher = getUtility(IProductSet)['jokosher']
+    >>> bug_params = CreateBugParams(
+    ...     title="Print is broken", comment="blah blah blah", owner=no_priv)
+    >>> bug_params.setBugTarget(product=jokosher)
+    >>> jokosher_bug = getUtility(IBugSet).createBug(bug_params)
+
+    # XXX sinzui 2007-08-23: The rules for selecting the QuestionTarget
+    # will be in the bug View. It will use the context and pass that
+    # to Bug.createQuestionFromBug(question_target)
+    >>> len(jokosher_bug.bugtasks)
+    1
+    >>> jokosher_bugtask = jokosher_bug.bugtasks[0]
+    >>> jokosher_bugtask.status.title
+    'New'
+    >>> jokosher.official_malone
+    True
+    >>> target = jokosher_bugtask.target
+    >>> verifyObject(IQuestionTarget, target)
+    True
+
+    # XXX sinzui 2007-08-23: l.c.l.interfaces/ftests/QuestionTarget.txt
+    # needs to run an example of each type that implements BugTask.
+    >>> question = jokosher_bug.createQuestionFromBug(jokosher, sample_person)
+    >>> question.target == jokosher
+    True
+
+    >>> question.owner == jokosher_bug.owner
+    True
+    >>> question.owner.displayname
+    u'No Privileges Person'
+
+    >>> question.title == jokosher_bug.title
+    True
+    >>> question.title
+    u'Print is broken'
+
+    >>> question.description == jokosher_bug.description
+    True
+    >>> question.description
+    u'blah blah blah'
+
+The question language is always English because all bugs in Launchpad
+are written in English.
+
+    >>> question.language.code
+    u'en'
+
+Once converted to a question, the bugtask status is Invalid. The
+Question status is new
+
+    >>> question.status.title
+    'Open'
+
+    >>> jokosher_bugtask.status.title
+    'Invalid'
+    >>> jokosher_bugtask.statusexplanation
+    u'This is not a bug. It is a question.'
+
+The question is automatically linked to the original bug.
+
+    >>> [question_bug.bug.title for question_bug in question.bug_links]
+    [u'Print is broken']
+
+A bug can only be converted to a question once.
+
+    >>> # XXX sinzui 2007-08-23: check the Question.bug_link will suffice
+    >>> '#%s' % question.id
+    '#15'
+
+    >>> question = jokosher_bug.createQuestionFromBug(jokosher, sample_person)
+    Traceback (most recent call last):
+    ...
+    AssertionError: This bug was already converted to question #15.    
+
+In the rare instance where a bug has more than one bugtask, the status
+for both bugtasks is set to Invalid. When a bug is really a question,
+it is a question for all bugtasks; a bug cannot be a question in one
+location and a bug in another.
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> bug_params = CreateBugParams(
+    ...     title="Print is borked", comment="blah blah blah", owner=no_priv)
+    >>> bug_params.setBugTarget(distribution=ubuntu)
+    >>> ubuntu_bug = getUtility(IBugSet).createBug(bug_params)
+
+    >>> evo_ubuntu = getUtility(ISourcePackageNameSet)['evolution']
+    >>> evo_bugtask = getUtility(IBugTaskSet).createTask(
+    ...     bug=ubuntu_bug, distribution=ubuntu, sourcepackagename=evo_ubuntu,
+    ...     owner=no_priv)
+    >>> bugtasks = ubuntu_bug.bugtasks
+    >>> len(bugtasks)
+    2
+
+    >>> ['%s: %s' % (bt.target.name, bt.status.title) for bt in bugtasks]
+    [u'ubuntu: New', u'evolution: New']
+
+    >>> question = ubuntu_bug.createQuestionFromBug(ubuntu, sample_person)
+    >>> question.title
+    u'Print is borked'
+    >>> question.target.name
+    u'ubuntu'
+
+    >>> ['%s: %s' % (bt.target.name, bt.status.title) for bt in bugtasks]
+    [u'ubuntu: Invalid', u'evolution: Invalid']
+    >>> [bt.statusexplanation for bt in bugtasks]
+    [u'This is not a bug. It is a question.',
+     u'This is not a bug. It is a question.']

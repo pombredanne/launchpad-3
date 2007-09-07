@@ -12,7 +12,7 @@ __all__ = [
 
 import sets
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 from zope.schema import Choice, List, Set, TextLine
 
 from canonical.launchpad import _
@@ -41,6 +41,19 @@ class IQuestionTarget(ISearchableByQuestionOwner):
                  is assumed to be created in English.
         :datecreated:  A datetime object that will be used for the datecreated
                 attribute. Defaults to canonical.database.constants.UTC_NOW.
+        """
+
+    def createQuestionFromBug(bug):
+        """Create a question from a Bug.
+        
+        The bug's title and description are used as the question title and
+        description. The bug owner is also the question owner. The question
+        is automatically linked to the bug.
+        
+        Note that bug messages and attachments are not duplicated for the
+        question. The question is a start of a new conversation.
+        
+        :bug: An IBug.
         """
 
     def getQuestion(question_id):
@@ -105,6 +118,10 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         An answer contact is considered to speak a given language if that
         language is listed as one of his preferred languages.
         """
+
+    pillar = Attribute(
+        "The pillar (product or distribution) associated with this "
+        "QuestionTarget.")
 
     answer_contacts = List(
         title=_("Answer Contacts"),

@@ -25,10 +25,13 @@
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts
       getSupportedLanguages getQuestionLanguages getAnswerContactsForLanguage
-      getAnswerContactRecipients"
+      getAnswerContactRecipients pillar"
       />
-    <require permission="launchpad.AnyPerson"
-      attributes="newQuestion addAnswerContact removeAnswerContact" />
+    <require
+      permission="launchpad.AnyPerson"
+      attributes="newQuestion createQuestionFromBug addAnswerContact
+        removeAnswerContact"
+      />
   </content>
   <adapter
     provides="canonical.launchpad.interfaces.IFAQTarget"

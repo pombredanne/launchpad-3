@@ -975,6 +975,11 @@ class QuestionTargetMixin:
         """
         return {}
 
+    @property
+    def pillar(self):
+        """See `IQuestionTarget`."""
+        return self
+
     def newQuestion(self, owner, title, description, language=None,
                   datecreated=None):
         """See `IQuestionTarget`."""
@@ -982,6 +987,12 @@ class QuestionTargetMixin:
             title=title, description=description, owner=owner,
             datecreated=datecreated, language=language,
             **self.getTargetTypes())
+
+    def createQuestionFromBug(self, bug):
+        """See `IQuestionTarget`."""
+        question = self.newQuestion(bug.owner, bug.title, bug.description)
+        question.linkBug(bug)
+        return question
 
     def getQuestion(self, question_id):
         """See `IQuestionTarget`."""
