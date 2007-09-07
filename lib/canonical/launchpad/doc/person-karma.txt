@@ -65,14 +65,14 @@ calculated daily. That's why it's still 0.
     >>> salgado.karma
     0
 
-Some Person's are not awarded karma: Teams, and the Launchpad-Janitor,
+Some Person's are not awarded karma: Teams, and the Launchpad Janitor,
 do not receive karma when assignKarma is called. There is no error
 or message to indicate nothing happed. The method assignKarma
 silently returns, so callsites do not need to know who may be awarded
 karma.
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> janitor = getUtility(ILaunchpadCelebrities).launchpad_janitor
+    >>> janitor = getUtility(ILaunchpadCelebrities).janitor
     >>> dummy = janitor.assignKarma('specreviewed', product=firefox)
     <BLANKLINE>
 

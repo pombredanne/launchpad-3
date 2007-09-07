@@ -29,7 +29,7 @@ class ExpireMemberships(LaunchpadCronScript):
         """
         membershipset = getUtility(ITeamMembershipSet)
         self.txn.begin()
-        reviewer = getUtility(ILaunchpadCelebrities).launchpad_janitor
+        reviewer = getUtility(ILaunchpadCelebrities).janitor
         membershipset.handleMembershipsExpiringToday(reviewer)
         self.txn.commit()
 
