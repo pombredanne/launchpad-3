@@ -183,7 +183,10 @@ slave has the requested file in cache.
   ...     def build(self, buildid, buildtype, chroot, filemap, args):
   ...         info = 'OkSlave BUILDING'
   ...         print info
-  ...         print "Archives: %s" % args['archives']
+  ...         if 'archives' in args:
+  ...             print "Archives: %s" % args['archives']
+  ...         else:
+  ...             print "No archives set."
   ...         return ('BuildStatus.Building', info)
   ...     def fetchlogtail(self, size):
   ...         return 'BOGUS'
@@ -955,7 +958,7 @@ Override the builder's slave with one that will claim to be 'OK'
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
-  Archives: []
+  No archives set.
 
 Cleanup in preparation for the next test:
 

@@ -296,8 +296,6 @@ class Builder(SQLBase):
                 'deb %s %s %s'
                 % (archive_url, dist_name, ogre_components))
             args['archives'] = [source_line, ubuntu_source_line]
-        else:
-            args['archives'] = []
 
         chroot_sha1 = chroot.content.sha1
         # store DB information
