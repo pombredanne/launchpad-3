@@ -188,26 +188,6 @@
             and <a href="http://twistedmatrix.com/trac/">Twisted</a>.
           </p>
 
-        <dt>Launchpad is down for maintenance.  How long before it comes back?</dt>
-            <dd>
-            <p>
-            Normally, Launchpad is updated every Tuesday, generally
-            around 10:00 UTC. This normally results in 30 minutes of
-            downtime as the production servers are upgraded.
-            </p>
-            <p>
-            There are other -- exceptional -- situations in which
-            Launchpad may become unavailable. When it is a planned
-            outage, email is sent to the <a
-            href="https://lists.ubuntu.com/mailman/listinfo/launchpad-users">Launchpad
-            users mailing list</a> notifying when, and how long.
-            Unpredictable outages are unfortunately, well,
-            unpredictable; however, the servers are maintained by a
-            dedicated team that is very responsive, and downtime is
-            normally minimal.
-            </p>
-            </dd>
-
         <dt>Can I translate Launchpad itself into my language?</dt>
             <dd>
             You can't, yet. Launchpad is still in the process of having
