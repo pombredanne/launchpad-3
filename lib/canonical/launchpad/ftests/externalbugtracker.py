@@ -5,11 +5,12 @@
 __metaclass__ = type
 
 import os
+import re
 
 from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.components.externalbugtracker import (
-    Bugzilla, Mantis, Trac, Roundup)
+    Bugzilla, Mantis, Trac, Roundup, SourceForge)
 
 
 def read_test_file(name):
@@ -249,3 +250,22 @@ class TestRoundup(Roundup):
         return open(file_path + '/' + 'roundup_example_ticket_export.csv', 'r')
 
 
+class TestSourceForge(SourceForge):
+    """Test-oriented SourceForge ExternalBugTracker.
+
+    Overrides _getPage() so that access to SourceForge itself is not
+    required.
+    """
+
+    trace_calls = False
+
+    def _getPage(self, page):
+        if self.trace_calls:
+            print "CALLED _getPage(%r)" % (page,)
+
+        page_re = re.compile('support/tracker.php\?aid=([0-9]+)')
+        bug_id = page_re.match(page).groups()[0]
+
+        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
+        return open(file_path + '/' + 
+            'sourceforge-sample-bug-%s.html' % bug_id, 'r')

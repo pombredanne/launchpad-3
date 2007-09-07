@@ -93,8 +93,8 @@ rely on a working network connection.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestSourceForge, print_bugwatches)
     >>> sourceforge = TestSourceForge('http://test.sourceforge')
-    >>> sourceforge.initializeRemoteBugDB([1])
+    >>> sourceforge.initializeRemoteBugDB([1722250])
     >>> sorted(sourceforge.bugs.keys())
-    [1]
+    [1722250]
 
 

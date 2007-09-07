@@ -13,7 +13,6 @@ import urlparse
 import ClientCookie
 import xml.parsers.expat
 from xml.dom import minidom
-from BeautifulSoup import BeautifulSoup
 
 from BeautifulSoup import BeautifulSoup, Comment, SoupStrainer
 from zope.interface import implements
@@ -1305,7 +1304,7 @@ class SourceForge(ExternalBugTracker):
         self.bugs = {}
 
         for bug_id in bug_ids:
-            query_url = "%s/%s" % (self.baseurl, self.export_url)
+            query_url = self.export_url % bug_id
             page_data = self._getPage(query_url)
 
     def convertRemoteStatus(self, remote_status):
