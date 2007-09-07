@@ -162,7 +162,7 @@
                       <div
                         tal:condition="not:view/macro:pagehas/applicationtabs"
                         id="noapplicationchooser"
-                      >&nbsp;</div>
+                      ></div>
                       <tal:applicationtabs
                         condition="view/macro:pagehas/applicationtabs"
                       >

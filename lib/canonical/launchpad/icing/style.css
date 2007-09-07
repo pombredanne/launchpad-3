@@ -710,7 +710,7 @@ body {min-width: 480px;}
   position: relative;
   top: 28px;
 }
-* html #container {margin-top: 28px; position: static;} /* fixes`in IE6 */
+* html #container {margin-top: 28px; position: static;} /* fixes in IE6 */
 body.applicationhome #container {padding-left: 20px;}
 #singlecolumn #container {
   padding-left: 20px;
@@ -743,10 +743,8 @@ ul#applicationchooser {
   background-repeat: no-repeat;
   background-position: top right;
 }
-div#noapplicationchooser {
-  clear: both;
-  margin-bottom: 18px;
-}
+/* If there are no tabs, a substitute div maintains the same spacing. */
+div#noapplicationchooser {clear: both; margin-bottom: -28px;}
 ul#applicationchooser li {
   float: left;
   display: block;
