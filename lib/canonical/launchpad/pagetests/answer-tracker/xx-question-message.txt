@@ -91,7 +91,7 @@ we can continue with the anonymous user to see the markup.
 
     >>> print text.findAll('p')[-2]
     <p>Somebody said sometime ago:<br />
-    <span class="foldable">
+    <span class="foldable-quoted">
     &gt; 1. Remove the letters  c, j, q, x, w<br />
     &gt;    from the English Language.<br />
     &gt; 2. Remove the penny from US currency.

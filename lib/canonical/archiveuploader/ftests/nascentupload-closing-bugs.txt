@@ -34,7 +34,7 @@ Check the current status of the bug we are supposed to fix:
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.interfaces import (
     ...    IDistributionSet, IPersonSet, IBugTaskSet)
-    >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
+    >>> from canonical.lp.dbschema import BugTaskImportance
     >>> login('no-priv@canonical.com')
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
@@ -113,7 +113,7 @@ FIXRELEASED and bug notification are generated:
     FIXRELEASED
 
     >>> from canonical.launchpad.database import BugNotification
-    >>> notifications = BugNotification.select(orderBy='id')
+    >>> notifications = BugNotification.selectBy(bug=the_bug, orderBy='id')
     >>> for notification in notifications:
     ...     print "From %s:\n%s\n" % (
     ...         notification.message.owner.displayname,

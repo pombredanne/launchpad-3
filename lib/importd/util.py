@@ -144,22 +144,25 @@ def jobsFromDB(slave_home, archive_mirror_dir, autotest, push_prefix):
         jobseries = ProductSeries.select(clause)
         jobs = list(jobsFromSeries(
             jobseries=jobseries,
-            slave_home = slave_home,
+            slave_home=slave_home,
             archive_mirror_dir=archive_mirror_dir,
-            push_prefix = push_prefix))
+            push_prefix=push_prefix,
+            autotest=autotest))
         getTxnManager().abort()
     except:
         tryToAbortTransaction()
         raise
     return jobs
 
-def jobsFromSeries(jobseries, slave_home, archive_mirror_dir, push_prefix):
+def jobsFromSeries(jobseries, slave_home, archive_mirror_dir, push_prefix,
+                   autotest):
     for series in jobseries:
         job = CopyJob()
         job.from_series(series)
         job.slave_home = slave_home
         job.archive_mirror_dir = archive_mirror_dir
         job.push_prefix = push_prefix
+        job.autotest = autotest
         # Record the canonical url of the series now, althought it is only
         # needed for oops reporting, so we can record BuildFailure OOPSes even
         # without database access. To use canonical_url we need to have run

@@ -16,7 +16,7 @@ product or a distribution), so that we know to what a user contributes to and
 what users are the top contributors for a given product/distribution.
 
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IPerson, IKarma, IKarmaCache, IProductSet,
     ...     ISourcePackageNameSet, IDistributionSet)

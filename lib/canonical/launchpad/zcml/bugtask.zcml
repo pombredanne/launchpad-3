@@ -249,25 +249,14 @@
     <browser:page
         name="+choose-affected-product"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.ChooseAffectedProductView"
-        permission="launchpad.AnyPerson"
-        template="../templates/bugtask-choose-affected-product.pt" />
-
-    <browser:page
-        name="+add-affected-product"
-        for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.BugAlsoReportInView"
-        permission="launchpad.AnyPerson"
-        attribute="render_upstreamtask">
-    </browser:page>
+        class="canonical.launchpad.browser.BugAlsoAffectsProductMetaView"
+        permission="launchpad.AnyPerson" />
 
     <browser:page
         name="+distrotask"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.BugAlsoReportInView"
-        permission="launchpad.AnyPerson"
-        attribute="render_distrotask"
-        />
+        class="canonical.launchpad.browser.BugAlsoAffectsDistroMetaView"
+        permission="launchpad.AnyPerson" />
 
     <browser:page
         name="+editstatus-page"

@@ -14,7 +14,7 @@ class DistroComponentUploader(SQLBase):
     """A grant of upload rights to a person or team, applying to a
     distribution and a specific component therein.
     """
-    
+
     implements(IDistroComponentUploader)
 
     distribution = ForeignKey(dbName='distribution',

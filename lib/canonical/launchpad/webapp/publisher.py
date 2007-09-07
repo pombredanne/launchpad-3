@@ -438,7 +438,7 @@ class Navigation:
             target = target + '?' + query_string
 
         return RedirectionView(target, self.request, status)
- 
+
     # The next methods are for use by the Zope machinery.
 
     def publishTraverse(self, request, name):

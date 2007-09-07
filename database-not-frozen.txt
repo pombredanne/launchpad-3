@@ -8,5 +8,4 @@ means.
 
 Status
 ------
-Database is open for landing of database changes.
-
+See the Launchpad google calender or wiki for timeframes.

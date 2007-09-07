@@ -41,7 +41,7 @@ pocketsuffix = {
 class IPublishing(Interface):
     """Ability to publish associated publishing records."""
 
-    def getPendingPublications(self, archive, pocket, is_careful):
+    def getPendingPublications(archive, pocket, is_careful):
         """Return the specific group of records to be published.
 
         IDistroSeries -> ISourcePackagePublishing

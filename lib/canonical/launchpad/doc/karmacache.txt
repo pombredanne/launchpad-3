@@ -9,7 +9,7 @@ The KarmaCache table is maintained by our foaf-update-karma-cache.py script,
 which runs daily. The script does that by using the IKarmaCacheManager API.
 
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.database import KarmaCategory
     >>> from canonical.launchpad.interfaces import (
     ...     IKarmaCache, IKarmaCacheManager, IPersonSet)
