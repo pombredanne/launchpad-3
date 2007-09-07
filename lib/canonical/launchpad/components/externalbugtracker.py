@@ -1286,7 +1286,7 @@ class Roundup(ExternalBugTracker):
 
 
 class SourceForge(ExternalBugTracker):
-    """An ExternalBugTracker for Sourceforge bugs."""
+    """An ExternalBugTracker for SourceForge bugs."""
 
     export_url = 'support/tracker.php?aid=%s'
 
@@ -1312,7 +1312,7 @@ class SourceForge(ExternalBugTracker):
             status_tag = soup.find(text=re.compile('Status:'))
 
             # If we can't find a status line in the output from
-            # Sourceforge there's little point in continuing.
+            # SourceForge there's little point in continuing.
             if not status_tag:
                 raise UnparseableBugData(
                     'Remote bug %s does not define a status.' % bug_id)

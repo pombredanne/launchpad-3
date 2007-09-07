@@ -1,14 +1,14 @@
 = ExternalBugTracker: SourceForge =
 
-This covers the implementation of the ExternalBugTracker class for SourceForge
-bugwatches.
+This covers the implementation of the ExternalBugTracker class for
+SourceForge bugwatches.
 
 
 == Basics ==
 
-The ExternalBugTracker descendant class which implements methods for updating
-bug watches on SourceForge bug trackers is externalbugtracker.Roundup, which
-implements IExternalBugTracker.
+The ExternalBugTracker descendant class which implements methods for
+updating bug watches on SourceForge bug trackers is
+externalbugtracker.SourceForge, which implements IExternalBugTracker.
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     SourceForge)
@@ -22,9 +22,8 @@ implements IExternalBugTracker.
 
 == Status Conversion ==
 
-The basic SourceForge bug statuses (i.e. those available by default in new
-SourceForge instances) map to Launchpad bug statuses.
-SourceForge.convertRemoteStatus() handles the conversion.
+The SourceForge bug status/resolution combinations map to Launchpad bug
+statuses. SourceForge.convertRemoteStatus() handles the conversion.
 
     >>> sourceforge = SourceForge('http://sourceforge.eggs')
     >>> sourceforge.convertRemoteStatus('Open').title
@@ -96,6 +95,14 @@ rely on a working network connection.
     >>> sourceforge.initializeRemoteBugDB([1722250])
     >>> sorted(sourceforge.bugs.keys())
     [1722250]
+
+If a remote bug doesn't define the requisite data, an error will be
+raised.
+
+    >>> sourceforge.initializeRemoteBugDB([0])
+    Traceback (most recent call last):
+      ...
+    UnparseableBugData: Remote bug 0 does not define a status.
 
 
 == Updating Bug Watches ==
