@@ -56,8 +56,8 @@ class LaunchpadAvatar(avatar.ConchUser):
         self.lpname = userDict['name']
         self.teams = userDict['teams']
 
-        self.logger = logging.getLogger('codehosting.ssh.%s' % self.lpname)
-        self.logger.info('Logged in')
+        logging.getLogger('codehosting.ssh').info('%r logged in', self.lpname)
+        self.logger = logging.getLogger('codehosting.sftp.%s' % self.lpname)
 
         # Extract the initial branches from the user dict.
         branches_by_team = dict(userDict['initialBranches'])
