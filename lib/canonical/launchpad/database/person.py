@@ -39,13 +39,12 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus,
-    SpecificationFilter, SpecificationDefinitionStatus,
+    BugTaskImportance, SpecificationFilter, SpecificationDefinitionStatus,
     SpecificationImplementationStatus, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, BugTaskSearchParams, EmailAddressStatus, IBugTaskSet,
-    ICalendarOwner, IDistribution, IDistributionSet, IEmailAddress,
+    AccountStatus, BugTaskSearchParams, BugTaskStatus, EmailAddressStatus,
+    IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet, IEmailAddress,
     IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo, IHasMugshot, IIrcID,
     IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILoginTokenSet, IPasswordEncryptor, IPerson,

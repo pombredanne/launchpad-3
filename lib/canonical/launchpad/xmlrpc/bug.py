@@ -14,7 +14,6 @@ from canonical.launchpad.interfaces import (
     NotFoundError)
 from canonical.launchpad.webapp import canonical_url, LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
-from canonical.lp.dbschema import BugTaskStatus
 
 class FileBugAPI(LaunchpadXMLRPCView):
     """The XML-RPC API for filing bugs in Malone."""
