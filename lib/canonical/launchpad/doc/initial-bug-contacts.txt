@@ -203,7 +203,7 @@ in the footer of the email with the bug title and URL.
     <BLANKLINE>
     ** Affects: firefox
          Importance: Low
-           Assignee: Mark Shuttleworth
+           Assignee: Mark Shuttleworth (sabdfl)
              Status: New
     <BLANKLINE>
     ** Affects: pmount (Ubuntu)
