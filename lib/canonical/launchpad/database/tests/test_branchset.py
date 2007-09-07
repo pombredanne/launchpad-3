@@ -93,7 +93,8 @@ class TestBranchSet(TestCase):
             expected_branches = branch_set.getBranchesForOwners(
                 list(branch_owner.teams_participated_in) + [branch_owner])
             expected_branches = [
-                branch for branch in expected_branches if branch.url is None]
+                branch for branch in expected_branches
+                if branch.branch_type == BranchType.HOSTED]
             self.assertEqual(expected_branches, branches)
         finally:
             logout()

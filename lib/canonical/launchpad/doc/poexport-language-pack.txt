@@ -1,20 +1,31 @@
+= Language Pack Exports =
 
-Language Pack Exports
---------------------
+Launchpad has a way to export all distribution series translations in a
+tarball to provide language packs.
 
-This is a workaround to give this test the same permissions as the cron script
-has.
+Some initialisation tasks:
 
-    >>> from canonical.launchpad.ftests import login
-    >>> login("daf@canonical.com")
-
-This is a dummy logger class to capture the export's log messages.
-
+    >>> import datetime
+    >>> import email
+    >>> import pytz
+    >>> import re
     >>> import sys
     >>> import traceback
+    >>> import transaction
+    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.helpers import string_to_tarfile
+    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from canonical.launchpad.mail.stub import test_emails
+    >>> from canonical.launchpad.scripts.language_pack import \
+    ...    export_language_pack
+    >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> login("daf@canonical.com")
+    >>> librarian_file_alias_set = getUtility(ILibraryFileAliasSet)
 
+    # This is a dummy logger class to capture the export's log messages.
     >>> class FakeLogger:
-    ...     messages = []
+    ...     def __init__(self):
+    ...         self.messages = []
     ...
     ...     def log(self, *stuff):
     ...         self.messages.append(' '.join(stuff))
@@ -28,10 +39,21 @@ This is a dummy logger class to capture the export's log messages.
     ...             if line.strip():
     ...                 self.log(line)
 
-Try doing a base language pack export.
+    >>> def get_librarian_file_from_email(msg):
+    ...     alias_num = None
+    ...     for line in msg.get_payload(decode=True).splitlines():
+    ...         if line.startswith('Librarian file alias:'):
+    ...             alias_num = re.search(
+    ...                 'Librarian file alias: (\d+)', line).group(1)
+    ...     librarian_file_alias = librarian_file_alias_set[alias_num]
+    ...     return string_to_tarfile(librarian_file_alias.read())
 
-    >>> from canonical.launchpad.scripts.language_pack import \
-    ...    export_language_pack
+
+== Base language pack export using Librarian ==
+
+When a new language pack export is requested, you can select to use Librarian
+to store the language pack. That is noted with output_file set to None.
+
     >>> logger = FakeLogger()
     >>> export_language_pack(
     ...     distribution_name='ubuntu',
@@ -42,18 +64,312 @@ Try doing a base language pack export.
     ...     output_file=None,
     ...     email_addresses=['daf@canonical.com'],
     ...     logger=logger)
-    True
+    >>> transaction.commit()
 
 Check that the log looks ok.
 
     >>> print '\n'.join(logger.messages)
     Selecting PO files for export
-    Number of PO files to export: 11
-    Exporting PO file ... (1/11)
-    Exporting PO file ... (2/11)
+    Number of PO files to export: 12
+    Exporting PO file ... (1/12)
+    Exporting PO file ... (2/12)
     ...
     Adding timestamp file
     Adding mapping file
     Done.
     Upload complete, file alias: ...
+
+Also, a notification email has been sent:
+
+    >>> len(test_emails)
+    1
+    >>> from_addr, to_addrs, raw_message = test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> print msg["Subject"]
+    Language pack export complete
+    >>> print msg.get_payload(decode=True)
+    Distribution: ubuntu
+    Release: hoary
+    Component: main
+    Librarian file alias: ...
+
+    # Get the generated tarball.
+    >>> tarfile = get_librarian_file_from_email(msg)
+
+The tarball has the right members.
+
+    >>> for name in tarfile.getnames():
+    ...     print name
+    rosetta-hoary/
+    ...
+    rosetta-hoary/es/
+    rosetta-hoary/es/LC_MESSAGES/
+    rosetta-hoary/es/LC_MESSAGES/pmount.po
+    ...
+    rosetta-hoary/timestamp.txt
+    rosetta-hoary/mapping.txt
+
+Directory permissions allow correct use of those directories:
+
+    >>> directory = tarfile.getmember('rosetta-hoary/')
+    >>> oct(directory.mode)
+    '0755'
+
+And one of the included .po files look like what we expected.
+
+    >>> fh = tarfile.extractfile(
+    ...     'rosetta-hoary/es/LC_MESSAGES/evolution-2.2.po')
+    >>> fh.readline()
+    '# traducci\xc3\xb3n de es.po al Spanish\n'
+
+
+== Base language pack export using Librarian with date limits ==
+
+Launchpad is also able to generate a tarball of all files for a distribution
+series that only includes translation files which have been changed since a
+certain date.
+
+First we need to set up some data to test with, and for this we need some DB
+classes.
+
+    >>> from StringIO import StringIO
+    >>> from canonical.launchpad.database import DistroSeries
+    >>> from canonical.launchpad.database import SourcePackageName
+    >>> from canonical.launchpad.database import POTemplateName
+    >>> from canonical.launchpad.database import POTemplate
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IPersonSet)
+
+Get hold of a person.
+
+    >>> mark = getUtility(IPersonSet).getByName('sabdfl')
+    >>> print mark.displayname
+    Mark Shuttleworth
+
+Get the Grumpy distro series.
+
+    >>> series = getUtility(IDistributionSet)['ubuntu'].getSeries('grumpy')
+
+Get a source package name to go with our distro series.
+
+    >>> spn = SourcePackageName.byName('evolution')
+
+Put a dummy file in the Librarian required by the new template we are
+creating.
+
+    >>> contents = '# Test PO template.'
+    >>> file_alias = getUtility(ILibrarianClient).addFile(
+    ...     name = 'test.po',
+    ...     size = len(contents),
+    ...     file = StringIO(contents),
+    ...     contentType = 'application/x-po')
+
+Create a PO template and put a single message set in it.
+
+    >>> ptn = POTemplateName(
+    ...     name='test', translationdomain='test', title='test')
+    >>> pot_header = 'Content-Type: text/plain; charset=UTF-8\n'
+    >>> template = POTemplate(
+    ...     potemplatename=ptn, distroseries=series, sourcepackagename=spn,
+    ...     owner=mark, languagepack=True, path='po/test.pot',
+    ...     header=pot_header)
+    >>> potmsgset = template.createMessageSetFromText(u'blah')
+    >>> potmsgset.sequence = 1
+
+Get some dates.
+
+    >>> UTC = pytz.timezone('UTC')
+    >>> d2000_01_01 = datetime.datetime(year=2000, month=1, day=1, tzinfo=UTC)
+    >>> d2000_01_02 = datetime.datetime(year=2000, month=1, day=2, tzinfo=UTC)
+    >>> d2000_01_03 = datetime.datetime(year=2000, month=1, day=3, tzinfo=UTC)
+
+Create a Spanish PO file, with an active translation submission created on
+2000/01/01.
+
+    >>> pofile_es = template.newPOFile('es')
+    >>> pomsgset_es = pofile_es.createMessageSetFromMessageSet(potmsgset)
+    >>> translations = { 0: u'blah (es)' }
+    >>> pomsgset_es.updateTranslationSet(mark, translations, fuzzy=False,
+    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> pomsgset_es.date_reviewed = d2000_01_01
+
+Create a Welsh PO file, with an active translation submission created on
+2000/01/03.
+
+    >>> pofile_cy = template.newPOFile('cy')
+    >>> pomsgset_cy = pofile_cy.createMessageSetFromMessageSet(potmsgset)
+    >>> translations = { 0: u'blah (cy)' }
+    >>> pomsgset_cy.updateTranslationSet(mark, translations, fuzzy=False,
+    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> pomsgset_cy.date_reviewed = d2000_01_03
+    >>> transaction.commit()
+
+This is handy for examining the tar files that are generated.
+
+    >>> def examine_tarfile(tarfile):
+    ...     for member in tarfile.getmembers():
+    ...         if member.isreg():
+    ...             lines = len(tarfile.extractfile(member).readlines())
+    ...         else:
+    ...             lines = 0
+    ...         print "| %5d | %s" % (lines, member.name)
+
+Now we export the PO files we've just created.
+
+    >>> logger = FakeLogger()
+    >>> export_language_pack(
+    ...     distribution_name='ubuntu',
+    ...     series_name='grumpy',
+    ...     component=None,
+    ...     update=False,
+    ...     force_utf8=True,
+    ...     output_file=None,
+    ...     email_addresses=['daf@canonical.com'],
+    ...     logger=logger)
+    >>> transaction.commit()
+
+Check that the log looks ok.
+
+    >>> print '\n'.join(logger.messages)
+    Selecting PO files for export
+    Number of PO files to export: 2
+    Exporting PO file ... (1/2)
+    Exporting PO file ... (2/2)
+    Adding timestamp file
+    Adding mapping file
+    Done.
+    Upload complete, file alias: ...
+
+Also, a notification email has been sent:
+
+    >>> len(test_emails)
+    1
+    >>> from_addr, to_addrs, raw_message = test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> print msg["Subject"]
+    Language pack export complete
+    >>> print msg.get_payload(decode=True)
+    Distribution: ubuntu
+    Release: grumpy
+    Component: All available
+    Librarian file alias: ...
+
+    # Get the generated tarball.
+    >>> tarfile = get_librarian_file_from_email(msg)
+
+First, export without a date limit: should get both PO files.
+
+    WARNING:root:PO file header entry has no content-type field
+    WARNING:root:PO file header entry has no content-type field
+    >>> examine_tarfile(tarfile)
+    |     0 | rosetta-grumpy/
+    |     0 | rosetta-grumpy/es/
+    |     0 | rosetta-grumpy/es/LC_MESSAGES/
+    |    21 | rosetta-grumpy/es/LC_MESSAGES/test.po
+    |     0 | rosetta-grumpy/cy/
+    |     0 | rosetta-grumpy/cy/LC_MESSAGES/
+    |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
+    |     1 | rosetta-grumpy/timestamp.txt
+    |     1 | rosetta-grumpy/mapping.txt
+
+Check the files look OK.
+
+    >>> fh = tarfile.extractfile('rosetta-grumpy/es/LC_MESSAGES/test.po')
+    >>> print fh.read()
+    # Spanish translation for evolution
+    # Copyright (c) ... Rosetta Contributors and Canonical Ltd ...
+    # This file is distributed under the same license as the evolution package.
+    # FIRST AUTHOR <EMAIL@ADDRESS>, ...
+    #
+    msgid ""
+    msgstr ""
+    "Project-Id-Version: evolution\n"
+    "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+    "POT-Creation-Date: ...\n"
+    "PO-Revision-Date: ...\n"
+    "Last-Translator: Mark Shuttleworth <mark@hbd.com>\n"
+    "Language-Team: Spanish <es@li.org>\n"
+    "MIME-Version: 1.0\n"
+    "Content-Type: text/plain; charset=UTF-8\n"
+    "Content-Transfer-Encoding: 8bit\n"
+    "X-Launchpad-Export-Date: ...-...-... ...:...+...\n"
+    "X-Generator: Launchpad (build ...)\n"
+    <BLANKLINE>
+    msgid "blah"
+    msgstr "blah (es)"
+
+    >>> fh = tarfile.extractfile('rosetta-grumpy/cy/LC_MESSAGES/test.po')
+    >>> print fh.read()
+    # Welsh translation for evolution
+    # Copyright (c) ... Rosetta Contributors and Canonical Ltd ...
+    # This file is distributed under the same license as the evolution package.
+    # FIRST AUTHOR <EMAIL@ADDRESS>, ...
+    #
+    msgid ""
+    msgstr ""
+    "Project-Id-Version: evolution\n"
+    "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+    "POT-Creation-Date: ...\n"
+    "PO-Revision-Date: ...\n"
+    "Last-Translator: Mark Shuttleworth <mark@hbd.com>\n"
+    "Language-Team: Welsh <cy@li.org>\n"
+    "MIME-Version: 1.0\n"
+    "Content-Type: text/plain; charset=UTF-8\n"
+    "Content-Transfer-Encoding: 8bit\n"
+    "X-Launchpad-Export-Date: ...-...-... ...:...+...\n"
+    "X-Generator: Launchpad (build ...)\n"
+    <BLANKLINE>
+    msgid "blah"
+    msgstr "blah (cy)"
+
+This is needed to make the PO export cache work, since it uses the Librarian.
+
+    >>> transaction.commit()
+
+Then, export with a date limit: we should only get the second PO file.
+The way to set date limits is setting when last language pack was done, thus,
+we set it and request an update export, which means we should get only files
+that where updated after 2000-01-02.
+
+    >>> series.datelastlangpack = d2000_01_02
+    >>> transaction.commit()
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+    >>> export_language_pack(
+    ...     distribution_name='ubuntu',
+    ...     series_name='grumpy',
+    ...     component=None,
+    ...     update=True,
+    ...     force_utf8=True,
+    ...     output_file=None,
+    ...     email_addresses=['daf@canonical.com'],
+    ...     logger=logger)
+    >>> transaction.commit()
+
+    >>> len(test_emails)
+    1
+    >>> from_addr, to_addrs, raw_message = test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> print msg["Subject"]
+    Language pack export complete
+    >>> print msg.get_payload(decode=True)
+    Distribution: ubuntu
+    Release: grumpy
+    Component: All available
+    Librarian file alias: ...
+
+    # Get the generated tarball.
+    >>> tarfile = get_librarian_file_from_email(msg)
+
+Now, there is only one file exported, the one that had the modification date
+after the last generated language pack.
+
+    >>> examine_tarfile(tarfile)
+    |     0 | rosetta-grumpy/
+    |     0 | rosetta-grumpy/cy/
+    |     0 | rosetta-grumpy/cy/LC_MESSAGES/
+    |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
+    |     1 | rosetta-grumpy/timestamp.txt
+    |     1 | rosetta-grumpy/mapping.txt
+
 

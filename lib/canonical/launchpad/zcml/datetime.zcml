@@ -1,6 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope">
-    
+
     <!-- Configuration related to datetime classes in Launchpad. -->
     <adapter
         for="canonical.launchpad.interfaces.IHasDateCreated"

@@ -341,7 +341,7 @@ class SFTPServerBranch(WriteLoggingDirectory):
         raise PermissionError(
             "Can only create Bazaar control directories directly beneath a "
             "branch directory.")
-    
+
     def remove(self):
         raise PermissionError(
             "removing branch directory %r is not allowed." % self.name)

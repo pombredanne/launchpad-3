@@ -564,7 +564,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getTargetTypes(self):
         """See `QuestionTargetMixin`.
-        
+
         Defines distribution as self and sourcepackagename as None.
         """
         return {'distribution': self,
@@ -572,7 +572,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def questionIsForTarget(self, question):
         """See `QuestionTargetMixin`.
-        
+
         Return True when the Question's distribution is self.
         """
         if question.distribution is not self:
@@ -598,7 +598,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return FAQSearch(
             search_text=search_text, owner=owner, sort=sort,
             distribution=self).getResults()
-    
+
     def ensureRelatedBounty(self, bounty):
         """See `IDistribution`."""
         for curr_bounty in self.bounties:
@@ -836,7 +836,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # the current distroseries and then across the whole
         # distribution.
         #
-        # XXX kiko 2006-07-28: 
+        # XXX kiko 2006-07-28:
         # Note that the strategy of falling back to previous
         # distribution series might be revisited in the future; for
         # instance, when people file bugs, it might actually be bad for
@@ -947,8 +947,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             active_statuses = (PackagePublishingStatus.PUBLISHED,
                                PackagePublishingStatus.PENDING)
             clauses.append("""
-            EXISTS (SELECT pub.id FROM SourcePackagePublishingHistory pub
-               WHERE pub.archive = Archive.id AND pub.status IN %s)
+            Archive.id IN (
+                SELECT DISTINCT archive FROM SourcepackagePublishingHistory
+                WHERE status IN %s)
             """ % sqlvalues(active_statuses))
 
         if text:
@@ -1037,7 +1038,7 @@ class DistributionSet:
         displayed.
         """
         distroset = Distribution.select()
-        return iter(sorted(shortlist(distroset),
+        return iter(sorted(shortlist(distroset,100),
                         key=lambda distro: distro._sort_key))
 
     def __getitem__(self, name):

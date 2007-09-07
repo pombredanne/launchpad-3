@@ -258,7 +258,7 @@ class TrackerImporter:
         """Get the Launchpad user corresponding to the given SF user ID"""
         if sf_userid in [None, '', 'nobody']:
             return None
-        
+
         email = '%s@users.sourceforge.net' % sf_userid
 
         launchpad_id = self._person_id_cache.get(sf_userid)
@@ -327,7 +327,7 @@ class TrackerImporter:
         exists, the import is skipped.
         """
         logger.info('Handling Sourceforge tracker item #%s', item.item_id)
-        
+
         nickname = 'sf%s' % item.item_id
         try:
             bug = getUtility(IBugSet).getByNameOrID(nickname)

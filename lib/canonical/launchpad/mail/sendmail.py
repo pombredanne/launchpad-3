@@ -53,7 +53,7 @@ def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
     An AssertionError will be raised if one of the parameters is
     invalid.
     """
-    # XXX StuartBishop 2005-03-19: 
+    # XXX StuartBishop 2005-03-19:
     # These checks need to be migrated upstream if this bug
     # still exists in modern Z3.
     assert (zisinstance(to_addrs, (list, tuple, sets.Set, set))
@@ -226,7 +226,7 @@ def sendmail(message, to_addrs=None):
                 # (because actual delivery is done later).
                 smtp = SMTP(
                     config.zopeless.smtp_host, config.zopeless.smtp_port)
-                
+
                 # The "MAIL FROM" is set to the bounce address, to behave in a
                 # way similar to mailing list software.
                 smtp.sendmail(config.bounce_address, to_addrs, raw_message)

@@ -1,37 +1,42 @@
-#!/usr/bin/python
-# Copyright 2005 Canonical Ltd. All rights reserved.
+# Copyright 2005-2007 Canonical Ltd. All rights reserved.
 
 """Functions for language pack creation script."""
 
 __metaclass__ = type
 
+__all__ = [
+    'export_language_pack',
+    ]
+
 import datetime
+import os
 import sys
 import tempfile
-import transaction
 from shutil import copyfileobj
 
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import (flush_database_updates, sqlvalues,
-    cursor)
+from canonical.database.sqlbase import sqlvalues, cursor
 from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
-from canonical.launchpad.components.poexport import (DistroSeriesPOExporter,
-    DistroSeriesTarballPOFileOutput, RosettaWriteTarFile)
 from canonical.launchpad.interfaces import IDistributionSet, IVPOExportSet
 from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.translationformat.translation_export import (
+    LaunchpadWriteTarFile)
+
 
 def get_distribution(name):
     """Return the distribution with the given name."""
     return getUtility(IDistributionSet)[name]
+
 
 def get_series(distribution_name, series_name):
     """Return the series with the given name in the distribution with the
     given name.
     """
     return get_distribution(distribution_name).getSeries(series_name)
+
 
 def iter_sourcepackage_translationdomain_mapping(series):
     """Return an iterator of tuples with sourcepackagename - translationdomain
@@ -57,24 +62,26 @@ def iter_sourcepackage_translationdomain_mapping(series):
     for (sourcepackagename, translationdomain,) in cur.fetchall():
         yield (sourcepackagename, translationdomain)
 
+
 def export(distribution_name, series_name, component, update, force_utf8,
-    logger):
+           logger):
     """Return a pair containing a filehandle from which the distribution's
     translations tarball can be read and the size of the tarball i bytes.
 
-    :distribution_name: The name of the distribution.
-    :series_name: The name of the distribution series.
-    :component: The component name from the given distribution series.
-    :update: Whether the export should be an update from the last export.
-    :force_utf8: Whether the export should have all files exported as UTF-8.
-    :logger: The logger object.
+    :arg distribution_name: The name of the distribution.
+    :arg series_name: The name of the distribution series.
+    :arg component: The component name from the given distribution series.
+    :arg update: Whether the export should be an update from the last export.
+    :arg force_utf8: Whether the export should have all files exported as
+        UTF-8.
+    :arg logger: The logger object.
     """
     series = get_series(distribution_name, series_name)
-    exporter = DistroSeriesPOExporter(series)
     export_set = getUtility(IVPOExportSet)
 
     logger.debug("Selecting PO files for export")
 
+    date = None
     if update:
         if series.datelastlangpack is None:
             # It's the first language pack for this series so the update must
@@ -82,16 +89,13 @@ def export(distribution_name, series_name, component, update, force_utf8,
             date = series.datereleased
         else:
             date = series.datelastlangpack
-    else:
-        date = series.datereleased
 
     pofile_count = export_set.get_distroseries_pofiles_count(
         series, date, component, languagepack=True)
     logger.info("Number of PO files to export: %d" % pofile_count)
 
     filehandle = tempfile.TemporaryFile()
-    archive = RosettaWriteTarFile(filehandle)
-    pofile_output = DistroSeriesTarballPOFileOutput(series, archive)
+    archive = LaunchpadWriteTarFile(filehandle)
 
     index = 0
     for pofile in export_set.get_distroseries_pofiles(
@@ -99,17 +103,26 @@ def export(distribution_name, series_name, component, update, force_utf8,
         logger.debug("Exporting PO file %d (%d/%d)" %
             (pofile.id, index + 1, pofile_count))
 
+        potemplate = pofile.potemplate
+        domain = potemplate.potemplatename.translationdomain.encode('ascii')
+        language_code = pofile.language.code.encode('ascii')
+
+        if pofile.variant is not None:
+            code = '%s@%s' % (language_code, pofile.variant.encode('UTF-8'))
+        else:
+            code = language_code
+
+        path = os.path.join(
+            'rosetta-%s' % series.name, code, 'LC_MESSAGES', '%s.po' % domain)
+
         try:
             # We don't want obsolete entries here, it makes no sense for a
             # language pack.
             contents = pofile.uncachedExport(
-                included_obsolete=False, force_utf8=force_utf8)
+                ignore_obsolete=True, force_utf8=force_utf8)
 
-            pofile_output(
-                potemplate=pofile.potemplate,
-                language=pofile.language,
-                variant=pofile.variant,
-                contents=contents)
+            # Store it in the tarball.
+            archive.add_file(path, contents)
         except:
             logger.exception(
                 "Uncaught exception while exporting PO file %d" % pofile.id)
@@ -138,6 +151,7 @@ def export(distribution_name, series_name, component, update, force_utf8,
 
     return filehandle, size
 
+
 def upload(filename, filehandle, size):
     """Upload a translation tarball to the Librarian.
 
@@ -153,21 +167,6 @@ def upload(filename, filehandle, size):
 
     return file_alias
 
-def compose_mail(sender, recipients, headers, body):
-    """Compose a mail text."""
-
-    all_headers = dict(headers)
-    all_headers.update({
-        'To': ', '.join(recipients),
-        'From': sender
-        })
-
-    header = '\n'.join([
-        '%s: %s' % (key, all_headers[key])
-        for key in all_headers
-        ])
-
-    return header + '\n\n' + body
 
 def send_upload_notification(recipients, distribution_name, series_name,
         component, file_alias):
@@ -189,11 +188,11 @@ def send_upload_notification(recipients, distribution_name, series_name,
             'Librarian file alias: %s\n'
             % (distribution_name, series_name, components, file_alias))
 
+
 def export_language_pack(distribution_name, series_name, component, update,
-        force_utf8, output_file, email_addresses, logger):
+                         force_utf8, output_file, email_addresses, logger):
 
     # Export the translations to a tarball.
-
     try:
         filehandle, size = export(
             distribution_name, series_name, component, update, force_utf8,
@@ -202,7 +201,7 @@ def export_language_pack(distribution_name, series_name, component, update,
         # Bare except statements are used in order to prevent premature
         # termination of the script.
         logger.exception('Uncaught exception while exporting')
-        return False
+        return
 
     if output_file is not None:
         # Save the tarball to a file.
@@ -227,12 +226,12 @@ def export_language_pack(distribution_name, series_name, component, update,
             file_alias = upload(filename, filehandle, size)
         except UploadFailed, e:
             logger.error('Uploading to the Librarian failed: %s', e)
-            return False
+            return
         except:
             # Bare except statements are used in order to prevent premature
             # termination of the script.
             logger.exception('Uncaught exception while uploading to the Librarian')
-            return False
+            return
 
         logger.info('Upload complete, file alias: %d' % file_alias)
 
@@ -246,9 +245,4 @@ def export_language_pack(distribution_name, series_name, component, update,
                 # Bare except statements are used in order to prevent
                 # premature termination of the script.
                 logger.exception("Sending notifications failed.")
-                return False
-
-    # Return a success code.
-
-    return True
-
+                return

@@ -16,7 +16,7 @@ from zope.interface import implements
 from zope.schema.interfaces import IText
 from zope.app.form.browser import TextAreaWidget, TextWidget, IntWidget
 
-from canonical.widgets.textwidgets import StrippedTextWidget 
+from canonical.widgets.textwidgets import StrippedTextWidget
 
 class TitleWidget(StrippedTextWidget):
     """A launchpad title widget; a little wider than a normal Textline."""
