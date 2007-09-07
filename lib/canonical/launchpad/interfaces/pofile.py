@@ -358,8 +358,7 @@ class AlternativeLanguageVocabularyFactory:
         if user is not None and user.languages:
             terms = [
                 SimpleTerm(language, language.code, language.displayname)
-                for language in user.languages
-                if language.code != 'en']
+                for language in user.translatable_languages]
             if terms:
                 return SimpleVocabulary(terms)
         return getVocabularyRegistry().get(None, "TranslatableLanguage")
