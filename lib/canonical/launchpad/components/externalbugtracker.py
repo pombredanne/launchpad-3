@@ -1309,8 +1309,7 @@ class SourceForge(ExternalBugTracker):
             page_data = self._getPage(query_url)
 
             soup = BeautifulSoup(page_data)
-            status_re = re.compile('Status:')
-            status_tag = soup.find(text=status_re)
+            status_tag = soup.find(text=re.compile('Status:'))
 
             # If we can't find a status line in the output from
             # Sourceforge there's little point in continuing.
@@ -1326,7 +1325,21 @@ class SourceForge(ExternalBugTracker):
             status, = status_row.contents[-1:]
             status = status.strip()
 
-            self.bugs[bug_id] = {'id': bug_id, 'status': status}
+            # We need to do the same for Resolution, though if we can't
+            # find it it's not critical.
+            resolution_tag = soup.find(text=re.compile('Resolution:'))
+            if resolution_tag:
+                resolution_row = resolution_tag.findParent.findParent()
+                resolution, = resolution_row.contents[-1:]
+                resolution = resolution.strip()
+
+                if resolution = 'None':
+                    resolution = None
+            else:
+                resolution = None
+
+            self.bugs[bug_id] = {
+                'id': bug_id, 'status': status, 'resolution': resolution}
 
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
