@@ -39,10 +39,13 @@ uploaded to.
     ...     PackageUploadStatus, PackagePublishingPocket)
 
     >>> def upload(source_release, fixing_text,
-    ...            pocket=PackagePublishingPocket.RELEASE):
+    ...            pocket=PackagePublishingPocket.RELEASE,
+    ...            archive=None):
     ...     changes = changes_template % fixing_text
+    ...     if archive is None:
+    ...         archive = ubuntu_hoary.main_archive
     ...     queue_item = ubuntu_hoary.createQueueEntry(
-    ...         archive=ubuntu_hoary.main_archive,
+    ...         archive=archive,
     ...         pocket=pocket,
     ...         changesfilename='%s.changes' % source_release.name,
     ...         changesfilecontent=changes)
@@ -147,6 +150,27 @@ further information:
 
     >>> queue_item_id = upload(cdrkit_release, cdrkit_bug_id, 
     ...                        pocket=PackagePublishingPocket.PROPOSED).id
+
+    >>> print_single_task_status(cdrkit_bug_id)
+    'NEW'
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
+    >>> close_bugs([queue_item_id])
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> print_single_task_status(cdrkit_bug_id)
+    'NEW'
+
+Uploads to PPAs will not close bugs (see bug #137767):
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> cprov_archive = getUtility(IPersonSet).getByName('cprov').archive
+    >>> queue_item_id = upload(cdrkit_release, cdrkit_bug_id,
+    ...                        archive=cprov_archive).id
 
     >>> print_single_task_status(cdrkit_bug_id)
     'NEW'
