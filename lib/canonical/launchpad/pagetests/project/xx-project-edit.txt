@@ -6,12 +6,12 @@ The owner of a project can edit its details.
   >>> browser.open('http://launchpad.dev/gnome')
   >>> browser.getLink('Change details').click()
   >>> browser.title
-  'The GNOME Project project group details'
+  'Change project group details'
 
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(browser.contents)
   >>> print soup.first('h1').renderContents()
-  Change project details
+  Change project group details
 
   >>> browser.getControl(name='field.name').value = 'new-name'
   >>> browser.getControl('Display Name').value = 'New Name'
@@ -39,9 +39,8 @@ But administrators can access the page:
 
   >>> admin_browser.url
   'http://launchpad.dev/new-name/+review'
-
   >>> admin_browser.title
-  'New Title project group details'
+  'Change project group details'
 
   >>> soup = BeautifulSoup(admin_browser.contents)
   >>> print soup.first('h1').renderContents()

@@ -909,7 +909,7 @@ project_branches = ContextTitle('Bazaar branches for %s')
 
 project_bugs = ContextTitle('Bugs in %s')
 
-project_edit = ContextTitle('Change project group details')
+project_edit = 'Change project group details'
 # We don't mention its name here, because that might be what you're changing.
 
 project_filebug_search = bugtarget_filebug_advanced

@@ -651,7 +651,7 @@ class ProductEditView(LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
     schema = IProduct
-    label = "Edit details"
+    label = "Change project details"
     field_names = [
         "displayname", "title", "summary", "description", "project",
         "bugtracker", "official_rosetta", "official_answers",

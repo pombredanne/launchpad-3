@@ -3,7 +3,7 @@
 Change some details of the Ubuntu distribution that were incorrect.
 
   >>> admin_browser.open("http://launchpad.dev/ubuntu")
-  >>> admin_browser.getLink("Change details").click()
+  >>> admin_browser.getLink("Change distribution details").click()
   >>> admin_browser.url
   'http://launchpad.dev/ubuntu/+edit'
 
@@ -21,7 +21,7 @@ Change some details of the Ubuntu distribution that were incorrect.
 
 The changed values can be seen on the distribution's +edit page.
 
-  >>> admin_browser.getLink("Change details").click()
+  >>> admin_browser.getLink("Change distribution details").click()
 
   >>> admin_browser.getControl("Display Name").value
   'Test Distro'
