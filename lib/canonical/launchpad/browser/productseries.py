@@ -770,15 +770,15 @@ class ProductSeriesSourceSetView:
         self.request = request
         self.text = request.form.get('text', None)
         try:
-            importstatus = int(request.form.get('state', None))
+            self.importstatus = int(request.form.get('state', None))
         except (ValueError, TypeError):
-            importstatus = None
+            self.importstatus = None
         # setup the initial values if there was no form submitted
         if request.form.get('search', None) is None:
-            importstatus = ImportStatus.TESTING
+            self.importstatus = ImportStatus.TESTING
 
         results = self.context.searchImports(
-            text=self.text, importstatus=importstatus)
+            text=self.text, importstatus=self.importstatus)
         self.batchnav = BatchNavigator(results, request)
 
     def sourcestateselector(self):
