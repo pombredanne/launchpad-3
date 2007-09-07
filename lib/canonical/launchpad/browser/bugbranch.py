@@ -114,13 +114,11 @@ class BugBranchEditView(LaunchpadEditFormView):
 
 
 class BranchLinkToBugView(LaunchpadFormView):
-    """The view to register new branch merge proposals."""
+    """The view to create bug-branch links."""
     schema = IBugBranch
     for_input=True
 
     field_names = ['bug', 'status', 'whiteboard']
-
-    focused_element_id = 'bug'
 
     @action('Link', name='link')
     def link_action(self, action, data):
@@ -132,10 +130,12 @@ class BranchLinkToBugView(LaunchpadFormView):
 
     def validate(self, data):
         """Make sure that this bug isn't already linked to the branch."""
-        if 'bug' in data:
-            link_bug = data['bug']
-            for bug in self.context.related_bugs:
-                if bug == link_bug:
-                    self.setFieldError(
-                        'bug',
-                        'Bug #%s is already linked to this branch' % bug.id)
+        if 'bug' not in data:
+            return
+
+        link_bug = data['bug']
+        for bug in self.context.related_bugs:
+            if bug == link_bug:
+                self.setFieldError(
+                    'bug',
+                    'Bug #%s is already linked to this branch' % bug.id)

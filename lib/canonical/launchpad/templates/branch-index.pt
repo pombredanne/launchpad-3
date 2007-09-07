@@ -198,19 +198,6 @@
     </div>
   </tal:whiteboard>
 
-  <div id="landing-targets" tal:condition="view/landing_targets">
-    <h2>Landing targets</h2>
-
-    <tal:proposals repeat="mergeproposal view/landing_targets">
-      <tal:landing-target
-          define="branch mergeproposal/target_branch;
-                  dependent_branch mergeproposal/dependent_branch;
-                  ">
-        <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
-      </tal:landing-target>
-    </tal:proposals>
-  </div>
-
   <div id="dependent-branches" tal:condition="context/dependent_branches">
     <h2>Dependent branches</h2>
 
@@ -223,8 +210,21 @@
     </tal:proposals>
   </div>
 
+  <div id="landing-targets" tal:condition="view/landing_targets">
+    <h2>This branch is proposed for merging into</h2>
+
+    <tal:proposals repeat="mergeproposal view/landing_targets">
+      <tal:landing-target
+          define="branch mergeproposal/target_branch;
+                  dependent_branch mergeproposal/dependent_branch;
+                  ">
+        <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
+      </tal:landing-target>
+    </tal:proposals>
+  </div>
+
   <div id="landing-candidates" tal:condition="view/latest_landing_candidates">
-    <h2>Landing candidates</h2>
+    <h2>Branches proposed to be merged into this one</h2>
 
     <tal:proposals repeat="mergeproposal view/latest_landing_candidates">
       <tal:landing-candidate
@@ -295,9 +295,10 @@
 
   <div id="related-bugs" tal:condition="context/related_bugs">
     <h2>Related Bugs</h2>
-    <div class="indented" tal:define="branch context">
-      <metal:branch-link use-macro="context/@@+macros/bug-branch-links"/>
-    </div>
+    <tal:bugs tal:define="branch context">
+        <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
+    </tal:bugs>
+  </tal:related-bugs>
   </div>
 
       <div class="related">

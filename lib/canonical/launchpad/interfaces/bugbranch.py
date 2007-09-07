@@ -21,7 +21,6 @@ class IBugBranch(IHasDateCreated, IHasBug):
     """A branch linked to a bug."""
 
     id = Int(title=_("Bug Branch #"))
-    # bug = Int(title=_("Bug"))
     bug = BugField(
         title=_("The bug that is linked to."), required=True, readonly=True)
     branch = Choice(
@@ -37,6 +36,7 @@ class IBugBranch(IHasDateCreated, IHasBug):
             'Additional information about the status of the bugfix '
             'in this branch.'))
 
+
 class IBugBranchSet(Interface):
 
     def getBugBranchesForBranches(branches):
@@ -46,4 +46,3 @@ class IBugBranchSet(Interface):
     def getBugBranchesForBugTasks(tasks):
         """Return a sequence of IBugBranch instances associated with
         the bugs for the given tasks."""
-

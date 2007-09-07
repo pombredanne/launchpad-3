@@ -714,6 +714,22 @@ class BugFormatterAPI(ObjectFormatterExtendedAPI):
                 '&nbsp;%s</a>' % (url, bug.title))
 
 
+class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
+    """Adapter for IBugTask objects to a formatted string."""
+
+    def link(self, extra_path):
+        """Return an HTML link to the bug task's page containing an icon
+        appropriate to the importance of the bug task.
+        """
+        bugtask = self._context
+        url = canonical_url(bugtask)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        image_html = BugTaskImageDisplayAPI(bugtask).icon()
+        return '<a href="%s">%s&nbsp;Bug #%d: %s</a>' % (
+            url, image_html, bugtask.bug.id, bugtask.bug.title)
+
+
 class NumberFormatterAPI:
     """Adapter for converting numbers to formatted strings."""
 
