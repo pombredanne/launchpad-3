@@ -79,19 +79,17 @@ def get_path_segments(path):
 def set_up_logging():
     trace.disable_default_logging()
     log = logging.getLogger('codehosting')
-    if config.codehosting.debug_logfile is None:
-        handler = logging.StreamHandler()
-    else:
+    if config.codehosting.debug_logfile is not None:
         parent_dir = os.path.dirname(config.codehosting.debug_logfile)
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
         assert (
             os.path.isdir(parent_dir), "%r should be a directory" % parent_dir)
         handler = logging.FileHandler(config.codehosting.debug_logfile)
-    handler.setFormatter(
-        logging.Formatter('%(asctime)s %(levelname)-8s %(name)s\t%(message)s'))
-    handler.setLevel(logging.DEBUG)
-    log.addHandler(handler)
+        handler.setFormatter(
+            logging.Formatter('%(asctime)s %(levelname)-8s %(name)s\t%(message)s'))
+        handler.setLevel(logging.DEBUG)
+        log.addHandler(handler)
     log.setLevel(logging.DEBUG)
     return log
 
