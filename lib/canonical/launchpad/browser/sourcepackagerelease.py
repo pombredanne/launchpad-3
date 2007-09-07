@@ -11,7 +11,10 @@ __all__ = [
 import cgi
 import re
 
-from canonical.launchpad.webapp import LaunchpadView
+from zope.component import getUtility
+
+from canonical.launchpad.webapp import LaunchpadView, canonical_url
+from canonical.launchpad.interfaces import IBugSet, NotFoundError
 
 
 class SourcePackageReleaseView(LaunchpadView):
@@ -24,6 +27,8 @@ class SourcePackageReleaseView(LaunchpadView):
         if changelog is None:
             return ''
         changelog = cgi.escape(changelog)
+
+        # Linkify the package name.
         escaped_name = re.escape(sourcepkgnametxt)
         matches = re.findall(r'%s (\(([^)]+)\) (\w+));' % escaped_name,
             changelog)
@@ -34,6 +39,18 @@ class SourcePackageReleaseView(LaunchpadView):
                 distroseries, sourcepkgnametxt, version)
             changelog = changelog.replace(match_text,
                 '(<a href="%s">%s</a>) %s' % (url, version, distroseries))
+
+        # Linkify bug numbers of the format "LP: #<number>"
+        matches = re.findall(r'(LP: #(\d+))', changelog)
+        for match_text, bug_id in matches:
+            try:
+                bug_url = canonical_url(getUtility(IBugSet).get(bug_id))
+            except NotFoundError:
+                pass
+            else:
+                changelog = changelog.replace(
+                    match_text, '<a href="%s">%s</a>' % (bug_url, match_text))
+
         return changelog
 
 
