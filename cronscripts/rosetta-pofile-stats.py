@@ -7,7 +7,7 @@ from canonical.config import config
 
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.verify_pofile_stats import (
-    VerifyPOFileStats)
+    VerifyPOFileStatsProcess)
 
 
 class VerifyPOFileStats(LaunchpadCronScript):
@@ -16,7 +16,6 @@ class VerifyPOFileStats(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = VerifyPOFileStats(
-        name="pofile-stats", dbuser=config.rosetta.dbuser)
+    script = VerifyPOFileStats(name="pofile-stats")
     script.lock_and_run()
 

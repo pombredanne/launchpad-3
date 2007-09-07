@@ -38,3 +38,19 @@ differences will be reported.
     cached stats were (0, 0, 999, 0), recomputed as (0, 0, 3, 0)
     INFO Done.
 
+All this machinery will be invoked by a cron script.
+
+    >>> import subprocess
+    >>> import sys
+    >>> process = subprocess.Popen([
+    ...     sys.executable, 'cronscripts/rosetta-pofile-stats.py', '-v'],
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT)
+    >>> (output, empty) = process.communicate()
+    >>> print output
+    INFO creating lockfile
+    INFO Starting verification of POFile stats at id 0
+    ...
+    INFO Done.
+    DEBUG Removing lock file: /var/lock/launchpad-pofile-stats.lock
+
