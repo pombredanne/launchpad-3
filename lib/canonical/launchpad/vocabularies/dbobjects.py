@@ -29,6 +29,7 @@ __all__ = [
     'FutureSprintVocabulary',
     'KarmaCategoryVocabulary',
     'LanguageVocabulary',
+    'LicenseVocabulary',
     'MilestoneVocabulary',
     'NonMergedPeopleAndTeamsVocabulary',
     'PackageReleaseVocabulary',
@@ -76,8 +77,8 @@ from canonical.lp.dbschema import DistroSeriesStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
     Distribution, DistroSeries, Person, SourcePackageRelease, Branch,
-    BranchSet, BugWatch, Sprint, DistroArchSeries, KarmaCategory, Language,
-    Milestone, Product, Project, ProductRelease, ProductSeries,
+    BranchSet, BugWatch, Sprint, DistroArchSeries, KarmaCategory, Language, 
+    License, Milestone, Product, Project, ProductRelease, ProductSeries,
     TranslationGroup, BugTracker, POTemplateName, Bounty, Country,
     Specification, Bug, Processor, ProcessorFamily, Component,
     PillarName)
@@ -329,6 +330,14 @@ class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
     _table = KarmaCategory
     _orderBy = 'name'
 
+class LicenseVocabulary(SQLObjectVocabularyBase):
+
+    _table = License
+    _orderBy = 'id'
+
+    def toTerm(self, obj):
+        """Return the term for this object."""
+        return SimpleTerm(obj, obj.id, obj.legalese)
 
 # XXX kiko 2007-01-18: any reason why this can't be an
 # NamedSQLObjectHugeVocabulary?

@@ -368,17 +368,9 @@ class ProjectReviewView(ProjectEditView):
     field_names = ['name', 'owner', 'active', 'reviewed']
 
 
-class ProjectAddProductView(LaunchpadFormView):
+from canonical.launchpad.browser import ProductAddViewBase
 
-    schema = IProduct
-    field_names = ['name', 'displayname', 'title', 'summary', 'description',
-                   'homepageurl', 'sourceforgeproject', 'freshmeatproject',
-                   'wikiurl', 'screenshotsurl', 'downloadurl',
-                   'programminglang']
-    custom_widget('homepageurl', TextWidget, displayWidth=30)
-    custom_widget('screenshotsurl', TextWidget, displayWidth=30)
-    custom_widget('wikiurl', TextWidget, displayWidth=30)
-    custom_widget('downloadurl', TextWidget, displayWidth=30)
+class ProjectAddProductView(ProductAddViewBase):
 
     label = "Register a new project that is part of this initiative"
     product = None
@@ -405,13 +397,9 @@ class ProjectAddProductView(LaunchpadFormView):
             sourceforgeproject=data['sourceforgeproject'],
             programminglang=data['programminglang'],
             project=self.context,
-            owner=self.user)
+            owner=self.user,
+            license=data['license'])
         notify(ObjectCreatedEvent(self.product))
-
-    @property
-    def next_url(self):
-        assert self.product is not None, 'No product has been created'
-        return canonical_url(self.product)
 
 
 class ProjectSetView(object):

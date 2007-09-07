@@ -19,6 +19,7 @@ __all__ = [
     'ProductView',
     'ProductDownloadFilesView',
     'ProductAddView',
+    'ProductAddViewBase',
     'ProductBrandingView',
     'ProductEditView',
     'ProductChangeTranslatorsView',
@@ -868,18 +869,27 @@ class ProductSetView(LaunchpadView):
         return self.matches > self.max_results_to_display
 
 
-class ProductAddView(LaunchpadFormView):
-
+class ProductAddViewBase(LaunchpadFormView):
     schema = IProduct
-    field_names = ['name', 'owner', 'displayname', 'title', 'summary',
-                   'description', 'project', 'homepageurl',
-                   'sourceforgeproject', 'freshmeatproject',
-                   'wikiurl', 'screenshotsurl', 'downloadurl',
-                   'programminglang', 'reviewed']
+    field_names = ['license', 'name', 'displayname', 'title', 'summary', 
+                   'description', 'homepageurl', 'sourceforgeproject', 
+                   'freshmeatproject', 'wikiurl', 'screenshotsurl', 
+                   'downloadurl', 'programminglang']
+
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('screenshotsurl', TextWidget, displayWidth=30)
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
+
+    @property
+    def next_url(self):
+        assert self.product is not None, 'No product has been created'
+        return canonical_url(self.product)
+
+class ProductAddView(ProductAddViewBase):
+
+    field_names = (ProductAddViewBase.field_names 
+                   + ['owner', 'project', 'reviewed'])
 
     label = "Register an upstream open source project"
     product = None
@@ -891,7 +901,7 @@ class ProductAddView(LaunchpadFormView):
         return self.user.inTeam(vcs_imports)
 
     def setUpFields(self):
-        LaunchpadFormView.setUpFields(self)
+        super(ProductAddView, self).setUpFields()
         if not self.isVCSImport():
             # vcs-imports members get it easy and are able to change
             # the owner and reviewed status during the edit process;
@@ -927,13 +937,8 @@ class ProductAddView(LaunchpadFormView):
             project=data['project'],
             owner=data['owner'],
             reviewed=data['reviewed'],
-            )
+            license=data['license'])
         notify(ObjectCreatedEvent(self.product))
-
-    @property
-    def next_url(self):
-        assert self.product is not None, 'No product has been created'
-        return canonical_url(self.product)
 
 
 class ProductBugContactEditView(LaunchpadEditFormView):

@@ -8,7 +8,7 @@ __all__ = ['Product', 'ProductSet']
 
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound, AND)
+    SQLObjectNotFound, IntCol, AND)
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -128,6 +128,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     calendar = ForeignKey(
         dbName='calendar', foreignKey='Calendar', default=None,
         forceDBName=True)
+
+    license = IntCol(dbName='license', notNull=False, default=None)
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
