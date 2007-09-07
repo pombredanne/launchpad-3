@@ -85,6 +85,8 @@ def set_up_logging():
         parent_dir = os.path.dirname(config.codehosting.debug_logfile)
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
+        assert (
+            os.path.isdir(parent_dir), "%r should be a directory" % parent_dir)
         handler = logging.FileHandler(config.codehosting.debug_logfile)
     handler.setFormatter(
         logging.Formatter('%(asctime)s %(levelname)-8s %(name)s\t%(message)s'))
@@ -294,6 +296,7 @@ class LaunchpadServer(Server):
         if not self._is_set_up:
             return
         self._is_set_up = False
+        self.logger.info('Requesting mirror for: %r', self._dirty_branch_ids)
         for branch_id in self._dirty_branch_ids:
             self.authserver.requestMirror(branch_id)
         self._dirty_branch_ids = None
