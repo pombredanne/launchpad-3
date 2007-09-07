@@ -251,7 +251,7 @@ class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
     been written to as part of a connection.
     """
 
-    def __init__(self, flagAsDirty, path, logger=None, name=None, parent=None):
+    def __init__(self, flagAsDirty, path, logger, name=None, parent=None):
         """
         Create a new WriteLoggingDirectory.
 
@@ -312,7 +312,7 @@ class WriteLoggingFile(osfs.OSFile, LoggingMixin):
     """osfs.OSFile that keeps track of whether it has been written to.
     """
 
-    def __init__(self, listener, path, logger=None, name=None, parent=None):
+    def __init__(self, listener, path, logger, name=None, parent=None):
         self._flagAsDirty = listener
         self.logger = logger
         osfs.OSFile.__init__(self, path, name, parent)
