@@ -1329,17 +1329,20 @@ class SourceForge(ExternalBugTracker):
             # find it it's not critical.
             resolution_tag = soup.find(text=re.compile('Resolution:'))
             if resolution_tag:
-                resolution_row = resolution_tag.findParent.findParent()
+                resolution_row = resolution_tag.findParent().findParent()
                 resolution, = resolution_row.contents[-1:]
                 resolution = resolution.strip()
 
-                if resolution = 'None':
+                if resolution == 'None':
                     resolution = None
             else:
                 resolution = None
 
             self.bugs[bug_id] = {
                 'id': bug_id, 'status': status, 'resolution': resolution}
+
+    def getRemoteStatus(self, bug_id):
+        """See `ExternalBugTracker`."""
 
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
