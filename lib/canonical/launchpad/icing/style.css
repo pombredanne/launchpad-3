@@ -705,13 +705,12 @@ body {min-width: 480px;}
 
 /* Inside those is a container for the main content, and the portlets if any. */
 #container {
-  padding: 20px 20px 0 240px;
   margin-top: 30px;
+  padding: 20px 20px 0 240px;
   position: relative;
   top: 28px;
 }
-* html #container {position: static;} /* stops container disappearing in IE6 */
-* html #container {margin-top: 48px;} /* works around IE6 bug */
+* html #container {margin-top: 28px; position: static;} /* fixes`in IE6 */
 body.applicationhome #container {padding-left: 20px;}
 #singlecolumn #container {
   padding-left: 20px;
