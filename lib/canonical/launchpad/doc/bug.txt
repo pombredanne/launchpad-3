@@ -452,8 +452,9 @@ Changing the description.
 
 Modifying a bugtask will update IBug.date_last_updated.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
-    >>> from canonical.launchpad.interfaces import IUpstreamBugTask
+    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskStatus, IUpstreamBugTask)
 
     >>> firefox_task = firefox_bug.bugtasks[0]
 

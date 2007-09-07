@@ -14,10 +14,10 @@ Sample Person.
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.lp.dbschema import BugTaskStatus
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskSearchParams, IBugTaskSet, ILaunchBag, IPersonSet)
+    ...     BugTaskStatus, BugTaskSearchParams, IBugTaskSet,
+    ...     ILaunchBag, IPersonSet)
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
     >>> params = BugTaskSearchParams(user=None, assignee=sample_person)

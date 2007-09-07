@@ -298,7 +298,8 @@ series.
 
 Add an Ubuntu bugtask for a bug that is confirmed upstream.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
+    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> from canonical.launchpad.ftests.test_bugtask import (
     ...     BugTaskSearchBugsElsewhereTest)
     >>> def bugTaskInfo(bugtask):
