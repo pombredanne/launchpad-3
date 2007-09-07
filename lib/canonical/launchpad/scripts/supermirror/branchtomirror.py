@@ -258,7 +258,7 @@ class BranchToMirror:
                 # Maybe this will be caught in bzrlib one day, and then we'll
                 # be able to get rid of this.
                 # https://launchpad.net/products/bzr/+bug/42383
-                msg = 'Private branch; required authentication'
+                msg = "Authentication required."
             self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
@@ -289,9 +289,14 @@ class BranchToMirror:
             self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.NotBranchError, e:
-            self._record_oops(logger)
-            msg = ('Not a branch: sftp://bazaar.launchpad.net/~%s'
-                   % self.branch_unique_name)
+            
+            message_by_type = {
+                BranchType.HOSTED: str(bzrlib.errors.NotBranchError(
+                "sftp://bazaar.launchpad.net/~%s" % self.branch_unique_name)),
+                BranchType.IMPORTED: "Not a branch.",
+                }
+            msg = message_by_type.get(self.branch_type, str(e))
+            self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
         except BranchReferenceForbidden, e:
