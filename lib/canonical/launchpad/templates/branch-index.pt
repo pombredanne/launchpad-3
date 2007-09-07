@@ -171,7 +171,9 @@ div.revision p {
             </tr>
             <tr class="lesser">
               <th>Example:</th>
-              <td>bzr push <tal:url replace="view/bzr_user_upload_url"/></td>
+              <td id="upload-directions">
+                bzr push <tal:url replace="view/bzr_user_upload_url"/>
+              </td>
             </tr>
             </tal:can-upload>
           </tal:logged-in>

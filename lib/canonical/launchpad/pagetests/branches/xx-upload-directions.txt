@@ -9,13 +9,8 @@ shows contextual directions on how to upload to it.
 We will need multiple browsers, logged in with different users. Set them up
 now.
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> name12_browser = Browser()
-  >>> name12_browser.addHeader(
-  ...     'Authorization', 'Basic test@canonical.com:test')
-  >>> ddaa_browser = Browser()
-  >>> ddaa_browser.addHeader(
-  ...     'Authorization', 'Basic david.allouche@canonical.com:test')
+  >>> name12_browser = setupBrowser(auth='Basic test@canonical.com:test')
+  >>> ddaa_browser = setupBrowser(auth='Basic david.allouche@canonical.com:test')
 
 We will also need a ssh key. Save it now.
 
@@ -70,8 +65,8 @@ URL for the branch.
   >>> content = name12_browser.contents
   >>> instructions = find_tag_by_id(content, 'upload-directions')
   >>> print extract_text(instructions)
-  You can upload to this branch at:
-  sftp://name12@bazaar.launchpad.net/~name12/gnome-terminal/pushed
+  bzr push bzr+ssh://name12@bazaar.launchpad.dev/~name12/gnome-terminal/pushed
+
 
 == SSH key directions ==
 
@@ -180,8 +175,7 @@ owning team's name.
   >>> content = name12_browser.contents
   >>> instructions = find_tag_by_id(content, 'upload-directions')
   >>> print extract_text(instructions)
-  You can upload to this branch at:
-  sftp://name12@bazaar.launchpad.net/~landscape-developers/gnome-terminal/pushed
+  bzr push bzr+ssh://name12@bazaar.launchpad.dev/~landscape-developers/gnome-terminal/pushed
 
 
 == Import branch ==
