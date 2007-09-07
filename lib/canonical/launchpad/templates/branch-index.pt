@@ -298,7 +298,6 @@
     <tal:bugs tal:define="branch context">
         <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
     </tal:bugs>
-  </tal:related-bugs>
   </div>
 
       <div class="related">
