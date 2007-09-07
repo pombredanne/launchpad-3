@@ -75,6 +75,8 @@ from canonical.launchpad.interfaces import (
     IPersonSet,
     IPillarNameSet,
     IPOTemplateNameSet,
+    IPrivateXMLRPCEndPoint,
+    IPrivateXMLRPCRequest,
     IProductSet,
     IProjectSet,
     IQuestionSet,
@@ -447,7 +449,14 @@ class LaunchpadRootNavigation(Navigation):
 
     def traverse(self, name):
         if name in self.stepto_utilities:
-            return getUtility(self.stepto_utilities[name])
+            utility = getUtility(self.stepto_utilities[name])
+            # If the utility is part of the private API, then the request must
+            # be coming from the private XML-RPC port.
+            if (IPrivateXMLRPCEndPoint.providedBy(utility) and
+                not IPrivateXMLRPCRequest.providedBy(self.request)):
+                # The utility wants to be private but the request was public.
+                return None
+            return utility
 
         # Allow traversal to ~foo for People
         if name.startswith('~'):
@@ -1012,4 +1021,3 @@ class BrowserWindowDimensions(LaunchpadView):
 
     def render(self):
         return u'Thanks.'
-

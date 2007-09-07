@@ -22,10 +22,11 @@ from zope.server.http.commonaccesslogger import CommonAccessLogger
 from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
-        IShipItApplication, IOpenIdApplication)
+        IShipItApplication, IOpenIdApplication, IPrivateXMLRPCRequest)
 
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
@@ -123,7 +124,7 @@ class ApplicationServerSettingRequestFactory:
 
     Due to the factory-fanatical design of this part of Zope3, we need
     to have a kind of proxying factory here so that we can create an
-    approporiate request and call its setApplicationServer method before it
+    appropriate request and call its setApplicationServer method before it
     is used.
     """
 
@@ -191,6 +192,8 @@ class LaunchpadRequestPublicationFactory:
             ShipItPublication))
         vhrps.append(VHRP('xmlrpc',
                           PublicXMLRPCRequest, PublicXMLRPCPublication))
+        vhrps.append(VHRP('xmlrpc_private',
+                          PrivateXMLRPCRequest, PrivateXMLRPCPublication))
         # Done with using the short form of VirtualHostRequestPublication, so
         # clean up, as we won't need to use it again later.
         del VHRP
@@ -215,6 +218,21 @@ class LaunchpadRequestPublicationFactory:
 
     def canHandle(self, environment):
         """Only configured domains are handled."""
+        # We look at the wsgi environment to get the port this request is
+        # coming in over. If it's our private port (as determined by matching
+        # the PrivateXMLRPC server type), then we route calls to the private
+        # xmlrpc host.
+        try:
+            port = int(environment.get('SERVER_PORT', '-1'))
+        except ValueError:
+            port = -1
+        for server in config.servers:
+            if server.address[1] == port and server.type == 'PrivateXMLRPC':
+                # This request came over the private XMLRPC port.
+                self._thread_local.host = (
+                    config.launchpad.vhosts.xmlrpc_private.hostname)
+                return True
+
         if 'HTTP_HOST' not in environment:
             self._thread_local.host = self.USE_DEFAULTS
             return True
@@ -654,6 +672,12 @@ debughttp = wsgi.ServerType(
     True,
     requestFactory=DebugLayerRequestFactory)
 
+privatexmlrpc = wsgi.ServerType(
+    WSGIHTTPServer,
+    WSGIPublisherApplication,
+    LaunchpadAccessLogger,
+    8080,
+    True)
 
 # ---- mainsite
 
@@ -754,6 +778,19 @@ class PublicXMLRPCResponse(XMLRPCResponse):
                             xmlrpclib.Fault(-1, request.oopsid),
                             None)
         XMLRPCResponse.handleException(self, exc_info)
+
+
+class PrivateXMLRPCPublication(PublicXMLRPCPublication):
+    """The publication used for private XML-RPC requests."""
+    # For now, the same as public publications.
+
+
+class PrivateXMLRPCRequest(PublicXMLRPCRequest):
+    """Request type for doing private XML-RPC in Launchpad."""
+
+    # Add this marker interface to the request so that LaunchpadRootNavigation
+    # can check for its presence on the resulting utility.
+    implements(IPrivateXMLRPCRequest)
 
 
 # ---- openid

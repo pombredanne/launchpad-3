@@ -60,6 +60,8 @@ __all__ = [
     'IPasswordChangeApp',
     'IPasswordEncryptor',
     'IPasswordResets',
+    'IPrivateXMLRPCEndPoint',
+    'IPrivateXMLRPCRequest',
     'IReadZODBAnnotation',
     'IRegistryApplication',
     'IRosettaApplication',
@@ -192,6 +194,14 @@ class IBazaarApplication(ILaunchpadApplication):
 
 class IOpenIdApplication(ILaunchpadApplication):
     """Launchpad Login Service application root."""
+
+
+class IPrivateXMLRPCEndPoint(Interface):
+    """Marker interface for private XML-RPC end points."""
+
+
+class IPrivateXMLRPCRequest(Interface):
+    """Marker interface for private XML-RPC requests."""
 
 
 class IAuthApplication(Interface):

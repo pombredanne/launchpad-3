@@ -22,4 +22,11 @@
         component="canonical.launchpad.webapp.servers.debughttp"
         provides="zope.app.server.servertype.IServerType"
         />
+
+    <utility
+        name="PrivateXMLRPC"
+        component="canonical.launchpad.webapp.servers.privatexmlrpc"
+        provides="zope.app.server.servertype.IServerType"
+        />
+
 </configure>
