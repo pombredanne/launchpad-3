@@ -1,0 +1,65 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone">
+
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <div>
+        <img alt="" src="/@@/bug" />
+        <a tal:attributes="href context/bug/fmt:url"
+        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
+        <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
+      </div>
+
+      <h1>Create a question from this bug</h1>
+    </metal:heading>
+
+    <metal:leftportlets fill-slot="portlets_one">
+      <div tal:replace="structure context/@@+portlet-questions" />
+    </metal:leftportlets>
+
+    <metal:rightportlets fill-slot="portlets_two">
+      <div tal:replace="structure context/@@+portlet-search" />
+    </metal:rightportlets>
+
+    <div metal:fill-slot="main">
+      <p tal:condition="not: view/contextUsesMalone">
+        <span tal:replace="context.displayname">Firefox</span> does not use
+        Launchpad to track bugs. A question cannot be created from this bug.
+      </p>
+
+      <p tal:condition="view/contextUsesMalone">
+        By creating a question from this bug, this bug's status will be Invalid
+        for all locations it affects. The new question will be linked to this
+        bug.
+      </p>
+
+      <form action="." method="POST">
+        <div class="field">
+          <div tal:content="structure view/create_question_widget">
+            <input type="radio" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <input 
+            type="submit"
+            name="cancel"
+            value="Cancel" />
+          <input tal:condition="view/contextUsesMalone"
+            type="submit"
+            name="create_question"
+            value="Create a Question" />
+        </div>
+      </form>
+    </div>
+
+  </body>
+</html>

@@ -346,6 +346,13 @@
 
     <browser:page
       for="canonical.launchpad.interfaces.IBugTask"
+      name="+create-question"
+      class="canonical.launchpad.browser.BugTaskView"
+      permission="launchpad.Edit"
+      template="../templates/bug-create-question.pt" />
+
+    <browser:page
+      for="canonical.launchpad.interfaces.IBugTask"
       name="+subscribe"
       class="canonical.launchpad.browser.BugTaskView"
       permission="launchpad.AnyPerson"
