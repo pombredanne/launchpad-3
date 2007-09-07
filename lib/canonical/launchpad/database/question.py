@@ -365,9 +365,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             if user.inTeam(contact):
                 return True
         admin = getUtility(ILaunchpadCelebrities).admin
-        # self.target can return a source package, we want the
-        # pillar target.
-        context = self.product or self.distribution
+        context = self.pillar
         return user.inTeam(context.owner) or user.inTeam(admin)
 
     @notify_question_modified()

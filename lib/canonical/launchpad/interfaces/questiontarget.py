@@ -44,10 +44,10 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         """
 
     def createQuestionFromBug(bug):
-        """Create a question from a Bug.
+        """Create and return a Question from a Bug.
         
         The bug's title and description are used as the question title and
-        description. The bug owner is also the question owner. The question
+        description. The bug owner is the question owner. The question
         is automatically linked to the bug.
         
         Note that bug messages and attachments are not duplicated for the

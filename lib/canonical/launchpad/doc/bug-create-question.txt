@@ -9,18 +9,20 @@ to IQuestionTarget and must use Launchpad track bugs.
     ...     IProductSet, IProductSeries, IQuestionTarget,
     ...     ISourcePackageNameSet)
 
-    # Some parts of the IQuestionTarget interface are only accessible
-    # to a registered user.
-    >>> login('no-priv@canonical.com')
+Some parts of the IQuestionTarget interface are only accessible
+to a registered user. No Privileges Person will create the bugs,
+Sample Person will play the role of bug contact.
+
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> login('test@canonical.com')
 
 A Firefox bug in Debian cannot be converted to a question because the
 Distribution does not use Launchpad to track bugs.
 
     >>> firefox_bug = getUtility(IBugSet).get(8)
     >>> firefox_package = firefox_bug.bugtasks[0].target
-    >>> verifyObject(IQuestionTarget, firefox_package)
+    >>> IQuestionTarget.providedBy(firefox_package)
     True
     >>> firefox_bug.bugtasks[0].target_uses_malone
     False
@@ -33,58 +35,44 @@ Distribution does not use Launchpad to track bugs.
 Jokosher does use Launchpad to track bugs; its bugs can be converted
 to questions.
 
+    >>> login('no-priv@canonical.com')
+
     >>> jokosher = getUtility(IProductSet)['jokosher']
     >>> bug_params = CreateBugParams(
     ...     title="Print is broken", comment="blah blah blah", owner=no_priv)
     >>> bug_params.setBugTarget(product=jokosher)
     >>> jokosher_bug = getUtility(IBugSet).createBug(bug_params)
-
-    # XXX sinzui 2007-08-23: The rules for selecting the QuestionTarget
-    # will be in the bug View. It will use the context and pass that
-    # to Bug.createQuestionFromBug(question_target)
-    >>> len(jokosher_bug.bugtasks)
-    1
     >>> jokosher_bugtask = jokosher_bug.bugtasks[0]
     >>> jokosher_bugtask.status.title
     'New'
     >>> jokosher.official_malone
     True
-    >>> target = jokosher_bugtask.target
-    >>> verifyObject(IQuestionTarget, target)
+    >>> IQuestionTarget.providedBy(jokosher)
     True
 
-    # XXX sinzui 2007-08-23: l.c.l.interfaces/ftests/QuestionTarget.txt
-    # needs to run an example of each type that implements BugTask.
+    # The view uses the context as the QuestionTarget, but any object
+    # that provides IQuestionTarget will suffice.
+    # eg. bug.createQuestionFromBug(self.context, self.user)
+    >>> login('test@canonical.com')
     >>> question = jokosher_bug.createQuestionFromBug(jokosher, sample_person)
+
     >>> question.target == jokosher
     True
-
     >>> question.owner == jokosher_bug.owner
     True
-    >>> question.owner.displayname
-    u'No Privileges Person'
-
     >>> question.title == jokosher_bug.title
     True
-    >>> question.title
-    u'Print is broken'
-
     >>> question.description == jokosher_bug.description
     True
+        
+    >>> question.owner.displayname
+    u'No Privileges Person'
+    >>> question.title
+    u'Print is broken'
     >>> question.description
     u'blah blah blah'
 
-The question language is always English because all bugs in Launchpad
-are written in English.
-
-    >>> question.language.code
-    u'en'
-
-Once converted to a question, the bugtask status is Invalid. The
-Question status is new
-
-    >>> question.status.title
-    'Open'
+Once converted to a question, the bugtask status is Invalid.
 
     >>> jokosher_bugtask.status.title
     'Invalid'
@@ -93,24 +81,22 @@ Question status is new
 
 The question is automatically linked to the original bug.
 
-    >>> [question_bug.bug.title for question_bug in question.bug_links]
+    >>> [question.title for question in jokosher_bug.questions]
     [u'Print is broken']
 
 A bug can only be converted to a question once.
 
-    >>> # XXX sinzui 2007-08-23: check the Question.bug_link will suffice
-    >>> '#%s' % question.id
-    '#15'
-
     >>> question = jokosher_bug.createQuestionFromBug(jokosher, sample_person)
     Traceback (most recent call last):
     ...
-    AssertionError: This bug was already converted to question #15.    
+    AssertionError: This bug was already converted to question #...    
 
 In the rare instance where a bug has more than one bugtask, the status
 for both bugtasks is set to Invalid. When a bug is really a question,
 it is a question for all bugtasks; a bug cannot be a question in one
 location and a bug in another.
+
+    >>> login('no-priv@canonical.com')
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> bug_params = CreateBugParams(
@@ -129,6 +115,8 @@ location and a bug in another.
     >>> ['%s: %s' % (bt.target.name, bt.status.title) for bt in bugtasks]
     [u'ubuntu: New', u'evolution: New']
 
+    >>> login('test@canonical.com')
+    
     >>> question = ubuntu_bug.createQuestionFromBug(ubuntu, sample_person)
     >>> question.title
     u'Print is borked'

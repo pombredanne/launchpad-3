@@ -297,10 +297,10 @@ class IBug(IMessageTarget, ICanBeMentored):
         """
 
     def createQuestionFromBug(question_target, person):
-        """Create a question from this Bug.
+        """Create and return a Question from this Bug.
         
-        The question_target or its distribution have official_malone set
-        to True. All the Bug's BugTasks will be set to Invalid status with
+        The question_target, or its distribution, must have official_malone
+        set to True. All the bug's bugtasks will be set to Invalid status with
         an explaination that the bug is a question in the statusexplanation.
         
         :question_target: An IQuestionTarget.

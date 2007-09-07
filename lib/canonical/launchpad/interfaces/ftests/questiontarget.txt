@@ -492,3 +492,53 @@ of the target's questions.
 
     >>> sorted([language.code for language in target.getQuestionLanguages()])
     [u'en', u'fr']
+
+
+== pillar ==
+
+The target knows the pillar (Product or Distribution) it belongs to.
+The target may return itself, or the pillar object that is appropriate.
+
+    >>> from canonical.launchpad.interfaces import IDistribution, IProduct
+    >>> pillar = target.pillar
+    >>> IDistribution.providedBy(pillar) or IProduct.providedBy(pillar)
+    True
+
+
+== Creating a question from a bug ==
+
+The target can create a question from a bug, and link that bug to the
+new question.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     CreateBugParams, IBugSet, IProductSet)
+    >>> jokosher = getUtility(IProductSet)['jokosher']
+    >>> bug_params = CreateBugParams(
+    ...     title="Print is broken", comment="blah blah blah",
+    ...     owner=sample_person)
+    >>> bug_params.setBugTarget(product=jokosher)
+    >>> jokosher_bug = getUtility(IBugSet).createBug(bug_params)
+
+    >>> jokosher_question = target.createQuestionFromBug(jokosher_bug)
+
+    >>> jokosher_question.owner == jokosher_bug.owner
+    True
+    >>> jokosher_question.title == jokosher_bug.title
+    True
+    >>> jokosher_question.description == jokosher_bug.description
+    True
+    
+    >>> jokosher_question.owner.displayname
+    u'Sample Person'
+    >>> jokosher_question.title
+    u'Print is broken'
+    >>> jokosher_question.description
+    u'blah blah blah'
+    >>> [bug_link.bug.title for bug_link in jokosher_question.bug_links]
+    [u'Print is broken']
+
+The question language is always English because all bugs in Launchpad
+are written in English.
+
+    >>> question.language.code
+    u'en'
