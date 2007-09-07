@@ -18,6 +18,7 @@ from canonical.config import config
 from canonical.authserver.client.twistedclient import TwistedAuthServer
 
 from canonical.codehosting import sshserver
+from canonical.codehosting.transport import set_up_logging
 
 
 class SSHService(service.Service):
@@ -36,7 +37,6 @@ class SSHService(service.Service):
         """Create and return an SFTP server that uses the given public and
         private keys.
         """
-        homedirs = config.codehosting.branches_root
         authserver = TwistedAuthServer(config.codehosting.authserver)
         portal = Portal(self.makeRealm())
         portal.registerChecker(
@@ -70,6 +70,7 @@ class SSHService(service.Service):
 
     def startService(self):
         """Start the SFTP service."""
+        set_up_logging()
         service.Service.startService(self)
         self.service.startService()
 

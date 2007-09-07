@@ -25,7 +25,6 @@ from twisted.vfs.adapters import sftp
 
 from canonical.codehosting.bazaarfs import SFTPServerRoot
 from canonical.codehosting.smartserver import launch_smart_server
-from canonical.codehosting.transport import set_up_logging
 from canonical.config import config
 
 from zope.interface import implements
@@ -252,7 +251,6 @@ class Factory(factory.SSHFactory):
         self.privateKeys = {
             'ssh-rsa': hostPrivateKey
         }
-        set_up_logging()
 
     def startFactory(self):
         factory.SSHFactory.startFactory(self)

@@ -7,6 +7,7 @@ __all__ = ['branch_id_to_path', 'LaunchpadServer', 'LaunchpadTransport',
            'set_up_logging', 'UntranslatablePath']
 
 import logging
+import os
 
 from bzrlib.errors import (
     BzrError, InProcessTransport, NoSuchFile, TransportNotPossible)
@@ -81,6 +82,7 @@ def set_up_logging():
     if config.codehosting.debug_logfile is None:
         handler = logging.StreamHandler()
     else:
+        os.makedirs(os.path.dirname(config.codehosting.debug_logfile))
         handler = logging.FileHandler(config.codehosting.debug_logfile)
     handler.setFormatter(
         logging.Formatter('%(asctime)s %(levelname)-8s %(name)s\t%(message)s'))
