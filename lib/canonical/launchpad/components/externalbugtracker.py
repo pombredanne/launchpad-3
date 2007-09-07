@@ -1393,7 +1393,11 @@ class SourceForge(ExternalBugTracker):
                 'Postponed': BugTaskStatus.CONFIRMED,
                 'Rejected': BugTaskStatus.WONTFIX,
                 'Remind': BugTaskStatus.CONFIRMED,
+
+                # Some custom SourceForge trackers misspell this, so we
+                # deal with the syntactically incorrect version, too.
                 "Won't Fix": BugTaskStatus.WONTFIX,
+                'Wont Fix': BugTaskStatus.WONTFIX,
                 'Works For Me': BugTaskStatus.INVALID,
             },
 

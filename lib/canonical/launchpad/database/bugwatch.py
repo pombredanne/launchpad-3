@@ -268,7 +268,7 @@ class BugWatchSet(BugSetBase):
         return the global SF instance. This makes it possible for people
         to use alternative host names, like sf.net.
         """
-        if not path.startswith('/tracker/'):
+        if not path.startswith('/support/tracker.php'):
             return None
         if not query.get('aid'):
             return None
