@@ -768,7 +768,7 @@ class ProductSeriesSourceSetView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        text = request.form.get('text', None)
+        self.text = request.form.get('text', None)
         try:
             importstatus = int(request.form.get('state', None))
         except (ValueError, TypeError):
@@ -778,7 +778,7 @@ class ProductSeriesSourceSetView:
             importstatus = ImportStatus.TESTING
 
         results = self.context.searchImports(
-            text=text, importstatus=importstatus)
+            text=self.text, importstatus=importstatus)
         self.batchnav = BatchNavigator(results, request)
 
     def sourcestateselector(self):
