@@ -28,7 +28,7 @@
       type="text/css"
       tal:condition="view/isPrivate | CONTEXTS/lp:immediate_object_is_private"
       id="privatestyle"
-    >#nonheader {background: url(/@@/private-bg) top left repeat-x;}</style>
+    >#container {background: url(/@@/private-bg) top left repeat-x;}</style>
     <style tal:condition="is_demo" type="text/css"
     >html, body {background-image: url(/@@/demo) !important;}</style>
     <style tal:condition="site_message" type="text/css"
@@ -97,9 +97,6 @@
         </tr>
       </table>
     </div>
-
-    <div id="nonheader">
-
     <div id="nonhelp">
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <table
@@ -355,8 +352,6 @@
         <li class="item"><a href="/people">People</a></li>
         <li class="item"><a href="/sprints">Meetings</a></li>
     </div>
-
-    </div><!--id="nonheader"-->
   </body>
 </html>
 <tal:requestlog
