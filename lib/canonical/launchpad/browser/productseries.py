@@ -777,7 +777,8 @@ class ProductSeriesSourceSetView:
         if request.form.get('search', None) is None:
             importstatus = ImportStatus.TESTING
 
-        results = self.context.search(text=text, importstatus=importstatus)
+        results = self.context.searchImports(
+            text=text, importstatus=importstatus)
         self.batchnav = BatchNavigator(results, request)
 
     def sourcestateselector(self):

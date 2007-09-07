@@ -215,8 +215,8 @@ class SyncIntervalTestCase(LaunchpadZopelessTestCase):
         self.assertEquals(series.syncinterval, datetime.timedelta(hours=12))
 
 
-class TestProductSeriesSearch(LaunchpadZopelessTestCase):
-    """
+class TestProductSeriesSearchImports(LaunchpadZopelessTestCase):
+    """Tests for ProductSeriesSet.searchImports().
     """
 
     def setUp(self):
@@ -224,43 +224,56 @@ class TestProductSeriesSearch(LaunchpadZopelessTestCase):
             series.deleteImport()
         flush_database_updates()
 
-    def addDetailsToSeries(self, series):
+    def importSeriesForProduct(self, product_name):
+        """Get a series with import data for the product named 'product_name'.
+
+        The returned series will have 'SYNCING' importstatus (chosen
+        arbitrarily).
+        """
+        product = getUtility(IProductSet).getByName(product_name)
+        series = product.development_focus
         series.rcstype = RevisionControlSystems.CVS
         series.cvsroot = ':pserver:anonymous@cvs.example.com:/cvsroot'
         series.cvsmodule = 'hello'
         series.cvsbranch = 'MAIN'
         series.importstatus = ImportStatus.SYNCING
+        flush_database_updates()
+        return series
 
     def testEmpty(self):
-        """Test that our setUp method ensures that .search() initally returns
-        no productseries.
+        """Test that our setUp method ensures that .searchImports() initally
+        returns no productseries.
         """
-        results = getUtility(IProductSeriesSet).search(forimport=True)
+        results = getUtility(IProductSeriesSet).searchImports()
         self.assertEquals(list(results), [])
 
     def testOneSeries(self):
+        """Test that when there is one series with import data, it is
+        returned.
         """
-        """
-        firefox = getUtility(IProductSet).getByName(
-            'firefox')
-        series = firefox.getSeries("trunk")
-        self.addDetailsToSeries(series)
-        flush_database_updates()
-        results = getUtility(IProductSeriesSet).search(forimport=True)
+        series = self.importSeriesForProduct('firefox')
+        results = getUtility(IProductSeriesSet).searchImports()
         self.assertEquals(list(results), [series])
 
     def testExcludeDeactivatedProducts(self):
+        """Test that series with import data associated to deactivated
+        products are not returned.
         """
-        """
-        disabled_product = getUtility(IProductSet).getByName(
-            'python-gnome2-dev')
-        self.failIf(disabled_product.active)
-        series = disabled_product.getSeries("trunk")
-        self.addDetailsToSeries(series)
-        flush_database_updates()
-        results = getUtility(IProductSeriesSet).search(forimport=True)
+        series = self.importSeriesForProduct('python-gnome2-dev')
+        self.failIf(series.product.active)
+        results = getUtility(IProductSeriesSet).searchImports()
         self.assertEquals(list(results), [])
 
+    def testSearchByStatus(self):
+        """Test that the 'status' argument to searchImports() is respected.
+        """
+        series = self.importSeriesForProduct('firefox')
+        results = getUtility(IProductSeriesSet).searchImports(
+            importstatus=ImportStatus.SYNCING)
+        self.assertEquals(list(results), [series])
+        results = getUtility(IProductSeriesSet).searchImports(
+            importstatus=ImportStatus.PROCESSING)
+        self.assertEquals(list(results), [])
 
 
 def test_suite():

@@ -345,7 +345,7 @@ class IProductSeriesSet(Interface):
         Return the default value if there is no such series.
         """
 
-    def search(text=None, importstatus=None):
+    def searchImports(text=None, importstatus=None):
         """Search through the series with import data.
 
         Note that this method will never return a series for a deactivated

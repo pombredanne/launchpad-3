@@ -551,14 +551,15 @@ class ProductSeriesSet:
         except SQLObjectNotFound:
             return default
 
-    def search(self, text=None, importstatus=None):
+    def searchImports(self, text=None, importstatus=None):
+        """See `IProductSeriesSet`."""
         query = self._querystr(text, importstatus)
         return ProductSeries.select(
             query, distinct=True, clauseTables=['Product', 'Project'])
 
     def importcount(self, status=None):
         """See `IProductSeriesSet`."""
-        return self.search(status=status).count()
+        return self.searchImports(status=status).count()
 
     def _querystr(self, text=None, importstatus=None):
         """Return a querystring for use in a query.
@@ -591,7 +592,7 @@ class ProductSeriesSet:
         if importstatus is None:
             queries.append('ProductSeries.importstatus IS NOT NULL')
         else:
-            queries.append('ProductSeries.importstatus = %d'
+            queries.append('ProductSeries.importstatus = %s'
                            % sqlvalues(importstatus))
 
         query = " AND ".join(queries)
