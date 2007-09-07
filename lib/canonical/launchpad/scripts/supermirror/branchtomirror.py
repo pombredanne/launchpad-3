@@ -42,8 +42,14 @@ class BranchReferenceForbidden(Exception):
     not allow references.
     """
 
+
 class BranchReferenceValueError(Exception):
     """Raised when encountering a branch reference with a dangerous value."""
+
+    def __init__(self, url):
+        Exception.__init__(self, url)
+        self.url = url
+
 
 class BranchReferenceLoopError(Exception):
     """Raised when encountering a branch reference loop."""
@@ -240,6 +246,7 @@ class BranchToMirror:
 
         try:
             self._checkSourceUrl()
+            self._checkBranchReference()
             self._openSourceBranch()
             self._mirrorToDestBranch()
         # add further encountered errors from the production runs here
@@ -285,6 +292,22 @@ class BranchToMirror:
             self._record_oops(logger)
             msg = ('Not a branch: sftp://bazaar.launchpad.net/~%s'
                    % self.branch_unique_name)
+            self._mirrorFailed(logger, msg)
+
+        except BranchReferenceForbidden, e:
+            msg = ("Branch references are not allowed for branches of type %s."
+                   % (self.branch_type.title,))
+            self._record_oops(logger, msg)
+            self._mirrorFailed(logger, msg)
+
+        except BranchReferenceValueError, e:
+            msg = "Bad branch reference value: %s" % (e.url,)
+            self._record_oops(logger, msg)
+            self._mirrorFailed(logger, msg)
+
+        except BranchReferenceLoopError, e:
+            msg = "Circular branch reference."
+            self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
         except bzrlib.errors.BzrError, e:

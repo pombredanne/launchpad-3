@@ -271,6 +271,8 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
 
 class ErrorHandlingTestCase(unittest.TestCase):
 
+    enable_checkBranchReference = False
+
     def setUp(self):
         unittest.TestCase.setUp(self)
         self._errorHandlingSetUp()
@@ -290,6 +292,8 @@ class ErrorHandlingTestCase(unittest.TestCase):
             self.open_call_count += 1
         self.branch._openSourceBranch = mockOpenSourceBranch
         self.branch._mirrorToDestBranch = lambda: None
+        if not self.enable_checkBranchReference:
+            self.branch._checkBranchReference = lambda: None
         # We set the log level to CRITICAL so that the log messages
         # are suppressed.
         logging.basicConfig(level=logging.CRITICAL)
@@ -379,6 +383,8 @@ class TestBadUrl(ErrorHandlingTestCase):
 class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
     """Feature tests for mirroring of branch references."""
 
+    enable_checkBranchReference = True
+
     def setUp(self):
         TestCaseWithTransport.setUp(self)
         ErrorHandlingTestCase._errorHandlingSetUp(self)
@@ -455,15 +461,6 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
         self.branch.source = reference_url
         self._runMirrorAndCheckError('Branch references are not allowed ')
         self.assertEqual(self.open_call_count, 0)
-
-    def testMirrorBranchReference(self):
-        """Most branch reference in mirror branches are accepted."""
-        reference_url = self.createBranchReference('http://example.com/branch')
-        self.branch.branch_type = BranchType.MIRRORED
-        self.branch.source = reference_url
-        self.branch.mirror(logging.getLogger())
-        self.assertEqual(len(self.errors), 0)
-        self.assertEqual(self.open_call_count, 1)
 
     def testMirrorLocalBranchReference(self):
         """A file:// branch reference for a mirror branch must cause an error.
@@ -684,6 +681,13 @@ class TestErrorHandling(ErrorHandlingTestCase):
         url = ('sftp://bazaar.launchpad.net/~%s'
                % self.branch.branch_unique_name)
         self.assertEqual('Not a branch: %s' % url, observed_msg)
+
+    def testBranchReferenceLoopError(self):
+        """BranchReferenceLoopError exceptions are caught."""
+        def stubCheckBranchReference():
+            raise BranchReferenceLoopError()
+        self.branch._checkBranchReference = stubCheckBranchReference
+        self._runMirrorAndCheckError("Circular branch reference.")
 
     def testBzrErrorHandling(self):
         def stubOpenSourceBranch():
