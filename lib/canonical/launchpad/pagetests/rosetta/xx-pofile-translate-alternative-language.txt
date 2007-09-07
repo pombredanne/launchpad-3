@@ -11,13 +11,13 @@ since that is the one language we always translate from, never to.
     >>> def get_alternative_languages_widget(browser):
     ...     """Check and return alternative languages widget offered on page.
     ...
-    ...     If a url is given, it will be opened in the browser.  If not, the
-    ...     current page is used.  This function also verifies that English
-    ...     is never offered as an alternative.  We translate from English,
-    ...     but never to English (except in variants like 'en_AU').
+    ...     Inspects the browser's currently opened page, which must be a
+    ...     +translate page.  Also verifies that English is never offered as
+    ...     an alternative.  We translate from English, but never to English
+    ...     (except in variants like 'en_AU').
     ...     """
-    ...     if not browser.url.endswith('+translate'):
-    ...         raise AssertionError("Not at +translate page.")
+    ...     if not browser.url.endswith('/+translate'):
+    ...         raise AssertionError("Not a +translate page: " + browser.url)
     ...     try:
     ...         browser.getControl('English (en)', index=0).selected
     ...         raise AssertionError(
