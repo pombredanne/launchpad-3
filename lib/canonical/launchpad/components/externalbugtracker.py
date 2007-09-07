@@ -10,8 +10,10 @@ import urllib
 import urllib2
 import ClientCookie
 import xml.parsers.expat
+from email.Utils import parseaddr
 from xml.dom import minidom
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
@@ -20,7 +22,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import BugTrackerType, BugTaskStatus
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
-    IExternalBugtracker, UNKNOWN_REMOTE_STATUS)
+    CreateBugParams, IDistribution, IExternalBugtracker, IPersonSet,
+    PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (http://bugs.launchpad.net/)"
@@ -539,6 +542,21 @@ class DebBugs(ExternalBugTracker):
         new_remote_status = ' '.join(
             [debian_bug.status, severity] + debian_bug.tags)
         return new_remote_status
+
+    def createLaunchpadBug(self, bug_target, bug_id):
+        assert IDistribution.providedBy(bug_target), (
+            'We assume debbugs is used only by a distribution (Debian).')
+        debian_bug = self._findBug(bug_id)
+        reporter_name, reporter_email = parseaddr(debian_bug.originator)
+        reporter = getUtility(IPersonSet).ensurePerson(
+            reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
+            comment='when importing debbugs bug #%s' % bug_id)
+        package = bug_target.getSourcePackage(debian_bug.package)
+        bug = package.createBug(
+            CreateBugParams(
+                reporter, debian_bug.subject, debian_bug.description,
+                subscribe_reporter=False))
+        return bug
 
 #
 # Mantis

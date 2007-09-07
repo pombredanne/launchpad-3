@@ -226,6 +226,98 @@ UNKNOWN_REMOTE_STATUS maps to Unknown.
     Unknown
 
 
+== Creating bug watches ==
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> debian.official_malone
+    False
+
+    >>> report = email.message_from_file(
+    ...     open(os.path.join(
+    ...         test_db_location, 'db-h', '35', '322535.report')))
+    >>> print report['Subject']
+    evolution: Multiple format string vulnerabilities in Evolution
+    >>> print report['From']
+    Moritz Muehlenhoff <jmm@inutil.org>
+
+    >>> from email.Utils import parseaddr
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> reporter_name, reporter_email = parseaddr(report['From'])
+    >>> print getUtility(IPersonSet).getByEmail(reporter_email)
+    None
+
+    >>> print report.get_payload(decode=True)
+    Package: evolution
+    Severity: grave
+    Tags: security
+    <BLANKLINE>
+    Multiple exploitable format string vulnerabilities have been found in
+    Evolution. Please see 
+    http://www.securityfocus.com/archive/1/407789/30/0/threaded
+    for details. 2.3.7 fixes all these issues.
+    ...
+
+    >>> bug = external_debbugs.createLaunchpadBug(debian, '322535')
+    >>> print bug.title
+    evolution: Multiple format string vulnerabilities in Evolution
+
+    >>> getUtility(IPersonSet).getByEmail(reporter_email) is not None
+    True
+
+The bug reporter got created automatically:
+
+    >>> print bug.owner.displayname
+    Moritz Muehlenhoff
+
+    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> reporter_email_adresses = getUtility(IEmailAddressSet).getByPerson(
+    ...     bug.owner)
+    >>> for email_address in reporter_email_adresses:
+    ...     print "%s: %s" % (email_address.email, email_address.status.name)
+    jmm@inutil.org: NEW
+    >>> print bug.owner.preferredemail
+    None
+
+    >>> bug.owner.creation_rationale.name
+    'BUGIMPORT'
+    >>> bug.owner.creation_comment
+    u'when importing debbugs bug #322535'
+
+    >>> print bug.description
+    Package: evolution
+    Severity: grave
+    Tags: security
+    <BLANKLINE>
+    Multiple exploitable format string vulnerabilities have been found in
+    Evolution. Please see 
+    http://www.securityfocus.com/archive/1/407789/30/0/threaded
+    for details. 2.3.7 fixes all these issues.
+    <BLANKLINE>
+    Cheers,
+            Moritz
+    <BLANKLINE>
+    -- System Information:
+    Debian Release: testing/unstable
+      APT prefers unstable
+      APT policy: (500, 'unstable')
+    Architecture: i386 (i686)
+    Shell:  /bin/sh linked to /bin/bash
+    Kernel: Linux 2.6.12-rc5
+    Locale: LANG=C, LC_CTYPE=de_DE.ISO-8859-15@euro (charmap=ISO-8859-15)
+
+    >>> [person.name for person in bug.getDirectSubscribers()]
+    []
+
+The bug got filed on evolution (Debian)
+
+    >>> [debian_task] = bug.bugtasks
+    >>> debian_task.bugtargetname
+    u'evolution (Debian)'
+
+
+XXX: is there a debian bug with non-existent package?
+
 == Wrapping up ==
 
 Restore the database path:
