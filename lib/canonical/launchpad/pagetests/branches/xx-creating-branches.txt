@@ -302,11 +302,11 @@ URL validation should check that the entered URL is not from Launchpad.
     ...     'http://code.launchpad.dev/~testuser/')
     >>> user_browser.getControl('Name').value = 'unique-name'
     >>> user_browser.getControl('Add Branch').click()
-    >>> messages = find_tags_by_class(user_browser.contents, 'message')
-    >>> for element in messages:
-    ...     print element.renderContents()
+    >>> for message in get_feedback_messages(user_browser):
+    ...     print message
     There is 1 error.
-    Don't manually register a bzr branch on <code>code.launchpad.dev</code>...
+    For Launchpad to mirror a branch, the original branch cannot be on
+    launchpad.dev. Did you want to create a hosted branch instead?
 
 
 == Attempting to create a branch in a forbidden project ==

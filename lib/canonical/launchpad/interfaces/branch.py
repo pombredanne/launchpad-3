@@ -203,9 +203,10 @@ class BranchURIField(URIField):
         launchpad_domain = config.launchpad.vhosts.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             message = _(
-                "Don't manually register a bzr branch on "
-                "<code>%s</code>. Create it by SFTP, and it "
-                "is registered automatically." % uri.host)
+                "For Launchpad to mirror a branch, the original branch cannot "
+                "be on <code>%s</code>. Did you want to "
+                '<a href="https://help.launchpad.net/CreatingAHostedBranch">'
+                "create a hosted branch</a> instead?" % launchpad_domain)
             raise LaunchpadValidationError(message)
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
