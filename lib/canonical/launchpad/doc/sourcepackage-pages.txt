@@ -75,7 +75,7 @@ return a IPackageRelationshipSet object (see package-relationship.txt).
 
   >>> firefox_parsed_depends = firefox_view.builddepends()
 
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.launchpad.interfaces import IPackageRelationshipSet
   >>> verifyObject(IPackageRelationshipSet, firefox_parsed_depends)
   True

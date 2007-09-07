@@ -3,9 +3,11 @@ automatically chosen if a packaging link is found.
 
     >>> user_browser.open(
     ...  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/8')
-    >>> user_browser.getLink('Upstream').click()
+    >>> user_browser.getLink('Project').click()
     >>> user_browser.url
-    'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/8/+add-affected-product?field.product=firefox'
+    'http://.../ubuntu/+source/mozilla-firefox/+bug/8/+choose-affected-product'
+    >>> user_browser.getControl(name='field.product').value
+    'firefox'
 
 If the source package has no upstream link. like thunderbird in Ubuntu,
 then the product widget will have no initial value.
@@ -19,7 +21,7 @@ then the product widget will have no initial value.
     >>> user_browser.url
     'http://bugs.launchpad.dev/ubuntu/+source/thunderbird/+bug/8'
 
-    >>> user_browser.getLink('Upstream').click()
+    >>> user_browser.getLink('Project').click()
     >>> user_browser.getControl('Project').value
     ''
 
@@ -42,6 +44,8 @@ thunderbird.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/thunderbird/+bug/8')
-    >>> user_browser.getLink('Upstream').click()
+    >>> user_browser.getLink('Project').click()
     >>> user_browser.url
-    'http://bugs.launchpad.dev/ubuntu/+source/thunderbird/+bug/8/+add-affected-product?field.product=thunderbird'
+    'http://.../ubuntu/+source/thunderbird/+bug/8/+choose-affected-product'
+    >>> user_browser.getControl(name='field.product').value
+    'thunderbird'

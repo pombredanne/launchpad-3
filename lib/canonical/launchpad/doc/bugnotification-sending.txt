@@ -747,7 +747,7 @@ initial message of the bug, it will result in a bug filed notification:
     ...         print_notification(message)
     To: test@canonical.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug 13] subject
+    Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
     Public bug reported:
@@ -760,7 +760,7 @@ initial message of the bug, it will result in a bug filed notification:
     <BLANKLINE>
     --
     new bug
-    http://bugs.launchpad.dev/bugs/13
+    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a direct subscriber
     of the bug.
     <BLANKLINE>
@@ -790,7 +790,7 @@ top of the email:
     ...         print_notification(message)
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug 13] subject
+    Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu) via Bug 1
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
@@ -800,14 +800,14 @@ top of the email:
     <BLANKLINE>
     --
     new bug
-    http://bugs.launchpad.dev/bugs/13
+    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a bug contact for
     mozilla-firefox in ubuntu (via bug 1).
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: marilize@hbd.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug 13] subject
+    Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber @shipit-admins via Bug 1
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
@@ -817,14 +817,14 @@ top of the email:
     <BLANKLINE>
     --
     new bug
-    http://bugs.launchpad.dev/bugs/13
+    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a member of ShipIt
     Administrators, which is a direct subscriber (via bug 1).
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: mark@hbd.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug 13] subject
+    Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Assignee via Bug 1
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
@@ -834,14 +834,14 @@ top of the email:
     <BLANKLINE>
     --
     new bug
-    http://bugs.launchpad.dev/bugs/13
+    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a bug assignee (via
     bug 1).
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug 13] subject
+    Subject: [Bug ...] subject
     X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
@@ -851,7 +851,7 @@ top of the email:
     <BLANKLINE>
     --
     new bug
-    http://bugs.launchpad.dev/bugs/13
+    http://bugs.launchpad.dev/bugs/...
     You received this bug notification because you are a direct subscriber
     of the bug.
     <BLANKLINE>

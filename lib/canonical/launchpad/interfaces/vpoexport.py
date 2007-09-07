@@ -11,9 +11,8 @@ from zope.interface import Interface, Attribute
 class IVPOExportSet(Interface):
     """A collection of IVPOExport-providing rows."""
 
-    def get_pofile_rows(potemplate, language, variant=None,
-        included_obsolete=True):
-        """Return all rows which belong to a particular PO file."""
+    def get_pofile_rows(pofile):
+        """Return all rows which belong to the given PO file."""
 
     def get_potemplate_rows(potemplate):
         """Return all rows which belong to a particular PO template."""
@@ -92,6 +91,7 @@ class IVPOExport(Interface):
     activesubmission = Attribute(
         "See IPOSubmission.id and IPOSubmission.active")
 
+    context = Attribute("See IPOTMsgSet.context")
     msgid = Attribute("See IPOMsgID.pomsgid")
 
     translation = Attribute("See IPOTranslation.translation")

@@ -188,8 +188,12 @@ class IBranchDetailsStorage(Interface):
     Published at `http://$authserver_host/branch`.
     """
 
-    def getBranchPullQueue():
+    def getBranchPullQueue(branch_type):
         """Get the list of branches to be pulled by the supermirror.
+
+        :param branch_type: One of 'HOSTED', 'MIRRORED', or 'IMPORTED'.
+
+        :raise UnknownBranchTypeError: if the branch type is unrecognized.
 
         :returns: a list of (branch_id, pull_url, unique_name) triples, where
         unique_name is owner_name/product_name/branch_name, and product_name is

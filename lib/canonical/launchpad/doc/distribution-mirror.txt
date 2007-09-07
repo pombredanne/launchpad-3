@@ -132,7 +132,7 @@ distribution owner can see them and mark the ones that should be official.
 
 It's possible to retrieve a mirror by its name:
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import IDistributionMirror
     >>> example_mirror = mirrorset.getByName('archive-mirror')
     >>> verifyObject(IDistributionMirror, example_mirror)
@@ -278,8 +278,8 @@ weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
     [u'canonical-releases', u'releases-mirror', u'releases-mirror2',
      u'unreachable-mirror']
 
-    The getMirrorsToProbe() method also accepts a ignore_last_probe argument,
-    that, if True, will ignore previous probe records for all mirrors.
+The getMirrorsToProbe() method also accepts an ignore_last_probe argument,
+that, if True, will ignore previous probe records for all mirrors.
 
     >>> mirrors = mirrorset.getMirrorsToProbe(
     ...     MirrorContent.ARCHIVE, ignore_last_probe=True)
@@ -287,6 +287,46 @@ weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
     [u'canonical-archive', u'archive-404-mirror', u'archive-mirror',
      u'archive-mirror2']
 
+It's also possible to limit the number of mirrors we want to probe by passing
+an extra limit= argument to mirrorset.getMirrorsToProbe().  If any limit is
+given, the mirrors which have never been probed will be given precedence,
+followed by the ones which have been probed longest ago.  Note that although
+we have this precedence when a limit is given, the actual results are not
+ordered by the date the mirrors were last probed as we don't care about it
+anyway.
+
+    >>> mirrors = mirrorset.getMirrorsToProbe(
+    ...     MirrorContent.ARCHIVE, ignore_last_probe=True)
+    >>> import pytz
+    >>> utc = pytz.timezone('UTC')
+    >>> now = datetime.now(utc)
+    >>> for mirror in mirrors:
+    ...     last_probe = mirror.last_probe_record
+    ...     last_probe_date = 'NEVER'
+    ...     if last_probe is not None:
+    ...         if (now - last_probe.date_created).days < 1:
+    ...             last_probe_date = 'TODAY'
+    ...         else:
+    ...             last_probe_date = last_probe.date_created.isoformat()
+    ...     print mirror.name, last_probe_date
+    canonical-archive NEVER
+    archive-404-mirror NEVER
+    archive-mirror TODAY
+    archive-mirror2 2006-05-24...
+
+    >>> mirrors = mirrorset.getMirrorsToProbe(
+    ...     MirrorContent.ARCHIVE, ignore_last_probe=True, limit=3)
+    >>> for mirror in mirrors:
+    ...     last_probe = mirror.last_probe_record
+    ...     last_probe_date = 'NEVER'
+    ...     if last_probe is not None:
+    ...         last_probe_date = last_probe.date_created.isoformat()
+    ...     print mirror.name, last_probe_date
+    canonical-archive NEVER
+    archive-404-mirror NEVER
+    archive-mirror2 2006-05-24...
+
+    
 If when we finish probing a mirror, that mirror doesn't have any
 MirrorDistroSeriesSource or MirrorDistroArchSeries, that mirror is marked as
 disabled and a notification is sent to its owner and to the distribution's
@@ -429,8 +469,6 @@ On the warty release, component 'main' and pocket RELEASE , we had two uploads
 between 2005-09-15 and 2005-09-17, so at that time we could've checked if 
 that mirror's last sync was in the last one or two days.
 
-    >>> import pytz
-    >>> utc = pytz.timezone('UTC')
     >>> when = datetime(2005, 9, 17, tzinfo=utc)
     >>> urls = warty_mirror.getURLsToCheckUpdateness(when=when)
     >>> [(status.name, url) for (status, url) in urls.items()]

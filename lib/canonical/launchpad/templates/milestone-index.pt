@@ -30,32 +30,22 @@
 
   <tal:has_specs condition="specs">
 
-    <h2>Targeted features</h2>
+    <h3 id="specification-count" tal:content="view/specification_count_text" />
 
     <table class="listing sortable" id="milestone_specs">
       <thead>
         <tr>
-          <th>Priority</th>
-          <th tal:condition="context/is_project_milestone | nothing">
+          <th>Specification</th>
+          <th tal:condition="view/is_project_milestone">
             Product
           </th>
-          <th>Specification</th>
+          <th>Priority</th>
           <th>Assignee</th>
           <th>Delivery</th>
         </tr>
       </thead>
       <tbody>
         <tr tal:repeat="spec specs">
-          <td>
-            <span class="sortkey" tal:content="spec/priority/sortkey" />
-            <span tal:content="spec/priority/title"
-                  tal:attributes="
-                  class string:specpriority${spec/priority/name}">High</span>
-          </td>
-          <td tal:condition="context/is_project_milestone | nothing">
-              <a tal:attributes="href spec/milestone/fmt:url"
-                 tal:content="spec/product/displayname" />
-          </td>
           <td>
             <a tal:content="spec/title/fmt:shorten/60"
                tal:attributes="
@@ -64,13 +54,24 @@
             <img src="/@@/info" alt="Informational"
                  tal:condition="spec/informational" />
           </td>
+          <td tal:condition="view/is_project_milestone">
+              <span class="sortkey" tal:content="spec/product/displayname" />
+              <a tal:attributes="href spec/milestone/fmt:url"
+                 tal:content="spec/product/displayname" />
+          </td>
+          <td>
+            <span class="sortkey" tal:content="spec/priority/sortkey" />
+            <span tal:content="spec/priority/title"
+                  tal:attributes="
+                  class string:specpriority${spec/priority/name}">High</span>
+          </td>
           <td>
             <a tal:condition="spec/assignee"
                tal:replace="structure spec/assignee/fmt:link" />&nbsp;
           </td>
           <td>
             <span class="sortkey"
-	          tal:content="spec/implementation_status/sortkey" />
+                  tal:content="spec/implementation_status/sortkey" />
             <span tal:content="spec/implementation_status/title"
                   tal:attributes="
                   class string:specdelivery${spec/implementation_status/name}">
@@ -85,13 +86,13 @@
 
   <tal:has_bugtasks condition="bugtasks">
 
-    <h2>Targeted bugs</h2>
+    <h3 id="bug-count" tal:content="view/bugtask_count_text" />
 
     <table class="listing sortable" id="milestone_bugtasks">
       <thead>
         <tr>
           <th colspan="3">Report</th>
-          <th tal:condition="context/is_project_milestone | nothing">
+          <th tal:condition="view/is_project_milestone">
             Product
           </th>
           <th>Importance</th>
@@ -112,9 +113,10 @@
                Bug Title Here
             </a>
           </td>
-          <td tal:condition="context/is_project_milestone | nothing">
+          <td tal:condition="view/is_project_milestone">
+            <span class="sortkey" tal:content="bugtask/product/displayname" />
             <a tal:attributes="href bugtask/milestone/fmt:url"
-               tal:content="bugtask/product/displayname | nothing" />
+               tal:content="bugtask/product/displayname" />
           </td>
           <td>
             <span class="sortkey" tal:content="bugtask/importance/sortkey" />
@@ -137,14 +139,12 @@
 
   </tal:has_bugtasks>
 
-  <tal:has_no_specs condition="not: specs">
-    <p class="informational message" tal:condition="not: bugtasks">
-      You do not have any feature specifications or bug tasks targeted to
-      this milestone. For any given specification or bug task, you can
-      target it to a milestone to keep a handy listing of things you want
-      to get done in that milestone.
-    </p>
-  </tal:has_no_specs>
+  <tal:has_bugs_or_specs condition="not: view/has_bugs_or_specs">
+    You do not have any feature specifications or bug tasks targeted to
+    this milestone. For any given specification or bug task, you can
+    target it to a milestone to keep a handy listing of things you want
+    to get done in that milestone.
+  </tal:has_bugs_or_specs>
 
 </div> 
 </body>

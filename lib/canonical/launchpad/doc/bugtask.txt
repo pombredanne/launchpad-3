@@ -89,6 +89,16 @@ Next, we need to grab some values to provide for importance and status.
     >>> IDistroSeriesBugTask.providedBy(distro_series_task)
     True
 
+The created bugtasks are guaranteed to implement the correct interface.
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(IDistroSeriesBugTask, distro_series_task)
+    True
+    >>> verifyObject(IDistroBugTask, distro_task)
+    True
+    >>> verifyObject(IUpstreamBugTask, upstream_task)
+    True
+
 # XXX: Brad Bollenbach 2005-02-24: See the bottom of this file for a chunk of
 # test documentation that is missing from here, due to problems with resetting
 # the connection after a ProgrammingError is raised. ARGH.
@@ -658,7 +668,7 @@ like these, use the NullBugTask object.
     True
     >>> null_bugtask.target == netapplet
     True
-    >>> null_bugtask.targetname
+    >>> null_bugtask.bugtargetname
     u'netapplet'
     >>> expected_related_task_ids = [
     ...     task.id for task in null_bugtask.related_tasks]
@@ -826,7 +836,7 @@ if we query logged in as a user who can't see that bug).
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
     ...     sample_person, user=foobar)
     >>> sorted(bugtask.bug.id for bugtask in foobar_maintained_tasks)
-    [1, 4, 5, 7]
+    [1, 4, 5, 7, 13]
 
 Privacy and Launchpad Admins
 ----------------------------
@@ -854,7 +864,7 @@ we'll also see bug 1 again in the results, even though it's private.
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
     ...     sample_person, user=debonzi)
     >>> sorted(bugtask.bug.id for bugtask in foobar_maintained_tasks)
-    [1, 4, 5, 7]
+    [1, 4, 5, 7, 13]
 
 Trying to retrieve the bug directly will work fine:
 

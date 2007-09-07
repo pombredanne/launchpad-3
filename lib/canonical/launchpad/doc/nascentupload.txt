@@ -355,6 +355,16 @@ separated by space:
   >>> ed_spr.dsc_binaries
   u'ed'
 
+
+The content of 'debian/copyright' is stored as the 'copyright'
+attribute of SourcePackageRelease (note that its content is filtered
+with encoding.guess()).
+
+  >>> print ed_spr.copyright
+  This is Debian GNU's prepackaged version of the FSF's GNU ed
+  ...
+  by the Foundation.
+
 The ed source would be in NEW, so punt it into accepted.
 
   >>> ed_src.queue_root.setAccepted()
@@ -702,7 +712,7 @@ sigining key reference as an IGPGKey:
   >>> bar_ok.is_rejected
   False
 
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.launchpad.interfaces import (
   ...    IGPGKey, IPersonSet)
 

@@ -14,9 +14,28 @@ class IPOSubmissionSet(Interface):
     """The set of submissions we have in our database."""
 
     def getPOSubmissionByID(id):
-        """Return the IPOsubmission with the given id or None.
+        """Return the `IPOsubmission` with the given id, or None.
 
-        :arg id: IPOSubmission.id
+        :param id: IPOSubmission.id
+        """
+
+    def getSubmissionsFor(stored_pomsgsets, dummy_pomsgsets):
+        """Retrieve submissions and suggestions for given `POMsgSet`s.
+
+        Gets `POSubmission`s that are either attached to, or can serve as
+        translation suggestions for, any of the given `POMsgSet`s.  This is
+        used to populate caches of active/published submissions and applicable
+        suggestions.
+
+        :param stored_pomsgsets: a list of `POMsgSet` objects that exist in
+            the database, for which submissions and suggestions should be
+            retrieved.  Can be freely combined with `dummy_pomsgsets`.
+        :param dummy_pomsgsets: a list of `DummyPOMsgSet` objects, for which
+            suggestions should be retrieved.  Can be freely combined with
+            `stored_pomsgsets`.
+
+        :return: a dict mapping each of the `POMsgSet`s to a list of
+            applicable `POSubmission`s.
         """
 
 

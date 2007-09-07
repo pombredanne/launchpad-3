@@ -16,7 +16,7 @@ from persistent import IPersistent
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
-# XXX kiko 2007-02-08: 
+# XXX kiko 2007-02-08:
 # These import shims are actually necessary if we don't go over the
 # entire codebase and fix where the import should come from.
 from canonical.launchpad.webapp.interfaces import (
@@ -147,6 +147,8 @@ class IMaloneApplication(ILaunchpadApplication):
 class IRosettaApplication(ILaunchpadApplication):
     """Application root for rosetta."""
 
+    languages = Attribute(
+        'Languages Launchpad can translate into.')
     language_count = Attribute(
         'Number of languages Launchpad can translate into.')
     statsdate = Attribute('The date stats were last updated.')
@@ -371,8 +373,10 @@ class IHasDateCreated(Interface):
 
 
 class IStructuralHeaderPresentation(Interface):
-    """Adapter that defines how a structural object is presented in the UI
-    as a heading."""
+    """Adapter for common aspects of a structural object's presentation."""
+
+    def isPrivate():
+        """Whether read access to the object is restricted."""
 
     def getIntroHeading():
         """Any heading introduction needed (e.g. "Ubuntu source package:")."""
@@ -382,7 +386,7 @@ class IStructuralHeaderPresentation(Interface):
 
 
 class IStructuralObjectPresentation(IStructuralHeaderPresentation):
-    """Adapter that defines how a structural object is presented in the UI."""
+    """Adapter for less common aspects of a structural object's presentation."""
 
     def listChildren(num):
         """List up to num children.  Return empty string for none of these"""
@@ -426,7 +430,7 @@ class INotificationRecipientSet(Interface):
     possible reasons.
 
     The set maintains the list of `IPerson` that will be contacted as well
-    as the email address to use to contact them. 
+    as the email address to use to contact them.
     """
     def getEmails():
         """Return all email addresses registered, sorted alphabetically."""

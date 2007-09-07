@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces.bounty import *
 from canonical.launchpad.interfaces.bountymessage import *
 from canonical.launchpad.interfaces.bountysubscription import *
 from canonical.launchpad.interfaces.branch import *
+from canonical.launchpad.interfaces.branchmergeproposal import *
 from canonical.launchpad.interfaces.branchref import *
 from canonical.launchpad.interfaces.branchrevision import *
 from canonical.launchpad.interfaces.branchsubscription import *
@@ -98,13 +99,11 @@ from canonical.launchpad.interfaces.packagerelationship import *
 from canonical.launchpad.interfaces.packaging import *
 from canonical.launchpad.interfaces.pathlookup import *
 from canonical.launchpad.interfaces.person import *
-from canonical.launchpad.interfaces.poexport import *
 from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.poll import *
 from canonical.launchpad.interfaces.pomsgid import *
 from canonical.launchpad.interfaces.pomsgidsighting import *
 from canonical.launchpad.interfaces.pomsgset import *
-from canonical.launchpad.interfaces.gettext_po_parser import *
 from canonical.launchpad.interfaces.potemplate import *
 from canonical.launchpad.interfaces.potemplatename import *
 from canonical.launchpad.interfaces.potmsgset import *
@@ -143,7 +142,9 @@ from canonical.launchpad.interfaces.sprintspecification import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.teammembership import *
 from canonical.launchpad.interfaces.temporaryblobstorage import *
-from canonical.launchpad.interfaces.translationformat import *
+from canonical.launchpad.interfaces.translationcommonformat import *
+from canonical.launchpad.interfaces.translationexporter import *
+from canonical.launchpad.interfaces.translationimporter import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *
 from canonical.launchpad.interfaces.questioncollection import *
@@ -152,6 +153,7 @@ from canonical.launchpad.interfaces.questionmessage import *
 from canonical.launchpad.interfaces.questionreopening import *
 from canonical.launchpad.interfaces.questionsubscription import *
 from canonical.launchpad.interfaces.questiontarget import *
+from canonical.launchpad.interfaces.translationcommonformat import *
 from canonical.launchpad.interfaces.translationgroup import *
 from canonical.launchpad.interfaces.translationimportqueue import *
 from canonical.launchpad.interfaces.translator import *

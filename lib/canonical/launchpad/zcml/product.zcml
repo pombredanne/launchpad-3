@@ -145,14 +145,24 @@
       />
   </browser:pages>
 
-    <browser:page
-        for="canonical.launchpad.interfaces.IProduct"
-        name="+download"
-        class="canonical.launchpad.browser.ProductDownloadFilesView"
-        permission="zope.Public"
-        facet="overview"
-        template="../templates/product-files.pt"
-        />
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    name="+download"
+    class="canonical.launchpad.browser.ProductDownloadFilesView"
+    permission="zope.Public"
+    facet="overview"
+    template="../templates/product-files.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IProduct"
@@ -333,13 +343,11 @@
     template="../templates/object-branding.pt"
     />
 
-  <browser:editform
+  <browser:page
     name="+bugcontact"
     for="canonical.launchpad.interfaces.IProduct"
-    schema="canonical.launchpad.interfaces.IProduct"
     facet="bugs"
     class="canonical.launchpad.browser.ProductBugContactEditView"
-    fields="bugcontact"
     permission="launchpad.Edit"
     template="../templates/product-bugcontact.pt"
     />
@@ -360,15 +368,6 @@
     class="canonical.launchpad.browser.ProductChangeTranslatorsView"
     permission="launchpad.Edit"
     template="../templates/product-translators.pt"
-    />
-
-  <browser:page
-    name="+launchpad"
-    for="canonical.launchpad.interfaces.IProduct"
-    class="canonical.launchpad.browser.ProductLaunchpadUsageEditView"
-    facet="overview"
-    permission="launchpad.Edit"
-    template="../templates/object-launchpadusage.pt"
     />
 
   <browser:addform
