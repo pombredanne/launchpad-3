@@ -241,12 +241,12 @@ purpose.
     No Privileges Person
 
 The question is moved to the SOLVED state, the message that solved
-the question is saved in the answer attribute, the dateanswered
+the question is saved in the answer attribute, the date_solved
 and answerer attributes are also updated.
 
     >>> print question.status.name
     SOLVED
-    >>> question.dateanswered == two_weeks_from_now
+    >>> question.date_solved == two_weeks_from_now
     True
     >>> print question.answerer.displayname
     Sample Person
@@ -291,7 +291,7 @@ problem, and come to a solution.
 In that case, the question owner is considered to have given
 information that the problem is solved and the question is moved to
 the SOLVED state. The 'answerer' attribute will be the question owner,
-the 'dateanswered' date of the message, but the 'answer' attribute
+the 'date_solved' date of the message, but the 'answer' attribute
 will None.
 
     >>> print self_answer_message.action.name
@@ -303,7 +303,7 @@ will None.
     SOLVED
     >>> print question.answerer.displayname
     No Privileges Person
-    >>> question.dateanswered == now_plus_one_hour
+    >>> question.date_solved == now_plus_one_hour
     True
     >>> question.answer is None
     True
@@ -313,7 +313,7 @@ his problem. The confirmAnswer() method is used when the question
 owner chooses another user's answer as a best answer. The status
 will remain SOLVED. The 'answerer' attribute will be the message
 owner, and the 'answer' will be the message. The question's
-'dateanswered' attribute will be the date of the answer message.
+'date_solved' attribute will be the date of the answer message.
 
     >>> confirm_message = question.confirmAnswer(
     ...     "Thanks Marilize for your help. I don't think I'll put Ubuntu "
@@ -332,7 +332,7 @@ owner, and the 'answer' will be the message. The question's
     Marilize Coetzee
     >>> question.answer == alt_answer_message
     True
-    >>> question.dateanswered == now_plus_one_hour
+    >>> question.date_solved == now_plus_one_hour
     True
 
 
@@ -445,13 +445,13 @@ After rejection, the question is marked as invalid and the
     True
 
 The rejection message is also considered as answering the message, so the
-dateanswered, answerer and answer attributes are also updated.
+date_solved, answerer and answer attributes are also updated.
 
     >>> spam_question.answer == reject_message
     True
     >>> print spam_question.answerer.displayname
     Sample Person
-    >>> spam_question.dateanswered == now_plus_one_hour
+    >>> spam_question.date_solved == now_plus_one_hour
     True
 
 == Other scenarios ==
@@ -507,14 +507,14 @@ The status change updates the datelastresponse attribute:
     True
 
 If an answer was present on the question, the status change also clears
-the answer and dateanswered attributes.
+the answer and date_solved attributes.
 
     >>> msg = question.setStatus(stub, QuestionStatus.OPEN, 'Status change.')
     >>> answer_message = question.giveAnswer(sample_person, 'Install BootX.')
 
     >>> login('no-priv@canonical.com')
     >>> msg = question.confirmAnswer('This worked.', answer=answer_message)
-    >>> question.dateanswered is not None
+    >>> question.date_solved is not None
     True
     >>> question.answer == answer_message
     True
@@ -524,7 +524,7 @@ the answer and dateanswered attributes.
     ...     stub, QuestionStatus.OPEN, 'Reopen the question',
     ...     datecreated=now_plus_one_hour)
 
-    >>> question.dateanswered is None
+    >>> question.date_solved is None
     True
     >>> question.answer is None
     True
@@ -660,7 +660,7 @@ prior status in the priorstate attribute:
 
     >>> print reopening.answerer.displayname
     Sample Person
-    >>> reopening.dateanswered == now_plus_two_hours
+    >>> reopening.date_solved == now_plus_two_hours
     True
     >>> print reopening.priorstate.name
     SOLVED
@@ -688,7 +688,7 @@ back to OPEN after having been rejected.
     True
     >>> print reopening.answerer.displayname
     Sample Person
-    >>> reopening.dateanswered == now_plus_one_hour
+    >>> reopening.date_solved == now_plus_one_hour
     True
     >>> print reopening.priorstate.name
     INVALID

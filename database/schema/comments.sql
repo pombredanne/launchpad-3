@@ -630,7 +630,7 @@ COMMENT ON COLUMN Question.datelastquery IS 'The date we last saw a comment from
 COMMENT ON COLUMN Question.datelastresponse IS 'The date we last saw a comment from somebody other than the requester.';
 COMMENT ON COLUMN Question.dateaccepted IS 'The date we "confirmed" or "accepted" this question. It is usually set to the date of the first response by someone other than the requester. This allows us to track the time between first request and first response.';
 COMMENT ON COLUMN Question.datedue IS 'The date this question is "due", if such a date can be established. Usually this will be set automatically on the basis of a support contract SLA commitment.';
-COMMENT ON COLUMN Question.dateanswered IS 'The date this question was last "answered", in the sense of receiving a comment from someone other than the requester that the requester considered sufficient to close the question.';
+COMMENT ON COLUMN Question.date_solved IS 'The date this question was last marked as solved by the requester (owner). The requester either found a solution, or accepted an answer from another user.';
 COMMENT ON COLUMN Question.dateclosed IS 'The date the requester marked this question CLOSED.';
 COMMENT ON COLUMN Question.language IS 'The language of the question''s title and description.';
 COMMENT ON COLUMN Question.whiteboard IS 'A general status whiteboard. This is a scratch space to which arbitrary data can be added (there is only one constant whiteboard with no history). It is displayed at the top of the question. So its a useful way for projects to add their own semantics or metadata to the Answer Tracker.';
