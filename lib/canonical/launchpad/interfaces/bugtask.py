@@ -6,6 +6,9 @@ __metaclass__ = type
 
 __all__ = [
     'BugTaskSearchParams',
+    'BugTaskStatus',
+    'BugTaskStatusSearch',
+    'BugTaskStatusSearchDisplay',
     'ConjoinedBugTaskEditError',
     'IBugTask',
     'INullBugTask',
@@ -42,6 +45,125 @@ from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from canonical.lazr import (
+    DBEnumeratedType, DBItem, use_template)
+
+
+class BugTaskStatus(DBEnumeratedType):
+    """Bug Task Status
+
+    The various possible states for a bugfix in a specific place.
+    """
+
+    NEW = DBItem(10, """
+        New
+
+        This is a new bug and has not yet been confirmed by the maintainer of
+        this product or source package.
+        """)
+
+    INCOMPLETE = DBItem(15, """
+        Incomplete
+
+        More info is required before making further progress on this bug, likely
+        from the reporter. E.g. the exact error message the user saw, the URL
+        the user was visiting when the bug occurred, etc.
+        """)
+
+    INVALID = DBItem(17, """
+        Invalid
+
+        This is not a bug. It could be a support request, spam, or a misunderstanding.
+        """)
+
+    WONTFIX = DBItem(18, """
+        Won't Fix
+
+        This will not be fixed. For example, this might be a bug but it's not considered worth
+        fixing, or it might not be fixed in this release.
+        """)
+
+    CONFIRMED = DBItem(20, """
+        Confirmed
+
+        This bug has been reviewed, verified, and confirmed as something needing
+        fixing. Anyone can set this status.
+        """)
+
+    TRIAGED = DBItem(21, """
+        Triaged
+
+        This bug has been reviewed, verified, and confirmed as
+        something needing fixing. The user must be a bug contact to
+        set this status, so it carries more weight than merely
+        Confirmed.
+        """)
+
+    INPROGRESS = DBItem(22, """
+        In Progress
+
+        The person assigned to fix this bug is currently working on fixing it.
+        """)
+
+    FIXCOMMITTED = DBItem(25, """
+        Fix Committed
+
+        This bug has been fixed in version control, but the fix has
+        not yet made it into a released version of the affected
+        software.
+        """)
+
+    FIXRELEASED = DBItem(30, """
+        Fix Released
+
+        The fix for this bug is available in a released version of the
+        affected software.
+        """)
+
+    # DBItem values 35 and 40 are used by
+    # BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE and
+    # BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE
+
+    UNKNOWN = DBItem(999, """
+        Unknown
+
+        The status of this bug task is unknown.
+        """)
+
+
+class BugTaskStatusSearch(DBEnumeratedType):
+    """Bug Task Status
+
+    The various possible states for a bugfix in searches.
+    """
+    use_template(BugTaskStatus, exclude=('UNKNOWN'))
+
+    sort_order = (
+        'NEW', 'INCOMPLETE_WITH_RESPONSE', 'INCOMPLETE_WITHOUT_RESPONSE',
+        'INCOMPLETE', 'INVALID', 'WONTFIX', 'CONFIRMED', 'TRIAGED',
+        'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
+
+    INCOMPLETE_WITH_RESPONSE = DBItem(35, """
+        Incomplete (with response)
+
+        This bug has new information since it was last marked
+        as requiring a response.
+        """)
+
+    INCOMPLETE_WITHOUT_RESPONSE = DBItem(40, """
+        Incomplete (without response)
+
+        This bug requires more information, but no additional
+        details were supplied yet..
+        """)
+
+class BugTaskStatusSearchDisplay(DBEnumeratedType):
+    """Bug Task Status
+
+    The various possible states for a bugfix in advanced
+    bug search forms.
+    """
+    use_template(BugTaskStatusSearch, exclude=('INCOMPLETE'))
 
 
 # XXX: Brad Bollenbach 2005-12-02 bugs=5320:
@@ -52,22 +174,29 @@ from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 # XXX: matsubara 2006-02-02 bug=4201:
 # I added the INCOMPLETE as a short-term solution.
 UNRESOLVED_BUGTASK_STATUSES = (
-    dbschema.BugTaskStatus.NEW,
-    dbschema.BugTaskStatus.INCOMPLETE,
-    dbschema.BugTaskStatus.CONFIRMED,
-    dbschema.BugTaskStatus.TRIAGED,
-    dbschema.BugTaskStatus.INPROGRESS,
-    dbschema.BugTaskStatus.FIXCOMMITTED)
+    BugTaskStatus.NEW,
+    BugTaskStatus.INCOMPLETE,
+    BugTaskStatus.CONFIRMED,
+    BugTaskStatus.TRIAGED,
+    BugTaskStatus.INPROGRESS,
+    BugTaskStatus.FIXCOMMITTED)
 
 RESOLVED_BUGTASK_STATUSES = (
-    dbschema.BugTaskStatus.FIXRELEASED,
-    dbschema.BugTaskStatus.INVALID,
-    dbschema.BugTaskStatus.WONTFIX)
+    BugTaskStatus.FIXRELEASED,
+    BugTaskStatus.INVALID,
+    BugTaskStatus.WONTFIX)
 
 BUG_CONTACT_BUGTASK_STATUSES = (
-    dbschema.BugTaskStatus.WONTFIX,
-    dbschema.BugTaskStatus.TRIAGED)
+    BugTaskStatus.WONTFIX,
+    BugTaskStatus.TRIAGED)
 
+DEFAULT_SEARCH_BUGTASK_STATUSES = (
+    BugTaskStatusSearch.NEW,
+    BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+    BugTaskStatusSearch.CONFIRMED,
+    BugTaskStatusSearch.TRIAGED,
+    BugTaskStatusSearch.INPROGRESS,
+    BugTaskStatusSearch.FIXCOMMITTED)
 
 class ConjoinedBugTaskEditError(Exception):
     """An error raised when trying to modify a conjoined bugtask."""
@@ -98,8 +227,8 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     # but adding a marker interface during initialization is expensive,
     # and adding it post-initialization is not trivial.
     status = Choice(
-        title=_('Status'), vocabulary='BugTaskStatus',
-        default=dbschema.BugTaskStatus.NEW)
+        title=_('Status'), vocabulary=BugTaskStatus,
+        default=BugTaskStatus.NEW)
     importance = Choice(
         title=_('Importance'), vocabulary='BugTaskImportance',
         default=dbschema.BugTaskImportance.UNDECIDED)
@@ -294,14 +423,13 @@ UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
         title="Show bugs that are open upstream"),
     ])
 
-
 class IBugTaskSearchBase(Interface):
     """The basic search controls."""
     searchtext = TextLine(title=_("Bug ID or text:"), required=False)
     status = List(
         title=_('Status'),
-        value_type=IBugTask['status'],
-        default=list(UNRESOLVED_BUGTASK_STATUSES),
+        value_type=Choice(title=_('Status'), vocabulary=BugTaskStatusSearch, default=BugTaskStatusSearch.NEW),
+        default=list(DEFAULT_SEARCH_BUGTASK_STATUSES),
         required=False)
     importance = List(
         title=_('Importance'),

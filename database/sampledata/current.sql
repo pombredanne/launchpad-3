@@ -557,6 +557,18 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -899,7 +911,6 @@ INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, ne
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (33, 14, '2007-08-09 11:39:16.836856', 63, 'bug', NULL, NULL, 'added bug');
 
 
-
 ALTER TABLE bugactivity ENABLE TRIGGER ALL;
 
 
@@ -969,7 +980,6 @@ INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (28, 13, 38, NULL);
 INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (29, 14, 39, NULL);
 
 
-
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
 
 
@@ -1030,7 +1040,6 @@ INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (15, 63, 14, 
 INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (16, 14, 14, '2007-08-09 11:39:16.836856');
 
 
-
 ALTER TABLE bugsubscription ENABLE TRIGGER ALL;
 
 
@@ -1051,33 +1060,32 @@ ALTER TABLE bugtag ENABLE TRIGGER ALL;
 
 ALTER TABLE bugtask DISABLE TRIGGER ALL;
 
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (2, 1, 4, NULL, NULL, NULL, NULL, 10, 10, 20, 1, '2005-01-02 11:07:20.330975', '2004-01-02 03:49:22.910878', 12, NULL, NULL, NULL, NULL, 'Mozilla Firefox', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (3, 2, 1, NULL, NULL, NULL, NULL, 10, 20, 20, NULL, '2005-01-03 11:07:20.330975', '2004-01-03 03:49:22.908491', 12, NULL, NULL, NULL, NULL, 'Tomcat', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (4, 1, NULL, 3, NULL, 1, NULL, 20, 40, 20, NULL, '2005-01-04 11:07:20.584746', '2004-01-04 03:49:22.79024', 12, NULL, 8, '', NULL, 'mozilla-firefox (Debian)', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (5, 2, NULL, 3, NULL, 1, NULL, 20, 40, 20, 12, '2005-01-05 11:07:20.584746', '2004-01-05 03:49:22.824591', 12, NULL, NULL, 'Upstream said that they won''t bother fixing it.', NULL, 'mozilla-firefox (Debian)', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (6, 3, NULL, 3, NULL, 1, NULL, 10, 20, 999, NULL, '2005-01-06 11:07:20.584746', '2004-01-06 03:49:22.825533', 16, NULL, NULL, '', NULL, 'mozilla-firefox (Debian)', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (13, 4, 4, NULL, NULL, NULL, NULL, 10, 30, 30, NULL, '2005-01-13 17:20:12.820778', '2004-01-13 17:20:12.820778', 12, NULL, NULL, NULL, NULL, 'Mozilla Firefox', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (14, 5, 4, NULL, NULL, NULL, NULL, 10, 30, 50, 12, '2005-01-14 17:27:03.702622', '2004-01-14 17:27:03.702622', 12, NULL, NULL, 'The status explanation is useful to provide task specific information.', NULL, 'Mozilla Firefox', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (15, 6, 4, NULL, NULL, NULL, NULL, 10, 30, 40, NULL, '2005-01-15 17:35:39.548665', '2004-01-15 17:35:39.548665', 12, NULL, NULL, NULL, NULL, 'Mozilla Firefox', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (16, 5, NULL, NULL, 1, 1, NULL, 10, 30, 30, NULL, '2005-01-16 14:43:02.452716', '2004-01-16 14:43:02.452716', 12, NULL, NULL, NULL, NULL, 'mozilla-firefox (Ubuntu Warty)', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (17, 1, NULL, 1, NULL, 1, NULL, 10, 30, 30, NULL, '2005-01-17 01:15:48.241836', '2004-01-17 01:15:48.241836', 16, NULL, NULL, NULL, NULL, 'mozilla-firefox (Ubuntu)', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (18, 3, NULL, NULL, 6, 1, NULL, 10, 30, 30, NULL, '2005-01-18 16:30:32.295049', '2004-01-18 16:30:32.295049', 12, NULL, NULL, NULL, NULL, 'mozilla-firefox (Debian Woody)', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (19, 3, NULL, NULL, 7, 1, NULL, 10, 30, 30, NULL, '2005-01-19 16:30:47.448639', '2004-01-19 16:30:47.448639', 12, 2, 10, '', NULL, 'mozilla-firefox (Debian Sarge)', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (20, 2, NULL, NULL, 6, 1, NULL, 10, 30, 30, NULL, '2005-01-20 13:54:57.840344', '2004-01-20 13:54:57.840344', 12, NULL, NULL, NULL, NULL, 'mozilla-firefox (Debian Woody)', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (21, 7, 5, NULL, NULL, NULL, NULL, 10, NULL, 30, 16, '2005-01-21 15:12:29.602117', '2004-01-21 15:12:29.602117', 16, NULL, NULL, NULL, NULL, 'Evolution', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (22, 8, NULL, 3, NULL, 1, NULL, 30, NULL, 30, 16, '2005-01-22 09:10:17.13237', '2004-01-22 09:10:17.13237', 12, NULL, NULL, NULL, NULL, 'mozilla-firefox (Debian)', NULL, NULL, '2005-01-25 09:10:17.13237', NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (23, 9, NULL, 1, NULL, 18, NULL, 20, NULL, 30, NULL, '2005-01-23 16:42:14.080227', '2004-01-23 16:42:14.080227', 16, NULL, NULL, '', NULL, 'thunderbird (Ubuntu)', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (24, 9, 8, NULL, NULL, NULL, NULL, 999, 999, 999, NULL, '2005-01-24 16:43:25.744534', '2004-01-24 16:43:25.744534', 12, NULL, 6, NULL, NULL, 'Mozilla Thunderbird', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (25, 10, NULL, 1, NULL, 22, NULL, 10, NULL, 30, NULL, '2005-01-25 19:42:21.890299', '2004-01-25 19:42:21.890299', 16, NULL, NULL, NULL, NULL, 'linux-source-2.6.15 (Ubuntu)', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (26, 2, NULL, 1, NULL, NULL, NULL, 10, NULL, 30, NULL, '2005-01-26 10:11:02.729077', '2004-01-26 10:11:02.729077', 16, NULL, NULL, NULL, NULL, 'Ubuntu', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (27, 7, NULL, 3, NULL, 9, NULL, 999, 999, 999, NULL, '2005-01-27 16:45:45.054836', '2004-01-27 16:45:45.054836', 12, NULL, 7, NULL, NULL, 'evolution (Debian)', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (28, 2, NULL, NULL, 3, NULL, NULL, 10, NULL, 5, NULL, NULL, '2006-08-21 22:23:08.163936', 1, NULL, NULL, NULL, NULL, 'Ubuntu Hoary', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (29, 5, NULL, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-01-04 15:00:50.431687', 16, NULL, NULL, NULL, NULL, 'Mozilla Firefox 1.0', NULL, NULL, NULL, 2);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (30, 11, 20, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-03-15 20:33:56.67893', 16, NULL, NULL, NULL, NULL, 'Jokosher', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (31, 12, 20, NULL, NULL, NULL, NULL, 20, NULL, 50, NULL, NULL, '2007-03-15 20:41:18.635493', 16, NULL, NULL, '', NULL, 'Jokosher', '2007-03-15 20:41:42.256326', NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (32, 13, 17, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-07-27 20:00:58.299796', 12, NULL, NULL, NULL, NULL, 'Launchpad', NULL, NULL, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (33, 14, 20, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-08-09 11:39:16.836856', 63, NULL, NULL, NULL, NULL, 'Jokosher', NULL, NULL, NULL, NULL);
-
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (2, 1, 4, NULL, NULL, NULL, NULL, 10, 10, 20, 1, '2005-01-02 11:07:20.330975', '2004-01-02 03:49:22.910878', 12, NULL, NULL, NULL, NULL, 'Mozilla Firefox', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (3, 2, 1, NULL, NULL, NULL, NULL, 10, 20, 20, NULL, '2005-01-03 11:07:20.330975', '2004-01-03 03:49:22.908491', 12, NULL, NULL, NULL, NULL, 'Tomcat', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (4, 1, NULL, 3, NULL, 1, NULL, 20, 40, 20, NULL, '2005-01-04 11:07:20.584746', '2004-01-04 03:49:22.79024', 12, NULL, 8, '', NULL, 'mozilla-firefox (Debian)', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (5, 2, NULL, 3, NULL, 1, NULL, 20, 40, 20, 12, '2005-01-05 11:07:20.584746', '2004-01-05 03:49:22.824591', 12, NULL, NULL, 'Upstream said that they won''t bother fixing it.', NULL, 'mozilla-firefox (Debian)', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (6, 3, NULL, 3, NULL, 1, NULL, 10, 20, 999, NULL, '2005-01-06 11:07:20.584746', '2004-01-06 03:49:22.825533', 16, NULL, NULL, '', NULL, 'mozilla-firefox (Debian)', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (13, 4, 4, NULL, NULL, NULL, NULL, 10, 30, 30, NULL, '2005-01-13 17:20:12.820778', '2004-01-13 17:20:12.820778', 12, NULL, NULL, NULL, NULL, 'Mozilla Firefox', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (14, 5, 4, NULL, NULL, NULL, NULL, 10, 30, 50, 12, '2005-01-14 17:27:03.702622', '2004-01-14 17:27:03.702622', 12, NULL, NULL, 'The status explanation is useful to provide task specific information.', NULL, 'Mozilla Firefox', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (15, 6, 4, NULL, NULL, NULL, NULL, 10, 30, 40, NULL, '2005-01-15 17:35:39.548665', '2004-01-15 17:35:39.548665', 12, NULL, NULL, NULL, NULL, 'Mozilla Firefox', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (16, 5, NULL, NULL, 1, 1, NULL, 10, 30, 30, NULL, '2005-01-16 14:43:02.452716', '2004-01-16 14:43:02.452716', 12, NULL, NULL, NULL, NULL, 'mozilla-firefox (Ubuntu Warty)', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (17, 1, NULL, 1, NULL, 1, NULL, 10, 30, 30, NULL, '2005-01-17 01:15:48.241836', '2004-01-17 01:15:48.241836', 16, NULL, NULL, NULL, NULL, 'mozilla-firefox (Ubuntu)', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (18, 3, NULL, NULL, 6, 1, NULL, 10, 30, 30, NULL, '2005-01-18 16:30:32.295049', '2004-01-18 16:30:32.295049', 12, NULL, NULL, NULL, NULL, 'mozilla-firefox (Debian Woody)', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (19, 3, NULL, NULL, 7, 1, NULL, 10, 30, 30, NULL, '2005-01-19 16:30:47.448639', '2004-01-19 16:30:47.448639', 12, 2, 10, '', NULL, 'mozilla-firefox (Debian Sarge)', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (20, 2, NULL, NULL, 6, 1, NULL, 10, 30, 30, NULL, '2005-01-20 13:54:57.840344', '2004-01-20 13:54:57.840344', 12, NULL, NULL, NULL, NULL, 'mozilla-firefox (Debian Woody)', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (21, 7, 5, NULL, NULL, NULL, NULL, 10, NULL, 30, 16, '2005-01-21 15:12:29.602117', '2004-01-21 15:12:29.602117', 16, NULL, NULL, NULL, NULL, 'Evolution', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (22, 8, NULL, 3, NULL, 1, NULL, 30, NULL, 30, 16, '2005-01-22 09:10:17.13237', '2004-01-22 09:10:17.13237', 12, NULL, NULL, NULL, NULL, 'mozilla-firefox (Debian)', NULL, NULL, '2005-01-25 09:10:17.13237', NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (23, 9, NULL, 1, NULL, 18, NULL, 20, NULL, 30, NULL, '2005-01-23 16:42:14.080227', '2004-01-23 16:42:14.080227', 16, NULL, NULL, '', NULL, 'thunderbird (Ubuntu)', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (24, 9, 8, NULL, NULL, NULL, NULL, 999, 999, 999, NULL, '2005-01-24 16:43:25.744534', '2004-01-24 16:43:25.744534', 12, NULL, 6, NULL, NULL, 'Mozilla Thunderbird', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (25, 10, NULL, 1, NULL, 22, NULL, 10, NULL, 30, NULL, '2005-01-25 19:42:21.890299', '2004-01-25 19:42:21.890299', 16, NULL, NULL, NULL, NULL, 'linux-source-2.6.15 (Ubuntu)', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (26, 2, NULL, 1, NULL, NULL, NULL, 10, NULL, 30, NULL, '2005-01-26 10:11:02.729077', '2004-01-26 10:11:02.729077', 16, NULL, NULL, NULL, NULL, 'Ubuntu', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (27, 7, NULL, 3, NULL, 9, NULL, 999, 999, 999, NULL, '2005-01-27 16:45:45.054836', '2004-01-27 16:45:45.054836', 12, NULL, 7, NULL, NULL, 'evolution (Debian)', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (28, 2, NULL, NULL, 3, NULL, NULL, 10, NULL, 5, NULL, NULL, '2006-08-21 22:23:08.163936', 1, NULL, NULL, NULL, NULL, 'Ubuntu Hoary', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (29, 5, NULL, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-01-04 15:00:50.431687', 16, NULL, NULL, NULL, NULL, 'Mozilla Firefox 1.0', NULL, NULL, NULL, 2, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (30, 11, 20, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-03-15 20:33:56.67893', 16, NULL, NULL, NULL, NULL, 'Jokosher', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (31, 12, 20, NULL, NULL, NULL, NULL, 20, NULL, 50, NULL, NULL, '2007-03-15 20:41:18.635493', 16, NULL, NULL, '', NULL, 'Jokosher', '2007-03-15 20:41:42.256326', NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (32, 13, 17, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-07-27 20:00:58.299796', 12, NULL, NULL, NULL, NULL, 'Launchpad', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (33, 14, 20, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-08-09 11:39:16.836856', 63, NULL, NULL, NULL, NULL, 'Jokosher', NULL, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE bugtask ENABLE TRIGGER ALL;
@@ -1205,11 +1213,39 @@ INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, svn_bran
 ALTER TABLE codeimport ENABLE TRIGGER ALL;
 
 
+ALTER TABLE codeimportevent DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE codeimportevent ENABLE TRIGGER ALL;
+
+
+ALTER TABLE codeimporteventdata DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE codeimporteventdata ENABLE TRIGGER ALL;
+
+
+ALTER TABLE codeimportjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE codeimportjob ENABLE TRIGGER ALL;
+
+
 ALTER TABLE codeimportmachine DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE codeimportmachine ENABLE TRIGGER ALL;
+
+
+ALTER TABLE codeimportresult DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE codeimportresult ENABLE TRIGGER ALL;
 
 
 ALTER TABLE component DISABLE TRIGGER ALL;
@@ -3107,7 +3143,6 @@ INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rf
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (39, '2007-08-09 11:39:16.836856', 'jokosher exposes personal details in its actions portlet', 63, NULL, NULL, '<20070809113916.26819.83859.malonedeb@localhost.localdomain>', NULL, NULL);
 
 
-
 ALTER TABLE message ENABLE TRIGGER ALL;
 
 
@@ -3279,22 +3314,18 @@ We like to show python too (V).
 We do not want to see signatures and END PGP.
 We want to see two ellipses (V).
 
--- 
 __PERSON SURNAME_______
 person.surname@example.org
 Guilty of stealing everything I am.
 
------BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.1 (GNU/Linux)
 Comment: Using GnuPG with Thunderbird
 
 iD8DBQFED60Y0F+nu1YWqI0RAqrNAJ9hTww5vqDbxp4xJS8ek58W
 T2PIWy0CUJsX8RXSt/M51WE=
 =J2S5
------END PGP SIGNATURE-----
 ', NULL, NULL);
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (39, 39, 1, 'Jokosher discloses to any passerby the fact that I am single and unwed in its actions portlet. Please fix this blatant violacion of privacy now!!', NULL, NULL);
-
 
 
 ALTER TABLE messagechunk ENABLE TRIGGER ALL;

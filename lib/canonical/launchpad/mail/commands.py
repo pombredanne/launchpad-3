@@ -19,7 +19,8 @@ from canonical.launchpad.interfaces import (
         IBugTaskSet, IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError,
         NotFoundError, CreateBugParams, IPillarNameSet,
-        BugTargetNotFound, IProject, ISourcePackage, IProductSeries)
+        BugTargetNotFound, IProject, ISourcePackage, IProductSeries,
+        BugTaskStatus)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
@@ -27,7 +28,7 @@ from canonical.launchpad.event.interfaces import (
 
 from canonical.launchpad.webapp.snapshot import Snapshot
 
-from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance)
+from canonical.lp.dbschema import BugTaskImportance
 
 
 def get_error_message(filename, **interpolation_items):

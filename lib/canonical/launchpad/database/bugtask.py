@@ -35,6 +35,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
+from canonical.lazr.enum import DBItem
+
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.interfaces import (
@@ -58,6 +60,8 @@ from canonical.launchpad.interfaces import (
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     BUG_CONTACT_BUGTASK_STATUSES,
+    BugTaskStatus,
+    BugTaskStatusSearch,
     )
 from canonical.launchpad.helpers import shortlist
 # XXX: kiko 2006-06-14 bug=49029
@@ -65,7 +69,6 @@ from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import (
     BugNominationStatus,
     BugTaskImportance,
-    BugTaskStatus,
     PackagePublishingStatus,
     )
 
@@ -327,7 +330,7 @@ class BugTask(SQLBase, BugTaskMixin):
     _CONJOINED_ATTRIBUTES = (
         "status", "importance", "assignee", "milestone",
         "date_assigned", "date_confirmed", "date_inprogress",
-        "date_closed")
+        "date_closed", "date_incomplete")
     _NON_CONJOINED_STATUSES = (BugTaskStatus.WONTFIX,)
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
@@ -368,6 +371,7 @@ class BugTask(SQLBase, BugTaskMixin):
     date_confirmed = UtcDateTimeCol(notNull=False, default=None)
     date_inprogress = UtcDateTimeCol(notNull=False, default=None)
     date_closed = UtcDateTimeCol(notNull=False, default=None)
+    date_incomplete = UtcDateTimeCol(notNull=False, default=None)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
     # The targetnamecache is a value that is only supposed to be set
     # when a bugtask is created/modified or by the
@@ -549,6 +553,10 @@ class BugTask(SQLBase, BugTaskMixin):
         """Set date_closed, and update conjoined BugTask."""
         self._setValueAndUpdateConjoinedBugTask("date_closed", value)
 
+    def _set_date_incomplete(self, value):
+        """Set date_incomplete, and update conjoined BugTask."""
+        self._setValueAndUpdateConjoinedBugTask("date_incomplete", value)
+
     def _setValueAndUpdateConjoinedBugTask(self, colname, value):
         """Set a value, and update conjoined BugTask."""
         if self._isConjoinedBugTask():
@@ -694,6 +702,7 @@ class BugTask(SQLBase, BugTaskMixin):
             self.date_confirmed = None
             self.date_inprogress = None
             self.date_closed = None
+            self.date_incomplete = None
 
             return
 
@@ -702,8 +711,8 @@ class BugTask(SQLBase, BugTaskMixin):
 
         # Record the date of the particular kinds of transitions into
         # certain states.
-        if ((old_status.value < BugTaskStatus.CONFIRMED.value) and
-            (new_status.value >= BugTaskStatus.CONFIRMED.value)):
+        if ((old_status < BugTaskStatus.CONFIRMED) and
+            (new_status >= BugTaskStatus.CONFIRMED)):
             # Even if the bug task skips the Confirmed status
             # (e.g. goes directly to Fix Committed), we'll record a
             # confirmed date at the same time anyway, otherwise we get
@@ -711,11 +720,19 @@ class BugTask(SQLBase, BugTaskMixin):
             # reports.
             self.date_confirmed = now
 
-        if ((old_status.value < BugTaskStatus.INPROGRESS.value) and
-            (new_status.value >= BugTaskStatus.INPROGRESS.value)):
+        if ((old_status < BugTaskStatus.INPROGRESS) and
+            (new_status >= BugTaskStatus.INPROGRESS)):
             # Same idea with In Progress as the comment above about
             # Confirmed.
             self.date_inprogress = now
+
+        # Bugs can jump in and out of 'incomplete' status
+        # and for just as long as they're marked incomplete
+        # we keep a date_incomplete recorded for them.
+        if new_status == BugTaskStatus.INCOMPLETE:
+            self.date_incomplete = now
+        else:
+            self.date_incomplete = None
 
         if ((old_status in UNRESOLVED_BUGTASK_STATUSES) and
             (new_status in RESOLVED_BUGTASK_STATUSES)):
@@ -1008,6 +1025,48 @@ class BugTaskSet:
             summary, Bug, ' AND '.join(constraint_clauses), ['BugTask'])
         return self.search(search_params)
 
+    def _buildStatusClause(self, status):
+        """Return the SQL query fragment for search by status.
+
+        Called from `buildQuery` or recursively."""
+        if zope_isinstance(status, any):
+            return '(' + ' OR '.join(
+                self._buildStatusClause(dbitem)
+                for dbitem
+                in status.query_values) + ')'
+        elif zope_isinstance(status, not_equals):
+            return '(NOT %s)' % self._buildStatusClause(status.value)
+        elif zope_isinstance(status, DBItem):
+            with_response = (
+                status == BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
+            without_response = (
+                status == BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
+            if with_response or without_response:
+                status_clause = (
+                    '(BugTask.status = %s ' %
+                    sqlvalues(BugTaskStatus.INCOMPLETE))
+                status_clause += 'AND BugTask.date_incomplete '
+                if with_response:
+                    status_clause += '<='
+                elif without_response:
+                    status_clause += '>'
+                else:
+                    assert with_response != without_response
+                status_clause += """ (
+                    SELECT Message.datecreated
+                    FROM BugMessage, Message
+                    WHERE Message.id = BugMessage.message
+                    AND BugMessage.bug = Bug.id
+                    ORDER BY Message.datecreated DESC
+                    LIMIT 1))
+                    """
+                return status_clause
+            else:
+                return '(BugTask.status = %s)' % sqlvalues(status)
+        else:
+            raise AssertionError(
+                'Unrecognized status value: %s' % repr(status))
+
     def buildQuery(self, params):
         """Build and return an SQL query with the given parameters.
 
@@ -1017,12 +1076,11 @@ class BugTaskSet:
 
         extra_clauses = ['Bug.id = BugTask.bug']
         clauseTables = ['BugTask', 'Bug']
-
+        
         # These arguments can be processed in a loop without any other
         # special handling.
         standard_args = {
             'bug': params.bug,
-            'status': params.status,
             'importance': params.importance,
             'product': params.product,
             'distribution': params.distribution,
@@ -1032,6 +1090,7 @@ class BugTaskSet:
             'sourcepackagename': params.sourcepackagename,
             'owner': params.owner,
         }
+
         # Loop through the standard, "normal" arguments and build the
         # appropriate SQL WHERE clause. Note that arg_value will be one
         # of:
@@ -1052,6 +1111,9 @@ class BugTaskSet:
             where_cond = search_value_to_where_condition(arg_value)
             if where_cond is not None:
                 extra_clauses.append("BugTask.%s %s" % (arg_name, where_cond))
+
+        if params.status is not None:
+            extra_clauses.append(self._buildStatusClause(params.status))
 
         if params.milestone:
             if IProjectMilestone.providedBy(params.milestone):

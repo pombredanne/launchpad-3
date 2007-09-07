@@ -1,5 +1,4 @@
 
-import datetime
 import os
 import pytz
 import re
@@ -14,12 +13,11 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces import (
-    IBugSet, IEmailAddressSet, IPersonSet, IProductSet,
+    BugTaskStatus, IBugSet, IEmailAddressSet, IPersonSet, IProductSet,
     PersonCreationRationale)
 from canonical.launchpad.scripts import bugimport
 from canonical.launchpad.scripts.bugimport import ET
-from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType)
+from canonical.lp.dbschema import BugAttachmentType, BugTaskImportance
 
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests import login, logout
@@ -66,7 +64,7 @@ class UtilsTestCase(unittest.TestCase):
         # Test that the get_enum_value() function returns the
         # appropriate enum value, or raises BugXMLSyntaxError if it is
         # not found.
-        from canonical.lp.dbschema import BugTaskStatus
+        from canonical.launchpad.interfaces import BugTaskStatus
         self.assertEqual(bugimport.get_enum_value(BugTaskStatus,
                                                   'FIXRELEASED'),
                          BugTaskStatus.FIXRELEASED)
