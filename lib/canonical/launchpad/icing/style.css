@@ -673,22 +673,27 @@ body.freeform #mainarea {top: 0;}
 * html #mainarea {top: 0;}
 body.freeform #mainarea {top: 20px;} /*- no logo on freeform pages -*/
 #mainarea div.v {
+  position: relative;
   width: 100%;
   background: url(mainarea_bottomleft.gif) bottom left no-repeat;
 }
 #mainarea div.w {
+  position: relative;
   width: 100%;
   background: url(mainarea_bottomright.gif) bottom right no-repeat;
 }
 #mainarea div.x {
+  position: relative;
   width: 100%;
   background: url(mainarea_top.gif) top left repeat-x;
 }
 #mainarea div.y {
+  position: relative;
   width: 100%;
   background: url(mainarea_topleft.gif) top left no-repeat;
 }
 #mainarea div.z {
+  position: relative;
   width: 100%;
   background: url(mainarea_topright.gif) 100% top no-repeat;
 }
@@ -700,9 +705,12 @@ body {min-width: 480px;}
 
 /* Inside those is a container for the main content, and the portlets if any. */
 #container {
-  padding: 0 20px 0 240px;
+  padding: 20px 20px 0 240px;
   margin-top: 30px;
+  position: relative;
+  top: 28px;
 }
+* html #container {position: static;} /* stops container disappearing in IE6 */
 * html #container {margin-top: 48px;} /* works around IE6 bug */
 body.applicationhome #container {padding-left: 20px;}
 #singlecolumn #container {

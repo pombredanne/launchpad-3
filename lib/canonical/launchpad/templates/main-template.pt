@@ -209,12 +209,6 @@
                           </tal:facet>
                         </ul>
                       </tal:applicationtabs>
-                      <!-- this br is conditional so that it does not show
-                           on applicationhomes, where it causes a large
-                           white space at the top of the page content area
-                           -->
-                      <br class="clear"
-                          tal:condition="view/macro:pagehas/pageheading"/>
                       <div id="container">
                         <div id="maincontent">
                            <div class="pageheading"
@@ -358,5 +352,4 @@
     define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
     replace="structure string:<!-- at least ${log} -->" />
 </metal:page>
-<!-- 1-0 inprogress Help panel wrong in IE/Win; portlets wrong in IE/Mac -->
-
+<!-- 1-0 inprogress portlets wrong in IE/Mac -->
