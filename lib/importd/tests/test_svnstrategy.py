@@ -33,6 +33,7 @@ class SvnJobHelper(SimpleJobHelper):
         """
         job = SimpleJobHelper.makeJob(self)
         job.repository = 'file://' + self.svn_repo_path + '/trunk'
+        job.autotest = False
         return job
 
 

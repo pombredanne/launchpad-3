@@ -70,7 +70,8 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
     UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, validate_distrotask,
     valid_upstreamtask, IProductSeriesBugTask, IBugNominationSet,
-    IProductSeries, INominationsReviewTableBatchNavigator)
+    IProductSeries, INominationsReviewTableBatchNavigator,
+    BugTaskStatus, BugTaskStatusSearchDisplay)
 
 from canonical.launchpad.searchbuilder import any, NULL
 
@@ -90,7 +91,7 @@ from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 from canonical.lazr import EnumeratedType, Item
-from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
+from canonical.lp.dbschema import BugTaskImportance
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
@@ -1155,8 +1156,8 @@ class BugTaskListingView(LaunchpadView):
 
         assignee_html = PersonFormatterAPI(assignee).link('+assignedbugs')
 
-        if status in (dbschema.BugTaskStatus.INVALID,
-                      dbschema.BugTaskStatus.FIXCOMMITTED):
+        if status in (BugTaskStatus.INVALID,
+                      BugTaskStatus.FIXCOMMITTED):
             return '%s by %s' % (status_title, assignee_html)
         else:
             return '%s, assigned to %s' % (status_title, assignee_html)
@@ -1228,8 +1229,7 @@ class BugListingPortletView(LaunchpadView):
 
     def getNewBugsURL(self):
         """Return the URL for new bugs on this bug target."""
-        return get_buglisting_search_filter_url(
-            status=dbschema.BugTaskStatus.NEW.title)
+        return get_buglisting_search_filter_url(status=BugTaskStatus.NEW.title)
 
     def getAllBugsEverReportedURL(self):
         all_statuses = UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES
@@ -1271,7 +1271,7 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     ['NEW', 'INCOMPLETE', 'CONFIRMED', 'TRIAGED', 'INPROGRESS', 'FIXCOMMITTED']
 
     >>> initial = getInitialValuesFromSearchParams(
-    ...     {'status': dbschema.BugTaskStatus.INVALID}, IBugTaskSearch)
+    ...     {'status': BugTaskStatus.INVALID}, IBugTaskSearch)
     >>> [status.name for status in initial['status']]
     ['INVALID']
 
@@ -1641,12 +1641,18 @@ class BugTaskSearchListingView(LaunchpadFormView):
         tasks = context.searchTasks(search_params)
         return self._getBatchNavigator(tasks)
 
-    def getWidgetValues(self, vocabulary_name, default_values=()):
-        """Return data used to render a field's widget."""
+    def getWidgetValues(
+        self, vocabulary_name=None, vocabulary=None, default_values=()):
+        """Return data used to render a field's widget.
+
+        Either `vocabulary_name` or `vocabulary` must be supplied."""
         widget_values = []
 
-        vocabulary_registry = getVocabularyRegistry()
-        for term in vocabulary_registry.get(self.context, vocabulary_name):
+        if vocabulary is None:
+            assert vocabulary_name is not None, 'No vocabulary specified.'
+            vocabulary_registry = getVocabularyRegistry()
+            vocabulary = vocabulary_registry.get(self.context, vocabulary_name)
+        for term in vocabulary:
             widget_values.append(
                 dict(
                     value=term.token, title=term.title or term.token,
@@ -1657,7 +1663,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
     def getStatusWidgetValues(self):
         """Return data used to render the status checkboxes."""
         return self.getWidgetValues(
-            vocabulary_name="BugTaskStatus",
+            vocabulary=BugTaskStatusSearchDisplay,            
             default_values=UNRESOLVED_BUGTASK_STATUSES)
 
     def getImportanceWidgetValues(self):

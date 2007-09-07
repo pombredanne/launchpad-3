@@ -3,8 +3,10 @@
 The queue of export requests is served by a cron script. Let's check if it can
 serve those requests properly.
 
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IPOExportRequestSet
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPOExportRequestSet
+    >>> from canonical.launchpad.translationformat.tests.helpers import (
+    ...     is_valid_mofile)
 
 This is a dummy logger class to capture the export's log messages.
 
@@ -82,7 +84,7 @@ The user receives a confirmation email.
   > The files you requested from Rosetta are ready for download
   > from the following location:
   >
-  >     http://localhost:58000/.../rosetta-pmount.tar.gz
+  >     http://localhost:58000/.../launchpad-export.tar.gz
 
 The email contains a URL linking to where the exported file can be downloaded.
 
@@ -101,9 +103,9 @@ Let's download it and make sure the contents look ok.
   >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
   >>> for name in sorted(tarball.getnames()):
   ...   print name
-  rosetta-pmount/
-  rosetta-pmount/ca.po
-  rosetta-pmount/cs.po
+  pmount/
+  pmount/pmount-ca.po
+  pmount/pmount-cs.po
 
 
 == Requesting MO files ==
@@ -111,7 +113,7 @@ Let's download it and make sure the contents look ok.
 Let's try requesting an export in MO format:
 
   >>> from canonical.lp.dbschema import TranslationFileFormat
-  >>> request_set.addRequest(person, None, [ca], TranslationFileFormat.MO)
+  >>> request_set.addRequest(person, None, [cs], TranslationFileFormat.MO)
   >>> process_queue(MockTransactionManager(), MockLogger())
   log> Exporting objects for Mark Shuttleworth, related to template pmount in
   Ubuntu Hoary package "pmount"
@@ -130,46 +132,13 @@ Let's try requesting an export in MO format:
   > The files you requested from Rosetta are ready for download
   > from the following location:
   > 
-  >     http://localhost:58000/.../ca.mo
+  >     http://localhost:58000/.../cs_LC_MESSAGES_pmount.mo
   >>> url = extract_url(body)
 
-We will need to define a helper function.
-
-  >>> def is_valid_mofile(mofile):
-  ...     """Test whether a string is a valid MO file."""
-  ...
-  ...     # There are different magics for big- and little-endianness, so we
-  ...     # test for both.
-  ...     be_magic = '\x95\x04\x12\xde'
-  ...     le_magic = ''.join(reversed(be_magic))
-  ...
-  ...     for magic in (be_magic, le_magic):
-  ...         if mofile[:len(magic)] == magic:
-  ...             return True
-  ...
-  ...     return False
+Check whether we generated a good .mo file.
 
   >>> is_valid_mofile(urllib2.urlopen(url).read())
   True
-
-Let's test the .mo compilation.
-
-  >>> from canonical.launchpad.components.poexport import MOCompiler
-  >>> compiler = MOCompiler()
-
-  >>> mofile = compiler.compile('''
-  ... msgid "foo"
-  ... msgstr "bar"
-  ... ''')
-  >>> is_valid_mofile(mofile)
-  True
-
-  >>> mofile = compiler.compile('''
-  ... blah
-  ... ''')
-  Traceback (most recent call last):
-  ...
-  MOCompilationError: ...
 
 
 == Cron script ==

@@ -66,8 +66,7 @@ you might prefer that to read, simply:
 We define a helper that uses the BugTaskListingView class (obtained via
 +listing-view) to render the status:
 
-  >>> from canonical.launchpad.interfaces import ILaunchBag
-  >>> from canonical.lp.dbschema import BugTaskStatus
+  >>> from canonical.launchpad.interfaces import BugTaskStatus, ILaunchBag
   >>> from zope.component import getView
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 

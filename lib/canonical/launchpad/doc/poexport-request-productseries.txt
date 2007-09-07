@@ -68,7 +68,7 @@ The user receives a confirmation email.
     > The files you requested from Rosetta are ready for download
     > from the following location:
     >
-    >     http://localhost:58000/.../rosetta-evolution-2.2.tar.gz
+    >     http://localhost:58000/.../launchpad-export.tar.gz
 
 The email contains a URL linking to where the exported file can be downloaded.
 
@@ -87,9 +87,9 @@ Let's download it and make sure the contents look ok.
     >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
     >>> for name in sorted(tarball.getnames()):
     ...   print name
-    rosetta-evolution-2.2/
-    rosetta-evolution-2.2/es.po
-    rosetta-evolution-2.2/evolution-2.2-test.pot
-    rosetta-evolution-2.2/evolution-2.2.pot
-    rosetta-evolution-2.2/pt_BR.po
-
+    evolution-2.2/
+    evolution-2.2/evolution-2.2-es.po
+    po/
+    po/evolution-2.2-test-pt_BR.po
+    po/evolution-2.2-test.pot
+    po/evolution-2.2.pot

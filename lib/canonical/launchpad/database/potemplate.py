@@ -1,51 +1,49 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-"""SQLObject implementation of POTemplate classes."""
+
+"""`SQLObject` implementation of `IPOTemplate` interface."""
 
 __metaclass__ = type
 __all__ = [
-    'POTemplateSubset',
-    'POTemplateSet',
     'POTemplate',
+    'POTemplateSet',
+    'POTemplateSubset',
+    'POTemplateToTranslationFileAdapter',
     ]
 
 import datetime
-import os.path
-
-# Zope interfaces
-from zope.interface import implements
+import os
+from sqlobject import (
+    BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
+    StringCol)
 from zope.component import getUtility
+from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
-from sqlobject import SQLMultipleJoin, SQLObjectNotFound
-
-from canonical.lp.dbschema import (
-    RosettaImportStatus, TranslationFileFormat)
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-
+from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, quote, flush_database_updates, sqlvalues)
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.constants import DEFAULT, UTC_NOW
-from canonical.database.enumcol import EnumCol
-
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPOTemplate, IPOTemplateExporter, IPOTemplateSet,
-    IPOTemplateSubset, ITranslationImporter, LanguageNotFound, NotFoundError,
-    TranslationConstants, TranslationFormatSyntaxError,
-    TranslationFormatInvalidInputError
-    )
-from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.mailnotification import MailWrapper
-
 from canonical.launchpad.database.language import Language
-from canonical.launchpad.database.potmsgset import POTMsgSet
-from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
+from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
+from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
+from canonical.launchpad.interfaces import (
+    ILaunchpadCelebrities, IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
+    ITranslationExporter, ITranslationFile, ITranslationImporter,
+    IVPOTExportSet, LanguageNotFound, NotFoundError, TranslationConstants,
+    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
+from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.mailnotification import MailWrapper
+from canonical.launchpad.translationformat import TranslationMessage
+from canonical.lp.dbschema import (
+    RosettaImportStatus, TranslationFileFormat)
 
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
@@ -269,6 +267,15 @@ class POTemplate(SQLBase, RosettaStats):
                 sourcepackagename=self.sourcepackagename)
         raise AssertionError('Unknown POTemplate translation target')
 
+    def getHeader(self):
+        """See `IPOTemplate`."""
+        translation_importer = getUtility(ITranslationImporter)
+        format_importer = translation_importer.getTranslationFormatImporter(
+            self.source_file_format)
+        header = format_importer.getHeaderFromString(self.header)
+        header.has_plural_forms = self.hasPluralMessage()
+        return header
+
     def getPOTMsgSetByMsgIDText(self, key, only_current=False, context=None):
         """See `IPOTemplate`."""
         query = 'potemplate = %s' % sqlvalues(self.id)
@@ -441,8 +448,36 @@ class POTemplate(SQLBase, RosettaStats):
 
     def export(self):
         """See `IPOTemplate`."""
-        exporter = IPOTemplateExporter(self)
-        return exporter.export_potemplate()
+        translation_exporter = getUtility(ITranslationExporter)
+        translation_format_exporter = (
+            translation_exporter.getExporterProducingTargetFileFormat(
+                self.source_file_format))
+
+        template_file = ITranslationFile(self)
+        exported_file = translation_format_exporter.exportTranslationFiles(
+            [template_file])
+
+        try:
+            file_content = exported_file.read()
+        finally:
+            exported_file.close()
+
+        return file_content
+
+    def exportWithTranslations(self):
+        """See `IPOTemplate`."""
+        translation_exporter = getUtility(ITranslationExporter)
+        translation_format_exporter = (
+            translation_exporter.getExporterProducingTargetFileFormat(
+                self.source_file_format))
+
+        translation_files = [
+            ITranslationFile(pofile)
+            for pofile in self.pofiles
+            ]
+        translation_files.append(ITranslationFile(self))
+        return translation_format_exporter.exportTranslationFiles(
+            translation_files)
 
     def expireAllMessages(self):
         """See `IPOTemplate`."""
@@ -923,3 +958,116 @@ class POTemplateSet:
                 'Either productseries or sourcepackagename arguments must be'
                 ' not None.')
 
+
+class POTemplateToTranslationFileAdapter:
+    """Adapter from `IPOTemplate` to `ITranslationFile`."""
+    implements(ITranslationFile)
+
+    def __init__(self, potemplate):
+        self._potemplate = potemplate
+        self.messages = self._getMessages()
+
+    @cachedproperty
+    def path(self):
+        """See `ITranslationFile`."""
+        return self._potemplate.path
+
+    @cachedproperty
+    def translation_domain(self):
+        """See `ITranslationFile`."""
+        return self._potemplate.potemplatename.translationdomain
+
+    @property
+    def is_template(self):
+        """See `ITranslationFile`."""
+        return True
+
+    @property
+    def language_code(self):
+        """See `ITraslationFile`."""
+        return None
+
+    @cachedproperty
+    def header(self):
+        """See `ITranslationFile`."""
+        return self._potemplate.getHeader()
+
+    def _getMessages(self):
+        """Return a list of `ITranslationMessage`."""
+        potemplate = self._potemplate
+        # Get all rows related to this file. We do this to speed the export
+        # process so we have a single DB query to fetch all needed
+        # information.
+        rows = getUtility(IVPOTExportSet).get_potemplate_rows(potemplate)
+
+        sequence = None
+        messages = []
+        msgset = None
+
+        for row in rows:
+            assert row.potemplate == potemplate, (
+                'Got a row for a different IPOTemplate.')
+
+            # Skip messages which aren't anymore in the PO template.
+            if row.sequence == 0:
+                continue
+
+            # If the sequence number changes, is a new message.
+            if row.sequence != sequence:
+                if msgset is not None:
+                    # Output current message set before creating the new one.
+                    messages.append(msgset)
+
+                # Create new message set
+                msgset = TranslationMessage()
+                msgset.sequence = row.sequence
+                msgset.obsolete = False
+
+            # Because of the way the database view works, message IDs will
+            # appear multiple times. We see how many we've added already to
+            # check whether the message ID/translation in the current row are
+            # ones we need to add.
+            if (row.pluralform == TranslationConstants.SINGULAR_FORM and
+                msgset.msgid is None):
+                msgset.msgid = row.msgid
+            elif (row.pluralform == TranslationConstants.PLURAL_FORM and
+                msgset.msgid_plural is None):
+                msgset.msgid_plural = row.msgid
+            else:
+                # msgset.msgid or msgset.msgid_plural could be not None,
+                # because we don't need to set it again, thus, we only check
+                # that row.msgidpluralform is correct.
+                assert row.msgidpluralform in (
+                    TranslationConstants.SINGULAR_FORM,
+                    TranslationConstants.PLURAL_FORM), (
+                        'msgid plural form is not valid: %s.' %
+                            row.msgidpluralform)
+
+            if row.context is not None and msgset.context is None:
+                msgset.context = row.context
+
+            if row.commenttext and not msgset.comment:
+                msgset.comment = row.commenttext
+
+            if row.sourcecomment and not msgset.source_comment:
+                msgset.source_comment = row.sourcecomment
+
+            if row.filereferences and not msgset.file_references:
+                msgset.file_references = row.filereferences
+
+            if row.flagscomment and not msgset.flags:
+                msgset.flags = [
+                    flag.strip()
+                    for flag in row.flagscomment.split(',')
+                    if flag
+                    ]
+
+            # Store sequences so we can detect later whether we changed the
+            # message.
+            sequence = row.sequence
+
+        # Once we've processed all the rows, store last message set.
+        if msgset:
+            messages.append(msgset)
+
+        return messages
