@@ -1,0 +1,40 @@
+= POFile statistics =
+
+We frequently display statistics about POFiles: how many of its messages
+remain untranslated, how many have been changed in Launchpad, how many have
+had suggested translations submitted that need to be reviewed?
+
+It takes too long to gather these statistics on demand, so we cache them in
+POFile fields.  When translations are changed, these statistics can be either
+updated incrementally or recomputed altogether.
+
+Incremental updates carry a risk of errors creeping in and being preserved
+even during some updates.  That's why a cron job trawls the POFile table,
+recomputing translation statistics and noting any divergence between the
+cached values and the ones it recomputes from scratch.
+
+    >>> import transaction
+    >>> from canonical.launchpad.scripts.verify_pofile_stats import (
+    ...     VerifyPOFileStatsProcess)
+    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> logger = FakeLogger()
+    >>> verifier = VerifyPOFileStatsProcess(transaction, logger, 30)
+    >>> verifier.run()
+    INFO Starting verification of POFile stats at id 30
+    INFO Done.
+
+If for any reason any POFiles' statistics are found to be wrong, the
+differences will be reported.
+
+    >>> from canonical.launchpad.database.pofile import POFile
+    >>> pofile = POFile.get(34)
+    >>> pofile.getStatistics()
+    (0, 0, 3, 0)
+    >>> pofile.rosettacount = 999
+    >>> verifier = VerifyPOFileStatsProcess(transaction, logger, 34)
+    >>> verifier.run()
+    INFO Starting verification of POFile stats at id 34
+    WARNING POFile 34:
+    cached stats were (0, 0, 999, 0), recomputed as (0, 0, 3, 0)
+    INFO Done.
+

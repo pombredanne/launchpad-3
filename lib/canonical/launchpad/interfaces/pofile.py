@@ -287,6 +287,13 @@ class IPOFile(IRosettaStats):
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""
 
+    def getStatistics():
+        """Summarize this file's cached translation statistics.
+
+        Returns tuple of (currentcount, updatescount, rosettacount,
+        unreviewed_count).
+        """
+
     def updateStatistics():
         """Update the statistics fields - rosettaCount, updatesCount and
         currentCount - from the messages currently known.
@@ -349,6 +356,15 @@ class IPOFileSet(Interface):
         Return None if there is not such IPOFile.
         """
 
+    def getBatch(starting_id, batch_size):
+        """Read up to batch_size `POFile`s, starting at given id.
+
+        Returns a sequence of consecutive `POFile`s (ordered by id), starting
+        the smallest id that is no greater than starting_id.
+
+        The number of items in the sequence will only be less than batch_size
+        if the end of the table has been reached.
+        """
 
 class IPOFileTranslator(Interface):
     """Represents contributions from people to POFiles."""
