@@ -109,7 +109,7 @@ class TeamMembershipEditView:
     def canChangeExpirationDate(self):
         """Return True if the logged in user can change the expiration date of
         this membership.
-        
+
         Team administrators can't change the expiration date of their own
         membership.
         """
@@ -180,7 +180,7 @@ class TeamMembershipEditView:
         if self.context.status != TeamMembershipStatus.PROPOSED:
             # Catch a double-form-post.
             self.errormessage = _(
-                'The membership request for %s has already been processed.' % 
+                'The membership request for %s has already been processed.' %
                     self.context.person.displayname)
             return
 
@@ -203,7 +203,7 @@ class TeamMembershipEditView:
                                        TeamMembershipStatus.DEACTIVATED):
             # Catch a double-form-post.
             self.errormessage = _(
-                'The membership request for %s has already been processed.' % 
+                'The membership request for %s has already been processed.' %
                     self.context.person.displayname)
             return
 
@@ -296,10 +296,10 @@ class TeamMembershipEditView:
         for month in range(1, 13):
             monthname = self.monthnames[month]
             if selected and month == selected.month:
-                html += ('<option selected value="%d">%s</option>' % 
+                html += ('<option selected value="%d">%s</option>' %
                          (month, monthname))
             else:
-                html += ('<option value="%d">%s</option>' % 
+                html += ('<option value="%d">%s</option>' %
                          (month, monthname))
         html += '</select>'
 

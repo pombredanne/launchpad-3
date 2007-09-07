@@ -34,7 +34,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url
-from zope.component import queryMultiAdapter        
+from zope.component import queryMultiAdapter
 
 class HasSpecificationsView(LaunchpadView):
     """Base class for several context-specific views that involve lists of

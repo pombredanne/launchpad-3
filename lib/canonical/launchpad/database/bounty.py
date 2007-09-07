@@ -9,7 +9,7 @@ from email.Utils import make_msgid
 from zope.interface import implements
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
-from sqlobject import ForeignKey, StringCol 
+from sqlobject import ForeignKey, StringCol
 from sqlobject import CurrencyCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 

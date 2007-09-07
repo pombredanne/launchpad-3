@@ -44,7 +44,7 @@ dbuser = os.environ.get('LP_DBUSER', config.launchpad.dbuser)
 _typesRegistered = False
 def registerTypes():
     '''Register custom type converters with psycopg
-    
+
     After calling this method, string-type columns are returned as Unicode
     and date and time columns returned as Python datetime, date and time
     instances.
@@ -62,7 +62,7 @@ def registerTypes():
 
     We cannot unittest this method, but other tests will confirm that
     the converters are working as expected.
-    
+
     '''
     global _typesRegistered
     if not _typesRegistered:

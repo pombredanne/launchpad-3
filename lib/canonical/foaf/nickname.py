@@ -46,7 +46,7 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
     email_addr = email_addr.strip().lower()
 
     if not valid_email(email_addr):
-        raise NicknameGenerationError("%s is not a valid email address" 
+        raise NicknameGenerationError("%s is not a valid email address"
                                       % email_addr)
 
     user, domain = re.match("^(\S+)@(\S+)$", email_addr).groups()
@@ -122,9 +122,9 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
 
 def generate_wikiname(displayname, registered):
     """Generate a LaunchPad wikiname from the displayname provided.
-    
+
     e.g.:
-    
+
         >>> generate_wikiname('Andrew Bennetts', lambda x: False)
         'AndrewBennetts'
         >>> generate_wikiname('andrew bennetts', lambda x: False)
@@ -135,7 +135,7 @@ def generate_wikiname(displayname, registered):
         'FooBar2'
         >>> generate_wikiname(u'Andr\xe9 Lu\xeds Lopes', lambda x: False)
         u'Andr\\xe9Lu\\xedsLopes'
-        
+
     """
     # First, just try smooshing the displayname together (stripping punctuation
     # and the like), and see if that's free.

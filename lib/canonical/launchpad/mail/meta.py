@@ -29,13 +29,13 @@ class IPOP3MailBoxDirective(Interface):
             description=u"Host name of the POP3 server.",
             required=True,
             )
-    
+
     user = ASCII(
             title=u"User",
             description=u"User name to connect to the POP3 server with.",
             required=True,
             )
-    
+
     password = ASCII(
             title=u"Password",
             description=u"Password to connect to the POP3 server with.",

@@ -42,7 +42,7 @@ urgencymap = {
     "medium": SourcePackageUrgency.MEDIUM,
     "high": SourcePackageUrgency.HIGH,
     "emergency": SourcePackageUrgency.EMERGENCY,
-    }   
+    }
 
 prioritymap = {
     "required": PackagePublishingPriority.REQUIRED,

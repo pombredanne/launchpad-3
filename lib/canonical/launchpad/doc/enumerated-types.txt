@@ -23,7 +23,7 @@ The `enum` values of EnumeratedTypes are instances of Item.
 
 Enumerated types support IVocabularyTokenized.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.schema.interfaces import (
     ...     ITitledTokenizedTerm, IVocabularyTokenized)
     >>> verifyObject(IVocabularyTokenized, Fruit)
