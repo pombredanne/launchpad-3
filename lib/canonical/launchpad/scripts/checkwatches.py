@@ -63,14 +63,6 @@ class BugWatchUpdater(object):
                 else:
                     self.updateBugTracker(bug_tracker)
                 self.txn.commit()
-            except socket.timeout:
-                # We don't want to die on a timeout, since most likely
-                # it's just a problem for this iteration. Nevertheless
-                # we log the problem.
-                self.log.error(
-                    "Connection timed out when updating %s" %
-                    bug_tracker_url)
-                self.txn.abort()
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
                 raise
@@ -109,6 +101,14 @@ class BugWatchUpdater(object):
                     remotesystem.updateBugWatches(bug_watches_to_update)
                 except externalbugtracker.BugWatchUpdateError, error:
                     self.log.error(str(error))
+                except socket.timeout:
+                    # We don't want to die on a timeout, since most likely
+                    # it's just a problem for this iteration. Nevertheless
+                    # we log the problem.
+                    self.log.error(
+                        "Connection timed out when updating %s" %
+                        bug_tracker.baseurl)
+                    self.txn.abort()
             else:
                 self.log.info("No watches to update on %s" %
                     bug_tracker.baseurl)
