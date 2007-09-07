@@ -40,6 +40,8 @@
           <th>Length</th>
           <th>Status</th>
           <th>Untranslated</th>
+          <th>Need review</th>
+          <th>Changed</th>
           <th>Last Edited</th>
           <th>By</th>
         </tr>
@@ -73,6 +75,36 @@
               0
             </span>
             <tal:block condition="not: entry/untranslatedCount">
+                &mdash;
+            </tal:block>
+          </td>
+          <td>
+            <span class="sortkey"
+              tal:content="entry/unreviewedCount">
+              0
+            </span>
+            <span
+              tal:condition="entry/unreviewedCount"
+              tal:replace="entry/unreviewedCount"
+              >
+              0
+            </span>
+            <tal:block condition="not: entry/unreviewedCount">
+                &mdash;
+            </tal:block>
+          </td>
+          <td>
+            <span class="sortkey"
+              tal:content="entry/updatesCount">
+              0
+            </span>
+            <span
+              tal:condition="entry/updatesCount"
+              tal:replace="entry/updatesCount"
+              >
+              0
+            </span>
+            <tal:block condition="not: entry/updatesCount">
                 &mdash;
             </tal:block>
           </td>
