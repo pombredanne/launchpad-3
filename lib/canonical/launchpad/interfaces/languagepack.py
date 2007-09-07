@@ -6,11 +6,12 @@ __metaclass__ = type
 
 __all__ = [
     'ILanguagePack',
+    'ILanguagePackSet',
     'LanguagePackType',
     ]
 
-from zope.schema import Choice, Datetime, Object
-from zope.interface import Interface
+from zope.schema import Choice, Datetime, Int, Object
+from zope.interface import Attribute, Interface
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
@@ -31,10 +32,27 @@ class LanguagePackType(DBEnumeratedType):
         Delta translation export based on a previous full export.""")
 
 
+class ILanguagePackSet(Interface):
+    """Language pack store set."""
+
+    def addLanguagePack(distroseries, file_alias, type):
+        """Add a new language pack to our records.
+
+        :param distroseries: The `IDistroSeries` associated from where this
+            language pack comes.
+        :param file_alias: An `ILibraryFileAlias` pointing to the librarian
+            entry storing the language pack we want to register.
+        :param type: The kind of `LanguagePackType` for this language pack.
+        :return: An `ILanguagePack` representing the given language pack.
+        """
+
+
 class ILanguagePack(Interface):
     """Language pack store."""
 
-    language_pack_file = Object(
+    id = Int(title=_('Language pack ID.'), required=True, readonly=True)
+
+    file = Object(
         title=_('Librarian file where the language pack is stored.'),
         required=True, schema=ILibraryFileAlias)
 
@@ -46,15 +64,12 @@ class ILanguagePack(Interface):
         title=_('The distribution series from where it was exported.'),
         required=True, vocabulary='FilteredDistroSeries')
 
-    language_pack_type = Choice(
+    type = Choice(
         title=_('Language pack type'), required=True,
         vocabulary=LanguagePackType,
         description=_("""
             Type of language pack. There are two types available, 1: Full
-            export, 2: Update export based on language_pack_that_updates
-            export.
+            export, 2: Update export based on `updates` export.
             """))
 
-    language_pack_that_updates = Object(
-        title=_('The LanguagePack that this one updates.'),
-        required=True, schema=ILanguagePack)
+    updates = Attribute(_('The LanguagePack that this one updates.'))

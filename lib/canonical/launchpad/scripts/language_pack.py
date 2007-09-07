@@ -20,7 +20,8 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues, cursor
 from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
-from canonical.launchpad.interfaces import IDistributionSet, IVPOExportSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, ILanguagePackSet, IVPOExportSet, LanguagePackType)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.translationformat.translation_export import (
     LaunchpadWriteTarFile)
@@ -201,7 +202,7 @@ def export_language_pack(distribution_name, series_name, component, update,
         # Bare except statements are used in order to prevent premature
         # termination of the script.
         logger.exception('Uncaught exception while exporting')
-        return
+        return False
 
     if output_file is not None:
         # Save the tarball to a file.
@@ -226,18 +227,30 @@ def export_language_pack(distribution_name, series_name, component, update,
             file_alias = upload(filename, filehandle, size)
         except UploadFailed, e:
             logger.error('Uploading to the Librarian failed: %s', e)
-            return
+            return False
         except:
             # Bare except statements are used in order to prevent premature
             # termination of the script.
             logger.exception('Uncaught exception while uploading to the Librarian')
-            return
+            return False
 
         logger.info('Upload complete, file alias: %d' % file_alias)
 
-        if email_addresses:
-            # Send a notification email.
+        # Let's register this new language pack.
+        distroseries = get_series(distribution_name, series_name)
+        language_pack_set = getUtility(ILanguagePackSet)
+        if update:
+            lang_pack_type = LanguagePackType.DELTA
+        else:
+            lang_pack_type = LanguagePackType.FULL
 
+        language_pack_set.addLanguagePack(
+            distroseries, file_alias, lang_pack_type)
+
+        logger.info('Registered the language pack.')
+
+        # Send a notification email.
+        if email_addresses:
             try:
                 send_upload_notification(email_addresses,
                     distribution_name, series_name, component, file_alias)
@@ -245,4 +258,6 @@ def export_language_pack(distribution_name, series_name, component, update,
                 # Bare except statements are used in order to prevent
                 # premature termination of the script.
                 logger.exception("Sending notifications failed.")
-                return
+                return False
+
+        return True

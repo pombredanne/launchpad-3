@@ -1484,5 +1484,5 @@ class FilteredDeltaLanguagePack(FilteredLanguagePackBase):
     _language_pack_type = LanguagePackType.DELTA
 
 
-class FilteredLanguagePack(FilteredLanguagePack):
+class FilteredLanguagePack(FilteredLanguagePackBase):
     displayname = 'Select a language pack'

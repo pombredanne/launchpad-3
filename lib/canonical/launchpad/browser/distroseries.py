@@ -270,11 +270,27 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         if self.text:
             self.searchrequested = True
 
+        self.displayname = '%s %s' % (self.context.distribution.displayname,
+                                       self.context.version)
+
     @cachedproperty
     def cached_packagings(self):
         # +packaging hits this many times, so avoid redoing the query
         # multiple times, in particular because it's gnarly.
         return list(self.context.packagings)
+
+    @cachedproperty
+    def unused_language_packs(self):
+        unused_language_packs = helpers.shortlist(self.context.language_packs)
+
+        if self.context.language_pack_base is not None:
+            unused_language_packs.remove(self.context.language_pack_base)
+        if self.context.language_pack_delta is not None:
+            unused_language_packs.remove(self.context.language_pack_delta)
+        if self.context.language_pack_proposed is not None:
+            unused_language_packs.remove(self.context.language_pack_proposed)
+
+        return unused_language_packs
 
     def searchresults(self):
         """Try to find the packages in this distro series that match

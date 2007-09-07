@@ -1,7 +1,7 @@
 #!/usr/bin/python2.4
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Script to export a tarball of translations for a distro release."""
+"""Script to export a tarball of translations for a distro series."""
 
 __metaclass__ = type
 
@@ -13,7 +13,7 @@ from canonical.launchpad.scripts.language_pack import export_language_pack
 
 
 class RosettaLangPackExporter(LaunchpadCronScript):
-    usage = '%prog [options] distribution release'
+    usage = '%prog [options] distribution series'
     def add_my_options(self):
         self.parser.add_option(
             '--email',
@@ -58,16 +58,16 @@ class RosettaLangPackExporter(LaunchpadCronScript):
         if len(self.args) != 2:
             raise LaunchpadScriptFailure(
                 'Wrong number of arguments: should include distribution '
-                'and release name')
+                'and series name')
 
-        distribution_name, release_name = self.args
+        distribution_name, series_name = self.args
         self.logger.info(
-            'Exporting translations for release %s of distribution %s',
-            distribution_name, release_name)
+            'Exporting translations for series %s of distribution %s',
+            distribution_name, series_name)
 
         success = export_language_pack(
             distribution_name=distribution_name,
-            release_name=release_name,
+            series_name=series_name,
             component=self.options.component,
             update=self.options.update,
             force_utf8=self.options.force_utf8,
@@ -77,6 +77,9 @@ class RosettaLangPackExporter(LaunchpadCronScript):
 
         if not success:
             raise LaunchpadScriptFailure('Language pack generation failed')
+        else:
+            self.txn.commit()
+
 
 if __name__ == '__main__':
     script = RosettaLangPackExporter('rosetta-language-pack-export')

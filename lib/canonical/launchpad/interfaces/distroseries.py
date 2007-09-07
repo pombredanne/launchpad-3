@@ -171,6 +171,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     binary_package_caches = Attribute("All of the cached binary package "
         "records for this distroseries.")
 
+    language_packs = Attribute(
+        "All language packs associated with this distribution series.")
+
     # other properties
     previous_serieses = Attribute("Previous series from the same "
         "distribution.")

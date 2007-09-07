@@ -117,12 +117,24 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     sourcecount = IntCol(notNull=True, default=DEFAULT)
     defer_translation_imports = BoolCol(notNull=True, default=True)
     hide_all_translations = BoolCol(notNull=True, default=True)
+    language_pack_base = ForeignKey(
+        foreignKey="LanguagePack", dbName="language_pack_base", notNull=False,
+        default=None)
+    language_pack_delta = ForeignKey(
+        foreignKey="LanguagePack", dbName="language_pack_delta",
+        notNull=False, default=None)
+    language_pack_proposed = ForeignKey(
+        foreignKey="LanguagePack", dbName="language_pack_proposed",
+        notNull=False, default=None)
+    language_pack_full_export_requested = BoolCol(notNull=True, default=False)
 
     architectures = SQLMultipleJoin(
         'DistroArchSeries', joinColumn='distroseries',
         orderBy='architecturetag')
     binary_package_caches = SQLMultipleJoin('DistroSeriesPackageCache',
         joinColumn='distroseries', orderBy='name')
+    language_packs = SQLMultipleJoin(
+        'LanguagePack', joinColumn='distroseries', orderBy='-date_exported')
     sections = SQLRelatedJoin(
         'Section', joinColumn='distrorelease', otherColumn='section',
         intermediateTable='SectionSelection')

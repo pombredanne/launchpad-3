@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'LanguagePack',
+    'LanguagePackSet',
     ]
 
 from sqlobject import ForeignKey
@@ -14,8 +15,29 @@ from zope.interface import implements
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import ILanguagePack, LanguagePackType
+from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.interfaces import (
+    ILanguagePack, ILanguagePackSet, LanguagePackType)
+
+
+class LanguagePackSet:
+    implements(ILanguagePackSet)
+
+    def addLanguagePack(self, distroseries, file_alias, type):
+        """See `ILanguagePackSet`."""
+        assert type in LanguagePackType, (
+            'Unknown language pack type: %s' % type.name)
+
+        if (type == LanguagePackType.DELTA and
+            distroseries.language_pack_base is None):
+            raise AssertionError(
+                "There is no base language pack available for %s's %s to get"
+                " deltas from." % sqlvalues(
+                    distroseries.distribution.name, distroseries.name))
+
+        return LanguagePack(
+            file=file_alias, date_exported=UTC_NOW, distroseries=distroseries,
+            type=type, updates=distroseries.language_pack_base)
 
 
 class LanguagePack(SQLBase):
@@ -23,19 +45,17 @@ class LanguagePack(SQLBase):
 
     _table = 'LanguagePack'
 
-    language_pack_file = ForeignKey(
-        foreignKey='LibraryFileAlias', dbName='language_pack_file',
-        notNull=True)
+    file = ForeignKey(
+        foreignKey='LibraryFileAlias', dbName='file', notNull=True)
 
     date_exported = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
-    distro_series = ForeignKey(
-        foreignKey='DistroRelease', dbName='distro_release',
-        notNull=True)
+    distroseries = ForeignKey(
+        foreignKey='DistroRelease', dbName='distroseries', notNull=True)
 
-    language_pack_type = EnumCol(
+    type = EnumCol(
         schema=LanguagePackType, notNull=True, default=LanguagePackType.FULL)
 
-    language_pack_that_updates = ForeignKey(
-        foreignKey='LanguagePack', dbName='language_pack_that_updates',
+    updates = ForeignKey(
+        foreignKey='LanguagePack', dbName='updates',
         notNull=False, default=None)

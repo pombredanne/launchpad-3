@@ -21,7 +21,7 @@
       />
     <require
       permission="launchpad.TranslationsAdmin"
-      set_attribute="language_pack_admin"
+      set_attributes="language_pack_admin"
       />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions

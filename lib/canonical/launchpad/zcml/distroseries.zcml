@@ -15,7 +15,7 @@
         set_attributes="hide_all_translations defer_translation_imports"
         />
     <require
-        permission="launchpad.LanguagePackAdmin"
+        permission="launchpad.LanguagePacksAdmin"
         set_attributes="language_pack_base language_pack_delta
                         language_pack_proposed
                         language_pack_full_export_requested"
@@ -156,6 +156,10 @@
       name="+translations"
       facet="translations"
       template="../templates/distroseries-translations.pt" />
+    <browser:page
+      name="+language-packs"
+      facet="translations"
+      template="../templates/distroseries-language-packs.pt" />
     <browser:page
       name="+langchart"
       template="../templates/distroseries-langchart.pt" />
