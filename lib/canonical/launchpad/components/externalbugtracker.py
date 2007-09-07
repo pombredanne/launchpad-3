@@ -7,6 +7,7 @@ __metaclass__ = type
 import cgi
 import csv
 import os.path
+import re
 import urllib
 import urllib2
 import urlparse
@@ -1306,6 +1307,26 @@ class SourceForge(ExternalBugTracker):
         for bug_id in bug_ids:
             query_url = self.export_url % bug_id
             page_data = self._getPage(query_url)
+
+            soup = BeautifulSoup(page_data)
+            status_re = re.compile('Status:')
+            status_tag = soup.find(text=status_re)
+
+            # If we can't find a status line in the output from
+            # Sourceforge there's little point in continuing.
+            if not status_tag:
+                raise UnparseableBugData(
+                    'Remote bug %s does not define a status.' % bug_id)
+
+            # We can extract the status by finding the grandparent tag.
+            # Happily, BeautifulSoup will turn the contents of this tag
+            # into a newline-delimited list from which we can then
+            # extract the requisite data.
+            status_row = status_tag.findParent().findParent()
+            status, = status_row.contents[-1:]
+            status = status.strip()
+
+            self.bugs[bug_id] = {'id': bug_id, 'status': status}
 
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
