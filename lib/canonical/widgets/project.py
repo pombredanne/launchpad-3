@@ -97,6 +97,12 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
         else:
             return None
 
+    def getScope(self):
+        """Returns the selected scope.
+
+        If no scope is selected, return `None`."""
+        return self.request.form_ng.getOne(self.name)
+
     def setRenderedValue(self, value):
         """See IWidget."""
         if value is None:

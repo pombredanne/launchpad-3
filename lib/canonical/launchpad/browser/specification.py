@@ -1062,7 +1062,7 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
         # build the query string themselves - most likely because they
         # are a bot. In that case we just assume they want to search
         # all projects.
-        scope = data.get('scope', None)
+        scope = self.widgets['scope'].getScope()
         search_text = data['search_text']
         if scope is None:
             url = '/'

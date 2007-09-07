@@ -106,7 +106,7 @@ class QuestionSetView(LaunchpadFormView):
     @action('Find Answers', name="search")
     def search_action(self, action, data):
         """Redirect to the proper search page based on the scope widget."""
-        scope = data['scope']
+        scope = self.widgets['scope'].getScope()
         if scope is None:
             # Use 'All projects' scope.
             scope = self.context
