@@ -82,7 +82,9 @@ def set_up_logging():
     if config.codehosting.debug_logfile is None:
         handler = logging.StreamHandler()
     else:
-        os.makedirs(os.path.dirname(config.codehosting.debug_logfile))
+        parent_dir = os.path.dirname(config.codehosting.debug_logfile)
+        if not os.path.exists(parent_dir):
+            os.makedirs(parent_dir)
         handler = logging.FileHandler(config.codehosting.debug_logfile)
     handler.setFormatter(
         logging.Formatter('%(asctime)s %(levelname)-8s %(name)s\t%(message)s'))
