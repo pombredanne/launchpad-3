@@ -1338,11 +1338,31 @@ class SourceForge(ExternalBugTracker):
             else:
                 resolution = None
 
-            self.bugs[bug_id] = {
-                'id': bug_id, 'status': status, 'resolution': resolution}
+            self.bugs[int(bug_id)] = {
+                'id': int(bug_id),
+                'status': status,
+                'resolution': resolution}
 
     def getRemoteStatus(self, bug_id):
         """See `ExternalBugTracker`."""
+        try:
+            bug_id = int(bug_id)
+        except ValueError:
+            raise InvalidBugId(
+                "bug_id must be convertable an integer: %s" % str(bug_id))
+
+        try:
+            remote_bug = self.bugs[bug_id]
+        except KeyError:
+            raise BugNotFound(bug_id)
+        else:
+            try:
+                return '%s:%s' % (
+                    remote_bug['status'], remote_bug['resolution'])
+            except KeyError:
+                raise UnparseableBugData(
+                    "Remote bug %s does not define a status.")
+
 
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
@@ -1393,6 +1413,9 @@ class SourceForge(ExternalBugTracker):
         # can't get both from SourceForge.
         if ':' in remote_status:
             status, resolution = remote_status.split(':')
+
+            if resolution == 'None':
+                resolution = None
         else:
             status = remote_status
             resolution = None
