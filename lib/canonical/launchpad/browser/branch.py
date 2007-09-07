@@ -134,7 +134,7 @@ class BranchContextMenu(ContextMenu):
         # Only enable the link if we've ever mirrored the branch.
         # Don't enable if the branch is private.
         enabled = self.context.code_is_browseable
-        url = config.launchpad.codebrowse_root + self.context.unique_name
+        url = config.codehosting.codebrowse_root + self.context.unique_name
         return Link(url, text, icon='info', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
@@ -213,7 +213,7 @@ class BranchView(LaunchpadView):
     @property
     def codebrowse_url(self):
         """Return the link to codebrowse for this branch."""
-        return config.launchpad.codebrowse_root + self.context.unique_name
+        return config.codehosting.codebrowse_root + self.context.unique_name
 
     def bzr_download_url(self):
         """Return the generic URL for downloading the branch."""
