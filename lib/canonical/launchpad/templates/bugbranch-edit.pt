@@ -20,17 +20,6 @@
     particular bug in a particular branch.
   </div>
 
-  <table>
-   <tr>
-     <th>Branch:</th>
-     <td><tal:branch replace="structure context/branch/fmt:link"/></td>
-   </tr>
-   <tr>
-     <th>Bug:</th>
-     <td><tal:bug replace="structure context/bug/fmt:link"/></td>
-   </tr>
-  </table>
-
   <div metal:use-macro="context/@@launchpad_form/form">
   </div>
 

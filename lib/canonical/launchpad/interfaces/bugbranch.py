@@ -25,7 +25,7 @@ class IBugBranch(IHasDateCreated, IHasBug):
         title=_("The bug that is linked to."), required=True, readonly=True)
     branch = Choice(
         title=_("Branch"), vocabulary="Branch",
-        constraint=non_duplicate_branch)
+        constraint=non_duplicate_branch, required=True, readonly=True)
     revision_hint = TextLine(title=_("Revision Hint"))
     status = Choice(
         title=_("State"), vocabulary="BugBranchStatus",

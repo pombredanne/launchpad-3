@@ -1,30 +1,26 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 
-#
-# Code to create a widget that encodes the value of the request context into
-# the form.
-#
+"""A simple display widget that renders like the tal expression fmt:link."""
 
 __metaclass__ = type
-
-from zope.interface import implements, Interface
-from canonical.widgets.owner import RequestWidget
-from zope.component import getUtility, queryAdapter
-from zope.app.traversing.interfaces import IPathAdapter
-
-class ILinkWidget(Interface):
-    """testing testing one two three."""
+__all__ = [
+    'LinkWidget',
+    ]
 
 from zope.app.form.browser import DisplayWidget
+from zope.app.traversing.interfaces import IPathAdapter
+from zope.component import queryAdapter
 
 class LinkWidget(DisplayWidget):
+    """Renders using the tal formatter for fmt:link.
 
-    implements(ILinkWidget)
+    Used by specifying `custom_widget('fieldname', LinkWidget)`.
+    """
 
-    def __init__(self, context, request, ignored):
+    def __init__(self, context, request, *ignored):
+        """Ignores extra params such as vocabularies."""
         super(DisplayWidget, self).__init__(context, request)
-        self.required = False
 
     def __call__(self):
-        adapter = queryAdapter(b, IPathAdapter, 'fmt')
+        adapter = queryAdapter(self._data, IPathAdapter, 'fmt')
         return adapter.link('')

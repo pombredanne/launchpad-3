@@ -92,9 +92,10 @@ class BugBranchEditView(LaunchpadEditFormView):
     """View to update a BugBranch."""
     schema = IBugBranch
 
-    field_names = ['branch', 'status', 'whiteboard']
+    field_names = ['branch', 'bug', 'status', 'whiteboard']
 
     custom_widget('branch', LinkWidget)
+    custom_widget('bug', LinkWidget)
 
     def initialize(self):
         self.bug = self.context.bug

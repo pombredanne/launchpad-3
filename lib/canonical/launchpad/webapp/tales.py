@@ -711,7 +711,7 @@ class BugFormatterAPI(ObjectFormatterExtendedAPI):
         if extra_path:
             url = '%s/%s' % (url, extra_path)
         return ('<a href="%s"><img src="/@@/bug" alt=""/>'
-                '&nbsp;%s</a>' % (url, bug.title))
+                '&nbsp;Bug #%d: %s</a>' % (url, bug.id, bug.title))
 
 
 class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
