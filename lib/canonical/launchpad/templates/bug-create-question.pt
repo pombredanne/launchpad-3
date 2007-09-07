@@ -22,7 +22,7 @@
     </metal:heading>
 
     <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure context/@@+portlet-questions" />
+      <div tal:replace="structure context/bug/@@+portlet-questions" />
     </metal:leftportlets>
 
     <metal:rightportlets fill-slot="portlets_two">
@@ -30,15 +30,16 @@
     </metal:rightportlets>
 
     <div metal:fill-slot="main">
-      <p tal:condition="not: view/contextUsesMalone">
-        <span tal:replace="context.displayname">Firefox</span> does not use
-        Launchpad to track bugs. A question cannot be created from this bug.
+      <p tal:condition="not: view/target_uses_malone">
+        <span tal:replace="context/target/displayname">Firefox</span>
+        does not use Launchpad to track bugs. A question cannot be created
+        from this bug.
       </p>
 
-      <p tal:condition="view/contextUsesMalone">
-        By creating a question from this bug, this bug's status will be Invalid
-        for all locations it affects. The new question will be linked to this
-        bug.
+      <p tal:condition="view/target_uses_malone">
+        By creating a question from this bug, this bug's status will be
+        Invalid for all locations it affects. The new question will be
+        linked to this bug.
       </p>
 
       <form action="." method="POST">
@@ -53,7 +54,7 @@
             type="submit"
             name="cancel"
             value="Cancel" />
-          <input tal:condition="view/contextUsesMalone"
+          <input tal:condition="view/target_uses_malone"
             type="submit"
             name="create_question"
             value="Create a Question" />

@@ -559,7 +559,18 @@ class Bug(SQLBase):
         """See `IBug`."""
         assert question_target.pillar.official_malone, (
             '%s official_malone must be True.' % question_target.pillar.name)
+        question = self.getQuestionCreatedFromBug()
+        assert question is None, (
+            'This bug was already converted to question #%s.' % question.id)
 
+        question = question_target.createQuestionFromBug(self)
+        for bugtask in self.bugtasks:
+            bugtask.transitionToStatus(BugTaskStatus.INVALID, person)
+            bugtask.statusexplanation = 'This is not a bug. It is a question.'
+        return question
+
+    def getQuestionCreatedFromBug(self):
+        """Return the question created from this Bug, or None."""
         # XXX sinzui 2007-09-06:
         # Checking the questions for the same owner, title, and
         # description is not reliable. A schema change may be required
@@ -568,14 +579,8 @@ class Bug(SQLBase):
             if (question.owner == self.owner
                 and question.title == self.title
                 and question.description == self.description):
-                raise AssertionError(
-                    'This bug was already converted to question #%s.'
-                    % question.id)
-        question = question_target.createQuestionFromBug(self)
-        for bugtask in self.bugtasks:
-            bugtask.transitionToStatus(BugTaskStatus.INVALID, person)
-            bugtask.statusexplanation = 'This is not a bug. It is a question.'
-        return question
+                return question
+        return None
 
     def canMentor(self, user):
         """See `ICanBeMentored`."""

@@ -388,6 +388,19 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
 
         self.handleSubscriptionRequest()
 
+        # Setup the widget for create-question-from-bug.
+        create_question_vocabulary = SimpleVocabulary(
+            [SimpleTerm(True, 'True', _("This bug is a question."))])
+        create_question_field = Choice(
+            __name__='create_question',
+            vocabulary=create_question_vocabulary,
+            required=True)
+        self.create_question_widget = CustomWidgetFactory(RadioWidget)
+        setUpWidget(
+            self, 'create_question', create_question_field, IInputWidget,
+            value=True)
+        self.handleCreateQuestionRequest()
+
     def userIsSubscribed(self):
         """Is the user subscribed to this bug?"""
         return (
@@ -677,6 +690,39 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
             if check_permission('launchpad.View', bug_branch.branch):
                 bug_branches.append(bug_branch)
         return bug_branches
+
+    @property
+    def target_uses_malone(self):
+        """Return True if the pillar uses malone, otherwise False.
+        
+        The pillar is the Product or Distribution associated with the
+        bugtask's target.
+        """
+        return self.context.target_uses_malone
+
+    def handleCreateQuestionRequest(self):
+        """Create a question from this bug and set this bug to Invalid.
+        
+        The status of each bugtask will be set to Invalid. The question
+        will be linked to this bug. A question will not be created if a
+        question was already created, or the bugtask's target does not
+        use malone.
+        """
+        if not (self.user is not None
+            and self.request.method == 'POST'
+            and 'cancel' not in self.request.form
+            and self.create_question_widget.getInputValue()):
+            return
+
+        question = self.context.bug.getQuestionCreatedFromBug()
+        if not self.target_uses_malone or question is not None:
+            return
+
+        question = self.context.bug.createQuestionFromBug(
+            self.context.pillar, self.user)
+        self.notices.append(
+            'A question was created from this bug: Question #%s: %s.'
+            % (question.id, question.title))
 
 
 class BugTaskPortletView:

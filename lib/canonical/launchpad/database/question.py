@@ -365,7 +365,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             if user.inTeam(contact):
                 return True
         admin = getUtility(ILaunchpadCelebrities).admin
-        context = self.pillar
+        context = self.target.pillar
         return user.inTeam(context.owner) or user.inTeam(admin)
 
     @notify_question_modified()
