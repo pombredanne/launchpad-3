@@ -557,6 +557,18 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -697,36 +709,36 @@ ALTER TABLE bountysubscription ENABLE TRIGGER ALL;
 
 ALTER TABLE branch DISABLE TRIGGER ALL;
 
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (1, 'Mozilla Firefox Mainline', 'text', 12, 4, 12, 'main', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--MAIN--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:42.98217', 0, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (2, 'Mozilla Thunderbird Mainline', 'Bazaar import of the Mozilla Thunderbird CVS mainline.', 11, 8, 1, 'main', NULL, 'http://bazaar.example.com/thunderbird@arch.ubuntu.com/thunderbird--MAIN--0', NULL, 1, NULL, '2006-04-08 01:40:15.816029', 1, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.042944', 0, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (3, 'Python Twisted Trunk', 'Bazaar import of the Twisted SVN trunk.', 7, NULL, 3, 'trunk', NULL, 'http://bazaar.example.com/twisted@arch.ubuntu.com/twisted--trunk--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.04419', 0, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (4, 'Bugzila Mainline', 'text', 3, NULL, NULL, 'main', NULL, 'http://bazaar.example.com/bugzilla@arch.ubuntu.com/bugzila--MAIN--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.045278', 0, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (5, 'Arch Devel', 'text', 8, NULL, NULL, 'devel-1.0', NULL, 'http://bazaar.example.com/arch@arch.ubuntu.com/arch--devel--1.0', NULL, 1, NULL, '2006-04-08 22:20:14.973705', 9, false, 'I do not like Arch, so I am pretending it failed to mirror.', NULL, NULL, NULL, '2006-10-16 18:31:43.046996', 0, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (6, 'Kiwi2 Mainline', 'text', 9, NULL, NULL, 'main', NULL, 'http://bazaar.example.com/kiwi2@arch.ubuntu.com/kiwi2--MAIN--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.048164', 0, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (7, 'Plone Trunk', 'text', 10, NULL, NULL, 'trunk', NULL, 'http://bazaar.example.com/plone@arch.ubuntu.com/plone--trunk--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.049222', 0, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (8, 'Evolution 2.0', 'text', 13, 5, NULL, '2.0', NULL, 'http://bazaar.example.com/gnome@arch.ubuntu.com/gnome--evolution--2.0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.050317', 0, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (9, 'Iso-codes 0.35', 'text', 13, 7, NULL, '0.35', NULL, 'http://bazaar.example.com/iso-codes@arch.ubuntu.com/iso-codes--iso-codes--0.35', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.051395', 0, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (10, 'Mozilla Firefox 0.9.2', 'text', 1, 4, NULL, 'release-0.9.2', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9.2', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.2--base-0', NULL, '2006-10-16 18:31:43.052449', 1, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (11, 'Mozilla Firefox 0.9.1', 'text', 1, 4, NULL, 'release--0.9.1', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9.1', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.1--base-0', NULL, '2006-10-16 18:31:43.053511', 1, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (12, 'Mozilla Firefox 0.9', 'text', 1, 4, NULL, 'release-0.9', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9--base-0', NULL, '2006-10-16 18:31:43.054581', 1, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (13, 'Mozilla Firefox 0.8', 'text', 1, 4, NULL, 'release-0.8', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.8', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.055661', 0, NULL, false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (1, 'Mozilla Firefox Mainline', 'text', 12, 4, 12, 'main', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--MAIN--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:42.98217', 0, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (2, 'Mozilla Thunderbird Mainline', 'Bazaar import of the Mozilla Thunderbird CVS mainline.', 11, 8, 1, 'main', NULL, 'http://bazaar.example.com/thunderbird@arch.ubuntu.com/thunderbird--MAIN--0', NULL, 1, NULL, '2006-04-08 01:40:15.816029', 1, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.042944', 0, '2006-04-08 07:40:15.816029', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (3, 'Python Twisted Trunk', 'Bazaar import of the Twisted SVN trunk.', 7, NULL, 3, 'trunk', NULL, 'http://bazaar.example.com/twisted@arch.ubuntu.com/twisted--trunk--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.04419', 0, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (4, 'Bugzila Mainline', 'text', 3, NULL, NULL, 'main', NULL, 'http://bazaar.example.com/bugzilla@arch.ubuntu.com/bugzila--MAIN--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.045278', 0, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (5, 'Arch Devel', 'text', 8, NULL, NULL, 'devel-1.0', NULL, 'http://bazaar.example.com/arch@arch.ubuntu.com/arch--devel--1.0', NULL, 1, NULL, '2006-04-08 22:20:14.973705', 9, false, 'I do not like Arch, so I am pretending it failed to mirror.', NULL, NULL, NULL, '2006-10-16 18:31:43.046996', 0, '2006-04-09 04:20:14.973705', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (6, 'Kiwi2 Mainline', 'text', 9, NULL, NULL, 'main', NULL, 'http://bazaar.example.com/kiwi2@arch.ubuntu.com/kiwi2--MAIN--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.048164', 0, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (7, 'Plone Trunk', 'text', 10, NULL, NULL, 'trunk', NULL, 'http://bazaar.example.com/plone@arch.ubuntu.com/plone--trunk--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.049222', 0, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (8, 'Evolution 2.0', 'text', 13, 5, NULL, '2.0', NULL, 'http://bazaar.example.com/gnome@arch.ubuntu.com/gnome--evolution--2.0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.050317', 0, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (9, 'Iso-codes 0.35', 'text', 13, 7, NULL, '0.35', NULL, 'http://bazaar.example.com/iso-codes@arch.ubuntu.com/iso-codes--iso-codes--0.35', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.051395', 0, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (10, 'Mozilla Firefox 0.9.2', 'text', 1, 4, NULL, 'release-0.9.2', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9.2', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.2--base-0', NULL, '2006-10-16 18:31:43.052449', 1, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (11, 'Mozilla Firefox 0.9.1', 'text', 1, 4, NULL, 'release--0.9.1', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9.1', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.1--base-0', NULL, '2006-10-16 18:31:43.053511', 1, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (12, 'Mozilla Firefox 0.9', 'text', 1, 4, NULL, 'release-0.9', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9--base-0', NULL, '2006-10-16 18:31:43.054581', 1, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (13, 'Mozilla Firefox 0.8', 'text', 1, 4, NULL, 'release-0.8', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.8', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.055661', 0, '2007-08-20 00:19:05.300799', false, 2);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (14, NULL, NULL, 24, 5, NULL, 'main', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.056714', 0, NULL, false, 3);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (15, 'GNOME Terminal Mainline', 'Main branch of development for GNOME Terminal. Stable branches are based on that one.', 12, 6, NULL, 'main', 'http://example.com/gnome-terminal', 'http://example.com/gnome-terminal/main', NULL, 30, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.057682', 0, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (16, 'GNOME Terminal 2.6 Releases', 'Release branch of GNOME Terminal for the GNOME 2.6 environment.', 12, 6, NULL, '2.6', 'http://example.com/gnome-terminal/', 'http://example.com/gnome-terminal/2.6', NULL, 50, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.058953', 0, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (17, 'GNOME Terminal 2.4 Releases', 'Obsolete branch for GNOME 2.4 releases of GNOME Terminal.', 12, 6, NULL, '2.4', NULL, 'http://example.com/gnome-terminal/2.4', NULL, 80, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.060078', 0, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (18, 'Klingon support in GNOME Terminal', 'Experimental feature branch for developping and testing Klingon support in GNOME Terminal.', 12, 6, 12, 'klingon', 'http://trekkies.example.com/k12n', 'http://trekkies.example.com/gnome-terminal/klingon', NULL, 10, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.061162', 0, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (19, 'Slowing GNOME Terminal scrolling', 'Feature branch for slowing down the scrolling of text in GNOME Terminal.', 12, 6, 12, 'slowness', NULL, 'http://users.example.com/gnome-terminal/slowness', NULL, 70, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.062427', 0, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (20, 'Ubuntu Junk Code', 'Sample junk branch.', 12, NULL, 17, 'junk.dev', NULL, 'http://localhost:8000/a', NULL, 10, NULL, NULL, 0, false, NULL, NULL, 'foo@localhost-20051031170357-1301ad6d387feb23', NULL, '2006-10-16 18:31:43.06351', 6, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (21, 'Junk Code Contributions', 'Contribute code to the junk branch.', 12, NULL, 12, 'junk.contrib', NULL, 'http://localhost:8000/b', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'foo@localhost-20051031170357-1301ad6d387feb23', NULL, '2006-10-16 18:31:43.064578', 6, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (22, 'Python twisted feature', 'Feature branch for twisted.', 7, NULL, 4, 'feature', NULL, 'http://not.launchpad.server.com/a-branch', NULL, 1, NULL, '2005-03-09 15:45:00', 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.065642', 0, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (23, 'Another Python twisted feature', 'Another Feature branch for twisted.', 7, NULL, 4, 'feature2', NULL, 'http://whynot.launchpad.server.com/another-branch', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.066804', 0, NULL, false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (24, 'Launchpad support for Gnome Terminal', 'Add Launchpad support to Gnome Terminal', 57, 6, 57, 'launchpad', NULL, 'http://users.example.com/gnome-terminal/launchpad', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.067922', 0, NULL, false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (15, 'GNOME Terminal Mainline', 'Main branch of development for GNOME Terminal. Stable branches are based on that one.', 12, 6, NULL, 'main', 'http://example.com/gnome-terminal', 'http://example.com/gnome-terminal/main', NULL, 30, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.057682', 0, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (16, 'GNOME Terminal 2.6 Releases', 'Release branch of GNOME Terminal for the GNOME 2.6 environment.', 12, 6, NULL, '2.6', 'http://example.com/gnome-terminal/', 'http://example.com/gnome-terminal/2.6', NULL, 50, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.058953', 0, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (17, 'GNOME Terminal 2.4 Releases', 'Obsolete branch for GNOME 2.4 releases of GNOME Terminal.', 12, 6, NULL, '2.4', NULL, 'http://example.com/gnome-terminal/2.4', NULL, 80, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.060078', 0, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (18, 'Klingon support in GNOME Terminal', 'Experimental feature branch for developping and testing Klingon support in GNOME Terminal.', 12, 6, 12, 'klingon', 'http://trekkies.example.com/k12n', 'http://trekkies.example.com/gnome-terminal/klingon', NULL, 10, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.061162', 0, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (19, 'Slowing GNOME Terminal scrolling', 'Feature branch for slowing down the scrolling of text in GNOME Terminal.', 12, 6, 12, 'slowness', NULL, 'http://users.example.com/gnome-terminal/slowness', NULL, 70, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.062427', 0, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (20, 'Ubuntu Junk Code', 'Sample junk branch.', 12, NULL, 17, 'junk.dev', NULL, 'http://localhost:8000/a', NULL, 10, NULL, NULL, 0, false, NULL, NULL, 'foo@localhost-20051031170357-1301ad6d387feb23', NULL, '2006-10-16 18:31:43.06351', 6, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (21, 'Junk Code Contributions', 'Contribute code to the junk branch.', 12, NULL, 12, 'junk.contrib', NULL, 'http://localhost:8000/b', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'foo@localhost-20051031170357-1301ad6d387feb23', NULL, '2006-10-16 18:31:43.064578', 6, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (22, 'Python twisted feature', 'Feature branch for twisted.', 7, NULL, 4, 'feature', NULL, 'http://not.launchpad.server.com/a-branch', NULL, 1, NULL, '2005-03-09 15:45:00', 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.065642', 0, '2005-03-09 21:45:00', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (23, 'Another Python twisted feature', 'Another Feature branch for twisted.', 7, NULL, 4, 'feature2', NULL, 'http://whynot.launchpad.server.com/another-branch', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.066804', 0, '2007-08-20 00:19:05.300799', false, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (24, 'Launchpad support for Gnome Terminal', 'Add Launchpad support to Gnome Terminal', 57, 6, 57, 'launchpad', NULL, 'http://users.example.com/gnome-terminal/launchpad', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.067922', 0, '2007-08-20 00:19:05.300799', false, 2);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (25, NULL, NULL, 12, 6, NULL, 'pushed', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.06897', 0, NULL, false, 1);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (26, NULL, NULL, 12, 6, NULL, 'mirrored', NULL, NULL, NULL, 1, '2007-03-16 14:12:49.050332', NULL, 0, false, NULL, NULL, NULL, NULL, '2007-03-16 03:12:49.050332', 0, NULL, false, 1);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (27, NULL, NULL, 12, 6, NULL, 'scanned', NULL, NULL, NULL, 1, '2007-03-16 14:14:29.935752', NULL, 0, false, NULL, '2007-03-16 14:14:29.935752', NULL, NULL, '2007-03-16 03:14:29.935752', 0, NULL, false, 1);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (26, NULL, NULL, 12, 6, NULL, 'mirrored', NULL, NULL, NULL, 1, '2007-03-16 14:12:49.050332', NULL, 0, false, NULL, NULL, NULL, NULL, '2007-03-16 03:12:49.050332', 0, '2007-08-20 00:19:05.300799', false, 1);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (27, NULL, NULL, 12, 6, NULL, 'scanned', NULL, NULL, NULL, 1, '2007-03-16 14:14:29.935752', NULL, 0, false, NULL, '2007-03-16 14:14:29.935752', NULL, NULL, '2007-03-16 03:14:29.935752', 0, '2007-08-20 00:19:05.300799', false, 1);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (28, NULL, NULL, 1, NULL, 1, 'testdoc', NULL, NULL, NULL, 1, NULL, NULL, 1, false, 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum', NULL, NULL, NULL, '2007-05-04 01:16:03.75446', 0, '2007-05-04 01:16:26.640702', false, 1);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (29, 'Landscape trunk', NULL, 64, 16, 12, 'trunk', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2007-05-28 02:37:07.814303', 0, NULL, true, 1);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (30, NULL, NULL, 12, 16, 12, 'feature-x', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2007-05-28 02:37:07.814303', 0, NULL, true, 1);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (29, 'Landscape trunk', NULL, 64, 16, 12, 'trunk', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2007-05-28 02:37:07.814303', 0, '2007-08-20 00:19:05.300799', true, 1);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (30, NULL, NULL, 12, 16, 12, 'feature-x', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2007-05-28 02:37:07.814303', 0, '2007-08-20 00:19:05.300799', true, 1);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (75, 'GNOME Terminal Import Branch', NULL, 24, 6, NULL, 'import', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-06-25 20:04:03.9465', 0, NULL, false, 3);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (76, 'Evolution Import Branch', NULL, 24, 5, NULL, 'import', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-06-25 20:04:04.218451', 0, NULL, false, 3);
 
@@ -855,6 +867,8 @@ to restart?
 
 Running on Ubuntu - with Jokosher 0.2 runscript.', 16, NULL, NULL, false, false, '2007-03-15 20:37:51.603369', NULL, NULL);
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private) VALUES (12, '2007-03-15 20:41:18.635493', NULL, 'Copy, Cut and Delete operations should work on selections', 'When trying to copy, cut or delete just a selected portion of an event, the operations affect the event completely. That is, you can''t select a portion and cut that piece. The whole event will be cut. Same goes for the other 2 operations.', 16, NULL, NULL, false, false, '2007-03-15 20:46:49.909153', NULL, NULL);
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private) VALUES (13, '2007-07-27 20:00:58.299796', NULL, 'Launchpad CSS and JS is not testible', 'The messages placed on this bug are for eyeball viewing of JS and CSS behaviour.', 12, NULL, NULL, false, false, '2007-07-27 20:29:46.336737', NULL, NULL);
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private) VALUES (14, '2007-08-09 11:39:16.836856', NULL, 'jokosher exposes personal details in its actions portlet', 'Jokosher discloses to any passerby the fact that I am single and unwed in its actions portlet. Please fix this blatant violacion of privacy now!!', 63, NULL, NULL, true, true, '2007-08-09 11:39:16.836856', NULL, NULL);
 
 
 ALTER TABLE bug ENABLE TRIGGER ALL;
@@ -893,6 +907,8 @@ INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, ne
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (29, 12, '2007-03-15 20:41:42.154264', 16, 'jokosher: status', 'Unconfirmed', 'Confirmed', NULL);
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (30, 12, '2007-03-15 20:41:42.154264', 16, 'jokosher: importance', 'Undecided', 'Critical', NULL);
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (31, 12, '2007-03-15 20:41:42.154264', 16, 'jokosher: statusexplanation', NULL, '', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (32, 13, '2007-07-27 20:00:58.299796', 12, 'bug', NULL, NULL, 'added bug');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (33, 14, '2007-08-09 11:39:16.836856', 63, 'bug', NULL, NULL, 'added bug');
 
 
 ALTER TABLE bugactivity ENABLE TRIGGER ALL;
@@ -959,6 +975,9 @@ INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (23, 12, 33, NULL);
 INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (24, 12, 34, NULL);
 INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (25, 12, 35, NULL);
 INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (26, 12, 36, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (27, 13, 37, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (28, 13, 38, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (29, 14, 39, NULL);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -1016,6 +1035,9 @@ INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (10, 12, 9, '
 INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (11, 16, 10, '2006-10-16 18:31:43.158628');
 INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (12, 16, 11, '2007-03-15 20:33:56.67893');
 INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (13, 16, 12, '2007-03-15 20:41:18.635493');
+INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (14, 12, 13, '2007-07-27 20:00:58.299796');
+INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (15, 63, 14, '2007-08-09 11:39:16.836856');
+INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (16, 14, 14, '2007-08-09 11:39:16.836856');
 
 
 ALTER TABLE bugsubscription ENABLE TRIGGER ALL;
@@ -1030,6 +1052,7 @@ INSERT INTO bugtag (id, bug, tag) VALUES (5, 3, 'layout-test');
 INSERT INTO bugtag (id, bug, tag) VALUES (6, 4, 'layout-test');
 INSERT INTO bugtag (id, bug, tag) VALUES (7, 5, 'doc');
 INSERT INTO bugtag (id, bug, tag) VALUES (8, 10, 'crash');
+INSERT INTO bugtag (id, bug, tag) VALUES (9, 14, 'lunch-money');
 
 
 ALTER TABLE bugtag ENABLE TRIGGER ALL;
@@ -1061,6 +1084,8 @@ INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackag
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (29, 5, NULL, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-01-04 15:00:50.431687', 16, NULL, NULL, NULL, NULL, 'Mozilla Firefox 1.0', NULL, NULL, NULL, 2, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (30, 11, 20, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-03-15 20:33:56.67893', 16, NULL, NULL, NULL, NULL, 'Jokosher', NULL, NULL, NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (31, 12, 20, NULL, NULL, NULL, NULL, 20, NULL, 50, NULL, NULL, '2007-03-15 20:41:18.635493', 16, NULL, NULL, '', NULL, 'Jokosher', '2007-03-15 20:41:42.256326', NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (32, 13, 17, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-07-27 20:00:58.299796', 12, NULL, NULL, NULL, NULL, 'Launchpad', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (33, 14, 20, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-08-09 11:39:16.836856', 63, NULL, NULL, NULL, NULL, 'Jokosher', NULL, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE bugtask ENABLE TRIGGER ALL;
@@ -1188,11 +1213,39 @@ INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, svn_bran
 ALTER TABLE codeimport ENABLE TRIGGER ALL;
 
 
+ALTER TABLE codeimportevent DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE codeimportevent ENABLE TRIGGER ALL;
+
+
+ALTER TABLE codeimporteventdata DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE codeimporteventdata ENABLE TRIGGER ALL;
+
+
+ALTER TABLE codeimportjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE codeimportjob ENABLE TRIGGER ALL;
+
+
 ALTER TABLE codeimportmachine DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE codeimportmachine ENABLE TRIGGER ALL;
+
+
+ALTER TABLE codeimportresult DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE codeimportresult ENABLE TRIGGER ALL;
 
 
 ALTER TABLE component DISABLE TRIGGER ALL;
@@ -2001,6 +2054,7 @@ INSERT INTO karma (id, datecreated, person, "action", product, distribution, sou
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (60, '2000-03-13 20:45:51.817826', 16, 2, 20, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (61, '2000-03-13 20:46:49.83307', 16, 2, 20, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (62, '2001-07-03 21:30:51.583356', 12, 47, NULL, 1, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (63, '2001-08-09 11:39:16.836856', 63, 1, 20, NULL, NULL);
 
 
 ALTER TABLE karma ENABLE TRIGGER ALL;
@@ -3084,6 +3138,9 @@ INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rf
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (34, '2007-03-15 20:45:15.852052', 'Re: Copy, Cut and Delete operations should work on selections', 13, NULL, NULL, '<20070315204515.14326.38817.malone@localhost>', NULL, NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (35, '2007-03-15 20:45:51.817826', 'Re: Copy, Cut and Delete operations should work on selections', 9, NULL, NULL, '<20070315204551.14326.36994.malone@localhost>', NULL, NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (36, '2007-03-15 20:46:49.83307', 'Re: Copy, Cut and Delete operations should work on selections', 6, NULL, NULL, '<20070315204649.14326.69581.malone@localhost>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (37, '2007-07-27 20:00:58.299796', 'Launchpad CSS and JS is not testible', 12, NULL, NULL, '<20070727200058.25131.76173.malonedeb@autumn.annrky-sinzui.local>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (38, '2007-07-27 20:29:46.25854', 'Re: Launchpad CSS and JS is not testible', 12, NULL, NULL, '<20070727202946.25131.16206.malone@autumn.annrky-sinzui.local>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (39, '2007-08-09 11:39:16.836856', 'jokosher exposes personal details in its actions portlet', 63, NULL, NULL, '<20070809113916.26819.83859.malonedeb@localhost.localdomain>', NULL, NULL);
 
 
 ALTER TABLE message ENABLE TRIGGER ALL;
@@ -3185,6 +3242,90 @@ INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (3
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (34, 34, 1, 'It would be a remarkable feat of engineering to do this before the 0.3 release. Lets target this for fixing before 1.0 though.', NULL, NULL);
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (35, 35, 1, 'Does it make sense to mark it critical if it''s not going to be fixed for a year, though?', NULL, NULL);
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (36, 36, 1, 'Yes, I think so, because that means it shows up near the top of our open bugs report and it really is a huge gaping omission.', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (37, 37, 1, 'The messages placed on this bug are for eyeball viewing of JS and CSS behaviour.', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (38, 38, 1, '-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+(^) Hidden with an ellipsis.
+
+The middle of the paragraph is hidden with an ellipsis
+because it is quoted with >. The first 3 lines and the
+last line are visible.(v):
+> 1. Remove the letters  c, j, q, x, w from the English Language.
+> 2. Remove the penny from US currency.
+> 3. more...
+>> 4. more...
+>> 5. more...
+>> 6. more...
+>>> 7. more...
+>>> 8. more...
+>>> 9. more...
+>> 10. more...
+> 11. more...
+> 12. more...
+> 13. To much.
+You should see this line because it is not quoted.
+
+| 1. Remove the letters  c, j, q, x, w from the English Language.
+| 2. Remove the penny from US currency.
+|>| 3. more...
+|>| 4. more...
+|>| 5. more...
+|>| 6. more...
+|> 7. more...
+|> 8. more...
+| 9. more...
+| 10. more...
+| 11. more...
+| 12. more...
+| 13. To much.
+
+(^) The entire paragraph is hidden with an ellipsis.
+
+Mister X wrote:
+> This is a short quoted line that is always visible.
+This is a reply to the line above.
+
+we@always:show$ dpkg -l libdvdread3
+Desired=Unknown/Install/Remove/Purge/Hold
+| Status=Not/Installed/Config-files/Unpacked/Failed-co
+|/ Err?=(none)/Hold/Reinst-required/X=both-problems
+||/ Name Version Description
++++-==============-==============-====================
+ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs
+
+We like to show python too (V).
+
+>>> import pytz
+>>>
+>>> # We will not hide Python interpreter
+>>> # output with an ellipsis.
+>>>
+>>> fruit = []
+>>> fruit.append(''apple'')
+>>> citrus_fruit = [''orange'', ''lemon'', ''lime'']
+>>> fruit.extend(citrus_fruit)
+>>> fruit[:] fruit.sort()
+>>> tz = pytz.timezone("Asia/Calcutta")
+>>> mydate = datetime.datetime(2007, 2, 18, 15, 35)
+>>> print tz.localize(mydate)
+2007-02-18 15:35:00+05:30
+
+We do not want to see signatures and END PGP.
+We want to see two ellipses (V).
+
+__PERSON SURNAME_______
+person.surname@example.org
+Guilty of stealing everything I am.
+
+Version: GnuPG v1.4.1 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird
+
+iD8DBQFED60Y0F+nu1YWqI0RAqrNAJ9hTww5vqDbxp4xJS8ek58W
+T2PIWy0CUJsX8RXSt/M51WE=
+=J2S5
+', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (39, 39, 1, 'Jokosher discloses to any passerby the fact that I am single and unwed in its actions portlet. Please fix this blatant violacion of privacy now!!', NULL, NULL);
 
 
 ALTER TABLE messagechunk ENABLE TRIGGER ALL;

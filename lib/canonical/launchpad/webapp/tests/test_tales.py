@@ -159,7 +159,7 @@ def test_add_word_breaks():
       ab/cdefghijklmn<wbr></wbr>op
 
     The string can contain HTML entities, which do not get split:
-    
+
       >>> print add_word_breaks('abcdef&anentity;hijklmnop')
       abcdef&anentity;<wbr></wbr>hijklmnop
     """

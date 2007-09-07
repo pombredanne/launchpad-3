@@ -59,7 +59,7 @@ def run_subprocess_with_logging(process_and_args, log, prefix):
     buf = ""
     while open_readers:
         rlist, wlist, xlist = select(open_readers, [], [])
-        
+
         for reader in rlist:
             chunk = os.read(reader.fileno(), 1024)
             if chunk == "":
@@ -72,11 +72,11 @@ def run_subprocess_with_logging(process_and_args, log, prefix):
                 for line in lines[0:-1]:
                     log.debug("%s%s" % (prefix, line))
                 buf = lines[-1]
-        
+
     ret = proc.wait()
     return ret
 
-    
+
 DEFAULT_COMPONENT = "main"
 
 CONFIG_HEADER = """
@@ -160,7 +160,7 @@ class FTPArchiveHandler:
         self.log.debug("Filepath: %s" % apt_config_filename)
         ret = run_subprocess_with_logging(["apt-ftparchive", "--no-contents",
                                            "generate", apt_config_filename],
-                                          self.log, "a-f: ")        
+                                          self.log, "a-f: ")
         if ret:
             raise AssertionError(
                 "Failure from apt-ftparchive. Return code %s" % ret)
@@ -460,7 +460,7 @@ class FTPArchiveHandler:
                 for header, values in headers.items():
                     ef.write("\t".join([pkg, header, ", ".join(values)]))
                     ef.write("\n")
-            # XXX: dsilvers 2006-08-23 bug=3900: As above, 
+            # XXX: dsilvers 2006-08-23 bug=3900: As above,
             # this needs to be integrated into the database at some point.
         ef.close()
 

@@ -1102,7 +1102,7 @@ class BugTaskSet:
         # * a dbschema item
         # * None (meaning no filter criteria specified for that arg_name)
         #
-        # XXX: kiko 2006-03-16: 
+        # XXX: kiko 2006-03-16:
         # Is this a good candidate for becoming infrastructure in
         # canonical.database.sqlbase?
         for arg_name, arg_value in standard_args.items():
@@ -1295,7 +1295,7 @@ class BugTaskSet:
 
     def _buildUpstreamClause(self, params):
         """Return an clause for returning upstream data if the data exists.
-        
+
         This method will handles BugTasks that do not have upstream BugTasks
         as well as thoses that do.
         """
@@ -1560,7 +1560,7 @@ class BugTaskSet:
 
     def _processOrderBy(self, params):
         """Process the orderby parameter supplied to search().
-        
+
         This method ensures the sort order will be stable, and converting
         the string supplied to actual column names.
         """

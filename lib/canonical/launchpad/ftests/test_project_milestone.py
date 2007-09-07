@@ -61,7 +61,7 @@ class ProjectMilestoneTest(unittest.TestCase):
 
     def test_milestone_name(self):
         """The names of project milestones.
-        
+
         A project milestone named `A` exists, if at least one product of this
         project has a milestone named `A`.
         """

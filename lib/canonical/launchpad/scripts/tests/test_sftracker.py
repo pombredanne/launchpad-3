@@ -250,7 +250,7 @@ class PersonMappingTestCase(unittest.TestCase):
 
 
 class TrackerItemImporterTestCase(unittest.TestCase):
-    
+
     layer = LaunchpadZopelessLayer
 
     def test_import_item(self):
@@ -327,6 +327,6 @@ class TrackerItemImporterTestCase(unittest.TestCase):
         self.assertEqual(bug.activity[0].message,
                          'Imported SF tracker item #1278591')
 
-        
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
