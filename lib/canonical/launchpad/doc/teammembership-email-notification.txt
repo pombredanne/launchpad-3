@@ -636,7 +636,7 @@ is automatically renewed.
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> membershipset.handleMembershipsExpiringToday(
-    ...     reviewer=getUtility(ILaunchpadCelebrities).team_membership_janitor)
+    ...     reviewer=getUtility(ILaunchpadCelebrities).janitor)
     >>> flush_database_updates()
     >>> transaction.commit()
 
