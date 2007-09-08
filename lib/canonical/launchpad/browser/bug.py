@@ -102,7 +102,8 @@ class BugContextMenu(ContextMenu):
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
              'nominate', 'addbranch', 'linktocve', 'unlinkcve',
-             'offermentoring', 'retractmentoring', 'activitylog']
+             'offermentoring', 'retractmentoring', 'createquestion',
+             'activitylog']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -200,10 +201,15 @@ class BugContextMenu(ContextMenu):
                    user)
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
+    def createquestion(self):
+        text= 'Is a question'
+        enabled = (self.context.target_uses_malone
+            and self.context.bug.getQuestionCreatedFromBug() is None)
+        return Link('+create-question', text, icon='edit', enabled=enabled)
+
     def activitylog(self):
         text = 'View activity log'
         return Link('+activity', text, icon='list')
-
 
 
 class MaloneView(LaunchpadFormView):
