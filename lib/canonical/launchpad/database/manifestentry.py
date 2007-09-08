@@ -22,7 +22,7 @@ class ManifestEntry(SQLBase):
 
     _table = 'ManifestEntry'
 
-    manifest = ForeignKey(foreignKey='Manifest', dbName='manifest', 
+    manifest = ForeignKey(foreignKey='Manifest', dbName='manifest',
                    notNull=True)
     sequence = IntCol(dbName='sequence', notNull=True)
     branch = ForeignKey(foreignKey='Branch', dbName='branch')

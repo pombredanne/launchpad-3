@@ -41,14 +41,14 @@ class IPOMsgSet(Interface):
     publishedfuzzy = Attribute("""Whether this set was marked as fuzzy in
         the PO file it came from.""")
 
-    isfuzzy = Attribute("""Whether this set was marked as fuzzy in the PO file 
+    isfuzzy = Attribute("""Whether this set was marked as fuzzy in the PO file
         it came from.""")
 
     isupdated = Attribute("""Whether or not this set includes any
         translations that are newer than those published in the po
         file.""")
 
-    obsolete = Attribute("""Whether this set was marked as obsolete in the 
+    obsolete = Attribute("""Whether this set was marked as obsolete in the
         PO file it came from.""")
 
     commenttext = Attribute("Text of translator comment from the PO file.")

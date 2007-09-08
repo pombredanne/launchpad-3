@@ -114,7 +114,7 @@ class PoppyInterface:
 
         # When we get on with the poppy path stuff, the below may be useful and
         # is thus left in rather than being removed.
-        
+
         #try:
         #    d = Distribution.byName(user)
         #    if d:

@@ -88,7 +88,7 @@ class TestBranchToMirror(unittest.TestCase):
         # Check that we can mirror an empty branch, and that the
         # last_mirrored_id for an empty branch can be distinguished
         # from an unmirrored branch.
-        
+
         # Create a branch
         srcbranchdir = self._getBranchDir("branchtomirror-testmirror-src")
         destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
@@ -100,7 +100,7 @@ class TestBranchToMirror(unittest.TestCase):
         # create empty source branch
         os.makedirs(srcbranchdir)
         tree = bzrdir.BzrDir.create_standalone_workingtree(srcbranchdir)
-        
+
         to_mirror.mirror(logging.getLogger())
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(None, mirrored_branch.last_revision())
@@ -155,7 +155,7 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
         self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
         self._createSourceBranch()
         self._mirror()
-        
+
         # Change the branch to knit format.
         shutil.rmtree('src-branch')
         self.repository_format = bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
@@ -188,7 +188,7 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
 
     def _testMirrorFormat(self):
         tree = self._createSourceBranch()
-        
+
         mirrored_branch = self._mirror()
         self.assertEqual(tree.last_revision(),
                          mirrored_branch.last_revision())
@@ -250,7 +250,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         tree.add(['afile'], ['myid'])
         tree.commit('start')
         # now we have a good branch with a file called afile and id myid
-        # we need to figure out the actual path for the weave.. or 
+        # we need to figure out the actual path for the weave.. or
         # deliberately corrupt it. like this.
         tree.branch.repository.weave_store.put_weave(
             "myid", Weave(weave_name="myid"),
@@ -373,13 +373,11 @@ class TestBadUrl(ErrorHandlingTestCase):
     def testBadUrlLaunchpadDomain(self):
         # If the host of the source branch is in the launchpad.net domain,
         # _openSourceBranch raises BadUrlLaunchpad.
-        self.branch.source = 'http://bazaar.launchpad.net/foo'
+        self.branch.source = 'http://bazaar.launchpad.dev/foo'
         self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
-
-    def testBadUrlLaunchpadHost(self):
-        # If the host of the source branch is launchpad.net, _openSourceBranch
-        # raises BadUrlLaunchpad.
-        self.branch.source = 'http://launchpad.net/foo'
+        self.branch.source = 'sftp://bazaar.launchpad.dev/bar'
+        self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
+        self.branch.source = 'http://launchpad.dev/baz'
         self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
 
     def testBadUrlLaunchpadCaught(self):
@@ -387,9 +385,9 @@ class TestBadUrl(ErrorHandlingTestCase):
         # or a host in this domain is caught, and an informative error message
         # is displayed to the user.
         expected_msg = "Launchpad does not mirror branches from Launchpad."
-        self.branch.source = 'http://bazaar.launchpad.net/foo'
+        self.branch.source = 'http://bazaar.launchpad.dev/foo'
         self.runMirrorAndAssertErrorEquals(expected_msg)
-        self.branch.source = 'http://launchpad.net/foo'
+        self.branch.source = 'http://launchpad.dev/foo'
         self.runMirrorAndAssertErrorEquals(expected_msg)
 
 
@@ -638,7 +636,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
     def testHTTPError(self):
         def stubOpenSourceBranch():
             raise urllib2.HTTPError(
-                'http://something', httplib.UNAUTHORIZED, 
+                'http://something', httplib.UNAUTHORIZED,
                 'Authorization Required', 'some headers',
                 open(tempfile.mkstemp()[1]))
         self.branch._openSourceBranch = stubOpenSourceBranch

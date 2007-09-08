@@ -6,6 +6,16 @@
       i18n:domain="launchpad">
 <body>
 
+<style metal:fill-slot="head_epilogue">
+div.revision {
+  padding-bottom: 1em;
+}
+
+div.revision p {
+  margin-left: 2.5em;
+}
+</style>
+
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
@@ -36,8 +46,10 @@
 
   <table id="branch-details-table">
     <caption style="margin-top:1ex" class="discreet">
+      <div style="white-space: nowrap">
       These URLs are intended for use with the
       <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
+      </div>
     </caption>
     <tbody>
       <tal:not-junk-branch tal:condition="context/product">
@@ -51,10 +63,7 @@
           </td>
         </tr>
       </tal:not-junk-branch>
-    <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
-      <tal:comment condition="nothing">
-        <!-- This is a mirror branch, display two URLs -->
-      </tal:comment>
+      <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
         <tr><th>Location:</th><td tal:content="context/url" /></tr>
         <tr><th>Mirror:</th><td tal:content="view/supermirror_url" /></tr>
         <tal:mirrored-yet tal:condition="context/last_mirrored">
@@ -77,17 +86,24 @@
             </tal:mirror-in-past>
           </tal:mirror-enabled>
         </tr>
-    </tal:mirrored-branch>
-    <tal:hosted-or-imported-branch 
-        tal:condition="not: context/branch_type/enumvalue:MIRRORED">
-      <tal:comment condition="nothing">
-        <!-- This is a hosted or import branch, one URL -->
-      </tal:comment>
-      <tr>
-        <th>Hosted on Launchpad:</th>
-        <td tal:content="view/supermirror_url" />
-      </tr>
-    </tal:hosted-or-imported-branch>
+      </tal:mirrored-branch>
+      <tal:remote-branch tal:condition="context/branch_type/enumvalue:REMOTE">
+        <tr>
+          <th>Location:</th>
+          <td tal:condition="context/url" tal:content="context/url" />
+          <td tal:condition="not: context/url" >Not specified</td>
+        </tr>
+      </tal:remote-branch>
+      <tal:hosted-branch tal:condition="context/branch_type/enumvalue:HOSTED">
+        <tr>
+          <th>Hosted on Launchpad:</th><td tal:content="view/supermirror_url" />
+        </tr>
+      </tal:hosted-branch>
+      <tal:imported-branch tal:condition="context/branch_type/enumvalue:IMPORTED">
+        <tr>
+          <th>Hosted on Launchpad:</th><td tal:content="view/supermirror_url" />
+        </tr>
+      </tal:imported-branch>
     </tbody>
   </table>
 
@@ -262,9 +278,9 @@
     </div>
   </tal:landing-candidates>
 
-  <h2 style="clear: both;">Recent revisions</h2>
-
   <div id="recent-revisions">
+  <h2 style="clear: both">Recent revisions</h2>
+
   <p tal:condition="not:context/revision_count">
     <tal:not-mirrored condition="not:context/last_mirrored">
       <tal:mirror condition="context/url">
@@ -285,10 +301,21 @@
   </p>
 
   <tal:history-available condition="context/revision_count">
-  <ol>
-    <li tal:repeat="rev_no context/latest_revisions"
-        tal:attributes="value rev_no/sequence; id string:rev${rev_no/sequence}">
+    <div class="revision"
+         tal:repeat="rev_no context/latest_revisions"
+         tal:attributes="id string:rev${rev_no/sequence}">
       <div>
+        <tal:comment condition="nothing">
+          The end of the anchor and the start of the next tal expression
+          has no whitespace between the elements as we do not want any
+          space between the number and the fullstop.
+        </tal:comment>
+        <a tal:attributes="href string:${view/codebrowse_url}/revision/${rev_no/sequence}"
+           tal:content="rev_no/sequence"
+           tal:condition="context/code_is_browseable">
+          1
+        </a><tal:revno condition="not: context/code_is_browseable"
+                       replace="rev_no/sequence">1</tal:revno>.
         By
         <strong>
           <tal:not-anonymous condition="view/user">
@@ -312,8 +339,7 @@
       <p tal:replace="structure rev_no/revision/log_body/fmt:text-to-html">
         The revision commit message.
       </p>
-    </li>
-  </ol>
+    </div>
   </tal:history-available>
   </div>
 

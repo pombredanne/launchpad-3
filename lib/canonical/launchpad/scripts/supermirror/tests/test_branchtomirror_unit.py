@@ -37,7 +37,7 @@ class StubObjectWithFormat:
     """A stub object with a _format attribute, like bzrdir and repositories."""
     def __init__(self, format):
         self._format = format
-        
+
 
 class StubBranch:
     """A stub branch object that just has formats."""
@@ -45,7 +45,7 @@ class StubBranch:
         self.bzrdir = StubObjectWithFormat(bzrdir_format)
         self.repository = StubObjectWithFormat(repo_format)
         self._format = branch_format
-        
+
 
 class IdenticalFormatsTestCase(unittest.TestCase):
     """Test case for identical_formats function."""
