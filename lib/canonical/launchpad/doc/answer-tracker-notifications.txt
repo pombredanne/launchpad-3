@@ -15,7 +15,6 @@ notification looks like:
     >>> ubuntu_question = ubuntu.newQuestion(
     ...     sample_person, "Can't install Ubuntu",
     ...    "I insert the install CD in the CD-ROM drive, but it won't boot.")
-    >>> notify(SQLObjectCreatedEvent(ubuntu_question))
 
 The notifications get sent to the question's subscribers, the question's
 target answer contacts as well as to the question's assignee. Initially,
@@ -831,7 +830,6 @@ receive notifications related to it.
     ...         u'corretamente e mostra a minha versao do java. No entanto, '
     ...         u'mover o mouse na pagina faz com que o firefox quebre.'),
     ...     language=getUtility(ILanguageSet)['pt_BR'])
-    >>> notify(SQLObjectCreatedEvent(pt_BR_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['guilherme.salgado@canonical.com', 'test@canonical.com']
@@ -864,7 +862,6 @@ sent to the support list about that question:
     ...     sample_person, title="Impossible d'installer Ubuntu",
     ...     description=u"Le CD ne semble pas fonctionn\xe9.",
     ...     language=french)
-    >>> notify(SQLObjectCreatedEvent(french_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['guilherme.salgado@canonical.com', 'support@ubuntu.com',
@@ -974,7 +971,6 @@ contacts too.
     ...     sample_person, title="Necesidad ayuda con Firefox",
     ...     description="No puedo acceso al Internet en Firefox.",
     ...     language=spanish)
-    >>> notify(SQLObjectCreatedEvent(spanish_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['carlos@canonical.com', 'test@canonical.com']
@@ -987,6 +983,7 @@ be used. So, if the team only officially speaks French, it will only
 receive notifications about French (and English) questions.
 
     >>> rosetta_admins.addLanguage(french)
+    >>> # Resend the new message notification
     >>> notify(SQLObjectCreatedEvent(french_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
@@ -1007,6 +1004,7 @@ if the team supported languages includes the question language:
     >>> ubuntu.addAnswerContact(launchpad_devs)
     True
 
+    >>> # Resend the new message notification
     >>> notify(SQLObjectCreatedEvent(spanish_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]

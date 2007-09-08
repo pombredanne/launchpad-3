@@ -711,6 +711,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
         if not (self.user is not None
             and self.request.method == 'POST'
             and 'cancel' not in self.request.form
+            and self.create_question_widget.hasValidInput()
             and self.create_question_widget.getInputValue()):
             return
 

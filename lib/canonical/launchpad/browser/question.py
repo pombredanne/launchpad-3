@@ -451,9 +451,6 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
         question = self.question_target.newQuestion(
             self.user, data['title'], data['description'], data['language'])
 
-        # XXX flacoste 2006-07-25: This should be moved to newQuestion().
-        notify(SQLObjectCreatedEvent(question))
-
         self.request.response.redirect(canonical_url(question))
         return ''
 
