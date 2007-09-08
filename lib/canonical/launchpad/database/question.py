@@ -979,13 +979,14 @@ class QuestionTargetMixin:
         return self
 
     def newQuestion(self, owner, title, description, language=None,
-                  datecreated=None):
+                  datecreated=None, do_notify=True):
         """See `IQuestionTarget`."""
         question = QuestionSet.new(
             title=title, description=description, owner=owner,
             datecreated=datecreated, language=language,
             **self.getTargetTypes())
-        notify(SQLObjectCreatedEvent(question))
+        if do_notify is True:
+            notify(SQLObjectCreatedEvent(question))
         return question
 
     def createQuestionFromBug(self, bug):

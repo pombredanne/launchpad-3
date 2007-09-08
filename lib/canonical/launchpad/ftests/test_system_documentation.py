@@ -161,7 +161,8 @@ def _createUbuntuBugTaskLinkedToQuestion():
     ubuntu.addAnswerContact(ubuntu_team)
     ubuntu_question = ubuntu.newQuestion(
         sample_person, "Can't install Ubuntu",
-        "I insert the install CD in the CD-ROM drive, but it won't boot.")
+        "I insert the install CD in the CD-ROM drive, but it won't boot.",
+        do_notify=False)
     no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
     params = CreateBugParams(
         owner=no_priv, title="Installer fails on a Mac PPC",
