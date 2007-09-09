@@ -201,8 +201,7 @@ class BranchURIField(URIField):
         uri = URI(value)
         supermirror_root = URI(config.launchpad.supermirror_root)
         launchpad_domain = config.launchpad.vhosts.mainsite.hostname
-        if (supermirror_root.contains(uri)
-            or uri.underDomain(launchpad_domain)):
+        if uri.underDomain(launchpad_domain):
             message = _(
                 "Don't manually register a bzr branch on "
                 "<code>%s</code>. Create it by SFTP, and it "

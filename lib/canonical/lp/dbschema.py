@@ -27,7 +27,6 @@ __all__ = (
 'BranchReviewStatus',
 'BugBranchStatus',
 'BugNominationStatus',
-'BugTaskStatus',
 'BugAttachmentType',
 'BugTrackerType',
 'BugExternalReferenceType',
@@ -1817,84 +1816,6 @@ class BugNominationStatus(DBSchema):
 
         The release management team has declined fixing the bug for this
         release.
-        """)
-
-
-class BugTaskStatus(DBSchema):
-    """Bug Task Status
-
-    The various possible states for a bugfix in a specific place.
-    """
-
-    NEW = Item(10, """
-        New
-
-        This is a new bug and has not yet been confirmed by the maintainer of
-        this product or source package.
-        """)
-
-    INCOMPLETE = Item(15, """
-        Incomplete
-
-        More info is required before making further progress on this bug, likely
-        from the reporter. E.g. the exact error message the user saw, the URL
-        the user was visiting when the bug occurred, etc.
-        """)
-
-    INVALID = Item(17, """
-        Invalid
-
-        This is not a bug. It could be a support request, spam, or a misunderstanding.
-        """)
-
-    WONTFIX = Item(18, """
-        Won't Fix
-
-        This will not be fixed. For example, this might be a bug but it's not considered worth
-        fixing, or it might not be fixed in this release.
-        """)
-
-    CONFIRMED = Item(20, """
-        Confirmed
-
-        This bug has been reviewed, verified, and confirmed as something needing
-        fixing. Anyone can set this status.
-        """)
-
-    TRIAGED = Item(21, """
-        Triaged
-
-        This bug has been reviewed, verified, and confirmed as
-        something needing fixing. The user must be a bug contact to
-        set this status, so it carries more weight than merely
-        Confirmed.
-        """)
-
-    INPROGRESS = Item(22, """
-        In Progress
-
-        The person assigned to fix this bug is currently working on fixing it.
-        """)
-
-    FIXCOMMITTED = Item(25, """
-        Fix Committed
-
-        This bug has been fixed in version control, but the fix has
-        not yet made it into a released version of the affected
-        software.
-        """)
-
-    FIXRELEASED = Item(30, """
-        Fix Released
-
-        The fix for this bug is available in a released version of the
-        affected software.
-        """)
-
-    UNKNOWN = Item(999, """
-        Unknown
-
-        The status of this bug task is unknown.
         """)
 
 
