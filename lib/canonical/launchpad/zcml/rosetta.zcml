@@ -20,7 +20,7 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IRosettaApplication"
         name="+index"
-        layer="canonical.launchpad.layers.BlueprintLayer"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:navigation
@@ -33,7 +33,7 @@
         facet="translations"
         permission="zope.Public"
         class="canonical.launchpad.browser.RosettaApplicationView"
-        layer="canonical.launchpad.layers.BlueprintLayer"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         >
         <browser:page
             name="+index"
@@ -62,9 +62,9 @@
     class="canonical.launchpad.browser.RosettaStatsView"
     facet="translations"
     permission="zope.Public"
-    layer="canonical.launchpad.layers.BlueprintLayer"
     name="+barchart"
     template="../templates/rosettastats-barchart.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
   <!-- portlets to show language prefs -->
@@ -73,7 +73,7 @@
     facet="translations"
     class="canonical.launchpad.browser.RosettaApplicationView"
     permission="zope.Public"
-    layer="canonical.launchpad.layers.BlueprintLayer" >
+    layer="canonical.launchpad.layers.TranslationsLayer" >
     <browser:page
         name="+portlet-preflangs"
         template="../templates/object-portlet-preflangs.pt" />

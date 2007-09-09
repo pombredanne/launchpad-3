@@ -53,7 +53,8 @@
         class="canonical.launchpad.browser.POTemplateViewPreferred"
         permission="zope.Public"
         template="../templates/potemplate-chart.pt"
-        layer="canonical.launchpad.layers.TranslationsLayer" />
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IPOTemplate"

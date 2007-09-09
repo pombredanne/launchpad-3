@@ -91,6 +91,11 @@
     class="canonical.launchpad.browser.sourcepackage.SourcePackageView"
     layer="canonical.launchpad.layers.TranslationsLayer" >
     <browser:page
+      name="+potlist"
+      facet="translations"
+      template="../templates/object-pots.pt"
+      />
+    <browser:page
       name="+translate"
       facet="translations"
       template="../templates/sourcepackage-translate.pt"
@@ -99,11 +104,6 @@
       name="+translations"
       facet="translations"
       template="../templates/object-translations.pt"
-      />
-    <browser:page
-      name="+potlist"
-      facet="translations"
-      template="../templates/object-pots.pt"
       />
   </browser:pages>
 
