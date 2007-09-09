@@ -17,7 +17,7 @@ from canonical.launchpad.browser.branch import BranchAddView, BranchView
 from canonical.launchpad.ftests.harness import login, logout, ANONYMOUS
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
-    BranchLifecycleStatus, IBranchSet, IPersonSet, IProductSet)
+    BranchLifecycleStatus, BranchType, IBranchSet, IPersonSet, IProductSet)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -58,6 +58,7 @@ class TestBranchView(unittest.TestCase):
             add_view = BranchAddView(arbitrary_person, self.request)
             add_view.initialize()
             data = {
+                'branch_type': BranchType.MIRRORED,
                 'name': 'some-branch',
                 'url': 'http://example.com',
                 'title': 'Branch Title',

@@ -83,6 +83,15 @@ class IArchive(IHasOwner):
         :return: SelectResults containing `IBinaryPackagePublishingHistory`.
         """
 
+    def allowUpdatesToReleasePocket():
+        """Return whether the archive allows publishing to the release pocket.
+
+        If a distroseries is stable, normally release pocket publishings are
+        not allowed.  However some archive types allow this.
+
+        :return: True or False
+        """
+
 class IPPAActivateForm(Interface):
     """Schema used to activate PPAs."""
 

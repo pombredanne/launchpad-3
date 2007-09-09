@@ -60,7 +60,7 @@ class SignedMessage(email.Message.Message):
         assert self.parsed_string is not None, (
             'Use signed_message_from_string() to create the message.')
         signed_content = signature = None
-        payload = self.get_payload() 
+        payload = self.get_payload()
         if self.is_multipart():
             if len(payload) == 2:
                 content_part, signature_part = payload
@@ -96,7 +96,7 @@ class SignedMessage(email.Message.Message):
         if signed_content is None:
             return None
         else:
-            if (not self.is_multipart() and 
+            if (not self.is_multipart() and
                 clearsigned_re.search(self.get_payload())):
                 # Add a new line so that a message with no headers will
                 # be created.

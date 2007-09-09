@@ -160,16 +160,16 @@ firefox_crashes bug, we can still access properties of this bug:
     >>> firefox_crashes.title
     u'Firefox crashes when Save As dialog for a nonexistent window is closed'
 
-Note that a search will return all the bugs, as well:
+Note that a search will return all public bugs, omitting bug 14 which is
+private:
 
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 
-(This test breaks if you add a new bug to sampledata: it's the only one
-you should need to fix and it only breaks to confirm the addition
-worked.)
+(This test breaks if you add a new public bug to sampledata; rely on it
+to ensure it worked!)
 
 Likewise Foo Bar, an admin, can access the bug.
 
@@ -183,12 +183,15 @@ Likewise Foo Bar, an admin, can access the bug.
     >>> firefox_crashes.title
     u'Firefox crashes when Save As dialog for a nonexistent window is closed'
 
-Bug #6 is returned by the search results for an admin as well:
+Bug 14, which is private, is  returned by the search results for an
+admin as well:
 
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
-    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+
+(This test breaks if you add any bug to sampledata.)
 
 As one would expect, the permissions are team aware. So, let's retrieve a bug
 and set it private (as Foo Bar again who, of course, is an admin.)
@@ -449,8 +452,9 @@ Changing the description.
 
 Modifying a bugtask will update IBug.date_last_updated.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
-    >>> from canonical.launchpad.interfaces import IUpstreamBugTask
+    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskStatus, IUpstreamBugTask)
 
     >>> firefox_task = firefox_bug.bugtasks[0]
 

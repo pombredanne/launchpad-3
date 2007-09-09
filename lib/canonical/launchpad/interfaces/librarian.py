@@ -40,14 +40,14 @@ class ILibraryFileAlias(Interface):
     expires = Datetime(
             title=_('Expiry time'), required=False, readonly=True,
             description=_('''
-                When file can be removed. Set to None if the file 
+                When file can be removed. Set to None if the file
                 should only be removed when it is no longer referenced
                 in the database. Set it to NEVER_EXPIRES to keep it in
                 the Librarian permanently.
                 ''')
             )
 
-    # XXX Guilherme Salgado, 2007-01-18 bug=80487: 
+    # XXX Guilherme Salgado, 2007-01-18 bug=80487:
     # We can't use TextLine here because they return
     # byte strings.
     http_url = Attribute(_("The http URL to this file"))
@@ -117,7 +117,7 @@ class ILibraryFileAliasSet(Interface):
 
     def __getitem__(key):
         """Lookup an ILibraryFileAlias by id."""
-    
+
     def findBySHA1(sha1):
         """Return all LibraryFileAlias whose content's sha1 match the given
         sha1.

@@ -538,7 +538,7 @@ while the one that was inactive hasn't changed.
     >>> foobar_on_admins.status.title
     'Expired'
     >>> foobar_on_admins.reviewer.name
-    u'team-membership-janitor'
+    u'janitor'
 
     >>> sp_on_ubuntu_translators = membershipset.getByPersonAndTeam(
     ...     personset.getByName('name12'),

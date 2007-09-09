@@ -269,6 +269,11 @@ bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 bugtask_choose_affected_product = LaunchbagBugID(
     'Bug #%d - Record as affecting another project')
 
+# This page is used for both projects/distros so we have to say 'software'
+# rather than distro or project here.
+bugtask_confirm_bugtracker_creation = LaunchbagBugID(
+    'Bug #%d - Record as affecting another software')
+
 bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()

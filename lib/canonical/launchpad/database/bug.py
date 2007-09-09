@@ -625,7 +625,7 @@ class Bug(SQLBase):
                     distroseries=None):
         """See `IBug`."""
         return NullBugTask(bug=self, product=product,
-                           productseries=productseries, 
+                           productseries=productseries,
                            sourcepackagename=sourcepackagename,
                            distribution=distribution,
                            distroseries=distroseries)
