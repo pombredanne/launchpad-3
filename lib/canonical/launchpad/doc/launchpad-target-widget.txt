@@ -106,7 +106,7 @@ If no distribution name is given at all, a MissingInput error is raised.
 
 == Selecting a package ==
 
-If both a distribution and a package name are selected, a distribution
+If both a distribution and a source package name are specified, a distribution
 source package is returned.
 
     >>> from canonical.launchpad.interfaces import IDistributionSourcePackage
@@ -127,6 +127,34 @@ source package is returned.
     >>> selected_package.name
     u'evolution'
 
+If both a distribution and a binary package name are specified, an appropriate
+distribution source package is returned.
+
+    >>> binary_package_name = 'linux-2.6.12'
+    >>> form = {'field.bugtarget': 'package',
+    ...         'field.bugtarget.distribution': 'ubuntu',
+    ...         'field.bugtarget.package': binary_package_name}
+    >>> widget = LaunchpadTargetWidget(
+    ...     IFrontPageBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
+    >>> widget.hasInput()
+    True
+    >>> widget.error()
+    ''
+    >>> selected_package = widget.getInputValue()
+    >>> IDistributionSourcePackage.providedBy(selected_package)
+    True
+    >>> selected_package.distribution.name
+    u'ubuntu'
+    >>> selected_package.name
+    u'linux-source-2.6.15'
+    
+The distribution source package corresponds to the specified binary package
+name:
+    
+    >>> print [package.name for release in selected_package.releases 
+    ...                     for package in release.binary_package_names]
+    [...'linux-2.6.12'...]
+    
 If a non-existent package is selected, a widget error is raised.
 
     >>> form['field.bugtarget.package'] = 'non-existent'
@@ -137,12 +165,12 @@ If a non-existent package is selected, a widget error is raised.
     >>> selected_package = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: There is no source package name 'non-existent'
+    LaunchpadValidationError: There is no package name 'non-existent'
                               published in Ubuntu
     >>> print widget.error()
-    There is no source package name 'non-existent' published in Ubuntu
+    There is no package name 'non-existent' published in Ubuntu
 
-The same error is displayed when an existing source package name that
+The same error is displayed when an existing package name that
 isn't published is selected.
 
     >>> form['field.bugtarget.package'] = 'thunderbird'
@@ -153,10 +181,10 @@ isn't published is selected.
     >>> selected_package = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: There is no source package name 'thunderbird'
+    LaunchpadValidationError: There is no package name 'thunderbird'
                               published in Ubuntu
     >>> print widget.error()
-    There is no source package name 'thunderbird' published in Ubuntu
+    There is no package name 'thunderbird' published in Ubuntu
 
 == Selecting a product ==
 
@@ -260,7 +288,7 @@ the distribution in the drop-down list.
              name="field.bugtarget" type="radio" value="product" />
     ...
 
-Passing in a distribution source package will select the 'package'
+Passing in a distribution package will select the 'package'
 radio button, select the distribution in the drop-down list, and set the
 package widget to the package name.
 
