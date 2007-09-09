@@ -37,7 +37,7 @@ class IPOSubmissionSet(Interface):
         :return: a dict mapping each of the `POMsgSet`s to a list of
             applicable `POSubmission`s.
         """
- 
+
 
 class IPOSubmission(Interface):
     """A submission of a translation to a PO file."""

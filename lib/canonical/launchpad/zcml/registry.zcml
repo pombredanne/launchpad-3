@@ -28,7 +28,7 @@
     </browser:pages>
 
     <!-- browser:pages for the registry application -->
-    <browser:pages 
+    <browser:pages
         for="canonical.launchpad.interfaces.IRegistryApplication"
         facet="overview"
         permission="zope.Public"

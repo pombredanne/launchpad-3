@@ -45,7 +45,7 @@ class ITeamMembership(Interface):
 
     def canChangeExpirationDate(person):
         """Can the given person change this membership's expiration date?
-        
+
         A membership's expiration date can be changed by the team owner, by a
         Launchpad admin or by a team admin. In the latter case, though, the
         expiration date can only be changed if the admin is not changing his
@@ -91,7 +91,7 @@ class ITeamMembership(Interface):
 
     def setStatus(status, reviewer, reviewercomment=None):
         """Set the status of this membership.
-        
+
         Also sets the reviewer and reviewercomment, filling or cleaning
         the TeamParticipation table if necessary.
 

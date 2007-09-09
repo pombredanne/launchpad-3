@@ -1484,7 +1484,7 @@ class FormattersAPI:
 
         def is_quoted(line):
             """Test that a line is a quote and not Python.
-            
+
             Note that passages may be wrongly be interpreted as Python
             because they start with '>>> '. The function does not check
             that next and previous lines of text consistently uses '>>> '
@@ -1496,7 +1496,7 @@ class FormattersAPI:
 
         def strip_leading_p_tag(line):
             """Return the characters after the paragraph mark (<p>).
-            
+
             The caller must be certain the line starts with a paragraph mark.
             """
             assert line.startswith('<p>'), (
@@ -1505,7 +1505,7 @@ class FormattersAPI:
 
         def strip_trailing_p_tag(line):
             """Return the characters before the line paragraph mark (</p>).
-            
+
             The caller must be certain the line ends with a paragraph mark.
             """
             assert line.endswith('</p>'), (
