@@ -26,7 +26,7 @@ from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 
 
 class LaunchpadTargetWidget(BrowserWidget, InputWidget):
-    """Widget for selecting a product, distribution or sourcepackage target."""
+    """Widget for selecting a product, distribution or package target."""
 
     implements(IAlwaysSubmittedWidget, IMultiLineWidgetLayout, IInputWidget)
 
@@ -45,7 +45,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 default=getUtility(ILaunchpadCelebrities).ubuntu),
             Choice(
                 __name__='package', title=u"Package",
-                required=False, vocabulary='SourcePackageName'),
+                required=False, vocabulary='BinaryAndSourcePackageName'),
             ]
         self.distribution_widget = CustomWidgetFactory(LaunchpadDropdownWidget)
         for field in fields:
