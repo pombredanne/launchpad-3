@@ -88,6 +88,9 @@ class BugBranchStatusView:
 class BranchLinkToBugView(LaunchpadFormView):
     """The view to create bug-branch links."""
     schema = IBugBranch
+    # In order to have the bug field rendered using the appropriate
+    # widget, we set the LaunchpadFormView attribute for_input to True
+    # to get the read only fields rendered as input widgets.
     for_input=True
 
     field_names = ['bug', 'status', 'whiteboard']
