@@ -12,4 +12,4 @@ DROP TABLE ManifestAncestry;
 DROP TABLE ManifestEntry;
 DROP TABLE Manifest;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 53, 0);
