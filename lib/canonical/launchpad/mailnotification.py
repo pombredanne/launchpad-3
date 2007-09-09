@@ -1247,6 +1247,8 @@ class QuestionNotification:
             '%s status=%s; assignee=%s; priority=%s; language=%s' % (
                 target, question.status.title, assignee,
                 question.priority.title, question.language.code))
+        headers['Reply-To'] = 'question%s@%s' % (
+            self.question.id, config.answertracker.email_domain)
 
         return headers
 
