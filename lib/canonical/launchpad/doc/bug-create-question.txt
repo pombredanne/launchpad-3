@@ -84,6 +84,22 @@ The question is automatically linked to the original bug.
     >>> [question.title for question in jokosher_bug.questions]
     [u'Print is broken']
 
+Subscribers to the bug are not notify that the bug is now invalid
+because the issue does not, nor did it ever, concern the bug contacts.
+The question owner (the bug owner) is informed by email that he asked
+a question.
+
+    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
+    1
+    
+    >>> notifications[0]['To']
+    'no-priv@canonical.com'
+    
+    >>> notifications[0]['Subject']
+    '[Question #15]: Print is broken'
+
 A bug can only be converted to a question once.
 
     >>> question = jokosher_bug.createQuestionFromBug(jokosher, sample_person)

@@ -1009,3 +1009,19 @@ if the team supported languages includes the question language:
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['foo.bar@canonical.com', 'test@canonical.com']
+
+
+== Preventing new question notification ==
+
+New question notifications can disabled when the application needs
+to create a question outside the standard workflow. The do_notify
+keyword arg is True by default. Setting it to False will prevent
+the new question from generating a notification.
+
+    >>> ubuntu_question = ubuntu.newQuestion(
+    ...     sample_person, "Can't install Ubuntu",
+    ...    "I insert the install CD in the CD-ROM drive, but it won't boot.",
+    ...     do_notify=False)
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
+    0

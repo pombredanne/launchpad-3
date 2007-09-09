@@ -1,0 +1,135 @@
+= Create a question from a bug =
+
+Some bugs that are filed, aren't really bugs, they are questions.
+When the bug target's pillar uses Launchpad to track bug, the
+bug can be converted to a question. The process creates a new
+question using the bug's owner, title, and description. The bug's
+status is set to Invalid in every location that it affects.
+
+Thunderbird does not use Launchpad to track bugs. Questions cannot
+be made from it's bugs.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/9')
+    >>> user_browser.title
+    'Bug #9 in Mozilla Thunderbird: ...Thunderbird crashes...'
+    >>> user_browser.getLink('Is a question')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+An Person with permission to edit a bug may create a question from
+a bug. An anonymous user cannot create a question.
+
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev'
+    ...     '/ubuntu/+source/linux-source-2.6.15/+bug/10')
+    >>> anon_browser.title
+    'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
+    >>> anon_browser.getLink('Is a question').click()
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+No Privileges Person is doing triage for Ubuntu. He recognizes bug 10
+is really a question. He chooses to make a question from it.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev'
+    ...     '/ubuntu/+source/linux-source-2.6.15/+bug/10')
+    >>> user_browser.title
+    'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
+    >>> user_browser.getLink('Is a question').click()
+    >>> user_browser.title
+    'Bug #10 - Create a question from this bug'
+
+The 'Create a question from this bug' page explains what will happen
+if No Privileges Person chooses the 'Create a Question' button at the
+bottom of the page. A single radio button indicates that the only
+option a user can take with this page is to create a question. No
+other input is needed. No Privileges Person must choose between the
+'Cancel' button and the 'Create a Question' button. He decides to
+create the question.
+
+    >>> find_main_content(user_browser.contents).p
+    <p>... this bug's status will be Invalid for all locations it affects...
+     The new question will be linked to this bug...
+
+    >>> control = user_browser.getControl(name='field.create_question')
+    >>> # Strip the non-breaking space embedded in the label.
+    >>> [option[1:] for option in control.displayOptions]
+    ['This bug is a question.']
+
+    >>> user_browser.getControl('Cancel').type
+    'submit'
+
+    >>> user_browser.getControl('Create a Question').click()
+
+No Privileges Person is shown the bug page again. There is a notice
+confirming that the question was created. The question has the same
+title and the bug. The bug status is Invalid for 'linux-source-2.6.15
+(Ubuntu)', and the comment about the last change states that the bug is
+a question.
+
+    >>> user_browser.title
+    'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
+
+    >>> content = find_tag_by_id(user_browser.contents, 'mainarea')
+    >>> content(['p'], {'class' : 'informational message'})
+    [...A question was created from this bug:
+     Question #...: another test bug...]
+
+    >>> print extract_text(content(['table'], {'class' : 'listing'})[0])
+    Affects                       Status   Importance  Assigned to
+    linux-source-2.6.15 (Ubuntu)  Invalid  Medium      &mdash;...
+    Comment on most recent change
+    This is not a bug. It is a question...
+
+No Privileges Person can see the link to the question in the 'Related
+questions' portlet. After noting that Foo Bar is the bug owner, he
+uses the link to see the question page.
+
+    >>> print extract_text(content(['img'], src='/@@/bug-medium')[0].parent)
+    Bug #10, first reported on 2004-01-10 by Foo Bar
+
+    >>> question_anchor = content(['div'], {'id' : 'portlet-questions'})[0].a
+    >>> question_anchor
+    <a href=".../ubuntu/+question/...">another test bug</a>
+
+    >>> user_browser.getLink('another test bug').click()
+    >>> user_browser.title
+    'Ubuntu question #...: ...another test bug...'
+
+No Privileges Person sees that the question status is Open and
+that is was asked by Foo Bar. Foo Bar is the only subscriber to
+this question (a question in Ubuntu would have many indirect
+subscribers in the real world). As No Privileges Person is not
+the question owner, he is invited to help answer the problem.
+
+    >>> content = find_tag_by_id(user_browser.contents, 'mainarea')
+    >>> print extract_text(content(['img'], src='/@@/question')[0].parent)
+    Open Question #..., asked ... by Foo Bar
+
+    >>> portlet = content(['div'], {'id' : 'portlet-subscribers'})[0]
+    >>> portlet.h2
+    <h2>Subscribers to question #...</h2>
+
+    >>> portlet.a
+    <a href="/~name16">Foo Bar</a>
+
+    >>> content.h2
+    <h2>...Can you help with this problem?...</h2>
+    
+    >>> user_browser.getControl("Add Answer").type
+    'submit'                                                
+
+Foo Bar received an email informing him that he asked a question. He
+used the link the email to view the page in his browser.
+
+    >>> admin_browser.open(question_anchor['href'])
+    >>> admin_browser.title
+    'Ubuntu question #...: ...another test bug...'
+
+    >>> admin_browser.getControl('Problem Solved').type
+    'submit'
+    >>> admin_browser.getControl("I'm Providing More Information").type
+    'submit'
