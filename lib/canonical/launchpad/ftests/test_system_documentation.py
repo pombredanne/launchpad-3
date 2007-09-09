@@ -24,6 +24,7 @@ from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet, ILaunchBag,
     IPersonSet, TeamSubscriptionPolicy)
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import (
         LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
@@ -34,6 +35,11 @@ here = os.path.dirname(os.path.realpath(__file__))
 default_optionflags = REPORT_NDIFF | NORMALIZE_WHITESPACE | ELLIPSIS
 
 
+def get_url(object, page, rootsite=None):
+    return '/'.join(
+        [canonical_url(object, rootsite=rootsite), page])
+
+
 def setGlobs(test):
     test.globs['ANONYMOUS'] = ANONYMOUS
     test.globs['login'] = login
@@ -42,6 +48,7 @@ def setGlobs(test):
     test.globs['getUtility'] = getUtility
     test.globs['transaction'] = transaction
     test.globs['flush_database_updates'] = flush_database_updates
+    test.globs['get_url'] = get_url
 
 
 def setUp(test):

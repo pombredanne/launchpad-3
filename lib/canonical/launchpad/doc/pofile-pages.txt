@@ -30,7 +30,9 @@ Now it's time to test the initialisation of the view class.
     ...     distroseries=series, sourcepackagename=sourcepackagename)
     >>> potemplate = potemplatesubset['evolution-2.2']
     >>> pofile_es = potemplate.getPOFileByLang('es')
-    >>> request = LaunchpadTestRequest(form={'show': 'all' })
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL=get_url(pofile_es, '+translate', 'translations'),
+    ...     form={'show': 'all' })
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
 
@@ -54,7 +56,9 @@ This time, we are going to see what happens if we get an IPOFile without
 the plural form information.
 
     >>> pofile_tlh = potemplate.getDummyPOFile('tlh')
-    >>> request = LaunchpadTestRequest(form={'show': 'all' })
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL=get_url(pofile_tlh, '+translate', 'translations'),
+    ...     form={'show': 'all' })
     >>> pofile_view = getView(pofile_tlh, '+translate', request)
     >>> pofile_view.initialize()
 
@@ -71,6 +75,7 @@ And the view class detects it correctly.
 Check the argument to filter messagesets.
 
     >>> request = LaunchpadTestRequest(form={
+    ...     SERVER_URL=get_url(pofile_es, '+translate', 'translations'),
     ...     'show': 'translated'})
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
@@ -84,13 +89,17 @@ Let's move to the navigation URLS testing.
 
 We get a request without any argument.
 
-    >>> request = LaunchpadTestRequest(form={'show': 'all' })
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL=get_url(pofile_es, '+translate', 'translations'),
+    ...     form={'show': 'all' })
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
 
 It's time to test that we get the right message sets from the submitted form.
 
-    >>> request = LaunchpadTestRequest(form={'show': 'all' })
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL=get_url(pofile_es, '+translate', 'translations'),
+    ...     form={'show': 'all' })
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
 
@@ -161,20 +170,22 @@ Now we do a submission with new translations:
    submitted in its corresponding msgset_*_new variable should be taken in
    consideration (if True) or just ignored (False).
 
-    >>> request = LaunchpadTestRequest(form={
-    ...     'batch': '10',
-    ...     'start': '0',
-    ...     'show': 'all',
-    ...     'lock_timestamp': '2006-11-28 13:00:00 UTC',
-    ...     'msgset_130': None,
-    ...     'msgset_130_es_translation_0_radiobutton':
-    ...         'msgset_130_es_translation_0_new',
-    ...     'msgset_130_es_translation_0_new': 'Foo',
-    ...     'msgset_138': None,
-    ...     'msgset_138_es_translation_0_radiobutton':
-    ...         'msgset_138_es_translation_0_new',
-    ...     'msgset_138_es_translation_0_new': 'Bar',
-    ...     'submit_translations': 'Save &amp; Continue'})
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL=get_url(pofile_es, '+translate', 'translations'),
+    ...     form={
+    ...         'batch': '10',
+    ...         'start': '0',
+    ...         'show': 'all',
+    ...         'lock_timestamp': '2006-11-28 13:00:00 UTC',
+    ...         'msgset_130': None,
+    ...         'msgset_130_es_translation_0_radiobutton':
+    ...             'msgset_130_es_translation_0_new',
+    ...         'msgset_130_es_translation_0_new': 'Foo',
+    ...         'msgset_138': None,
+    ...         'msgset_138_es_translation_0_radiobutton':
+    ...             'msgset_138_es_translation_0_new',
+    ...         'msgset_138_es_translation_0_new': 'Bar',
+    ...         'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
@@ -239,16 +250,18 @@ their sequence is 0.
     >>> potmsgset = POTMsgSet.get(161)
     >>> potmsgset.sequence
     0
-    >>> request = LaunchpadTestRequest(form={
-    ...     'batch': '10',
-    ...     'start': '0',
-    ...     'show': 'untranslated',
-    ...     'lock_timestamp': '2006-11-28 13:00:00 UTC',
-    ...     'msgset_161': None,
-    ...     'msgset_161_es_translation_0_radiobutton':
-    ...         'msgset_161_es_translation_0_new',
-    ...     'msgset_161_es_translation_0_new': 'Foo',
-    ...     'submit_translations': 'Save &amp; Continue'})
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL=get_url(pofile_es, '+translate', 'translations'),
+    ...     form={
+    ...         'batch': '10',
+    ...         'start': '0',
+    ...         'show': 'untranslated',
+    ...         'lock_timestamp': '2006-11-28 13:00:00 UTC',
+    ...         'msgset_161': None,
+    ...         'msgset_161_es_translation_0_radiobutton':
+    ...             'msgset_161_es_translation_0_new',
+    ...         'msgset_161_es_translation_0_new': 'Foo',
+    ...         'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
@@ -329,12 +342,14 @@ exact same results.
 
 Now, we are going to check the alternative language submission.
 
-    >>> request = LaunchpadTestRequest(form={
-    ...     'show': 'all',
-    ...     'batch': '10',
-    ...     'start': '10',
-    ...     'field.alternative_language': 'fr',
-    ...     'select_alternate_language': 'Change'})
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL=get_url(pofile_es, '+translate', 'translations'),
+    ...     form={
+    ...         'show': 'all',
+    ...         'batch': '10',
+    ...         'start': '10',
+    ...         'field.alternative_language': 'fr',
+    ...         'select_alternate_language': 'Change'})
     >>> request.method = 'get'
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
@@ -366,10 +381,12 @@ headers.
 
 Now, we do the upload.
 
-    >>> request = LaunchpadTestRequest(form={
-    ...     'file': FileUpload(FileUploadArgument()),
-    ...     'upload_type': 'upstream',
-    ...     'pofile_upload': 'Upload'})
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL=get_url(pofile_es, '+upload', 'translations'),
+    ...     form={
+    ...         'file': FileUpload(FileUploadArgument()),
+    ...         'upload_type': 'upstream',
+    ...         'pofile_upload': 'Upload'})
     >>> request.method = 'POST'
     >>> pofile_view = getView(pofile_es, '+upload', request)
     >>> pofile_view.initialize()
@@ -463,7 +480,9 @@ cached export, the user is redirected to the index page of the IPOFile.
     False
 
     # Request the download.
-    >>> request = LaunchpadTestRequest(form={'format': 'PO' })
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL=get_url(pofile_es, '+export', 'translations'),
+    ...     form={'format': 'PO' })
     >>> request.method = 'POST'
     >>> pofile_view = getView(pofile_es, '+export', request)
     >>> pofile_view.initialize()

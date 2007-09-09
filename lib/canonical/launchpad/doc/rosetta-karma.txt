@@ -355,7 +355,9 @@ description.
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> sample_person = personset.getByEmail('test@canonical.com')
     >>> login('test@canonical.com')
-    >>> request = LaunchpadTestRequest(form={
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL=get_url(potemplate, '+edit', 'translations'),
+    ...     form={
     ...     u'field.owner': u'test@canonical.com',
     ...     u'field.priority': u'0',
     ...     u'field.description': u'This is a new description',

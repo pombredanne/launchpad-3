@@ -23,12 +23,13 @@ Here's the PO template they're going to request some files from.
 Here's the request from the user.
 
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+  >>> SERVER_URL = get_url(potemplate, '+export', 'translations')
   >>> form = {
   ...     'what': 'some',
   ...     'potemplate': True,
   ...     'es': True,
   ...     'format': 'PO'}
-  >>> request = LaunchpadTestRequest(form=form)
+  >>> request = LaunchpadTestRequest(SERVER_URL=SERVER_URL, form=form)
   >>> request.method = 'POST'
 
 And here's the view processing that request.
@@ -63,11 +64,12 @@ See, no requests!
 Request an empty potemplate (i.e. without any POTMsgSets).
 https://launchpad.net/products/rosetta/+bug/68261
 
+  >>> SERVER_URL = get_url(empty_potemplate, '+export', 'translations')
   >>> form = {
   ...     'what': 'some',
   ...     'potemplate': True,
   ...     'format': 'PO'}
-  >>> request = LaunchpadTestRequest(form=form)
+  >>> request = LaunchpadTestRequest(SERVER_URL=SERVER_URL, form=form)
   >>> request.method = 'POST'
   >>> empty_potemplate = POTemplate.get(6)
   >>> broken_potemplate_view = getView(empty_potemplate, '+export', request)
@@ -102,7 +104,9 @@ Let's request a PO file instead this time.
 
 Here's our new request.
 
-  >>> request = LaunchpadTestRequest(form={'format': 'PO'})
+  >>> SERVER_URL = get_url(pofile, '+export', 'translations')
+  >>> request = LaunchpadTestRequest(
+  ...     SERVER_URL=SERVERL_URL, form={'format': 'PO'})
   >>> request.method = 'POST'
 
 Here's that request getting processed.

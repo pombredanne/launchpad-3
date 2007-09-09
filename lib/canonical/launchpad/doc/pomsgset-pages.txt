@@ -25,7 +25,7 @@ without the plural form information.
     >>> pomsgset = POMsgSet.get(1)
     >>> pofile_tlh = pomsgset.pofile.potemplate.getDummyPOFile('tlh')
     >>> pomsgset_tlh = pofile_tlh.getPOMsgSet(u'evolution addressbook')
-    >>> SERVER_URL = '/'.join([canonical_url(pomsgset), '+translate'])
+    >>> SERVER_URL = get_url(pomsgset, '+translate', 'translations')
     >>> request = LaunchpadTestRequest(SERVER_URL=SERVER_URL)
     >>> pomsgset_page_view = getView(pomsgset_tlh, "+translate", request)
     >>> pomsgset_page_view.initialize()
@@ -229,7 +229,7 @@ But first, let's see current values.
 
 Now we do the submit.
 
-    >>> SERVER_URL = '/'.join([canonical_url(pomsgset), '+translate'])
+    >>> SERVER_URL = get_url(pomsgset, '+translate', 'translations')
     >>> request = LaunchpadTestRequest(
     ...     SERVER_URL=SERVER_URL,
     ...     form={

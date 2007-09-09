@@ -48,9 +48,11 @@ headers.
 
 Now, we do the upload.
 
-    >>> request = LaunchpadTestRequest(form={
-    ...     'file': FileUpload(FileUploadArgument()),
-    ...     'UPLOAD': 'Upload'})
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL=get_url(potemplate, '+upload', 'translations'),
+    ...     form={
+    ...         'file': FileUpload(FileUploadArgument()),
+    ...         'UPLOAD': 'Upload'})
     >>> request.method = 'POST'
     >>> potemplate_view = getView(potemplate, '+upload', request)
     >>> potemplate_view.initialize()
@@ -77,9 +79,11 @@ that feature...
 
 We do the upload...
 
-    >>> request = LaunchpadTestRequest(form={
-    ...     'file': FileUpload(FileUploadArgument()),
-    ...     'UPLOAD': 'Upload'})
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL=get_url(potemplate, '+upload', 'translations'),
+    ...     form={
+    ...         'file': FileUpload(FileUploadArgument()),
+    ...         'UPLOAD': 'Upload'})
     >>> request.method = 'POST'
     >>> potemplate_view = getView(potemplate, '+upload', request)
     >>> potemplate_view.initialize()
@@ -111,7 +115,8 @@ Let's check the traversal code.
 
 First, what happens if we get any method that is not supported?
 
-    >>> request = LaunchpadTestRequest()
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL=get_url(potemplate, '', 'translations'))
     >>> request.method = 'PUT'
     >>> navigation = POTemplateNavigation(potemplate, request)
     >>> navigation.traverse('es')
