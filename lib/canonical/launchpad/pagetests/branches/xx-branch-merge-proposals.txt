@@ -47,10 +47,18 @@ When looked at from the point of view of the source branch, the
 merge proposal is considered a "landing target" with an optional
 "dependent branch".
 
-    >>> print extract_text(find_tag_by_id(
-    ...     nopriv_browser.contents, 'landing-targets'))
-    GNOME Terminal Mainline registered by No Privileges Person
+    >>> def printMergeProposals(browser, id):
+    ...     tag = find_tag_by_id(browser.contents, id)
+    ...     if tag is None:
+    ...         print tag
+    ...     else:
+    ...         for mp in tag.findAll(attrs={'class': 'mergeproposal'}):
+    ...             print extract_text(mp)
+
+    >>> printMergeProposals(nopriv_browser, 'landing-targets')
+    ~name12/gnome-terminal/main
     This is the whiteboard
+    Merge proposed by No Privileges Person
 
 Since the user who registered the merge proposal is different
 to the owner of the source branch, they are shown explicitly.
@@ -67,12 +75,9 @@ shown.
     ...     'This is the whiteboard')
     >>> sample_browser.getControl('Register').click()
 
-    >>> landing_targets = find_tag_by_id(
-    ...     sample_browser.contents, 'landing-targets')
-    >>> print extract_text(landing_targets)
-    GNOME Terminal Mainline
+    >>> printMergeProposals(sample_browser, 'landing-targets')
+    ~name12/gnome-terminal/main
     This is the whiteboard
-
 
 
 == Landing Candidates ==
@@ -83,13 +88,12 @@ shown first.
 
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
-    >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, 'landing-candidates'))
-    ~name12/gnome-terminal/scanned
+    >>> printMergeProposals(browser, 'landing-candidates')
+    ~name12/gnome-terminal/scanned (New)
       This is the whiteboard
-    Klingon support in GNOME Terminal registered by No Privileges Person
+    ~name12/gnome-terminal/klingon (Experimental)
       This is the whiteboard
-
+      Merge proposed by No Privileges Person
 
 == Editing a merge proposal ==
 
@@ -104,6 +108,8 @@ There are currently three tasks that can be done when editing a merge proposal:
 If the user is able to edit the merge proposal, then a pencil icon is shown
 that is linked to the edit page url.
 
+    >>> landing_targets = find_tag_by_id(
+    ...     sample_browser.contents, 'landing-targets')
     >>> edit_link = landing_targets.fetch('a')[1]['href']
     >>> print edit_link
     /~name12/gnome-terminal/scanned/+merge/2
@@ -114,10 +120,8 @@ that is linked to the edit page url.
     ...     "This is the updated whiteboard.\n"
     ...     "Demo url: http://launchpad.dev/+foo")
     >>> sample_browser.getControl('Update').click()
-    >>> landing_targets = find_tag_by_id(
-    ...     sample_browser.contents, 'landing-targets')
-    >>> print extract_text(landing_targets)
-    GNOME Terminal Mainline
+    >>> printMergeProposals(sample_browser, 'landing-targets')
+    ~name12/gnome-terminal/main
     This is the updated whiteboard.
     Demo url: http://launchpad.dev/+foo
 
@@ -133,9 +137,7 @@ for the source_branch.
     >>> print sample_browser.url
     http://code.launchpad.dev/~name12/gnome-terminal/scanned
 
-    >>> landing_targets = find_tag_by_id(
-    ...     sample_browser.contents, 'landing-targets')
-    >>> print landing_targets
+    >>> printMergeProposals(sample_browser, 'landing-targets')
     None
 
 
@@ -154,18 +156,15 @@ the target branch.
     ...     'This is the whiteboard')
     >>> sample_browser.getControl('Register').click()
 
-    >>> landing_targets = find_tag_by_id(
-    ...     sample_browser.contents, 'landing-targets')
-    >>> print extract_text(landing_targets)
-    GNOME Terminal Mainline
+    >>> printMergeProposals(sample_browser, 'landing-targets')
+    ~name12/gnome-terminal/main
     This is the whiteboard
-    Dependent on Klingon support in GNOME Terminal
+    Dependent on ~name12/gnome-terminal/klingon
 
 This association is also shown on the branch that is depended upon.
 
-    >>> sample_browser.getLink('Klingon support in GNOME Terminal').click()
-    >>> print extract_text(find_tag_by_id(
-    ...     sample_browser.contents, 'dependent-branches'))
+    >>> sample_browser.getLink('~name12/gnome-terminal/klingon').click()
+    >>> printMergeProposals(sample_browser, 'dependent-branches')
     ~name12/gnome-terminal/scanned
     This is the whiteboard
 
@@ -183,10 +182,9 @@ on the target branch.
     >>> landing_targets = find_tag_by_id(
     ...     nopriv_browser.contents, 'landing-targets')
 
-Since the registrant is shown before the edit link, the pencil image is
-the third anchor.
+The edit link is shown after the branch link.
 
-    >>> edit_link = landing_targets.fetch('a')[2]['href']
+    >>> edit_link = landing_targets.fetch('a')[1]['href']
     >>> nopriv_browser.getLink(url=edit_link).click()
 
 There is an action link here to mark as merged.
@@ -204,17 +202,16 @@ find one, then the current time is used as the date merged.
 
 The user is then taken to the source branch details page.
 
-    >>> print extract_text(find_tag_by_id(
-    ...     nopriv_browser.contents, 'landing-targets'))
-    GNOME Terminal Mainline registered by No Privileges Person
+    >>> printMergeProposals(nopriv_browser, 'landing-targets')
+    ~name12/gnome-terminal/main
       This is the whiteboard
+      Merge proposed by No Privileges Person
       Merged ... seconds ago as revision 42
 
 Gone from the target branch.
 
-    >>> nopriv_browser.getLink('GNOME Terminal Mainline').click()
-    >>> print extract_text(find_tag_by_id(
-    ...     nopriv_browser.contents, 'landing-candidates'))
-    ~name12/gnome-terminal/scanned
+    >>> nopriv_browser.getLink('~name12/gnome-terminal/main').click()
+    >>> printMergeProposals(nopriv_browser, 'landing-candidates')
+    ~name12/gnome-terminal/scanned (New)
       This is the whiteboard
 

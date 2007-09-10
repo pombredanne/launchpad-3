@@ -115,7 +115,7 @@ class BranchContextMenu(ContextMenu):
     facet = 'branches'
     links = ['edit', 'delete_branch', 'browse_code', 'browse_revisions',
              'reassign', 'subscription', 'addsubscriber', 'associations',
-             'registermerge', 'landingcandidates']
+             'registermerge', 'landingcandidates', 'linkbug']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -129,9 +129,8 @@ class BranchContextMenu(ContextMenu):
         return Link('+delete', text, enabled=enabled)
 
     def browse_code(self):
+        """ """
         text = 'Browse code'
-        # Only enable the link if we've ever mirrored the branch.
-        # Don't enable if the branch is private.
         enabled = self.context.code_is_browseable
         url = (config.launchpad.codebrowse_root
                + self.context.unique_name
@@ -139,9 +138,8 @@ class BranchContextMenu(ContextMenu):
         return Link(url, text, icon='info', enabled=enabled)
 
     def browse_revisions(self):
+        """ """
         text = 'Browse revisions'
-        # Only enable the link if we've ever mirrored the branch.
-        # Don't enable if the branch is private.
         enabled = self.context.code_is_browseable
         url = (config.launchpad.codebrowse_root
                + self.context.unique_name
@@ -183,6 +181,10 @@ class BranchContextMenu(ContextMenu):
         text = 'View landing candidates'
         enabled = self.context.landing_candidates.count() > 0
         return Link('+landing-candidates', text, icon='edit', enabled=enabled)
+
+    def linkbug(self):
+        text = 'Link to bug report'
+        return Link('+linkbug', text, icon='edit')
 
 
 class BranchView(LaunchpadView):

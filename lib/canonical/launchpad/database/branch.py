@@ -185,6 +185,18 @@ class Branch(SQLBase):
         return [bug_branch.bug for bug_branch in self.bug_branches]
 
     @property
+    def related_bug_tasks(self):
+        """See `IBranch`."""
+        tasks = []
+        for bug in self.related_bugs:
+            task = bug.getBugTask(self.product)
+            if task is None:
+                # Just choose the first task for the bug.
+                task = bug.bugtasks[0]
+            tasks.append(task)
+        return tasks
+
+    @property
     def warehouse_url(self):
         """See `IBranch`."""
         root = config.supermirror.warehouse_root_url
@@ -243,11 +255,6 @@ class Branch(SQLBase):
 
     def canBeDeleted(self):
         """See `IBranch`."""
-        # XXX: TimPenhey 2007-07-30
-        # ManifestEntries are deliberately being ignored here.
-        # They are part of HCT which is in active rot, and should
-        # be removed.
-
         # CodeImportSet imported here to avoid circular imports.
         from canonical.launchpad.database.codeimport import CodeImportSet
         code_import = CodeImportSet().getByBranch(self)
