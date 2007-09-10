@@ -34,6 +34,12 @@
       <td><a tal:attributes="href context/target/fmt:url"
              tal:content="context/target/bugtargetdisplayname">Ubuntu</a></td>
     </tr>
+    <tr tal:condition="context/target/currentrelease|nothing">
+      <th>Latest release:</th>
+      <td tal:define="cr context/target/currentrelease">
+        <a tal:content="cr/version" tal:attributes="href cr/fmt:url">3.2.1-3</a>
+      </td>
+    </tr>
     <tr>
       <th>Filed here by:</th>
       <td><a tal:replace="structure context/owner/fmt:link">Foo Bar</a></td>

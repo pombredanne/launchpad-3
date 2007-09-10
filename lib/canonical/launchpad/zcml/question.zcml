@@ -12,7 +12,7 @@
     <allow
         attributes="id title description status priority owner assignee
                     answerer answer datecreated datedue datelastquery
-                    datelastresponse dateanswered faq language messages
+                    datelastresponse date_solved faq language messages
                     whiteboard product distribution sourcepackagename
                     target can_be_reopened reopenings canReject
                     can_request_info can_give_info can_give_answer
