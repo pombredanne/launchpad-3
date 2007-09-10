@@ -1436,7 +1436,9 @@ class FilteredLanguagePackVocabularyBase(SQLObjectVocabularyBase):
     _language_pack_type = None
 
     def toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.date_exported.isoformat())
+        return SimpleTerm(
+            obj, obj.id, '%s (%s)' % (
+                obj.date_exported.isoformat(), obj.type.title))
 
     def __iter__(self):
         if not IDistroSeries.providedBy(self.context):

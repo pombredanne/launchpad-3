@@ -250,7 +250,9 @@ class DistroSeriesTranslationsMenu(ApplicationMenu):
 
     usedfor = IDistroSeries
     facet = 'translations'
-    links = ['admin', 'imports']
+    links = [
+        'admin', 'imports', 'language_packs', 'admin_language_packs',
+        'full_language_pack_request']
 
     def imports(self):
         text = 'See import queue'
@@ -258,7 +260,21 @@ class DistroSeriesTranslationsMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def admin(self):
-        return Link('+admin', 'Admin translation options', icon='edit')
+        return Link('+admin', 'Administer translation options', icon='edit')
+
+    def language_packs(self):
+        return Link('+language-packs', 'See language packs')
+
+    @enabled_with_permission('launchpad.TranslationsAdmin')
+    def admin_language_packs(self):
+        return Link(
+            '+admin-language-packs', 'Administer language packs', icon='edit')
+
+    @enabled_with_permission('launchpad.LanguagePacksAdmin')
+    def full_language_pack_request(self):
+        return Link(
+            '+full-language-pack-request',
+            'Request a full language pack export')
 
 
 class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
@@ -454,7 +470,8 @@ class DistroSeriesLanguagePackAdminView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
 
-        self.next_url = canonical_url(self.context)
+        self.next_url = '/'.join(
+            [canonical_url(self.context), '+language-packs'])
 
 
 class DistroSeriesFullLanguagePackRequestView(LaunchpadEditFormView):
@@ -476,4 +493,5 @@ Your request has been noted, next language pack export will include a full
 export.
 ''')
 
-        self.next_url = canonical_url(self.context)
+        self.next_url = '/'.join(
+            [canonical_url(self.context), '+language-packs'])
