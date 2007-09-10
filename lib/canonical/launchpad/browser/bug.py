@@ -27,16 +27,9 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams,
-    IBug,
-    IBugSet,
-    IBugTaskSet,
-    IBugWatchSet,
-    ICveSet,
-    IFrontPageBugTaskSearch,
-    ILaunchBag,
-    NotFoundError,
-    )
+    BugTaskSearchParams, BugTaskStatus, IBug, IBugSet, IBugTaskSet,
+    IBugWatchSet, ICveSet, IFrontPageBugTaskSearch, ILaunchBag,
+    NotFoundError)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.webapp import (
@@ -46,7 +39,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
-from canonical.lp.dbschema import BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.project import ProjectScopeWidget
 

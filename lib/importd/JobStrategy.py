@@ -535,4 +535,7 @@ class SVNStrategy(CSCVSStrategy):
         while-list. Eventually, that will check for a flag set by the operator
         in the Launchpad web UI.
         """
+        if not self.job.autotest:
+            # Only perform the sanity check on autotest.
+            return True
         return self.job.repository in self._svn_url_whitelist
