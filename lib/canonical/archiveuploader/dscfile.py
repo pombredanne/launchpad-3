@@ -427,7 +427,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             self.copyright = open(fullpath).read().strip()
 
         if self.copyright is None:
-            yield UploadError("No copyright file found.")
+            yield UploadWarning("No copyright file found.")
 
         self.logger.debug("Cleaning up source tree.")
         try:
@@ -464,7 +464,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # file is in, unfortunately, and there is no standard, so guess.
         encoded = {}
         for key, value in pending.items():
-            encoded[key] = guess_encoding(value)
+            if value is not None:
+                encoded[key] = guess_encoding(value)
+            else:
+                encoded[key] = None
 
         source_name = getUtility(
             ISourcePackageNameSet).getOrCreateByName(self.source)
@@ -484,12 +487,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             dsc_maintainer_rfc822=encoded['maintainer'],
             dsc_format=encoded['format'],
             dsc_binaries=encoded['binary'],
-            dsc_standards_version=encoded.get('standards-version', None),
+            dsc_standards_version=encoded.get('standards-version'),
             component=self.component,
-            changelog=encoded.get('simulated_changelog', None),
+            changelog=encoded.get('simulated_changelog'),
             section=self.section,
             archive=self.policy.archive,
-            copyright=encoded.get('copyright', None),
+            copyright=encoded.get('copyright'),
             # dateuploaded by default is UTC:now in the database
             )
 
