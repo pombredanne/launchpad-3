@@ -243,8 +243,15 @@ the branch itself.
     >>> print extract_text(main_content.h1)
     Edit subscription to branch for Landscape Developers
 
-From this page the branch subscription can be altered or unsubscribed from.
+From this page the branch subscription can be altered...
 
+    >>> browser.getControl('Notification Level').displayValue = [
+    ...     'No email']
+    >>> browser.getControl('Change').click()
+
+... or unsubscribed from.
+
+    >>> browser.getLink(url='+subscription/landscape').click()
     >>> browser.getControl('Unsubscribe').click()
     >>> print_informational_message(browser.contents)
     Landscape Developers has been unsubscribed from this branch.

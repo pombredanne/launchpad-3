@@ -9,7 +9,7 @@ from unittest import TestCase, TestLoader
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IBranchSet
+from canonical.launchpad.interfaces import BranchType, IBranchSet
 from canonical.launchpad.scripts import supermirror_rewritemap
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -49,6 +49,19 @@ class TestRewriteMapScript(TestCase):
         lines = file.getvalue().splitlines()
         self.failIf('~name12/gnome-terminal/scanned\t00/00/00/1b' in lines,
                     'private branch %s should not be in %r' %
+                    (branch_unique_name, lines))
+
+    def test_remote_branch_not_written(self):
+        """Remote branches do not have entries in the rewrite file."""
+        branch_unique_name = '~name12/gnome-terminal/scanned'
+        branch = getUtility(IBranchSet).getByUniqueName(branch_unique_name)
+        branch.branch_type = BranchType.REMOTE
+        # Now create the rewrite map.
+        file = StringIO()
+        supermirror_rewritemap.write_map(file)
+        lines = file.getvalue().splitlines()
+        self.failIf('~name12/gnome-terminal/scanned\t00/00/00/1b' in lines,
+                    'remote branch %s should not be in %r' %
                     (branch_unique_name, lines))
 
 def test_suite():

@@ -4,7 +4,7 @@ from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
 
 
 class TestBranchTargeter(unittest.TestCase):
-    
+
     def testcalculate0(self):
         self.assertEquals("00/00/00/00", branchtarget(0))
 
