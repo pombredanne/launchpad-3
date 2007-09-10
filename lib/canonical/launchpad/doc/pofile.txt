@@ -1003,9 +1003,9 @@ added to make formatting nicer (first one is used as a separation
 between package and Launchpad contributors, and second is empty email
 for 'Launchpad Contributions' title; see bug #133817 for details).
 
-  >>> alsa_translation.prepareTranslationCredits(
-  ...     emails_of_translators.potmsgset)
-  u'danilo@canonical.com,,,carlos@canonical.com'
+    >>> alsa_translation.prepareTranslationCredits(
+    ...     emails_of_translators.potmsgset)
+    u'danilo@canonical.com,,,carlos@canonical.com'
 
 Names of translators are untranslated and there is no message set for them yet.
 
@@ -1024,9 +1024,9 @@ But now names credit Carlos when prepared automatically.  As above, an
 empty name is added first to serve as a separator, and "Launchpad
 Contributions:" is used as a header for the added credits.
 
-  >>> alsa_translation.prepareTranslationCredits(
-  ...     names_of_translators.potmsgset)
-  u',Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
+    >>> alsa_translation.prepareTranslationCredits(
+    ...     names_of_translators.potmsgset)
+    u',Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
 
 
 = POFile Security tests =

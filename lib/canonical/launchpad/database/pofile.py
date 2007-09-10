@@ -324,7 +324,7 @@ class POFile(SQLBase, POFileMixIn):
                 emails.append(text)
 
             # Add two empty email fields to make formatting nicer.
-            # See bug #133764 for details.
+            # See bug #133817 for details.
             emails.extend([u'',u''])
 
             for contributor in self.contributors:
@@ -340,7 +340,7 @@ class POFile(SQLBase, POFileMixIn):
             if text is not None:
                 names.append(text)
             # Add an empty name as a separator, and 'Launchpad
-            # Contributions' header; see bug #133764 for details.
+            # Contributions' header; see bug #133817 for details.
             names.extend([u'',
                           u'Launchpad Contributions:'])
             names.extend([
@@ -358,7 +358,7 @@ class POFile(SQLBase, POFileMixIn):
 
                 text += 'Launchpad Contributions:'
                 for contributor in self.contributors:
-                    text += ("\n  %s <%s>" %
+                    text += ("\n  %s %s" %
                              (contributor.displayname,
                               canonical_url(contributor)))
             return text
