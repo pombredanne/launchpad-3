@@ -1439,16 +1439,26 @@ class FilteredLanguagePackVocabularyBase(SQLObjectVocabularyBase):
         return SimpleTerm(obj, obj.id, obj.date_exported.isoformat())
 
     def __iter__(self):
-        query = []
         if not IDistroSeries.providedBy(self.context):
             # This vocabulary is only useful from a DistroSeries context.
             return
+
+        query = []
+
         type_delta_query = ('(type = %s AND updates = %s)' % sqlvalues(
             LanguagePackType.DELTA, self.context.language_pack_base))
         type_full_query = ('type = %s' % sqlvalues(LanguagePackType.FULL))
 
         if self._language_pack_type is None:
-            # We are interested on any language pack type.
+            # We are interested on any language pack type except the ones
+            # already used.
+            used_lang_packs = []
+            if self.context.language_pack_base is not None:
+                used_lang_packs.append(self.context.language_pack_base.id)
+            if self.context.language_pack_delta is not None:
+                used_lang_packs.append(self.context.language_pack_delta.id)
+            if used_lang_packs:
+                query.append('id NOT IN %s' % sqlvalues(used_lang_packs))
             query.append('(%s OR %s)' % (type_delta_query, type_full_query))
         elif self._language_pack_type == LanguagePackType.DELTA:
             query.append(type_delta_query)

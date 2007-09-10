@@ -445,6 +445,11 @@ class DistroSeriesLanguagePackAdminView(LaunchpadEditFormView):
 
     @action("Change")
     def change_action(self, action, data):
+        if ('language_pack_base' in data and
+            data['language_pack_base'] != self.context.language_pack_base):
+            # language_pack_base changed, the delta one must be invalidated.
+            data['language_pack_delta'] = None
+
         self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             'Your changes have been applied.')

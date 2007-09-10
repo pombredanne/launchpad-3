@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces import (
     IArchiveSet, IBinaryPackageName, IBuildSet, IDistroSeries, IDistroSeriesSet,
     IHasBuildRecords, IHasQueueItems, ILibraryFileAliasSet,
     IPublishedPackageSet, IPublishing, ISourcePackage, ISourcePackageName,
-    ISourcePackageNameSet, NotFoundError)
+    ISourcePackageNameSet, LanguagePackType, NotFoundError)
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -57,6 +57,7 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.languagepack import LanguagePack
 from canonical.launchpad.database.distroserieslanguage import (
     DistroSeriesLanguage, DummyDistroSeriesLanguage)
 from canonical.launchpad.database.sourcepackage import SourcePackage
@@ -110,8 +111,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     nominatedarchindep = ForeignKey(
         dbName='nominatedarchindep',foreignKey='DistroArchSeries',
         notNull=False, default=None)
-    datelastlangpack = UtcDateTimeCol(
-        dbName='datelastlangpack', notNull=False, default=None)
     messagecount = IntCol(notNull=True, default=0)
     binarycount = IntCol(notNull=True, default=DEFAULT)
     sourcecount = IntCol(notNull=True, default=DEFAULT)
@@ -363,6 +362,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def bugtargetdisplayname(self):
         """See IBugTarget."""
         return self.fullseriesname
+
+    @property
+    def last_full_language_pack_exported(self):
+        return LanguagePack.selectFirstBy(
+            distroseries=self, type=LanguagePackType.FULL,
+            orderBy='-date_exported')
+
+    @property
+    def last_delta_language_pack_exported(self):
+        return LanguagePack.selectFirstBy(
+            distroseries=self, type=LanguagePackType.DELTA,
+            updates=self.language_pack_base, orderBy='-date_exported')
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""

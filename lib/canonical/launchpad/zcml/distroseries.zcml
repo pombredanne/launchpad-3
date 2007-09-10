@@ -25,8 +25,7 @@
          shedloads of data. -->
     <require
         permission="launchpad.Edit"
-        set_attributes="displayname title summary description
-                        datelastlangpack driver"
+        set_attributes="displayname title summary description driver"
         />
     <!-- NB: check with SABDFL before modifying these, there is potential to
          make a huge mess if these get changed and Soyuz has to republish

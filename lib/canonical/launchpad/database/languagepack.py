@@ -35,9 +35,13 @@ class LanguagePackSet:
                 " deltas from." % sqlvalues(
                     distroseries.distribution.name, distroseries.name))
 
+        updates = None
+        if type == LanguagePackType.DELTA:
+            updates = distroseries.language_pack_base
+
         return LanguagePack(
             file=file_alias, date_exported=UTC_NOW, distroseries=distroseries,
-            type=type, updates=distroseries.language_pack_base)
+            type=type, updates=updates)
 
 
 class LanguagePack(SQLBase):
@@ -51,7 +55,7 @@ class LanguagePack(SQLBase):
     date_exported = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     distroseries = ForeignKey(
-        foreignKey='DistroRelease', dbName='distroseries', notNull=True)
+        foreignKey='DistroSeries', dbName='distroseries', notNull=True)
 
     type = EnumCol(
         schema=LanguagePackType, notNull=True, default=LanguagePackType.FULL)

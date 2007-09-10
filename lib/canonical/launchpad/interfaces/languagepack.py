@@ -60,7 +60,7 @@ class ILanguagePack(Interface):
         title=_('When this language pack was exported.'),
         required=True)
 
-    distro_release = Choice(
+    distroseries = Choice(
         title=_('The distribution series from where it was exported.'),
         required=True, vocabulary='FilteredDistroSeries')
 

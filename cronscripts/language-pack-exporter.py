@@ -7,21 +7,15 @@ __metaclass__ = type
 
 import _pythonpath
 
-from canonical.launchpad.scripts.base import (LaunchpadCronScript,
-    LaunchpadScriptFailure)
+from canonical.launchpad.scripts.base import (
+    LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.scripts.language_pack import export_language_pack
 
 
 class RosettaLangPackExporter(LaunchpadCronScript):
     usage = '%prog [options] distribution series'
+
     def add_my_options(self):
-        self.parser.add_option(
-            '--email',
-            dest='email_addresses',
-            default=[],
-            action='append',
-            help='An email address to send a notification to.'
-            )
         self.parser.add_option(
             '--output',
             dest='output',
@@ -29,14 +23,6 @@ class RosettaLangPackExporter(LaunchpadCronScript):
             action='store',
             help='A file to send the generated tarball to, rather than the'
                  ' Libraran.'
-            )
-        self.parser.add_option(
-            '--update',
-            dest='update',
-            default=False,
-            action='store_true',
-            help='Whether the generated language pack should be an update from'
-                 ' the previous export.'
             )
         self.parser.add_option(
             '--component',
@@ -69,10 +55,8 @@ class RosettaLangPackExporter(LaunchpadCronScript):
             distribution_name=distribution_name,
             series_name=series_name,
             component=self.options.component,
-            update=self.options.update,
             force_utf8=self.options.force_utf8,
             output_file=self.options.output,
-            email_addresses=self.options.email_addresses,
             logger=self.logger)
 
         if not success:
@@ -82,6 +66,6 @@ class RosettaLangPackExporter(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = RosettaLangPackExporter('rosetta-language-pack-export')
+    script = RosettaLangPackExporter('language-pack-exporter')
     script.lock_and_run()
 

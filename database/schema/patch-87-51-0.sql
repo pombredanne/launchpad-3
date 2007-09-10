@@ -23,6 +23,7 @@ CREATE TABLE LanguagePack (
 
 CREATE INDEX languagepack__file__idx ON LanguagePack(file);
 
+--ALTER TABLE DistroRelease DROP COLUMN datelastlangpack;
 ALTER TABLE DistroRelease ADD COLUMN language_pack_base integer
     CONSTRAINT distroseries__language_pack_base__fk
     REFERENCES LanguagePack(id);
