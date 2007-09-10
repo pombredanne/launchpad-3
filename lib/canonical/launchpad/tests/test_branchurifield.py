@@ -45,8 +45,8 @@ class TestBranchURIField(LaunchpadZopelessTestCase):
         self.assertRaises(LaunchpadValidationError, self.field.validate, uri)
 
     def test_notFromSupermirror(self):
-        # Branches on the supermirror are registered automatically, so there is
-        # no need to register them.
+        # Branches on the supermirror are already registered, so there is no
+        # need to register them, again.
         self.assertInvalid(
             u'%s/~user/+junk/branch' % config.codehosting.supermirror_root)
 

@@ -220,69 +220,45 @@ div.revision p {
     </div>
   </tal:whiteboard>
 
-  <tal:landing-targets condition="view/landing_targets">
-    <h2>Landing Targets</h2>
-    <div id="landing-targets">
-    <div tal:repeat="mergeproposal view/landing_targets">
-      <tal:target replace="structure mergeproposal/target_branch/fmt:link" />
-      <tal:show-registrant condition="mergeproposal/show_registrant">
-        registered by
-        <tal:registrant replace="structure mergeproposal/registrant/fmt:link"/>
-      </tal:show-registrant>
-      <a tal:condition="mergeproposal/required:launchpad.Edit"
-         tal:attributes="href mergeproposal/fmt:url">
-        <img alt="" src="/@@/edit"/>
-      </a>
+  <div id="dependent-branches" tal:condition="context/dependent_branches">
+    <h2>Dependent branches</h2>
 
-      <div style="padding-left: 3em">
-        <div tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
-          The whiteboard.
-        </div>
-        <div tal:condition="mergeproposal/dependent_branch">
-          Dependent on
-          <tal:dependent replace="structure mergeproposal/dependent_branch/fmt:link" />
-        </div>
-        <div tal:condition="mergeproposal/date_merged" class="branchstatusMERGED">
-          Merged
-          <tal:merged replace="mergeproposal/date_merged/fmt:approximatedate">
-            2007-06-04
-          </tal:merged>
-          <tal:have-revno condition="mergeproposal/merged_revno">
-            as revision <tal:revno replace="mergeproposal/merged_revno"/>
-          </tal:have-revno>
-        </div>
-      </div>
-    </div>
-    </div>
-  </tal:landing-targets>
+    <tal:proposals repeat="mergeproposal context/dependent_branches">
+      <tal:dependent-branch
+          define="branch mergeproposal/source_branch;
+                  ">
+        <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
+      </tal:dependent-branch>
+    </tal:proposals>
+  </div>
 
-  <tal:dependent-branches condition="context/dependent_branches">
-    <h2>Dependent Branches</h2>
-    <div id="dependent-branches">
-    <div tal:repeat="mergeproposal context/dependent_branches">
-      <tal:source replace="structure mergeproposal/source_branch/fmt:link" />
-      <a tal:condition="mergeproposal/required:launchpad.Edit"
-         tal:attributes="href mergeproposal/fmt:url">
-        <img alt="" src="/@@/edit"/>
-      </a>
+  <div id="landing-targets" tal:condition="view/landing_targets">
+    <h2>This branch is proposed for merging into</h2>
 
-      <div style="padding-left: 3em">
-        <div tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
-          The whiteboard.
-        </div>
-      </div>
-    </div>
-    </div>
-  </tal:dependent-branches>
+    <tal:proposals repeat="mergeproposal view/landing_targets">
+      <tal:landing-target
+          define="branch mergeproposal/target_branch;
+                  dependent_branch mergeproposal/dependent_branch;
+                  ">
+        <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
+      </tal:landing-target>
+    </tal:proposals>
+  </div>
 
-  <tal:landing-candidates condition="view/latest_landing_candidates">
-    <h2>Landing Candidates</h2>
-    <div id="landing-candidates">
-    <div tal:repeat="mergeproposal view/latest_landing_candidates">
-      <metal:landing-candidate use-macro="context/@@+macros/landing-candidate"/>
-    </div>
-    </div>
-  </tal:landing-candidates>
+  <div id="landing-candidates" tal:condition="view/latest_landing_candidates">
+    <h2>Branches proposed to be merged into this one</h2>
+
+    <tal:proposals repeat="mergeproposal view/latest_landing_candidates">
+      <tal:landing-candidate
+          define="branch mergeproposal/source_branch;
+                  show_associations python:True;
+                  show_lifecycle python:True;
+                  ">
+        <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
+      </tal:landing-candidate>
+    </tal:proposals>
+    <a href="+landing-candidates">more&#8230;</a>
+  </div>
 
   <div id="recent-revisions">
   <h2 style="clear: both">Recent revisions</h2>
@@ -349,19 +325,12 @@ div.revision p {
   </tal:history-available>
   </div>
 
-  <tal:related-bugs condition="context/related_bugs">
+  <div id="related-bugs" tal:condition="context/related_bugs">
     <h2>Related Bugs</h2>
-    <ul style="list-style: none">
-      <span tal:repeat="bug context/related_bugs"
-            tal:omit-tag="">
-        <li tal:condition="bug/required:launchpad.View">
-          <a href="#"
-             tal:content="string:${bug/id}. ${bug/title}"
-             tal:attributes="href bug/fmt:url">Foo is Broken</a>
-        </li>
-      </span>
-    </ul>
-  </tal:related-bugs>
+    <tal:bugs tal:define="branch context">
+        <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
+    </tal:bugs>
+  </div>
 
       <div class="related">
 

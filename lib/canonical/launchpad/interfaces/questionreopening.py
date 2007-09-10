@@ -40,8 +40,8 @@ class IQuestionReopening(Interface):
                 "the question."),
         required=True, readonly=True, schema=IPerson)
 
-    dateanswered = Datetime(
-        title=_("The date it had previously been answered."), required=True,
+    date_solved = Datetime(
+        title=_("The date it had previously been solved."), required=True,
         readonly=True)
 
     priorstate = Choice(
