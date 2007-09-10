@@ -10,6 +10,7 @@ sourcecode/bzrtools
 sourcecode/cscvs
 sourcecode/gnarly
 sourcecode/hct
+sourcecode/loggerhead
 sourcecode/mailman
 sourcecode/openid
 sourcecode/psycopgda
@@ -23,6 +24,7 @@ sourcecode/sqlobject
 sourcecode/sqlos
 sourcecode/storm
 sourcecode/testresources
+sourcecode/twisted
 sourcecode/urljr
 sourcecode/zope
 sourcecode/zstorm
@@ -30,8 +32,6 @@ sourcecode/zstorm
 ./tags
 database/schema/diagrams/*.ps
 database/schema/diagrams/*.dot
-sourcecode/twisted
 thread*.request
 ./TAGS
 lib/mailman
-sourcecode/loggerhead
