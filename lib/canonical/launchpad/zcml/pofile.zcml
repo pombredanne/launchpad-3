@@ -17,6 +17,11 @@
         <allow interface="canonical.launchpad.interfaces.IPOFileTranslator" />
     </content>
 
+    <adapter
+        for="canonical.launchpad.interfaces.IPOFile"
+        provides="canonical.launchpad.interfaces.ITranslationFile"
+        factory="canonical.launchpad.database.POFileToTranslationFileAdapter" />
+
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="POFileNavigation"
