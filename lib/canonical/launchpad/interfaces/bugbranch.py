@@ -34,6 +34,7 @@ class IBugBranch(IHasDateCreated, IHasBug):
             'Additional information about the status of the bugfix '
             'in this branch.'))
 
+
 class IBugBranchSet(Interface):
 
     def getBugBranchesForBranches(branches):
@@ -43,4 +44,3 @@ class IBugBranchSet(Interface):
     def getBugBranchesForBugTasks(tasks):
         """Return a sequence of IBugBranch instances associated with
         the bugs for the given tasks."""
-
