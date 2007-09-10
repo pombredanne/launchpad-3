@@ -22,9 +22,9 @@ a list of possible duplicates.
     >>> user_browser.getControl('Summary').value = 'Evolution crashes'
     >>> user_browser.getControl('Continue').click()
 
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print message.renderContents()
-    No similar bugs were found.
+    >>> print find_main_content(user_browser.contents).renderContents()
+    <...
+    No similar bug reports were found...
 
 Entering a description and submitting the bug takes the user to the bug
 page.
@@ -83,7 +83,7 @@ This one matches, so we subscribe.
 
     >>> user_browser.getControl(
     ...     label='Evolution crashes lots').selected = True
-    >>> user_browser.getControl('Subscribe to This Bug').click()
+    >>> user_browser.getControl('Subscribe to This Bug Report').click()
 
     >>> print user_browser.url
     http://bugs.launchpad.dev/evolution/+bug/...

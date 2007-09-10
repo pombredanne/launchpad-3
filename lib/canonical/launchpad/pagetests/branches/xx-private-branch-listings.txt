@@ -63,7 +63,7 @@ branches that they are subscribed to or are the owner of.
     ...     'Authorization', 'Basic no-priv@canonical.com:test')
 
     >>> print_recently_registered_branches(no_priv_browser)
-    '...A Private Branch...<img src="/@@/locked"...'
+    '...A Private Branch...<img...src="/@@/private"...'
     '...~sabdfl/+junk/testdoc...'
     '...~name12/gnome-terminal/scanned...'
     '...~name12/gnome-terminal/mirrored...'
@@ -78,8 +78,8 @@ developer.
     ...     'Authorization', 'Basic test@canonical.com:test')
 
     >>> print_recently_registered_branches(landscape_dev_browser)
-    '...~name12/landscape/feature-x...<img src="/@@/locked"...'
-    '...Landscape trunk...<img src="/@@/locked"...'
+    '...~name12/landscape/feature-x...<img...src="/@@/private"...'
+    '...Landscape trunk...<img...src="/@@/private"...'
     '...~sabdfl/+junk/testdoc...'
     '...~name12/gnome-terminal/scanned...'
     '...~name12/gnome-terminal/mirrored...'
@@ -87,9 +87,9 @@ developer.
 Launchpad administrators are able to see all private branches.
 
     >>> print_recently_registered_branches(admin_browser)
-    '...A Private Branch...<img src="/@@/locked"...'
-    '...~name12/landscape/feature-x...<img src="/@@/locked"...'
-    '...Landscape trunk...<img src="/@@/locked"...'
+    '...A Private Branch...<img...src="/@@/private"...'
+    '...~name12/landscape/feature-x...<img...src="/@@/private"...'
+    '...Landscape trunk...<img...src="/@@/private"...'
     '...~sabdfl/+junk/testdoc...'
     '...~name12/gnome-terminal/scanned...'
 
@@ -101,7 +101,7 @@ branches.
 
     >>> def print_landscape_overview_branches(browser):
     ...     browser.open('http://launchpad.dev/landscape')
-    ...     branches = find_portlet(browser.contents, 'Latest code')
+    ...     branches = find_portlet(browser.contents, 'Latest branches')
     ...     if branches is None:
     ...         print 'Latest code portlet not shown'
     ...     else:
@@ -112,16 +112,16 @@ branches.
     Latest code portlet not shown
 
     >>> print_landscape_overview_branches(no_priv_browser)
-    '.../landscape/testing-branch...<img src="/@@/locked"...'
+    '.../landscape/testing-branch...<img src="/@@/private"...'
 
     >>> print_landscape_overview_branches(landscape_dev_browser)
-    '.../landscape/feature-x...<img src="/@@/locked"...'
-    '.../landscape/trunk...<img src="/@@/locked"...'
+    '.../landscape/feature-x...<img...src="/@@/private"...'
+    '.../landscape/trunk...<img...src="/@@/private"...'
 
     >>> print_landscape_overview_branches(admin_browser)
-    '.../landscape/testing-branch...<img src="/@@/locked"...'
-    '.../landscape/feature-x...<img src="/@@/locked"...'
-    '.../landscape/trunk...<img src="/@@/locked"...'
+    '.../landscape/testing-branch...<img...src="/@@/private"...'
+    '.../landscape/feature-x...<img...src="/@@/private"...'
+    '.../landscape/trunk...<img...src="/@@/private"...'
 
 
 == Landscape code listing page ==

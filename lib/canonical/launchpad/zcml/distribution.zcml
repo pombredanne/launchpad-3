@@ -8,6 +8,7 @@
   <content class="canonical.launchpad.database.Distribution">
     <allow interface="canonical.launchpad.interfaces.IDistribution"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <require
       permission="launchpad.Edit"
       set_attributes="displayname title summary description
@@ -405,6 +406,16 @@
     fields="translationgroup translationpermission"
     permission="launchpad.Edit"
     template="../templates/distribution-translators.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
   <browser:addform

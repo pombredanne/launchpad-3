@@ -110,7 +110,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.lp.dbschema import BugTaskStatus, SpecificationFilter
+from canonical.lp.dbschema import SpecificationFilter
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
@@ -124,11 +124,11 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    BugTaskSearchParams, IBranchSet, ITeamMembership,
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
-    LoginTokenType, PersonCreationRationale, QuestionParticipation,
-    SSHKeyType, TeamMembershipStatus, TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy)
+    BugTaskStatus, BugTaskSearchParams, IBranchSet, ITeamMembership,
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, LoginTokenType, SSHKeyType,
+    EmailAddressStatus, TeamMembershipStatus, TeamSubscriptionPolicy,
+    PersonCreationRationale, TeamMembershipRenewalPolicy,
+    QuestionParticipation)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -613,7 +613,7 @@ class PersonBugsMenu(ApplicationMenu):
         summary = ('Lists all bug reports which %s reported, is assigned to, '
                    'or is subscribed to.' % self.context.displayname)
         return Link('', text, summary=summary)
-        
+
     def assignedbugs(self):
         text = 'List assigned bugs'
         summary = 'Lists bugs assigned to %s.' % self.context.displayname
@@ -704,6 +704,17 @@ class PersonSpecsMenu(ApplicationMenu):
         text = 'Roadmap'
         summary = 'Show recommended sequence of feature implementation'
         return Link('+roadmap', text, summary, icon='info')
+
+
+class PersonTranslationsMenu(ApplicationMenu):
+
+    usedfor = IPerson
+    facet = 'translations'
+    links = ['imports']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
 
 
 class TeamSpecsMenu(PersonSpecsMenu):
@@ -969,7 +980,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+editlanguages'
         text = 'Set preferred languages'
         return Link(target, text, icon='edit')
-        
+
     def joinleave(self):
         team = self.context
         enabled = True
@@ -2759,7 +2770,7 @@ class RequestPeopleMergeView(AddView):
                                   LoginTokenType.ACCOUNTMERGE)
 
         # XXX: SteveAlexander 2006-03-07: An experiment to see if this
-        #      improves problems with merge people tests.  
+        #      improves problems with merge people tests.
         import canonical.database.sqlbase
         canonical.database.sqlbase.flush_database_updates()
         token.sendMergeRequestEmail()

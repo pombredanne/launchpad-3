@@ -148,10 +148,10 @@ Distro sourcepackages know how to compare to each other:
 You can search for bugs in an IDistroSourcePackage using the
 .searchTasks method:
 
-    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
-    >>> from canonical.lp import dbschema
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskSearchParams, BugTaskStatus)
     >>> params = BugTaskSearchParams(
-    ...     status=dbschema.BugTaskStatus.NEW, user=None)
+    ...     status=BugTaskStatus.NEW, user=None)
     >>> tasks = ubuntu_firefox.searchTasks(params)
     >>> tasks.count()
     1
@@ -282,9 +282,6 @@ Checking handy Sourcepackage properties:
 XXX cprov 20060125: it's still very primitive test but it's better
 than nothing ... bug # 29659
 
-    >>> sp.manifest.uuid
-    u'e0451064-b405-4f52-b387-ebfc1a7ee298'
-
     >>> len(sp.releases)
     2
 
@@ -326,3 +323,14 @@ Lastly, note that sourcepackages know how to compare to each other:
     >>> len(list(hoary_firefox_one.distinctreleases))
     1
 
+== Interface implementation ==
+
+SourcePackageName implements IHasTranslationImports interface:
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     IHasTranslationImports)
+    >>> IHasTranslationImports.providedBy(warty_firefox)
+    True
+    >>> verifyObject(IHasTranslationImports, warty_firefox)
+    True

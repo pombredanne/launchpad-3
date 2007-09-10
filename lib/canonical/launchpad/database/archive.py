@@ -66,7 +66,7 @@ class Archive(SQLBase):
 
         if self.purpose == ArchivePurpose.PPA:
             return urlappend(
-                config.personalpackagearchive.base_url, 
+                config.personalpackagearchive.base_url,
                 self.owner.name + '/' + self.distribution.name)
 
         try:
@@ -250,6 +250,22 @@ class Archive(SQLBase):
         cruft = (self.number_of_sources + self.number_of_binaries) * 1024
         return size + cruft
 
+    def allowUpdatesToReleasePocket(self):
+        """See `IArchive`."""
+        purposeToPermissionMap = {
+            ArchivePurpose.COMMERCIAL : True,
+            ArchivePurpose.PPA : True,
+            ArchivePurpose.PRIMARY : False,
+        }
+
+        try:
+            permission = purposeToPermissionMap[self.purpose]
+        except KeyError:
+            # Future proofing for when new archive types are added.
+            permission = False
+
+        return permission
+
 
 class ArchiveSet:
     implements(IArchiveSet)
@@ -275,13 +291,13 @@ class ArchiveSet:
         return Archive(owner=owner, distribution=distribution,
                        description=description, purpose=purpose)
 
-    def ensure(self, owner, distribution, purpose):
+    def ensure(self, owner, distribution, purpose, description=None):
         """See `IArchiveSet`."""
         if owner is not None:
             archive = owner.archive
             if archive is None:
                 archive = self.new(distribution=distribution, purpose=purpose,
-                                   owner=owner)
+                                   owner=owner, description=description)
         else:
             archive = self.getByDistroPurpose(distribution, purpose)
             if archive is None:

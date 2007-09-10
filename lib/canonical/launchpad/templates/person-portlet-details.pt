@@ -19,7 +19,7 @@
               <b>Preferred address:</b>
 
               <span style="white-space: nowrap">&nbsp;&nbsp;&nbsp;
-                <img src="/@@/locked" alt="" /> 
+                <img src="/@@/private" alt="" /> 
                 <span tal:replace="context/preferredemail/email">foo@bar.com</span>
               </span>
               <br />

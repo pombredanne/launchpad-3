@@ -13,8 +13,8 @@ possible for its bugs to have an Unknown importance.
     >>> user_browser.open(
     ...     'http://launchpad.dev/debian/+source/evolution/+bug/7/+editstatus')
     >>> main = find_main_content(user_browser.contents)
-    >>> lock_icon = main.find('img', {'src': '/@@/locked'})
-    >>> print extract_text(lock_icon.parent)
+    >>> read_only_icon = main.find('img', {'src': '/@@/read-only'})
+    >>> print extract_text(read_only_icon.parent)
     Unknown
 
 If the project switches to use Launchpad as its bug tracker, the importance
@@ -30,6 +30,6 @@ will still have an Unknown value.
     >>> user_browser.open(
     ...     'http://launchpad.dev/debian/+source/evolution/+bug/7/+editstatus')
     >>> main = find_main_content(user_browser.contents)
-    >>> lock_icon = main.find('img', {'src': '/@@/locked'})
-    >>> print extract_text(lock_icon.parent)
+    >>> read_only_icon = main.find('img', {'src': '/@@/read-only'})
+    >>> print extract_text(read_only_icon.parent)
     Unknown

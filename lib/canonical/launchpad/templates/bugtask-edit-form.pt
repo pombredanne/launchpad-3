@@ -34,6 +34,12 @@
       <td><a tal:attributes="href context/target/fmt:url"
              tal:content="context/target/bugtargetdisplayname">Ubuntu</a></td>
     </tr>
+    <tr tal:condition="context/target/currentrelease|nothing">
+      <th>Latest release:</th>
+      <td tal:define="cr context/target/currentrelease">
+        <a tal:content="cr/version" tal:attributes="href cr/fmt:url">3.2.1-3</a>
+      </td>
+    </tr>
     <tr>
       <th>Filed here by:</th>
       <td><a tal:replace="structure context/owner/fmt:link">Foo Bar</a></td>
@@ -160,13 +166,21 @@
       </tr>
       <tr>
         <td tal:content="structure view/widgets/status" />
-        <td title="Editable only by the maintainer or bug contact of the project">
-          <img tal:condition="not:view/userCanEditImportance" src="/@@/locked" />
+        <td title="Changeable only by a project maintainer or bug contact">
+          <img
+            tal:condition="not:view/userCanEditImportance"
+            alt=""
+            src="/@@/read-only"
+          />
           <tal:widget content="structure view/widgets/importance" />
         </td>
         <td tal:condition="view/widgets/milestone"
-            title="Editable only by the maintainer or bug contact of the project">
-          <img tal:condition="not:view/userCanEditMilestone" src="/@@/locked" />
+            title="Changeable only by a project maintainer or bug contact">
+          <img
+            tal:condition="not:view/userCanEditMilestone"
+            alt=""
+            src="/@@/read-only"
+          />
           <tal:widget content="structure view/widgets/milestone" />
         </td>
       </tr>

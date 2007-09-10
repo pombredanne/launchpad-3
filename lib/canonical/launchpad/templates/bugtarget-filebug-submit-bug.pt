@@ -7,12 +7,24 @@
 
 <body>
 
-<metal:heading fill-slot="pageheading">
-  <h1 tal:condition="not: view/similar_bugs">Report a new bug</h1>
-  <h1 tal:condition="view/similar_bugs">Is the bug you're reporting one of these?</h1>
-</metal:heading>
-
 <div metal:fill-slot="main">
+
+      <h1>
+        <img
+          tal:condition="view/isPrivate"
+          alt="(Private)"
+          id="privatebadge"
+          src="/@@/private-large"
+          style="float: right;"
+          title="This bug report will be private, though you can disclose it later."
+        />
+        <tal:heading condition="not:view/similar_bugs">
+          Report a bug
+        </tal:heading>
+        <tal:heading condition="view/similar_bugs">
+          Is the bug you&rsquo;re reporting one of these?
+        </tal:heading>
+      </h1>
 
   <metal:not_uses_malone
       use-macro="context/@@+filebug-macros/not_uses_malone" />
@@ -22,9 +34,8 @@
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <div metal:fill-slot="extra_info">
-      <p class="informational message"
-         tal:condition="not: view/similar_bugs">
-        No similar bugs were found.
+      <p tal:condition="not: view/similar_bugs">
+        No similar bug reports were found.
       </p>
     </div>
 
@@ -44,7 +55,7 @@
 
         <tal:similar-bugs condition="view/contextUsesMalone">
 
-          <ul id="similar-bugs" style="list-style: none; margin-left: 0">
+          <ul id="similar-bugs" style="list-style: none; margin-left: 0; margin-bottom: 0">
             <li tal:repeat="bug view/similar_bugs"
                 tal:attributes="title bug/description/fmt:shorten/500"
                 title="bug description goes here" class="similar-bug">
@@ -102,7 +113,7 @@
           <p tal:define="error_message view/widget_errors/bug_already_reported_as|nothing"
              tal:condition="error_message" tal:content="error_message" class="error message" />
 
-          <div class="actions" style="margin-top: 0.5em; margin-bottom: 1em">
+          <div class="actions" style="margin-top: 0.5em; margin-bottom: 2em; margin-left: 2em">
             <input tal:replace="structure view/this_is_my_bug_action/render" />
           </div>
 
@@ -166,7 +177,7 @@
             hideElement('bug_reporting_form');
           }
 
-          // Disable "Subscribe to This Bug" button to avoid accidental use.
+          // Disable "Subscribe to This Bug Report" to avoid accidental use.
           $('field.actions.this_is_my_bug').disabled = no_radiobtn.checked;
         }
 

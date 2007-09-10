@@ -10,7 +10,7 @@ object via a BinaryPackageFile or SourcePackageReleaseFile.
 SourcePackageReleaseFile or BinaryPackageFile are available via the
 'files' attribute on its parent.
 
- >>> from zope.interface.verify import verifyObject
+ >>> from canonical.launchpad.webapp.testing import verifyObject
  >>> from zope.component import getUtility
 
  >>> from canonical.launchpad.interfaces import (

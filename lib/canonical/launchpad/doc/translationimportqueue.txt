@@ -914,7 +914,7 @@ no sense at all.
     0
 
 
-== getPillarObjectsWithApprovedImports ==
+== getPillarObjectsWithImports ==
 
 This method returns all objects which have entries in the translation
 import queue waiting to be imported.  Object can be a Product or
@@ -957,8 +957,8 @@ Next, lets add one item to a ProductSeries as well:
 The list of objects with approved entries should still be empty, since
 we haven't approved any.
 
-    >>> importqueues = (
-    ...     translationimportqueue.getPillarObjectsWithApprovedImports() )
+    >>> importqueues = translationimportqueue.getPillarObjectsWithImports(
+    ...     RosettaImportStatus.APPROVED)
     >>> len(importqueues)
     0
     >>> print entry3.status.name
@@ -976,8 +976,8 @@ Now we approve these entries (we need to be Rosetta administrator to do this).
 If we re-get the list of objects which have approved entries, we'll
 get these recently approved ones.
 
-    >>> importqueues = (
-    ...     translationimportqueue.getPillarObjectsWithApprovedImports() )
+    >>> importqueues = translationimportqueue.getPillarObjectsWithImports(
+    ...     RosettaImportStatus.APPROVED)
     >>> len(importqueues)
     2
 

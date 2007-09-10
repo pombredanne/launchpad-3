@@ -14,7 +14,7 @@ interesting one):
 
 Verify if the object follows its interface contracts:
 
- >>> from zope.interface.verify import verifyObject
+ >>> from canonical.launchpad.webapp.testing import verifyObject
  >>> from canonical.launchpad.interfaces import (
  ...     ISourcePackageRelease, IDistroSeries,
  ...     ISourcePackagePublishingHistory,
@@ -108,7 +108,7 @@ for a particular publication:
  Format: 1.0
  Directory: pool/main/a/alsa-utils
  Files:
-  whatever                         3 alsa-utils_1.0.8-1ubuntu1.dsc
+  01234567890123456789012345678925 3 alsa-utils_1.0.8-1ubuntu1.dsc
 
 
 Empty fields like are suppressed, like 'Build-Depends' or
@@ -174,7 +174,7 @@ Generating respective "Packages" stanzas based on IArchivePublish:
  Conflicts: firefox, mozilla-web-browser
  Filename: pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb
  Size: 3
- MD5sum: 01234567890123456789012345678901
+ MD5sum: 01234567890123456789012345678926
  Description: Mozilla Firefox Web Browser
   Mozilla Firefox Web Browser is .....
 

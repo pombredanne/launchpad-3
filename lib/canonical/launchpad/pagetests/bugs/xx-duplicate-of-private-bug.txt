@@ -9,7 +9,8 @@ First we mark a bug as private:
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/'
     ...         'debian/+source/mozilla-firefox/+bug/8/+secrecy')
-    >>> admin_browser.getControl('Keep bug confidential').selected = True
+    >>> admin_browser.getControl(
+    ...     'This bug report should be private').selected = True
     >>> admin_browser.getControl('Change').click()
     >>> print admin_browser.url
     http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/8
@@ -19,7 +20,7 @@ First we mark a bug as private:
 
     >>> print find_tag_by_id(
     ...     admin_browser.contents, 'bug-properties').img['title']
-    Private
+    This bug report is private
 
 Next we mark another bug as a duplicate of the private bug:
 

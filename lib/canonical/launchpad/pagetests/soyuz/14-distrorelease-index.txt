@@ -25,7 +25,8 @@ Each entry contains:
  * age, as approximateduration representation of the time passed since
    the upload was done.
 
-  >>> anon_browser.open("http://launchpad.dev/ubuntu/warty/+latest-uploads")
+  >>> anon_browser.open(
+  ...     "http://launchpad.dev/ubuntu/warty/+portlet-latestuploads")
   >>> latest_uploads = str(find_tag_by_id(anon_browser.contents,
   ...                      "latest-uploads"))
   >>> 'mozilla-firefox 0.9' in latest_uploads
@@ -45,6 +46,7 @@ Empty results are also presented properly (even if they are quite rare
 in production environment):
 
   >>> anon_browser.open(
-  ...     "http://launchpad.dev/ubuntutest/breezy-autotest/+latest-uploads")
+  ...     "http://launchpad.dev/ubuntutest/breezy-autotest/"
+  ...     "+portlet-latestuploads")
   >>> "<ul" in anon_browser.contents
   False

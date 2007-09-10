@@ -6,7 +6,11 @@ __all__ = [
     'BranchSet',
     ]
 
+from datetime import datetime, timedelta
 import re
+import os
+
+import pytz
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -14,7 +18,7 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, OR
+from sqlobject.sqlbuilder import AND
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -36,6 +40,8 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
+from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 
 
 class Branch(SQLBase):
@@ -77,6 +83,9 @@ class Branch(SQLBase):
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
     revision_count = IntCol(default=DEFAULT, notNull=True)
+
+    def __repr__(self):
+        return '<Branch %r (%d)>' % (self.unique_name, self.id)
 
     @property
     def revision_history(self):
@@ -176,6 +185,18 @@ class Branch(SQLBase):
         return [bug_branch.bug for bug_branch in self.bug_branches]
 
     @property
+    def related_bug_tasks(self):
+        """See `IBranch`."""
+        tasks = []
+        for bug in self.related_bugs:
+            task = bug.getBugTask(self.product)
+            if task is None:
+                # Just choose the first task for the bug.
+                task = bug.bugtasks[0]
+            tasks.append(task)
+        return tasks
+
+    @property
     def warehouse_url(self):
         """See `IBranch`."""
         root = config.supermirror.warehouse_root_url
@@ -234,11 +255,6 @@ class Branch(SQLBase):
 
     def canBeDeleted(self):
         """See `IBranch`."""
-        # XXX: TimPenhey 2007-07-30
-        # ManifestEntries are deliberately being ignored here.
-        # They are part of HCT which is in active rot, and should
-        # be removed.
-
         # CodeImportSet imported here to avoid circular imports.
         from canonical.launchpad.database.codeimport import CodeImportSet
         code_import = CodeImportSet().getByBranch(self)
@@ -352,31 +368,67 @@ class Branch(SQLBase):
                 history.append(revision_id)
         return ancestry, history, branch_revision_map
 
+    def getPullURL(self):
+        """See `IBranch`."""
+        if self.branch_type == BranchType.MIRRORED:
+            # This is a pull branch, hosted externally.
+            return self.url
+        elif self.branch_type == BranchType.IMPORTED:
+            # This is an import branch, imported into bzr from
+            # another RCS system such as CVS.
+            prefix = config.launchpad.bzr_imports_root_url
+            return urlappend(prefix, '%08x' % self.id)
+        elif self.branch_type == BranchType.HOSTED:
+            # This is a push branch, hosted on the supermirror
+            # (pushed there by users via SFTP).
+            prefix = config.codehosting.branches_root
+            return os.path.join(prefix, split_branch_id(self.id))
+        else:
+            raise AssertionError("No pull URL for %r" % (self,))
+
     def requestMirror(self):
         """See `IBranch`."""
+        if self.branch_type == BranchType.REMOTE:
+            raise BranchTypeError
         self.mirror_request_time = UTC_NOW
         self.syncUpdate()
         return self.mirror_request_time
 
     def startMirroring(self):
         """See `IBranch`."""
+        if self.branch_type == BranchType.REMOTE:
+            raise BranchTypeError
         self.last_mirror_attempt = UTC_NOW
         self.syncUpdate()
 
     def mirrorComplete(self, last_revision_id):
         """See `IBranch`."""
+        if self.branch_type == BranchType.REMOTE:
+            raise BranchTypeError
+        assert self.last_mirror_attempt != None, (
+            "startMirroring must be called before mirrorComplete.")
         self.last_mirrored = self.last_mirror_attempt
         self.mirror_failures = 0
         self.mirror_status_message = None
-        self.mirror_request_time = None
+        if (self.mirror_request_time != None
+            and self.last_mirror_attempt > self.mirror_request_time):
+            # No mirror was requested since we started mirroring.
+            if self.branch_type == BranchType.MIRRORED:
+                self.mirror_request_time = (
+                    datetime.now(pytz.timezone('UTC')) + timedelta(hours=6))
+            else:
+                self.mirror_request_time = None
         self.last_mirrored_id = last_revision_id
         self.syncUpdate()
 
     def mirrorFailed(self, reason):
         """See `IBranch`."""
+        if self.branch_type == BranchType.REMOTE:
+            raise BranchTypeError
         self.mirror_failures += 1
         self.mirror_status_message = reason
-        self.mirror_request_time = None
+        self.mirror_request_time = (
+            datetime.now(pytz.timezone('UTC')) + timedelta(hours=6))
         self.syncUpdate()
 
 
@@ -531,6 +583,14 @@ class BranchSet:
             home_page = None
         if date_created is None:
             date_created = UTC_NOW
+
+        if product is None and owner.isTeam():
+            # We disallow team-owned junk branches -- with the exception of
+            # ~vcs-imports, to allow the eventual creation of code imports not
+            # yet associated with a product.
+            assert owner == getUtility(ILaunchpadCelebrities).vcs_imports, (
+                "Cannot create team-owned junk branches.")
+
         # Check the policy for the person creating the branch.
         private, implicit_subscription = self._checkVisibilityPolicy(
             creator, owner, product)
@@ -600,7 +660,7 @@ class BranchSet:
             return branch
 
     def getBranchesToScan(self):
-        """See IBranchSet.getBranchesToScan()"""
+        """See `IBranchSet`"""
         # Return branches where the scanned and mirrored IDs don't match.
         # Branches with a NULL last_mirrored_id have never been
         # successfully mirrored so there is no point scanning them.
@@ -608,10 +668,11 @@ class BranchSet:
         # so are included.
 
         return Branch.select('''
+            Branch.branch_type <> %s AND
             Branch.last_mirrored_id IS NOT NULL AND
             (Branch.last_scanned_id IS NULL OR
              Branch.last_scanned_id <> Branch.last_mirrored_id)
-            ''')
+            ''' % quote(BranchType.REMOTE))
 
     def getProductDevelopmentBranches(self, products):
         """See `IBranchSet`."""
@@ -651,41 +712,61 @@ class BranchSet:
                                'last_commit' : last_commit}
         return result
 
-    def getRecentlyChangedBranches(self, branch_count, visible_by_user=None):
+    def getRecentlyChangedBranches(
+        self, branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
         """See `IBranchSet`."""
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
-            Branch.last_scanned IS NOT NULL
-            AND Branch.owner <> %d
+            Branch.branch_type <> %s AND
+            Branch.last_scanned IS NOT NULL %s
             '''
-            % vcs_imports.id)
-        return Branch.select(
+            % (quote(BranchType.IMPORTED), lifecycle_clause))
+        results = Branch.select(
             self._generateBranchClause(query, visible_by_user),
-            limit=branch_count,
             orderBy=['-last_scanned', '-id'],
             prejoins=['author', 'product'])
+        if branch_count is not None:
+            results = results.limit(branch_count)
+        return results
 
-    def getRecentlyImportedBranches(self, branch_count, visible_by_user=None):
+    def getRecentlyImportedBranches(
+        self, branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
         """See `IBranchSet`."""
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
-            Branch.last_scanned IS NOT NULL
-            AND Branch.owner = %d
+            Branch.branch_type = %s AND
+            Branch.last_scanned IS NOT NULL %s
             '''
-            % vcs_imports.id)
-        return Branch.select(
+            % (quote(BranchType.IMPORTED), lifecycle_clause))
+        results = Branch.select(
             self._generateBranchClause(query, visible_by_user),
-            limit=branch_count,
             orderBy=['-last_scanned', '-id'],
             prejoins=['author', 'product'])
+        if branch_count is not None:
+            results = results.limit(branch_count)
+        return results
 
-    def getRecentlyRegisteredBranches(self, branch_count, visible_by_user=None):
+    def getRecentlyRegisteredBranches(
+        self, branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
         """See `IBranchSet`."""
-        return Branch.select(
-            self._generateBranchClause('', visible_by_user),
-            limit=branch_count,
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+        # Since the lifecycle_clause may or may not contain anything,
+        # we need something that is valid if the lifecycle clause starts
+        # with 'AND', so we choose true.
+        query = 'true %s' % lifecycle_clause
+        results = Branch.select(
+            self._generateBranchClause(query, visible_by_user),
             orderBy=['-date_created', '-id'],
             prejoins=['author', 'product'])
+        if branch_count is not None:
+            results = results.limit(branch_count)
+        return results
 
     def getLastCommitForBranches(self, branches):
         """Return a map of branch id to last commit time."""
@@ -846,12 +927,12 @@ class BranchSet:
     def getHostedBranchesForPerson(self, person):
         """See `IBranchSet`."""
         branches = Branch.select("""
-            Branch.url IS NULL
+            Branch.branch_type = %s
             AND Branch.owner IN (
             SELECT TeamParticipation.team
             FROM TeamParticipation
             WHERE TeamParticipation.person = %s)
-            """ % sqlvalues(person))
+            """ % sqlvalues(BranchType.HOSTED, person))
         return branches
 
     def getLatestBranchesForProduct(self, product, quantity,
@@ -866,62 +947,9 @@ class BranchSet:
             limit=quantity,
             orderBy=['-date_created', '-id'])
 
-    def getHostedPullQueue(self):
+    def getPullQueue(self, branch_type):
         """See `IBranchSet`."""
-
-        # XXX: JonathanLange 2007-07-27: Hosted branches (see Andrew's comment
-        # dated 2006-06-15) are mirrored if their mirror_request_time is not
-        # NULL or if they haven't been mirrored in the last 6 hours. The latter
-        # behaviour is a fail-safe and should probably be removed once we trust
-        # the mirror_request_time behavior. See
-        # test_mirror_stale_hosted_branches.
-
-        # The mirroring interval is 6 hours. we think this is a safe balance
-        # between frequency of mirroring and not hammering servers with
-        # requests to check whether mirror branches are up to date.
-
         return Branch.select(
-            AND(Branch.q.branch_type == BranchType.HOSTED,
-                OR(Branch.q.last_mirror_attempt == None,
-                   UTC_NOW - Branch.q.last_mirror_attempt > '6 hours',
-                   Branch.q.mirror_request_time != None)),
-            prejoins=['owner', 'product'])
-
-    def getMirroredPullQueue(self):
-        """See `IBranchSet`."""
-
-        # The mirroring interval is 6 hours. we think this is a safe balance
-        # between frequency of mirroring and not hammering servers with
-        # requests to check whether mirror branches are up to date.
-
-        return Branch.select(
-            AND(Branch.q.branch_type == BranchType.MIRRORED,
-                OR(Branch.q.last_mirror_attempt == None,
-                   UTC_NOW - Branch.q.last_mirror_attempt > '6 hours')),
-            prejoins=['owner', 'product'])
-
-    def getImportedPullQueue(self):
-        """See `IBranchSet`."""
-        # XXX: JonathanLange 2007-07-19: Circular import.
-        from canonical.launchpad.database.productseries import ProductSeries
-        return Branch.select(
-            AND(Branch.q.branch_type == BranchType.IMPORTED,
-                ProductSeries.q.import_branchID == Branch.q.id,
-                OR(AND(ProductSeries.q.datelastsynced != None,
-                       Branch.q.last_mirror_attempt == None),
-                   ProductSeries.q.datelastsynced > Branch.q.last_mirror_attempt,
-                   AND(ProductSeries.q.datelastsynced == None,
-                       UTC_NOW - Branch.q.last_mirror_attempt > '1 day'))),
-            clauseTables=['ProductSeries'],
-            prejoins=['owner', 'product'])
-
-    def getPullQueue(self):
-        """See `IBranchSet`."""
-        # The following types of branches are included in the queue:
-        # - any branches which have not yet been mirrored
-        # - any branches that were last mirrored over 6 hours ago
-        # - any hosted branches which have requested that they be mirrored
-        # - any import branches which have been synced since their last mirror
-        return self.getHostedPullQueue().union(
-            self.getMirroredPullQueue()).union(
-            self.getImportedPullQueue()).orderBy('last_mirror_attempt')
+            AND(Branch.q.branch_type == branch_type,
+                Branch.q.mirror_request_time < UTC_NOW),
+            prejoins=['owner', 'product'], orderBy='mirror_request_time')

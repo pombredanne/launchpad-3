@@ -120,7 +120,7 @@
 <!-- Primary Index -->
 <p><br />
 <br />
-Dumped on 2007-07-19</p>
+Dumped on 2007-08-24</p>
 <h1><a name="index" id="index">Index of database -
 launchpad_dev</a></h1>
 <ul>
@@ -128,9 +128,6 @@ launchpad_dev</a></h1>
 <li style="list-style: none">
 <ul>
 <li><a href="#public.table.answercontact">answercontact</a></li>
-<li><a href="#public.table.archconfig">archconfig</a></li>
-<li><a href=
-"#public.table.archconfigentry">archconfigentry</a></li>
 <li><a href="#public.table.archive">archive</a></li>
 <li><a href=
 "#public.view.binaryandsourcepackagenameview">binaryandsourcepackagenameview</a></li>
@@ -151,9 +148,8 @@ launchpad_dev</a></h1>
 <li><a href=
 "#public.table.bountysubscription">bountysubscription</a></li>
 <li><a href="#public.table.branch">branch</a></li>
-<li><a href="#public.table.branchmessage">branchmessage</a></li>
 <li><a href=
-"#public.table.branchrelationship">branchrelationship</a></li>
+"#public.table.branchmergeproposal">branchmergeproposal</a></li>
 <li><a href="#public.table.branchrevision">branchrevision</a></li>
 <li><a href=
 "#public.table.branchsubscription">branchsubscription</a></li>
@@ -272,6 +268,7 @@ launchpad_dev</a></h1>
 "#public.table.openidassociations">openidassociations</a></li>
 <li><a href=
 "#public.table.openidauthorization">openidauthorization</a></li>
+<li><a href="#public.table.openidrpconfig">openidrpconfig</a></li>
 <li><a href=
 "#public.table.packagebugcontact">packagebugcontact</a></li>
 <li><a href=
@@ -313,8 +310,6 @@ launchpad_dev</a></h1>
 "#public.table.processorfamily">processorfamily</a></li>
 <li><a href="#public.table.product">product</a></li>
 <li><a href="#public.table.productbounty">productbounty</a></li>
-<li><a href=
-"#public.table.productbranchrelationship">productbranchrelationship</a></li>
 <li><a href=
 "#public.table.productcvsmodule">productcvsmodule</a></li>
 <li><a href="#public.table.productrelease">productrelease</a></li>
@@ -1029,312 +1024,6 @@ The date the answer contact was submitted.</td>
 </td>
 <td></td>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.archconfig" id=
-"public.table.archconfig">archconfig</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.archconfig Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>name</td>
-<td>text</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>title</td>
-<td>text</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>description</td>
-<td>text</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td><a href=
-"#public.table.productrelease">public.productrelease.id</a></td>
-<td>productrelease</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>owner</td>
-<td>integer</td>
-<td></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<p>Tables referencing this one via Foreign Key Constraints:</p>
-<ul>
-<li><a href=
-"#public.table.archconfigentry">public.archconfigentry</a></li>
-</ul>
-<!-- View Definition -->
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.archconfig</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr0">
-<td>read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.archconfigentry" id=
-"public.table.archconfigentry">archconfigentry</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.archconfigentry Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td><a href=
-"#public.table.archconfig">public.archconfig.id</a></td>
-<td>archconfig</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>path</td>
-<td>text</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.branch">public.branch.id</a></td>
-<td>branch</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>changeset</td>
-<td>integer</td>
-<td></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.archconfigentry</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr0">
-<td>read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
 <td></td>
 <td></td>
 <td></td>
@@ -3253,24 +2942,6 @@ represented as a number of kilobytes of storage.</td>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>copyright</td>
-<td>text</td>
-<td><br />
-<br />
-The copyright associated with this binarypackage. Often in the case
-of debian packages this is found in
-/usr/share/doc/&lt;binarypackagename&gt;/copyright</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>licence</td>
-<td>text</td>
-<td><br />
-<br />
-The licence that this binarypackage is under.</td>
-</tr>
-<tr class="tr1">
-<td></td>
 <td>architecturespecific</td>
 <td>boolean</td>
 <td><i>NOT NULL</i><br />
@@ -4212,8 +3883,9 @@ Branches are currently one of HOSTED (1), MIRRORED (2), or IMPORTED
 </tr>
 <tr class="tr0">
 <td>branch_type_url_consistent</td>
-<td>CHECK ((((branch_type = 2) AND (url IS NOT NULL)) OR (url IS
-NULL)))</td>
+<td>CHECK (((((branch_type = 2) AND (url IS NOT NULL)) OR
+((branch_type = ANY (ARRAY[1, 3])) AND (url IS NULL))) OR
+(branch_type = 4)))</td>
 </tr>
 <tr class="tr1">
 <td>branch_url_no_trailing_slash</td>
@@ -4240,15 +3912,7 @@ NULL)))</td>
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
 <li><a href=
-"#public.table.archconfigentry">public.archconfigentry</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.branchmessage">public.branchmessage</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.branchrelationship">public.branchrelationship</a></li>
+"#public.table.branchmergeproposal">public.branchmergeproposal</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -4267,10 +3931,6 @@ NULL)))</td>
 <ul>
 <li><a href=
 "#public.table.manifestentry">public.manifestentry</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.productbranchrelationship">public.productbranchrelationship</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -4372,7 +4032,9 @@ NULL)))</td>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -4472,10 +4134,12 @@ NULL)))</td>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.branchmessage" id=
-"public.table.branchmessage">branchmessage</a></h2>
+"public.table.branchmergeproposal" id=
+"public.table.branchmergeproposal">branchmergeproposal</a></h2>
+<p>Branch merge proposals record the intent of landing (or merging)
+one branch on another.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.branchmessage Structure</caption>
+<caption>public.branchmergeproposal Structure</caption>
 <tr>
 <th>F-Key</th>
 <th>Name</th>
@@ -4489,25 +4153,109 @@ public</a></p>
 <td><i>PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.branch">public.branch.id</a></td>
-<td>branch</td>
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>registrant</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+The person that created the merge proposal.</td>
 </tr>
 <tr class="tr0">
-<td><a href="#public.table.message">public.message.id</a></td>
-<td>message</td>
+<td><a href="#public.table.branch">public.branch.id</a></td>
+<td>source_branch</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The branch where the work is being written. This branch contains
+the changes that the registrant wants to land.</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.branch">public.branch.id</a></td>
+<td>target_branch</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The branch where the user wants the changes from the source branch
+to be merged into.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.branch">public.branch.id</a></td>
+<td>dependent_branch</td>
+<td>integer</td>
+<td><br />
+<br />
+If the source branch was not branched off the target branch, then
+this is considered the dependent_branch.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>whiteboard</td>
+<td>text</td>
+<td><br />
+<br />
+Used to write other information about the branch, like test
+URLs.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>date_merged</td>
+<td>timestamp without time zone</td>
+<td><i>UNIQUE#1</i><br />
+<br />
+This is the date that merge occurred.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>merged_revno</td>
+<td>integer</td>
+<td><br />
+<br />
+This is the revision number of the revision on the target branch
+that includes the merge from the source branch.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>merge_reporter</td>
+<td>integer</td>
+<td><br />
+<br />
+This is the user that marked the proposal as merged.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>date_created</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i><br />
+<br />
+When the registrant created the merge proposal.</td>
 </tr>
 </table>
 <!-- Constraint List -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.branchmergeproposal Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>different_branches</td>
+<td>CHECK ((((source_branch &lt;&gt; target_branch) AND
+(dependent_branch &lt;&gt; source_branch)) AND (dependent_branch
+&lt;&gt; target_branch)))</td>
+</tr>
+<tr class="tr1">
+<td>positive_revno</td>
+<td>CHECK (((merged_revno IS NULL) OR (merged_revno &gt; 0)))</td>
+</tr>
+</table>
 <!-- Foreign Key Discovery -->
 <!-- View Definition -->
 <!-- List off permissions -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.branchmessage</caption>
+<caption>Permissions which apply to
+public.branchmergeproposal</caption>
 <tr>
 <th>User</th>
 <th>
@@ -4562,8 +4310,12 @@ public</a></p>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -4597,151 +4349,6 @@ public</a></p>
 </td>
 <td></td>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.branchrelationship" id=
-"public.table.branchrelationship">branchrelationship</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.branchrelationship Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.branch">public.branch.id</a></td>
-<td>subject</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>label</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.branch">public.branch.id</a></td>
-<td>object</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>id</td>
-<td>integer</td>
-<td><i>PRIMARY KEY DEFAULT
-nextval(('branchrelationship_id_seq'::text)::regclass)</i></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.branchrelationship</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr0">
-<td>read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
 <td></td>
 <td></td>
 <td></td>
@@ -6647,6 +6254,14 @@ that a particular message is associated with a particular bug.</p>
 <td>message</td>
 <td>integer</td>
 <td><i>UNIQUE#1 NOT NULL</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.bugwatch">public.bugwatch.id</a></td>
+<td>bugwatch</td>
+<td>integer</td>
+<td><br />
+<br />
+The external bug this bug comment was imported from.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -8671,7 +8286,7 @@ the bug tracker.</td>
 <td></td>
 <td>summary</td>
 <td>text</td>
-<td><i>NOT NULL</i><br />
+<td><br />
 <br />
 A brief summary of this bug tracker, which might for example list
 any interesting policies regarding the use of the bug tracker. The
@@ -8947,6 +8562,9 @@ with time zone)</i></td>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href="#public.table.bugmessage">public.bugmessage</a></li>
+</ul>
 <ul>
 <li><a href="#public.table.bugtask">public.bugtask</a></li>
 </ul>
@@ -10447,7 +10065,7 @@ branch.</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The person who requested this import.</td>
+The person who originally requested this import.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -10501,6 +10119,34 @@ was accepted.</td>
 <br />
 When this code import last succeeded. NULL if this import has never
 succeeded.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>owner</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The person who is currently responsible for keeping the import
+details up to date, initially set to the registrant. This person
+can edit some of the details of the code import branch.</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>assignee</td>
+<td>integer</td>
+<td><br />
+<br />
+The person in charge of delivering this code import and interacting
+with the owner.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>update_interval</td>
+<td>interval</td>
+<td><br />
+<br />
+How often should this import be updated. If NULL, defaults to a
+system-wide value set by the Launchpad administrators.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -10678,12 +10324,22 @@ The (unique) hostname of the machine.</td>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>online</td>
-<td>boolean</td>
-<td><i>NOT NULL</i><br />
+<td>state</td>
+<td>integer</td>
+<td><i>NOT NULL DEFAULT 10</i><br />
 <br />
-Whether the machine is capable of performing jobs at this
-time.</td>
+Whether the controller daemon on this machine is offline, online,
+or quiescing (running but not accepting new jobs).</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>heartbeat</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+When the code-import-controller daemon was last known to be running
+on this machine. If it is not updated for a long time the machine
+state will change to offline.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -18084,6 +17740,10 @@ Initially set to this item's creation date.</td>
 </ul>
 <ul>
 <li><a href=
+"#public.table.openidrpconfig">public.openidrpconfig</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.packageupload">public.packageupload</a></li>
 </ul>
 <ul>
@@ -20528,10 +20188,6 @@ required to provide access to the original, undecoded message.</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.branchmessage">public.branchmessage</a></li>
-</ul>
-<ul>
-<li><a href=
 "#public.table.bugattachment">public.bugattachment</a></li>
 </ul>
 <ul>
@@ -21395,6 +21051,18 @@ NULL))))</td>
 </td>
 </tr>
 <tr class="tr1">
+<td>bugnotification</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -21416,7 +21084,7 @@ NULL))))</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -21428,7 +21096,7 @@ NULL))))</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -21440,7 +21108,7 @@ NULL))))</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -21452,7 +21120,7 @@ NULL))))</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -23395,6 +23063,199 @@ public.openidauthorization</caption>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.openidrpconfig" id=
+"public.table.openidrpconfig">openidrpconfig</a></h2>
+<p>Configuration information for OpenID Relying Parties</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.openidrpconfig Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>trust_root</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+The trust root for this RP</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>displayname</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+The human readable name for this RP</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>description</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+A description of the RP. Should indicate why the RP wants the user
+to log in</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
+<td>logo</td>
+<td>integer</td>
+<td><br />
+<br />
+A reference to the logo for this RP</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>allowed_sreg</td>
+<td>text</td>
+<td><br />
+<br />
+A comma separated list of fields that can be sent to the RP via
+openid.sreg. The field names should not have the "openid.sreg."
+prefix</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>creation_rationale</td>
+<td>integer</td>
+<td><i>NOT NULL DEFAULT 13</i><br />
+<br />
+A person creation rationale to use for users who create an account
+while logging in to this RP</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.openidrpconfig</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>librariangc</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr0">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.packagebugcontact" id=
 "public.table.packagebugcontact">packagebugcontact</a></h2>
 <p>Defines the support contact for a given ticket target. The
@@ -25061,7 +24922,7 @@ The policy for membership renewal on this team.</td>
 <td></td>
 <td>openid_identifier</td>
 <td>text</td>
-<td><i>UNIQUE</i></td>
+<td><i>UNIQUE NOT NULL</i></td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -25076,7 +24937,7 @@ Person.</td>
 <td></td>
 <td>account_status</td>
 <td>integer</td>
-<td><br />
+<td><i>NOT NULL DEFAULT 10</i><br />
 <br />
 The status of the account associated with this Person.</td>
 </tr>
@@ -25084,7 +24945,7 @@ The status of the account associated with this Person.</td>
 <td></td>
 <td>personal_standing</td>
 <td>integer</td>
-<td><br />
+<td><i>NOT NULL</i><br />
 <br />
 The standing of the person, which indicates (for now, just) whether
 the person can post to a mailing list without requiring first post
@@ -25113,7 +24974,7 @@ datetime is not necessary.</td>
 <td></td>
 <td>mailing_list_auto_subscribe_policy</td>
 <td>integer</td>
-<td><br />
+<td><i>NOT NULL DEFAULT 1</i><br />
 <br />
 The auto-subscription policy for the person, i.e. whether and how
 the user is automatically subscribed to mailing lists for teams
@@ -25124,7 +24985,7 @@ dbschema.MailingListAutoSubscribePolicy.</td>
 <td></td>
 <td>mailing_list_receive_duplicates</td>
 <td>boolean</td>
-<td><br />
+<td><i>NOT NULL DEFAULT true</i><br />
 <br />
 True means the user wants to receive list copies of messages on
 which they are explicitly named as a recipient.</td>
@@ -25175,9 +25036,6 @@ IS NULL) WHEN (renewal_policy = ANY (ARRAY[20, 30])) THEN
 "#public.table.answercontact">public.answercontact</a></li>
 </ul>
 <ul>
-<li><a href="#public.table.archconfig">public.archconfig</a></li>
-</ul>
-<ul>
 <li><a href="#public.table.archive">public.archive</a></li>
 </ul>
 <ul>
@@ -25189,6 +25047,10 @@ IS NULL) WHEN (renewal_policy = ANY (ARRAY[20, 30])) THEN
 </ul>
 <ul>
 <li><a href="#public.table.branch">public.branch</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.branchmergeproposal">public.branchmergeproposal</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -26730,11 +26592,17 @@ public</a></p>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>msgid</td>
+<td>context</td>
 <td>text</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td></td>
+<td>msgid</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td></td>
 <td>translation</td>
 <td>text</td>
@@ -26802,6 +26670,7 @@ SELECT (
 , pomsgidsighting.pluralform AS msgidpluralform
 , posubmission.pluralform AS translationpluralform
 , posubmission.id AS activesubmission
+, potmsgset.context
 , pomsgid.msgid
 , potranslation.translation 
 FROM (
@@ -29162,7 +29031,9 @@ public</a></p>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -29888,6 +29759,12 @@ public</a></p>
 </tr>
 <tr class="tr0">
 <td></td>
+<td>context</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
 <td>msgid</td>
 <td>text</td>
 <td></td>
@@ -29926,6 +29803,7 @@ SELECT (
 , potmsgset.flagscomment
 , potmsgset.filereferences
 , pomsgidsighting.pluralform
+, potmsgset.context
 , pomsgid.msgid 
 FROM (
      (
@@ -30150,6 +30028,15 @@ The flags associated with this set (like c-format).</td>
 <br />
 The alternative (non-English-based) id of a pomgsid that identifies
 this message set.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>context</td>
+<td>text</td>
+<td><br />
+<br />
+Context uniquely defining a message when there are messages with
+same primemsgids.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -31291,10 +31178,6 @@ NULL)))</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.productbranchrelationship">public.productbranchrelationship</a></li>
-</ul>
-<ul>
-<li><a href=
 "#public.table.productcvsmodule">public.productcvsmodule</a></li>
 </ul>
 <ul>
@@ -31732,156 +31615,6 @@ will be mentioned on the bounty web page.</p>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.productbranchrelationship" id=
-"public.table.productbranchrelationship">productbranchrelationship</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.productbranchrelationship Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.product">public.product.id</a></td>
-<td>product</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.branch">public.branch.id</a></td>
-<td>branch</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>label</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>date_created</td>
-<td>timestamp without time zone</td>
-<td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.productbranchrelationship</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr0">
-<td>read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.productcvsmodule" id=
 "public.table.productcvsmodule">productcvsmodule</a></h2>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -32149,9 +31882,6 @@ in time.</td>
 </table>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
-<ul>
-<li><a href="#public.table.archconfig">public.archconfig</a></li>
-</ul>
 <ul>
 <li><a href=
 "#public.table.bugproductinfestation">public.bugproductinfestation</a></li>
@@ -41161,6 +40891,16 @@ DSC binary line, claimed binary-names produce by this source.</td>
 <br />
 The archive into which this sourcepackagerelese was originally
 uploaded.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>copyright</td>
+<td>text</td>
+<td><br />
+<br />
+The copyright associated with this sourcepackage. Often in the case
+of debian packages and will be found after the installation in
+/usr/share/doc/&lt;binarypackagename&gt;/copyright</td>
 </tr>
 </table>
 <!-- Constraint List -->

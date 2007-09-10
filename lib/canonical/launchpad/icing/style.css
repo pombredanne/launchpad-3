@@ -136,7 +136,7 @@ td.error {
 /* --- Form controls --- */
 
 form {border: 0; margin: 0; padding: 0;}
-input, select, textarea {
+input[type="text"], input[type="password"], textarea {
   background-color: #fff;
   color: #656565;
   font-family: sans-serif;
@@ -571,8 +571,9 @@ So it's hidden initially, and then revealed if JavaScript is available.
 /* The rest of the page keeps clear of the collapsed help panel. */
 /* test: http://launchpad.dev/+logout */
 #nonhelp {
-  margin: 10px 20px 0 38px;
+  margin: 0 20px 0 38px;
   min-width: 752px; /* prevents search field from sliding under tabs */
+  padding-top: 10px;
 }
 
 /*- App home pages and pillar indexes both have a heading and app buttons, -*/
@@ -946,7 +947,6 @@ ul.edit, li.edit                     {list-style-image: url(/@@/edit);}
 ul.faq, li.faq                       {list-style-image: url(/@@/faq);}
 ul.info, li.info                     {list-style-image: url(/@@/info);}
 ul.language, li.language             {list-style-image: url(/@@/language);}
-ul.locked, li.locked                 {list-style-image: url(/@@/locked);}
 ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
 ul.meeting, li.meeting               {list-style-image: url(/@@/meeting);}
 ul.milestone, li.milestone           {list-style-image: url(/@@/milestone);}
@@ -1087,6 +1087,11 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .branchstatusMERGED       {color: #666;}
 .branchstatusABANDONED    {color: #666;}
 .branchstatusNEW          {color: black;}
+
+.mergeproposal p {margin: 0.5em 0 }
+
+.vcsimportSUCCESS {} /* inherited text color */
+.vcsimportFAILURE {color: Red;}
 
 /* --- Bugs --- */
 
@@ -1364,7 +1369,8 @@ ul#applicationchooser a, ul#applicationchooser a:hover {
 body {
   min-width: 480px;
 }
-#container {padding: 0 20px 0 240px; margin-top: 40px;}
+#container {padding: 0 20px 0 240px; margin-top: 30px;}
+* html #container {margin-top: 48px;} /* works around IE6 bug */
 body.applicationhome #container {padding-left: 20px;}
 #singlecolumn #container {
   padding-left: 20px;
@@ -1602,9 +1608,6 @@ th.descending {
 .cloud-highlight-light {
   color: #b8ffb8;
 }
-
-.vcsimportSUCCESS {} /* inherited text color */
-.vcsimportFAILURE {color: Red;}
 
 .lowerCaseText {
   text-transform: lowercase

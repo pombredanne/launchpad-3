@@ -9,8 +9,8 @@ from zope.component import getUtility
 
 from canonical.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.launchpad.interfaces import (
-    IBugSet, IPackageUploadSet, NotFoundError)
-from canonical.lp.dbschema import BugTaskStatus
+    BugTaskStatus, IBugSet, IPackageUploadSet, NotFoundError)
+from canonical.lp.dbschema import PackagePublishingPocket
 
 def get_bugs_from_changes_file(changes_file):
     """Parse the changes file and return a list of bugs referenced by it.
@@ -59,9 +59,14 @@ def closeBugsForQueueItem(queue_item, changesfile_object=None):
     In practice, 'changesfile_object' is only set when we are closing bugs
     in upload-time (see archiveuploader/ftests/nascentupload-closing-bugs.txt).
 
+    Skip bug-closing if the upload is target to pocket PROPOSED.
+
     Set the package bugtask status to Fix Released and the changelog is added
     as a comment.
     """
+    if queue_item.pocket == PackagePublishingPocket.PROPOSED:
+        return
+
     if changesfile_object is None:
         changesfile_object = queue_item.changesfile
 

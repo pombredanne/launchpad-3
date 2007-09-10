@@ -431,3 +431,33 @@ from a package), it only shows the translator, and not reviewer.
   >>> print find_tag_by_id(browser.contents, "translated_and_reviewed_by")
   None
 
+== Translating context ==
+
+Going to a translation page for a message with the context displays the
+context.
+
+    >>> browser.open('http://launchpad.dev/alsa-utils/trunk/+pots/'
+    ...     'alsa-utils/sr/+translate')
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, "msgset_198_context").parent)
+    Something
+
+We can change a translation for messages with context.
+
+  >>> browser.getControl(
+  ...     name='msgset_198_sr_translation_0_radiobutton').value = [
+  ...         'msgset_198_sr_translation_0_new']
+  >>> browser.getControl(
+  ...     name='msgset_198_sr_translation_0_new').value = u'blah'
+
+And submit it.
+
+  >>> browser.getControl(name='submit_translations').click()
+  >>> browser.url
+  'http://launchpad.dev/alsa-utils/trunk/+pots/alsa-utils/sr/+translate'
+
+And the translation is now updated.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, "msgset_198_sr_translation_0"))
+    blah

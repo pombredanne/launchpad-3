@@ -15,11 +15,17 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, ProductBugTracker, Summary, Title, URIField)
-from canonical.launchpad.interfaces import (
-    IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy, IHasDrivers,
-    IHasIcon, IHasLogo, IHasMilestones, IHasMugshot, IHasOwner,
-    IHasSecurityContact, IKarmaContext, ISpecificationTarget,
-    PillarNameField)
+from canonical.launchpad.interfaces.branchvisibilitypolicy import (
+    IHasBranchVisibilityPolicy)
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.karma import IKarmaContext
+from canonical.launchpad.interfaces.launchpad import (
+    IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
+    IHasOwner, IHasSecurityContact)
+from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.pillar import PillarNameField
+from canonical.launchpad.interfaces.specificationtarget import (
+    ISpecificationTarget)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
@@ -105,7 +111,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     displayname = TextLine(
         title=_('Display Name'),
-        description=_("""The name of the project as it would appear in a 
+        description=_("""The name of the project as it would appear in a
             paragraph."""))
 
     title = Title(
@@ -341,8 +347,18 @@ class IProductSet(Interface):
         Return the default value if there is no such product.
         """
 
-    def getProductsWithBranches():
-        """Return an iterator over all products that have branches."""
+    def getProductsWithBranches(num_products=None):
+        """Return an iterator over all products that have branches.
+
+        If num_products is not None, then the first `num_products` are
+        returned.
+        """
+
+    def getProductsWithUserDevelopmentBranches():
+        """Return products that have a user branch for the development series.
+
+        A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
+        """
 
     def getProductsWithUserDevelopmentBranches():
         """Return products that have a user branch for the development series.
