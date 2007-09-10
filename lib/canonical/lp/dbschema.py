@@ -41,8 +41,6 @@ __all__ = (
 'ImportTestStatus',
 'ImportStatus',
 'MailingListAutoSubscribePolicy',
-'ManifestEntryType',
-'ManifestEntryHint',
 'MirrorContent',
 'MirrorPulseType',
 'MirrorSpeed',
@@ -267,101 +265,6 @@ class ProjectStatus(DBSchema):
         This project has been reviewed, and has been disabled. Typically
         this is because the contents appear to be bogus. Such a project
         should not show up in searches etc.""")
-
-
-class ManifestEntryType(DBSchema):
-    """A Sourcerer Manifest.
-
-    This is a list of branches that are brought together to make up a source
-    package. Each branch can be included in the package in a number of
-    different ways, and the Manifest Entry Type tells sourcerer how to bring
-    that branch into the package.
-    """
-
-    DIR = Item(1, """
-        A Directory
-
-        This is a special case of Manifest Entry Type, and tells
-        sourcerer simply to create an empty directory with the given name.
-        """)
-
-    COPY = Item(2, """
-        Copied Source code
-
-        This branch will simply be copied into the source package at
-        a specified location. Typically this is used where a source
-        package includes chunks of code such as libraries or reference
-        implementation code, and builds it locally for static linking
-        rather than depending on a system-installed shared library.
-        """)
-
-    FILE = Item(3, """
-        Binary file
-
-        This is another special case of Manifest Entry Type that tells
-        sourcerer to create a branch containing just the file given.
-        """)
-
-    TAR = Item(4, """
-        A Tar File
-
-        This branch will be tarred up and installed in the source
-        package as a tar file. Typically, the package build system
-        will know how to untar that code and use it during the build.
-        """)
-
-    ZIP = Item(5, """
-        A Zip File
-
-        This branch will be zipped up and installed in the source
-        package as a zip file. Typically, the package build system
-        will know how to unzip that code and use it during the build.
-        """)
-
-    PATCH = Item(6, """
-        Patch File
-
-        This branch will be brought into the source file as a patch
-        against another branch. Usually, the patch is stored in the
-        "patches" directory, then applied at build time by the source
-        package build scripts.
-        """)
-
-
-class ManifestEntryHint(DBSchema):
-    """Hint as to purpose of a ManifestEntry.
-
-    Manifests, used by both HCT and Sourcerer, are made up of a collection
-    of Manifest Entries.  Each entry refers to a particular component of
-    the source package built by the manifest, usually each having a different
-    branch or changeset.  A Manifest Entry Hint can be assigned to suggest
-    what the purpose of the entry is.
-    """
-
-    ORIGINAL_SOURCE = Item(1, """
-        Original Source
-
-        This is the original source code of the source package, and in the
-        absence of any Patch Base, the parent of any new patch branches
-        created.
-        """)
-
-    PATCH_BASE = Item(2, """
-        Patch Base
-
-        This is an entry intended to serve as the base for any new patches
-        created and added to the source package.  It is often a patch itself,
-        or a virtual branch.  If not present, the Original Source is used
-        instead.
-        """)
-
-    PACKAGING = Item(3, """
-        Packaging
-
-        This is the packaging meta-data for the source package, usually
-        the entry that becomes the debian/ directory in the case of Debian
-        source packages or the spec file in the case of RPMs.
-        """)
 
 
 class PackagingType(DBSchema):

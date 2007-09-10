@@ -259,11 +259,6 @@ COMMENT ON COLUMN CveReference.url IS 'The URL to this reference out there on th
 COMMENT ON COLUMN CveReference.content IS 'The content of the ref in the CVE database. This is sometimes a comment, sometimes a description, sometimes a bug number... it is not predictable.';
 
 
--- DevelopmentManifest
-COMMENT ON TABLE DevelopmentManifest IS 'A table that keeps track of the "intermediate commits" during the development of a source package. A developer using HCT will make regular commits (stored locally, as Bazaar revisions). On occasion, the developer will "publish" the current state of the package. This results in the Bazaar branches being made available on a public server, and a DevelopmentManifest being created. Other people will then see the existence of the Development Manifest and know that the person is currently working on a variation of the package. When the developer believes that the page is actually ready to build, they can "release" the package. This results in a SourcePackageRelease being assembled, based on the existing development manifest.';
-COMMENT ON COLUMN DevelopmentManifest.distrorelease IS 'The distribution release for which this source package is being developed. Note that the source package may very well be built and published in other releases as well - this information is purely a starting point indicator.';
-COMMENT ON COLUMN DevelopmentManifest.sourcepackagename IS 'Again, this is just an indicator of the place the developer is primarily targeting the work. This same package may actually be uploaded under a different name somewhere else eventually.';
-
 
 -- DistributionSourcePackageCache
 
@@ -685,17 +680,6 @@ COMMENT ON COLUMN DistroReleaseLanguage.rosettacount IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.unreviewed_count IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.contributorcount IS 'The total number of contributors to the translation of this distrorelease into this language.';
 
--- Manifest
-
-COMMENT ON TABLE Manifest IS 'A Manifest describes the branches that go into
-making up a source package or product release. This allows us to describe
-the source package or product release in a way that HCT can pull down the
-sources directly from The Bazaar and allow people to branch and edit
-immediately. Note that a Manifest does not have an owner, please ensure that
-ANYTHING that points TO a manifest, such as ProductRelease or
-SourcePackageRelease, has an owner, so that we do not end up with orphaned
-manifests.';
-
 -- Calendar
 
 COMMENT ON TABLE Calendar IS 'A Calendar attached to some other Launchpad object (currently People, Projects or Products)';
@@ -816,7 +800,6 @@ COMMENT ON COLUMN SourcePackageRelease.builddependsindep IS 'DSC builddependsind
 COMMENT ON COLUMN SourcePackageRelease.architecturehintlist IS 'DSC arch line';
 COMMENT ON COLUMN SourcePackageRelease.dsc IS 'Original DSC text.';
 COMMENT ON COLUMN SourcePackageRelease.section IS 'This integer field references the Section which the source package claims to be in';
-COMMENT ON COLUMN SourcePackageRelease.manifest IS 'Reference to a manifest record.';
 COMMENT ON COLUMN SourcePackageRelease.maintainer IS 'Reference to the person noted as source package maintainer in the DSC.';
 COMMENT ON COLUMN SourcePackageRelease.sourcepackagename IS 'Reference to a SourcePackageName.';
 COMMENT ON COLUMN SourcePackageRelease.uploaddistrorelease IS 'DistroRelease to where the source was originally uploaded.';

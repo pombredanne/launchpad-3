@@ -255,11 +255,6 @@ class Branch(SQLBase):
 
     def canBeDeleted(self):
         """See `IBranch`."""
-        # XXX: TimPenhey 2007-07-30
-        # ManifestEntries are deliberately being ignored here.
-        # They are part of HCT which is in active rot, and should
-        # be removed.
-
         # CodeImportSet imported here to avoid circular imports.
         from canonical.launchpad.database.codeimport import CodeImportSet
         code_import = CodeImportSet().getByBranch(self)
