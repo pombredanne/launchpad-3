@@ -27,6 +27,7 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
+    BugTaskStatus,
     BugTaskSearchParams,
     IBug,
     IBugSet,
