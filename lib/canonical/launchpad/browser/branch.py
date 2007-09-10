@@ -115,7 +115,7 @@ class BranchContextMenu(ContextMenu):
     facet = 'branches'
     links = ['edit', 'delete_branch', 'browse', 'reassign', 'subscription',
              'addsubscriber', 'associations', 'registermerge',
-             'landingcandidates']
+             'landingcandidates', 'linkbug']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -171,6 +171,10 @@ class BranchContextMenu(ContextMenu):
         text = 'View landing candidates'
         enabled = self.context.landing_candidates.count() > 0
         return Link('+landing-candidates', text, icon='edit', enabled=enabled)
+
+    def linkbug(self):
+        text = 'Link to bug report'
+        return Link('+linkbug', text, icon='edit')
 
 
 class BranchView(LaunchpadView):
