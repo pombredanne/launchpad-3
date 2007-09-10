@@ -129,7 +129,7 @@ class BranchContextMenu(ContextMenu):
         return Link('+delete', text, enabled=enabled)
 
     def browse_code(self):
-        """ """
+        """Return a link to the branch's file listing on codebrowse."""
         text = 'Browse code'
         enabled = self.context.code_is_browseable
         url = (config.launchpad.codebrowse_root
@@ -138,7 +138,7 @@ class BranchContextMenu(ContextMenu):
         return Link(url, text, icon='info', enabled=enabled)
 
     def browse_revisions(self):
-        """ """
+        """Return a link to the branch's revisions on codebrowse."""
         text = 'Browse revisions'
         enabled = self.context.code_is_browseable
         url = (config.launchpad.codebrowse_root
