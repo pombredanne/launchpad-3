@@ -8,7 +8,7 @@ from sqlobject import ForeignKey
 
 from zope.interface import implements
 
-from canonical.database.sqlbase import (quote, SQLBase)
+from canonical.database.sqlbase import (SQLBase, sqlvalues)
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import TranslationFileFormat
@@ -19,6 +19,11 @@ from canonical.launchpad.interfaces import (
 
 class POExportRequestSet:
     implements(IPOExportRequestSet)
+
+    @property
+    def entry_count(self):
+        """See `IPOExportRequestSet`."""
+        return POExportRequest.select().count()
 
     def _addRequestEntry(self, person, potemplate, pofile, format):
         """Add a request entry to the queue.
@@ -66,17 +71,18 @@ class POExportRequestSet:
         except IndexError:
             return None
 
+        person = request.person
+        format = request.format
+
         query = """
             person = %s AND
+            format = %s AND
             date_created = (
                 SELECT date_created
                 FROM POExportRequest
                 ORDER BY id
-                LIMIT 1)""" % quote(request.person)
+                LIMIT 1)""" % sqlvalues(person, format)
         requests = POExportRequest.select(query, orderBy='potemplate')
-        person = requests[0].person
-        potemplate = requests[0].potemplate
-        format = requests[0].format
         objects = []
 
         for request in requests:
@@ -88,6 +94,7 @@ class POExportRequestSet:
             POExportRequest.delete(request.id)
 
         return person, objects, format
+
 
 class POExportRequest(SQLBase):
     implements(IPOExportRequest)

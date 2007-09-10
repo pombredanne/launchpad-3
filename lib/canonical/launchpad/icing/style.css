@@ -1088,6 +1088,11 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .branchstatusABANDONED    {color: #666;}
 .branchstatusNEW          {color: black;}
 
+.mergeproposal p {margin: 0.5em 0 }
+
+.vcsimportSUCCESS {} /* inherited text color */
+.vcsimportFAILURE {color: Red;}
+
 /* --- Bugs --- */
 
 body.tab-bugs #applications {background: url(app-bugs-wm.gif) no-repeat;}
@@ -1603,9 +1608,6 @@ th.descending {
 .cloud-highlight-light {
   color: #b8ffb8;
 }
-
-.vcsimportSUCCESS {} /* inherited text color */
-.vcsimportFAILURE {color: Red;}
 
 .lowerCaseText {
   text-transform: lowercase

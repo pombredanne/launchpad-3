@@ -5,7 +5,6 @@
 __metaclass__ = type
 __all__ = ['BaseExportView']
 
-import os.path
 from zope.component import getUtility
 
 from canonical.launchpad import _

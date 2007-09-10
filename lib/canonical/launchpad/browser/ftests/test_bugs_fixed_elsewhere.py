@@ -13,11 +13,10 @@ from zope.component import getUtility
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IDistributionSet, ILaunchBag, IProductSet)
+    BugTaskStatus, CreateBugParams, IDistributionSet, ILaunchBag, IProductSet)
 from canonical.launchpad.ftests import login
 from canonical.launchpad.ftests.test_system_documentation import (
     default_optionflags, setUp, tearDown)
-from canonical.lp.dbschema import BugTaskStatus
 from canonical.testing import LaunchpadFunctionalLayer
 
 
