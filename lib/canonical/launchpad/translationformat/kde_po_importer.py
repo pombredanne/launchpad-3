@@ -61,7 +61,7 @@ class KdePOImporter(GettextPOImporter):
 
         for message in translation_file.messages:
             msgid = message.msgid
-            if msgid.lower().startswith('_n: ') and '\n' in msgid:
+            if msgid.startswith('_n: ') and '\n' in msgid:
                 # This is a KDE plural form
                 singular, plural = msgid[4:].split('\n')
 
@@ -72,7 +72,7 @@ class KdePOImporter(GettextPOImporter):
                     message._translations = msgstrs[0].split('\n')
 
                 self.internal_format = TranslationFileFormat.KDEPO
-            elif msgid.lower().startswith('_: ') and '\n' in msgid:
+            elif msgid.startswith('_: ') and '\n' in msgid:
                 # This is a KDE context message
                 message.context, message.msgid = msgid[3:].split('\n', 1)
                 self.internal_format = TranslationFileFormat.KDEPO

@@ -29,13 +29,13 @@ class KdePOExporter(GettextPOExporter):
     implements(ITranslationFormatExporter)
 
     def __init__(self, context=None):
-        # 'context' is ignored here because we don't need it, although we use
-        # zope.component.subscribers from TranslationExporter class to get all
-        # exporters available, which require that each exporter have a
-        # 'context' argument.
+        # See GettextPOExporter.__init__ for explanation of `context`.
         self.format = TranslationFileFormat.KDEPO
-        self.supported_formats = [
-            TranslationFileFormat.PO, TranslationFileFormat.KDEPO]
+        # We can also export TranslationFileFormat.PO, but the need for this
+        # is very limited: only if we do a correct import, but don't mark this
+        # as KDEPO inside potemplate.source_file_format, what would be a bug
+        # in our code
+        self.supported_formats = [ TranslationFileFormat.KDEPO ]
 
     def exportTranslationMessage(self, translation_message):
         """See `ITranslationFormatExporter`."""

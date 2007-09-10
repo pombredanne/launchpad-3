@@ -442,7 +442,9 @@ class GettextPOExporter:
         # 'context' argument.
         self.format = TranslationFileFormat.PO
         self.supported_formats = [
-            TranslationFileFormat.PO, TranslationFileFormat.XPI]
+            TranslationFileFormat.PO,
+            TranslationFileFormat.KDEPO,
+            TranslationFileFormat.XPI]
 
     def _getHeaderAsMessage(self, translation_file):
         """Return an `ITranslationMessage` with the header content."""
