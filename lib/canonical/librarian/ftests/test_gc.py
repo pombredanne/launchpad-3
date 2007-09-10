@@ -294,7 +294,7 @@ class TestLibrarianGarbageCollection(TestCase):
         self.failUnlessEqual(
                 len(results), 0, 'Too many results %r' % (results,)
                 )
- 
+
     def test_DeleteUnreferencedContent2(self):
         # Like testDeleteUnreferencedContent, except that the file is
         # removed from disk before attempting to remove the unreferenced
@@ -391,7 +391,7 @@ class TestLibrarianGarbageCollection(TestCase):
         cur.execute("""SELECT id FROM LibraryFileContent LIMIT 1""")
         deleted_content_id = cur.fetchone()[0]
         cur.execute("""
-            UPDATE LibraryFileContent SET deleted = TRUE 
+            UPDATE LibraryFileContent SET deleted = TRUE
             WHERE id = %s
             """, (deleted_content_id,))
 
@@ -467,8 +467,8 @@ class TestLibrarianGarbageCollection(TestCase):
     def test_confirm_no_clock_skew(self):
         # There should not be any clock skew when running the test suite.
         librariangc.confirm_no_clock_skew(self.con)
-        
-        # To test this function raises an excption when it should, 
+
+        # To test this function raises an excption when it should,
         # the garbage collector into thinking it is tomorrow.
         org_time = librariangc.time
 
@@ -719,7 +719,7 @@ class TestBlobCollection(TestCase):
         count = cur.fetchone()[0]
         self.failIfEqual(count, 2)
 
- 
+
 def test_suite():
     suite = TestSuite()
     suite.addTest(makeSuite(TestLibrarianGarbageCollection))

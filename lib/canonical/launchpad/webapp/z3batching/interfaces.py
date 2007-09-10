@@ -30,7 +30,7 @@ class IBatch(IItemMapping):
         passed in batch size, since we could be at the end of the list and
         there are not enough elements left to fill the batch completely."""
 
-    def __iter__(): 
+    def __iter__():
         """Creates an iterator for the contents of the batch (not the entire
         list)."""
 
@@ -39,7 +39,7 @@ class IBatch(IItemMapping):
 
     def nextBatch(self):
         """Return the next batch. If there is no next batch, return None."""
-    
+
     def prevBatch(self):
         """Return the previous batch. If there is no previous batch, return
         None."""
