@@ -7,18 +7,11 @@
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-bugcontacts" />
-    <div tal:replace="structure context/@@+portlet-releases" />
-    <div tal:replace="structure context/@@+portlet-latestbugs" />
-    <div tal:replace="structure context/@@+portlet-latestquestions" />
   </metal:leftportlets>
-
-  <metal:rightportlets fill-slot="portlets_two">
-  </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-  <h1>Publishing history</h1>
+  <h1>Source package publishing history</h1>
   <table class="listing">
     <thead>
       <tr>

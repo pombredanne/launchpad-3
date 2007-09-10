@@ -17,7 +17,43 @@
 
 <div metal:fill-slot="main">
 
-  <h1><span tal:replace="context/name" /> source package history</h1>
+  <h1><span tal:replace="context/name" /> in
+      <span tal:replace="context/distribution/displayname" /></h1>
+
+  <h2>Upstream associations</h2>
+
+  <table class="listing">
+    <thead>
+      <tr>
+        <th><span tal:replace="context/distribution/displayname" /> version</th>
+        <th>Upstream version</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="sp context/get_distroseries_packages">
+        <td>
+          <span tal:replace="sp/distroseries/displayname">Hoary</span>:
+          <span tal:replace="sp/name" />
+          <span tal:replace="sp/currentrelease/version" />
+        </td>
+        <tal:pkg_def define="pkging sp/direct_packaging">
+          <td>
+            <span tal:condition="pkging"
+                  tal:replace="pkging/productseries/title" />
+            <tal:no_direct condition="not: pkging">
+            None defined
+            </tal:no_direct>
+            <a tal:attributes="href string:${sp/fmt:url}/+edit-packaging"
+               title="Edit association with upstream version">
+              <img src="/@@/edit" />
+            </a>
+          </td>
+        </tal:pkg_def>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Version history</h2>
 
   <tal:block
     repeat="dspr context/releases"
