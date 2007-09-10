@@ -13,6 +13,29 @@ even during some updates.  That's why a cron job trawls the POFile table,
 recomputing translation statistics and noting any divergence between the
 cached values and the ones it recomputes from scratch.
 
+    >>> import subprocess
+    >>> import sys
+    >>> process = subprocess.Popen([
+    ...     sys.executable, 'cronscripts/rosetta-pofile-stats.py', '-v'],
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT)
+    >>> (output, empty) = process.communicate()
+    >>> print output
+    INFO creating lockfile
+    INFO Starting verification of POFile stats at id 0
+    ...
+    INFO Done.
+    DEBUG Removing lock file: /var/lock/launchpad-pofile-stats.lock
+
+Since old data will probably change less, the machinery supports partial runs
+skipping POFiles whose id is lower than some given value.  This may be
+useful for optimization: we can decide to schedule more frequent runs on
+newer data, or we can choose to do a quick manual run if we believe some
+recent POFile(s) to have incorrect statistics data.
+
+Since we just ran the cron script on the full table, all our statistics are
+now in order.  We verify POFiles starting at id 30, and see no warnings.
+
     >>> import transaction
     >>> from canonical.launchpad.scripts.verify_pofile_stats import (
     ...     VerifyPOFileStatsProcess)
@@ -38,19 +61,4 @@ differences will be reported.
     cached stats were (0, 0, 999, 0), recomputed as (0, 0, 3, 0)
     INFO Done.
 
-All this machinery will be invoked by a cron script.
-
-    >>> import subprocess
-    >>> import sys
-    >>> process = subprocess.Popen([
-    ...     sys.executable, 'cronscripts/rosetta-pofile-stats.py', '-v'],
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.STDOUT)
-    >>> (output, empty) = process.communicate()
-    >>> print output
-    INFO creating lockfile
-    INFO Starting verification of POFile stats at id 0
-    ...
-    INFO Done.
-    DEBUG Removing lock file: /var/lock/launchpad-pofile-stats.lock
 
