@@ -964,7 +964,7 @@ The process can be rectified though by removing the offending links.
     >>> print branchset.getByUniqueName('~ddaa/gnome-terminal/to-delete')
     None
 
-Branches with revisions are now deletable.
+Branches with revisions are deletable.
 
     >>> branch = branchset.getByUniqueName('~sabdfl/firefox/release--0.9.1')
     >>> branch.revision_count
@@ -974,3 +974,31 @@ Branches with revisions are now deletable.
     >>> branchset.delete(branch)
     >>> print branchset.getByUniqueName('~sabdfl/firefox/release--0.9.1')
     None
+
+
+== Branch references ==
+
+When new references to the branch table are added, these need to be
+taken into consideration with branch deletion.
+
+The current references to the branch table are shown here.
+
+    >>> from canonical.database import postgresql
+    >>> from canonical.database.sqlbase import cursor
+    >>> cur = cursor()
+    >>> references = list(postgresql.listReferences(cur, 'branch', 'id'))
+
+    >>> for name in sorted([
+    ...     '%s.%s' % (src_tab, src_col) for
+    ...     src_tab, src_col, ref_tab, ref_col, updact, delact in references]):
+    ...     print name
+    branchmergeproposal.dependent_branch
+    branchmergeproposal.source_branch
+    branchmergeproposal.target_branch
+    branchrevision.branch
+    branchsubscription.branch
+    bugbranch.branch
+    codeimport.branch
+    productseries.import_branch
+    productseries.user_branch
+    specificationbranch.branch
