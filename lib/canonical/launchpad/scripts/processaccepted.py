@@ -9,9 +9,9 @@ from zope.component import getUtility
 
 from canonical.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.launchpad.interfaces import (
-    IBugSet, IPackageUploadSet, NotFoundError)
+    BugTaskStatus, IBugSet, IPackageUploadSet, NotFoundError)
 from canonical.lp.dbschema import (
-    ArchivePurpose, BugTaskStatus, PackagePublishingPocket)
+    ArchivePurpose, PackagePublishingPocket)
 
 def get_bugs_from_changes_file(changes_file):
     """Parse the changes file and return a list of bugs referenced by it.

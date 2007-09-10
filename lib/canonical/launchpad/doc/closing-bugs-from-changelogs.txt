@@ -230,7 +230,7 @@ queue items have been processed.
     >>> queue_item = upload(pmount_release, fixing_text)
     >>> queue_item.setAccepted()
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
 
     >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
     >>> [pmount_task] = pmount_bug.bugtasks
