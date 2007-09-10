@@ -45,22 +45,25 @@
           <h2>What&#8217;s new</h2>
           <ul class="news">
             <li>
-              <a href="https://help.launchpad.net/FrequentlyAskedQuestions"
-                 >Frequently Asked Questions: create standard answers to FAQs
+                <a href="https://help.launchpad.net/FrequentlyAskedQuestions"
+                 ><strong>Frequently Asked Questions</strong>: manage your project FAQs
                 in the Answer Tracker</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/Mantis">Watch remote bugs
+              <a href="https://help.launchpad.net/Mantis"><strong>Mantis
+              support:</strong> Watch remote bugs
                 in Mantis bug trackers</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/FileDownloadsOverview">File
-                downloads: make installers, documentation and other files
+              <a href="https://help.launchpad.net/FileDownloadsOverview">
+              <strong>File downloads:</strong>
+              make releases and other files
                 available from your project's overview page</a>
             </li>
             <li>
-             <a href="https://help.launchpad.net/BugStatuses">New clearer bug
-                status names</a>
+             <a href="https://help.launchpad.net/BugStatuses">
+               <strong>Bug status names:</strong> clarifications and
+               additions</a>
             </li>
           </ul>
         </div>
