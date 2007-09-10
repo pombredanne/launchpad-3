@@ -102,7 +102,7 @@ class ISourcePackageRelease(Interface):
         "The archive for which this package was first uploaded in Launchpad")
 
 
-    # XXX Steve Alexander 2004-12-10: 
+    # XXX Steve Alexander 2004-12-10:
     #     What do the following methods and attributes do?
     #     These were missing from the interfaces, but being used
     #     in application code.

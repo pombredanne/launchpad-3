@@ -11,7 +11,7 @@ class UserDetailsResource(xmlrpc.XMLRPC):
 
     def xmlrpc_getUser(self, loginID):
         """Get a user
-        
+
         :returns: user dict if loginID exists, otherwise empty dict
         """
         if self.debug:
@@ -20,7 +20,7 @@ class UserDetailsResource(xmlrpc.XMLRPC):
 
     def xmlrpc_authUser(self, loginID, sshaDigestedPassword):
         """Authenticate a user
-        
+
         :returns: user dict if authenticated, otherwise empty dict
         """
         if self.debug:
@@ -30,11 +30,11 @@ class UserDetailsResource(xmlrpc.XMLRPC):
 
     def xmlrpc_getSSHKeys(self, loginID):
         """Retrieve SSH public keys for a given user
-        
+
         :param loginID: a login ID.
         :returns: list of 2-tuples of (key type, key text).  This list will be
             empty if the user has no keys or does not exist.
-        
+
         :returns: user dict if loginID exists, otherwise empty dict
         """
         if self.debug:
@@ -51,7 +51,7 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
 
     def xmlrpc_getUser(self, loginID):
         """Get a user
-        
+
         :returns: user dict if loginID exists, otherwise empty dict
         """
         if self.debug:
@@ -60,16 +60,16 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
 
     def xmlrpc_authUser(self, loginID, password):
         """Authenticate a user
-        
+
         :returns: user dict if authenticated, otherwise empty dict
         """
         if self.debug:
             print 'authUser(%r, %r)' % (loginID, password)
         return self.storage.authUser(loginID, password)
-        
+
     def xmlrpc_getSSHKeys(self, loginID):
         """Retrieve SSH public keys for a given user
-        
+
         :param loginID: a login ID.
         :returns: list of 2-tuples of (key type, key text).  This list will be
             empty if the user has no keys or does not exist.
