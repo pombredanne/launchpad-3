@@ -436,10 +436,8 @@ class GettextPOExporter:
     implements(ITranslationFormatExporter)
 
     def __init__(self, context=None):
-        # 'context' is ignored here because we don't need it, although we use
-        # zope.component.subscribers from TranslationExporter class to get all
-        # exporters available, which require that each exporter have a
-        # 'context' argument.
+        # 'context' is ignored because it's only required by the way the
+        # exporters are instantiated but it isn't used by this class.
         self.format = TranslationFileFormat.PO
         self.supported_formats = [
             TranslationFileFormat.PO,
@@ -536,24 +534,25 @@ class GettextPOExporter:
 
             exported_files[file_path] = exported_file_content
 
-        exported_file = ExportedTranslationFile()
         if len(exported_files) == 1:
             # It's a single file export.
+            exported_file = ExportedTranslationFile(
+                StringIO(exported_file_content))
             exported_file.path = file_path
-            exported_file.content_file = StringIO(exported_file_content)
+            # We use x-po for consistency with other .po editors like
+            # GTranslator.
             exported_file.content_type = 'application/x-po'
             exported_file.file_extension = file_extension
         else:
             # There are multiple files being exported. We need to generate an
             # archive that include all them.
-            exported_file.content_file = LaunchpadWriteTarFile.files_to_stream(
-                exported_files)
+            exported_file = ExportedTranslationFile(
+                LaunchpadWriteTarFile.files_to_stream(exported_files))
             # For tar.gz files, the standard content type is
             # application/x-gtar. You can see more info on
             # http://en.wikipedia.org/wiki/List_of_archive_formats
             exported_file.content_type = 'application/x-gtar'
             exported_file.file_extension = 'tar.gz'
-            # We cannot give a proper file path for the tarball, that's why we
-            # don't set it. We leave that decision to the caller.
+            # By leaving path set to None, we let the caller decide.
 
         return exported_file

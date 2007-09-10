@@ -97,7 +97,7 @@ class GettextPOExporterTestCase(unittest.TestCase):
             [cy_translation_file])
 
         self._compareImportAndExport(
-            pofile_cy.strip(), exported_cy_file.content_file.read().strip())
+            pofile_cy.strip(), exported_cy_file.read().strip())
 
     def testEncodingExport(self):
         """Test that PO headers specifying character sets are respected."""
@@ -123,7 +123,7 @@ class GettextPOExporterTestCase(unittest.TestCase):
                 [translation_file])
 
             self._compareImportAndExport(
-                pofile.strip(), exported_file.content_file.read().strip())
+                pofile.strip(), exported_file.read().strip())
 
         # File representing the same PO file three times. Each is identical
         # except for the charset declaration in the header.
@@ -219,10 +219,8 @@ class GettextPOExporterTestCase(unittest.TestCase):
             [translation_file])
 
         self._compareImportAndExport(
-            pofile.strip() % (
-                'UTF-8',
-                '\xc3\xa1'),
-            exported_file.content_file.read().strip())
+            pofile.strip() % ('UTF-8', '\xc3\xa1'),
+            exported_file.read().strip())
 
     def testIncompletePluralMessage(self):
         """Test export correctness for partial plural messages."""
@@ -254,8 +252,7 @@ class GettextPOExporterTestCase(unittest.TestCase):
             [translation_file])
 
         self._compareImportAndExport(
-            pofile.strip() % 'msgstr[1] ""',
-            exported_file.content_file.read().strip())
+            pofile.strip() % 'msgstr[1] ""', exported_file.read().strip())
 
 
 def test_suite():

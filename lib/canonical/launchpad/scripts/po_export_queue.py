@@ -12,7 +12,6 @@ import psycopg
 import textwrap
 import traceback
 from StringIO import StringIO
-from zope.proxy import removeAllProxies
 from zope.component import getUtility
 
 from canonical.config import config
@@ -86,8 +85,7 @@ class ExportResult:
             raise AssertionError(
                 'We cannot have a URL for the export and a failure.')
         else:
-            raise AssertionError(
-                'We neither have the exported URL nor we got a failure.')
+            raise AssertionError('On success, an exported URL is expected.')
 
         recipients = list(helpers.contactEmailAddresses(person))
 
@@ -140,7 +138,7 @@ def process_request(person, objects, format, logger):
     """
     translation_exporter = getUtility(ITranslationExporter)
     translation_format_exporter = (
-        translation_exporter.getTranslationFormatExporterByFileFormat(format))
+        translation_exporter.getExporterProducingTargetFileFormat(format))
 
     result = ExportResult(person.name)
     translation_file_list = []
@@ -181,19 +179,11 @@ def process_request(person, objects, format, logger):
             # librarian.
             exported_path = exported_file.path.replace(os.sep, '_')
 
-        # XXX CarlosPerelloMarin 20070705: Reviewer, is there any way to avoid
-        # this other than define the file object like interface in ZCML ?
-        content_file = removeAllProxies(exported_file.content_file)
-        # Go to the end of the file.
-        content_file.seek(0, 2)
-        size = content_file.tell()
-        # Go back to the start of the file.
-        content_file.seek(0)
         alias_set = getUtility(ILibraryFileAliasSet)
         alias = alias_set.create(
             name=exported_path,
-            size=size,
-            file=content_file,
+            size=exported_file.size,
+            file=exported_file,
             contentType=exported_file.content_type)
         result.url = alias.http_url
 

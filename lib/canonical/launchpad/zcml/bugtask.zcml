@@ -26,12 +26,13 @@
     <!-- IBugTask -->
     <content class="canonical.launchpad.database.BugTask">
         <allow attributes="id bug bugID target date_assigned datecreated
-                           date_confirmed date_inprogress date_closed
-                           bug_subscribers is_complete canTransitionToStatus
-                           isMentor canMentor isSubscribed" />
+                           date_confirmed date_incomplete date_inprogress
+                           date_closed bug_subscribers is_complete
+                           canTransitionToStatus isMentor canMentor
+                           isSubscribed" />
         <require
             permission="launchpad.View"
-            attributes="bugtargetname bugtargetdisplayname
+            attributes="bugtargetname bugtargetdisplayname 
                         product productseries sourcepackagename distribution
                         distroseries milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
@@ -248,25 +249,14 @@
     <browser:page
         name="+choose-affected-product"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.ChooseAffectedProductView"
-        permission="launchpad.AnyPerson"
-        template="../templates/bugtask-choose-affected-product.pt" />
-
-    <browser:page
-        name="+add-affected-product"
-        for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.BugAlsoReportInView"
-        permission="launchpad.AnyPerson"
-        attribute="render_upstreamtask">
-    </browser:page>
+        class="canonical.launchpad.browser.BugAlsoAffectsProductMetaView"
+        permission="launchpad.AnyPerson" />
 
     <browser:page
         name="+distrotask"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.BugAlsoReportInView"
-        permission="launchpad.AnyPerson"
-        attribute="render_distrotask"
-        />
+        class="canonical.launchpad.browser.BugAlsoAffectsDistroMetaView"
+        permission="launchpad.AnyPerson" />
 
     <browser:page
         name="+editstatus-page"

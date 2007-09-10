@@ -27,27 +27,44 @@ class ExportedTranslationFile:
     """See `IExportedTranslationFile`."""
     implements(IExportedTranslationFile)
 
-    def __init__(self):
+    def __init__(self, content_file):
+        self._content_file  = content_file
         self.content_type = None
-        self.content_file  = None
         self.path = None
         self.file_extension = None
+
+        # Go to the end of the file.
+        self._content_file.seek(0, 2)
+        self.size = self._content_file.tell()
+        # Go back to the start of the file.
+        self._content_file.seek(0)
+
+    def read(self, *args, **kwargs):
+        """See `IExportedTranslationFile`."""
+        if 'size' in kwargs:
+            return self._content_file.read(kwargs['size'])
+        else:
+            return self._content_file.read()
+
+    def close(self):
+        """See `IExportedTranslationFile`."""
+        self._content_file.close()
 
 
 class TranslationExporter:
     """See `ITranslationExporter`."""
     implements(ITranslationExporter)
 
-    def getTranslationFormatExportersForFileFormat(self, file_format):
+    def getExportersForSupportedFileFormat(self, file_format):
         """See `ITranslationExporter`."""
         exporters_available = []
         for exporter in subscribers([self], ITranslationFormatExporter):
-            if file_format in exporter.supported_formats:
+            if file_format in exporter.supported_source_formats:
                 exporters_available.append(exporter)
 
         return exporters_available
 
-    def getTranslationFormatExporterByFileFormat(self, file_format):
+    def getExporterProducingTargetFileFormat(self, file_format):
         """See `ITranslationExporter`."""
         for exporter in subscribers([self], ITranslationFormatExporter):
             if exporter.format == file_format:

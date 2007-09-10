@@ -83,7 +83,7 @@ class POFileNavigation(Navigation):
                 self.context.language.code, self.context.variant)
         else:
             # It's a POST.
-            # XXX CarlosPerelloMarin 2006-04-20 bug=40275: 
+            # XXX CarlosPerelloMarin 2006-04-20 bug=40275:
             # We should check the kind of POST we got,
             # a Log out action will be also a POST and we
             # should not create a POMsgSet in that case.

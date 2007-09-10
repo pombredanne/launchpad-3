@@ -77,7 +77,7 @@ class BaseExportView(LaunchpadView):
 
         default_format = self.getDefaultFormat()
         exporters = (getUtility(
-            ITranslationExporter).getTranslationFormatExportersForFileFormat(
+            ITranslationExporter).getExportersForSupportedFileFormat(
                 default_format))
         for exporter in exporters:
             format = exporter.format

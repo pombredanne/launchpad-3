@@ -24,7 +24,7 @@ http://www.gnu.org/software/gettext/manual/html_chapter/gettext_10.html#MO-Files
     >>> verifyObject(ITranslationFormatExporter, GettextMOExporter())
     True
 
-== exportTranslationFiles ==
+== exportTranslationFiles() ==
 
 With exportTranslationFiles method, we can get a compiled .po file from a
 TranslationFile.
@@ -56,7 +56,7 @@ When we export a single file, we get a .mo file as output.
     >>> exported_file = exporter.exportTranslationFiles([translation_file_es])
     >>> print exported_file.content_type
     application/x-gmo
-    >>> is_valid_mofile(exported_file.content_file.read())
+    >>> is_valid_mofile(exported_file.read())
     True
 
 When we export more than one file, we get a tarball.
@@ -69,7 +69,7 @@ When we export more than one file, we get a tarball.
     ...     [translation_file_es, translation_file_sr])
     >>> print exported_file.content_type
     application/x-gtar
-    >>> file_content = exported_file.content_file.read()
+    >>> file_content = exported_file.read()
     >>> is_valid_mofile(file_content)
     False
     >>> tarfile = string_to_tarfile(file_content)

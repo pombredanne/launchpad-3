@@ -69,7 +69,7 @@
       template="../templates/launchpad-unexpectedformdata.pt"
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
- 
+
   <!-- UnsafeFormGetSubmissionError -->
   <browser:page
       for="canonical.launchpad.webapp.interfaces.UnsafeFormGetSubmissionError"

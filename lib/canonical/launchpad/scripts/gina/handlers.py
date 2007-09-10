@@ -470,7 +470,7 @@ class SourcePackageHandler:
 
         # the dsc doesn't list itself so add it ourselves
         if 'files' not in dsc_contents:
-            log.error('DSC for %s didn\'t contain a files entry: %r' % 
+            log.error('DSC for %s didn\'t contain a files entry: %r' %
                       (dsc_name, dsc_contents))
             return None
         if not dsc_contents['files'].endswith("\n"):
@@ -516,7 +516,7 @@ class SourcePackageHandler:
                 SourcePackageRelease.version = %s AND
                 SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id AND
-                SourcePackagePublishingHistory.distrorelease = 
+                SourcePackagePublishingHistory.distrorelease =
                     DistroRelease.id AND
                 SourcePackagePublishingHistory.archive = %s AND
                 DistroRelease.distribution = %s
@@ -541,7 +541,7 @@ class SourcePackageHandler:
 
         # XXX Debonzi 2005-05-16: Check it later.
         #         if src.dsc_signing_key_owner:
-        #             key = self.getGPGKey(src.dsc_signing_key, 
+        #             key = self.getGPGKey(src.dsc_signing_key,
         #                                  *src.dsc_signing_key_owner)
         #         else:
         key = None
@@ -565,7 +565,6 @@ class SourcePackageHandler:
             sourcepackagename=name.id,
             maintainer=maintainer.id,
             dscsigningkey=key,
-            manifest=None,
             urgency=urgencymap[src.urgency],
             dateuploaded=src.date_uploaded,
             dsc=src.dsc,
@@ -632,7 +631,7 @@ class SourcePackagePublisher:
                 # If nothing has changed in terms of publication
                 # (overrides) we are free to let this one go
                 log.info('SourcePackageRelease already published with no '
-                         'changes as %s' % 
+                         'changes as %s' %
                          source_publishinghistory.status.title)
                 return
 
@@ -777,7 +776,7 @@ class BinaryPackageHandler:
         distribution = distroarchseries.distroseries.distribution
         clauseTables = ["Build", "DistroArchRelease", "DistroRelease"]
 
-        # XXX kiko 2006-02-03: 
+        # XXX kiko 2006-02-03:
         # This method doesn't work for real bin-only NMUs that are
         # new versions of packages that were picked up by Gina before.
         # The reason for that is that these bin-only NMUs' corresponding
@@ -786,13 +785,13 @@ class BinaryPackageHandler:
         # doing it the second time.
 
         query = ("Build.sourcepackagerelease = %d AND "
-                 "Build.distroarchrelease = DistroArchRelease.id AND " 
+                 "Build.distroarchrelease = DistroArchRelease.id AND "
                  "DistroArchRelease.distrorelease = DistroRelease.id AND "
                  "DistroRelease.distribution = %d"
                  % (srcpkg.id, distribution.id))
 
         if archtag != "all":
-            query += ("AND DistroArchRelease.architecturetag = %s" 
+            query += ("AND DistroArchRelease.architecturetag = %s"
                       % quote(archtag))
 
         try:
@@ -813,7 +812,7 @@ class BinaryPackageHandler:
 
             # XXX Debonzi 2005-05-16: Check it later
             #         if bin.gpg_signing_key_owner:
-            #             key = self.getGPGKey(bin.gpg_signing_key, 
+            #             key = self.getGPGKey(bin.gpg_signing_key,
             #                                  *bin.gpg_signing_key_owner)
             #         else:
             key = None
@@ -870,7 +869,7 @@ class BinaryPackagePublisher:
                 # If nothing has changed in terms of publication
                 # (overrides) we are free to let this one go
                 log.info('BinaryPackageRelease already published with no '
-                         'changes as %s' % 
+                         'changes as %s' %
                          binpkg_publishinghistory.status.title)
                 return
 

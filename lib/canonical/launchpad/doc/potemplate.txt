@@ -523,13 +523,8 @@ instead, we get a tarball with all those files.
 
 Inspecting the tarball content, we have the list of entries exported.
 
-    # XXX CarlosPerelloMarin 2007-08-06: Is there any way to avoid
-    # 'removeSecurityProxy' call? (This is for the reviewer).
     >>> from canonical.launchpad.helpers import string_to_tarfile
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> content_file = removeSecurityProxy(
-    ...     exported_translation_file.content_file)
-    >>> tarfile_string = content_file.read()
+    >>> tarfile_string = exported_translation_file.read()
     >>> tarfile = string_to_tarfile(tarfile_string)
     >>> tarfile.getnames()
     ['evolution-2.2/', 'evolution-2.2/evolution-2.2-es.po',

@@ -1,6 +1,6 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""SQLObject implementation of IPOTemplate interface."""
+"""`SQLObject` implementation of `IPOTemplate` interface."""
 
 __metaclass__ = type
 __all__ = [
@@ -17,7 +17,6 @@ from sqlobject import (
     StringCol)
 from zope.component import getUtility
 from zope.interface import implements
-from zope.proxy import removeAllProxies
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -107,6 +106,14 @@ class POTemplate(SQLBase, RosettaStats):
 
     # joins
     pofiles = SQLMultipleJoin('POFile', joinColumn='potemplate')
+
+    # In-memory cache: maps (language code, variant) to list of POFiles
+    # translating this template to that language (variant).
+    _cached_pofiles_by_language = None
+
+    # In-memory cache: code of last-requested language, and its Language.
+    _cached_language_code = None
+    _cached_language = None
 
     def __iter__(self):
         """See `IPOTemplate`."""
@@ -356,6 +363,16 @@ class POTemplate(SQLBase, RosettaStats):
 
     def getPOFileByLang(self, language_code, variant=None):
         """See `IPOTemplate`."""
+        # Consult cache first.
+        language_spec = (language_code, variant)
+        if self._cached_pofiles_by_language is None:
+            self._cached_pofiles_by_language = {}
+        elif language_spec in self._cached_pofiles_by_language:
+            # Cache contains a remembered POFile for this language.  Don't do
+            # the usual get() followed by "is None"; the dict may contain None
+            # values to indicate we looked for a POFile and found none.
+            return self._cached_pofiles_by_language[language_spec]
+
         if variant is None:
             variantspec = 'IS NULL'
         elif isinstance(variant, unicode):
@@ -363,7 +380,7 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             raise TypeError('Variant must be None or unicode.')
 
-        return POFile.selectOne("""
+        self._cached_pofiles_by_language[language_spec] = POFile.selectOne("""
             POFile.potemplate = %d AND
             POFile.language = Language.id AND
             POFile.variant %s AND
@@ -374,6 +391,8 @@ class POTemplate(SQLBase, RosettaStats):
             clauseTables=['Language'],
             prejoinClauseTables=['Language'],
             prejoins=["last_touched_pomsgset"])
+
+        return self._cached_pofiles_by_language[language_spec]
 
     def messageCount(self):
         """See `IRosettaStats`."""
@@ -431,19 +450,25 @@ class POTemplate(SQLBase, RosettaStats):
         """See `IPOTemplate`."""
         translation_exporter = getUtility(ITranslationExporter)
         translation_format_exporter = (
-            translation_exporter.getTranslationFormatExporterByFileFormat(
+            translation_exporter.getExporterProducingTargetFileFormat(
                 self.source_file_format))
 
         template_file = ITranslationFile(self)
         exported_file = translation_format_exporter.exportTranslationFiles(
             [template_file])
-        return removeAllProxies(exported_file.content_file).read()
+
+        try:
+            file_content = exported_file.read()
+        finally:
+            exported_file.close()
+
+        return file_content
 
     def exportWithTranslations(self):
         """See `IPOTemplate`."""
         translation_exporter = getUtility(ITranslationExporter)
         translation_format_exporter = (
-            translation_exporter.getTranslationFormatExporterByFileFormat(
+            translation_exporter.getExporterProducingTargetFileFormat(
                 self.source_file_format))
 
         translation_files = [
@@ -459,18 +484,33 @@ class POTemplate(SQLBase, RosettaStats):
         for potmsgset in self:
             potmsgset.sequence = 0
 
+    def _lookupLanguage(self, language_code):
+        """Look up named `Language` object, or raise `LanguageNotFound`."""
+        # Caches last-requested language to deal with repetitive requests.
+        if self._cached_language_code == language_code:
+            assert self._cached_language is not None, (
+                "Cached None as language in POTemplate.")
+            return self._cached_language
+
+        try:
+            self._cached_language = Language.byCode(language_code)
+        except SQLObjectNotFound:
+            self._cached_language_code = None
+            self._cached_language = None
+            raise LanguageNotFound(language_code)
+
+        self._cached_language_code = language_code
+        return self._cached_language
+
     def newPOFile(self, language_code, variant=None, requester=None):
         """See `IPOTemplate`."""
-        # see if one exists already
+        # Make sure we don't already have a PO file for this language.
         existingpo = self.getPOFileByLang(language_code, variant)
         assert existingpo is None, (
             'There is already a valid IPOFile (%s)' % existingpo.title)
 
-        # since we don't have one, create one
-        try:
-            language = Language.byCode(language_code)
-        except SQLObjectNotFound:
-            raise LanguageNotFound(language_code)
+        # Since we have no PO file for this language yet, create one.
+        language = self._lookupLanguage(language_code)
 
         now = datetime.datetime.now()
         data = {
@@ -519,6 +559,9 @@ class POTemplate(SQLBase, RosettaStats):
             variant=variant,
             path=path)
 
+        # Update cache to reflect the change.
+        self._cached_pofiles_by_language[language_code, variant] = pofile
+
         # Store the changes.
         flush_database_updates()
 
@@ -531,11 +574,7 @@ class POTemplate(SQLBase, RosettaStats):
         assert existingpo is None, (
             'There is already a valid IPOFile (%s)' % existingpo.title)
 
-        try:
-            language = Language.byCode(language_code)
-        except SQLObjectNotFound:
-            raise LanguageNotFound(language_code)
-
+        language = self._lookupLanguage(language_code)
         return DummyPOFile(self, language, owner=requester)
 
     def createMessageIDSighting(self, potmsgset, messageID):
@@ -674,7 +713,7 @@ class POTemplateSubset:
 
     def __init__(self, sourcepackagename=None, from_sourcepackagename=None,
                  distroseries=None, productseries=None):
-        """Create a new POTemplateSubset object.
+        """Create a new `POTemplateSubset` object.
 
         The set of POTemplate depends on the arguments you pass to this
         constructor. The sourcepackagename, from_sourcepackagename,
@@ -995,6 +1034,9 @@ class POTemplateToTranslationFileAdapter:
                 msgset.msgid_plural is None):
                 msgset.msgid_plural = row.msgid
             else:
+                # msgset.msgid or msgset.msgid_plural could be not None,
+                # because we don't need to set it again, thus, we only check
+                # that row.msgidpluralform is correct.
                 assert row.msgidpluralform in (
                     TranslationConstants.SINGULAR_FORM,
                     TranslationConstants.PLURAL_FORM), (

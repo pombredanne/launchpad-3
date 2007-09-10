@@ -139,7 +139,7 @@ class TestJobManagerInLaunchpad(unittest.TestCase):
     def assertMirrored(self, branch_to_mirror):
         """Assert that branch_to_mirror's source and destinations have the same
         revisions.
-        
+
         :param branch_to_mirror: a BranchToMirror instance.
         """
         source_branch = bzrlib.branch.Branch.open(branch_to_mirror.source)

@@ -14,6 +14,7 @@ from zope.interface import Attribute, Interface
 from zope.schema import (
     Bool, Choice, Datetime, Field, Int, List, Object, Text, TextLine)
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.pomsgset import IPOMsgSet
@@ -30,106 +31,108 @@ class IPOFile(IRosettaStats):
     """A translation file."""
 
     id = Int(
-        title=u"The translation file id.",
+        title=_('The translation file id.'),
         required=True, readonly=True)
 
     potemplate = Object(
-        title=u'The translation file template.',
+        title=_('The translation file template.'),
         required=True, readonly=True, schema=IPOTemplate)
 
     language = Choice(
-        title=u'Language of this PO file.',
+        title=_('Language of this PO file.'),
         vocabulary='Language', required=True)
 
     title = TextLine(
-        title=u'The translation file title.', required=True, readonly=True)
+        title=_('The translation file title.'), required=True, readonly=True)
 
     description = Text(
-        title=u'The translation file description.', required=True)
+        title=_('The translation file description.'), required=True)
 
     topcomment = Text(
-        title=u'A comment about this translation file.', required=True)
+        title=_('A comment about this translation file.'), required=True)
 
     header = Text(
-        title=u'Header',
-        description=u'The standard translation header in its native format.',
+        title=_('Header'),
+        description=_(
+            'The standard translation header in its native format.'),
         required=False)
 
     fuzzyheader = Bool(
-        title=u'A flag indicating whether the header is fuzzy.',
+        title=_('A flag indicating whether the header is fuzzy.'),
         required=True)
 
     lasttranslator = Object(
-        title=u'Last person that translated a message.', schema=IPerson)
+        title=_('Last person that translated a message.'), schema=IPerson)
 
-    license = Int(title=u'The license under this translation is done.')
+    license = Int(title=_('The license under this translation is done.'))
 
-    lastparsed = Datetime(title=u'Last time this pofile was parsed.')
+    lastparsed = Datetime(title=_('Last time this pofile was parsed.'))
 
     owner = Choice(
-        title=u'Translation file owner',
+        title=_('Translation file owner'),
         required=True,
-        description=u'''
+        description=_('''
             The owner of the translation file in Launchpad can edit its
             translations and upload new versions.
-            ''',
+            '''),
         vocabulary="ValidOwner")
 
     variant = TextLine(
-        title=u'The language variant for this translation file.')
+        title=_('The language variant for this translation file.'))
 
     path = TextLine(
-        title=u'The path to the file that was imported',
+        title=_('The path to the file that was imported'),
         required=True)
 
     exportfile = Object(
-        title=u'Last cached export file',
+        title=_('Last cached export file'),
         required=True, schema=ILibraryFileAlias)
 
     datecreated = Datetime(
-        title=u'When this translation file was created.', required=True)
+        title=_('When this translation file was created.'), required=True)
 
     last_touched_pomsgset = Object(
-        title=u'Translation message which was most recently touched.',
-        description=u'''
+        title=_('Translation message which was most recently touched.'),
+        description=_('''
             Translation message which was most recently touched, or None if
-            there are no translations active in this IPOFile.''',
+            there are no translations active in this IPOFile.'''),
         required=False, schema=IPOMsgSet)
 
     translators = List(
-        title=u'Translators that have edit permissions.',
-        description=u'''
+        title=_('Translators that have edit permissions.'),
+        description=_('''
             Translators designated as having permission to edit these files
             in this language.
-            ''', required=True, readonly=True)
+            '''), required=True, readonly=True)
 
     contributors = List(
-        title=u'''Translators who have made some sort of contribution to this translation file.''',
+        title=_('Translators who have made any contribution to this file.'),
         required=True, readonly=True)
 
     translationpermission = Choice(
-        title=u'Translation permission',
+        title=_('Translation permission'),
         required=True,
-        description=u'''
+        description=_('''
             The permission system which is used for this translation file.
             This is inherited from the product, project and/or distro in which
             the pofile is found.
-            ''',
+            '''),
         vocabulary='TranslationPermission')
 
     fuzzy_count = Int(
-        title=u'The number of fuzzy messages in this po file.',
+        title=_('The number of fuzzy messages in this po file.'),
         required=True, readonly=True)
 
     from_sourcepackagename = Field(
-        title=u'The source package this pofile comes from.',
-        description=(u'The source package this pofile comes from (set it only'
-            u' if it\'s different from IPOFile.potemplate.sourcepackagename).'
-            ),
+        title=_('The source package this pofile comes from.'),
+        description=_('''
+            The source package this pofile comes from (set it only if it\'s
+            different from IPOFile.potemplate.sourcepackagename).
+            '''),
         required=False)
 
     pomsgsets = Attribute(
-        'All `IPOMsgset` objects related to this translation file.')
+        _('All `IPOMsgset` objects related to this translation file.'))
 
     def translatedCount():
         """
@@ -319,10 +322,10 @@ class IPOFileAlternativeLanguage(Interface):
     """A PO File's alternative language."""
 
     alternative_language = Choice(
-        title=u'Alternative language',
-        description=(u'Language from where we could get alternative'
-                     u' translations for this PO file.'),
-        vocabulary='TranslatableLanguage',
+        title=_('Alternative language'),
+        description=_('''
+            Language from where we could get alternative translations for
+            this PO file.'''), vocabulary='TranslatableLanguage',
         required=False)
 
 
@@ -351,16 +354,16 @@ class IPOFileTranslator(Interface):
     """Represents contributions from people to POFiles."""
 
     person = Object(
-        title=u'The Person this record represents.', required=True,
+        title=_('The Person this record represents.'), required=True,
         schema=IPerson)
 
     pofile = Object(
-        title=u'The `IPOFile` modified by the translator.', required=True,
+        title=_('The `IPOFile` modified by the translator.'), required=True,
         schema=IPOFile)
 
     latest_posubmission = Object(
-        title=u'Latest `IPOSubmission` added to this `IPOFile`.',
+        title=_('Latest `IPOSubmission` added to this `IPOFile`.'),
         required=True, schema=IPOSubmission)
 
     date_last_touched = Datetime(
-        title=u'When was added latest `IPOSubmission`.', required=True)
+        title=_('When was added latest `IPOSubmission`.'), required=True)
