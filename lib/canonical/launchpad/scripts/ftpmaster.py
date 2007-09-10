@@ -207,11 +207,23 @@ class ArchiveOverrider:
             self.log.error("'%s' source isn't published in %s"
                            % (package_name, self.distroseries.name))
             return
+        if sp.currentrelease.binaries.count() == 0:
+            self.log.error("'%s' has no binaries published in %s"
+                           % (package_name, self.distroseries.name))
+            return
 
         # Process all binaries related to the current source package release.
         for bpr in sp.currentrelease.binaries:
-            # Examine all architectures for the binary package release.
-            for distroarchseries in self.distroseries.architectures:
+            if bpr.architecturespecific:
+                # Examine only the target archictecture for architecture
+                # specific binary package releases.
+                considered_archs = [bpr.build.distroarchseries]
+            else:
+                # Examine all architectures for the archictecture independent
+                # binary package releases.
+                considered_archs = self.distroseries.architectures
+            # Perform overrides.
+            for distroarchseries in considered_archs:
                 dasbpr = distroarchseries.getBinaryPackage(
                     bpr.name)[bpr.version]
                 current = None
@@ -224,7 +236,7 @@ class ArchiveOverrider:
                         new_priority=self.priority, new_section=self.section)
                     self.log.info(
                         "'%s/%s/%s/%s' binary overridden in %s/%s"
-                        % (package_name, current.component.name,
+                        % (bpr.name, current.component.name,
                            current.section.name, current.priority.name,
                            self.distroseries.name,
                            distroarchseries.architecturetag))

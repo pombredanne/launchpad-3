@@ -359,6 +359,12 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
             "INFO: 'mozilla-firefox/main/base/EXTRA' "
+                "binary overridden in warty/i386\n"
+            "INFO: 'mozilla-firefox/main/base/EXTRA' "
+                "binary overridden in warty/hppa\n"
+            "INFO: 'mozilla-firefox-data/main/base/EXTRA' "
+                "binary overridden in warty/hppa\n"
+            "INFO: 'mozilla-firefox-data/main/base/EXTRA' "
                 "binary overridden in warty/i386")
 
     def test_processChildrenChange_error(self):
