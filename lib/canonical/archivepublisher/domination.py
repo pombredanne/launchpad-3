@@ -148,7 +148,7 @@ class Dominator:
                     # not the new binary package release. This is because there
                     # may not *be* a new matching binary package - source
                     # packages can change the binaries they build between
-                    # releases. 
+                    # releases.
                     pubrec.supersededby = dominantrelease.build
 
 

@@ -152,7 +152,7 @@ class DistributionSourcePackageBugContactsView(LaunchpadFormView):
         terms = [
             SimpleTerm(contact, contact.name, contact.displayname)
             for contact in other_contacts]
-        
+
         contacts_vocabulary = SimpleVocabulary(terms)
         other_contacts_field = List(
             __name__='remove_other_bugcontacts',
@@ -183,7 +183,7 @@ class DistributionSourcePackageBugContactsView(LaunchpadFormView):
             'make_me_a_bugcontact': self.currentUserIsBugContact(),
             'bugmail_contact_team': bugcontact_teams
             }
-    
+
     def currentUserIsBugContact(self):
         """Return True, if the current user is a bug contact."""
         return self.context.isBugContact(self.user)

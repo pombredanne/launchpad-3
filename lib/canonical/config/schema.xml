@@ -408,6 +408,15 @@ k            </description>
             </description>
         </key>
 
+        <key name="componentoverride" datatype="string" required="no">
+            <description>
+                If specified, override packages' components to this value.
+                This only affects the publisher tables and may also override
+                the archive according to the existing component/archive
+                overriding rules.
+            </description>
+        </key>
+
         <key name="katie_dbname" datatype="string" required="no">
             <description>
                 The Katie database that should be used to extract extra
@@ -565,6 +574,19 @@ k            </description>
               without being truncated when displayed on the main bug
               page.
           </description>
+        </key>
+        <key name="expiration_dbuser" datatype="string" 
+            default="bugnotification">
+            <description>
+                The database user that will be used to expire bugtask.
+            </description>
+        </key>
+        <key name="days_before_expiration" datatype="integer"
+             default="60">
+            <description>
+                The number of days of inactivity required before an unassigned
+                bugtask with the status of INCOMPLETE is expired.
+            </description>
         </key>
         <key name="search_comments" datatype="boolean" required="no"
              default="no">
@@ -907,8 +929,6 @@ k            </description>
         <key name="dbuser" datatype="string" default="supermirror" />
         <key name="branchesdest" datatype="string" default="/var/tmp/sm-ng/mirrors" />
         <key name="masterlock" datatype="string" default="/var/tmp/sm-ng/masterlock" />
-        <key name="branchlistsource" datatype="string"
-             default="http://gangotri.ubuntu.com:9000/supermirror-pull-list.txt" />
         <key name="authserver_url" datatype="canonical.config.urlbase"
              default="http://localhost:8999/branch/">
             <description>
@@ -1027,6 +1047,10 @@ k            </description>
         <key name="xmlrpc_runner_sleep" datatype="integer" default="10" />
     </sectiontype>
 
+    <sectiontype name="checkwatches">
+        <key name="batch_query_threshold" datatype="integer" default="10" />
+    </sectiontype>
+
     <sectiontype name="canonical" extends="database_options">
         <key name="chunkydiff" datatype="boolean"
             required="no" default="true" />
@@ -1076,6 +1100,7 @@ k            </description>
         <section name="*" type="mailman" attribute="mailman" />
         <section name="*" type="archivepublisher" 
             attribute="archivepublisher" />
+        <section name="*" type="checkwatches" attribute="checkwatches" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file

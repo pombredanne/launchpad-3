@@ -24,12 +24,8 @@ import cgi
 from datetime import datetime, timedelta
 import pytz
 
-from zope.app.form.browser.widget import BrowserWidget, renderElement
-from zope.app.form.browser import UnicodeDisplayWidget
-from zope.app.form.interfaces import IDisplayWidget
 from zope.event import notify
 from zope.component import getUtility
-from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -44,7 +40,7 @@ from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchType, BranchVisibilityRule, IBranch,
     IBranchMergeProposal, InvalidBranchMergeProposal,
     IBranchSet, IBranchSubscription, IBugSet,
-    ICodeImportSet, ILaunchpadCelebrities, IPersonSet)
+    ICodeImportSet, ILaunchpadCelebrities, IPersonSet, UICreatableBranchType)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
@@ -119,7 +115,7 @@ class BranchContextMenu(ContextMenu):
     facet = 'branches'
     links = ['edit', 'delete_branch', 'browse', 'reassign', 'subscription',
              'addsubscriber', 'associations', 'registermerge',
-             'landingcandidates']
+             'landingcandidates', 'linkbug']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -176,6 +172,10 @@ class BranchContextMenu(ContextMenu):
         enabled = self.context.landing_candidates.count() > 0
         return Link('+landing-candidates', text, icon='edit', enabled=enabled)
 
+    def linkbug(self):
+        text = 'Link to bug report'
+        return Link('+linkbug', text, icon='edit')
+
 
 class BranchView(LaunchpadView):
 
@@ -212,6 +212,12 @@ class BranchView(LaunchpadView):
     def author_is_owner(self):
         """Is the branch author set and equal to the registrant?"""
         return self.context.author == self.context.owner
+
+    @property
+    def codebrowse_url(self):
+        """Return the link to codebrowse for this branch."""
+        return config.launchpad.codebrowse_root + self.context.unique_name
+
 
     def supermirror_url(self):
         """Public URL of the branch on the Supermirror."""
@@ -447,7 +453,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
         # This is to prevent users from converting push/import
         # branches to pull branches.
         branch = self.context
-        if branch.url is None:
+        if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             self.form_fields = self.form_fields.omit('url')
 
         # Disable privacy if the owner of the branch is not allowed to change
@@ -477,29 +483,43 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             self.form_fields = self.form_fields.omit('private')
 
     def validate(self, data):
+        # Check that we're not moving a team branch to the +junk
+        # pseudo project.
+        if ('product' in data and data['product'] is None
+            and self.context.owner.isTeam()):
+            self.setFieldError(
+                'product',
+                "Team-owned branches must be associated with a project.")
         if 'product' in data and 'name' in data:
             self.validate_branch_name(self.context.owner,
                                       data['product'],
                                       data['name'])
+        if self.context.branch_type == BranchType.MIRRORED:
+            if data.get('url') is None:
+                self.setFieldError(
+                    'url',
+                    'Branch URLs are required for Mirrored branches.')
 
 
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
-    field_names = ['product', 'url', 'name', 'title', 'summary',
+    field_names = ['branch_type', 'product', 'url', 'name', 'title', 'summary',
                    'lifecycle_status', 'whiteboard', 'home_page', 'author']
 
     branch = None
+
+    @property
+    def initial_values(self):
+        return {'branch_type': UICreatableBranchType.MIRRORED}
 
     @action('Add Branch', name='add')
     def add_action(self, action, data):
         """Handle a request to create a new branch for this product."""
         try:
-            # XXX thumper 2007-06-27 spec=branch-creation-refactoring:
-            # The branch_type needs to be passed
-            # in as part of the view data, see spec
+            ui_branch_type = data['branch_type']
             self.branch = getUtility(IBranchSet).new(
-                branch_type=BranchType.MIRRORED,
+                branch_type=BranchType.items[ui_branch_type.name],
                 name=data['name'],
                 creator=self.user,
                 owner=self.user,
@@ -511,7 +531,8 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 lifecycle_status=data['lifecycle_status'],
                 home_page=data['home_page'],
                 whiteboard=data['whiteboard'])
-            self.branch.requestMirror()
+            if self.branch.branch_type == BranchType.MIRRORED:
+                self.branch.requestMirror()
         except BranchCreationForbidden:
             self.setForbiddenError(self.getProduct(data))
         else:
@@ -532,14 +553,48 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         """A method that is overridden in the derived classes."""
         return data['author']
 
+    def hasProduct(self, data):
+        """Is the product defined in the data dict."""
+        return 'product' in data
+
     def getProduct(self, data):
         """A method that is overridden in the derived classes."""
-        return data['product']
+        return data.get('product')
 
     def validate(self, data):
-        if 'product' in data and 'name' in data:
+        if self.hasProduct(data) and 'name' in data:
             self.validate_branch_name(
-                self.user, data['product'], data['name'])
+                self.user, self.getProduct(data), data['name'])
+
+        branch_type = data.get('branch_type')
+        # If branch_type failed to validate, then the rest of the method
+        # doesn't make any sense.
+        if branch_type is None:
+            return
+
+        # If the branch is a MIRRORED branch, then the url
+        # must be supplied, and if HOSTED the url must *not*
+        # be supplied.
+        url = data.get('url')
+        if branch_type == UICreatableBranchType.MIRRORED:
+            if url is None:
+                # If the url is not set due to url validation errors,
+                # there will be an error set for it.
+                error = self.getWidgetError('url')
+                if not error:
+                    self.setFieldError(
+                        'url',
+                        'Branch URLs are required for Mirrored branches.')
+        elif branch_type == UICreatableBranchType.HOSTED:
+            if url is not None:
+                self.setFieldError(
+                    'url',
+                    'Branch URLs cannot be set for Hosted branches.')
+        elif branch_type == UICreatableBranchType.REMOTE:
+            # A remote location can, but doesn't have to be set.
+            pass
+        else:
+            raise AssertionError('Unknown branch type')
 
     def script_hook(self):
         return '''<script type="text/javascript">
@@ -572,24 +627,22 @@ class PersonBranchAddView(BranchAddView):
 class ProductBranchAddView(BranchAddView):
     """See `BranchAddView`."""
 
-    initial_focus_widget = 'url'
-
     @property
     def field_names(self):
         fields = list(BranchAddView.field_names)
         fields.remove('product')
         return fields
 
+    def hasProduct(self, data):
+        return True
+
     def getProduct(self, data):
         return self.context
 
-    def validate(self, data):
-        if 'name' in data:
-            self.validate_branch_name(self.user, self.context, data['name'])
-
     @property
     def initial_values(self):
-        return {'author': self.user}
+        return {'author': self.user,
+                'branch_type': UICreatableBranchType.MIRRORED}
 
     def setForbiddenError(self, product):
         """There is no product widget, so set a form wide error."""
@@ -616,6 +669,11 @@ class BranchReassignmentView(ObjectReassignmentView):
     def isValidOwner(self, new_owner):
         if self.context.product is None:
             product_name = None
+            if new_owner.isTeam():
+                self.errormessage = (
+                    "You cannot assign a +junk branch to a team. Create a "
+                    "project first.")
+                return False
         else:
             product_name = self.context.product.name
         branch_name = self.context.name
@@ -638,6 +696,8 @@ class BranchReassignmentView(ObjectReassignmentView):
                 % (quote(new_owner.browsername),
                    quote(branch.product.displayname),
                    branch.name))
+            # XXX 2007-08-07 MichaelHudson, branch.product can be None in the
+            # lines above.  See bug 133126.
             return False
 
 

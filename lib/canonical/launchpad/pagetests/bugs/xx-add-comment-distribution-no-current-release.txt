@@ -9,7 +9,7 @@ it's still possible to add comments to the bug.
     >>> user_browser.getControl('Further information').value = 'A test bug.'
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.url
-    'http://bugs.launchpad.dev/gentoo/+bug/14'
+    'http://bugs.launchpad.dev/gentoo/+bug/...'
 
     >>> user_browser.getControl(name='field.comment').value = 'A new comment.'
     >>> user_browser.getControl('Save Changes', index=-1).click()
