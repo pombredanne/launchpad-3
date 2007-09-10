@@ -6,7 +6,7 @@
     <!--
     <mail:queuedDelivery
         permission="zope.SendMail" mailer="smtp"
-        queuePath="/srv/launchpad.net/mail_queue/production6"
+        queuePath="/srv/launchpad.net/mail_queue/production1"
         />
     -->
 
