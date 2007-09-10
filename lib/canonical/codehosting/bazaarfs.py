@@ -60,7 +60,11 @@ class SFTPServerRoot(adhoc.AdhocDirectory, LoggingMixin):
             "Branches must be inside a person or team directory.")
 
     def getAbsolutePath(self):
-        """Return the absolute path to this directory."""
+        """Return the absolute path to this directory.
+
+        Because this is the root directory by definition, we return '/' rather
+        than using the default implementation.
+        """
         return '/'
 
     def setListenerFactory(self, factory):
@@ -201,8 +205,7 @@ class SFTPServerProductDir(adhoc.AdhocDirectory, LoggingMixin):
                 childName, self)
             return self.child(childName)
         self.avatar.logger.debug(
-            'Create branch directory %r under %r. Already exists',
-            childName, self)
+            'Create branch directory %r under %r.', childName, self)
         deferred = self.avatar.createBranch(
             self.avatar.avatarId, self.userName, self.productName, childName)
         def cb(branchID):
