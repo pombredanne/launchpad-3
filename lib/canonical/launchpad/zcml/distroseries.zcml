@@ -336,4 +336,24 @@
     permission="zope.Public"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesLanguagePackAdminView"
+    permission="launchpad.TranslationsAdmin"
+    template="../templates/distroseries-language-packs-editing.pt"
+    name="+admin-language-packs"
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesFullLanguagePackRequestView"
+    permission="launchpad.LanguagePacksAdmin"
+    template="../templates/distroseries-language-packs-editing.pt"
+    name="+full-language-pack-request"
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
 </configure>

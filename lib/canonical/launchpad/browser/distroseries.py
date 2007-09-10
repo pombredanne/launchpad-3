@@ -5,14 +5,16 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistroSeriesNavigation',
-    'DistroSeriesDynMenu',
-    'DistroSeriesSOP',
-    'DistroSeriesFacets',
-    'DistroSeriesView',
-    'DistroSeriesEditView',
     'DistroSeriesAddView',
+    'DistroSeriesDynMenu',
+    'DistroSeriesEditView',
+    'DistroSeriesFacets',
+    'DistroSeriesFullLanguagePackRequestView',
+    'DistroSeriesLanguagePackAdminView',
+    'DistroSeriesNavigation',
+    'DistroSeriesSOP',
     'DistroSeriesTranslationsAdminView',
+    'DistroSeriesView',
     ]
 
 from zope.component import getUtility
@@ -426,5 +428,47 @@ class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
         self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
+
+        self.next_url = canonical_url(self.context)
+
+
+class DistroSeriesLanguagePackAdminView(LaunchpadEditFormView):
+    schema = IDistroSeries
+
+    field_names = ['language_pack_base', 'language_pack_delta',
+                   'language_pack_proposed']
+
+    def initialize(self):
+        LaunchpadEditFormView.initialize(self)
+        self.label = 'Change language packs of %s' % self.context.title
+        self.page_title = self.label
+
+    @action("Change")
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'Your changes have been applied.')
+
+        self.next_url = canonical_url(self.context)
+
+
+class DistroSeriesFullLanguagePackRequestView(LaunchpadEditFormView):
+    schema = IDistroSeries
+
+    field_names = ['language_pack_full_export_requested']
+
+    def initialize(self):
+        LaunchpadEditFormView.initialize(self)
+        self.label = 'Request a full language pack export of %s' % (
+            self.context.title)
+        self.page_title = self.label
+
+    @action("Request")
+    def request_action(self, action, data):
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification('''
+Your request has been noted, next language pack export will include a full
+export.
+''')
 
         self.next_url = canonical_url(self.context)

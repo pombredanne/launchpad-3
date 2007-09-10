@@ -23,11 +23,11 @@ __all__ = [
     'DistributionUsingMaloneVocabulary',
     'DistroSeriesVocabulary',
     'FAQVocabulary',
-    'FilteredDeltaLanguagePack',
+    'FilteredDeltaLanguagePackVocabulary',
     'FilteredDistroArchSeriesVocabulary',
     'FilteredDistroSeriesVocabulary',
-    'FilteredFullLanguagePack',
-    'FilteredLanguagePack',
+    'FilteredFullLanguagePackVocabulary',
+    'FilteredLanguagePackVocabulary',
     'FilteredProductSeriesVocabulary',
     'FutureSprintVocabulary',
     'KarmaCategoryVocabulary',
@@ -1428,7 +1428,7 @@ class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
             return IDistribution.providedBy(obj)
 
 
-class FilteredLanguagePackBase(SQLObjectVocabularyBase):
+class FilteredLanguagePackVocabularyBase(SQLObjectVocabularyBase):
     """Base vocabulary class to retrieve language packs for a distroseries."""
     displayname = 'Needs to be overridden'
     _table = LanguagePack
@@ -1443,28 +1443,23 @@ class FilteredLanguagePackBase(SQLObjectVocabularyBase):
         if not IDistroSeries.providedBy(self.context):
             # This vocabulary is only useful from a DistroSeries context.
             return
-        language_pack_type_delta_query = ('''
-            (language_pack_type = %s AND language_pack_that_updates = %s)
-            ''' % sqlvalues(
-                LanguagePackType.DELTA, self.context.language_pack_base))
-        language_pack_type_full_query = (
-            'language_pack_type = %s' % sqlvalues(LanguagePackType.FULL))
+        type_delta_query = ('(type = %s AND updates = %s)' % sqlvalues(
+            LanguagePackType.DELTA, self.context.language_pack_base))
+        type_full_query = ('type = %s' % sqlvalues(LanguagePackType.FULL))
 
         if self._language_pack_type is None:
             # We are interested on any language pack type.
-            query.append('(%s OR %s)' % (
-                language_pack_type_delta_query, language_pack_type_full_query)
-                )
+            query.append('(%s OR %s)' % (type_delta_query, type_full_query))
         elif self._language_pack_type == LanguagePackType.DELTA:
-            query.append(language_pack_type_delta_query)
+            query.append(type_delta_query)
         elif self._language_pack_type == LanguagePackType.FULL:
-            query.append(language_pack_type_full_query)
+            query.append(type_full_query)
         else:
             raise AssertionError(
                 'Unknown language pack type: %s' %
                     self._language_pack_type.name)
 
-        query.append('distro_release = %s' % sqlvalues(self.context))
+        query.append('distroseries = %s' % sqlvalues(self.context))
         language_packs = self._table.select(
             ' AND '.join(query), orderBy=self._orderBy)
 
@@ -1472,17 +1467,17 @@ class FilteredLanguagePackBase(SQLObjectVocabularyBase):
             yield self.toTerm(language_pack)
 
 
-class FilteredFullLanguagePack(FilteredLanguagePackBase):
+class FilteredFullLanguagePackVocabulary(FilteredLanguagePackVocabularyBase):
     """Full export Language Pack for a distribution series."""
     displayname = 'Select a full export language pack'
     _language_pack_type = LanguagePackType.FULL
 
 
-class FilteredDeltaLanguagePack(FilteredLanguagePackBase):
+class FilteredDeltaLanguagePackVocabulary(FilteredLanguagePackVocabularyBase):
     """Delta export Language Pack for a distribution series."""
     displayname = 'Select a delta export language pack'
     _language_pack_type = LanguagePackType.DELTA
 
 
-class FilteredLanguagePack(FilteredLanguagePackBase):
+class FilteredLanguagePackVocabulary(FilteredLanguagePackVocabularyBase):
     displayname = 'Select a language pack'

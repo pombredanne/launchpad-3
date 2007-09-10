@@ -450,6 +450,9 @@ def distroseries_index(context, view):
 
 distroseries_language_packs = ContextDisplayName('Language packs for %s')
 
+def distroseries_language_packs_editing(context, view):
+    return view.page_title
+
 distroseries_packaging = ContextDisplayName('Mapping packages to upstream '
     'for %s')
 

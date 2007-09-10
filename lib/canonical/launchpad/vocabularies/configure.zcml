@@ -120,6 +120,11 @@
     factory="canonical.launchpad.vocabularies.FAQVocabulary"
     />
 
+  <vocabulary
+    name="FilteredDeltaLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredDeltaLanguagePackVocabulary"
+    />
+
    <vocabulary
     name="FilteredDistroArchSeries"
     factory="canonical.launchpad.vocabularies.FilteredDistroArchSeriesVocabulary"
@@ -128,6 +133,16 @@
   <vocabulary
     name="FilteredDistroSeries"
     factory="canonical.launchpad.vocabularies.FilteredDistroSeriesVocabulary"
+    />
+
+  <vocabulary
+    name="FilteredFullLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredFullLanguagePackVocabulary"
+    />
+
+  <vocabulary
+    name="FilteredLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredLanguagePackVocabulary"
     />
 
   <vocabulary
