@@ -59,11 +59,6 @@ class BuildQueue(SQLBase):
     @property
     def component_name(self):
         """See IBuildQueue."""
-        # XXX cprov 20070808: If we store component in the Build record on its
-        # creation time we could save this publishing query and be in a better
-        # position when inspecting main/universe demotions and FTBFS due to
-        # ogre-model implications because we would have the component where
-        # the source was built directly.
         pub = self._currentPublication()
         if pub is not None:
             return pub.component.name
