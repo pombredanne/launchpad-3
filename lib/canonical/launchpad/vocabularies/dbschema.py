@@ -17,7 +17,6 @@ __all__ = [
     'BugBranchStatusVocabulary',
     'BugNominationStatusVocabulary',
     'BugTaskImportanceVocabulary',
-    'BugTaskStatusVocabulary',
     'BugTrackerTypeVocabulary',
     'CodeImportReviewStatusVocabulary',
     'CveStatusVocabulary',
@@ -28,7 +27,6 @@ __all__ = [
     'PollAlgorithmVocabulary',
     'PollSecrecyVocabulary',
     'RemoteBugTaskImportanceVocabulary',
-    'RemoteBugTaskStatusVocabulary',
     'RevisionControlSystemsVocabulary',
     'SpecificationImplementationStatusVocabulary',
     'SpecificationPriorityVocabulary',
@@ -44,6 +42,8 @@ __all__ = [
 from canonical.lp import dbschema
 
 from canonical.launchpad.webapp.vocabulary import vocab_factory
+from canonical.launchpad.interfaces import (
+    QuestionAction, QuestionPriority, QuestionSort, QuestionStatus)
 
 
 # DB Schema Vocabularies
@@ -54,8 +54,6 @@ BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
 BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
-BugTaskStatusVocabulary = vocab_factory(
-    dbschema.BugTaskStatus, noshow=[dbschema.BugTaskStatus.UNKNOWN])
 BugTaskImportanceVocabulary = vocab_factory(
     dbschema.BugTaskImportance, noshow=[dbschema.BugTaskImportance.UNKNOWN])
 BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
@@ -72,7 +70,6 @@ PackagePublishingPocketVocabulary = vocab_factory(
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
 PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
-RemoteBugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 RevisionControlSystemsVocabulary = vocab_factory(
     dbschema.RevisionControlSystems)
