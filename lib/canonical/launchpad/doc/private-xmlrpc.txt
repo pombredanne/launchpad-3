@@ -1,0 +1,55 @@
+Private XML-RPC ports
+=====================
+
+Several internal services require access to Launchpad data, typically over
+XML-RPC.  Because these services are internal and the data they expose is not
+needed by the outside world -- nor should it be -- Launchpad exposes an
+internal port for these private XML-RPC end points.  These internal-only end
+points are not available on the public XML-RPC port.
+
+For example, the team mailing list feature requires a connection between an
+internal Mailman server and Launchpad.  This end point is not available on the
+external XML-RPC port.
+
+    >>> import xmlrpclib
+    >>> from canonical.functional import XMLRPCTestTransport
+    >>> external_api = xmlrpclib.ServerProxy(
+    ...    'http://test@canonical.com:test@xmlrpc.launchpad.dev/mailinglists/',
+    ...    transport=XMLRPCTestTransport())
+    >>> external_api.getPendingActions()
+    Traceback (most recent call last):
+    ...
+    ProtocolError: <ProtocolError for
+    test@canonical.com:test@xmlrpc.launchpad.dev/mailinglists/:
+    404 404 Not Found>
+
+However, the end point is available on the internal port and does not require
+authentication.
+
+    >>> internal_api = xmlrpclib.ServerProxy(
+    ...     'http://xmlrpc.launchpad.dev:8087/mailinglists/',
+    ...     transport=XMLRPCTestTransport())
+    >>> internal_api.getPendingActions()
+    {}
+
+The bugs API on the other hand is an external service so it is available on
+the external port.
+
+    >>> external_api = xmlrpclib.ServerProxy(
+    ...    'http://test@canonical.com:test@xmlrpc.launchpad.dev/bugs/',
+    ...    transport=XMLRPCTestTransport())
+    >>> external_api.filebug(dict(
+    ...     product='firefox', summary='the summary', comment='the comment'))
+    'http://bugs.launchpad.dev/bugs/15'
+
+But it is not available on the internal port.
+
+    >>> internal_api = xmlrpclib.ServerProxy(
+    ...     'http://xmlrpc.launchpad.dev:8087/bugs/',
+    ...     transport=XMLRPCTestTransport())
+    >>> internal_api.filebug(dict(
+    ...     product='firefox', summary='the summary', comment='the comment'))
+    Traceback (most recent call last):
+    ...
+    ProtocolError: <ProtocolError for xmlrpc.launchpad.dev:8087/bugs/:
+    404 404 Not Found>

@@ -456,6 +456,14 @@ class LaunchpadRootNavigation(Navigation):
                 not IPrivateXMLRPCRequest.providedBy(self.request)):
                 # The utility wants to be private but the request was public.
                 return None
+            # And If the utility is not part of the private API, then the
+            # request must not be coming from the private XML-RPC port.
+            if (not IPrivateXMLRPCEndPoint.providedBy(utility) and
+                IPrivateXMLRPCRequest.providedBy(self.request)):
+                # The utility wants to be public but the request was private.
+                # This is mostly an internal error, but returning a 404 will
+                # give a better error diagnostic.
+                return None
             return utility
 
         # Allow traversal to ~foo for People

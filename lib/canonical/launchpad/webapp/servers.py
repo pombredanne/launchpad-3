@@ -219,13 +219,21 @@ class LaunchpadRequestPublicationFactory:
     def canHandle(self, environment):
         """Only configured domains are handled."""
         # We look at the wsgi environment to get the port this request is
-        # coming in over. If it's our private port (as determined by matching
+        # coming in over.  If it's our private port (as determined by matching
         # the PrivateXMLRPC server type), then we route calls to the private
-        # xmlrpc host.
+        # xmlrpc host.  The port number can be in one of two places; either
+        # it's on the SERVER_PORT environment variable or, as is the case with
+        # the test suite, it's on the HTTP_HOST variable after a colon.  Check
+        # the former first.
+        host = environment['HTTP_HOST']
+        server_port = environment.get('SERVER_PORT')
+        port = -1
+        if server_port is None and ':' in host:
+            host, server_port = host.split(':', 1)
         try:
-            port = int(environment.get('SERVER_PORT', '-1'))
-        except ValueError:
-            port = -1
+            port = int(server_port)
+        except (ValueError, TypeError):
+            pass
         for server in config.servers:
             if server.address[1] == port and server.type == 'PrivateXMLRPC':
                 # This request came over the private XMLRPC port.
