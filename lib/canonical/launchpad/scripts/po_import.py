@@ -64,12 +64,13 @@ class ImportProcess:
                     continue
 
                 if entry_to_import.import_into is None:
-                    package = "unknown package"
                     if entry_to_import.sourcepackagename is not None:
                         package = entry_to_import.sourcepackagename.name
                     elif entry_to_import.productseries is not None:
                         package = (
                             entry_to_import.productseries.product.displayname)
+                    else:
+                        package = "unknown package"
                     raise AssertionError(
                         "Broken translation import queue entry %d (for %s): "
                         "it's Approved but lacks the place where it should "

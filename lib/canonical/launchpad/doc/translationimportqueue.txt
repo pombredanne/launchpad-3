@@ -1003,13 +1003,34 @@ review.
 
 = Error handling =
 
-If administrators fail to correct certain errors in requests while approving
-them, we may end up with an approved but incomplete entry that has no place to
-go.  Make sure these errors are caught and reported appropriately.
+Because of bug 138650, if administrators fail to correct certain errors in
+requests while approving them, we may end up with an approved but incomplete
+entry that has no place to go.
+
+If such bad requests do end up on the import queue, the import queue code will
+raise errors about them.
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
     ...     u'po/sr.po', 'foo', True, rosetta_expert,
     ...      productseries=evolution_productseries)
+
+    >>> entry.import_into is None
+    True
+
+    >>> entry.status = RosettaImportStatus.APPROVED
+
+    >>> import logging
+    >>> from canonical.launchpad.scripts.po_import import ImportProcess
+    >>> ImportProcess(transaction, logging).run()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Broken translation import queue entry 4 (for evolution):
+    ...
+
+    >>> entry = translationimportqueue.addOrUpdateEntry(
+    ...     u'po/th.po', 'bar', False, rosetta_expert,
+    ...     distroseries=hoary_distroseries,
+    ...     sourcepackagename=evolution_sourcepackagename)
 
     >>> entry.import_into is None
     True
