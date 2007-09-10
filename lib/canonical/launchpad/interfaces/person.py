@@ -185,6 +185,12 @@ class PersonCreationRationale(DBEnumeratedType):
         directed to Launchpad to create an account.
         """)
 
+    OWNER_SUBMITTED_HARDWARE_TEST = DBItem(14, """
+        Created by a submission to the hardware database.
+
+        Somebody without a Launchpad account made a submission to the
+        hardware database.
+        """)
 
 class TeamMembershipRenewalPolicy(DBEnumeratedType):
     """TeamMembership Renewal Policy.

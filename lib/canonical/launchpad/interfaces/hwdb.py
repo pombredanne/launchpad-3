@@ -5,13 +5,13 @@
 __metaclass__ = type
 
 __all__ = [
-    'HWDBSubmissionError',
-    'HWDBSubmissionFormat',
-    'HWDBSubmissionStatus',
-    'IHWDBSubmission',
-    'IHWDBSubmissionSet',
-    'IHWDBSystemFingerprint',
-    'IHWDBSystemFingerprintSet'
+    'HWSubmissionError',
+    'HWSubmissionFormat',
+    'HWSubmissionStatus',
+    'IHWSubmission',
+    'IHWSubmissionSet',
+    'IHWSystemFingerprint',
+    'IHWSystemFingerprintSet'
     ]
 
 from textwrap import dedent
@@ -26,11 +26,11 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import valid_email
 
-class HWDBSubmissionError(Exception):
+class HWSubmissionError(Exception):
     """Prevent two or more submission with identical submission_id."""
 
 
-class HWDBSubmissionStatus(DBEnumeratedType):
+class HWSubmissionStatus(DBEnumeratedType):
     """The status of a submission to the hardware database."""
 
     INVALID = DBItem(0, """
@@ -51,13 +51,13 @@ class HWDBSubmissionStatus(DBEnumeratedType):
         The submitted data has been processed.
         """)
 
-class HWDBSubmissionFormat(DBEnumeratedType):
+class HWSubmissionFormat(DBEnumeratedType):
     """The format version of the submitted data."""
 
     VERSION_1 = DBItem(1, "Version 1")
 
 
-class IHWDBSubmission(Interface):
+class IHWSubmission(Interface):
     """Raw submission data for the hardware database."""
 
     date_created = Datetime(
@@ -66,10 +66,10 @@ class IHWDBSubmission(Interface):
         title=_(u'Date Submitted'), required=True)
     format = Choice(
         title=_(u'Format Version'), required=True,
-        vocabulary=HWDBSubmissionFormat)
+        vocabulary=HWSubmissionFormat)
     status = Choice(
         title=_(u'Submission Status'), required=True,
-        vocabulary=HWDBSubmissionStatus)
+        vocabulary=HWSubmissionStatus)
     private = Bool(
         title=_(u'Private Submission'), required=True)
     contactable = Bool(
@@ -80,9 +80,7 @@ class IHWDBSubmission(Interface):
         title=_(u'Unique Submission ID'), required=True)
     owner = Attribute(
         _(u"The owner's IPerson"))
-    emailaddress = TextLine(
-        title=_('Email address'), required=True)
-    distroarchseries = Attribute(
+    distroarchrelease = Attribute(
         _(u'The DistroArchSeries'))
     raw_submission = Object(
         schema=ILibraryFileAlias,
@@ -92,8 +90,8 @@ class IHWDBSubmission(Interface):
         _(u'The system this submmission was made on'))
 
 
-class IHWDBSubmissionSet(Interface):
-    """The set of HWDBSubmissions."""
+class IHWSubmissionSet(Interface):
+    """The set of HWSubmissions."""
 
     def createSubmission(date_created, format, private, contactable,
                          live_cd, submission_id, emailaddress,
@@ -102,41 +100,41 @@ class IHWDBSubmissionSet(Interface):
         """Store submitted raw hardware information in a Librarian file.
 
         If a submission with an identical submission_id already exists,
-        an HWDBSubmissionError is raised."""
+        an HWSubmissionError is raised."""
 
     def getBySubmissionID(submission_id, user=None):
         """Return the submission with the given submission ID, or None.
 
         If a submission is marked as private, it is only returned, if
-        user == HWDBSubmission.owner.
+        user == HWSubmission.owner.
         """
 
     def getByFingerprintName(name, user=None):
         """Return the submissions for the given system fingerprint string.
 
         If a submission is marked as private, it is only returned, if
-        user == HWDBSubmission.owner.
+        user == HWSubmission.owner.
         """
 
     def getByOwner(owner, user=None):
         """Return the submissions for the given person.
 
         If a submission is marked as private, it is only returned, if
-        user == HWDBSubmission.owner.
+        user == HWSubmission.owner.
         """
 
 
-class IHWDBSystemFingerprint(Interface):
+class IHWSystemFingerprint(Interface):
     """Identifiers of a computer system."""
 
     fingerprint = Attribute(u'A unique identifier of a system')
 
 
-class IHWDBSystemFingerprintSet(Interface):
-    """The set of HWDBSystemFingerprints."""
+class IHWSystemFingerprintSet(Interface):
+    """The set of HWSystemFingerprints."""
 
     def getByName(fingerprint):
-        """Lookup an IHWDBSystemFingerprint by its value.
+        """Lookup an IHWSystemFingerprint by its value.
 
         Return None, if a fingerprint `fingerprint` does not exist."""
 

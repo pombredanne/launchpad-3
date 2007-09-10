@@ -1928,18 +1928,18 @@ INSERT INTO gpgkey (id, "owner", keyid, fingerprint, active, algorithm, keysize,
 ALTER TABLE gpgkey ENABLE TRIGGER ALL;
 
 
-ALTER TABLE hwdbsubmission DISABLE TRIGGER ALL;
+ALTER TABLE hwsubmission DISABLE TRIGGER ALL;
 
 
 
-ALTER TABLE hwdbsubmission ENABLE TRIGGER ALL;
+ALTER TABLE hwsubmission ENABLE TRIGGER ALL;
 
 
-ALTER TABLE hwdbsystemfingerprint DISABLE TRIGGER ALL;
+ALTER TABLE hwsystemfingerprint DISABLE TRIGGER ALL;
 
 
 
-ALTER TABLE hwdbsystemfingerprint ENABLE TRIGGER ALL;
+ALTER TABLE hwsystemfingerprint ENABLE TRIGGER ALL;
 
 
 ALTER TABLE ircid DISABLE TRIGGER ALL;
