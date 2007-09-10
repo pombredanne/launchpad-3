@@ -319,12 +319,12 @@ div.revision p {
   </tal:history-available>
   </div>
 
-  <tal:related-bugs condition="context/related_bugs">
+  <div id="related-bugs" tal:condition="context/related_bugs">
     <h2>Related Bugs</h2>
     <tal:bugs tal:define="branch context">
         <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
     </tal:bugs>
-  </tal:related-bugs>
+  </div>
 
       <div class="related">
 
