@@ -213,6 +213,9 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
+    removed_by = ForeignKey(
+        dbName="removed_by", foreignKey="Person", default=None)
+    removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
     def selectBy(cls, *args, **kwargs):
@@ -257,6 +260,9 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
+    removed_by = ForeignKey(
+        dbName="removed_by", foreignKey="Person", default=None)
+    removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
     def selectBy(cls, *args, **kwargs):

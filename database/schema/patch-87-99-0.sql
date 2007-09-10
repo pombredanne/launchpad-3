@@ -1,6 +1,26 @@
 SET client_min_messages=ERROR;
 
 
+-- Adding removal tracking support for source publications.
+ALTER TABLE SecureSourcePackagePublishingHistory
+    ADD COLUMN removed_by integer;
+ALTER TABLE SecureSourcePackagePublishingHistory
+    ADD CONSTRAINT securesourcepackagepublishinghistory_removedby_fk
+    FOREIGN KEY (removed_by) REFERENCES person(id);
+ALTER TABLE SecureSourcePackagePublishingHistory
+    ADD COLUMN removal_comment text;
+
+
+-- Adding removal tracking support for binary publications.
+ALTER TABLE SecureBinaryPackagePublishingHistory
+    ADD COLUMN removed_by integer;
+ALTER TABLE SecureBinaryPackagePublishingHistory
+    ADD CONSTRAINT securebinarypackagepublishinghistory_removedby_fk
+    FOREIGN KEY (removed_by) REFERENCES person(id);
+ALTER TABLE SecureBinaryPackagePublishingHistory
+    ADD COLUMN removal_comment text;
+
+
 -- Revove-for-editing
 DROP VIEW SourcePackageFilePublishing;
 DROP VIEW BinaryPackageFilePublishing;

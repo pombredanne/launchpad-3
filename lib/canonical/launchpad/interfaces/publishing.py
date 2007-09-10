@@ -20,7 +20,7 @@ __all__ = [
     'pocketsuffix'
     ]
 
-from zope.schema import Bool, Datetime, Int, TextLine
+from zope.schema import Bool, Datetime, Int, TextLine, Text
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
@@ -260,6 +260,14 @@ class ISecureSourcePackagePublishingHistory(IExtendedSourcePackagePublishing):
             title=_('The date on which this record had its embargo lifted'),
             required=False, readonly=False,
             )
+    removed_by = Int(
+        title=_('The IPerson responsible for the removal'),
+        required=False, readonly=False,
+        )
+    removal_comment = Text(
+        title=_('Reason why this publication is going to be removed.'),
+        required=False, readonly=False,
+        )
 
 
 class ISourcePackagePublishingHistory(IExtendedSourcePackagePublishing):
@@ -416,6 +424,14 @@ class ISecureBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
                     'embargo lifted'),
             required=False, readonly=False,
             )
+    removed_by = Int(
+        title=_('The IPerson responsible for the removal'),
+        required=False, readonly=False,
+        )
+    removal_comment = Text(
+        title=_('Reason why this publication is going to be removed.'),
+        required=False, readonly=False,
+        )
 
 
 class IBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
