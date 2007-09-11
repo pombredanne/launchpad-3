@@ -592,7 +592,7 @@ names.
     cy     Welsh
 
 Person.translatable_languages yields the same list, except it leaves out US
-English.
+English and languages marked as non-visible such as 'zh' or 'de_DE'.
 
     >>> for language in daf.translatable_languages:
     ...     print language.code, language.englishname

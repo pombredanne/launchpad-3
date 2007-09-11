@@ -493,7 +493,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return Language.select("""
             Language.id = PersonLanguage.language AND
             PersonLanguage.person = %s AND
-            Language.code <> 'en'""" % quote(self),
+            Language.code <> 'en' AND
+            Language.visible""" % quote(self),
             clauseTables=['PersonLanguage'], orderBy='englishname')
 
     def getDirectAnswerQuestionTargets(self):
