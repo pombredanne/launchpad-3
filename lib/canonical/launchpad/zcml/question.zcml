@@ -12,7 +12,7 @@
     <allow
         attributes="id title description status priority owner assignee
                     answerer answer datecreated datedue datelastquery
-                    datelastresponse dateanswered faq language messages
+                    datelastresponse date_solved faq language messages
                     whiteboard product distribution sourcepackagename
                     target can_be_reopened reopenings canReject
                     can_request_info can_give_info can_give_answer
@@ -193,7 +193,7 @@
     permission="launchpad.AnyPerson"
     template="../templates/question-linkfaq.pt"
     />
-  
+
   <browser:page
     name="+createfaq"
     for="canonical.launchpad.interfaces.IQuestion"
@@ -201,7 +201,7 @@
     permission="launchpad.Moderate"
     template="../templates/question-createfaq.pt"
     />
-  
+
   <browser:page
     name="+display"
     for="canonical.launchpad.interfaces.IQuestionMessage"

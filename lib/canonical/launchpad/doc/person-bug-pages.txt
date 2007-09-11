@@ -88,7 +88,7 @@ Let's first close a bug setting its status to 'Invalid'.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> bug_task = reported_bugtasks[1]
     >>> print bug_task.distribution.name
     ubuntu
@@ -138,7 +138,8 @@ with any importance.
      (1, 'NEW', 'LOW'),
      (1, 'NEW', 'MEDIUM'),
      (4, 'NEW', 'MEDIUM'),
-     (9, 'CONFIRMED', 'MEDIUM')]
+     (9, 'CONFIRMED', 'MEDIUM'),
+     (13, 'NEW', 'UNDECIDED')]
 
 Using the advanced form we can query for closed bugs someone is subscribed to.
 

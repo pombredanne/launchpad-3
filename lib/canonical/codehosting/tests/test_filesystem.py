@@ -39,7 +39,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
     layer = TwistedLayer
 
     def _cleanUp(self, result):
-        # XXX: JonathanLange 2007-06-13 bug=120156 
+        # XXX: JonathanLange 2007-06-13 bug=120156
         # Override Twisted's post-test cleanup.
         # The tests fail badly if this is removed, for unknown reasons.
         from twisted.internet import defer

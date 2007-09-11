@@ -55,7 +55,7 @@ class GetFiltersTestCase(unittest.TestCase):
     def test_getFilters(self):
         # test that getFilters() correctly extracts file patterns from
         # the database.
-        
+
         ztm = self.layer.txn
         ztm.begin()
 
@@ -106,7 +106,7 @@ class HandleProductTestCase(unittest.TestCase):
             def handleRelease(self, product_name, series_name, url):
                 self.seen_releases.append((product_name, series_name,
                                            os.path.basename(url)))
-            
+
         # create releases tree
         os.mkdir(os.path.join(self.release_root, 'product'))
         for series in ['1', '2']:
@@ -133,7 +133,7 @@ class HandleProductTestCase(unittest.TestCase):
                           '/product/2/product-2.*.tar.gz'),
             ]
 
-        
+
         prf.handleProduct('product', filters)
         prf.seen_releases.sort()
         self.assertEqual(len(prf.seen_releases), 4)

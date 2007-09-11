@@ -86,7 +86,7 @@ If the value is None, a dash is displayed:
 
 We can set a specific value to be displayed using setRenderedValue():
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> status_widget.setRenderedValue(BugTaskStatus.CONFIRMED)
     >>> print status_widget()
     <span class="statusCONFIRMED">Confirmed</span>

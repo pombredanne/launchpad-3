@@ -219,7 +219,7 @@ class LaunchpadServer(Server):
         segments = get_path_segments(virtual_path)
         if (len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES):
             raise NoSuchFile(FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
-        
+
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
         # a branch'.

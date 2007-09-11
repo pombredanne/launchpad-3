@@ -6,10 +6,10 @@
 
     <browser:navigation
         module="canonical.launchpad.browser"
-        classes="ShipItNavigation ShippingRequestSetNavigation 
+        classes="ShipItNavigation ShippingRequestSetNavigation
                  StandardShipItRequestSetNavigation"
         />
- 
+
     <!-- This is only used on shipit. That's why it's here. -->
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
@@ -145,7 +145,7 @@
     <!-- XXX: Guilherme Salgado 2006-05-24:
          This needs to be moved into a normal browser:page declaration,
          like specialrequest/myrequest, to avoid having all these
-         definitions of the widgets' lengths. 
+         definitions of the widgets' lengths.
     -->
     <browser:generalform
         for="canonical.launchpad.interfaces.IShipItApplication"
@@ -158,7 +158,7 @@
                 ubuntu_quantityamd64 kubuntu_quantityx86
                 kubuntu_quantityamd64 edubuntu_quantityx86 highpriority"
         keyword_arguments="
-                recipientdisplayname addressline1 addressline2 city province 
+                recipientdisplayname addressline1 addressline2 city province
                 country postcode phone organization ubuntu_quantityx86
                 ubuntu_quantityamd64 kubuntu_quantityx86
                 kubuntu_quantityamd64 edubuntu_quantityx86 highpriority"
@@ -200,21 +200,21 @@
         name="exports"
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItExportsView"
-        permission="launchpad.Admin" 
+        permission="launchpad.Admin"
         template="../templates/shipit-exports.pt" />
 
     <browser:page
         name="reports"
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItReportsView"
-        permission="launchpad.Admin" 
+        permission="launchpad.Admin"
         template="../templates/shipit-reports.pt" />
 
 
     <!-- ShippingRequest -->
     <content class="canonical.launchpad.database.ShippingRequest">
         <allow interface="canonical.launchpad.interfaces.IShippingRequest" />
-        <require 
+        <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IShippingRequest" />
     </content>
@@ -289,7 +289,7 @@
     <!-- StandardShipItRequest -->
     <content class="canonical.launchpad.database.StandardShipItRequest">
         <allow interface="canonical.launchpad.interfaces.IStandardShipItRequest" />
-        <require 
+        <require
             permission="launchpad.Admin"
             set_schema="canonical.launchpad.interfaces.IStandardShipItRequest" />
     </content>
@@ -344,7 +344,7 @@
         for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
         class="canonical.launchpad.browser.StandardShipItRequestsView"
         facet="overview"
-        permission="launchpad.Admin" 
+        permission="launchpad.Admin"
         template="../templates/standardshipitrequests-index.pt"
         />
 
@@ -371,7 +371,7 @@
     <!-- RequestedCDs -->
     <content class="canonical.launchpad.database.RequestedCDs">
         <allow interface="canonical.launchpad.interfaces.IRequestedCDs" />
-        <require 
+        <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IRequestedCDs" />
     </content>
@@ -392,7 +392,7 @@
     <!-- ShippingRun -->
     <content class="canonical.launchpad.database.ShippingRun">
         <allow interface="canonical.launchpad.interfaces.IShippingRun" />
-        <require 
+        <require
             permission="launchpad.Admin"
             set_schema="canonical.launchpad.interfaces.IShippingRun" />
     </content>
@@ -406,7 +406,7 @@
     <!-- ShipItReport -->
     <content class="canonical.launchpad.database.ShipItReport">
         <allow interface="canonical.launchpad.interfaces.IShipItReport" />
-        <require 
+        <require
             permission="launchpad.Admin"
             set_schema="canonical.launchpad.interfaces.IShipItReport" />
     </content>

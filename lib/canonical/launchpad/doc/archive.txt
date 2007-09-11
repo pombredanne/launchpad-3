@@ -2,7 +2,7 @@
 
 An Archive models a Debian Archive ...
 
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.lp.dbschema import ArchivePurpose
   >>> from canonical.launchpad.interfaces import (
   ...     IPerson, IPersonSet, IArchiveSet, IArchive,
@@ -281,6 +281,25 @@ A new Archive can be created by passing a name and an owner
   >>> sandbox_archive.owner == name16
   True
 
+IArchiveSet.ensure will either return an existing archive, or make a new
+one if there is no existing one.
+
+  >>> name12 = getUtility(IPersonSet).getByName('name12')
+  >>> name12_archive = archive_set.ensure(
+  ...     owner=name12, distribution=None, purpose=ArchivePurpose.PPA,
+  ...     description="Holy mackerel")
+  >>> name12_archive.description
+  u'Holy mackerel'
+
+Repeating this call with a different description results in the archive
+created above returned instead of a new one:
+
+  >>> name12_archive = archive_set.ensure(
+  ...     owner=name12, distribution=None, purpose=ArchivePurpose.PPA,
+  ...     description="Flaming trousers")
+  >>> name12_archive.description
+  u'Holy mackerel'
+
 An archive is also associated with a distribution.  This can be found on
 the distribution property.  The default distribution is "ubuntu":
 
@@ -328,6 +347,19 @@ archive.
   set(['commercial'])
 
 
+IArchive.allowUpdatesToReleasePocket returns whether the archive is allowed
+to publish to the RELEASE pocket no matter what state the distroseries is in.
+
+  >>> commercial_archive.allowUpdatesToReleasePocket()
+  True
+
+  >>> cprov_archive.allowUpdatesToReleasePocket()
+  True
+
+  >>> getUtility(IArchiveSet).getByDistroPurpose(
+  ...     ubuntutest, ArchivePurpose.PRIMARY).allowUpdatesToReleasePocket()
+  False
+
 Iteration over the own utility is performed against all archives,
 including the *main_archives*:
 
@@ -339,4 +371,4 @@ including the *main_archives*:
   ...     else:
   ...          ppas += 1
   >>> main_archives, ppas
-  (9, 4)
+  (9, 5)
