@@ -7,6 +7,7 @@ __metaclass__ = type
 import gzip
 import os
 import shutil
+import stat
 import tempfile
 import unittest
 
@@ -14,7 +15,8 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher.diskpool import DiskPool
-from canonical.archivepublisher.publishing import getPublisher
+from canonical.archivepublisher.publishing import (
+    getPublisher, Publisher)
 from canonical.config import config
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.launchpad.interfaces import (
@@ -43,7 +45,6 @@ class TestPublisher(TestNativePublishingBase):
 
     def testInstantiate(self):
         """Publisher should be instantiatable"""
-        from canonical.archivepublisher.publishing import Publisher
         Publisher(self.logger, self.config, self.disk_pool,
                   self.ubuntutest.main_archive)
 
@@ -52,7 +53,6 @@ class TestPublisher(TestNativePublishingBase):
 
         With one PENDING record, respective pocket *dirtied*.
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -72,7 +72,6 @@ class TestPublisher(TestNativePublishingBase):
 
     def testPublishCommercial(self):
         """Test that a commercial package is published to the right place."""
-        from canonical.archivepublisher.publishing import Publisher
         archive = self.ubuntutest.getArchiveByComponent('commercial')
         config = removeSecurityProxy(archive.getPubConfig())
         config.setupArchiveDirs()
@@ -85,14 +84,14 @@ class TestPublisher(TestNativePublishingBase):
         publisher.A_publish(False)
 
         # Did the file get published in the right place?
-        self.assertEqual(config.poolroot, 
+        self.assertEqual(config.poolroot,
             "/var/tmp/archive/ubuntutest-commercial/pool")
         foo_path = "%s/main/f/foo/foo.dsc" % config.poolroot
         self.assertEqual(open(foo_path).read().strip(), "I am commercial")
 
         # Check that the index is in the right place.
         publisher.C_writeIndexes(False)
-        self.assertEqual(config.distsroot, 
+        self.assertEqual(config.distsroot,
             "/var/tmp/archive/ubuntutest-commercial/dists")
         index_path = os.path.join(
             config.distsroot, 'breezy-autotest', 'commercial', 'source',
@@ -105,12 +104,35 @@ class TestPublisher(TestNativePublishingBase):
             config.distsroot, 'breezy-autotest', 'Release')
         self.assertTrue(open(release_file))
 
+    def testCommercialReleasePocketPublishing(self):
+        """Test commercial package RELEASE pocket publishing.
+
+        Publishing commercial packages to the RELEASE pocket in a stable
+        distroseries is always allowed, so check for that here.
+        """
+        archive = self.ubuntutest.getArchiveByComponent('commercial')
+        config = removeSecurityProxy(archive.getPubConfig())
+        config.setupArchiveDirs()
+        disk_pool = DiskPool(config.poolroot, config.temproot, self.logger)
+        publisher = Publisher(self.logger, config, disk_pool, archive)
+        pub_source = self.getPubSource(
+            archive=archive, filecontent="I am commercial",
+            status=PackagePublishingStatus.PENDING)
+
+        publisher.A_publish(force_publishing=False)
+
+        # The pocket was dirtied:
+        self.assertDirtyPocketsContents(
+            [('breezy-autotest', 'RELEASE')], publisher.dirty_pockets)
+        # The file was published:
+        foo_path = "%s/main/f/foo/foo.dsc" % config.poolroot
+        self.assertEqual(open(foo_path).read().strip(), 'I am commercial')
+
     def testPublishingSpecificDistroSeries(self):
         """Test the publishing procedure with the suite argument.
 
         To publish a specific distroseries.
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive,
@@ -134,7 +156,6 @@ class TestPublisher(TestNativePublishingBase):
 
         To publish a specific pocket.
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive,
@@ -165,7 +186,6 @@ class TestPublisher(TestNativePublishingBase):
 
         With one PUBLISHED record, no pockets *dirtied*.
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -187,7 +207,6 @@ class TestPublisher(TestNativePublishingBase):
 
         With one PUBLISHED record, pocket gets *dirtied*.
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -212,7 +231,6 @@ class TestPublisher(TestNativePublishingBase):
         Ignore pending publishing records targeted to another archive.
         Nothing gets published, no pockets get *dirty*
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -235,7 +253,6 @@ class TestPublisher(TestNativePublishingBase):
 
     def testPublishingWorksForOtherArchives(self):
         """Publisher also works as expected for another archives."""
-        from canonical.archivepublisher.publishing import Publisher
 
         test_archive = getUtility(IArchiveSet).new(
             distribution=self.ubuntutest,
@@ -358,7 +375,7 @@ class TestPublisher(TestNativePublishingBase):
                              uncompressed_file_path):
         """Assert that a compressed file is equal to its uncompressed version.
 
-        Check that a compressed file, such as Releases.gz and Sources.gz
+        Check that a compressed file, such as Packages.gz and Sources.gz
         matches its uncompressed partner.  The file paths are relative to
         breezy-autotest/main under the archive_publisher's configured dist
         root.  'breezy-autotest' is our test distroseries name.
@@ -471,7 +488,6 @@ class TestPublisher(TestNativePublishingBase):
         Check if it works on a development series.
         A SUPERSEDED published source should be moved to PENDINGREMOVAL.
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -499,7 +515,6 @@ class TestPublisher(TestNativePublishingBase):
         Check if it works on a obsolete series.
         A SUPERSEDED published source should be moved to PENDINGREMOVAL.
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -541,7 +556,6 @@ class TestPublisher(TestNativePublishingBase):
         The release file should contain the MD5, SHA1 and SHA256 for each
         index created for a given distroseries.
         """
-        from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
@@ -666,7 +680,6 @@ class TestPublisher(TestNativePublishingBase):
         Signed Release files must reference an uncompressed Sources and
         Packages file.
         """
-        # Avoid circular import.
         archive = self.ubuntutest.getArchiveByComponent('commercial')
         allowed_suites = []
         publisher = getPublisher(archive, allowed_suites, self.logger)
@@ -690,6 +703,36 @@ class TestPublisher(TestNativePublishingBase):
         self.assertTrue('Packages\n' in stringified_contents)
         self.assertTrue('Sources.gz\n' in stringified_contents)
         self.assertTrue('Sources\n' in stringified_contents)
+
+    def testWorldReadablePackagesAndSources(self):
+        """Test Packages.gz and Sources.gz files are created world readable.
+
+        Packages.gz and Sources.gz files generated by NoMoreAF must be
+        world readable.  We'll test this in the partner archive as that
+        uses NoMoreAF.
+        """
+        archive = self.ubuntutest.getArchiveByComponent('commercial')
+        allowed_suites = []
+        publisher = getPublisher(archive, allowed_suites, self.logger)
+        self.getPubSource(filecontent='Hello world', archive=archive)
+        publisher.A_publish(False)
+        publisher.C_writeIndexes(False)
+
+        # Find a Sources.gz and Packages.gz that were just published
+        # in the breezy-autotest distroseries.
+        sourcesgz_file = os.path.join(
+            publisher._config.distsroot, 'breezy-autotest', 'commercial',
+            'source', 'Sources.gz')
+        packagesgz_file = os.path.join(
+            publisher._config.distsroot, 'breezy-autotest', 'commercial',
+            'binary-i386', 'Packages.gz')
+
+        # What permissions are set on those files?
+        for file in (sourcesgz_file, packagesgz_file):
+            mode = stat.S_IMODE(os.stat(file).st_mode)
+            self.assertTrue(
+                (mode & stat.S_IROTH) == stat.S_IROTH,
+                "%s is not world readable." % file)
 
 
 def test_suite():

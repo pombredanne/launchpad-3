@@ -191,7 +191,7 @@ class BranchTestCase(TestCaseWithTransport):
         old_policy = getSecurityPolicy()
         setSecurityPolicy(LaunchpadSecurityPolicy)
         self.addCleanup(lambda: setSecurityPolicy(old_policy))
-    
+
 
 def deferToThread(f):
     """Run the given callable in a separate thread and return a Deferred which

@@ -104,7 +104,7 @@ class BinaryPackageRelease(SQLBase):
 
         # Daniel Debonzi: To get the lastest versions of a BinaryPackage
         # Im suposing that one BinaryPackage is build for only one
-        # DistroSeries (Each DistroSeries compile all its Packages). 
+        # DistroSeries (Each DistroSeries compile all its Packages).
         # (BinaryPackage.build.distroarchseries = \
         # PackagePublishing.distroarchseries
         # where PackagePublishing.binarypackage = BinaryPackage.id)

@@ -6,7 +6,7 @@ from canonical.ftests.pgsql import PgTestSetup
 from zope.testing.doctest import DocTestSuite
 
 def setUp(test):
-    
+
     # Build a fresh, empty database and connect
     PgTestSetup().setUp()
     con = PgTestSetup().connect()

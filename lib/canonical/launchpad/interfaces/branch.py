@@ -11,6 +11,7 @@ __all__ = [
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchType',
+    'BranchTypeError',
     'CannotDeleteBranch',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
@@ -18,6 +19,7 @@ __all__ = [
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchLifecycleFilter',
+    'UICreatableBranchType',
     'UnknownBranchTypeError'
     ]
 
@@ -132,6 +134,11 @@ class BranchType(DBEnumeratedType):
         """)
 
 
+class UICreatableBranchType(EnumeratedType):
+    """The types of branches that can be created through the web UI."""
+    use_template(BranchType, exclude='IMPORTED')
+
+
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.NEW,
     BranchLifecycleStatus.EXPERIMENTAL,
@@ -167,6 +174,15 @@ class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
     """
 
 
+class BranchTypeError(Exception):
+    """An operation cannot be performed for a particular branch type.
+
+    Some branch operations are only valid for certain types of branches.  The
+    BranchTypeError exception is raised if one of these operations is called
+    with a branch of the wrong type.
+    """
+
+
 class BranchURIField(URIField):
 
     def _validate(self, value):
@@ -185,8 +201,7 @@ class BranchURIField(URIField):
         uri = URI(value)
         supermirror_root = URI(config.launchpad.supermirror_root)
         launchpad_domain = config.launchpad.vhosts.mainsite.hostname
-        if (supermirror_root.contains(uri)
-            or uri.underDomain(launchpad_domain)):
+        if uri.underDomain(launchpad_domain):
             message = _(
                 "Don't manually register a bzr branch on "
                 "<code>%s</code>. Create it by SFTP, and it "
@@ -218,12 +233,26 @@ class IBranch(IHasOwner):
     """A Bazaar branch."""
 
     id = Int(title=_('ID'), readonly=True, required=True)
+
+    # XXX: TimPenhey 2007-08-31
+    # The vocabulary set for branch_type is only used for the creation
+    # of branches through the automatically generated forms, and doesn't
+    # actually represent the complete range of real values that branch_type
+    # may actually hold.  Import branches are not created in the same
+    # way as Hosted, Mirrored or Remote branches.
+    # There are two option:
+    #   1) define a separate schema to use in the UI (sledgehammer solution)
+    #   2) work out some way to specify a restricted vocabulary in the view
+    # Personally I'd like a LAZR way to do number 2.
     branch_type = Choice(
-        title=_("Branch type"), required=True, vocabulary=BranchType,
+        title=_("Branch Type"), required=True,
+        vocabulary=UICreatableBranchType,
         description=_("Hosted branches have Launchpad code hosting as the "
                       "primary location and can be pushed to.  Mirrored "
                       "branches are pulled from the remote location "
-                      "specified and cannot be pushed to."))
+                      "specified and cannot be pushed to.  Remote branches "
+                      "are not mirrored by Launchpad, nor can they be "
+                      "pushed to."))
     name = TextLine(
         title=_('Name'), required=True, description=_("Keep very "
         "short, unique, and descriptive, because it will be used in URLs. "
@@ -238,7 +267,7 @@ class IBranch(IHasOwner):
         "single-paragraph description of the branch. This will be "
         "displayed on the branch page."))
     url = BranchURIField(
-        title=_('Branch URL'), required=True,
+        title=_('Branch URL'), required=False,
         allowed_schemes=['http', 'https', 'ftp', 'sftp', 'bzr+ssh'],
         allow_userinfo=False,
         allow_query=False,
@@ -352,6 +381,11 @@ class IBranch(IHasOwner):
     related_bugs = Attribute(
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
+
+    related_bug_tasks = Attribute(
+        "For each related_bug, the bug task reported against this branch's "
+        "product or the first bug task (in case where there is no task "
+        "reported against the branch's product).")
 
     # Specification attributes
     spec_links = Attribute("Specifications linked to this branch")
@@ -550,6 +584,9 @@ class IBranchSet(Interface):
 
         Raises BranchCreationForbidden if the creator is not allowed
         to create a branch for the specified product.
+
+        If product is None (indicating a +junk branch) then the owner must not
+        be a team, except for the special case of the ~vcs-imports celebrity.
         """
 
     def delete(branch):
