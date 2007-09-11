@@ -151,6 +151,9 @@ def branch_index(context, view):
     else:
         return smartquote('"%s" branch in Launchpad') % (context.displayname)
 
+branch_link_to_bug = ContextDisplayName(smartquote(
+    'Link branch "%s" to a bug report'))
+
 def branch_listing_cross_product(context, view):
     return view.page_title
 

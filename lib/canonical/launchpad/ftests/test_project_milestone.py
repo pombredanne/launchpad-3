@@ -10,9 +10,9 @@ from datetime import datetime
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (BugTaskSearchParams,
-    CreateBugParams, IBugSet, IBugTaskSet, IPersonSet, IProductSet,
-    IProjectSet, ISpecificationSet)
-from canonical.lp.dbschema import (BugTaskStatus, SpecificationPriority,
+    BugTaskStatus, CreateBugParams, IBugTaskSet, IPersonSet,
+    IProductSet, IProjectSet, ISpecificationSet)
+from canonical.lp.dbschema import (SpecificationPriority,
     SpecificationDefinitionStatus)
 from canonical.launchpad.ftests import login, syncUpdate
 from canonical.testing import LaunchpadFunctionalLayer
@@ -45,6 +45,7 @@ class ProjectMilestoneTest(unittest.TestCase):
             unittest.TestCase.__init__(self, methodName)
 
     def setUp(self):
+        """Login an admin user to perform the tests."""
         # From the persons defined in the test data, only those with
         # admin rights can change the 'visible' attribute of milestones.
         login('foo.bar@canonical.com')
@@ -265,8 +266,11 @@ class ProjectMilestoneTest(unittest.TestCase):
         self._createBugtask('evolution', '1.1')
         self._createBugtask('gnomebaker', '1.1')
 
+
 def test_suite():
+    """Return the test suite for the tests in this module."""
     return unittest.TestLoader().loadTestsFromName(__name__)
+
 
 if __name__ == '__main__':
     unittest.main()

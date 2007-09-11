@@ -173,7 +173,7 @@ XXX: We really should update the status from the bug watch, but that's
      not trivial to do at the moment. I will fix this later.
      -- Bjorn Tillenius, 2006-03-01
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> thunderbird_task.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
     >>> request = LaunchpadTestRequest(

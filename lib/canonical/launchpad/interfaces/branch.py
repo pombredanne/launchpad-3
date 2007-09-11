@@ -382,6 +382,11 @@ class IBranch(IHasOwner):
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
 
+    related_bug_tasks = Attribute(
+        "For each related_bug, the bug task reported against this branch's "
+        "product or the first bug task (in case where there is no task "
+        "reported against the branch's product).")
+
     # Specification attributes
     spec_links = Attribute("Specifications linked to this branch")
 
