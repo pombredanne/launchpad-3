@@ -106,7 +106,7 @@ If no distribution name is given at all, a MissingInput error is raised.
 
 == Selecting a package ==
 
-If both a distribution and a source package name are specified, a distribution
+If both a distribution and a source package are specified, a distribution
 source package is returned.
 
     >>> from canonical.launchpad.interfaces import IDistributionSourcePackage
@@ -127,8 +127,8 @@ source package is returned.
     >>> selected_package.name
     u'evolution'
 
-If both a distribution and a binary package name are specified, an appropriate
-distribution source package is returned.
+If both a distribution and a binary package are specified, the distribution
+source package from which the given binary package is built is returned.
 
     >>> binary_package_name = 'linux-2.6.12'
     >>> form = {'field.bugtarget': 'package',
