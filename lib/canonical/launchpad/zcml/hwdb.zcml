@@ -5,7 +5,9 @@
     i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.HWSubmission">
-        <allow interface="canonical.launchpad.interfaces.IHWSubmission" />
+        <require 
+            permission="launchpad.View" 
+            interface="canonical.launchpad.interfaces.IHWSubmission"/>
     </content>
 
     <securedutility

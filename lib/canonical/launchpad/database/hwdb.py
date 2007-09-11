@@ -8,10 +8,6 @@ __all__ = ['HWSubmission',
            'HWSystemFingerprintSet'
           ]
 
-from datetime import datetime
-
-import pytz
-
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -22,13 +18,13 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import (
-    HWSubmissionError, HWSubmissionFormat, HWSubmissionStatus,
+    HWSubmissionError, HWSubmissionFormat, HWSubmissionProcessingStatus,
     IHWSubmission, IHWSubmissionSet, IHWSystemFingerprint,
-    IHWSystemFingerprintSet, ILibraryFileAliasSet, IPersonSet,
-    PersonCreationRationale)
+    IHWSystemFingerprintSet, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IPersonSet, PersonCreationRationale)
 
 class HWSubmission(SQLBase):
-    """Raw submission data"""
+    """See `IHWSubmission`."""
 
     implements(IHWSubmission)
     _table = 'HWSubmission'
@@ -36,18 +32,21 @@ class HWSubmission(SQLBase):
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_submitted = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     format = EnumCol(enum=HWSubmissionFormat, notNull=True)
-    status = EnumCol(enum=HWSubmissionStatus, notNull=True)
+    status = EnumCol(enum=HWSubmissionProcessingStatus, notNull=True)
     private = BoolCol(notNull=True)
     contactable = BoolCol(notNull=True)
     live_cd = BoolCol(notNull=True, default=False)
     submission_id = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person')
     distroarchrelease = ForeignKey(dbName='distroarchseries',
-                                   foreignKey='Distroarchrelease')
+                                   foreignKey='Distroarchrelease',
+                                   notNull=True)
     raw_submission = ForeignKey(dbName='raw_submission',
-                                foreignKey='LibraryFileAlias')
+                                foreignKey='LibraryFileAlias',
+                                notNull=True)
     system_fingerprint = ForeignKey(dbName='system_fingerprint',
-                                    foreignKey='HWSystemFingerprint')
+                                    foreignKey='HWSystemFingerprint',
+                                    notNull=True)
 
 
 class HWSubmissionSet:
@@ -61,9 +60,9 @@ class HWSubmissionSet:
                          filesize, system_fingerprint):
         """See `IHWSubmissionSet`."""
         
-        submission_exists = HWSubmission.select(
-            'submission_id=%s' % sqlvalues(submission_id)).count() > 0
-        if submission_exists:
+        submission_exists = HWSubmission.selectOneBy(
+            submission_id=submission_id)
+        if submission_exists is not None:
             raise HWSubmissionError(
                 'A submission with this ID already exists')
         
@@ -94,9 +93,8 @@ class HWSubmissionSet:
 
         return HWSubmission(
             date_created=date_created,
-            date_submitted=datetime.now(pytz.timezone('UTC')),
             format=format,
-            status=HWSubmissionStatus.SUBMITTED,
+            status=HWSubmissionProcessingStatus.SUBMITTED,
             private=private,
             contactable=contactable,
             live_cd=live_cd,
@@ -108,44 +106,37 @@ class HWSubmissionSet:
 
     def getBySubmissionID(self, submission_id, user=None):
         """See `IHWSubmissionSet`."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        query = "submission_id=%s" % sqlvalues(submission_id)
         if user is None:
-            query = "submission_id=%s AND not private"
-            query = query % sqlvalues(submission_id)
+            query = query + " AND not private"
+        elif not user.inTeam(admins):
+            query = query + " AND (not private OR owner=%i)" % user.id
         else:
-            query = "submission_id=%s AND (not private OR owner=%s)"
-            query = query % sqlvalues(submission_id, user)
+            # the user is an admin and may see every submission, hence
+            # no need to add any restriction.
+            pass
         return HWSubmission.selectOne(query)
 
     def getByFingerprintName(self, name, user=None):
         """See `IHWSubmissionSet`."""
+        admins = getUtility(ILaunchpadCelebrities).admin
         fp = HWSystemFingerprintSet().getByName(name)
+        query = """
+            system_fingerprint=%s
+            AND HWSystemFingerprint.id = HWSubmission.system_fingerprint
+            """ % sqlvalues(fp)
         if user is None:
-            # Sorting is done by system name first, i.e., by a column
-            # of the "foreign" table HWSystemFingerprint. Unfortunately,
-            # the straightforward way to add the parameters
-            # "orderBy=['HWSystemFingerprint.fingerprint']" and
-            # "prejoins=['system']" to the select() call does not work,
-            # because SQLObject creates the the SQL expression
-            # "LEFT OUTER JOIN HWSystemFingerprint AS _prejoin0", which
-            # means that the orderBy expression would be
-            # "_prejoin0.fingerprint", which does not look not very obvious,
-            # and depends on implementation details. Hence the table
-            # HWSystemFingerprint is explicitly joined a second time, and
-            # the sorting done on the column of this "second join".
-            query = """
-                system_fingerprint=%s
-                AND not private
-                AND HWSystemFingerprint.id = HWSubmission.system_fingerprint
-                """ % sqlvalues(fp)
+            query = query + " AND not private"
+        elif not user.inTeam(admins):
+            query = query + " AND (NOT private OR owner=%i)" % user.id
         else:
-            query = """
-                system_fingerprint=%s
-                AND (not private OR owner=%s)
-                AND HWSystemFingerprint.id = HWSubmission.system_fingerprint
-                """ % sqlvalues(fp, user)
+            # the user is an admin and may see every submission, hence
+            # no need to add any restriction.
+            pass
+            
         return HWSubmission.select(
             query,
-            prejoins=['system_fingerprint'],
             clauseTables=['HWSystemFingerprint'],
             prejoinClauseTables=['HWSystemFingerprint'],
             orderBy=['HWSystemFingerprint.fingerprint',
@@ -154,18 +145,20 @@ class HWSubmissionSet:
 
     def getByOwner(self, owner, user=None):
         """See `IHWSubmissionSet`."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        query = """
+            owner=%i
+            AND HWSystemFingerprint.id = HWSubmission.system_fingerprint
+            """ % owner.id
         if user is None:
-            query = """
-                owner=%s
-                AND not private
-                AND HWSystemFingerprint.id = HWSubmission.system_fingerprint
-                """ % sqlvalues(owner)
+            query = query + " AND NOT private"
+        elif not user.inTeam(admins):
+            query = query + " AND (NOT private OR owner=%s)" % user.id
         else:
-            query = """
-                owner=%s
-                AND (not private OR owner=%s)
-                AND HWSystemFingerprint.id = HWSubmission.system_fingerprint
-                """ % sqlvalues(owner, user)
+            # the user is an admin and may see every submission, hence
+            # no need to add any restriction.
+            pass
+
         return HWSubmission.select(
             query,
             clauseTables=['HWSystemFingerprint'],
@@ -173,7 +166,6 @@ class HWSubmissionSet:
             orderBy=['HWSystemFingerprint.fingerprint',
                      'date_submitted',
                      'submission_id'])
-
 
 class HWSystemFingerprint(SQLBase):
     """Identifiers of a computer system."""

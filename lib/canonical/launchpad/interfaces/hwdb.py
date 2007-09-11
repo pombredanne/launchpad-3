@@ -7,30 +7,25 @@ __metaclass__ = type
 __all__ = [
     'HWSubmissionError',
     'HWSubmissionFormat',
-    'HWSubmissionStatus',
+    'HWSubmissionProcessingStatus',
     'IHWSubmission',
     'IHWSubmissionSet',
     'IHWSystemFingerprint',
     'IHWSystemFingerprintSet'
     ]
 
-from textwrap import dedent
-
 from zope.interface import Interface, Attribute
-from zope.schema import (ASCIILine, Bool, Bytes, Choice, Datetime, Object,
-    TextLine)
+from zope.schema import ASCIILine, Bool, Choice, Datetime, Object
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import valid_email
 
 class HWSubmissionError(Exception):
     """Prevent two or more submission with identical submission_id."""
 
 
-class HWSubmissionStatus(DBEnumeratedType):
+class HWSubmissionProcessingStatus(DBEnumeratedType):
     """The status of a submission to the hardware database."""
 
     INVALID = DBItem(0, """
@@ -58,7 +53,10 @@ class HWSubmissionFormat(DBEnumeratedType):
 
 
 class IHWSubmission(Interface):
-    """Raw submission data for the hardware database."""
+    """Raw submission data for the hardware database.
+
+    See doc/hwdb.txt for details about the attributes.
+    """
 
     date_created = Datetime(
         title=_(u'Date Created'), required=True)
@@ -69,7 +67,7 @@ class IHWSubmission(Interface):
         vocabulary=HWSubmissionFormat)
     status = Choice(
         title=_(u'Submission Status'), required=True,
-        vocabulary=HWSubmissionStatus)
+        vocabulary=HWSubmissionProcessingStatus)
     private = Bool(
         title=_(u'Private Submission'), required=True)
     contactable = Bool(
@@ -105,22 +103,22 @@ class IHWSubmissionSet(Interface):
     def getBySubmissionID(submission_id, user=None):
         """Return the submission with the given submission ID, or None.
 
-        If a submission is marked as private, it is only returned, if
-        user == HWSubmission.owner.
+        If a submission is marked as private, it is only returned if
+        user == HWSubmission.owner, of if user is an admin.
         """
 
     def getByFingerprintName(name, user=None):
         """Return the submissions for the given system fingerprint string.
 
-        If a submission is marked as private, it is only returned, if
-        user == HWSubmission.owner.
+        If a submission is marked as private, it is only returned if
+        user == HWSubmission.owner, or if user is an admin.
         """
 
     def getByOwner(owner, user=None):
         """Return the submissions for the given person.
 
-        If a submission is marked as private, it is only returned, if
-        user == HWSubmission.owner.
+        If a submission is marked as private, it is only returned if
+        user == HWSubmission.owner, or if user is an admin.
         """
 
 
