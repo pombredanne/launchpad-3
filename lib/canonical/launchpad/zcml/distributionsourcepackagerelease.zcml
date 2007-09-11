@@ -31,7 +31,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackageRelease"
-    class="canonical.launchpad.browser.DistributionSourcePackageReleaseView"
+    class="canonical.launchpad.webapp.LaunchpadView"
     permission="zope.Public"
     >
     <browser:page

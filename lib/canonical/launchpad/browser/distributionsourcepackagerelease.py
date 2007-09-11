@@ -12,7 +12,7 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.browser.launchpad import (
-    DefaultShortLink, LaunchpadView)
+    DefaultShortLink)
 
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackageRelease, ILaunchBag, IBuildSet, NotFoundError)
@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu, Navigation,
-    GetitemNavigation, stepthrough)
+    LaunchpadView, GetitemNavigation, stepthrough)
 
 
 class DistributionSourcePackageReleaseFacets(StandardLaunchpadFacets):
@@ -56,11 +56,12 @@ class DistributionSourcePackageReleaseNavigation(Navigation):
             return None
 
 
+class DistributionSourcePackageReleaseView(LaunchpadView):
+    pass
+
+
 class DistributionSourcePackageReleaseShortLink(DefaultShortLink):
 
     def getLinkText(self):
         return self.context.sourcepackagerelease.version
-
-class DistributionSourcePackageReleaseView(LaunchpadView):
-    pass
 
