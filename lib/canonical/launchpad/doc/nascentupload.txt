@@ -379,8 +379,7 @@ another similar feature.
 
 Soyuz is prepared to accept those uploads (and avoid extra work on
 maintainer's side), however it cannot store a proper
-SourcePackageRelease.copyright content. See bug #134567 for further
-information.
+SourcePackageRelease.copyright content. See bug #134567.
 
   >>> nocopyright_src = NascentUpload(
   ...     datadir('suite/nocopyright_1.0-1/nocopyright_1.0-1_source.changes'),
