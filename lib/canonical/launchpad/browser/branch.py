@@ -113,9 +113,9 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'delete_branch', 'browse', 'reassign', 'subscription',
-             'addsubscriber', 'associations', 'registermerge',
-             'landingcandidates', 'linkbug']
+    links = ['edit', 'delete_branch', 'browse_code', 'browse_revisions',
+             'reassign', 'subscription', 'addsubscriber', 'associations',
+             'registermerge', 'landingcandidates', 'linkbug']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -128,12 +128,22 @@ class BranchContextMenu(ContextMenu):
         enabled = self.context.canBeDeleted()
         return Link('+delete', text, enabled=enabled)
 
-    def browse(self):
+    def browse_code(self):
+        """Return a link to the branch's file listing on codebrowse."""
         text = 'Browse code'
-        # Only enable the link if we've ever mirrored the branch.
-        # Don't enable if the branch is private.
         enabled = self.context.code_is_browseable
-        url = config.codehosting.codebrowse_root + self.context.unique_name
+        url = (config.codehosting.codebrowse_root
+               + self.context.unique_name
+               + '/files')
+        return Link(url, text, icon='info', enabled=enabled)
+
+    def browse_revisions(self):
+        """Return a link to the branch's revisions on codebrowse."""
+        text = 'Browse revisions'
+        enabled = self.context.code_is_browseable
+        url = (config.codehosting.codebrowse_root
+               + self.context.unique_name
+               + '/changes')
         return Link(url, text, icon='info', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')

@@ -262,7 +262,13 @@ link is shown.
     ...     browser.contents, "recent-revisions").div)
     6. By foo... fix bug in bar...
     >>> print browser.getLink('Browse code').url
-    http://codebrowse.launchpad.dev/~name12/+junk/junk.dev
+    http://codebrowse.launchpad.dev/~name12/+junk/junk.dev/files
+
+In addition, there is a "Browse revisions" link that links to the
+changelog view in codebrowse.
+
+    >>> print browser.getLink('Browse revisions').url
+    http://codebrowse.launchpad.dev/~name12/+junk/junk.dev/changes
 
 If the branch is private, the browse code link is not shown.
 In order to see the private branch, we need to log in as a user that
