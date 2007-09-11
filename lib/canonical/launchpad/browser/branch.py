@@ -113,9 +113,9 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'delete_branch', 'browse', 'reassign', 'subscription',
-             'addsubscriber', 'associations', 'registermerge',
-             'landingcandidates']
+    links = ['edit', 'delete_branch', 'browse_code', 'browse_revisions',
+             'reassign', 'subscription', 'addsubscriber', 'associations',
+             'registermerge', 'landingcandidates', 'linkbug']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -128,12 +128,22 @@ class BranchContextMenu(ContextMenu):
         enabled = self.context.canBeDeleted()
         return Link('+delete', text, enabled=enabled)
 
-    def browse(self):
+    def browse_code(self):
+        """Return a link to the branch's file listing on codebrowse."""
         text = 'Browse code'
-        # Only enable the link if we've ever mirrored the branch.
-        # Don't enable if the branch is private.
         enabled = self.context.code_is_browseable
-        url = config.launchpad.codebrowse_root + self.context.unique_name
+        url = (config.launchpad.codebrowse_root
+               + self.context.unique_name
+               + '/files')
+        return Link(url, text, icon='info', enabled=enabled)
+
+    def browse_revisions(self):
+        """Return a link to the branch's revisions on codebrowse."""
+        text = 'Browse revisions'
+        enabled = self.context.code_is_browseable
+        url = (config.launchpad.codebrowse_root
+               + self.context.unique_name
+               + '/changes')
         return Link(url, text, icon='info', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
@@ -171,6 +181,10 @@ class BranchContextMenu(ContextMenu):
         text = 'View landing candidates'
         enabled = self.context.landing_candidates.count() > 0
         return Link('+landing-candidates', text, icon='edit', enabled=enabled)
+
+    def linkbug(self):
+        text = 'Link to bug report'
+        return Link('+linkbug', text, icon='edit')
 
 
 class BranchView(LaunchpadView):

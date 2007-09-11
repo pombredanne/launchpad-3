@@ -575,6 +575,19 @@ k            </description>
               page.
           </description>
         </key>
+        <key name="expiration_dbuser" datatype="string" 
+            default="bugnotification">
+            <description>
+                The database user that will be used to expire bugtask.
+            </description>
+        </key>
+        <key name="days_before_expiration" datatype="integer"
+             default="60">
+            <description>
+                The number of days of inactivity required before an unassigned
+                bugtask with the status of INCOMPLETE is expired.
+            </description>
+        </key>
         <key name="search_comments" datatype="boolean" required="no"
              default="no">
           <description>
@@ -916,8 +929,6 @@ k            </description>
         <key name="dbuser" datatype="string" default="supermirror" />
         <key name="branchesdest" datatype="string" default="/var/tmp/sm-ng/mirrors" />
         <key name="masterlock" datatype="string" default="/var/tmp/sm-ng/masterlock" />
-        <key name="branchlistsource" datatype="string"
-             default="http://gangotri.ubuntu.com:9000/supermirror-pull-list.txt" />
         <key name="authserver_url" datatype="canonical.config.urlbase"
              default="http://localhost:8999/branch/">
             <description>
