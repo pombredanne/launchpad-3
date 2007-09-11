@@ -278,7 +278,12 @@ class ErrorHandlingTestCase(unittest.TestCase):
         self._errorHandlingSetUp()
 
     def _errorHandlingSetUp(self):
-        """Setup code that is specific to ErrorHandlingTestCase."""
+        """Setup code that is specific to ErrorHandlingTestCase.
+        
+        This is needed because TestReferenceMirroring uses a diamond-shaped
+        class hierarchy and we do not want to end up calling unittest.TestCase
+        twice.
+        """
         client = BranchStatusClient()
         self.branch = BranchToMirror(
             'foo', 'bar', client, 1, 'owner/product/foo', None)
