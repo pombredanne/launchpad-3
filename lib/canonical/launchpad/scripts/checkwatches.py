@@ -56,8 +56,13 @@ class BugWatchUpdater(object):
             bug_tracker_url = bug_tracker.baseurl
             try:
                 if bug_tracker == ubuntu_bugzilla:
-                    # No need updating Ubuntu Bugzilla watches since all bugs
-                    # have been imported into Malone, and thus won't change.
+                    # XXX: 2007-09-11 Graham Binns
+                    #      We automatically ignore the Ubuntu Bugzilla
+                    #      here as all its bugs have been imported into
+                    #      Launchpad. Ideally we would have some means
+                    #      to identify all bug trackers like this so
+                    #      that hard-coding like this can be genericised
+                    #      (Bug 138949).
                     self.log.info(
                         "Skipping updating Ubuntu Bugzilla watches.")
                 else:
@@ -72,7 +77,7 @@ class BugWatchUpdater(object):
                 # the other bug trackers.
                 self.log.error(
                     "An exception was raised when updating %s" %
-                        bug_tracker_url,
+                    bug_tracker_url,
                     exc_info=True)
                 self.txn.abort()
         self._logout()
@@ -89,8 +94,7 @@ class BugWatchUpdater(object):
         except externalbugtracker.UnknownBugTrackerTypeError, error:
             self.log.info(
                 "ExternalBugtracker for BugTrackerType '%s' is not "
-                "known." % (
-                    error.bugtrackertypename))
+                "known." % (error.bugtrackertypename))
         else:
             number_of_watches = bug_watches_to_update.count()
             if number_of_watches > 0:
@@ -110,6 +114,6 @@ class BugWatchUpdater(object):
                         bug_tracker.baseurl)
                     self.txn.abort()
             else:
-                self.log.info("No watches to update on %s" %
-                    bug_tracker.baseurl)
+                self.log.info(
+                    "No watches to update on %s" % bug_tracker.baseurl)
 
