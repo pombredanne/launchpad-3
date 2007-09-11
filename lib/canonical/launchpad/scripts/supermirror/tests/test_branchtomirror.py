@@ -269,9 +269,42 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         self.assertEqual(1, branch.mirror_failures)
 
 
-class ErrorHandlingTestCase(unittest.TestCase):
+class StubbedBranchStatusClient(BranchStatusClient):
+    """Partially stubbed subclass of BranchStatusClient, for unit tests."""
 
+    def startMirroring(self, branch_id):
+        pass
+
+
+class StubbedBranchToMirror(BranchToMirror):
+    """Partially stubbed subclass of BranchToMirror, for unit tests."""
+    
     enable_checkBranchReference = False
+    enable_checkSourceUrl = True
+
+    def _checkSourceUrl(self):
+        if self.enable_checkSourceUrl:
+            BranchToMirror._checkSourceUrl(self)
+
+    def _checkBranchReference(self):
+        if self.enable_checkBranchReference:
+            BranchToMirror._checkBranchReference(self)
+
+    def _openSourceBranch(self):
+        self.testcase.open_call_count += 1
+    
+    def _mirrorToDestBranch(self):
+        pass
+    
+    def _mirrorSuccessful(self, logger):
+        pass
+
+    def _mirrorFailed(self, logger, error_msg):
+        self.testcase.errors.append(error_msg)
+
+    
+
+class ErrorHandlingTestCase(unittest.TestCase):
 
     def setUp(self):
         unittest.TestCase.setUp(self)
@@ -284,26 +317,15 @@ class ErrorHandlingTestCase(unittest.TestCase):
         class hierarchy and we do not want to end up calling unittest.TestCase
         twice.
         """
-        client = BranchStatusClient()
-        self.branch = BranchToMirror(
+        client = StubbedBranchStatusClient()
+        self.branch = StubbedBranchToMirror(
             'foo', 'bar', client, 1, 'owner/product/foo', None)
-        # Stub out everything that we don't need to test
-        client.startMirroring = lambda branch_id: None
-        def mockMirrorFailed(logger, err):
-            self.errors.append(err)
-        self.branch._mirrorFailed = mockMirrorFailed
-        self.branch._mirrorSuccessful = lambda logger: None
-        def mockOpenSourceBranch():
-            self.open_call_count += 1
-        self.branch._openSourceBranch = mockOpenSourceBranch
-        self.branch._mirrorToDestBranch = lambda: None
-        if not self.enable_checkBranchReference:
-            self.branch._checkBranchReference = lambda: None
+        self.errors = []
+        self.open_call_count = 0
+        self.branch.testcase = self
         # We set the log level to CRITICAL so that the log messages
         # are suppressed.
         logging.basicConfig(level=logging.CRITICAL)
-        self.errors = []
-        self.open_call_count = 0
 
     def tearDown(self):
         self._errorHandlingTearDown()
@@ -399,17 +421,16 @@ class TestBadUrl(ErrorHandlingTestCase):
 class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
     """Feature tests for mirroring of branch references."""
 
-    enable_checkBranchReference = True
-
     def setUp(self):
         TestCaseWithTransport.setUp(self)
         ErrorHandlingTestCase._errorHandlingSetUp(self)
+        self.branch.enable_checkBranchReference = True
 
     def tearDown(self):
         TestCaseWithTransport.tearDown(self)
         # errorHandlingTearDown must be called after
-        # TestCaseWithTransport.tearDown otherwise it prevents the latter fails
-        # to uninstall its log handlers.
+        # TestCaseWithTransport.tearDown otherwise the latter fails
+        # when trying to uninstall its log handlers.
         ErrorHandlingTestCase._errorHandlingTearDown(self)
 
     def testCreateBranchReference(self):
@@ -635,8 +656,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
 
     def setUp(self):
         ErrorHandlingTestCase.setUp(self)
-        # We do not care about the value the source URL in those tests
-        self.branch._checkSourceUrl = lambda: None
+        self.branch.enable_checkSourceUrl = False
 
     def testHTTPError(self):
         def stubOpenSourceBranch():
