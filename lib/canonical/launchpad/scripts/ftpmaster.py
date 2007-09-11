@@ -1278,7 +1278,8 @@ class PackageCopier(LaunchpadScript):
             from_binaries = self._findBinaries(from_source, from_location)
             for binary in from_binaries:
                 binary_copied = self.copyBinary(binary, to_location)
-                copied_binaries.append(binary_copied)
+                if binary_copied is not None:
+                    copied_binaries.append(binary_copied)
             self.logger.info(
                 "%d binaries copied." % len(copied_binaries))
 
@@ -1344,13 +1345,19 @@ class PackageCopier(LaunchpadScript):
         # binarypackagereleases in all arches for the from_source and its
         # from_location.
         for binary in from_source.binaries:
-            all_arches = from_location.distroseries.architectures
-            for distroarchseries in all_arches:
+            if binary.architecturespecific:
+                considered_arches = [binary.build.distroarchseries]
+            else:
+                considered_arches = from_location.distroseries.architectures
+
+            for distroarchseries in considered_arches:
                 dasbpr = distroarchseries.getBinaryPackage(
                     binary.name)[binary.version]
                 # Only include objects with published binaries.
-                if dasbpr and dasbpr.current_publishing_record:
-                    target_binaries.append(dasbpr)
+                if not dasbpr or not dasbpr.current_publishing_record:
+                    continue
+                target_binaries.append(dasbpr)
+
         return target_binaries
 
     def _getUserConfirmation(self):
@@ -1402,16 +1409,16 @@ class PackageCopier(LaunchpadScript):
                 distroseries=to_location.distroseries,
                 pocket=to_location.pocket)
         except NotFoundError:
-            pass
-        else:
-            # Retrieve and store the IDARBPR for the target location.
-            darbp = binary_copy.distroarchseries.getBinaryPackage(
-                binary_copy.binarypackagerelease.name)
-            bin_version = binary_copy.binarypackagerelease.version
-            binary_copied = darbp[bin_version]
+            return None
 
-            self.logger.info("Copied: %s" % binary_copied.title)
-            return binary_copied
+        # Retrieve and store the IDARBPR for the target location.
+        darbp = binary_copy.distroarchseries.getBinaryPackage(
+            binary_copy.binarypackagerelease.name)
+        bin_version = binary_copy.binarypackagerelease.version
+        binary_copied = darbp[bin_version]
+        
+        self.logger.info("Copied: %s" % binary_copied.title)
+        return binary_copied
 
 
 class LpQueryDistro(LaunchpadScript):
