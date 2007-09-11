@@ -31,11 +31,6 @@
     />
 
   <vocabulary
-    name="BugBranchStatus"
-    factory="canonical.launchpad.vocabularies.BugBranchStatusVocabulary"
-    />
-
-  <vocabulary
     name="BugNominatableSerieses"
     factory="canonical.launchpad.vocabularies.BugNominatableSeriesesVocabulary"
     />

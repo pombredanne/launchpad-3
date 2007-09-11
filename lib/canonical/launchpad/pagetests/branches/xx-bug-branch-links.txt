@@ -103,3 +103,53 @@ page restricted with the launchpad.AnyPerson permission.
     Related Bugs
     Bug #11: Make Jokosher use autoaudiosink (Undecided &ndash; New)
 
+
+== Editing the bug status ==
+
+# XXX: TimPenhey 2007-09-11
+# Editing bug branch links is only available from the bug page at the moment.
+# Initial design from the branch page would be a pencil icon after the
+# bug branch hyperlink, but the permission that would control the visibility
+# of the pencil is currently too permissive (see lpbug 138805) and would
+# indicate to users who should really not be messing with it that they could.
+# The UI is not currently very intuitive on the bug side, and should also
+# be addressed once the permissions have been tightened.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/bugs/11')
+    >>> printBugsBranches(user_browser)
+    Related branch                      Developer       Status for this bug
+    ~name12/gnome-terminal/scanned      Sample Person   Fix In Progress
+    >>> user_browser.getLink('Fix In Progress').click()
+    >>> print user_browser.title
+    Edit branch fix status
+
+Bug branch links have two editable fields:
+  * The state of the branch with respect to the bug
+  * A whiteboard
+
+    >>> user_browser.getControl('State').value = ['FIXAVAILABLE']
+    >>> user_browser.getControl('Whiteboard').value = (
+    ...     'This is a fix for the problem and involved:\n'
+    ...     ' * Fixing the doodad\n'
+    ...     ' * Adjusting the lambda probe')
+    >>> user_browser.getControl('Update').click()
+    >>> printBugsBranches(user_browser)
+    Related branch                      Developer       Status for this bug
+    ~name12/gnome-terminal/scanned      Sample Person   Fix Available
+
+
+== Deleting bug branch links ==
+
+The edit view for the bug branch also now has a delete button to unlink
+the bug from the branch.
+
+    >>> user_browser.getLink('Fix Available').click()
+    >>> print user_browser.getControl('Whiteboard').value
+    This is a fix for the problem and involved:
+     * Fixing the doodad
+     * Adjusting the lambda probe
+
+    >>> user_browser.getControl('Delete').click()
+    >>> printBugsBranches(user_browser)
+    None
