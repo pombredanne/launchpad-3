@@ -372,7 +372,6 @@ ul#menuroot a.breadcrumb em { /* should be changed to not need em */
   background-repeat: no-repeat;
   background-position: right top;
   padding: 6px 26px 6px 20px;
-  cursor: hand;
   cursor: pointer;
 }
 * html ul#menuroot a.breadcrumb em {padding-bottom: 4px;} /* for IE6 */
@@ -617,7 +616,6 @@ body.pillarindex table#applications th {padding-left: 0;}
   border: 0;
   width: 20px;
   height: 20px;
-  cursor: hand;
   cursor: pointer;
 }
 #globalsearchscope {padding: 4px 0 0;}
@@ -697,9 +695,6 @@ body.freeform #mainarea {top: 20px;} /*- no logo on freeform pages -*/
   width: 100%;
   background: url(mainarea_topright.gif) 100% top no-repeat;
 }
-#singlecolumn div.z {
-  padding: 0 0 20px; /* XXX Makes the top right corner disappear */
-}
 
 body {min-width: 480px;}
 
@@ -712,10 +707,6 @@ body {min-width: 480px;}
 }
 * html #container {margin-top: 28px; position: static;} /* fixes in IE6 */
 body.applicationhome #container {padding-left: 20px;}
-#singlecolumn #container {
-  padding-left: 20px;
-  padding-top: 50px;
-}
 #maincontent {
   width: 100%;
   padding: 0 0 20px 0;
@@ -726,8 +717,6 @@ body.applicationhome #container {padding-left: 20px;}
 #portlets .portlet {
   width: 200px;
 }
-#singlecolumn {margin: 20px 20px 0 0;} /* test: front page, FAQ page */
-#mainarea #singlecolumn {margin-right: 0;}
 
 ul#applicationchooser {
   position: absolute;
@@ -949,7 +938,7 @@ a conditional comment in main-template.pt to work around the above rule. */
 
 /* --- Various custom list formats --- */
 
-#maincontent ol, #maincontent ul, #singlecolumn ul, #singlecolumn ol {
+#maincontent ol, #maincontent ul {
   margin-left: 24px;
   padding-left: 0;
 }
@@ -1472,9 +1461,6 @@ ul.buttons {margin: 2em 0 4em 0 !important; padding: 0 !important;}
 ul.buttons li {display: inline; margin-right: 1em;}
 body.applicationhome ul.buttons {float: right; margin: 0 0 0 1em !important;}
 body.applicationhome ul.buttons li {display: block; margin-right: 0;}
-#singlecolumn ul.buttons {float: right; margin: 0;}
-#singlecolumn ul.buttons li {margin: 0;}
-#singlecolumn ul.buttons li {display: block;}
 ul.cross-reference {font-size: 1.25em;}
 /*
 li {

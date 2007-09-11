@@ -10,7 +10,11 @@
         icingroot string:${rooturl}+icing/rev${revno};
         site_message modules/canonical.config/config/launchpad/site_message;
         devmode modules/canonical.config/config/devmode;
-        is_demo modules/canonical.config/config/launchpad/is_demo">
+        is_demo modules/canonical.config/config/launchpad/is_demo"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+>
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad style sheet -->
