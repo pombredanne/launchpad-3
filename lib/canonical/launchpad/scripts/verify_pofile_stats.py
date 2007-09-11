@@ -27,18 +27,31 @@ class Verifier:
 
     def isDone(self):
         """See `ITunableLoop`."""
+        # When the main loop hits the end of the POFile table, it sets
+        # start_id to None.  Until we know we hit the end, it always has a
+        # numerical value.
         return self.start_id is None
 
     def __call__(self, chunk_size):
-        """See `ITunableLoop`."""
+        """See `ITunableLoop`.
+
+        Retrieve a batch of `POFile`s in ascending id order, and verify and
+        refresh their cached statistics.
+        """
         pofiles = self.pofileset.getBatch(self.start_id, int(chunk_size))
 
         self.start_id = None
         for pofile in pofiles:
+            # Set starting point of next batch to right after the POFile we're
+            # looking at.  If we don't get any POFiles, this loop iterates
+            # zero times and start_id will remain set to None.
             self.start_id = pofile.id + 1
             try:
                 self._verify(pofile)
             except Exception, error:
+                # Verification failed for this POFile.  Don't bail out: if
+                # there's a pattern of failure, we'll want to report that and
+                # not just the first problem we encounter.
                 self.logger.warning(
                     "Error %s while recomputing stats for POFile %d: %s"
                     % (type(error), pofile.id, error))
@@ -47,6 +60,12 @@ class Verifier:
         self.transaction.begin()
 
     def _verify(self, pofile):
+        """Re-compute statistics for pofile, and compare to cached stats.
+
+        Logs a warning if the recomputed stats do not match the ones stored in
+        the database.  The stored statistics are replaced with the fresly
+        computed ones.
+        """
         old_stats = pofile.getStatistics()
         new_stats = pofile.updateStatistics()
         if new_stats != old_stats:
@@ -69,6 +88,12 @@ class VerifyPOFileStatsProcess:
         self.logger.info("Starting verification of POFile stats at id %d"
             % self.start_at_id)
         loop = Verifier(self.transaction, self.logger, self.start_at_id)
+
+        # Each iteration of our loop collects all statistics first, before
+        # modifying any rows in the database.  With any locks on the database
+        # acquired only at the very end of the iteration, we can afford to
+        # make relatively long, low-overhead iterations without disrupting
+        # application response times.
         LoopTuner(loop, 4).run()
         self.logger.info("Done.")
 

@@ -27,11 +27,13 @@ cached values and the ones it recomputes from scratch.
     INFO Done.
     DEBUG Removing lock file: /var/lock/launchpad-pofile-stats.lock
 
-Since old data will probably change less, the machinery supports partial runs
-skipping POFiles whose id is lower than some given value.  This may be
-useful for optimization: we can decide to schedule more frequent runs on
-newer data, or we can choose to do a quick manual run if we believe some
-recent POFile(s) to have incorrect statistics data.
+Old data will probably change less, either because it's superseded by later
+distro/product series or because it has reached maturity and stabilized.  To
+optimize for this principle, the machinery supports partial runs skipping
+POFiles whose id is lower than some given value.  This gives us room to
+schedule more frequent runs on newer data, or we can choose to do a quick
+manual run on part of the data if we believe some recent POFile(s) to have
+incorrect statistics data.
 
 Since we just ran the cron script on the full table, all our statistics are
 now in order.  We verify POFiles starting at id 30, and see no warnings.

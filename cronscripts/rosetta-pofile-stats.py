@@ -3,14 +3,14 @@
 
 """Refresh and verify cached POFile translation statistics."""
 
-from canonical.config import config
-
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.verify_pofile_stats import (
     VerifyPOFileStatsProcess)
 
 
 class VerifyPOFileStats(LaunchpadCronScript):
+    """Trawl `POFile` table, verifying and updating cached statistics."""
+
     def main(self):
         VerifyPOFileStatsProcess(self.txn, self.logger).run()
 
