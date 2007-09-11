@@ -1,16 +1,47 @@
-# Copyright 2006 Canonical Ltd., all rights reserved.
-"""XMLRPC API to the application roots."""
+# Copyright 2006-2007 Canonical Ltd., all rights reserved.
+
+"""XML-RPC API to the application roots."""
 
 __metaclass__ = type
-__all__ = ['ISelfTest', 'SelfTest', 'IRosettaSelfTest', 'RosettaSelfTest']
+
+__all__ = [
+    'IRosettaSelfTest',
+    'ISelfTest',
+    'PrivateApplication',
+    'PrivateApplicationNavigation',
+    'RosettaSelfTest',
+    'SelfTest',
+    ]
 
 import xmlrpclib
 
 from zope.component import getUtility
 from zope.interface import Interface, implements
 
-from canonical.launchpad.interfaces import ILaunchBag
-from canonical.launchpad.webapp import LaunchpadXMLRPCView
+from canonical.launchpad.interfaces import (
+    ILaunchBag, IMailingListApplication,
+    IPrivateApplication, IPrivateXMLRPCEndPoint)
+from canonical.launchpad.webapp import LaunchpadXMLRPCView, Navigation
+
+
+class PrivateApplication:
+    implements(IPrivateApplication, IPrivateXMLRPCEndPoint)
+
+    @property
+    def mailinglists(self):
+        return getUtility(IMailingListApplication)
+
+
+class PrivateApplicationNavigation(Navigation):
+    usedfor = IPrivateApplication
+
+    def traverse(self, name):
+        # Raise a 404 on an invalid private application end point.
+        missing = object()
+        end_point = getattr(self.context, name, missing)
+        if end_point is missing:
+            raise NotFoundError(name)
+        return end_point
 
 
 class ISelfTest(Interface):

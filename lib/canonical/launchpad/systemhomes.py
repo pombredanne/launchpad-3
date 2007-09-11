@@ -21,9 +21,8 @@ from canonical.launchpad.interfaces import (
     IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet, IDistroSeriesSet,
     ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
     IMailingListApplication, IMaloneApplication,
-    IOpenIdApplication, IPrivateXMLRPCEndPoint, IProductSet,
-    IRegistryApplication, IRosettaApplication, IShipItApplication,
-    ITranslationGroupSet)
+    IOpenIdApplication, IProductSet, IRegistryApplication,
+    IRosettaApplication, IShipItApplication, ITranslationGroupSet)
 
 
 class RegistryApplication:
@@ -35,7 +34,7 @@ class ShipItApplication:
 
 
 class MailingListApplication:
-    implements(IMailingListApplication, IPrivateXMLRPCEndPoint)
+    implements(IMailingListApplication)
 
 
 class MaloneApplication:
