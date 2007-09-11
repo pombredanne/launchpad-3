@@ -6,7 +6,6 @@ import socket
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.config import config
-from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)

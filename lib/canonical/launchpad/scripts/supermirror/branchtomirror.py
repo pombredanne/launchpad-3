@@ -9,9 +9,11 @@ import socket
 import sys
 import urllib2
 
-import bzrlib.branch
+from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
-import bzrlib.errors
+from bzrlib.errors import (
+    BzrError, NotBranchError, ParamikoNotPresent,
+    UnknownFormatError, UnsupportedFormatError)
 from bzrlib.revision import NULL_REVISION
 
 from canonical.config import config
@@ -145,7 +147,7 @@ class BranchToMirror:
 
     def _openSourceBranch(self):
         """Open the branch to pull from, useful to override in tests."""
-        self._source_branch = bzrlib.branch.Branch.open(self.source)
+        self._source_branch = Branch.open(self.source)
 
     def _mirrorToDestBranch(self):
         """Open the branch to pull to, creating a new one if necessary.
@@ -153,8 +155,8 @@ class BranchToMirror:
         Useful to override in tests.
         """
         try:
-            branch = bzrlib.bzrdir.BzrDir.open(self.dest).open_branch()
-        except bzrlib.errors.NotBranchError:
+            branch = BzrDir.open(self.dest).open_branch()
+        except NotBranchError:
             # Make a new branch in the same format as the source branch.
             branch = self._createDestBranch()
         else:
@@ -268,17 +270,17 @@ class BranchToMirror:
             self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
-        except bzrlib.errors.UnsupportedFormatError, e:
+        except UnsupportedFormatError, e:
             msg = ("Launchpad does not support branches from before "
                    "bzr 0.7. Please upgrade the branch using bzr upgrade.")
             self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
-        except bzrlib.errors.UnknownFormatError, e:
+        except UnknownFormatError, e:
             self._record_oops(logger)
             self._mirrorFailed(logger, e)
 
-        except (bzrlib.errors.ParamikoNotPresent, BadUrlSsh), e:
+        except (ParamikoNotPresent, BadUrlSsh), e:
             msg = ("Launchpad cannot mirror branches from SFTP and SSH URLs."
                    " Please register a HTTP location for this branch.")
             self._record_oops(logger, msg)
@@ -289,10 +291,10 @@ class BranchToMirror:
             self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
-        except bzrlib.errors.NotBranchError, e:
+        except NotBranchError, e:
             
             message_by_type = {
-                BranchType.HOSTED: str(bzrlib.errors.NotBranchError(
+                BranchType.HOSTED: str(NotBranchError(
                 "sftp://bazaar.launchpad.net/~%s" % self.branch_unique_name)),
                 BranchType.IMPORTED: "Not a branch.",
                 }
@@ -316,7 +318,7 @@ class BranchToMirror:
             self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
-        except bzrlib.errors.BzrError, e:
+        except BzrError, e:
             self._record_oops(logger)
             self._mirrorFailed(logger, e)
 
