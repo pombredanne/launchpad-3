@@ -983,7 +983,7 @@ class Roundup(ExternalBugTracker):
                 # Open issues (status=1). We also use this as a fallback
                 # for statuses 2 and 3, for which the mappings are
                 # different only in a few instances.
-                1 : {
+                1: {
                     None: BugTaskStatus.NEW,       # No resolution
                     1: BugTaskStatus.CONFIRMED,    # Resolution: accepted
                     2: BugTaskStatus.CONFIRMED,    # Resolution: duplicate
@@ -996,22 +996,19 @@ class Roundup(ExternalBugTracker):
                     9: BugTaskStatus.CONFIRMED,    # Resolution: remind
                     10: BugTaskStatus.WONTFIX,     # Resolution: wontfix
                     11: BugTaskStatus.INVALID,     # Resolution: works for me
-                    UNKNOWN_REMOTE_STATUS: BugTaskStatus.UNKNOWN
-                },
+                    UNKNOWN_REMOTE_STATUS: BugTaskStatus.UNKNOWN},
 
                 # Closed issues (status=2)
                 2: {
                     None: BugTaskStatus.WONTFIX,   # No resolution
                     1: BugTaskStatus.FIXCOMMITTED, # Resolution: accepted
                     3: BugTaskStatus.FIXRELEASED,  # Resolution: fixed
-                    7: BugTaskStatus.WONTFIX,      # Resolution: postponed
-                },
+                    7: BugTaskStatus.WONTFIX},     # Resolution: postponed
 
                 # Pending issues (status=3)
                 3: {
                     None: BugTaskStatus.INCOMPLETE,# No resolution
-                    7: BugTaskStatus.WONTFIX,      # Resolution: postponed
-                },
+                    7: BugTaskStatus.WONTFIX},     # Resolution: postponed
             }
 
         else:
@@ -1028,13 +1025,21 @@ class Roundup(ExternalBugTracker):
                 6: BugTaskStatus.INPROGRESS,   # Roundup status 'testing'
                 7: BugTaskStatus.FIXCOMMITTED, # Roundup status 'done-cbb'
                 8: BugTaskStatus.FIXRELEASED,  # Roundup status 'resolved'
-                UNKNOWN_REMOTE_STATUS: BugTaskStatus.UNKNOWN
-            }
+                UNKNOWN_REMOTE_STATUS: BugTaskStatus.UNKNOWN}
 
 
     def __init__(self, baseurl):
-        # We strip any trailing slashes to ensure that we don't end up
-        # requesting a URL that Roundup can't handle.
+        """Create a new Roundup instance.
+
+        :baseurl: The base url (including protocol) for the Roundup
+            bugtracker. Trailing slashes will be removed from this.
+
+        If the baseurl passed is one which points to bugs.python.org,
+        the behaviour of the Roundup bugtracker will be different from
+        that which it exhbits to every other Roundup bug tracker, since
+        the Python Roundup instance is very specific to Python and in
+        fact behaves rather more like SourceForge than Roundup.
+        """
         self.baseurl = baseurl.rstrip('/')
 
         if self.isPython():
@@ -1067,13 +1072,17 @@ class Roundup(ExternalBugTracker):
                 "&@startwith=0")
 
     def isPython(self):
-        """Return True if the remote bug tracker is the Python bug
-        tracker at bugs.python.org, False otherwise.
+        """Return True if the remote bug tracker isi at bugs.python.org.
+
+        Return False otherwise.
         """
         return 'bugs.python.org' in self.baseurl
 
     def _getBug(self, bug_id):
         """Return the bug with the ID bug_id from the internal bug list.
+
+        :param bug_id: The ID of the remote bug to return.
+        :type bug_id: int
 
         BugNotFound will be raised if the bug does not exist.
         InvalidBugId will be raised if bug_id is not of a valid format.
@@ -1082,7 +1091,7 @@ class Roundup(ExternalBugTracker):
             bug_id = int(bug_id)
         except ValueError:
             raise InvalidBugId(
-                "bug_id must be convertable an integer: %s" % str(bug_id))
+                "bug_id must be convertible an integer: %s." % str(bug_id))
 
         try:
             return self.bugs[bug_id]
@@ -1177,8 +1186,8 @@ class Roundup(ExternalBugTracker):
             status, resolution = remote_status.split(':')
         except ValueError:
             raise AssertionError(
-                "remote_status must be a string of the form "
-                "<status>:<resolution>")
+                "The remote status must be a string of the form "
+                "<status>:<resolution>.")
 
         try:
             status = int(status)
