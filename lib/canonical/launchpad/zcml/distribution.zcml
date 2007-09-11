@@ -422,6 +422,16 @@
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    name="+select-language-pack-admin"
+    class="canonical.launchpad.browser.DistributionLanguagePackAdminView"
+    facet="translations"
+    permission="launchpad.TranslationsAdmin"
+    template="../templates/distribution-language-pack-admin.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
   <browser:addform
     name="+linkbounty"
     for="canonical.launchpad.interfaces.IDistribution"

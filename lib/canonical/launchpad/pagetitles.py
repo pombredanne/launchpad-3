@@ -393,6 +393,9 @@ distribution_cvereport = ContextTitle('CVE reports for %s')
 
 distribution_edit = ContextTitle('Edit %s')
 
+distribution_language_pack_admin = ContextTitle(
+    'Change the language pack administrator for %s')
+
 distribution_members = ContextTitle('%s distribution members')
 
 distribution_memberteam = ContextTitle(
