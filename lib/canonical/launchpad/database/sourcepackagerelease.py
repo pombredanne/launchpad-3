@@ -328,7 +328,8 @@ class SourcePackageRelease(SQLBase):
     def change_summary(self):
         """See ISourcePackageRelease"""
         # this regex is copied from apt-listchanges.py courtesy of MDZ
-        new_stanza_line = re.compile('^\S+ \((?P<version>.*)\) .*;.*urgency=(?P<urgency>\w+).*')
+        new_stanza_line = re.compile(
+            '^\S+ \((?P<version>.*)\) .*;.*urgency=(?P<urgency>\w+).*')
         logfile = StringIO(self.changelog)
         change = ''
         top_stanza = False

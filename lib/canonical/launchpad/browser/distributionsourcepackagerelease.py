@@ -6,7 +6,6 @@ __all__ = [
     'DistributionSourcePackageReleaseFacets',
     'DistributionSourcePackageReleaseNavigation',
     'DistributionSourcePackageReleaseShortLink',
-    'DistributionSourcePackageReleaseView',
     ]
 
 from zope.component import getUtility
@@ -20,7 +19,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu, Navigation,
-    LaunchpadView, GetitemNavigation, stepthrough)
+    GetitemNavigation, stepthrough)
 
 
 class DistributionSourcePackageReleaseFacets(StandardLaunchpadFacets):
@@ -54,10 +53,6 @@ class DistributionSourcePackageReleaseNavigation(Navigation):
             return getUtility(IBuildSet).getByBuildID(build_id)
         except NotFoundError:
             return None
-
-
-class DistributionSourcePackageReleaseView(LaunchpadView):
-    pass
 
 
 class DistributionSourcePackageReleaseShortLink(DefaultShortLink):
