@@ -327,6 +327,7 @@
                               <input
                                   type="radio"
                                   name="assignee_option"
+                                  id="assignee_option"
                                   value="choose">
                               <span
                                   tal:content="structure view/widgets/assignee"

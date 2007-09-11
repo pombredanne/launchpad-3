@@ -217,7 +217,7 @@ class DistroSeriesSourcePackageRelease:
             new_section == current.section):
             return
 
-        # See if the archive has changed by virtue of the component 
+        # See if the archive has changed by virtue of the component
         # changing:
         new_archive = self.distribution.getArchiveByComponent(
             new_component.name)

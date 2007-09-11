@@ -2,13 +2,12 @@
 
 import unittest
 
-from zope.testing import doctest
 from zope.testing.doctest import DocTestSuite
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.interface import implements
 
 from canonical.launchpad import helpers
-from canonical.launchpad.components.poexport import RosettaWriteTarFile
+from canonical.launchpad.translationformat import LaunchpadWriteTarFile
 from canonical.launchpad.interfaces import ILanguageSet, IPerson, ILaunchBag
 
 
@@ -27,7 +26,7 @@ def make_test_tarball_1():
     True
     '''
 
-    return RosettaWriteTarFile.files_to_tarfile({
+    return LaunchpadWriteTarFile.files_to_tarfile({
         'uberfrob-0.1/README':
             'Uberfrob is an advanced frobnicator.',
         'uberfrob-0.1/po/cy.po':
@@ -74,7 +73,7 @@ def make_test_tarball_2():
         'msgstr "bar"',
         )
 
-    return RosettaWriteTarFile.files_to_tarfile({
+    return LaunchpadWriteTarFile.files_to_tarfile({
         'test/test.pot': pot,
         'test/cy.po': po,
         'test/es.po': po,

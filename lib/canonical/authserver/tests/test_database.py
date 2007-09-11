@@ -331,7 +331,7 @@ class UserDetailsStorageTest(DatabaseTest):
         storage = DatabaseUserDetailsStorage(None)
         keys = storage._getSSHKeysInteraction('no-such-user')
         self.assertEqual([], keys)
-        
+
     def test_getSSHKeys(self):
         # getSSHKeys returns a list of keytype, keytext tuples for users with
         # SSH keys.
@@ -509,7 +509,19 @@ class HostedBranchStorageTest(DatabaseTest):
         branch_id, permissions = store._getBranchInformationInteraction(
             12, 'vcs-imports', 'gnome-terminal', 'import')
         self.assertEqual(75, branch_id)
-        self.assertEqual(READ_ONLY, permissions)        
+        self.assertEqual(READ_ONLY, permissions)
+
+    def test_getBranchInformation_remote(self):
+        # Remote branches are not accessible by the smartserver or SFTP server.
+        no_priv = getUtility(IPersonSet).getByName('no-priv')
+        firefox = getUtility(IProductSet).getByName('firefox')
+        branch = getUtility(IBranchSet).new(
+            BranchType.REMOTE, 'remote', no_priv, no_priv, firefox, None)
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'no-priv', 'firefox', 'remote')
+        self.assertEqual('', branch_id)
+        self.assertEqual('', permissions)
 
     def test_getBranchInformation_private(self):
         # When we get the branch information for a private branch that is

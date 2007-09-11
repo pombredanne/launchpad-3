@@ -69,7 +69,7 @@ def dump_garbage():
     gc.set_debug(gc.DEBUG_LEAK)
 
     """
-        
+
     # force collection
     print "\nGARBAGE:"
     gc.collect()
@@ -133,5 +133,5 @@ if __name__=="__main__":
 
     # show the dirt ;-)
     dump_garbage()
-  
+
 

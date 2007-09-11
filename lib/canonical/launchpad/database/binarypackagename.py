@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'BinaryPackageName', 
+    'BinaryPackageName',
     'BinaryPackageNameSet',
     'BinaryPackageNameVocabulary',
     'getBinaryPackageDescriptions'

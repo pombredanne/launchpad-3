@@ -280,7 +280,7 @@ class PollVoteView(BasePollView):
                     "or change your vote, if you want.")
 
     def processCondorcetVotingForm(self):
-        """Process the condorcet-voting form to change a user's vote or 
+        """Process the condorcet-voting form to change a user's vote or
         register a new one.
 
         This method must not be called if the poll is not open.
@@ -340,7 +340,7 @@ class PollAddView(GeneralFormView):
                 dateopens, datecloses):
         pollsubset = IPollSubset(self.context)
         poll = pollsubset.new(
-            name, title, proposition, dateopens, datecloses, 
+            name, title, proposition, dateopens, datecloses,
             secrecy, allowspoilt)
         self._nextURL = canonical_url(poll)
         notify(ObjectCreatedEvent(poll))
