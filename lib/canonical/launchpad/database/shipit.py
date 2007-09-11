@@ -206,10 +206,11 @@ class ShippingRequest(SQLBase):
         standardrequestset = getUtility(IStandardShipItRequestSet)
         type = ShippingRequestType.STANDARD
         for flavour, arches_and_quantities in quantities.items():
+            x86 = arches_and_quantities.get(ShipItArchitecture.X86, 0)
+            amd64 = arches_and_quantities.get(ShipItArchitecture.AMD64, 0)
+            ppc = arches_and_quantities.get(ShipItArchitecture.PPC, 0)
             standard_template = standardrequestset.getByNumbersOfCDs(
-                flavour, arches_and_quantities[ShipItArchitecture.X86],
-                arches_and_quantities[ShipItArchitecture.AMD64],
-                arches_and_quantities[ShipItArchitecture.PPC])
+                flavour, x86, amd64, ppc)
             if standard_template is None:
                 type = ShippingRequestType.CUSTOM
             for arch, quantity in arches_and_quantities.items():
