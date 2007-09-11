@@ -246,6 +246,9 @@ echo "
 </VirtualHost>
 " | sudo tee /etc/apache2/sites-available/bazaar.launchpad.dev > /dev/null
 
+# Create the document root to avoid Apache warnings
+mkdir -p /var/tmp/sm-ng/mirrors
+
 # Create an empty rewritemap file so that Apache will start.
 mkdir -p /var/tmp/sm-ng/config
 touch /var/tmp/sm-ng/config/launchpad-lookup.txt
