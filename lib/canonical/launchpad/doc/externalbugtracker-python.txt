@@ -1,7 +1,7 @@
 = ExternalBugTracker: Python =
 
-This covers the implementation of the ExternalBugTracker class for Python
-bugwatches.
+This covers the implementation of the ExternalBugTracker class for
+Python bugwatches.
 
 The Python bug tracker is a slight modification of the Roundup
 bugtracker and the functionality for importing bugs from it is housed
