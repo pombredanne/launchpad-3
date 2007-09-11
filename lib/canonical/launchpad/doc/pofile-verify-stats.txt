@@ -13,6 +13,9 @@ even during some updates.  That's why a cron job trawls the POFile table,
 recomputing translation statistics and noting any divergence between the
 cached values and the ones it recomputes from scratch.
 
+Running the cron script completes successfully, even if some POFiles turn out
+to have incorrect statistics (as is the case in our sample data).
+
     >>> import subprocess
     >>> import sys
     >>> process = subprocess.Popen([
@@ -24,19 +27,21 @@ cached values and the ones it recomputes from scratch.
     INFO creating lockfile
     INFO Starting verification of POFile stats at id 0
     ...
+    WARNING POFile ...: cached stats were (...), recomputed as (...)
     INFO Done.
     DEBUG Removing lock file: /var/lock/launchpad-pofile-stats.lock
 
 Old data will probably change less, either because it's superseded by later
 distro/product series or because it has reached maturity and stabilized.  To
-optimize for this principle, the machinery supports partial runs skipping
-POFiles whose id is lower than some given value.  This gives us room to
-schedule more frequent runs on newer data, or we can choose to do a quick
+optimize for this principle, the underlying machinery supports partial runs
+skipping POFiles whose id is lower than some given value.  This gives us room
+to schedule more frequent runs on newer data, or we can choose to do a quick
 manual run on part of the data if we believe some recent POFile(s) to have
 incorrect statistics data.
 
-Since we just ran the cron script on the full table, all our statistics are
-now in order.  We verify POFiles starting at id 30, and see no warnings.
+As an example we verify just the POFiles with id 30 and up (something the
+cron script does not allow us to do, but the underlying machinery supports).
+Since we just ran the cron script, all statistics are correct.
 
     >>> import transaction
     >>> from canonical.launchpad.scripts.verify_pofile_stats import (
@@ -48,8 +53,8 @@ now in order.  We verify POFiles starting at id 30, and see no warnings.
     INFO Starting verification of POFile stats at id 30
     INFO Done.
 
-If for any reason any POFiles' statistics are found to be wrong, the
-differences will be reported.
+If for any reason any POFiles' statistics are found to be wrong, the script
+reports both the wrong and the corrected statistics.
 
     >>> from canonical.launchpad.database.pofile import POFile
     >>> pofile = POFile.get(34)
