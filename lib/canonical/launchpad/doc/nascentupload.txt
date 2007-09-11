@@ -712,7 +712,7 @@ sigining key reference as an IGPGKey:
   >>> bar_ok.is_rejected
   False
 
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.launchpad.interfaces import (
   ...    IGPGKey, IPersonSet)
 

@@ -316,6 +316,14 @@
     permission="zope.Public"
     />
 
+  <browser:page
+    name="+export"
+    for="canonical.launchpad.interfaces.IProductSeries"
+    permission="launchpad.AnyPerson"
+    template="../templates/productseries-export.pt"
+    class="canonical.launchpad.browser.ProductSeriesTranslationsExportView"
+    />
+
   <!-- ProductSeriesSet -->
   <content class="canonical.launchpad.database.ProductSeriesSet">
     <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />

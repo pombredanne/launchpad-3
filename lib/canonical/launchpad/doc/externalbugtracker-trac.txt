@@ -82,6 +82,54 @@ If we initialise with a different set of keys we overwrite the first set:
     [6, 7, 8, 9, 10, 11, 12]
 
 
+== Export Methods ==
+
+There are two means by which we can export Trac bug statuses: on a bug-by-bug
+basis and as a batch. When the number of bugs that need updating is less than
+a given bug tracker's batch_query_threshold the bugs will be fetched
+one-at-a-time:
+
+    >>> trac.batch_query_threshold
+    10
+
+    >>> trac.trace_calls = True
+    >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
+    CALLED urlopen('http://test.trac/ticket/6?format=csv')
+    CALLED urlopen('http://test.trac/ticket/7?format=csv')
+    CALLED urlopen('http://test.trac/ticket/8?format=csv')
+    CALLED urlopen('http://test.trac/ticket/9?format=csv')
+    CALLED urlopen('http://test.trac/ticket/10?format=csv')
+
+If there are more than batch_query_threshold bugs to update then they are
+fetched as a batch:
+
+    >>> trac.batch_query_threshold = 4
+    >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
+    CALLED urlopen('http://test.trac/query?id=6&id=7...&format=csv')
+
+The batch updating method will also be used in cases where the Trac instance
+doesn't support CSV exports of individual tickets:
+
+    >>> trac.batch_query_threshold = 10
+    >>> trac.supports_single_exports = False
+    >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
+    CALLED urlopen('http://test.trac/query?id=6&id=7...&format=csv')
+
+
+== Invalid Bug Statuses ==
+
+Some Trac instances don't specificy a status field in their CSV exports. To
+deal with this, our Trac instance will simply return UNKNOWN_REMOTE_STATUS
+when it encounters such an instance. We can demonstrate this with a simple
+invalid bug:
+
+    >>> invalid_bug = {'id': 1, 'description': 'This bug has no status'}
+    >>> trac.bugs = {invalid_bug['id']: invalid_bug}
+    >>> trac.getRemoteStatus(invalid_bug['id'])
+    WARNING:root:Trac ticket 1 defines no status
+    'UNKNOWN'
+
+
 == Updating Bug Watches ==
 
 First, we create some bug watches to test with:

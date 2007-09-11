@@ -92,7 +92,7 @@ class CursorWrapper:
 
             # Avoid looping insanely fast.
             time.sleep(0.1)
-            
+
             try:
                 self._reconnect()
             except psycopg.OperationalError:

@@ -1,6 +1,6 @@
 = Specification Branch Links =
 
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.launchpad.interfaces import ISpecificationBranch
   >>> from canonical.launchpad.database import SpecificationBranch
   >>> verifyObject(ISpecificationBranch, SpecificationBranch.get(1))

@@ -223,7 +223,7 @@ Test the DARBPR page for a REMOVED package:
 >>> check_redirect("/bugs/assigned")
 >>> check_not_found("/bugs/bugs/assigned")
 >>> check_not_found("/bugs/bugs")
->>> check_redirect("/bugs/bugs/1")
+>>> check_not_found("/bugs/bugs/1")
 >>> check_redirect("/bugs/1")
 >>> check("/bugs/bugtrackers")
 >>> check("/bugs/cve/1999-8979")

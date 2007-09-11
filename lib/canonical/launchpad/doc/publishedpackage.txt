@@ -8,7 +8,7 @@ which distributions.
     >>> from canonical.launchpad.interfaces import IPublishedPackageSet
     >>> pp_set = getUtility(IPublishedPackageSet)
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(IPublishedPackageSet, pp_set)
     True
 

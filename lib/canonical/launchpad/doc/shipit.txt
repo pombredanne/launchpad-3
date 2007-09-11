@@ -7,7 +7,7 @@ these CDs are sent to the user.
 
   >>> from datetime import date
   >>> from zope.component import getUtility
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.ftests import login
   >>> from canonical.launchpad.database import ShippingRun
@@ -1012,33 +1012,45 @@ and to the previous one.
   >>> pprint_csv(content)
   ------------------------------------------------------------ Line 1
          # of requests: 0
-           # of people: 0 (0.0%)
+           # of people: 0
+                     %: 0.0
    avg CDs per request: 0
-           # of people: 0 (0.0%)
+           # of people: 0
+                     %: 0.0
   avg CDs per shipment: 0
-           # of people: 8 (80.0%)
+           # of people: 8
+                     %: 80.0
    avg CDs per request: 0.0
-           # of people: 8 (80.0%)
+           # of people: 8
+                     %: 80.0
   avg CDs per shipment: 0.0
   ------------------------------------------------------------ Line 2
          # of requests: 1
-           # of people: 9 (90.0%)
+           # of people: 9
+                     %: 90.0
    avg CDs per request: 7.66
-           # of people: 7 (87.5%)
+           # of people: 7
+                     %: 87.5
   avg CDs per shipment: 7.28
-           # of people: 2 (20.0%)
+           # of people: 2
+                     %: 20.0
    avg CDs per request: 24.0
-           # of people: 2 (20.0%)
+           # of people: 2
+                     %: 20.0
   avg CDs per shipment: 24.0
   ------------------------------------------------------------ Line 3
          # of requests: 2
-           # of people: 1 (10.0%)
+           # of people: 1
+                     %: 10.0
    avg CDs per request: 1.5
-           # of people: 1 (12.5%)
+           # of people: 1
+                     %: 12.5
   avg CDs per shipment: 1.5
-           # of people: 0 (0.0%)
+           # of people: 0
+                     %: 0.0
    avg CDs per request: 0
-           # of people: 0 (0.0%)
+           # of people: 0
+                     %: 0.0
   avg CDs per shipment: 0
 
 

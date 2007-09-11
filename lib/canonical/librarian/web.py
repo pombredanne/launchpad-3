@@ -42,7 +42,7 @@ class LibraryFileResource(resource.Resource):
             aliasID = int(name)
         except ValueError:
             return fourOhFour
-            
+
         return LibraryFileAliasResource(self.storage, aliasID,
                 self.upstreamHost, self.upstreamPort)
 
@@ -90,7 +90,7 @@ class LibraryFileAliasResource(resource.Resource):
     def _eb_getFileAlias(self, failure):
         failure.trap(NotFound)
         return fourOhFour
-        
+
     def _cb_getFileAlias(
             self, (dbcontentID, dbfilename, mimetype),
             filename, request

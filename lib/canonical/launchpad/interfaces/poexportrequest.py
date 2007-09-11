@@ -1,18 +1,31 @@
-# Copyright 2005 Canonical Ltd. All rights reserved.
+# Copyright 2007 Canonical Ltd. All rights reserved.
 
 __metaclass__ = type
 
-__all__ = ('IPOExportRequestSet', 'IPOExportRequest')
+__all__ = [
+    'IPOExportRequestSet',
+    'IPOExportRequest'
+    ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
+from zope.schema import Int, Object
+
+from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.interfaces.pofile import IPOFile
+from canonical.launchpad.interfaces.potemplate import IPOTemplate
 from canonical.lp.dbschema import TranslationFileFormat
 
 class IPOExportRequestSet(Interface):
-    def addRequest(person, potemplate=None, pofiles=None,
+    entry_count = Int(
+        title=u'Number of entries waiting in the queue.',
+        required=True, readonly=True)
+
+    def addRequest(person, potemplates=None, pofiles=None,
                    format=TranslationFileFormat.PO):
         """Add a request to export a set of files.
 
-        :param potemplate: The PO template to export, or `None`.
+        :param potemplates: PO template or list of PO templates to export, or
+            `None`.
         :param pofiles: A list of PO files to export.
         """
 
@@ -25,9 +38,15 @@ class IPOExportRequestSet(Interface):
         """
 
 class IPOExportRequest(Interface):
-    person = Attribute("The person who made the request.")
-    potemplate = Attribute(
-        "The PO template to which the requested files belong.")
-    pofile = Attribute(
-        "The PO file requested, if any.")
+    person = Object(
+        title=u'The person who made the request.',
+        required=True, readonly=True, schema=IPerson)
+
+    potemplate = Object(
+        title=u'The translation template to which the requested file belong.',
+        required=True, readonly=True, schema=IPOTemplate)
+
+    pofile = Object(
+        title=u'The translation file requested, if any.',
+        required=True, readonly=True, schema=IPOFile)
 

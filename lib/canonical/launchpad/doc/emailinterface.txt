@@ -1245,7 +1245,7 @@ Bug contacts can set some restricted statuses:
 
 Everyone else gets an explanatory error message:
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> upstream_task.transitionToStatus(BugTaskStatus.NEW, email_user)
 
     >>> login('foo.bar@canonical.com')
@@ -1471,7 +1471,7 @@ The user is a distribution member
     1
     >>> print bug_notification.message.text_contents
     ** Changed in: mozilla-firefox (Ubuntu)
-        Assignee: No Privileges Person => Sample Person
+        Assignee: No Privileges Person (no-priv) => Sample Person (name12)
     ...
 
 
@@ -1654,6 +1654,67 @@ error to happen.
     '<original@msg>'
     >>> print msg.get_payload(decode=True)
     Original message body.
+
+
+== Error handling ==
+
+When creating a new task and assigning it to a team, it is possible
+that the team will not have a contact address. This is not generally
+a problem, but when formatting the notification email resulting from
+that action we used to have a bug (See bug #126943).
+
+First, we create a new firefox bug.
+
+    >>> login('test@canonical.com')
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2006
+    ... Subject: Another bug in Firefox
+    ...
+    ... Another bug in Firefox.
+    ...  affects firefox
+    ... """
+    >>> process_email(submit_mail)
+    >>> ff_bug = get_latest_added_bug()
+
+Ordinary persons always have a preferred email address, but teams can
+exist without a contact address.
+
+    >>> name19 = getUtility(IPersonSet).getByName('name19')
+    >>> print name19.preferredemail
+    None
+
+We send another email, creating a new task (for the package in ubuntu)
+and assigning the bug to `name19`.
+
+    >>> submit_commands(ff_bug,
+    ...     'affects ubuntu/mozilla-firefox', 'assignee name19')
+
+The email was handled correctly - A new bugtask was added and assigned
+to the specified team.
+
+    >>> print ff_bug.bugtasks[-1].assignee.name
+    name19
+
+We don't use the preffered email address to refer to the assignee in
+any email notifications. Instead, we always use the unique
+displayname - a combination of the user's display name and their unique
+Launchpad username.
+
+    >>> print name19.unique_displayname
+    Warty Gnome Team (name19)
+    >>> from canonical.launchpad.mailnotification import (
+    ...     get_bug_edit_notification_texts)
+    >>> from canonical.launchpad.components.bug import BugDelta
+    >>> from canonical.launchpad.webapp.publisher import canonical_url
+    >>> bug_delta = BugDelta(
+    ...     bug=ff_bug,
+    ...     bugurl=canonical_url(ff_bug),
+    ...     user=getUtility(IPersonSet).getByEmail('test@canonical.com'),
+    ...     added_bugtasks=ff_bug.bugtasks[-1])
+    >>> print get_bug_edit_notification_texts(bug_delta)[0]
+    **...
+    ...Assignee: Warty Gnome Team (name19)...
 
 
 XXX: Add tests for non-ascii mails.

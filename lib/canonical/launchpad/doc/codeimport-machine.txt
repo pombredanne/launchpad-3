@@ -51,7 +51,7 @@ hostname and to all machines.
     True
 
     >>> machine_set = getUtility(ICodeImportMachineSet)
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.security.proxy import removeSecurityProxy
     >>> verifyObject(ICodeImportMachineSet, removeSecurityProxy(machine_set))
     True
