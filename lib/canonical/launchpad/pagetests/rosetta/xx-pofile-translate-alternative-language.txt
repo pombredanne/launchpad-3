@@ -16,7 +16,7 @@ And open the translation form:
 
 The 'Make suggestions from' control lists the translatable languages.
 Japanese is a translatable language.
-    
+
     >>> browser.getControl(
     ...     name='field.alternative_language').displayOptions[:4]
     ['(no value)', 'Abkhazian (ab)', 'Achinese (ace)', 'Acoli (ach)']

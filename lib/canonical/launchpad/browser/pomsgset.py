@@ -796,21 +796,19 @@ class BaseTranslationView(LaunchpadView):
             query_parts = cgi.parse_qsl(
                 old_query_string, strict_parsing=False)
 
-            # Override whatever current query string values we have with the
-            # ones added by _buildRedirectParams.
-            final_parameters = []
+            # Combine parameters provided by _buildRedirectParams with those
+            # that came with our page request.  The latter take precedence.
+            combined_parameters = {}
+            combined_parameters.update(parameters)
             for (key, value) in query_parts:
-                for (par_key, par_value) in parameters.items():
-                    if par_key == key:
-                        final_parameters.append((par_key, par_value))
-                    else:
-                        final_parameters.append((key, value))
-
+                combined_parameters[key] = value
+            parameters = combined_parameters
         else:
             base_url = new_url
-            final_parameters = []
-            for (key, value) in parameters.items():
-                final_parameters.append((key, value))
+
+        final_parameters = []
+        for (key, value) in parameters.items():
+            final_parameters.append((key, value))
 
         new_query = urllib.urlencode(
             [(key, value) for (key, value) in final_parameters])
