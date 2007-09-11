@@ -540,11 +540,17 @@ class QuestionSet:
 
     def findExpiredQuestions(self, days_before_expiration):
         """See `IQuestionSet`."""
+        # This query joins to bugtasks that are not BugTaskStatus.INVALID
+        # because there are many bugtasks to one question. A question is
+        # included when BugTask.status IS NULL.
         return Question.select("""
             id in (SELECT Question.id
                 FROM Question
                     LEFT JOIN QuestionBug
                         ON Question.id = QuestionBug.question
+                    LEFT OUTER JOIN BugTask
+                        ON QuestionBug.bug = BugTask.bug
+                            AND BugTask.status != %s
                 WHERE
                     Question.status IN (%s, %s)
                     AND (Question.datelastresponse IS NULL
@@ -553,18 +559,11 @@ class QuestionSet:
                     AND Question.datelastquery < 
                         (current_timestamp - interval '%s days')
                     AND Question.assignee IS NULL
-                    AND (QuestionBug.bug IS NULL
-                         OR NOT EXISTS (
-                            SELECT TRUE
-                            FROM BugTask
-                            WHERE
-                                BugTask.bug = QuestionBug.bug
-                                AND BugTask.status != %s
-                            LIMIT 1)))
+                    AND BugTask.status IS NULL)
             """ % sqlvalues(
+                BugTaskStatus.INVALID,
                 QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
-                days_before_expiration, days_before_expiration,
-                BugTaskStatus.INVALID))
+                days_before_expiration, days_before_expiration))
 
     def searchQuestions(self, search_text=None, language=None,
                       status=QUESTION_STATUS_DEFAULT_SEARCH, sort=None):

@@ -91,7 +91,8 @@ somebody are subject to expiration.
     >>> [bugtask.status.title for bugtask in bugtasks]
     ['Unknown', 'Invalid']
     >>> bug_link_question = questionset.get(11)
-    >>> question_bug = bug_link_question.linkBug(fixed_bug)
+    >>> bug_link_question.linkBug(fixed_bug)
+    <QuestionBug at ...>
 
     # A question linked to an Invalid bug; it is expirable.
     >>> invalid_bug = getUtility(IBugSet).get(10)
@@ -100,7 +101,8 @@ somebody are subject to expiration.
     >>> bugtask.status.title
     'Invalid'
     >>> invalid_bug_question = questionset.get(12)
-    >>> question_bug = invalid_bug_question.linkBug(invalid_bug)
+    >>> invalid_bug_question.linkBug(invalid_bug)
+    <QuestionBug at ...>
 
     # Commit the current transaction because the script will run in
     # another transaction and thus it won't see the changes done on this
