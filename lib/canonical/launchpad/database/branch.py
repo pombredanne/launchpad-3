@@ -29,7 +29,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchLifecycleStatus, BranchType, BranchVisibilityRule,
+    BranchLifecycleStatus, BranchType, BranchTypeError, BranchVisibilityRule,
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal,
@@ -259,10 +259,12 @@ class Branch(SQLBase):
         from canonical.launchpad.database.codeimport import CodeImportSet
         code_import = CodeImportSet().getByBranch(self)
         if (code_import is not None or
-            self.revision_history.count() > 0 or
             self.subscriptions.count() > 0 or
             self.bug_branches.count() > 0 or
             self.spec_links.count() > 0 or
+            self.landing_targets.count() > 0 or
+            self.landing_candidates.count() > 0 or
+            self.dependent_branches.count() > 0 or
             self.associatedProductSeries().count() > 0):
             # Can't delete if the branch is associated with anything.
             return False
@@ -389,7 +391,7 @@ class Branch(SQLBase):
     def requestMirror(self):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
-            raise BranchTypeError
+            raise BranchTypeError(self.unique_name)
         self.mirror_request_time = UTC_NOW
         self.syncUpdate()
         return self.mirror_request_time
@@ -397,14 +399,14 @@ class Branch(SQLBase):
     def startMirroring(self):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
-            raise BranchTypeError
+            raise BranchTypeError(self.unique_name)
         self.last_mirror_attempt = UTC_NOW
         self.syncUpdate()
 
     def mirrorComplete(self, last_revision_id):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
-            raise BranchTypeError
+            raise BranchTypeError(self.unique_name)
         assert self.last_mirror_attempt != None, (
             "startMirroring must be called before mirrorComplete.")
         self.last_mirrored = self.last_mirror_attempt
@@ -424,7 +426,7 @@ class Branch(SQLBase):
     def mirrorFailed(self, reason):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
-            raise BranchTypeError
+            raise BranchTypeError(self.unique_name)
         self.mirror_failures += 1
         self.mirror_status_message = reason
         self.mirror_request_time = (
@@ -615,6 +617,11 @@ class BranchSet:
     def delete(self, branch):
         """See `IBranchSet`."""
         if branch.canBeDeleted():
+            # Delete any branch revisions.
+            branch_ancestry = BranchRevision.selectBy(branch=branch)
+            for branch_revision in branch_ancestry:
+                BranchRevision.delete(branch_revision.id)
+            # Now delete the branch itself.
             Branch.delete(branch.id)
         else:
             raise CannotDeleteBranch(
