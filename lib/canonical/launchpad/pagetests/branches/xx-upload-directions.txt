@@ -44,9 +44,9 @@ the branch, and suggest logging in for directions.
   >>> print instructions.renderContents()
   Only
   <a href="/~name12">Sample Person</a>
-  can upload to this branch. If this is you,
-  <a href="+login">log in</a> for directions.
- 
+  can upload to this branch. If you are Sample Person please
+  <a href="+login">log in</a> for upload directions.
+
 If the user is logged in, and is not the owner of the branch, we can be
 definitive that it is not possible to upload to this branch.
 
@@ -158,13 +158,13 @@ link to easily join.
   >>> print instructions.renderContents()
   You cannot upload to this branch. Members of <a
   href="/~landscape-developers">Landscape
-  Developers</a> can upload to this branch.
-  <a href="/~landscape-developers/+join">Join the
+  Developers</a> can upload to this branch.  You may want to
+  <a href="/~landscape-developers/+join">join the
   team</a>.
 
 Check that the "Join the team" link is not broken.
 
-  >>> ddaa_browser.getLink("Join the team").click()
+  >>> ddaa_browser.getLink("join the team").click()
 
 Finally, if the user is a member of the team, we display the same "you can
 upload" message as before. Of course the upload URL looks different, in

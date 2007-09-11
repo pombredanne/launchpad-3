@@ -114,8 +114,9 @@ div.revision p {
               Only
               <a tal:attributes="href context/owner/fmt:url"
                  tal:content="context/owner/browsername">Person</a>
-              can upload to this branch. If this is you,
-              <a href="+login">log in</a> for directions.
+              can upload to this branch. If you are
+              <tal:branch-owner replace="context/owner/browsername"/>
+              please <a href="+login">log in</a> for upload directions.
             </td>
             <td id="upload-directions" tal:condition="context/owner/isTeam">
               Members of
@@ -143,8 +144,8 @@ div.revision p {
                 You cannot upload to this branch. Members of
                 <a tal:attributes="href context/owner/fmt:url"
                    tal:content="context/owner/browsername">Team</a>
-                can upload to this branch.
-                <a tal:attributes="href string:${context/owner/fmt:url}/+join">Join
+                can upload to this branch. You may want to
+                <a tal:attributes="href string:${context/owner/fmt:url}/+join">join
                 the team</a>.
               </td>
             </tr>

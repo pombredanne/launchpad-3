@@ -45,7 +45,6 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
     LaunchpadEditFormView, action, custom_widget)
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
 
 from canonical.widgets import SinglePopupWidget
@@ -223,21 +222,29 @@ class BranchView(LaunchpadView):
         """Return the generic URL for downloading the branch."""
         if self.user_can_download():
             return self.context.getBzrDownloadURL()
+        else:
+            return None
 
     def bzr_user_download_url(self):
         """Return the specific URL for the user to download the branch."""
         if self.user_can_download():
             return self.context.getBzrDownloadURL(self.user)
+        else:
+            return None
 
     def bzr_upload_url(self):
         """Return the generic URL for uploading the branch."""
         if self.user_can_upload():
             return self.context.getBzrUploadURL()
+        else:
+            return None
 
     def bzr_user_upload_url(self):
         """Return the specific URL for the user to upload to the branch."""
         if self.user_can_upload():
             return self.context.getBzrUploadURL(self.user)
+        else:
+            return None
 
     def edit_link_url(self):
         """Target URL of the Edit link used in the actions portlet."""

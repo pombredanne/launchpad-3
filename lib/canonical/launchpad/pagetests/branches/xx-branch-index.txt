@@ -176,7 +176,7 @@ for the branch's canonical location.
     >>> print extract_text(get_branch_details_table())
     Project: GNOME Terminal
     Upload URL: Only Sample Person can upload to this branch.
-      If this is you, log in for directions.
+      If you are Sample Person please log in for upload directions.
 
 
 For mirrored branches, the table has a link to the branch's project, the
