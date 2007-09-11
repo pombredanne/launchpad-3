@@ -218,6 +218,10 @@ class LaunchpadRequestPublicationFactory:
 
     def canHandle(self, environment):
         """Only configured domains are handled."""
+        if 'HTTP_HOST' not in environment:
+            self._thread_local.host = self.USE_DEFAULTS
+            return True
+
         # We look at the wsgi environment to get the port this request is
         # coming in over.  If it's our private port (as determined by matching
         # the PrivateXMLRPC server type), then we route calls to the private
@@ -240,10 +244,6 @@ class LaunchpadRequestPublicationFactory:
                 self._thread_local.host = (
                     config.launchpad.vhosts.xmlrpc_private.hostname)
                 return True
-
-        if 'HTTP_HOST' not in environment:
-            self._thread_local.host = self.USE_DEFAULTS
-            return True
 
         host = environment['HTTP_HOST']
         if ":" in host:
