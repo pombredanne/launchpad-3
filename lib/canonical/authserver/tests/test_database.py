@@ -511,6 +511,18 @@ class HostedBranchStorageTest(DatabaseTest):
         self.assertEqual(75, branch_id)
         self.assertEqual(READ_ONLY, permissions)
 
+    def test_getBranchInformation_remote(self):
+        # Remote branches are not accessible by the smartserver or SFTP server.
+        no_priv = getUtility(IPersonSet).getByName('no-priv')
+        firefox = getUtility(IProductSet).getByName('firefox')
+        branch = getUtility(IBranchSet).new(
+            BranchType.REMOTE, 'remote', no_priv, no_priv, firefox, None)
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'no-priv', 'firefox', 'remote')
+        self.assertEqual('', branch_id)
+        self.assertEqual('', permissions)
+
     def test_getBranchInformation_private(self):
         # When we get the branch information for a private branch that is
         # hidden to us, it is an if the branch doesn't exist at all.

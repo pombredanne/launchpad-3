@@ -146,6 +146,8 @@ class IMaloneApplication(ILaunchpadApplication):
 class IRosettaApplication(ILaunchpadApplication):
     """Application root for rosetta."""
 
+    languages = Attribute(
+        'Languages Launchpad can translate into.')
     language_count = Attribute(
         'Number of languages Launchpad can translate into.')
     statsdate = Attribute('The date stats were last updated.')

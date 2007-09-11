@@ -72,8 +72,8 @@ Add watch for external bug to the bug:
 
 Mark a bug task as fixed:
 
-    >>> from canonical.launchpad.interfaces import IDistroBugTask
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskStatus, IDistroBugTask)
     >>> bugtask = bug.bugtasks[0]
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
     >>> bugtask.transitionToStatus(

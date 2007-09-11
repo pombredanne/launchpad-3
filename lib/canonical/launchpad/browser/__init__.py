@@ -18,6 +18,7 @@ from canonical.launchpad.browser.branchref import *
 from canonical.launchpad.browser.branchsubscription import *
 from canonical.launchpad.browser.branchvisibilitypolicy import *
 from canonical.launchpad.browser.bug import *
+from canonical.launchpad.browser.bugalsoaffects import *
 from canonical.launchpad.browser.buglinktarget import *
 from canonical.launchpad.browser.bugattachment import *
 from canonical.launchpad.browser.bugbranch import *

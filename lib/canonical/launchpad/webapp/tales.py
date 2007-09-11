@@ -671,7 +671,38 @@ class PersonFormatterAPI(ObjectFormatterAPI):
 
 
 class BranchFormatterAPI(ObjectFormatterAPI):
-    """Adapter for IPerson objects to a formatted string."""
+    """Adapter for IBranch objects to a formatted string."""
+
+    implements(ITraversable)
+
+    allowed_names = set([
+        'url',
+        ])
+
+    def traverse(self, name, furtherPath):
+        if name == 'link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.link(extra_path)
+        elif name in self.allowed_names:
+            return getattr(self, name)()
+        else:
+            raise TraversalError, name
+
+    def link(self, extra_path):
+        """Return an HTML link to the branch page containing an icon
+        followed by the branch's unique name.
+        """
+        branch = self._context
+        url = canonical_url(branch)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        return ('<a href="%s" title="%s"><img src="/@@/branch" alt=""/>'
+                '&nbsp;%s</a>' % (url, branch.displayname, branch.unique_name))
+
+
+class BugTaskFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IBugTask objects to a formatted string."""
 
     implements(ITraversable)
 
@@ -693,12 +724,13 @@ class BranchFormatterAPI(ObjectFormatterAPI):
         """Return an HTML link to the person's page containing an icon
         followed by the person's name.
         """
-        branch = self._context
-        url = canonical_url(branch)
+        bugtask = self._context
+        url = canonical_url(bugtask)
         if extra_path:
             url = '%s/%s' % (url, extra_path)
-        return '<a href="%s"><img src="/@@/branch" alt=""/>&nbsp;%s</a>' % (
-            url, branch.displayname)
+        image_html = BugTaskImageDisplayAPI(bugtask).icon()
+        return '<a href="%s">%s&nbsp;Bug #%d: %s</a>' % (
+            url, image_html, bugtask.bug.id, bugtask.bug.title)
 
 
 class NumberFormatterAPI:

@@ -201,8 +201,8 @@ bug. Let's take a look at each type.
 Let's demonstrate a notification email where Sample Person marks a
 task Fixed, and assigns himself to it.
 
-    >>> from canonical.launchpad.interfaces import IDistroBugTask
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskStatus, IDistroBugTask)
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
 
     >>> bugtask_before_modification = Snapshot(
