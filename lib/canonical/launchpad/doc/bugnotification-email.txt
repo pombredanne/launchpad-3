@@ -280,7 +280,7 @@ text representations of the changes when a bug task is edited.
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Changed in: tomcat
-         Assignee: (unassigned) => Sample Person
+         Assignee: (unassigned) => Sample Person (name12)
            Status: New => Confirmed
     -----------------------------
 
@@ -303,7 +303,7 @@ edited:
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Changed in: mozilla-firefox (Debian)
-         Assignee: Sample Person => (unassigned)
+         Assignee: Sample Person (name12) => (unassigned)
     -----------------------------
 
 = Adding and editing bug watches =
