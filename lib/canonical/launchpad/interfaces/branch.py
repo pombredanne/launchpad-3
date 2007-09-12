@@ -201,12 +201,12 @@ class BranchURIField(URIField):
         uri = URI(value)
         supermirror_root = URI(config.launchpad.supermirror_root)
         launchpad_domain = config.launchpad.vhosts.mainsite.hostname
-        if (supermirror_root.contains(uri)
-            or uri.underDomain(launchpad_domain)):
+        if uri.underDomain(launchpad_domain):
             message = _(
-                "Don't manually register a bzr branch on "
-                "<code>%s</code>. Create it by SFTP, and it "
-                "is registered automatically." % uri.host)
+                "For Launchpad to mirror a branch, the original branch cannot "
+                "be on <code>%s</code>. Did you want to "
+                '<a href="https://help.launchpad.net/CreatingAHostedBranch">'
+                "create a hosted branch</a> instead?" % launchpad_domain)
             raise LaunchpadValidationError(message)
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
@@ -382,6 +382,11 @@ class IBranch(IHasOwner):
     related_bugs = Attribute(
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
+
+    related_bug_tasks = Attribute(
+        "For each related_bug, the bug task reported against this branch's "
+        "product or the first bug task (in case where there is no task "
+        "reported against the branch's product).")
 
     # Specification attributes
     spec_links = Attribute("Specifications linked to this branch")
