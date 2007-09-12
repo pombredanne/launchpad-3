@@ -92,7 +92,7 @@ Also, using our connection should still work.
     1
 
 
-XXX: Test that interrupting a transaction still fails -- spiv
+XXX: spiv 2004-12-08: Test that interrupting a transaction still fails.
 
 Clean up the proxy.
 

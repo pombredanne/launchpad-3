@@ -1,6 +1,9 @@
 IBranchSetAPI
 -------------
 
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from datetime import datetime
+    >>> import pytz 
     >>> import xmlrpclib
     >>> from canonical.functional import XMLRPCTestTransport
     >>> branchset_api = xmlrpclib.ServerProxy(
@@ -55,6 +58,16 @@ Since we didn't specify product, title or description, they are None:
     >>> new_branch.summary is None
     True
 
+Also, Launchpad is scheduled to mirror this branch on its next mirror run:
+
+    >>> removeSecurityProxy(new_branch).sync()
+    >>> print new_branch.mirror_request_time is not None
+    True
+    >>> print new_branch.mirror_request_time < datetime.now(pytz.timezone('UTC'))
+    True
+
+(We remove the security proxy in order to ensure that mirror_request_time has a
+real object in it, rather than an expression builder.)
 
 Let's register a branch specifying the name, description and product as
 well:

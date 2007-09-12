@@ -106,7 +106,7 @@ def main():
         BuildStatus.CHROOTWAIT : options.chrootwait,
         }
 
-    # XXX cprov 20060831: one query per requested state
+    # XXX cprov 2006-08-31: one query per requested state
     # could organise it in a single one nicely if I have
     # an empty SQLResult instance, than only iteration + union()
     # would work.

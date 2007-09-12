@@ -11,11 +11,10 @@ __all__ = ['SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
            ]
 
 from warnings import warn
-import operator
 import os
 
 from zope.interface import implements
-from sqlobject import ForeignKey, StringCol, BoolCol, IntCol
+from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -32,7 +31,7 @@ from canonical.launchpad.interfaces import (
     PoolFileOverwriteError)
 
 
-# XXX cprov 20060818: move it away, perhaps archivepublisher/pool.py
+# XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
 def makePoolPath(source_name, component_name):
     """Return the pool path for a given source name and component name."""
     from canonical.archivepublisher.diskpool import poolify
@@ -44,8 +43,8 @@ class ArchiveFilePublisherBase:
     """Base class to publish files in the archive."""
     def publish(self, diskpool, log):
         """See IArchiveFilePublisherBase."""
-        # XXX cprov 20060612: the encode should not be needed
-        # when retrieving data from DB. bug # 49510
+        # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
+        # when retrieving data from DB.
         source = self.sourcepackagename.encode('utf-8')
         component = self.componentname.encode('utf-8')
         filename = self.libraryfilealiasfilename.encode('utf-8')
@@ -113,6 +112,11 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
+    @property
+    def publishing_record(self):
+        """See `ArchiveFilePublisherBase`."""
+        return self.sourcepackagepublishing
+
 
 class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     """A binary package file which is published.
@@ -161,13 +165,18 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
+    @property
+    def publishing_record(self):
+        """See `ArchiveFilePublisherBase`."""
+        return self.binarypackagepublishing
+
 
 class ArchiveSafePublisherBase:
     """Base class to grant ability to publish a record in a safe manner."""
 
     def setPublished(self):
         """see IArchiveSafePublisher."""
-        # XXX cprov 20060614:
+        # XXX cprov 2006-06-14:
         # Implement sanity checks before set it as published
         if self.status == PackagePublishingStatus.PENDING:
             # update the DB publishing record status if they
@@ -355,12 +364,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 BinaryPackageName.id AND
             Build.sourcepackagerelease=%s AND
             DistroArchRelease.distrorelease=%s AND
-            BinaryPackagePublishingHistory.archive=%s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.status=%s
-            """ % sqlvalues(self.sourcepackagerelease,
-                            self.distroseries,
-                            self.distroseries.main_archive,
-                            PackagePublishingStatus.PUBLISHED)
+            """ % sqlvalues(
+                    self.sourcepackagerelease,
+                    self.distroseries,
+                    self.distroseries.distribution.all_distro_archive_ids,
+                    PackagePublishingStatus.PUBLISHED)
 
         orderBy = ['BinaryPackageName.name',
                    'DistroArchRelease.architecturetag']
@@ -399,8 +409,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def meta_distroseriessourcepackagerelease(self):
         """see ISourcePackagePublishingHistory."""
-        return self.distroseries.getSourcePackageRelease( 
-            self.sourcepackagerelease 
+        return self.distroseries.getSourcePackageRelease(
+            self.sourcepackagerelease
             )
 
     @property
@@ -540,7 +550,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         fields = IndexStanzaFields()
         fields.append('Package', bpr.name)
-        fields.append('Priority', self.priority.title)
+        fields.append('Priority', self.priority.title.lower())
         fields.append('Section', self.section.name)
         fields.append('Installed-Size', bpr.installedsize)
         fields.append('Maintainer', spr.dsc_maintainer_rfc822)
@@ -556,7 +566,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('MD5sum', bin_md5)
         fields.append('Description', bin_description)
 
-        # XXX cprov 20061103: the extra override fields (Bugs, Origin and
+        # XXX cprov 2006-11-03: the extra override fields (Bugs, Origin and
         # Task) included in the template be were not populated.
         # When we have the information this will be the place to fill them.
 

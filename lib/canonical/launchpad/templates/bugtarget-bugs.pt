@@ -9,6 +9,8 @@
     <script type="text/javascript" src="/+icing/PlotKit_Packed.js"></script>
   </metal:block>
   <metal:portlets fill-slot="portlets">
+    <tal:block content="structure context/@@+portlet-bugfilters" />
+    <tal:block content="structure context/@@+portlet-bugtags" />
     <tal:releasecriticalbugs
       tal:condition="view/shouldShowReleaseCriticalPortlet"
       tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />

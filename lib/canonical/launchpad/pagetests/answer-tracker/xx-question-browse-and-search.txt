@@ -767,8 +767,8 @@ to mimick the user clicking on it.)
     >>> [search_url] = re.findall(
     ...     "popup_window\('([^']*')", choose_link.url)
 
-    # XXX flacoste 2007/02/21 We should use directly search_url here but
-    # can't because of bug #
+    # XXX flacoste 2007-02-21 bug=51853:
+    # We should use directly search_url here but can't because of bug #51853.
     # >>> anon_browser.open(search_url)
     >>> anon_browser.open('http://answers.launchpad.dev/' + search_url)
     >>> print anon_browser.title

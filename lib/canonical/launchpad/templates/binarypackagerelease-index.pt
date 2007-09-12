@@ -12,9 +12,8 @@
     <div tal:replace="structure context/@@+portlet-details" />
   </metal:leftportlets>
 
-  <!-- XXX: matsubara 20060213 
-       see bug https://launchpad.net/productslaunchpad/+bug/31342 
-       the main template is broken when there is no actions portlet -->
+  <!-- XXX: matsubara 2006-02-13 bug=31342
+       The main template is broken when there is no actions portlet -->
   <metal:rightportlets fill-slot="portlets_two">
     <div>&nbsp;</div>
   </metal:rightportlets>

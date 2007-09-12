@@ -29,20 +29,62 @@ from canonical.launchpad.interfaces import (
 MIN_REQUEST_TIMEOUT_RATIO = 3
 MIN_REQUESTS_TO_CONSIDER_RATIO = 30
 
-# XXX: We need to get rid of these global dicts in this module. See
-# https://launchpad.net/launchpad/+bug/82201 for more details.
-# -- Guilherme Salgado, 2007-01-30
+# XXX Guilherme Salgado 2007-01-30 bug=82201:
+# We need to get rid of these global dicts in this module.
 host_requests = {}
 host_timeouts = {}
-host_semaphores = {}
 
 MAX_REDIRECTS = 3
 
-# Number of simultaneous connections we issue on a given host
+# Number of simultaneous requests we issue on a given host.
 # IMPORTANT: Don't change this unless you really know what you're doing. Using
-# a to big value can cause spurious failures on lots of mirrors and a to small
-# one can cause the prober to run for hours.
+# a too big value can cause spurious failures on lots of mirrors and a too
+# small one can cause the prober to run for hours.
 PER_HOST_REQUESTS = 2
+
+# We limit the overall number of simultaneous requests as well to prevent
+# them from stalling and timing out before they even get a chance to
+# start connecting.
+OVERALL_REQUESTS = 100
+
+
+class RequestManager:
+
+    overall_semaphore = DeferredSemaphore(OVERALL_REQUESTS)
+
+    # Yes, I want a mutable class attribute because I want changes done in an
+    # instance to be visible in other instances as well.
+    host_locks = {}
+
+    def run(self, host, probe_func):
+        # Use a MultiLock with one semaphore limiting the overall
+        # connections and another limiting the per-host connections.
+        if host in self.host_locks:
+            multi_lock = self.host_locks[host]
+        else:
+            multi_lock = MultiLock(
+                self.overall_semaphore, DeferredSemaphore(PER_HOST_REQUESTS))
+            self.host_locks[host] = multi_lock
+        return multi_lock.run(probe_func)
+
+
+class MultiLock(defer._ConcurrencyPrimitive):
+    """A lock that acquires multiple underlying locks before it is acquired."""
+
+    def __init__(self, overall_lock, host_lock):
+        defer._ConcurrencyPrimitive.__init__(self)
+        self.overall_lock = overall_lock
+        self.host_lock = host_lock
+        # host_lock will always be the scarcer resource, so it should be the
+        # first to be acquired.
+        self._locks = [host_lock, overall_lock]
+
+    def acquire(self):
+        return defer.gatherResults([lock.acquire() for lock in self._locks])
+
+    def release(self):
+        for lock in self._locks:
+            lock.release()
 
 
 class ProberProtocol(HTTPClient):
@@ -52,7 +94,7 @@ class ProberProtocol(HTTPClient):
         """Simply requests path presence."""
         self.makeRequest()
         self.headers = {}
-        
+
     def makeRequest(self):
         """Request path presence via HTTP/1.1 using HEAD.
 
@@ -61,7 +103,7 @@ class ProberProtocol(HTTPClient):
         self.sendCommand('HEAD', self.factory.connect_path)
         self.sendHeader('HOST', self.factory.connect_host)
         self.endHeaders()
-        
+
     def handleStatus(self, version, status, message):
         # According to http://lists.debian.org/deity/2001/10/msg00046.html,
         # apt intentionally handles only '200 OK' responses, so we do the
@@ -73,7 +115,7 @@ class ProberProtocol(HTTPClient):
         self.transport.loseConnection()
 
     def handleResponse(self, response):
-        # The status is all we need, so we don't need to do anything with 
+        # The status is all we need, so we don't need to do anything with
         # the response
         pass
 
@@ -146,7 +188,7 @@ class ProberFactory(protocol.ClientFactory):
         # NOTE: We don't want to issue connections to any outside host when
         # running the mirror prober in a development machine, so we do this
         # hack here.
-        if (self.connect_host != 'localhost' 
+        if (self.connect_host != 'localhost'
             and config.distributionmirrorprober.localhost_only):
             reactor.callLater(0, self.succeeded, '200')
             logger.debug("Forging a successful response on %s as we've been "
@@ -192,12 +234,12 @@ class ProberFactory(protocol.ClientFactory):
     def setURL(self, url):
         self.url = url
         scheme, host, port, path = _parse(url)
-        # XXX: We don't actually know how to handle FTP responses, but we
+        # XXX Guilherme Salgado 2006-09-19:
+        # We don't actually know how to handle FTP responses, but we
         # expect to be behind a squid HTTP proxy with the patch at
         # http://www.squid-cache.org/bugs/show_bug.cgi?id=1758 applied. So, if
         # you encounter any problems with FTP URLs you'll probably have to nag
         # the sysadmins to fix squid for you.
-        # -- Guilherme Salgado, 2006-09-19
         if scheme not in ('http', 'ftp'):
             raise UnknownURLScheme(url)
 
@@ -240,9 +282,8 @@ class RedirectAwareProberFactory(ProberFactory):
 
             logger = logging.getLogger('distributionmirror-prober')
             logger.debug('Got redirected from %s to %s' % (self.url, url))
-            # XXX: We can't assume url to be absolute here. See
-            # https://bugs.launchpad.net/launchpad/+bug/109223 for more
-            # details.  -- Guilherme Salgado, 2007-04-23
+            # XXX Guilherme Salgado 2007-04-23 bug=109223:
+            # We can't assume url to be absolute here.
             self.setURL(url)
         except (InfiniteLoopDetected, UnknownURLScheme), e:
             self.failed(e)
@@ -342,7 +383,7 @@ class ArchiveMirrorProberCallbacks(object):
         failure.trap(*self.expected_failures)
 
     def ensureMirrorSeries(self, http_status):
-        """Make sure we have a mirror for self.series, self.pocket and 
+        """Make sure we have a mirror for self.series, self.pocket and
         self.component.
         """
         msg = ('Ensuring %s of %s with url %s exists in the database.\n'
@@ -358,8 +399,8 @@ class ArchiveMirrorProberCallbacks(object):
     def updateMirrorStatus(self, arch_or_source_mirror):
         """Update the status of this MirrorDistro{ArchSeries,SeriesSource}.
 
-        This is done by issuing HTTP HEAD requests on that mirror looking for 
-        some packages found in our publishing records. Then, knowing what 
+        This is done by issuing HTTP HEAD requests on that mirror looking for
+        some packages found in our publishing records. Then, knowing what
         packages the mirror contains and when these packages were published,
         we can have an idea of when that mirror was last updated.
         """
@@ -380,20 +421,14 @@ class ArchiveMirrorProberCallbacks(object):
             self.deleteMethod(self.series, self.pocket, self.component)
             return
 
+        request_manager = RequestManager()
         deferredList = []
         # We start setting the status to unknown, and then we move on trying to
         # find one of the recently published packages mirrored there.
         arch_or_source_mirror.status = MirrorStatus.UNKNOWN
         for status, url in status_url_mapping.items():
             prober = ProberFactory(url)
-            # Use one semaphore per host, to limit the numbers of simultaneous
-            # connections on a given host. Note that we don't have an overall
-            # limit of connections, since the per-host limit should be enough.
-            # If we ever need an overall limit, we can use Andrew's suggestion
-            # on https://launchpad.net/bugs/54791 to implement it.
-            semaphore = host_semaphores.setdefault(
-                prober.request_host, DeferredSemaphore(PER_HOST_REQUESTS))
-            deferred = semaphore.run(prober.probe)
+            deferred = request_manager.run(prober.request_host, prober.probe)
             deferred.addCallback(
                 self.setMirrorStatus, arch_or_source_mirror, status, url)
             deferred.addErrback(self.logError, url)
@@ -403,13 +438,13 @@ class ArchiveMirrorProberCallbacks(object):
     def setMirrorStatus(self, http_status, arch_or_source_mirror, status, url):
         """Update the status of the given arch or source mirror.
 
-        The status is changed only if the given status refers to a more 
+        The status is changed only if the given status refers to a more
         recent date than the current one.
         """
         if status < arch_or_source_mirror.status:
             msg = ('Found that %s exists. Updating %s of %s status to %s.\n'
                    % (url, self.mirror_class_name,
-                      self._getSeriesPocketAndComponentDescription(), 
+                      self._getSeriesPocketAndComponentDescription(),
                       status.title))
             self.log_file.write(msg)
             arch_or_source_mirror.status = status
@@ -427,12 +462,12 @@ class ArchiveMirrorProberCallbacks(object):
                      self.series.architecturetag))
         else:
             text = "Series %s" % self.series.title
-        text += (", Component %s and Pocket %s" % 
+        text += (", Component %s and Pocket %s" %
                  (self.component.name, self.pocket.title))
         return text
 
     def logError(self, failure, url):
-        msg = ("%s on %s of %s\n" 
+        msg = ("%s on %s of %s\n"
                % (failure.getErrorMessage(), url,
                   self._getSeriesPocketAndComponentDescription()))
         if failure.check(*self.expected_failures) is not None:
@@ -470,10 +505,10 @@ class MirrorCDImageProberCallbacks(object):
                     self.distroseries, self.flavour)
                 if response.check(*self.expected_failures) is None:
                     msg = ("%s on mirror %s. Check its logfile for more "
-                           "details.\n" 
+                           "details.\n"
                            % (response.getErrorMessage(), self.mirror.name))
-                    # This is not an error we expect from an HTTP server, so 
-                    # we log it using the cronscript's logger and wait for 
+                    # This is not an error we expect from an HTTP server, so
+                    # we log it using the cronscript's logger and wait for
                     # kiko to complain about it.
                     logger = logging.getLogger('distributionmirror-prober')
                     logger.error(msg)
@@ -553,8 +588,7 @@ def checkComplete(result, key, unchecked_keys):
     return result
 
 
-def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
-                         host_semaphores=host_semaphores):
+def probe_archive_mirror(mirror, logfile, unchecked_keys, logger):
     """Probe an archive mirror for its contents and freshness.
 
     First we issue a set of HTTP HEAD requests on some key files to find out
@@ -565,6 +599,7 @@ def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
     packages_paths = mirror.getExpectedPackagesPaths()
     sources_paths = mirror.getExpectedSourcesPaths()
     all_paths = itertools.chain(packages_paths, sources_paths)
+    request_manager = RequestManager()
     for series, pocket, component, path in all_paths:
         url = "%s/%s" % (mirror.base_url, path)
         callbacks = ArchiveMirrorProberCallbacks(
@@ -572,14 +607,7 @@ def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
         unchecked_keys.append(url)
         prober = ProberFactory(url)
 
-        # Use one semaphore per host, to limit the numbers of simultaneous
-        # connections on a given host. Note that we don't have an overall
-        # limit of connections, since the per-host limit should be enough.
-        # If we ever need an overall limit, we can use Andrews's suggestion
-        # on https://launchpad.net/bugs/54791 to implement it.
-        semaphore = host_semaphores.setdefault(
-            prober.request_host, DeferredSemaphore(PER_HOST_REQUESTS))
-        deferred = semaphore.run(prober.probe)
+        deferred = request_manager.run(prober.request_host, prober.probe)
         deferred.addCallbacks(
             callbacks.ensureMirrorSeries, callbacks.deleteMirrorSeries)
 
@@ -589,10 +617,9 @@ def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
         deferred.addBoth(checkComplete, url, unchecked_keys)
 
 
-def probe_cdimage_mirror(mirror, logfile, unchecked_keys, logger,
-                         host_semaphores=host_semaphores):
+def probe_cdimage_mirror(mirror, logfile, unchecked_keys, logger):
     """Probe a cdimage mirror for its contents.
-    
+
     This is done by checking the list of files for each flavour and series
     returned by get_expected_cdimage_paths(). If a mirror contains all
     files for a given series and flavour, then we consider that mirror is
@@ -616,19 +643,13 @@ def probe_cdimage_mirror(mirror, logfile, unchecked_keys, logger,
         mirror_key = (series, flavour)
         unchecked_keys.append(mirror_key)
         deferredList = []
+        request_manager = RequestManager()
         for path in paths:
             url = '%s/%s' % (mirror.base_url, path)
             # Use a RedirectAwareProberFactory because CD mirrors are allowed
             # to redirect, and we need to cope with that.
             prober = RedirectAwareProberFactory(url)
-            # Use one semaphore per host, to limit the numbers of simultaneous
-            # connections on a given host. Note that we don't have an overall
-            # limit of connections, since the per-host limit should be enough.
-            # If we ever need an overall limit, we can use Andrews's
-            # suggestion on https://launchpad.net/bugs/54791 to implement it.
-            semaphore = host_semaphores.setdefault(
-                prober.request_host, DeferredSemaphore(PER_HOST_REQUESTS))
-            deferred = semaphore.run(prober.probe)
+            deferred = request_manager.run(prober.request_host, prober.probe)
             deferred.addErrback(callbacks.logMissingURL, url)
             deferredList.append(deferred)
 

@@ -22,7 +22,7 @@ def parse_first_line(line):
     urgency = None
     match = urgency_re.search(line)
     if match:
-        # XXX: why do we do lower() here?
+        # XXX kiko 2005-11-05: Why do we do lower() here?
         urgency = match.group(1).lower()
 
     return (srcpkg, version, urgency)
@@ -57,7 +57,7 @@ def parse_changelog(changelines):
     for line in changelines:
         #print line[:-1]
         if state == 0:
-            if (line.startswith(" ") or line.startswith("\t") or 
+            if (line.startswith(" ") or line.startswith("\t") or
                 not line.rstrip()):
                 #print "State0 skip"
                 continue

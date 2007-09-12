@@ -71,7 +71,7 @@ class IBugLinkForm(Interface):
         title=_('Bug ID'), required=True)
 
 
-# XXX flacoste 2006/08/29 To remain consistent with the existing source
+# XXX flacoste 2006-08-29: To remain consistent with the existing source
 # code layout policy, this should really be in vocabularies.buglinks but this
 # is not possible because of dependencies on interfaces in some vocabularies
 # modules.

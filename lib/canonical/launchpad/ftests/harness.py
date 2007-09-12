@@ -146,8 +146,8 @@ class LaunchpadTestCase(unittest.TestCase):
     dbuser = LaunchpadTestSetup.dbuser
     dbname = LaunchpadTestSetup.dbname
     template = LaunchpadTestSetup.template
-    # XXX: Should be Launchpad, but we need to specify how to change the
-    # db user to connect as. -- StuartBishop 20060713
+    # XXX StuartBishop 2006-07-13: Should be Launchpad, but we need to
+    # specify how to change the db user to connect as.
     layer = LibrarianLayer
 
     def setUp(self):
@@ -166,8 +166,8 @@ class LaunchpadTestCase(unittest.TestCase):
 
 
 class LaunchpadFunctionalTestCase(unittest.TestCase):
-    # XXX: Should be LaunchpadFunctional, but we first need to implement
-    # a way of specifying the dbuser to connect as. -- StuartBishop 20060713
+    # XXX StuartBishop 2006-07-13: Should be LaunchpadFunctional, but we
+    # first need to implement a way of specifying the dbuser to connect as.
     layer = FunctionalLayer
     dbuser = None
     def login(self, user=None):

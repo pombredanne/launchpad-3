@@ -119,7 +119,7 @@ class BuilddMaster:
     This class is in the process of being deprecated in favour of the regular
     content classes.
     """
-    # XXX cprov 20070615: Please do not extend this class except as
+    # XXX cprov 2007-06-15: Please do not extend this class except as
     # required to move more logic into the content classes. A new feature
     # should be modeled directly in IBuilder.
 
@@ -233,9 +233,8 @@ class BuilddMaster:
             "Found %d source(s) published." % sources_published.count())
 
         for pubrec in sources_published:
-            # XXX cprov 20070711: Fix me please, 'ppa_archtags'
+            # XXX cprov 2007-07-11 bug=129491: Fix me please, 'ppa_archtags'
             # should be modeled as DistroArchSeries.ppa_supported.
-            # See #129491.
             if pubrec.archive.purpose == dbschema.ArchivePurpose.PPA:
                 ppa_archtags = ('i386', 'amd64')
                 local_archs = [
@@ -347,6 +346,7 @@ class BuilddMaster:
             'universe': 250,
             'restricted': 750,
             'main': 1000,
+            'commercial' : 1250,
             }
 
         score_urgency = {
@@ -412,7 +412,7 @@ class BuilddMaster:
             parsed_deps = apt_pkg.ParseDepends(dependencies_line)
         except (ValueError, TypeError):
             self._logger.warn("COULD NOT PARSE DEP: %s" % dependencies_line)
-            # XXX cprov 20051018:
+            # XXX cprov 2005-10-18:
             # We should remove the job if we could not parse its
             # dependency, but AFAICS, the integrity checks in
             # uploader component will be in charge of this. In
@@ -424,12 +424,12 @@ class BuilddMaster:
         score = 0
 
         for token in parsed_deps:
-            # XXX cprov 20060227: it may not work for and'd and or'd
+            # XXX cprov 2006-02-27: it may not work for and'd and or'd
             # syntaxes.
             try:
                 name, version, relation = token[0]
             except ValueError:
-                # XXX cprov 20051018:
+                # XXX cprov 2005-10-18:
                 # We should remove the job if we could not parse its
                 # dependency, but AFAICS, the integrity checks in
                 # uploader component will be in charge of this. In
@@ -485,7 +485,7 @@ class BuilddMaster:
         status = dbschema.BuildStatus.MANUALDEPWAIT
         bqset = getUtility(IBuildSet)
         candidates = bqset.getBuildsByArchIds(arch_ids, status=status)
-        # XXX cprov 20060227: IBuildSet.getBuildsByArch API is evil,
+        # XXX cprov 2006-02-27: IBuildSet.getBuildsByArch API is evil,
         # we should always return an SelectResult, even for empty results
         if candidates is None:
             self._logger.debug("No MANUALDEPWAIT record found")
@@ -496,7 +496,7 @@ class BuilddMaster:
             % candidates.count())
 
         for build in candidates:
-            # XXX cprov 20060606: This iteration/check should be provided
+            # XXX cprov 2006-06-06: This iteration/check should be provided
             # by IBuild.
 
             if not build.distroseries.canUploadToPocket(build.pocket):

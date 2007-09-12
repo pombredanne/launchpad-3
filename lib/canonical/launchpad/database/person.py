@@ -39,22 +39,22 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, ShippingRequestStatus,
-    SpecificationFilter, SpecificationDefinitionStatus,
+    BugTaskImportance, SpecificationFilter, SpecificationDefinitionStatus,
     SpecificationImplementationStatus, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IBugTaskSet, ICalendarOwner, IDistribution,
-    IDistributionSet, IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon,
-    IHasLogo, IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet,
-    ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
-    ILoginTokenSet, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
-    IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey,
-    ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
-    JoinNotAllowed, LoginTokenType, PersonCreationRationale,
-    QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants, SSHKeyType,
-    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
+    AccountStatus, BugTaskSearchParams, BugTaskStatus, EmailAddressStatus,
+    IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet, IEmailAddress,
+    IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo, IHasMugshot, IIrcID,
+    IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
+    ILaunchpadStatisticSet, ILoginTokenSet, IPasswordEncryptor, IPerson,
+    IPersonSet, IPillarNameSet, IProduct, ISignedCodeOfConductSet,
+    ISourcePackageNameSet, ISSHKey, ISSHKeySet, ITeam, ITranslationGroupSet,
+    IWikiName, IWikiNameSet, JoinNotAllowed, LoginTokenType,
+    PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants,
+    ShippingRequestStatus, SSHKeyType, TeamMembershipRenewalPolicy,
+    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
+    UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar
@@ -80,6 +80,8 @@ from canonical.launchpad.database.specificationfeedback import (
     SpecificationFeedback)
 from canonical.launchpad.database.specificationsubscription import (
     SpecificationSubscription)
+from canonical.launchpad.database.translationimportqueue import (
+    HasTranslationImportsMixin)
 from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamMembershipSet, TeamParticipation)
 from canonical.launchpad.database.question import QuestionPersonSearch
@@ -96,7 +98,7 @@ class ValidPersonOrTeamCache(SQLBase):
     # Look Ma, no columns! (apart from id)
 
 
-class Person(SQLBase, HasSpecificationsMixin):
+class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     """A Person."""
 
     implements(IPerson, ICalendarOwner, IHasIcon, IHasLogo, IHasMugshot)
@@ -124,6 +126,10 @@ class Person(SQLBase, HasSpecificationsMixin):
     openid_identifier = StringCol(
             dbName='openid_identifier', alternateID=True, notNull=True,
             default=DEFAULT)
+
+    account_status = EnumCol(
+        enum=AccountStatus, default=AccountStatus.NOACCOUNT)
+    account_status_comment = StringCol(default=None)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -172,10 +178,9 @@ class Person(SQLBase, HasSpecificationsMixin):
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
         orderBy='id')
-    # XXX: matsubara 2006-03-06: Is this really needed? There's no attribute
-    # 'claimant' in the Bounty database class or interface, but the column
-    # exists in the database.
-    # https://launchpad.net/products/launchpad/+bug/33935
+    # XXX: matsubara 2006-03-06 bug=33935:
+    # Is this really needed? There's no attribute 'claimant' in the Bounty
+    # database class or interface, but the column exists in the database.
     claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
         orderBy='id')
     subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
@@ -605,10 +610,10 @@ class Person(SQLBase, HasSpecificationsMixin):
             sourcepackagename = sourcepackagename_set.get(
                 row['sourcepackagename'])
             source_package = distribution.getSourcePackage(sourcepackagename)
-            # XXX: Add a tuple instead of the distribution package
+            # XXX: Bjorn Tillenius 2006-12-15:
+            # Add a tuple instead of the distribution package
             # directly, since DistributionSourcePackage doesn't define a
             # __hash__ method.
-            # -- Bjorn Tillenius, 2006-12-15
             packages_with_bugs.add((distribution, sourcepackagename))
             package_counts = dict(
                 package=source_package,
@@ -809,7 +814,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             SELECT name
             FROM project, teamparticipation
             WHERE teamparticipation.person = %(person)s
-                AND (driver = teamparticipation.team 
+                AND (driver = teamparticipation.team
                      OR owner = teamparticipation.team)
 
             UNION
@@ -932,9 +937,12 @@ class Person(SQLBase, HasSpecificationsMixin):
                     sourcepackagename=None):
         """See `IPerson`."""
         # Teams don't get Karma. Inactive accounts don't get Karma.
+        # The system user and janitor, does not get karma.
         # No warning, as we don't want to place the burden on callsites
         # to check this.
-        if not self.is_valid_person:
+        if (not self.is_valid_person
+            or self.id is getUtility(
+                ILaunchpadCelebrities).janitor.id):
             return None
 
         if product is not None:
@@ -962,9 +970,9 @@ class Person(SQLBase, HasSpecificationsMixin):
         return Karma.selectBy(person=self,
             orderBy='-datecreated')[:quantity]
 
-    # XXX: This cache should no longer be needed once CrowdControl lands,
+    # XXX: StuartBishop 2006-05-10:
+    # This cache should no longer be needed once CrowdControl lands,
     # as apparently it will also cache this information.
-    # -- StuartBishop 20060510
     _inTeam_cache = None
 
     def inTeam(self, team):
@@ -1303,10 +1311,10 @@ class Person(SQLBase, HasSpecificationsMixin):
             self.invited_members,
             orderBy=self._sortingColumnsForSetOperations)
 
-    # XXX: myactivememberships and getActiveMemberships are rather
+    # XXX: kiko 2005-10-07:
+    # myactivememberships and getActiveMemberships are rather
     # confusingly named, and I just fixed bug 2871 as a consequence of
     # this. Is there a way to improve it?
-    #   -- kiko, 2005-10-07
     @property
     def myactivememberships(self):
         """See `IPerson`."""
@@ -1327,6 +1335,83 @@ class Person(SQLBase, HasSpecificationsMixin):
             """ % sqlvalues(self.id, TeamMembershipStatus.INVITED),
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
+
+    def deactivateAccount(self, comment):
+        """Deactivate this person's Launchpad account.
+
+        Deactivating an account means:
+            - Setting its password to NULL;
+            - Removing the user from all teams he's a member of;
+            - Changing all his email addresses' status to NEW;
+            - Revoking Code of Conduct signatures of that user;
+            - Reassigning bugs/specs assigned to him;
+            - Changing the ownership of products/projects/teams owned by him.
+        """
+        assert self.is_valid_person, (
+            "You can only deactivate an account of a valid person.")
+
+        for membership in self.myactivememberships:
+            self.leave(membership.team)
+        # Make sure all further queries don't see this person as a member of
+        # any teams.
+        flush_database_updates()
+
+        # Deactivate CoC signatures, invalidate email addresses, unassign bug
+        # tasks and specs and reassign pillars and teams.
+        for coc in self.signedcocs:
+            coc.active = False
+        for email in self.validatedemails:
+            email.status = EmailAddressStatus.NEW
+        params = BugTaskSearchParams(self, assignee=self)
+        for bug_task in self.searchTasks(params):
+            assert bug_task.assignee == self, (
+                "This bugtask (%s) should be assigned to this person."
+                % bug_task.id)
+            bug_task.transitionToAssignee(None)
+        for spec in self.assigned_specs:
+            spec.assignee = None
+        registry = getUtility(ILaunchpadCelebrities).registry
+        for team in Person.selectBy(teamowner=self):
+            team.teamowner = registry
+        for pillar_name in self.getOwnedOrDrivenPillars():
+            pillar = pillar_name.pillar
+            if pillar.owner == self:
+                pillar.owner = registry
+            elif pillar.driver == self:
+                pillar.driver = registry
+            else:
+                raise AssertionError(
+                    "This person must be the owner or driver of this project "
+                    "(%s)" % pillar.pillar.name)
+
+        # Nuke all subscriptions of this person.
+        removals = [
+            ('BountySubscription', 'person'),
+            ('BranchSubscription', 'person'),
+            ('BugSubscription', 'person'),
+            ('QuestionSubscription', 'person'),
+            ('POSubscription', 'person'),
+            ('SpecificationSubscription', 'person'),
+            ('PackageBugContact', 'bugcontact'),
+            ('AnswerContact', 'person')]
+        cur = cursor()
+        for table, person_id_column in removals:
+            cur.execute("DELETE FROM %s WHERE %s=%d"
+                        % (table, person_id_column, self.id))
+
+        # Update the account's status, password, preferred email and name.
+        self.account_status = AccountStatus.DEACTIVATED
+        self.account_status_comment = comment
+        self.password = None
+        self.preferredemail.status = EmailAddressStatus.NEW
+        self._preferredemail_cached = None
+        base_new_name = self.name + '-deactivatedaccount'
+        new_name = base_new_name
+        count = 1
+        while Person.selectOneBy(name=new_name) is not None:
+            new_name = base_new_name + str(count)
+            count += 1
+        self.name = new_name
 
     def getActiveMemberships(self):
         """See `IPerson`."""
@@ -1461,8 +1546,8 @@ class Person(SQLBase, HasSpecificationsMixin):
             raise TypeError, (
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
-        # XXX stevea 05/07/05 this is here because of an SQLobject
-        # comparison oddity
+        # XXX stevea 2005-07-05:
+        # This is here because of an SQLobject comparison oddity.
         assert email.person.id == self.id, 'Wrong person! %r, %r' % (
             email.person, self)
 
@@ -1493,8 +1578,16 @@ class Person(SQLBase, HasSpecificationsMixin):
             # SQLObject will issue the changes and we can't set the new
             # address to PREFERRED until the old one has been set to VALIDATED
             preferredemail.syncUpdate()
-        # get the non-proxied EmailAddress object, so we can call
-        # syncUpdate() on it:
+        else:
+            # This is the first time we're confirming this person's email
+            # address, so we now assume this person has a Launchpad account.
+            # XXX: This is a hack! In the future we won't have this
+            # association between accounts and confirmed addresses, but this
+            # will do for now. -- Guilherme Salgado, 2007-07-03
+            self.account_status = AccountStatus.ACTIVE
+            self.account_status_comment = None
+        # Get the non-proxied EmailAddress object, so we can call
+        # syncUpdate() on it.
         email = EmailAddress.get(email.id)
         email.status = EmailAddressStatus.PREFERRED
         email.syncUpdate()
@@ -1741,7 +1834,7 @@ class PersonSet:
 
     def getByOpenIdIdentifier(self, openid_identifier):
         """Returns a Person with the given openid_identifier, or None.
-       
+
         None is returned if the person is not enabled for OpenID usage
         (see Person.is_openid_enabled).
         """
@@ -1890,11 +1983,11 @@ class PersonSet:
             POFileTranslator.pofile = %s""" % quote(pofile),
             clauseTables=["POFileTranslator"],
             distinct=True,
-            # XXX: we can't use Person.sortingColumns because this is a
+            # XXX: kiko 2006-10-19:
+            # We can't use Person.sortingColumns because this is a
             # distinct query. To use it we'd need to add the sorting
             # function to the column results and then ignore it -- just
             # like selectAlso does, ironically.
-            #   -- kiko, 2006-10-19
             orderBy=["Person.displayname", "Person.name"])
         return contributors
 
@@ -2005,7 +2098,7 @@ class PersonSet:
         # Update GPGKey. It won't conflict, but our sanity checks don't
         # know that
         cur.execute(
-            'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d' 
+            'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
             % vars())
         skip.append(('gpgkey','owner'))
 
@@ -2119,8 +2212,8 @@ class PersonSet:
         skip.append(('mailinglistsubscription', 'person'))
 
         # Update only the BountySubscriptions that will not conflict
-        # XXX: Add sampledata and test to confirm this case
-        # -- StuartBishop 20050331
+        # XXX: StuartBishop 2005-03-31:
+        # Add sampledata and test to confirm this case
         cur.execute('''
             UPDATE BountySubscription
             SET person=%(to_id)d
@@ -2289,8 +2382,8 @@ class PersonSet:
         skip.append(('sprintattendance', 'attendee'))
 
         # Update only the POSubscriptions that will not conflict
-        # XXX: Add sampledata and test to confirm this case
-        # -- StuartBishop 20050331
+        # XXX: StuartBishop 2005-03-31:
+        # Add sampledata and test to confirm this case.
         cur.execute('''
             UPDATE POSubscription
             SET person=%(to_id)d
@@ -2356,11 +2449,12 @@ class PersonSet:
             ''' % vars())
         skip.append(('translationimportqueueentry', 'importer'))
 
-        # XXX cprov 20070222: Since we only allow one PPA for each user,
+        # XXX cprov 2007-02-22 bug=87098:
+        # Since we only allow one PPA for each user,
         # we can't reassign the old user archive to the new user.
         # It need to be done manually, probably by reasinning all publications
         # to the old PPA to the new one, performing a careful_publishing on it
-        # and removing the old one from disk. See bug #87098
+        # and removing the old one from disk.
         skip.append(('archive', 'owner'))
 
         # Sanity check. If we have a reference that participates in a
@@ -2465,10 +2559,11 @@ class PersonSet:
 
     def getTranslatorsByLanguage(self, language):
         """See `IPersonSet`."""
-        # XXX CarlosPerelloMarin 20070331: The KarmaCache table doesn't have a
-        # field to store karma per language, so we are actually returning the
-        # people with the most translation karma that have this language
-        # selected in their preferences.  See bug #102257 for more info.
+        # XXX CarlosPerelloMarin 2007-03-31 bug=102257:
+        # The KarmaCache table doesn't have a field to store karma per
+        # language, so we are actually returning the people with the most
+        # translation karma that have this language selected in their
+        # preferences.
         return Person.select('''
             PersonLanguage.person = Person.id AND
             PersonLanguage.language = %s AND

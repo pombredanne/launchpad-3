@@ -231,12 +231,12 @@ def options_init():
     if not Options.reason:
         Options.reason = ""
 
-    # XXX: 'dak rm' used to check here whether or not we're removing
-    # from anything other than << unstable.  This never got ported
+    # XXX malcc 2006-08-03: 'dak rm' used to check here whether or not we're
+    # removing from anything other than << unstable.  This never got ported
     # to ubuntu anyway, but it might be nice someday.
 
     # Additional architecture checks
-    # XXX - parse_args
+    # XXX James Troup 2006-01-30: parse_args.
     if Options.architecture and 0:
         dak_utils.warn("'source' in -a/--argument makes no sense and is ignored.")
 
@@ -430,7 +430,7 @@ def main ():
     suites_list = dak_utils.join_with_commas_and(Options.suite);
 
     # Log first; if it all falls apart I want a record that we at least tried.
-    # XXX de-hardcode me harder
+    # XXX malcc 2006-08-03: de-hardcode me harder
     logfile = open("/srv/launchpad.net/dak/removals.txt", 'a')
     logfile.write("==================================="
                   "======================================\n")

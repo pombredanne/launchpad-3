@@ -15,9 +15,9 @@ that deal with new package request with a certain tag.
 On the next page, possible duplicates are displayed as ususal. No
 candidates were found for this summary, though.
 
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print message.renderContents()
-    No similar bugs were found.
+    >>> print find_main_content(user_browser.contents).renderContents()
+    <...
+    No similar bug reports were found...
 
 After submitting the bug, the tags are added to the bug.
 

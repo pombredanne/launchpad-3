@@ -62,7 +62,7 @@ def _wasDisconnected(msg):
     The message will either be a string, or a dictionary mapping
     cursors to string messages.
     """
-    # XXX: 20070514 James Henstridge
+    # XXX: James Henstridge 2007-05-14:
     # This function needs to check exception messages in order to do
     # its job.  Hopefully we can clean this up when switching to
     # psycopg2, since it exposes the Postgres error codes through its
@@ -267,7 +267,7 @@ class SessionDatabaseAdapter(ReconnectingDatabaseAdapter):
     """A subclass of ReconnectionDatabaseAdapter that stores its
     connection information in the central launchpad configuration.
     """
-    
+
     def __init__(self, dsn=None):
         """Ignore dsn"""
         super(SessionDatabaseAdapter, self).__init__(
@@ -319,6 +319,16 @@ def clear_request_started():
     _local.request_start_time = None
     _local.request_statements = []
 
+def summarize_requests():
+    """Produce human-readable summary of requests issued so far."""
+    secs = get_request_duration()
+    statements = getattr(_local, 'request_statements', [])
+    log = "%s queries issued in %.2f seconds" % (len(statements), secs)
+    return log
+
+def summarize_requests_to_stderr(*args):
+    """Output summarize_requests in a format suitable to stderr."""
+    sys.stderr.write(" v--- " + summarize_requests() + "\n")
 
 def get_request_statements():
     """Get the list of executed statements in the request.
@@ -423,7 +433,7 @@ class LaunchpadConnection(ReconnectingConnection):
 
     Overrides the cursor() method to return LaunchpadCursor objects.
     """
-    
+
     def cursor(self):
         return LaunchpadCursor(self)
 
@@ -473,12 +483,12 @@ class LaunchpadCursor(ReconnectingCursor):
         try:
             starttime = time()
             if os.environ.get("LP_DEBUG_SQL_EXTRA"):
-                sys.stderr.write("-" * 70 + "\n")
                 traceback.print_stack()
                 sys.stderr.write("." * 70 + "\n")
-            if (os.environ.get("LP_DEBUG_SQL_EXTRA") or 
+            if (os.environ.get("LP_DEBUG_SQL_EXTRA") or
                 os.environ.get("LP_DEBUG_SQL")):
                 sys.stderr.write(statement + "\n")
+                sys.stderr.write("-" * 70 + "\n")
             try:
                 return super(LaunchpadCursor, self).execute(
                         statement, *args, **kwargs)
@@ -581,7 +591,7 @@ def break_main_thread_db_access(*ignored):
     class BrokenConnection:
         def __getattr__(self, key):
             raise SQLOSAccessFromMainThread()
-        
+
     sqlos.connection.connCache[key] = BrokenConnection()
 
     # And prove it
@@ -594,4 +604,5 @@ def break_main_thread_db_access(*ignored):
         pass
     else:
         raise AssertionError("Failed to kill main thread SQLOS connection")
+
 

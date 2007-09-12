@@ -41,7 +41,7 @@ pocketsuffix = {
 class IPublishing(Interface):
     """Ability to publish associated publishing records."""
 
-    def getPendingPublications(self, archive, pocket, is_careful):
+    def getPendingPublications(archive, pocket, is_careful):
         """Return the specific group of records to be published.
 
         IDistroSeries -> ISourcePackagePublishing
@@ -100,6 +100,10 @@ class IArchivePublisher(Interface):
 class IArchiveFilePublisher(Interface):
     """Ability to publish and archive file"""
 
+    publishing_record = Attribute(
+        "Return the respective Source or Binary publishing record "
+        "(in the form of I{Source,Binary}PackagePublishingHistory).")
+
     def publish(diskpool, log):
         """Publish or ensure contents of this file in the archive.
 
@@ -107,6 +111,7 @@ class IArchiveFilePublisher(Interface):
         or add file from librarian if it's not present. Update the database
         to represent the current archive state.
         """
+
 
 class IArchiveSafePublisher(Interface):
     """Safe Publication methods"""

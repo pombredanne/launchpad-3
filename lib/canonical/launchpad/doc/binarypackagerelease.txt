@@ -7,7 +7,7 @@ across build records.
    >>> from canonical.launchpad.database import BinaryPackageRelease
    >>> from canonical.launchpad.interfaces import (
    ...       IBinaryPackageRelease, IBinaryPackageReleaseSet)
-   >>> from zope.interface.verify import verifyObject
+   >>> from canonical.launchpad.webapp.testing import verifyObject
 
    >>> firefox_bin_release = BinaryPackageRelease.get(12)
    >>> verifyObject(IBinaryPackageRelease, firefox_bin_release)

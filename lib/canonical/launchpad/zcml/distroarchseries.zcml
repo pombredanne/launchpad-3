@@ -36,7 +36,7 @@
         />
 
     <browser:pages
-        for="canonical.launchpad.database.DistroArchSeries" 
+        for="canonical.launchpad.database.DistroArchSeries"
         permission="zope.Public"
         class="canonical.launchpad.browser.DistroArchSeriesView">
       <browser:page
@@ -59,7 +59,7 @@
     </browser:pages>
 
     <browser:page
-      for="canonical.launchpad.database.DistroArchSeries" 
+      for="canonical.launchpad.database.DistroArchSeries"
       permission="zope.Public"
       name="+search"
       class="canonical.launchpad.browser.DistroArchSeriesBinariesView"
@@ -92,7 +92,7 @@
 
     <!-- PocketChroot -->
     <content class="canonical.launchpad.database.PocketChroot">
-	<!-- XXX cprov 20060713: it needs security permission tweaks. -->
+	<!-- XXX cprov 2006-07-13: it needs security permission tweaks. -->
 	<!-- Currently it's only modified/added by a script.  -->
 	<!-- We should allow changes only by buildd-admin member. -->
         <allow

@@ -54,7 +54,7 @@ class TestPushDoneNotification(AvatarTestCase):
             '/~%s/%s' % (avatar.avatarId, productID))
         d = defer.maybeDeferred(productDir.createDirectory, branchName)
         return d
-    
+
     def test_no_writes(self):
         # 'connect' and disconnect
         self.server.connectionLost(None)
@@ -115,7 +115,7 @@ class WriteLoggingDirectory(unittest.TestCase):
     def test_listener(self):
         # Children of a WriteLoggingDirectory should maintain a reference
         # to the top-level WriteLoggingDirectory.
-        # XXX - whitebox test (jml, 2007-02-15)
+        # XXX jml 2007-02-15: Whitebox test
         self.assertEqual(self.flagAsDirty, self.directory._flagAsDirty)
         self.assertEqual(self.flagAsDirty,
                          self.directory.createDirectory('foo')._flagAsDirty)
@@ -189,7 +189,7 @@ class WriteLoggingFile(unittest.TestCase):
 
     def test_file_has_listener(self):
         # The created file should refer to the listener of its parent directory.
-        # XXX - whitebox test (jml, 2007-02-15)
+        # XXX jml 2007-02-15: Whitebox test.
         self.assertEqual(self.flagAsDirty, self.file._flagAsDirty)
 
     def test_writeChunk(self):

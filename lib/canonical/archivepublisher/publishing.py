@@ -2,7 +2,9 @@
 
 __all__ = ['Publisher', 'pocketsuffix', 'suffixpocket', 'getPublisher']
 
+__metaclass__ = type
 
+import apt_pkg
 from datetime import datetime
 import gzip
 import logging
@@ -12,7 +14,7 @@ from sha import sha
 import stat
 import tempfile
 
-from Crypto.Hash.SHA256 import new as sha256
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
@@ -20,7 +22,7 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
-from canonical.launchpad.interfaces import pocketsuffix
+from canonical.launchpad.interfaces import IComponentSet, pocketsuffix
 from canonical.librarian.client import LibrarianClient
 from canonical.lp.dbschema import (
     ArchivePurpose, PackagePublishingPocket, PackagePublishingStatus)
@@ -45,6 +47,22 @@ Origin: %s
 Label: %s
 Architecture: %s
 """
+
+class sha256:
+    """Encapsulates apt_pkg.sha256sum as expected by publishing.
+
+    It implements '__init__' and 'hexdigest' methods from PEP-247, which are
+    the only ones required in soyuz-publishing-system.
+
+    It's a work around for broken Crypto.Hash.SHA256. See further information
+    in bug #131503.
+    """
+    def __init__(self, content):
+        self._sum = apt_pkg.sha256sum(content)
+
+    def hexdigest(self):
+        """Return the hexdigest produced by apt_pkg.sha256sum."""
+        return self._sum
 
 
 def reorder_components(components):
@@ -80,16 +98,15 @@ def _getDiskPool(pubconf, log):
 
     return dp
 
-
 def getPublisher(archive, allowed_suites, log, distsroot=None):
     """Return an initialised Publisher instance for the given context.
 
     The callsites can override the location where the archive indexes will
     be stored via 'distroot' argument.
     """
-    if archive.purpose == ArchivePurpose.PRIMARY:
-        log.debug("Finding configuration for %s main_archive."
-                  % archive.distribution.name)
+    if archive.purpose != ArchivePurpose.PPA:
+        log.debug("Finding configuration for %s %s."
+                  % (archive.distribution.name, archive.title))
     else:
         log.debug("Finding configuration for '%s' PPA."
                   % archive.owner.name)
@@ -99,7 +116,7 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
         log.error(info)
         raise
 
-    # XXX cprov 20070103: remove security proxy of the Config instance
+    # XXX cprov 2007-01-03: remove security proxy of the Config instance
     # returned by IArchive. This is kinda of a hack because Config doesn't
     # have any interface yet.
     pubconf = removeSecurityProxy(pubconf)
@@ -194,7 +211,7 @@ class Publisher(object):
                                    (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        distroseries.main_archive.id == self.archive.id):
+                        self.archive.purpose != ArchivePurpose.PPA):
                         # We're not doing a full run and the
                         # distroseries is now 'stable': if we try to
                         # write a release file for it, we're doing
@@ -222,11 +239,16 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        distroseries.main_archive.id == self.archive.id):
+                        self.archive.purpose != ArchivePurpose.PPA):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
                             "Oops, indexing stable distroseries.")
-                for component in distroseries.components:
+                # Retrieve components from the publisher config because
+                # it gets overridden in IArchive.getPubConfig to set the
+                # correct components for the archive being used.
+                for component_name in self._config.componentsForSeries(
+                        distroseries.name):
+                    component = getUtility(IComponentSet)[component_name]
                     self._writeComponentIndexes(
                         distroseries, pocket, component)
 
@@ -247,7 +269,7 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        distroseries.main_archive == self.archive):
+                        self.archive.purpose != ArchivePurpose.PPA):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
                             "Oops, indexing stable distroseries.")
@@ -272,57 +294,76 @@ class Publisher(object):
                        % (suite_name, component.name))
 
         self.log.debug("Generating Sources")
-        temp_index = tempfile.mktemp(prefix='source-index_')
-        source_index = gzip.GzipFile(fileobj=open(temp_index, 'wb'))
+        fd_gz, temp_index_gz = tempfile.mkstemp(prefix='source-index_')
+        source_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, 'wb'))
+        fd, temp_index = tempfile.mkstemp(prefix='source-index_')
+        source_index = open(temp_index, 'wb')
 
         for spp in distroseries.getSourcePackagePublishing(
             PackagePublishingStatus.PUBLISHED, pocket=pocket,
             component=component, archive=self.archive):
             source_index.write(spp.getIndexStanza().encode('utf8'))
             source_index.write('\n\n')
+            source_index_gz.write(spp.getIndexStanza().encode('utf8'))
+            source_index_gz.write('\n\n')
         source_index.close()
+        source_index_gz.close()
 
         source_index_basepath = os.path.join(
             self._config.distsroot, suite_name, component.name, 'source')
         if not os.path.exists(source_index_basepath):
             os.makedirs(source_index_basepath)
-        source_index_path = os.path.join(source_index_basepath, "Sources.gz")
+        source_index_gz_path = os.path.join(source_index_basepath, "Sources.gz")
+        source_index_path = os.path.join(source_index_basepath, "Sources")
 
-        # move the the archive index file to the right place.
+        # Move the the archive index files to the right place.
         os.rename(temp_index, source_index_path)
+        os.rename(temp_index_gz, source_index_gz_path)
 
-        # make the files group writable
+        # Make the files group writable.
         mode = stat.S_IMODE(os.stat(source_index_path).st_mode)
         os.chmod(source_index_path, mode | stat.S_IWGRP)
+        mode = stat.S_IMODE(os.stat(source_index_gz_path).st_mode)
+        os.chmod(source_index_gz_path, mode | stat.S_IWGRP)
 
         for arch in distroseries.architectures:
             arch_path = 'binary-%s' % arch.architecturetag
             self.log.debug("Generating Packages for %s" % arch_path)
 
             temp_prefix = '%s-index_' % arch_path
-            temp_index = tempfile.mktemp(prefix=temp_prefix)
-            package_index = gzip.GzipFile(fileobj=open(temp_index, "wb"))
+            fd_gz, temp_index_gz = tempfile.mkstemp(prefix=temp_prefix)
+            fd, temp_index = tempfile.mkstemp(prefix=temp_prefix)
+            package_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, "wb"))
+            package_index = open(temp_index, "wb")
 
             for bpp in distroseries.getBinaryPackagePublishing(
                 archtag=arch.architecturetag, pocket=pocket,
                 component=component, archive=self.archive):
                 package_index.write(bpp.getIndexStanza().encode('utf-8'))
                 package_index.write('\n\n')
+                package_index_gz.write(bpp.getIndexStanza().encode('utf-8'))
+                package_index_gz.write('\n\n')
             package_index.close()
+            package_index_gz.close()
 
             package_index_basepath = os.path.join(
                 self._config.distsroot, suite_name, component.name, arch_path)
             if not os.path.exists(package_index_basepath):
                 os.makedirs(package_index_basepath)
-            package_index_path = os.path.join(
+            package_index_gz_path = os.path.join(
                 package_index_basepath, "Packages.gz")
+            package_index_path = os.path.join(
+                package_index_basepath, "Packages")
 
-            # move the the archive index file to the right place.
+            # Move the the archive index files to the right place.
             os.rename(temp_index, package_index_path)
+            os.rename(temp_index_gz, package_index_gz_path)
 
-            # make the files group writable
+            # Make the files group writable.
             mode = stat.S_IMODE(os.stat(package_index_path).st_mode)
             os.chmod(package_index_path, mode | stat.S_IWGRP)
+            mode = stat.S_IMODE(os.stat(package_index_gz_path).st_mode)
+            os.chmod(package_index_gz_path, mode | stat.S_IWGRP)
 
         # Inject static requests for Release files into self.apt_handler
         # in a way which works for NoMoreAptFtpArchive without changing
@@ -349,7 +390,7 @@ class Publisher(object):
 
     def _writeDistroRelease(self, distroseries, pocket):
         """Write out the Release files for the provided distroseries."""
-        # XXX: untested method -- kiko, 2006-08-24
+        # XXX: kiko 2006-08-24: Untested method.
 
         # As we generate file lists for apt-ftparchive we record which
         # distroseriess and so on we need to generate Release files for.
@@ -413,13 +454,17 @@ class Publisher(object):
     def _writeDistroArchRelease(self, distroseries, pocket, component,
                                 architecture, all_files):
         """Write out a Release file for a DAR."""
-        # XXX: untested method -- kiko, 2006-08-24
+        # XXX kiko 2006-08-24: Untested method.
 
         full_name = distroseries.name + pocketsuffix[pocket]
 
-        # XXX cprov 20070711: it will be affected by CommercialRepo changes
-        if self.archive == self.distro.main_archive:
+        # Only the primary archive has uncompressed and bz2 archives.
+        if self.archive.purpose == ArchivePurpose.PRIMARY:
             index_suffixes = ('', '.gz', '.bz2')
+        elif self.archive.purpose == ArchivePurpose.COMMERCIAL:
+            # The commercial archive needs uncompressed files for
+            # compatibility with signed Release files.
+            index_suffixes = ('', '.gz')
         else:
             index_suffixes = ('.gz',)
 
@@ -431,7 +476,8 @@ class Publisher(object):
             clean_architecture = architecture[7:]
             file_stub = "Packages"
 
-            if self.archive == self.distro.main_archive:
+            # Only the primary archive has debian-installer.
+            if self.archive.purpose == ArchivePurpose.PRIMARY:
                 # Set up the debian-installer paths for main_archive.
                 # d-i paths are nested inside the component.
                 di_path = os.path.join(

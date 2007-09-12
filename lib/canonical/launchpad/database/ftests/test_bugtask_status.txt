@@ -2,7 +2,7 @@
 
     >>> from canonical.launchpad.interfaces import (
     ...     CreateBugParams, IPersonSet, IProductSet)
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> nopriv_user = getUtility(IPersonSet).getByName('no-priv')
@@ -62,13 +62,13 @@ to ensure that all call sites adhere to this.
     ...     BugTaskStatus.WONTFIX, nopriv_user)
     Traceback (most recent call last):
     ...
-    AssertionError: Only Bug Contacts may change status to Won't Fix
+    AssertionError: Only Bug Contacts may change status to Won't Fix.
 
     >>> firefox_bugtask.transitionToStatus(
     ...     BugTaskStatus.TRIAGED, nopriv_user)
     Traceback (most recent call last):
     ...
-    AssertionError: Only Bug Contacts may change status to Triaged
+    AssertionError: Only Bug Contacts may change status to Triaged.
 
 The method IBugTask.canTransitionToStatus comes in handy here. It
 tells us if a transition to a status is permitted. It is *not* a

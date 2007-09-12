@@ -72,8 +72,8 @@ class IBounty(IHasOwner, IMessageTarget):
         required=True,
         vocabulary='ValidOwner',
         description=_("""Owner (registrant) of Bounty."""))
-    # XXX is this really necessary? IDs shouldn't be exposed in
-    # interfaces. -- kiko, 2005-01-14
+    # XXX kiko 2005-01-14:
+    # is this really necessary? IDs shouldn't be exposed in interfaces.
     ownerID = Int(
             title=_('Owner'), required=True, readonly=True
             )

@@ -62,9 +62,9 @@ class Build(SQLBase):
     @property
     def buildqueue_record(self):
         """See `IBuild`"""
-        # XXX cprov 20051025
+        # XXX cprov 2005-10-25 bug=3424:
         # Would be nice if we can use fresh sqlobject feature 'singlejoin'
-        # instead, see bug # 3424
+        # instead.
         return BuildQueue.selectOneBy(build=self)
 
     @property
@@ -130,7 +130,7 @@ class Build(SQLBase):
         from canonical.launchpad.database.distroarchseriesbinarypackagerelease\
             import (DistroArchSeriesBinaryPackageRelease)
         return [DistroArchSeriesBinaryPackageRelease(
-            self.distroarchseries, bp) 
+            self.distroarchseries, bp)
             for bp in self.binarypackages]
 
     @property
@@ -186,37 +186,21 @@ class Build(SQLBase):
                 return binpkg
         raise NotFoundError, 'No binary package "%s" in build' % name
 
-    def createBinaryPackageRelease(self, binarypackagename, version,
-                                   summary, description,
-                                   binpackageformat, component,
-                                   section, priority, shlibdeps,
-                                   depends, recommends, suggests,
-                                   conflicts, replaces, provides,
-                                   essential, installedsize,
-                                   copyright, licence,
-                                   architecturespecific):
-        """See `IBuild`."""
-        return BinaryPackageRelease(build=self,
-                                    binarypackagename=binarypackagename,
-                                    version=version,
-                                    summary=summary,
-                                    description=description,
-                                    binpackageformat=binpackageformat,
-                                    component=component,
-                                    section=section,
-                                    priority=priority,
-                                    shlibdeps=shlibdeps,
-                                    depends=depends,
-                                    recommends=recommends,
-                                    suggests=suggests,
-                                    conflicts=conflicts,
-                                    replaces=replaces,
-                                    provides=provides,
-                                    essential=essential,
-                                    installedsize=installedsize,
-                                    copyright=copyright,
-                                    licence=licence,
-                                    architecturespecific=architecturespecific)
+    def createBinaryPackageRelease(
+        self, binarypackagename, version, summary, description,
+        binpackageformat, component,section, priority, shlibdeps,
+        depends, recommends, suggests, conflicts, replaces, provides,
+        essential, installedsize, architecturespecific):
+        """See IBuild."""
+        return BinaryPackageRelease(
+            build=self, binarypackagename=binarypackagename, version=version,
+            summary=summary, description=description,
+            binpackageformat=binpackageformat,
+            component=component, section=section, priority=priority,
+            shlibdeps=shlibdeps, depends=depends, recommends=recommends,
+            suggests=suggests, conflicts=conflicts, replaces=replaces,
+            provides=provides, essential=essential, installedsize=installedsize,
+            architecturespecific=architecturespecific)
 
     def createBuildQueueEntry(self):
         """See `IBuild`"""
@@ -237,7 +221,7 @@ class Build(SQLBase):
             'X-Launchpad-Build-State': self.buildstate.name,
             }
 
-        # XXX cprov 20061027: temporary extra debug info about the
+        # XXX cprov 2006-10-27: Temporary extra debug info about the
         # SPR.creator in context, to be used during the service quarantine,
         # notify_owner will be disabled to avoid *spamming* Debian people.
         creator = self.sourcepackagerelease.creator
@@ -277,10 +261,10 @@ class Build(SQLBase):
                 self.id, self.title, archive_tag)
             source_url = 'not available'
 
-        # XXX cprov 20060802: pending security recipients for SECURITY
+        # XXX cprov 2006-08-02: pending security recipients for SECURITY
         # pocket build. We don't build SECURITY yet :(
 
-        # XXX cprov 20060802: find out a way to glue parameters reported
+        # XXX cprov 2006-08-02: find out a way to glue parameters reported
         # with the state in the build worflow, maybe by having an
         # IBuild.statusReport property, which could also be used in the
         # respective page template.
@@ -445,7 +429,7 @@ class BuildSet:
         """See `IBuildSet`."""
         # If not distroarchseries was found return empty list
         if not arch_ids:
-            # XXX cprov 20060908: returning and empty SelectResult to make
+            # XXX cprov 2006-09-08: returning and empty SelectResult to make
             # the callsites happy as bjorn suggested. However it would be
             # much clearer if we have something like SQLBase.empty() for this
             return Build.select("2=1")
@@ -460,7 +444,7 @@ class BuildSet:
             condition_clauses = [('distroarchrelease IN %s'
                                   % sqlvalues(arch_ids))]
 
-        # XXX cprov 20060925: It would be nice if we could encapsulate
+        # XXX cprov 2006-09-25: It would be nice if we could encapsulate
         # the chunk of code below (which deals with the optional paramenters)
         # and share it with ISourcePackage.getBuildRecords()
 
@@ -495,7 +479,7 @@ class BuildSet:
         # Fallback to ordering by -id as a tie-breaker.
         orderBy.append("-id")
 
-        # End of duplication (see XXX cprov 20060925 above).
+        # End of duplication (see XXX cprov 2006-09-25 above).
 
         if name:
             condition_clauses.append("Build.sourcepackagerelease="
@@ -519,9 +503,9 @@ class BuildSet:
             DistroArchRelease.distrorelease = DistroRelease.id AND
             DistroRelease.distribution = Distribution.id AND
             Distribution.id = Archive.distribution AND
-            Archive.purpose = %s AND
+            Archive.purpose != %s AND
             Archive.id = Build.archive
-            """ % quote(ArchivePurpose.PRIMARY))
+            """ % quote(ArchivePurpose.PPA))
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,

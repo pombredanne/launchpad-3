@@ -126,7 +126,7 @@ class LaunchpadFormView(LaunchpadView):
 
         This will be called in the case of a validation error.
         """
-        # XXX: 20060802 jamesh
+        # XXX jamesh 2006-08-02:
         # This should really be dooming the transaction rather than
         # aborting.  What we really want is to prevent more work being
         # done and then committed.
@@ -149,7 +149,7 @@ class LaunchpadFormView(LaunchpadView):
         If no context is given, the view's context is used."""
         if context is None:
             context = self.context
-        # XXX: 20060802 jamesh
+        # XXX: jamesh 2006-08-02:
         # do we want to do anything with ignore_request?
         self.widgets = form.setUpWidgets(
             self.form_fields, self.prefix, context, self.request,
@@ -165,7 +165,7 @@ class LaunchpadFormView(LaunchpadView):
     def action_url(self):
         """Set the default action URL for the form."""
 
-        # XXX: 20070413 bac
+        # XXX: bac 2007-04-13:
         # Rather than use a property it is tempting to just cache the value of
         # request.getURL.  This caching cannot be done in __init__ as the full
         # URL has not been traversed at instantiation time.  It could be
@@ -195,8 +195,7 @@ class LaunchpadFormView(LaunchpadView):
         self.errors.append(message)
 
     def _validate(self, action, data):
-        # XXXX 2006-09-26 jamesh
-
+        # XXX jamesh 2006-09-26:
         # If a form field is disabled, then no data will be sent back.
         # getWidgetsData() raises an exception when this occurs, even
         # if the field is not marked as required.

@@ -1,14 +1,16 @@
 # Copyright Canonical Limited 2006-2007
 """Ftpmaster queue tool libraries."""
 
-# XXX: This should be renamed to ftpmasterqueue.py or just ftpmaster.py
-# as Launchpad contains lots of queues -- StuartBishop 20070131
+# XXX StuartBishop 2007-01-31:
+# This should be renamed to ftpmasterqueue.py or just ftpmaster.py
+# as Launchpad contains lots of queues.
 
 __metaclass__ = type
 
 __all__ = [
     'CommandRunner',
     'CommandRunnerError',
+    'QueueActionError',
     'name_queue_map'
     ]
 
@@ -60,7 +62,7 @@ name_priority_map = {
     '': None
     }
 
-#XXX cprov 20060919: we need to use template engine instead of harcoded
+#XXX cprov 2006-09-19: We need to use template engine instead of harcoded
 # format variables.
 HEAD = "-" * 9 + "|----|" + "-" * 22 + "|" + "-" * 22 + "|" + "-" * 15
 FOOT_MARGIN = " " * (9 + 6 + 1 + 22 + 1 + 22 + 2)
@@ -97,7 +99,7 @@ class QueueAction:
                  announcelist, display, no_mail=True, exact_match=False):
         """Initialises passed variables. """
         self.terms = terms
-        # Some actions have addtional commands at the start of the terms 
+        # Some actions have addtional commands at the start of the terms
         # so allow them to state that here by specifiying the start index.
         self.terms_start_index = 0
         self.component_name = component_name
@@ -255,7 +257,7 @@ class QueueAction:
             datetime.now(pytz.timezone('UTC')) -
             queue_item.datecreated).approximateduration()
 
-        # XXX cprov 20060731: source_tag and build_tag ('S' & 'B')
+        # XXX cprov 2006-07-31: source_tag and build_tag ('S' & 'B')
         # are necessary simply to keep the format legaxy.
         # We may discuss a more reasonable output format later
         # and avoid extra boring code. The IDRQ.displayname should
@@ -318,7 +320,7 @@ class QueueAction:
         """Send the mails provided using the launchpad mail infrastructure."""
         mail_message = message_from_string(ascii_smash(message))
         mail_message['X-Katie'] = "Launchpad actually"
-        # XXX cprov 20060711: workaround for bug # 51742, empty 'To:' due
+        # XXX cprov 2006-07-11 bug=51742: Empty 'To:' due
         # invalid uploader LP email on reject. We always have Bcc:, so, it's
         # promoted to To:
         if not mail_message['To']:
@@ -332,7 +334,7 @@ class QueueAction:
 
         self.displayMessage(mail_message)
 
-    # XXX: dsilvers: 20050203: This code is essentially cargo-culted from
+    # XXX: dsilvers 2005-02-03: This code is essentially cargo-culted from
     # nascentupload.py and ideally should be migrated into a database
     # method.
     def _components_valid_for(self, person):
@@ -569,7 +571,7 @@ class QueueActionReject(QueueAction):
                 queue_item.syncUpdate()
                 summary = []
                 for queue_source in queue_item.sources:
-                    # XXX: dsilvers: 20060203: This needs to be able to
+                    # XXX: dsilvers 2006-02-03: This needs to be able to
                     # be given a reason for the rejection, otherwise it's
                     # not desperately useful.
                     src_rel = queue_source.sourcepackagerelease
@@ -594,7 +596,7 @@ class QueueActionReject(QueueAction):
                         queue_item.changesfile)
 
                 queue_item.changesfile.open()
-                # XXX cprov 20060221: guess_encoding breaks the
+                # XXX cprov 2006-02-21: guess_encoding breaks the
                 # GPG signature.
                 changescontent = guess_encoding(
                     queue_item.changesfile.read())
@@ -639,7 +641,7 @@ class QueueActionAccept(QueueAction):
                 queue_item.syncUpdate()
                 summary = []
                 for queue_source in queue_item.sources:
-                    # XXX: dsilvers: 20060203: This needs to be able to
+                    # XXX: dsilvers 2006-02-03: This needs to be able to
                     # be given a reason for the rejection, otherwise it's
                     # not desperately useful.
                     src_rel = queue_source.sourcepackagerelease
@@ -690,7 +692,7 @@ class QueueActionAccept(QueueAction):
         # section ('laguage-pack-*' & 'language-support-*')
         if queue_item.containsSource:
             source = queue_item.sources[0]
-            # XXX cprov 20070228: instead of using the original section
+            # XXX cprov 2007-02-28: instead of using the original section
             # we should be aware of pre-publication overrides when we
             # have them. See NativeSourceSync specification.
             section_name = source.sourcepackagerelease.section.name
@@ -707,7 +709,7 @@ class QueueActionAccept(QueueAction):
             recipients.append(self.announcelist)
 
         queue_item.changesfile.open()
-        # XXX cprov 20060221: guess_encoding breaks the GPG signature.
+        # XXX cprov 2006-02-21: guess_encoding breaks the GPG signature.
         changescontent = guess_encoding(queue_item.changesfile.read())
         queue_item.changesfile.close()
 
@@ -756,14 +758,14 @@ class QueueActionOverride(QueueAction):
                  component_name, section_name, priority_name,
                  announcelist, display, no_mail=True, exact_match=False):
         """Constructor for QueueActionOverride."""
-        
+
         # This exists so that self.terms_start_index can be set as this action
         # class has a command at the start of the terms.
         # Our first term is "binary" or "source" to specify the type of
         # over-ride.
         QueueAction.__init__(self, distribution_name, suite_name, queue, terms,
                              component_name, section_name, priority_name,
-                             announcelist, display, no_mail=True, 
+                             announcelist, display, no_mail=True,
                              exact_match=False)
         self.terms_start_index = 1
 
@@ -848,6 +850,17 @@ class QueueActionOverride(QueueAction):
                                         priority=priority)
                         # break loop, just in case
                         break
+                # See if the new component requires a new archive on the build:
+                if component:
+                    distribution = (
+                        build.build.distroarchseries.distroseries.distribution)
+                    new_archive = distribution.getArchiveByComponent(
+                        self.component_name)
+                    if (new_archive != build.build.archive):
+                        raise QueueActionError(
+                            "Overriding component to '%s' failed because it "
+                            "would require a new archive."
+                            % self.component_name)
                 self.displayInfo(queue_item, only=binary.name)
 
         not_overridden = set(self.package_names) - set(overridden)
@@ -878,7 +891,7 @@ class CommandRunnerError(Exception):
 class CommandRunner:
     """A wrapper for queue_action classes."""
     def __init__(self, queue, distribution_name, suite_name,
-                 announcelist, no_mail, component_name, section_name, 
+                 announcelist, no_mail, component_name, section_name,
                  priority_name, display=default_display):
         self.queue = queue
         self.distribution_name = distribution_name

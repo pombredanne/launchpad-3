@@ -111,7 +111,7 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.id, 'OOPS-A0001')
         self.assertEqual(entry.type, 'NotFound')
         self.assertEqual(entry.value, 'error message')
-        # XXX 20051130: jamesh
+        # XXX jamesh 2005-11-30:
         # this should probably convert back to a datetime
         self.assertEqual(entry.time, '2005-04-01T00:00:00+00:00')
         self.assertEqual(entry.tb_text, 'traceback-text')

@@ -26,15 +26,16 @@ QRUNNERS = [
     ('OutgoingRunner', 1), # outgoing messages to the smtpd
     ('VirginRunner',   1), # internally crafted (virgin birth) messages
     ('RetryRunner',    1), # retry temporarily failed deliveries
-    # Non-standard runners we've added.  XXX BarryWarsaw: not yet implemented.
+    # XXX BarryWarsaw 2007-03-29: not yet implemented.
+    # Non-standard runners we've added.
 ##     ('POPRunner',      1), # POP new messages to us
-##     ('XMLRPCRunner',   1), # Poll for XMLRPC requests
+    ('XMLRPCRunner',   1), # Poll for XMLRPC requests
     ]
 
 # Other list defaults.
 DEFAULT_GENERIC_NONMEMBER_ACTION = 3 # Discard
 DEFAULT_SEND_REMINDERS = No
-DEFAULT_SEND_WELCOME_MSG = No
+DEFAULT_SEND_WELCOME_MSG = Yes
 DEFAULT_SEND_GOODBYE_MSG = No
 DEFAULT_DIGESTABLE = No
 DEFAULT_BOUNCE_NOTIFY_OWNER_ON_DISABLE = No

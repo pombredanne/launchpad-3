@@ -4,7 +4,7 @@
 # this tree.
 #
 
-if [ "x$1" == "x" ]; then 
+if [ "x$1" = "x" ]; then 
     echo "Usage: $0 <directory with main tree>"
     echo "Example: '$0 ~/devel/launchpad-main/'"
     exit 2

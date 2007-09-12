@@ -148,7 +148,7 @@ class Dominator:
                     # not the new binary package release. This is because there
                     # may not *be* a new matching binary package - source
                     # packages can change the binaries they build between
-                    # releases. 
+                    # releases.
                     pubrec.supersededby = dominantrelease.build
 
 
@@ -213,16 +213,15 @@ class Dominator:
 
         self.debug("Beginning superseded processing...")
 
-        # XXX: dsilvers: 20050922: Need to make binaries go in groups
-        # but for now this'll do. An example of the concrete problem here
-        # is:
+        # XXX: dsilvers 2005-09-22 bug=55030:
+        # Need to make binaries go in groups but for now this'll do.
+        # An example of the concrete problem here is:
         # - Upload foo-1.0, which builds foo and foo-common (arch all).
         # - Upload foo-1.1, ditto.
         # - foo-common-1.1 is built (along with the i386 binary for foo)
         # - foo-common-1.0 is superseded
         # Foo is now uninstallable on any architectures which don't yet
         # have a build of foo-1.1, as the foo-common for foo-1.0 is gone.
-        # See bug 55030.
 
         # Essentially we ideally don't want to lose superseded binaries
         # unless the entire group is ready to be made pending removal.
@@ -274,9 +273,10 @@ class Dominator:
                 if considered_binaries.count() > 0:
                     # There is at least one non-removed binary to consider
 
-                    # XXX malcc 20061017: Want to change to running scripts
-                    # at info level, but for now just shut up this particularly
-                    # noisy debug statement. See bug 57488.
+                    # XXX malcc 2006-10-17 bug=57488:
+                    # Want to change to running scripts at info level,
+                    # but for now just shut up this particularly noisy
+                    # debug statement.
                     #self.debug("%s/%s (source) has at least %d non-removed "
                     #           "binaries as yet" % (
                     #    srcpkg_release.sourcepackagename.name,
@@ -334,10 +334,10 @@ class Dominator:
             # Here we go behind SQLObject's back to generate an assistance
             # table which will seriously improve the performance of this
             # part of the publisher.
-            # XXX: dsilvers: 20060204: It would be nice to not have to do this.
-            # Most of this methodology is stolen from person.py
-            # malcc 20060803: This should go away when we shift to doing
-            # this one package at a time.
+            # XXX: dsilvers 2006-02-04: It would be nice to not have to do
+            # this. Most of this methodology is stolen from person.py
+            # XXX: malcc 2006-08-03: This should go away when we shift to
+            # doing this one package at a time.
             flush_database_updates()
             cur = cursor()
             cur.execute("""SELECT bpn.id AS name, count(bpn.id) AS count INTO

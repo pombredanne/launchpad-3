@@ -136,10 +136,10 @@ Foo Bar, and one to Ubuntu Team:
     You received this question notification because you are the assignee for
     this question.
 
-XXX flacoste 2006/09/19 Add checks for notification of change to
-assignee, status whiteboard, priority. For example, if a question is
-transferred to another QuestionTarget and priority is changed,
-the notification does not include priority.
+# XXX flacoste 2006-09-19: Add checks for notification of change to
+# assignee, status whiteboard, priority. For example, if a question is
+# transferred to another QuestionTarget and priority is changed,
+# the notification does not include priority.
 
     >>> unmodified_question = Snapshot(
     ...     ubuntu_question, providing=providedBy(ubuntu_question))
@@ -238,8 +238,8 @@ A notification is also sent when a bug is unlinked from the question:
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
-        Removed link to bug: #13
-        http://.../bugs/13
+        Removed link to bug: #...
+        http://.../bugs/...
         "Installer fails on a Mac PPC"
     <BLANKLINE>
     --...

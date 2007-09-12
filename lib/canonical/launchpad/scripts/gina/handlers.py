@@ -17,8 +17,6 @@ __all__ = [
 
 import os
 import re
-import tempfile
-import shutil
 
 from sqlobject import SQLObjectNotFound, SQLObjectMoreThanOneResultError
 
@@ -38,8 +36,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina.library import getLibraryAlias
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
-    urgencymap, prioritymap, get_dsc_path, licence_cache, read_dsc,
-    PoolFileNotFound)
+    urgencymap, prioritymap, get_dsc_path, PoolFileNotFound)
 
 from canonical.launchpad.database import (Distribution, DistroSeries,
     DistroArchSeries,Processor, SourcePackageName, SourcePackageRelease,
@@ -65,14 +62,14 @@ def check_not_in_librarian(files, archive_root, directory):
         fname = i[-1]
         path = os.path.join(archive_root, directory)
         if not os.path.exists(os.path.join(path, fname)):
-            # XXX: untested
+            # XXX kiko 2005-10-22: Untested
             raise PoolFileNotFound('Package %s not found in archive '
                                    '%s' % (fname, path))
-        # XXX: <stub> Until I or someone else completes
+        # XXX kiko 2005-10-23: <stub> Until I or someone else completes
         # LibrarianGarbageCollection (the first half of which is
         # awaiting review)
         #if checkLibraryForFile(path, fname):
-        #    # XXX: untested
+        #    # XXX kiko 2005-10-23: Untested
         #    raise LibrarianHasFileError('File %s already exists in the '
         #                                'librarian' % fname)
         to_upload.append((fname, path))
@@ -111,9 +108,10 @@ class ImporterHandler:
     This class is used to handle the import process.
     """
     def __init__(self, ztm, distro_name, distroseries_name, dry_run,
-                 ktdb, archive_root, keyrings, pocket):
+                 ktdb, archive_root, keyrings, pocket, component_override):
         self.dry_run = dry_run
         self.pocket = pocket
+        self.component_override = component_override
         self.ztm = ztm
 
         self.distro = self._get_distro(distro_name)
@@ -124,11 +122,12 @@ class ImporterHandler:
         self.imported_bins = {}
 
         self.sphandler = SourcePackageHandler(ktdb, archive_root, keyrings,
-                                              pocket)
+                                              pocket, component_override)
         self.bphandler = BinaryPackageHandler(self.sphandler, archive_root,
                                               pocket)
 
-        self.sppublisher = SourcePackagePublisher(self.distroseries, pocket)
+        self.sppublisher = SourcePackagePublisher(
+            self.distroseries, pocket, self.component_override)
         # This is initialized in ensure_archinfo
         self.bppublishers = {}
 
@@ -155,8 +154,8 @@ class ImporterHandler:
             raise DataSetupError("Error finding distroarchseries for %s/%s"
                                  % (self.distroseries.name, archtag))
 
-        # XXX: is this really a selectOneBy? Can't there be multiple
-        # proessors per family?
+        # XXX kiko 2005-11-07: Is this really a selectOneBy? Can't there
+        # be multiple proessors per family?
         processor = Processor.selectOneBy(familyID=dar.processorfamily.id)
         if not processor:
             raise DataSetupError("Unable to find a processor from the "
@@ -167,7 +166,8 @@ class ImporterHandler:
         info = {'distroarchseries': dar, 'processor': processor}
         self.archinfo[archtag] = info
 
-        self.bppublishers[archtag] = BinaryPackagePublisher(dar, self.pocket)
+        self.bppublishers[archtag] = BinaryPackagePublisher(
+            dar, self.pocket, self.component_override)
         self.imported_bins[archtag] = []
 
     #
@@ -258,7 +258,7 @@ class ImporterHandler:
         sourcepackage = self.locate_sourcepackage(binarypackagedata,
                                                   distroseries)
         if not sourcepackage:
-            # XXX: untested
+            # XXX kiko 2005-10-23: Untested
             # If the sourcepackagerelease is not imported, not way to import
             # this binarypackage. Warn and giveup.
             raise NoSourcePackageError("No source package %s (%s) found "
@@ -313,9 +313,10 @@ class ImporterHandler:
                       version, binarypackagedata.package,
                       binarypackagedata.version))
 
-            # XXX: I question whether binarypackagedata.section here is
-            # actually correct -- but where can we obtain this
-            # information from introspecting the archive?
+            # XXX kiko 2005-11-03: I question whether
+            # binarypackagedata.section here is actually correct -- but
+            # where can we obtain this information from introspecting
+            # the archive?
             sourcepackage = self.sphandler.findUnlistedSourcePackage(
                 binarypackagedata.source, version,
                 binarypackagedata.component, binarypackagedata.section,
@@ -326,7 +327,8 @@ class ImporterHandler:
             log.warn("Nope, couldn't find it. Could it be a "
                      "bin-only-NMU? Checking version %s" % version)
 
-            # XXX: testing a third cycle of this loop isn't done
+            # XXX kiko 2005-11-03: Testing a third cycle of this loop
+            # isn't done.
 
         return None
 
@@ -349,7 +351,7 @@ class DistroHandler:
     def __init__(self):
         # Components and sections are cached to avoid redoing the same
         # database queries over and over again.
-        self.compcache = {} 
+        self.compcache = {}
         self.sectcache = {}
 
     def getComponentByName(self, component):
@@ -386,12 +388,14 @@ class SourcePackageHandler:
     This class has methods to make the sourcepackagerelease access
     on the launchpad db a little easier.
     """
-    def __init__(self, KTDB, archive_root, keyrings, pocket):
+    def __init__(self, KTDB, archive_root, keyrings, pocket,
+                 component_override):
         self.distro_handler = DistroHandler()
         self.ktdb = KTDB
         self.archive_root = archive_root
         self.keyrings = keyrings
         self.pocket = pocket
+        self.component_override = component_override
 
     def ensureSourcePackageName(self, name):
         return SourcePackageName.ensure(name)
@@ -439,7 +443,8 @@ class SourcePackageHandler:
         # the binary import is started. Thusly since this source is
         # being imported "late" in the process, we publish it immediately
         # to make sure it doesn't get lost.
-        SourcePackagePublisher(distroseries, self.pocket).publish(spr, sp_data)
+        SourcePackagePublisher(distroseries, self.pocket,
+                               self.component_override).publish(spr, sp_data)
         return spr
 
     def _getSourcePackageDataFromDSC(self, sp_name, sp_version,
@@ -465,13 +470,13 @@ class SourcePackageHandler:
 
         # the dsc doesn't list itself so add it ourselves
         if 'files' not in dsc_contents:
-            log.error('DSC for %s didn\'t contain a files entry: %r' % 
+            log.error('DSC for %s didn\'t contain a files entry: %r' %
                       (dsc_name, dsc_contents))
             return None
         if not dsc_contents['files'].endswith("\n"):
             dsc_contents['files'] += "\n"
-        # XXX: Why do we hack the md5sum and size of the DSC? Should
-        # probably calculate it properly.
+        # XXX kiko 2005-10-21: Why do we hack the md5sum and size of the DSC?
+        # Should probably calculate it properly.
         dsc_contents['files'] += "xxx 000 %s" % dsc_name
 
         # SourcePackageData requires capitals
@@ -497,13 +502,12 @@ class SourcePackageHandler:
 
     def _getSource(self, sourcepackagename, version, distroseries):
         """Returns a sourcepackagerelease by its name and version."""
-        # XXX: we use the source package publishing tables here, but I
-        # think that's a bit flawed. We should have a way of saying "my
-        # distroseries overlays the version namespace of that
+        # XXX kiko 2005-11-05: we use the source package publishing tables
+        # here, but I think that's a bit flawed. We should have a way of
+        # saying "my distroseries overlays the version namespace of that
         # distroseries" and use that to decide on whether we've seen
         # this package before or not. The publishing tables may be
         # wrong, for instance, in the context of proper derivation.
-        #   -- kiko, 2005-XX-XX
 
         # Check here to see if this release has ever been published in
         # the distribution, no matter what status.
@@ -512,7 +516,7 @@ class SourcePackageHandler:
                 SourcePackageRelease.version = %s AND
                 SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id AND
-                SourcePackagePublishingHistory.distrorelease = 
+                SourcePackagePublishingHistory.distrorelease =
                     DistroRelease.id AND
                 SourcePackagePublishingHistory.archive = %s AND
                 DistroRelease.distribution = %s
@@ -535,9 +539,9 @@ class SourcePackageHandler:
         maintainer = ensure_person(
             displayname, emailaddress, src.package, distroseries.displayname)
 
-        # XXX: Check it later -- Debonzi 20050516
+        # XXX Debonzi 2005-05-16: Check it later.
         #         if src.dsc_signing_key_owner:
-        #             key = self.getGPGKey(src.dsc_signing_key, 
+        #             key = self.getGPGKey(src.dsc_signing_key,
         #                                  *src.dsc_signing_key_owner)
         #         else:
         key = None
@@ -555,28 +559,29 @@ class SourcePackageHandler:
         maintainer_line = "%s <%s>" % (displayname, emailaddress)
         name = self.ensureSourcePackageName(src.package)
         spr = SourcePackageRelease(
-                                   section=sectionID,
-                                   creator=maintainer.id,
-                                   component=componentID,
-                                   sourcepackagename=name.id,
-                                   maintainer=maintainer.id,
-                                   dscsigningkey=key,
-                                   manifest=None,
-                                   urgency=urgencymap[src.urgency],
-                                   dateuploaded=src.date_uploaded,
-                                   dsc=src.dsc,
-                                   version=src.version,
-                                   changelog=src.changelog,
-                                   builddepends=src.build_depends,
-                                   builddependsindep=src.build_depends_indep,
-                                   architecturehintlist=src.architecture,
-                                   format=SourcePackageFormat.DPKG,
-                                   uploaddistroseries=distroseries.id,
-                                   dsc_format=src.format,
-                                   dsc_maintainer_rfc822=maintainer_line,
-                                   dsc_standards_version=src.standards_version,
-                                   dsc_binaries=" ".join(src.binaries),
-                                   upload_archive=distroseries.main_archive)
+            section=sectionID,
+            creator=maintainer.id,
+            component=componentID,
+            sourcepackagename=name.id,
+            maintainer=maintainer.id,
+            dscsigningkey=key,
+            manifest=None,
+            urgency=urgencymap[src.urgency],
+            dateuploaded=src.date_uploaded,
+            dsc=src.dsc,
+            copyright=src.copyright,
+            version=src.version,
+            changelog=src.changelog,
+            builddepends=src.build_depends,
+            builddependsindep=src.build_depends_indep,
+            architecturehintlist=src.architecture,
+            format=SourcePackageFormat.DPKG,
+            uploaddistroseries=distroseries.id,
+            dsc_format=src.format,
+            dsc_maintainer_rfc822=maintainer_line,
+            dsc_standards_version=src.standards_version,
+            dsc_binaries=" ".join(src.binaries),
+            upload_archive=distroseries.main_archive)
         log.info('Source Package Release %s (%s) created' %
                  (name.name, src.version))
 
@@ -595,10 +600,11 @@ class SourcePackageHandler:
 class SourcePackagePublisher:
     """Class to handle the sourcepackagerelease publishing process."""
 
-    def __init__(self, distroseries, pocket):
+    def __init__(self, distroseries, pocket, component_override):
         # Get the distroseries where the sprelease will be published.
         self.distroseries = distroseries
         self.pocket = pocket
+        self.component_override = component_override
         self.distro_handler = DistroHandler()
 
     def publish(self, sourcepackagerelease, spdata):
@@ -606,7 +612,16 @@ class SourcePackagePublisher:
         # Check if the sprelease is already published and if so, just
         # report it.
 
-        component = self.distro_handler.getComponentByName(spdata.component)
+        if self.component_override:
+            component = self.distro_handler.getComponentByName(
+                self.component_override)
+            log.info('Overriding source %s component' %
+                sourcepackagerelease.sourcepackagename.name)
+        else:
+            component = self.distro_handler.getComponentByName(
+                spdata.component)
+        archive = self.distroseries.distribution.getArchiveByComponent(
+            component.name)
         section = self.distro_handler.ensureSection(spdata.section)
 
         source_publishinghistory = self._checkPublishing(sourcepackagerelease)
@@ -617,7 +632,7 @@ class SourcePackagePublisher:
                 # If nothing has changed in terms of publication
                 # (overrides) we are free to let this one go
                 log.info('SourcePackageRelease already published with no '
-                         'changes as %s' % 
+                         'changes as %s' %
                          source_publishinghistory.status.title)
                 return
 
@@ -632,7 +647,7 @@ class SourcePackagePublisher:
             datecreated=UTC_NOW,
             datepublished=UTC_NOW,
             pocket=self.pocket,
-            archive=self.distroseries.main_archive
+            archive=archive
             )
         log.info('Source package %s (%s) published' % (
             entry.sourcepackagerelease.sourcepackagename.name,
@@ -702,49 +717,12 @@ class BinaryPackageHandler:
             bpr = BinaryPackageRelease.selectOne(query,
                                                  clauseTables=clauseTables)
         except SQLObjectMoreThanOneResultError:
-            # XXX: untested
+            # XXX kiko 2005-10-27: Untested
             raise MultiplePackageReleaseError("Found more than one "
                     "entry for %s (%s) for %s in %s" %
                     (binaryname.name, version, architecture,
                      distroseries.distribution.name))
         return bpr
-
-    def readLicence(self, bin_name, src_name, version, component):
-        licence = self.readLicenceCached(bin_name, src_name, version)
-        if licence:
-            return licence
-
-        # XXX: untested
-        # Couldn't find the licence in the cache; let's trigger a
-        # read_dsc to see if we can find it.
-        try:
-            tempdir = tempfile.mkdtemp()
-            cwd = os.getcwd()
-            os.chdir(tempdir)
-            try:
-                # Read the DSC and ensure the licence_cache is set
-                read_dsc(src_name, version, component, self.archive_root)
-            finally:
-                os.chdir(cwd)
-            shutil.rmtree(tempdir)
-        except PoolFileNotFound:
-            log.warn("While groping for a copyright file for %s, could "
-                     "not even find the source package for %s (%s) in "
-                     "the archive. Dropped copyright." %
-                     (bin_name, src_name, version))
-            licence = None
-        else:
-            licence = self.readLicenceCached(bin_name, src_name, version)
-
-        return licence
-
-    def readLicenceCached(self, bin_name, src_name, version):
-        licence = licence_cache.get((src_name, version, bin_name), None)
-        if licence is None:
-            # No binarypackage-specific licence, so let's get the
-            # main one (if it's there)
-            licence = licence_cache.get((src_name, version, None), None)
-        return licence
 
     def createBinaryPackage(self, bin, srcpkg, distroarchinfo, archtag):
         """Create a new binarypackage."""
@@ -758,10 +736,6 @@ class BinaryPackageHandler:
 
         bin_name = getUtility(IBinaryPackageNameSet).ensure(bin.package)
         build = self.ensureBuild(bin, srcpkg, distroarchinfo, archtag)
-
-        licence = self.readLicence(bin.package,
-                                   srcpkg.sourcepackagename.name,
-                                   srcpkg.version, srcpkg.component.name)
 
         # Create the binarypackage entry on lp db.
         binpkg = BinaryPackageRelease(
@@ -783,9 +757,7 @@ class BinaryPackageHandler:
             provides = bin.provides,
             essential = bin.essential,
             installedsize = bin.installed_size,
-            licence = licence,
             architecturespecific = architecturespecific,
-            copyright = None,
             )
         log.info('Binary Package Release %s (%s) created' %
                  (bin_name.name, bin.version))
@@ -805,43 +777,43 @@ class BinaryPackageHandler:
         distribution = distroarchseries.distroseries.distribution
         clauseTables = ["Build", "DistroArchRelease", "DistroRelease"]
 
-        # XXX: this method doesn't work for real bin-only NMUs that are
+        # XXX kiko 2006-02-03:
+        # This method doesn't work for real bin-only NMUs that are
         # new versions of packages that were picked up by Gina before.
         # The reason for that is that these bin-only NMUs' corresponding
         # source package release will already have been built at least
         # once, and the two checks below will of course blow up when
         # doing it the second time.
-        #   -- kiko, 2006-02-03
 
         query = ("Build.sourcepackagerelease = %d AND "
-                 "Build.distroarchrelease = DistroArchRelease.id AND " 
+                 "Build.distroarchrelease = DistroArchRelease.id AND "
                  "DistroArchRelease.distrorelease = DistroRelease.id AND "
                  "DistroRelease.distribution = %d"
                  % (srcpkg.id, distribution.id))
 
         if archtag != "all":
-            query += ("AND DistroArchRelease.architecturetag = %s" 
+            query += ("AND DistroArchRelease.architecturetag = %s"
                       % quote(archtag))
 
         try:
             build = Build.selectOne(query, clauseTables)
         except SQLObjectMoreThanOneResultError:
-            # XXX: untested
+            # XXX kiko 2005-10-27: Untested.
             raise MultipleBuildError("More than one build was found "
                 "for package %s (%s)" % (binary.package, binary.version))
 
         if build:
             for bpr in build.binarypackages:
                 if bpr.binarypackagename.name == binary.package:
-                    # XXX: untested
+                    # XXX kiko 2005-10-27: Untested.
                     raise MultipleBuildError("Build %d was already found "
                         "for package %s (%s)" %
                         (build.id, binary.package, binary.version))
         else:
 
-            # XXX: Check it later -- Debonzi 20050516
+            # XXX Debonzi 2005-05-16: Check it later
             #         if bin.gpg_signing_key_owner:
-            #             key = self.getGPGKey(bin.gpg_signing_key, 
+            #             key = self.getGPGKey(bin.gpg_signing_key,
             #                                  *bin.gpg_signing_key_owner)
             #         else:
             key = None
@@ -862,9 +834,10 @@ class BinaryPackageHandler:
 
 class BinaryPackagePublisher:
     """Binarypackage publisher class."""
-    def __init__(self, distroarchseries, pocket):
+    def __init__(self, distroarchseries, pocket, component_override):
         self.distroarchseries = distroarchseries
         self.pocket = pocket
+        self.component_override = component_override
         self.distro_handler = DistroHandler()
 
     def publish(self, binarypackage, bpdata):
@@ -873,7 +846,16 @@ class BinaryPackagePublisher:
         # binary package release: the data represents data from /this
         # specific distroseries/, whereas the package represents data
         # from when it was first built.
-        component = self.distro_handler.getComponentByName(bpdata.component)
+        if self.component_override is not None:
+            component = self.distro_handler.getComponentByName(
+                self.component_override)
+            log.info('Overriding binary %s component' %
+                binarypackage.binarypackagename.name)
+        else:
+            component = self.distro_handler.getComponentByName(
+                bpdata.component)
+        distribution = self.distroarchseries.distroseries.distribution
+        archive = distribution.getArchiveByComponent(component.name)
         section = self.distro_handler.ensureSection(bpdata.section)
         priority = prioritymap[bpdata.priority]
 
@@ -888,7 +870,7 @@ class BinaryPackagePublisher:
                 # If nothing has changed in terms of publication
                 # (overrides) we are free to let this one go
                 log.info('BinaryPackageRelease already published with no '
-                         'changes as %s' % 
+                         'changes as %s' %
                          binpkg_publishinghistory.status.title)
                 return
 
@@ -908,7 +890,7 @@ class BinaryPackagePublisher:
             supersededby = None,
             datemadepending = None,
             dateremoved = None,
-            archive=self.distroarchseries.main_archive
+            archive=archive
             )
 
         log.info('BinaryPackage %s-%s published into %s.' % (

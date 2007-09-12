@@ -63,8 +63,10 @@ You cannot upload an empty attachment.
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/1/+addcomment
 
-    >>> get_feedback_messages(user_browser)
-    [u'Cannot upload empty file.']
+    >>> for msg in get_feedback_messages(user_browser):
+    ...     print msg
+    There is 1 error.
+    Cannot upload empty file.
 
 You cannot add a comment without a subject.
 
@@ -72,8 +74,10 @@ You cannot add a comment without a subject.
     ...     "http://bugs.launchpad.dev/firefox/+bug/1/+addcomment-form")
     >>> user_browser.getControl("Subject").value = ""
     >>> user_browser.getControl("Save Changes").click()
-    >>> get_feedback_messages(user_browser)
-    [u'Required input is missing.']
+    >>> for msg in get_feedback_messages(user_browser):
+    ...     print msg
+    There is 1 error.
+    Required input is missing.
 
 The size of uploaded files is limited with the max_bug_attachment_size
 option in launchpad.conf. In our example, the size is limited to 1024.
@@ -89,8 +93,10 @@ option in launchpad.conf. In our example, the size is limited to 1024.
     ...     StringIO("x"*1025), "text/plain", "foo.txt")
     >>> user_browser.getControl("Save Changes").click()
 
-    >>> get_feedback_messages(user_browser)
-    [u'Cannot upload files larger than 1024 bytes']
+    >>> for msg in get_feedback_messages(user_browser):
+    ...     print msg
+    There is 1 error.
+    Cannot upload files larger than 1024 bytes
 
 The comment/attach file form is available from a link on the bug page.
 

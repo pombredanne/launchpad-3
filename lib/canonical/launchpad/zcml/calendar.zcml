@@ -245,10 +245,10 @@
       template="../templates/calendar-event-index.pt"
       />
 
-  <!-- XXX: displaying the duration causes an exception due to
+  <!-- XXX: James Henstridge 2005-06-29:
+       displaying the duration causes an exception due to
        zope.app.form.DisplayView assuming that the value is a
-       string.  Should not be a problem with newer Zope
-         James Henstridge (2005-06-29) -->
+       string.  Should not be a problem with newer Zope -->
   <browser:schemadisplay
       name="+display"
       for="schoolbell.interfaces.ICalendarEvent"

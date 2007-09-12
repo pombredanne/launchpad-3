@@ -22,9 +22,6 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
-from canonical.lp.dbschema import (
-    ShipItFlavour, ShipItArchitecture, ShipItDistroSeries,
-    ShippingRequestStatus)
 from canonical.launchpad.helpers import (
     intOrZero, get_email_template, shortlist)
 from canonical.launchpad.webapp.error import SystemErrorView
@@ -41,7 +38,8 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IShippingRequestSet, ILaunchBag,
     ILaunchpadCelebrities, IShippingRunSet, IShipItApplication,
     IShipItReportSet, UnexpectedFormData, IShippingRequestUser,
-    ShipItConstants)
+    ShipItConstants, ShipItFlavour, ShipItArchitecture, ShipItDistroSeries,
+    ShippingRequestStatus)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
@@ -84,10 +82,10 @@ def shipit_is_open(flavour):
         flavour, getUtility(ILaunchBag).user))
 
 
-# XXX: The LoginOrRegister class is not really designed to be reused. That
+# XXX: GuilhermeSalgado 2005-09-09:
+# The LoginOrRegister class is not really designed to be reused. That
 # class must either be fixed to allow proper reuse or we should write a new
-# class which doesn't reuses LoginOrRegister here. -- GuilhermeSalgado
-# 2005-09-09
+# class which doesn't reuses LoginOrRegister here.
 class ShipItLoginView(LoginOrRegister):
     """Process the login form and redirect the user to the request page."""
 
@@ -95,7 +93,7 @@ class ShipItLoginView(LoginOrRegister):
         ShipItFlavour.UBUNTU: 'shipit-ubuntu',
         ShipItFlavour.KUBUNTU: 'shipit-kubuntu',
         ShipItFlavour.EDUBUNTU: 'shipit-edubuntu'}
-        
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -254,7 +252,7 @@ class ShipItRequestView(GeneralFormView):
             setUpWidgets(
                 self, self.schema, IInputWidget, names=self._extra_fields,
                 initial=self.extra_fields_initial_values, context=context)
-                    
+
     def renderCustomrequestForm(self):
         self._setExtraFields()
         self.should_show_custom_request = True
@@ -332,7 +330,7 @@ class ShipItRequestView(GeneralFormView):
     @cachedproperty
     def current_order_standard_id(self):
         """The current order's StandardShipItRequest id, or None.
-        
+
         If there's no current order or the current order doesn't contain any
         CDs of self.flavour, None will be returned.
         """
@@ -373,7 +371,7 @@ class ShipItRequestView(GeneralFormView):
         selected.
 
         If the submitted form contains a 'ordertype' variable, that's the one
-        that should be requested. If not, we check if the current shipit 
+        that should be requested. If not, we check if the current shipit
         request is a standard one, and if so, return the standard request id
         of this shipit request. Lastly, if none of the above exists, we return
         the standard request whose isdefault attribute is True.
@@ -496,7 +494,7 @@ class ShipItRequestView(GeneralFormView):
                 current_order.clearApproval()
         elif current_order.isAwaitingApproval():
             assert not current_order.isDenied()
-            if (not shipped_orders or 
+            if (not shipped_orders or
                 not self.userAlreadyRequestedFlavours(current_flavours)):
                 # This is either the first order containing CDs of the current
                 # distroseries made by this user or it contains only CDs of
@@ -601,7 +599,7 @@ class _SelectMenuOption:
     This class simply stores a name, a title and whether the option should be
     selected or not.
     """
-    
+
     def __init__(self, name, title, is_selected=False):
         self.name = name
         self.title = title
@@ -650,14 +648,14 @@ class ShippingRequestsView:
         return self._build_options(names_and_titles, self.selectedFlavourName)
 
     def series_options(self):
-        names_and_titles = [(series.name, series.title) 
+        names_and_titles = [(series.name, series.title)
                             for series in ShipItDistroSeries.items]
         names_and_titles.append(('any', 'Any'))
         return self._build_options(
             names_and_titles, self.selectedDistroSeriesName)
 
     def status_options(self):
-        names_and_titles = [(status.name, status.title) 
+        names_and_titles = [(status.name, status.title)
                             for status in ShippingRequestStatus.items]
         names_and_titles.append(('all', 'All'))
         return self._build_options(names_and_titles, self.selectedStatus)
@@ -688,7 +686,14 @@ class ShippingRequestsView:
         else:
             flavour = ShipItFlavour.items[self.selectedFlavourName]
 
-        orderby = str(request.get('orderby'))
+        # Sort as directed by form, but also by id as a tie-breaker
+        # XXX: JeroenVermeulen bug=136345 2007-08-31: Indeterministic sorting
+        # was breaking the xx-shipit-search-for-requests.txt test most of the
+        # time (and blocking PQM).  This is a quick fix, but it looks like we
+        # could also use some extra input checking here.  SQL sorting
+        # expressions are hard-coded in the template, plus not selecting an
+        # order would trigger an exception in this line.
+        orderby = [str(request.get('orderby')), 'id']
         self.recipient_text = request.get('recipient_text')
 
         requestset = getUtility(IShippingRequestSet)
@@ -751,7 +756,7 @@ class ShippingRequestAdminMixinView:
 
     def widgetsMatrixWithFlavours(self):
         """Return a matrix in which each row contains a ShipItFlavour and one
-        quantity widget for each ShipItArchitecture that we ship CDs. 
+        quantity widget for each ShipItArchitecture that we ship CDs.
 
         The architectures of CDs that we ship are dependent on the
         flavour.
@@ -826,9 +831,9 @@ class ShippingRequestApproveOrDenyView(
             # This order was exported after the form was rendered; we can't
             # allow changing it, so we return to render the page again,
             # without the buttons that allow changing it.
-            # XXX: It's probably a good idea to notify the user about what
+            # XXX: Guilherme Salgado 2006-07-27:
+            # It's probably a good idea to notify the user about what
             # happened here.
-            # -- Guilherme Salgado, 2006-07-27
             return
 
         if 'DENY' not in form:
@@ -928,7 +933,7 @@ class ShippingRequestApproveOrDenyView(
         shipped_requests = recipient.shippedShipItRequestsOfCurrentSeries()
         if not shipped_requests:
             return False
-        elif (shipped_requests.count() == 1 
+        elif (shipped_requests.count() == 1
               and shipped_requests[0] == self.context):
             return False
         else:
@@ -936,7 +941,7 @@ class ShippingRequestApproveOrDenyView(
 
     def contextCanBeModified(self):
         """Return true if the context can be modified.
-        
+
         A ShippingRequest can be modified only if it's not shipped nor
         cancelled.
         """
@@ -987,9 +992,9 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
         return initial
 
     def validate(self, data):
-        # XXX: Even shipit admins shouldn't be allowed to make requests with 0
+        # XXX: Guilherme Salgado 2006-04-21:
+        # Even shipit admins shouldn't be allowed to make requests with 0
         # CDs. We need to check this here.
-        # Guilherme Salgado, 2006-04-21
         errors = []
         country = data['country']
         if shipit_postcode_required(country) and not data['postcode']:
@@ -1099,12 +1104,12 @@ class ShipItNavigation(Navigation):
 
     @stepto('requests')
     def requests(self):
-        # XXX: permission=launchpad.Admin
+        # XXX: SteveAlexander 2005-10-06: permission=launchpad.Admin
         return getUtility(IShippingRequestSet)
 
     @stepto('standardoptions')
     def standardoptions(self):
-        # XXX: permission=launchpad.Admin
+        # XXX: SteveAlexander 2005-10-06: permission=launchpad.Admin
         return getUtility(IStandardShipItRequestSet)
 
 

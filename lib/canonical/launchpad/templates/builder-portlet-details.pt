@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-details">
    <h2><span tal:replace="context/title">BUILDER</span> details</h2>
    <div class="portletBody portletContent">
 

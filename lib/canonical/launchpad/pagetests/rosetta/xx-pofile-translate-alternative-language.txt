@@ -15,14 +15,11 @@ And open the translation form:
     Translating evolution-2.2 in Ubuntu Hoary package "evolution" into Spanish
 
 The 'Make suggestions from' control lists the translatable languages.
-Japanese is a translatable language, English is included because many
-English dialects may want to use the source English.
-
+Japanese is a translatable language.
+    
     >>> browser.getControl(
     ...     name='field.alternative_language').displayOptions[:4]
     ['(no value)', 'Abkhazian (ab)', 'Achinese (ace)', 'Acoli (ach)']
-    >>> browser.getControl('English (en)', index=0).selected
-    False
 
     >>> browser.getControl(name='field.alternative_language').value
     ['']
@@ -34,6 +31,15 @@ English dialects may want to use the source English.
 
     >>> browser.getControl(name='field.alternative_language', index=0).value
     ['ja']
+
+English is not among the items in the 'Make suggestions from' list.
+The English templates are hidden in the UI because it is not a
+translatable language; the source messages are stored in English.
+
+    >>> browser.getControl('English (en)', index=0).selected
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'English (en)'
 
 This page also allows the user to filter the translatable strings to
 show only the strings he is interested in.

@@ -233,7 +233,8 @@ def extract_component_from_section(section):
     if section.find('/') != -1:
         component = section.split('/')[0];
 
-    # XXX - we don't have Cnf, don't want to use DB particularly, so...
+    # XXX James Troup 2006-01-30:
+    # We don't have Cnf, don't want to use DB particularly, so...
     valid_components = [ "main", "restricted", "universe", "multiverse", "contrib", "non-free" ]
 
     # Expand default component

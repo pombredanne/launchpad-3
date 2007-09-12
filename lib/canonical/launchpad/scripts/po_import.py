@@ -41,14 +41,14 @@ class ImportProcess:
         # Get the list of each product or distroseries with pending imports.
         # We'll serve these queues in turn, one request each, until either the
         # queue is drained or our time is up.
-        importqueues = (
-            translation_import_queue.getPillarObjectsWithApprovedImports() )
+        importqueues = translation_import_queue.getPillarObjectsWithImports(
+            RosettaImportStatus.APPROVED)
 
         if not importqueues:
             self.logger.info("No requests pending.")
             return
 
-        # XXX: JeroenVermeulen 2007-06-20, how on Earth do we test that the
+        # XXX: JeroenVermeulen 2007-06-20: How on Earth do we test that the
         # deadline code works?  It's only a small thing, and of course we'll
         # notice that it works when we stop getting errors about this script
         # not finishing.  Meanwhile, SteveA has suggested a more general
@@ -117,7 +117,8 @@ class ImportProcess:
                     self.ztm.begin()
             # Refresh the list of objects with pending imports.
             importqueues = (
-                translation_import_queue.getPillarObjectsWithApprovedImports())
+                translation_import_queue.getPillarObjectsWithImports(
+                    RosettaImportStatus.APPROVED))
 
         if not importqueues:
             self.logger.info("Import requests completed.")

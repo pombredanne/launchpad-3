@@ -5,12 +5,12 @@ Launchpad users have been assigned.  The business model for these
 assignments is not important, but it could be through a commercial
 arrangement or through a grant that applies to everyone.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     EntitlementQuota, IPersonSet, IEntitlement, IEntitlementSet)
+    ...     EntitlementQuota, EntitlementState, EntitlementType,
+    ...     IEntitlement, IEntitlementSet, IPersonSet)
     >>> from canonical.launchpad.database import Entitlement
     >>> from canonical.launchpad.ftests import login
-    >>> from canonical.lp.dbschema import EntitlementState, EntitlementType
     >>> from canonical.database.sqlbase import flush_database_updates
 
 The logged in user must be an admin in order to change the quota.

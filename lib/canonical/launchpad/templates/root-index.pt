@@ -4,21 +4,17 @@
 
   <div class="informational message" tal:condition="view/isBetaUser">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
-      <script type="text/javascript"
-              tal:content="view/getEnableRedirectScript"></script>
       <p>As a member of the Launchpad Beta Testers team, you would
       normally be redirected to the beta site when viewing Launchpad
       pages.  However, you currently have this disabled.</p>
-      <p><button onclick="enable_beta_redirect()">Enable beta site
+      <p><button onclick="setBetaRedirect(true)">Enable beta site
       redirection</button></p>
     </tal:redirect_inhibited>
     <tal:redirect_enabled condition="not:view/isRedirectInhibited">
-      <script type="text/javascript"
-              tal:content="view/getInhibitRedirectScript"></script>
       <p>As a member of the Launchpad Beta Testers team, you will be
       redirected to the beta site when viewing Launchpad pages other
       than the front page.</p>
-      <p><button onclick="inhibit_beta_redirect()">Disable redirection
+      <p><button onclick="setBetaRedirect(false)">Disable redirection
       for 2 hours</button></p>
     </tal:redirect_enabled>
   </div>

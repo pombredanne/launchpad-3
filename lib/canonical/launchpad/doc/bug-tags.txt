@@ -151,6 +151,11 @@ separate the tags, so we accept that as well.
     >>> tags_widget._toFieldValue(u'foo,bar')
     [u'bar', u'foo']
 
+Duplicate tags are converted to a single instance.
+
+    >>> tags_widget._toFieldValue(u'FOO, , , , bar bar, bar, bar foo')
+    [u'bar', u'foo']
+
 
 == Searching ==
 
@@ -182,9 +187,9 @@ example, if we search for 'some-tag', we find nothing at the moment:
     >>> some_tag_tasks.count()
     0
 
-XXX: The tests below don't pass yet. It's desirable functionality, but
-     it's better to get this branch landed and spend time on it later.
-     -- Bjorn Tillenius, 2006-07-14
+# XXX: Bjorn Tillenius 2006-07-14
+#      The tests below don't pass yet. It's desirable functionality, but
+#      it's better to get this branch landed and spend time on it later.
 
 If we now set bug one's tag to 'some-tag', it will be found.
 
@@ -207,8 +212,7 @@ tags used in its distribution/distroseries, since it's good to see
 which tags can be used. The tags are ordered alphabetically.  All tags
 are shown, no matter if they are used in open bugs or closed ones.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import IProductSet, BugTaskStatus
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login('test@canonical.com')
     >>> for bugtask in firefox.searchTasks(BugTaskSearchParams(

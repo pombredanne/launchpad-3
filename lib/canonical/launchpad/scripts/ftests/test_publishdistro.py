@@ -13,7 +13,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IPersonSet)
+    IArchiveSet, IDistributionSet, IPersonSet)
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.lp.dbschema import (
     ArchivePurpose, PackagePublishingStatus)
@@ -93,8 +93,10 @@ class TestPublishDistro(TestNativePublishingBase):
         pub_source2 = self.getPubSource(
             sourcename='baz', filecontent='baz', archive=cprov.archive)
 
+        ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         name16 = getUtility(IPersonSet).getByName('name16')
-        getUtility(IArchiveSet).new(purpose=ArchivePurpose.PPA, owner=name16)
+        getUtility(IArchiveSet).new(purpose=ArchivePurpose.PPA, owner=name16,
+            distribution=ubuntutest)
         pub_source3 = self.getPubSource(
             sourcename='bar', filecontent='bar', archive=name16.archive)
 

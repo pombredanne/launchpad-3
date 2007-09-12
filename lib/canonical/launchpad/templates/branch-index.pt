@@ -6,6 +6,16 @@
       i18n:domain="launchpad">
 <body>
 
+<style metal:fill-slot="head_epilogue">
+div.revision {
+  padding-bottom: 1em;
+}
+
+div.revision p {
+  margin-left: 2.5em;
+}
+</style>
+
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
@@ -14,10 +24,15 @@
 
 <div metal:fill-slot="main">
 
-  <div style="float: right" id="branch-badges">
-    <img src="/@@/locked-large" title="Private"
-         tal:condition="context/private" />
-  </div>
+      <div style="float: right">
+        <img
+          tal:condition="context/private"
+          alt="(Private branch)"
+          id="privatebadge"
+          src="/@@/private-large"
+          title="This branch is private"
+        />
+      </div>
 
   <h1>
     <img src="/@@/branch-large" alt="" />
@@ -31,8 +46,10 @@
 
   <table id="branch-details-table">
     <caption style="margin-top:1ex" class="discreet">
+      <div style="white-space: nowrap">
       These URLs are intended for use with the
       <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
+      </div>
     </caption>
     <tbody>
       <tal:not-junk-branch tal:condition="context/product">
@@ -46,22 +63,47 @@
           </td>
         </tr>
       </tal:not-junk-branch>
-    <tal:mirrored-branch tal:condition="context/url">
-      <tal:comment condition="nothing">
-        <!-- This is a mirror branch, display two URLs -->
-      </tal:comment>
+      <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
         <tr><th>Location:</th><td tal:content="context/url" /></tr>
         <tr><th>Mirror:</th><td tal:content="view/supermirror_url" /></tr>
-    </tal:mirrored-branch>
-    <tal:hosted-or-imported-branch tal:condition="not:context/url">
-      <tal:comment condition="nothing">
-        <!-- This is a hosted or import branch, one URL -->
-      </tal:comment>
-      <tr>
-        <th>Hosted on Launchpad:</th>
-        <td tal:content="view/supermirror_url" />
-      </tr>
-    </tal:hosted-or-imported-branch>
+        <tal:mirrored-yet tal:condition="context/last_mirrored">
+          <tr>
+            <th>Last mirrored:</th>
+            <td tal:attributes="title context/last_mirrored/fmt:datetime"
+                tal:content="context/last_mirrored/fmt:approximatedate"/></tr>
+        </tal:mirrored-yet>
+        <tr><th>Next mirror:</th>
+          <tal:mirror-disabled tal:condition="view/mirror_disabled">
+            <td>Disabled</td>
+          </tal:mirror-disabled>
+          <tal:mirror-enabled tal:condition="not:view/mirror_disabled">
+            <tal:mirror-in-future tal:condition="view/mirror_in_future">
+              <td tal:attributes="title context/last_mirrored/fmt:datetime"
+                  tal:content="context/mirror_request_time/fmt:approximatedate"/>
+            </tal:mirror-in-future>
+            <tal:mirror-in-past tal:condition="not:view/mirror_in_future">
+              <td>As soon as possible</td>
+            </tal:mirror-in-past>
+          </tal:mirror-enabled>
+        </tr>
+      </tal:mirrored-branch>
+      <tal:remote-branch tal:condition="context/branch_type/enumvalue:REMOTE">
+        <tr>
+          <th>Location:</th>
+          <td tal:condition="context/url" tal:content="context/url" />
+          <td tal:condition="not: context/url" >Not specified</td>
+        </tr>
+      </tal:remote-branch>
+      <tal:hosted-branch tal:condition="context/branch_type/enumvalue:HOSTED">
+        <tr>
+          <th>Hosted on Launchpad:</th><td tal:content="view/supermirror_url" />
+        </tr>
+      </tal:hosted-branch>
+      <tal:imported-branch tal:condition="context/branch_type/enumvalue:IMPORTED">
+        <tr>
+          <th>Hosted on Launchpad:</th><td tal:content="view/supermirror_url" />
+        </tr>
+      </tal:imported-branch>
     </tbody>
   </table>
 
@@ -141,9 +183,9 @@
   </tal:hosted-branch>
 
   <tal:comment condition="nothing">
-    <!-- XXX This style attribute is evil, but bold text makes the mirror error
-    difficult to read. Checked with mpt about that.
-    - David Allouche 2006-04-09 -->
+    <!-- XXX This David Allouche 2006-04-09
+         Style attribute is evil, but bold text makes the mirror error
+         difficult to read. Checked with mpt about that. -->
   </tal:comment>
   <p tal:condition="view/mirror_of_ssh" id="mirror-of-ssh"
        class="warning message" style="font-weight: normal">
@@ -172,7 +214,48 @@
     </div>
   </tal:whiteboard>
 
-  <h2 style="clear: both;">Recent revisions</h2>
+  <div id="dependent-branches" tal:condition="context/dependent_branches">
+    <h2>Dependent branches</h2>
+
+    <tal:proposals repeat="mergeproposal context/dependent_branches">
+      <tal:dependent-branch
+          define="branch mergeproposal/source_branch;
+                  ">
+        <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
+      </tal:dependent-branch>
+    </tal:proposals>
+  </div>
+
+  <div id="landing-targets" tal:condition="view/landing_targets">
+    <h2>This branch is proposed for merging into</h2>
+
+    <tal:proposals repeat="mergeproposal view/landing_targets">
+      <tal:landing-target
+          define="branch mergeproposal/target_branch;
+                  dependent_branch mergeproposal/dependent_branch;
+                  ">
+        <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
+      </tal:landing-target>
+    </tal:proposals>
+  </div>
+
+  <div id="landing-candidates" tal:condition="view/latest_landing_candidates">
+    <h2>Branches proposed to be merged into this one</h2>
+
+    <tal:proposals repeat="mergeproposal view/latest_landing_candidates">
+      <tal:landing-candidate
+          define="branch mergeproposal/source_branch;
+                  show_associations python:True;
+                  show_lifecycle python:True;
+                  ">
+        <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
+      </tal:landing-candidate>
+    </tal:proposals>
+    <a href="+landing-candidates">more&#8230;</a>
+  </div>
+
+  <div id="recent-revisions">
+  <h2 style="clear: both">Recent revisions</h2>
 
   <p tal:condition="not:context/revision_count">
     <tal:not-mirrored condition="not:context/last_mirrored">
@@ -194,10 +277,21 @@
   </p>
 
   <tal:history-available condition="context/revision_count">
-  <ol>
-    <li tal:repeat="rev_no context/latest_revisions"
-        tal:attributes="value rev_no/sequence; id string:rev${rev_no/sequence}">
+    <div class="revision"
+         tal:repeat="rev_no context/latest_revisions"
+         tal:attributes="id string:rev${rev_no/sequence}">
       <div>
+        <tal:comment condition="nothing">
+          The end of the anchor and the start of the next tal expression
+          has no whitespace between the elements as we do not want any
+          space between the number and the fullstop.
+        </tal:comment>
+        <a tal:attributes="href string:${view/codebrowse_url}/revision/${rev_no/sequence}"
+           tal:content="rev_no/sequence"
+           tal:condition="context/code_is_browseable">
+          1
+        </a><tal:revno condition="not: context/code_is_browseable"
+                       replace="rev_no/sequence">1</tal:revno>.
         By
         <strong>
           <tal:not-anonymous condition="view/user">
@@ -221,23 +315,16 @@
       <p tal:replace="structure rev_no/revision/log_body/fmt:text-to-html">
         The revision commit message.
       </p>
-    </li>
-  </ol>
+    </div>
   </tal:history-available>
+  </div>
 
-  <tal:related-bugs condition="context/related_bugs">
+  <div id="related-bugs" tal:condition="context/related_bugs">
     <h2>Related Bugs</h2>
-    <ul style="list-style: none">
-      <span tal:repeat="bug context/related_bugs"
-            tal:omit-tag="">
-        <li tal:condition="bug/required:launchpad.View">
-          <a href="#"
-             tal:content="string:${bug/id}. ${bug/title}"
-             tal:attributes="href bug/fmt:url">Foo is Broken</a>
-        </li>
-      </span>
-    </ul>
-  </tal:related-bugs>
+    <tal:bugs tal:define="branch context">
+        <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
+    </tal:bugs>
+  </div>
 
       <div class="related">
 
@@ -298,17 +385,22 @@
     team, the URL will change.</p>
 
   <p>Subscribing to a branch will make it appear in your personal branch
-    listings.</p>
+    listings, and if you choose to, Launchpad will email you when the branch
+    is updated.</p>
 
-  <p>Once you have registered or uploaded a branch, it cannot be deleted. But
-    you can set its status to &ldquo;Abandoned&rdquo;.</p>
+  <p>A branch that has no revisions, and is not linked to any other branches,
+    bugs or blueprints, and has no subscribers may be deleted.  If the branch
+    cannot be deleted, you can set its status to
+    &ldquo;<strong><span class="branchstatusABANDONED">Abandoned</span></strong>&rdquo;,
+    and this will stop the branch appearing by default in listing views.</p>
 
   <p>A mirror branch cannot be converted to an upload branch, and conversely,
     you cannot convert an upload branch to a mirror branch. However you can
     rename a branch and create a new one in its place.<p>
 
-  <p>There no browsable web content on <code>bazaar.launchpad.net<code>. This
-    host only serves data for use with the Bazaar version control system.</p>
+  <p>There is no browsable web content on <code>bazaar.launchpad.net</code>.
+    This host only serves data for use with the Bazaar version control system.
+  </p>
 
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
 

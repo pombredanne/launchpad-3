@@ -80,7 +80,7 @@ class PackageUpload(SQLBase):
     pocket = EnumCol(dbName='pocket', unique=False, notNull=True,
                      schema=PackagePublishingPocket)
 
-    # XXX: this is NULLable. Fix sampledata?
+    # XXX: kiko 2007-02-10: This is NULLable. Fix sampledata?
     changesfile = ForeignKey(dbName='changesfile',
                              foreignKey="LibraryFileAlias")
 
@@ -89,8 +89,8 @@ class PackageUpload(SQLBase):
     signing_key = ForeignKey(foreignKey='GPGKey', dbName='signing_key',
                              notNull=False)
 
-    # XXX julian 2007-05-06
-    # sources and builds should not be SQLMultipleJoin, there is only
+    # XXX julian 2007-05-06:
+    # Sources and builds should not be SQLMultipleJoin, there is only
     # ever one of each at most.
 
     # Join this table to the PackageUploadBuild and the
@@ -111,9 +111,10 @@ class PackageUpload(SQLBase):
         Force user to use the provided machine-state methods.
         Raises QueueStateWriteProtectedError.
         """
-        # XXX: bug #29663: this is a bit evil, but does the job. Andrew
+        # XXX: kiko 2006-01-25 bug=29663:
+        # This is a bit evil, but does the job. Andrew
         # has suggested using immutable=True in the column definition.
-        #   -- kiko, 2006-01-25
+
         # allow 'status' write only in creation process.
         if self._SO_creating:
             self._SO_set_status(value)
@@ -185,7 +186,7 @@ class PackageUpload(SQLBase):
                 'Queue item already rejected')
         self._SO_set_status(PackageUploadStatus.REJECTED)
 
-    # XXX cprov 20060314: following properties should be redesigned to
+    # XXX cprov 2006-03-14: Following properties should be redesigned to
     # reduce the duplicated code.
     @cachedproperty
     def containsSource(self):
@@ -417,7 +418,7 @@ class PackageUpload(SQLBase):
             "%s rejected" % self.changesfile.filename,
             rejection_template % interpolations)
 
-    def _sendSuccessNotification(self, recipients, announce_list, 
+    def _sendSuccessNotification(self, recipients, announce_list,
             changes_lines, changes, summarystring):
         """Send a success email."""
         interpolations = {
@@ -454,7 +455,7 @@ class PackageUpload(SQLBase):
             interpolations["STATUS"] = "[PPA %s] Accepted" % (
                 self.archive.owner.name)
             subject = "[PPA %s] Accepted %s %s (%s)" % (
-                self.archive.owner.name, self.displayname, 
+                self.archive.owner.name, self.displayname,
                 self.displayversion, self.displayarchs)
             self._sendMail(
                 uploader_address,
@@ -543,9 +544,9 @@ class PackageUpload(SQLBase):
         # already will have parsed elsewhere we don't need to worry about that
         # here.  Any exceptions from the librarian can be left to the caller.
 
-        # XXX 20070511 julian:
-        # Requiring an open changesfile object is a bit ugly but it is required
-        # because of several problems:
+        # XXX julian 2007-05-11:
+        # Requiring an open changesfile object is a bit ugly but it is
+        # required because of several problems:
         # a) We don't know if the librarian has the file committed or not yet
         # b) Passing a ChangesFile object instead means that we get an
         #    unordered dictionary which can't be translated back exactly for
@@ -576,7 +577,7 @@ class PackageUpload(SQLBase):
 
         # If we need to send a rejection, do it now and return early.
         if self.status == PackageUploadStatus.REJECTED:
-            self._sendRejectionNotification(recipients, changes_lines, 
+            self._sendRejectionNotification(recipients, changes_lines,
                 summary_text)
             return
 
@@ -593,21 +594,24 @@ class PackageUpload(SQLBase):
             # This is a signed upload.
             signer = self.signing_key.owner
             candidate_recipients.append(signer)
+        else:
+            debug(self.logger,
+                "Changes file is unsigned, adding changer as recipient")
+            candidate_recipients.append(changer)
 
+        # PPA uploads only email the uploader but for everything else
+        # we consider maintainer and changed-by also.
+        if self.signing_key and not self.isPPA():
             maintainer = self._emailToPerson(changes['maintainer'])
             if (maintainer and maintainer != signer and
                     maintainer.isUploader(self.distroseries.distribution)):
                 debug(self.logger, "Adding maintainer to recipients")
                 candidate_recipients.append(maintainer)
 
-            if (changer and changer != signer and 
+            if (changer and changer != signer and
                     changer.isUploader(self.distroseries.distribution)):
                 debug(self.logger, "Adding changed-by to recipients")
                 candidate_recipients.append(changer)
-        else:
-            debug(self.logger,
-                "Changes file is unsigned, adding changer as recipient")
-            candidate_recipients.append(changer)
 
         # Now filter list of recipients for persons only registered in
         # Launchpad to avoid spamming the innocent.
@@ -615,14 +619,14 @@ class PackageUpload(SQLBase):
         for person in candidate_recipients:
             if person is None or person.preferredemail is None:
                 continue
-            recipient = format_address(person.displayname, 
+            recipient = format_address(person.displayname,
                 person.preferredemail.email)
             debug(self.logger, "Adding recipient: '%s'" % recipient)
             recipients.append(recipient)
 
         return recipients
 
-    # XXX 2007-05-21 julian
+    # XXX julian 2007-05-21:
     # This method should really be IPersonSet.getByUploader but requires
     # some extra work to port safe_fix_maintainer to emailaddress.py and
     # then get nascent upload to use that.
@@ -657,8 +661,8 @@ class PackageUpload(SQLBase):
         """
         extra_headers = { 'X-Katie' : 'Launchpad actually' }
 
-        # `simple_sendmail`, despite handling unicode message bodies, can't 
-        # cope with non-ascii sender/recipient addresses, so ascii_smash 
+        # `simple_sendmail`, despite handling unicode message bodies, can't
+        # cope with non-ascii sender/recipient addresses, so ascii_smash
         # is used on all addresses.
 
         # All emails from here have a Bcc to the default recipient.
@@ -684,10 +688,10 @@ class PackageUpload(SQLBase):
             from_addr.encode('ascii')
 
         simple_sendmail(
-            from_addr, 
+            from_addr,
             recipients,
-            subject, 
-            mail_text, 
+            subject,
+            mail_text,
             extra_headers
         )
 
@@ -746,8 +750,8 @@ class PackageUploadBuild(SQLBase):
                     binary.binarypackagename.name,
                     binary.version))
             for each_target_dar in target_dars:
-                # XXX: dsilvers: 20051020: What do we do about embargoed
-                # binaries here? bug 3408
+                # XXX: dsilvers 2005-10-20 bug=3408:
+                # What do we do about embargoed binaries here?
                 sbpph = SecureBinaryPackagePublishingHistory(
                     binarypackagerelease=binary,
                     distroarchseries=each_target_dar,
@@ -847,8 +851,8 @@ class PackageUploadSource(SQLBase):
     def publish(self, logger=None):
         """See IPackageUploadSource."""
         # Publish myself in the distroseries pointed at by my queue item.
-        # XXX: dsilvers: 20051020: What do we do here to support embargoed
-        # sources? bug 3408
+        # XXX: dsilvers: 2005-10-20 bug=3408:
+        # What do we do here to support embargoed sources?
         debug(logger, "Publishing source %s/%s to %s/%s" % (
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
@@ -940,7 +944,7 @@ class PackageUploadCustom(SQLBase):
 
     def publish_DEBIAN_INSTALLER(self, logger=None):
         """See IPackageUploadCustom."""
-        # XXX cprov 20050303: We need to use the Zope Component Lookup
+        # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.debian_installer import (
             process_debian_installer)
@@ -949,7 +953,7 @@ class PackageUploadCustom(SQLBase):
 
     def publish_DIST_UPGRADER(self, logger=None):
         """See IPackageUploadCustom."""
-        # XXX cprov 20050303: We need to use the Zope Component Lookup
+        # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.dist_upgrader import (
             process_dist_upgrader)
@@ -958,7 +962,7 @@ class PackageUploadCustom(SQLBase):
 
     def publish_DDTP_TARBALL(self, logger=None):
         """See IPackageUploadCustom."""
-        # XXX cprov 20050303: We need to use the Zope Component Lookup
+        # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.ddtp_tarball import (
             process_ddtp_tarball)
@@ -967,7 +971,7 @@ class PackageUploadCustom(SQLBase):
 
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
         """See IPackageUploadCustom."""
-        # XXX: dsilvers: 20051115: We should be able to get a
+        # XXX: dsilvers 2005-11-15: We should be able to get a
         # sourcepackagerelease directly.
         sourcepackagerelease = (
             self.packageupload.builds[0].build.sourcepackagerelease)
@@ -982,9 +986,9 @@ class PackageUploadCustom(SQLBase):
             PackagePublishingPocket.UPDATES, PackagePublishingPocket.PROPOSED)
         if (self.packageupload.pocket not in valid_pockets or
             sourcepackagerelease.component.name != 'main'):
-            # XXX: CarlosPerelloMarin 20060216 This should be implemented
-            # using a more general rule to accept different policies depending
-            # on the distribution. See bug #31665 for more details.
+            # XXX: CarlosPerelloMarin 2006-02-16 bug=31665:
+            # This should be implemented using a more general rule to accept
+            # different policies depending on the distribution.
             # Ubuntu's MOTU told us that they are not able to handle
             # translations like we do in main. We are going to import only
             # packages in main.

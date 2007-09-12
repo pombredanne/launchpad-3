@@ -18,6 +18,7 @@ import operator
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib import form
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
@@ -25,8 +26,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, LaunchpadFormView,
     LaunchpadEditFormView, action, canonical_url, ContextMenu,
-    enabled_with_permission, Link)
+    enabled_with_permission, Link, custom_widget)
 
+from canonical.widgets import LabeledMultiCheckBoxWidget
 
 class LanguageSetNavigation(GetitemNavigation):
     usedfor = ILanguageSet
@@ -104,8 +106,8 @@ class LanguageAddView(LaunchpadFormView):
         return canonical_url(self.language)
 
     def validate(self, data):
-        # XXX CarlosPerelloMarin 20070404: Pluralform expression should be
-        # validated. See bug #102898 for more info.
+        # XXX CarlosPerelloMarin 2007-04-04 bug=102898:
+        # Pluralform expression should be validated.
         new_code = data.get('code')
         language_set = getUtility(ILanguageSet)
         if language_set.getLanguageByCode(new_code) is not None:
@@ -142,8 +144,11 @@ class LanguageAdminView(LaunchpadEditFormView):
     """Handle an admin form submission."""
     schema = ILanguage
 
+    custom_widget('countries', LabeledMultiCheckBoxWidget,
+                  orientation='vertical')
+
     field_names = ['code', 'englishname', 'nativename', 'pluralforms',
-                   'pluralexpression', 'visible', 'direction']
+                   'pluralexpression', 'visible', 'direction', 'countries']
 
     def initialize(self):
         LaunchpadEditFormView.initialize(self)

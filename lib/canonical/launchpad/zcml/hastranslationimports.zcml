@@ -1,0 +1,19 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+  <facet facet="translations">
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IHasTranslationImports"
+        class="canonical.launchpad.browser.HasTranslationImportsView"
+        permission="zope.Public"
+        name="+import-queue"
+        template="../templates/hastranslationimports-index.pt"/>
+
+  </facet>
+
+</configure>

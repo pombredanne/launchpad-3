@@ -37,6 +37,8 @@ from canonical.launchpad.database.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
+from canonical.launchpad.database.translationimportqueue import (
+    HasTranslationImportsMixin)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distroseriessourcepackagerelease import (
@@ -49,7 +51,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
     def getTargetTypes(self):
         """See `QuestionTargetMixin`.
-        
+
         Defines distribution and sourcepackagename as this object's
         distribution and sourcepackagename.
         """
@@ -58,7 +60,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
     def questionIsForTarget(self, question):
         """See `QuestionTargetMixin`.
-        
+
         Return True when the question's distribution and sourcepackagename
         are this object's distribution and sourcepackagename.
         """
@@ -123,7 +125,8 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
             key=attrgetter('displayname'))
 
 
-class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
+class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
+                    HasTranslationImportsMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object implements the MagicSourcePackage specification. It is not a
@@ -139,7 +142,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         self.distroseries = distroseries
 
     def _get_ubuntu(self):
-        # XXX: Ideally, it would be possible to just do
+        # XXX: kiko 2006-03-20: Ideally, it would be possible to just do
         # ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         # and not need this method. However, importd currently depends
         # on SourcePackage methods that require the ubuntu celebrity,
@@ -163,9 +166,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
                    SourcePackageRelease.id AND
                    SourcePackageRelease.sourcepackagename = %s AND
                    SourcePackagePublishingHistory.distrorelease = %s AND
-                   SourcePackagePublishingHistory.archive = %s
-                """ % sqlvalues(self.sourcepackagename, self.distroseries,
-                                self.distroseries.main_archive))
+                   SourcePackagePublishingHistory.archive IN %s
+                """ % sqlvalues(
+                        self.sourcepackagename,
+                        self.distroseries,
+                        self.distribution.all_distro_archive_ids))
         if version:
             clauses.append(
                 "SourcePackageRelease.version = %s" % sqlvalues(version))
@@ -289,13 +294,13 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.status != %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id
             ''' % sqlvalues(self.sourcepackagename,
                             self.distribution,
-                            self.distribution.main_archive,
+                            self.distribution.all_distro_archive_ids,
                             PackagePublishingStatus.REMOVED),
             clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'],
             selectAlso="%s" % (SQLConstant(order_const)),
@@ -485,16 +490,16 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         Build.sourcepackagerelease = SourcePackageRelease.id AND
         SourcePackageRelease.sourcepackagename = %s AND
         SourcePackagePublishingHistory.distrorelease = %s AND
-        SourcePackagePublishingHistory.archive = %s AND
+        SourcePackagePublishingHistory.archive IN %s AND
         SourcePackagePublishingHistory.status = %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
         SourcePackageRelease.id
         """ % sqlvalues(self.sourcepackagename,
                         self.distroseries,
-                        self.distroseries.main_archive,
+                        self.distribution.all_distro_archive_ids,
                         PackagePublishingStatus.PUBLISHED)]
 
-        # XXX cprov 20060925: It would be nice if we could encapsulate
+        # XXX cprov 2006-09-25: It would be nice if we could encapsulate
         # the chunk of code below (which deals with the optional paramenters)
         # and share it with IBuildSet.getBuildsByArchIds()
 
@@ -529,7 +534,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         # Fallback to ordering by -id as a tie-breaker.
         orderBy.append("-id")
 
-        # End of duplication (see XXX cprov 20060925 above).
+        # End of duplication (see XXX cprov 2006-09-25 above).
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables, orderBy=orderBy)

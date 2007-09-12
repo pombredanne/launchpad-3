@@ -22,7 +22,7 @@ class BranchRef:
         self.branch = branch
 
 
-# XXXX 2006-09-26 jamesh
+# XXX jamesh 2006-09-26:
 # Eventually we will be able to change this to serve a simple HTTP
 # redirect for 'branch-format' and have bzr do the rest.  However,
 # current Bazaar releases would continue to request branch data files

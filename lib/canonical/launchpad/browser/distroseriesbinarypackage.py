@@ -21,7 +21,7 @@ from canonical.launchpad.webapp import (
 
 
 class DistroSeriesBinaryPackageFacets(StandardLaunchpadFacets):
-    # XXX 20061004 mpt: A DistroArchSeriesBinaryPackage is not a structural
+    # XXX mpt 2006-10-04: A DistroArchSeriesBinaryPackage is not a structural
     # object. It should inherit all navigation from its distro series.
 
     usedfor = IDistroSeriesBinaryPackage

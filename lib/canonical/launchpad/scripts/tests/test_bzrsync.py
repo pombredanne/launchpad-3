@@ -10,7 +10,6 @@ import random
 import time
 import unittest
 
-import bzrlib.osutils
 from bzrlib.revision import NULL_REVISION
 from bzrlib.uncommit import uncommit
 from bzrlib.tests import TestCaseWithTransport
@@ -28,13 +27,13 @@ from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
 from canonical.launchpad.scripts.importd.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
 from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
-from canonical.testing import LaunchpadZopelessLayer, BzrlibZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer
 
 
 class BzrSyncTestCase(TestCaseWithTransport):
     """Common base for BzrSync test cases."""
 
-    layer = BzrlibZopelessLayer
+    layer = LaunchpadZopelessLayer
 
     AUTHOR = "Revision Author <author@example.com>"
     LOG = "Log message"
@@ -74,12 +73,12 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def setUpDBBranch(self):
         LaunchpadZopelessLayer.txn.begin()
-        arbitraryownerid = 1
+        arbitraryowner = getUtility(IPersonSet).get(1)
         self.db_branch = getUtility(IBranchSet).new(
             branch_type=BranchType.MIRRORED,
             name="test",
-            creator=arbitraryownerid,
-            owner=arbitraryownerid,
+            creator=arbitraryowner,
+            owner=arbitraryowner,
             product=None,
             url=self.bzr_branch_url,
             title="Test branch",
@@ -840,8 +839,9 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         # value of sys.getfilesystemencoding().
         self.writeToFile(filename='un elephant',
                          contents='\xc7a trompe \xc3\xa9norm\xc3\xa9ment.\n')
-        # XXX: The binary file is not really needed here, but it triggers a
-        # crasher bug with bzr-0.15 and earlier. -- DavidAllouche 2007-04-26
+        # XXX DavidAllouche 2007-04-26: 
+        # The binary file is not really needed here, but it triggers a
+        # crasher bug with bzr-0.15 and earlier.
         self.writeToFile(filename='binary', contents=chr(0))
         self.commitRevision(rev_id=rev_id, timestamp=1000000000.0, timezone=0)
         sync = self.makeBzrSync()

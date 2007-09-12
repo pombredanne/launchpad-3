@@ -126,12 +126,12 @@ def getSourcePackageDescriptions(results, use_names=False, max_title_length=50):
     promise to provide The Correct Description, but a pretty good guess
     at what the description should be.
     """
-    # XXX: use_names could be removed if we instead added IDs to the
+    # XXX: kiko, 2007-01-17:
+    # Use_names could be removed if we instead added IDs to the
     # BinaryAndSourcePackageName view, but we'd still need to find
     # out how to specify the attribute, since it would be
     # sourcepackagename_id and binarypackagename_id depending on
     # whether the row represented one or both of those cases.
-    #   -- kiko, 2007-01-17
     if use_names:
        clause = ("SourcePackageName.name in %s" %
                  sqlvalues([pn.name for pn in results]))

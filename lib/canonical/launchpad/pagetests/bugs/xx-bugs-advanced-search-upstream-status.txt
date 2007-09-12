@@ -20,8 +20,8 @@ needing a bug watch, only the bugs with tasks in other contexts that
 don't use Launchpad Bugs are shown, if at least one of those contexts 
 doesn't have a bug watch.
 
-    XXX: Can't click on the link due to bug 51853.
-       -- Bjorn Tillenius, 2006-07-04
+    # XXX: Bjorn Tillenius 2006-07-04 bug=51853:
+    #      Can't click on the link due to bug 51853.
     >>> anon_browser.getLink('Advanced search').attrs['href']
     '?advanced=1'
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
@@ -39,8 +39,8 @@ are not included in the report.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout, syncUpdate
-    >>> from canonical.launchpad.interfaces import (IBugSet, ILaunchBag)
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskStatus, IBugSet, ILaunchBag)
 
     >>> login("foo.bar@canonical.com")
 
@@ -154,7 +154,7 @@ The user opens a bookmark for "upstream status doesn't matter"
     ...     'field.searchtext': '',
     ...     'orderby': '-importance',
     ...     'field.status:list': [
-    ...          'Unconfirmed', 'Needs Info', 'Confirmed', 'In Progress',
+    ...          'Unconfirmed', 'Incomplete', 'Confirmed', 'In Progress',
     ...          'Fix Committed'],
     ...     'assignee_option': 'any',
     ...     'field.assignee': '',

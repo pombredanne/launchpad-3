@@ -48,6 +48,7 @@ __all__ = [
     'SpecificationDependenciesVocabulary',
     'SpecificationDepCandidatesVocabulary',
     'SprintVocabulary',
+    'TranslatableLanguageVocabulary',
     'TranslationGroupVocabulary',
     'UserTeamsParticipationVocabulary',
     'ValidPersonOrTeamVocabulary',
@@ -68,7 +69,7 @@ from zope.security.proxy import isinstance as zisinstance
 from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectNotFound
 
 from canonical.launchpad.webapp.vocabulary import (
-    CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary, 
+    CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import DistroSeriesStatus
@@ -89,7 +90,7 @@ from canonical.launchpad.interfaces import (
 
 
 class BasePersonVocabulary:
-    """This is a base class to be used by all different Person Vocabularies."""
+    """This is a base class used by all different Person Vocabularies."""
 
     _table = Person
 
@@ -208,7 +209,7 @@ class BugVocabulary(SQLObjectVocabularyBase):
 class BountyVocabulary(SQLObjectVocabularyBase):
 
     _table = Bounty
-    # XXX: no _orderBy?
+    # XXX kiko 2006-02-20: no _orderBy?
 
 
 class BugTrackerVocabulary(SQLObjectVocabularyBase):
@@ -223,7 +224,7 @@ class FAQVocabulary:
     implements(IHugeVocabulary)
 
     displayname = 'Select a FAQ'
-    
+
     def __init__(self, context):
         """Create a new vocabulary for the context.
 
@@ -243,7 +244,7 @@ class FAQVocabulary:
     def __contains__(self, value):
         """See `IVocabulary`."""
         if not IFAQ.providedBy(value):
-           return False
+            return False
         return self.context.getFAQ(value.id) is not None
 
     def getTerm(self, value):
@@ -274,6 +275,7 @@ class FAQVocabulary:
 
 
 class LanguageVocabulary(SQLObjectVocabularyBase):
+    """All the languages known by Launchpad."""
 
     _table = Language
     _orderBy = 'englishname'
@@ -294,14 +296,42 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
         return self.getTerm(found_language)
 
 
+class TranslatableLanguageVocabulary(LanguageVocabulary):
+    """All the translatable languages known by Launchpad.
+
+    English is not a translatable language. It is excluded from the terms.
+    """
+
+    def __contains__(self, language):
+        """See `IVocabulary`."""
+        if language.code == 'en':
+            return False
+        return super(
+            TranslatableLanguageVocabulary, self).__contains__(language)
+
+    def __iter__(self):
+        """See `IVocabulary`."""
+        languages = self._table.select(
+            "Language.code != 'en'", orderBy=self._orderBy)
+        for language in languages:
+            yield self.toTerm(language)
+
+    def getTermByToken(self, token):
+        """See `IVocabulary`."""
+        if token == 'en':
+            raise LookupError(token)
+        return super(
+            TranslatableLanguageVocabulary, self).getTermByToken(token)
+
+
 class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
 
     _table = KarmaCategory
     _orderBy = 'name'
 
 
-# XXX: any reason why this can't be an NamedSQLObjectHugeVocabulary?
-#   -- kiko, 2007-01-18
+# XXX kiko 2007-01-18: any reason why this can't be an
+# NamedSQLObjectHugeVocabulary?
 class ProductVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
@@ -346,8 +376,8 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         return self.emptySelectResults()
 
 
-# XXX: any reason why this can't be an NamedSQLObjectHugeVocabulary?
-#   -- kiko, 2007-01-18
+# XXX kiko 2007-01-18: any reason why this can't be an
+# NamedSQLObjectHugeVocabulary?
 class ProjectVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
@@ -527,7 +557,8 @@ class ValidPersonOrTeamVocabulary(
 
         if not text:
             query = 'Person.id = ValidPersonOrTeamCache.id' + extra_clause
-            return Person.select(query, clauseTables=['ValidPersonOrTeamCache'])
+            return Person.select(
+                query, clauseTables=['ValidPersonOrTeamCache'])
 
         name_match_query = """
             Person.id = ValidPersonOrTeamCache.id
@@ -562,9 +593,8 @@ class ValidPersonOrTeamVocabulary(
             ircid_match_query,
             clauseTables=['ValidPersonOrTeamCache', 'IRCId'])
 
-        # XXX: We have to explicitly provide an orderBy here as a workaround
-        # for https://launchpad.net/products/launchpad/+bug/30053
-        # -- Guilherme Salgado, 2006-01-30
+        # XXX Guilherme Salgado 2006-01-30 bug=30053:
+        # We have to explicitly provide an orderBy here as a workaround
         return name_matches.union(ircid_matches).union(
             email_matches, orderBy=['displayname', 'name'])
 
@@ -697,7 +727,7 @@ def person_team_participations_vocabulary_factory(context):
     participate in.
     """
     assert context is not None
-    person= IPerson(context)
+    person = IPerson(context)
     return SimpleVocabulary([
         SimpleTerm(team, team.name, title=team.displayname)
         for team in person.teams_participated_in])
@@ -708,11 +738,10 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
 
     displayname = 'Select a Product Release'
     _table = ProductRelease
-    # XXX carlos Perello Marin 2005-05-16:
+    # XXX carlos Perello Marin 2005-05-16 bugs=687:
     # Sorting by version won't give the expected results, because it's just a
     # text field.  e.g. ["1.0", "2.0", "11.0"] would be sorted as ["1.0",
     # "11.0", "2.0"].
-    # See https://launchpad.ubuntu.com/malone/bugs/687
     _orderBy = [Product.q.name, ProductSeries.q.name,
                 ProductRelease.q.version]
     _clauseTables = ['Product', 'ProductSeries']
@@ -840,7 +869,7 @@ class FilteredDistroSeriesVocabulary(SQLObjectVocabularyBase):
             distribution = launchbag.distribution
             serieses = self._table.selectBy(
                 distributionID=distribution.id, **kw)
-            for series in sorted(serieses, key=lambda x: x.sortkey):
+            for series in sorted(serieses, key=attrgetter('sortkey')):
                 yield self.toTerm(series)
 
 
@@ -930,7 +959,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             # to it.
             target = None
 
-        # XXX, Brad Bollenbach, 2006-02-24: Listifying milestones is
+        # XXX: Brad Bollenbach 2006-02-24: Listifying milestones is
         # evil, but we need to sort the milestones by a non-database
         # value, for the user to find the milestone they're looking
         # for (particularly when showing *all* milestones on the
@@ -963,7 +992,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             # ensure that the +editstatus page doesn't break.
             visible_milestones.append(milestone_context.milestone)
 
-        for ms in sorted(visible_milestones, key=lambda m: m.displayname):
+        for ms in sorted(visible_milestones, key=attrgetter('displayname')):
             yield self.toTerm(ms)
 
 
@@ -986,7 +1015,8 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
             target = distribution
 
         if target is not None:
-            for spec in sorted(target.specifications(), key=lambda a: a.title):
+            for spec in sorted(
+                target.specifications(), key=attrgetter('title')):
                 # we will not show the current specification in the
                 # launchbag
                 if spec == launchbag.specification:
@@ -1012,7 +1042,8 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
         curr_spec = launchbag.specification
 
         if curr_spec is not None:
-            for spec in sorted(curr_spec.dependencies, key=lambda a: a.title):
+            for spec in sorted(
+                curr_spec.dependencies, key=attrgetter('title')):
                 yield SimpleTerm(spec, spec.name, spec.title)
 
 class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
@@ -1023,7 +1054,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
     The current spec is not included.
     """
-    
+
     implements(IHugeVocabulary)
 
     _table = Specification
@@ -1031,12 +1062,12 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     displayname = 'Select a blueprint'
 
     def _filter_specs(self, specs):
-        # XXX: is 100 a reasonable count before starting
-        #   to warn?  -- intellectronica, 2007-07-05
+        # XXX intellectronica 2007-07-05: is 100 a reasonable count before
+        # starting to warn?
         speclist = shortlist(specs, 100)
         return [spec for spec in speclist
                 if (spec != self.context and
-                    spec.product == self.context.product
+                    spec.target == self.context.target
                     and spec not in self.context.all_blocked)]
 
     def _doSearch(self, query):
@@ -1074,8 +1105,8 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
                                  candidate_specs)
 
     def _all_specs(self):
-        return self._filter_specs(self.context.product.specifications())
-    
+        return self._filter_specs(self.context.target.specifications())
+
     def __iter__(self):
         return (self.toTerm(spec) for spec in self._all_specs())
 
@@ -1171,7 +1202,8 @@ class DistributionUsingMaloneVocabulary:
         return SimpleTerm(obj, obj.name, obj.displayname)
 
     def getTermByToken(self, token):
-        found_dist = Distribution.selectOneBy(name=token, official_malone=True)
+        found_dist = Distribution.selectOneBy(
+            name=token, official_malone=True)
         if found_dist is None:
             raise LookupError(token)
         return self.getTerm(found_dist)
@@ -1187,7 +1219,7 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
         serieses = self._table.select(
             DistroSeries.q.distributionID==Distribution.q.id,
             orderBy=self._orderBy, clauseTables=self._clauseTables)
-        for series in sorted(serieses, key=lambda x: x.sortkey):
+        for series in sorted(serieses, key=attrgetter('sortkey')):
             yield self.toTerm(series)
 
     def toTerm(self, obj):
@@ -1299,7 +1331,8 @@ class BugNominatableSeriesVocabularyBase(NamedSQLObjectVocabulary):
         raise NotImplementedError
 
 
-class BugNominatableProductSeriesVocabulary(BugNominatableSeriesVocabularyBase):
+class BugNominatableProductSeriesVocabulary(
+    BugNominatableSeriesVocabularyBase):
     """The product series for which a bug can be nominated."""
 
     _table = ProductSeries
@@ -1317,7 +1350,8 @@ class BugNominatableProductSeriesVocabulary(BugNominatableSeriesVocabularyBase):
         return self.product.getSeries(name)
 
 
-class BugNominatableDistroSeriesVocabulary(BugNominatableSeriesVocabularyBase):
+class BugNominatableDistroSeriesVocabulary(
+    BugNominatableSeriesVocabularyBase):
     """The distribution series for which a bug can be nominated."""
 
     _table = DistroSeries

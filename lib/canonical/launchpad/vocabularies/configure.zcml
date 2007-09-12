@@ -51,11 +51,6 @@
     />
 
   <vocabulary
-    name="BugTaskStatus"
-    factory="canonical.launchpad.vocabularies.BugTaskStatusVocabulary"
-    />
-
-  <vocabulary
     name="BugTaskImportance"
     factory="canonical.launchpad.vocabularies.BugTaskImportanceVocabulary"
     />
@@ -156,6 +151,11 @@
     />
 
   <vocabulary
+    name="TranslatableLanguage"
+    factory="canonical.launchpad.vocabularies.TranslatableLanguageVocabulary"
+    />
+
+  <vocabulary
     name="Milestone"
     factory="canonical.launchpad.vocabularies.MilestoneVocabulary"
     />
@@ -246,11 +246,6 @@
     />
 
   <vocabulary
-    name="RemoteBugTaskStatus"
-    factory="canonical.launchpad.vocabularies.RemoteBugTaskStatusVocabulary"
-    />
-
-  <vocabulary
     name="RemoteBugTaskImportance"
     factory="canonical.launchpad.vocabularies.RemoteBugTaskImportanceVocabulary"
     />
@@ -258,11 +253,6 @@
   <vocabulary
     name="RevisionControlSystems"
     factory="canonical.launchpad.vocabularies.RevisionControlSystemsVocabulary"
-    />
-
-  <vocabulary
-    name="ShipItFlavour"
-    factory="canonical.launchpad.vocabularies.ShipItFlavourVocabulary"
     />
 
   <vocabulary

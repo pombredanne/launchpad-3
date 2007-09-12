@@ -23,8 +23,9 @@ from zope.publisher.browser import FileUpload
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.pomsgset import (
     BaseTranslationView, POMsgSetView)
+from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.potemplate import (
-    BaseExportView, POTemplateSOP, POTemplateFacets)
+    POTemplateSOP, POTemplateFacets)
 from canonical.launchpad.interfaces import (
     IPOFile, ITranslationImporter, ITranslationImportQueue,
     UnexpectedFormData, NotFoundError)
@@ -82,10 +83,10 @@ class POFileNavigation(Navigation):
                 self.context.language.code, self.context.variant)
         else:
             # It's a POST.
-            # XXX CarlosPerelloMarin 2006-04-20: We should check the kind of
-            # POST we got, a Log out action will be also a POST and we should
-            # not create a POMsgSet in that case. See bug #40275 for more
-            # information.
+            # XXX CarlosPerelloMarin 2006-04-20 bug=40275:
+            # We should check the kind of POST we got,
+            # a Log out action will be also a POST and we
+            # should not create a POMsgSet in that case.
             return self.context.createMessageSetFromMessageSet(potmsgset)
 
 class POFileFacets(POTemplateFacets):
@@ -152,13 +153,13 @@ class POFileUploadView(POFileView):
                     "Ignored your upload because you didn't select a file to"
                     " upload.")
             else:
-                # XXX: Carlos Perello Marin 2004/12/30
+                # XXX: Carlos Perello Marin 2004-12-30 bug=116:
                 # Epiphany seems to have an unpredictable bug with upload
                 # forms (or perhaps it's launchpad because I never had
                 # problems with bugzilla). The fact is that some uploads don't
                 # work and we get a unicode object instead of a file-like
                 # object in "upload_file". We show an error if we see that
-                # behaviour. For more info, look at bug #116.
+                # behaviour.
                 self.request.response.addErrorNotification(
                     "The upload failed because there was a problem receiving"
                     " the data.")
@@ -175,7 +176,7 @@ class POFileUploadView(POFileView):
         translation_import_queue = getUtility(ITranslationImportQueue)
         root, ext = os.path.splitext(filename)
         translation_importer = getUtility(ITranslationImporter)
-        if (ext not in translation_importer.file_extensions_with_importer):
+        if (ext not in translation_importer.supported_file_extensions):
             self.request.response.addErrorNotification(
                 "Ignored your upload because the file you uploaded was not"
                 " recognised as a file that can be imported.")
@@ -204,8 +205,8 @@ class POFileUploadView(POFileView):
         self.request.response.addInfoNotification(
             'Thank you for your upload. The translation content will be'
             ' imported soon into Launchpad. You can track its status from the'
-            ' <a href="%s">Translation Import Queue</a>' %
-                canonical_url(translation_import_queue))
+            ' <a href="%s/+imports">Translation Import Queue</a>' %
+                canonical_url(self.context.potemplate.translationtarget))
 
 
 class POFileTranslateView(BaseTranslationView):
@@ -339,7 +340,7 @@ class POFileTranslateView(BaseTranslationView):
         if self.show not in (
             'translated', 'untranslated', 'all', 'need_review',
             'changed_in_launchpad', 'new_suggestions'):
-            # XXX: should this be an UnexpectedFormData?
+            # XXX: kiko 2006-09-27: Should this be an UnexpectedFormData?
             self.show = self.DEFAULT_SHOW
         if self.show == 'all':
             self.shown_count = self.context.messageCount()
@@ -392,21 +393,14 @@ class POFileTranslateView(BaseTranslationView):
 class POExportView(BaseExportView):
 
     def processForm(self):
-        if self.request.method != 'POST':
-            return
-
-        format = self.validateFileFormat(self.request.form.get('format'))
-        if not format:
-            return
-
         if self.context.validExportCache():
             # There is already a valid exported file cached in Librarian, we
             # can serve that file directly.
             self.request.response.redirect(self.context.exportfile.http_url)
-            return
+            return None
 
-        # Register the request to be processed later with our export script.
-        self.request_set.addRequest(
-            self.user, pofiles=[self.context], format=format)
-        self.nextURL()
+        return (None, [self.context])
+
+    def getDefaultFormat(self):
+        return self.context.potemplate.source_file_format
 

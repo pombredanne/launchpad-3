@@ -100,8 +100,8 @@ for each new publishing record.
     ...     for pub in distroseries.getSourcesPublishedForAllArchives():
     ...         if pub.id in initial_candidates:
     ...             continue
-    ...         is_main = pub.archive == pub.distroseries.main_archive
-    ...         print pub.status.name, pub.pocket.name, is_main
+    ...         arch_purpose = pub.archive.purpose.name
+    ...         print pub.status.name, pub.pocket.name, arch_purpose
 
 Finally, a shortcut to do all the dirty-job:
 
@@ -133,10 +133,10 @@ important to accomplish building-accepted-sources specification:
 This will give us only 4 of the test publications:
 
     >>> probe_candidates(warty)
-    PUBLISHED UPDATES True
-    PENDING UPDATES True
-    PUBLISHED RELEASE False
-    PENDING RELEASE False
+    PUBLISHED UPDATES PRIMARY
+    PENDING UPDATES PRIMARY
+    PUBLISHED RELEASE PPA
+    PENDING RELEASE PPA
 
 
 == DEVELOPMENT DistroSeries ==
@@ -145,7 +145,7 @@ For a distroseries in DEVELOPMENT state, which means UNSTABLE, we
 expect to retrieve the following publications:
 
  * All PPA publications
- * All main_archive publication, including RELEASE and post-release pockets
+ * All main archive publications, including RELEASE and post-release pockets
 
     >>> hoary = ubuntu['hoary']
     >>> hoary.status.name
@@ -157,13 +157,15 @@ IDistroSeries.canUploadToPocket). This nuance will be more explored
 when fixing #67790 when we will start publishing and building
 post-release pocket in FROZEN state.
 
-Summing up, all the 6 test publications will be returned from the lookup:
+Summing up, all the 8 test publications will be returned from the lookup:
 
     >>> probe_candidates(hoary)
-    PUBLISHED RELEASE True
-    PENDING RELEASE True
-    PUBLISHED UPDATES True
-    PENDING UPDATES True
-    PUBLISHED RELEASE False
-    PENDING RELEASE False
+    PUBLISHED RELEASE PRIMARY
+    PENDING RELEASE PRIMARY
+    PUBLISHED UPDATES PRIMARY
+    PENDING UPDATES PRIMARY
+    PUBLISHED RELEASE PPA
+    PENDING RELEASE PPA
+    PUBLISHED RELEASE COMMERCIAL
+    PENDING RELEASE COMMERCIAL
 

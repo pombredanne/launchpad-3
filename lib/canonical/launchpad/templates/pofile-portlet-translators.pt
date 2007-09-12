@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-translators">
   <h2><span tal:replace="context/language/englishname">Spanish</span>
   translators</h2>
 

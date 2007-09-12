@@ -261,7 +261,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         inline list with links to see the questions for each language:
         '_Hungarian_ (2), _Romanian_ (1)'. An empty string is returned
         when all questions are in a language spoken by the answer contacts.
-        
+
         This method is relevant to QuestionTargets. Subclasses of this
         View that want to list unspoken languages for other objects must
         provide their own implementation.
@@ -746,11 +746,11 @@ class QuestionTargetTraversalMixin:
 
 
 
-# XXX flacoste 2007/07/08 This menu shouldn't "extend" FAQCollectionMenu.
+# XXX flacoste 2007-07-08 bug=125851:
+# This menu shouldn't "extend" FAQCollectionMenu.
 # But this is needed because of limitations in the current menu architecture.
 # Menu should be built by merging all menus applying to the context object
 # (-based on the interfaces it provides).
-# See bug #125851
 class QuestionCollectionAnswersMenu(FAQCollectionMenu):
     """Base menu definition for QuestionCollection searchable by owner."""
 

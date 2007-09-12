@@ -141,7 +141,7 @@ class CustomUpload:
                 if os.path.islink(sourcepath):
                     os.symlink(os.readlink(sourcepath), destpath)
 
-                # XXX cprov 20070327: We don't want to create empty
+                # XXX cprov 2007-03-27: We don't want to create empty
                 # directories, some custom formats rely on this, DDTP,
                 # for instance. We may end up with broken links
                 # but that's more an uploader fault than anything else.

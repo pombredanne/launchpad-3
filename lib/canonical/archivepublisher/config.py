@@ -78,10 +78,10 @@ class Config(object):
         self.overrideroot = self._distroconfig.get("publishing","overrideroot")
         self.cacheroot = self._distroconfig.get("publishing","cacheroot")
         self.miscroot = self._distroconfig.get("publishing","miscroot")
-        # XXX cprov 20070426: we should build all the previous attributes
+        # XXX cprov 2007-04-26 bug=45270:
+        # We should build all the previous attributes
         # dynamically like this. It would reduce the configuration complexity.
         # Even before we have it properly modeled in LPDB.
-        # See bug #45270 for further information.
         self.temproot = os.path.join(
             self.distroroot, '%s-temp' % self.distroName)
 

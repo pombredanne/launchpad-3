@@ -75,7 +75,8 @@
   ...
 
 
-  # XXX: Remember to check the notification message displayed after this
+  # XXX Guilherme Salgado 2007-06-29:
+  # Remember to check the notification message displayed after this
   # submission when converting this to use testbrowser.
   >>> print http(r"""
   ... POST %s HTTP/1.1
@@ -163,7 +164,8 @@
   ...
 
 
-  # XXX: Remember to check the notification message displayed after this
+  # XXX Guilherme Salgado 2007-06-29:
+  # Remember to check the notification message displayed after this
   # submission when converting this to use testbrowser.
   >>> print http(r"""
   ... POST %s HTTP/1.1
@@ -295,7 +297,8 @@ Person validates the email address using the token.
 
   Email was validated.
 
-  # XXX: Remember to check the notification message displayed after this
+  # XXX Guilherme Salgado 2007-06-29:
+  # Remember to check the notification message displayed after this
   # submission when converting this to use testbrowser.
   >>> print http(r"""
   ... POST %s HTTP/1.1

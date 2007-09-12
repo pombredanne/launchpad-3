@@ -99,7 +99,7 @@ def main(csvfile, log):
     total = len(broken)
 
     # Delete any entries that were not spidered
-    # TODO: Only if older than a threshold -- StuartBishop 20050704
+    # XXX StuartBishop 2005-07-04: Only if older than a threshold.
     for link in CheckedLink.select():
         if link in broken:
             continue

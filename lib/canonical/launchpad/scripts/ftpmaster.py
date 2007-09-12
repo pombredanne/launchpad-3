@@ -108,7 +108,7 @@ class ArchiveOverrider:
         if self.component_name:
             valid_components = dict(
                 [(component.name, component)
-                 for component in self.distroseries.components])
+                 for component in self.distroseries.upload_components])
             if self.component_name not in valid_components:
                 raise ArchiveOverriderError(
                     "%s is not a valid component for %s/%s."
@@ -244,7 +244,7 @@ class ArchiveCruftChecker:
     something goes wrong.
     """
 
-    # XXX cprov 20060515: the default archive path should come
+    # XXX cprov 2006-05-15: the default archive path should come
     # from the IDistroSeries.lucilleconfig. But since it's still
     # not optimal and we have real plans to migrate it from DB
     # text field to default XML config or a more suitable/reliable
@@ -328,7 +328,7 @@ class ArchiveCruftChecker:
                 "Gunzip invocation failed!\n%s" % output)
 
         temp_fd = open(temp_filename)
-        # XXX cprov 20060515: maybe we need some sort of data integrity
+        # XXX cprov 2006-05-15: maybe we need some sort of data integrity
         # check at this point, and maybe keep the uncrompressed file
         # for debug purposes, let's see how it behaves in real conditions.
         parsed_contents = apt_pkg.ParseTagFile(temp_fd)
@@ -1007,11 +1007,10 @@ class SyncSource:
         Return the fetched filename if it was present in Librarian or None
         if it wasn't.
         """
-        # XXX cprov 20070110: looking for files within ubuntu only.
-        # It doesn't affect the usual sync-source procedure. However
+        # XXX cprov 2007-01-10 bug=78683: Looking for files within ubuntu
+        # only. It doesn't affect the usual sync-source procedure. However
         # it needs to be revisited for derivation, we probably need
         # to pass the target distribution in order to make proper lookups.
-        # See further info in bug #78683.
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         try:
             libraryfilealias = ubuntu.getFileByName(
@@ -1515,15 +1514,15 @@ class LpQueryDistro(LaunchpadScript):
             raise LaunchpadScriptFailure(
                 "Action does not accept defined suite_name.")
 
-    # XXX cprov 20070420: should be implemented in IDistribution.
-    # raising NotFoundError instead. Bug #113563.
+    # XXX cprov 2007-04-20 bug=113563.: Should be implemented in
+    # IDistribution. raising NotFoundError instead.
     def getSeriesByStatus(self, status):
         """Query context distribution for a distroseries in a given status.
 
         I may raise LaunchpadScriptError if no suitable distroseries in a
         given status was found.
         """
-        # XXX sabdfl 2007-05-27 isn't this a bit risky, if there are
+        # XXX sabdfl 2007-05-27: Isn't this a bit risky, if there are
         # multiple series with the desired status?
         for series in self.location.distribution.serieses:
             if series.status == status:

@@ -32,9 +32,6 @@ from canonical.launchpad.scripts.gina import call
 
 from canonical.launchpad.validators.version import valid_debian_version
 
-# Keep a licence_cache around to avoid needing to unpack the source
-# twice.
-licence_cache = {}
 
 #
 # Data setup
@@ -45,7 +42,7 @@ urgencymap = {
     "medium": SourcePackageUrgency.MEDIUM,
     "high": SourcePackageUrgency.HIGH,
     "emergency": SourcePackageUrgency.EMERGENCY,
-    }   
+    }
 
 prioritymap = {
     "required": PackagePublishingPriority.REQUIRED,
@@ -121,37 +118,22 @@ def read_dsc(package, version, component, archive_root):
         changelog = parse_changelog(clfile)
         clfile.close()
     else:
-        log.warn("No changelog file found for %s in %s" % 
+        log.warn("No changelog file found for %s in %s" %
                  (package, source_dir))
         changelog = None
 
-    # Welcome to the world's biggest hack. Source packages contain the
-    # licence files, but they may be specific to a certain binary
-    # package, and we store them in the binary package release table,
-    # anyway. To avoid unpacking the debian source multiple times, we
-    # save the licence in a cache, keying it appropriately.
-    licence = None
+    copyright = None
     globpath = os.path.join(source_dir, "debian", "*copyright")
     for fullpath in glob.glob(globpath):
         if not os.path.exists(fullpath):
             continue
-        licence = open(fullpath).read().strip()
-        file_name = os.path.basename(fullpath)
-        if "." in file_name:
-            binpkg = file_name.split(".")[0]
-        else:
-            binpkg = None
-        licence = encoding.guess(licence)
-        licence_cache[(package, version, binpkg)] = licence
+        copyright = open(fullpath).read().strip()
 
-    if licence is None:
-        log.warn("No copyright file found for %s in %s" % 
-                 (package, source_dir))
-        # Cache we didn't find it and avoid looking it up again later
-        licence_cache[(package, version, None)] = None
+    if copyright is None:
+        log.warn("No copyright file found for %s in %s" % (package, source_dir))
+        copyright = ''
 
-    return dsc, changelog
-
+    return dsc, changelog, copyright
 
 def parse_person(val):
     if "," in val:
@@ -174,7 +156,7 @@ def parse_section(v):
 
 
 def get_person_by_key(keyrings, key):
-    # XXX: untested, should probably be a method
+    # XXX kiko Sun 2005-10-23: Untested, should probably be a method.
     if key and key not in ("NOSIG", "None", "none"):
         command = ("gpg --no-options --no-default-keyring "
                    "--with-colons --fingerprint %s %s" % (key, keyrings))
@@ -295,9 +277,8 @@ class AbstractPackageData:
         # leave it around for forensics.
         shutil.rmtree(tempdir)
 
-        # XXX: Katie is disabled for the moment; hardcode the
-        # date_uploaded and c'est la vie
-        #   -- kiko, 2005-10-18
+        # XXX kiko 2005-10-18: Katie is disabled for the moment;
+        # hardcode the date_uploaded and c'est la vie.
         # if not self.do_katie(kdb, keyrings):
         #    return False
         self.date_uploaded = UTC_NOW
@@ -320,12 +301,12 @@ class SourcePackageData(AbstractPackageData):
     # Defaults, potentially overwritten by __init__
     build_depends = ""
     build_depends_indep = ""
-    # XXX: this isn't stored at all
+    # XXX kiko 2005-10-30: This isn't stored at all.
     standards_version = ""
     section = None
     format = None
 
-    # XXX: not used anywhere
+    # XXX kiko 2005-11-05: Not used anywhere.
     priority = None
 
     is_processed = False
@@ -368,15 +349,15 @@ class SourcePackageData(AbstractPackageData):
                 for f in files:
                     self.files.append(stripseq(f.split(" ")))
             elif k == 'Uploaders':
-                # XXX: we don't do anything with this data, but I
-                # suspect we should. -- kiko, 2005-10-19
+                # XXX kiko 2005-10-19: We don't do anything with this data,
+                # but I suspect we should.
                 people = stripseq(v.split(","))
                 self.uploaders = [person.split(" ", 1) for person in people]
             else:
                 setattr(self, k.lower().replace("-", "_"), v)
 
         if self.section is None:
-            # XXX: untested and disabled
+            # XXX kiko 2005-11-05: Untested and disabled.
             # if kdb:
             #     log.warn("Source package %s lacks section, looking it up..." %
             #              self.package)
@@ -399,9 +380,11 @@ class SourcePackageData(AbstractPackageData):
         If successful processing of the package occurs, this method
         sets the changelog and urgency attributes.
         """
-        dsc, changelog = read_dsc(self.package, self.version,
-                                  self.component, archive_root)
+        dsc, changelog, copyright = read_dsc(
+            self.package, self.version, self.component, archive_root)
+
         self.dsc = encoding.guess(dsc)
+        self.copyright = encoding.guess(copyright)
 
         self.urgency = None
         self.changelog = None
@@ -421,7 +404,7 @@ class SourcePackageData(AbstractPackageData):
                          (self.package, self.version))
 
     def do_katie(self, kdb, keyrings):
-        # XXX: disabled for the moment, untested
+        # XXX kiko 2005-10-23: Disabled for the moment, untested.
         raise AssertionError
 
         data = kdb.getSourcePackageRelease(self.package, self.version)
@@ -438,14 +421,14 @@ class SourcePackageData(AbstractPackageData):
 
     def ensure_complete(self, kdb):
         if self.format is None:
-            # XXX: this is very funny. We care so much about it here,
-            # but we don't do anything about this in handlers.py!
-            log.warn("Invalid format in %s, assumed %r" % 
+            # XXX kiko 2005-11-05: this is very funny. We care so much about
+            # it here, but we don't do anything about this in handlers.py!
+            log.warn("Invalid format in %s, assumed %r" %
                      (self.package, "1.0"))
             self.format = "1.0"
 
         if self.urgency not in urgencymap:
-            log.warn("Invalid urgency in %s, %r, assumed %r" % 
+            log.warn("Invalid urgency in %s, %r, assumed %r" %
                      (self.package, self.urgency, "low"))
             self.urgency = "low"
 
@@ -509,14 +492,14 @@ class BinaryPackageData(AbstractPackageData):
                         "not a valid integer: %r" % v)
             else:
                 setattr(self, k.lower().replace("-", "_"), v)
-            # XXX: "enhances" is not used and not stored anywhere,
-            # same for "pre_depends"
+            # XXX kiko 2005-11-03: "enhances" is not used and not stored
+            # anywhere, same for "pre_depends"
 
         if self.source:
             # We need to handle cases like "Source: myspell
             # (1:3.0+pre3.1-6)". apt-pkg kindly splits this for us
             # already, but sometimes fails.
-            # XXX: dsilvers: 20050922: Work out why this happens and
+            # XXX: dsilvers 2005-09-22: Work out why this happens and
             # file an upstream bug against python-apt once we've worked
             # it out.
             if self.source_version is None:
@@ -525,8 +508,8 @@ class BinaryPackageData(AbstractPackageData):
                     self.source = match.group(1)
                     self.source_version = match.group(2)
                 else:
-                    # XXX: this is probably a best-guess and might fail
-                    #   -- kiko, 2005-10-18
+                    # XXX kiko 2005-10-18:
+                    # This is probably a best-guess and might fail.
                     self.source_version = self.version
         else:
             # Some packages have Source, some don't -- the ones that
@@ -566,7 +549,7 @@ class BinaryPackageData(AbstractPackageData):
             log.debug("Grabbing shared library info from %s" % shlibfile)
 
     def do_katie(self, kdb, keyrings):
-        # XXX: disabled for the moment, untested
+        # XXX kiko 2005-10-23: Disabled for the moment, untested.
         raise AssertionError
 
         data = kdb.getBinaryPackageRelease(self.package, self.version,

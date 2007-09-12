@@ -6,7 +6,8 @@ __metaclass__ = type
 __all__ = ['branch_id_to_path', 'LaunchpadServer', 'LaunchpadTransport',
            'UntranslatablePath']
 
-from bzrlib.errors import BzrError, NoSuchFile, TransportNotPossible
+from bzrlib.errors import (
+    BzrError, InProcessTransport, NoSuchFile, TransportNotPossible)
 from bzrlib import urlutils
 from bzrlib.transport import (
     get_transport,
@@ -17,6 +18,9 @@ from bzrlib.transport import (
     )
 
 from canonical.authserver.interfaces import READ_ONLY
+
+from canonical.codehosting.bazaarfs import (
+    ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR)
 
 
 def branch_id_to_path(branch_id):
@@ -38,8 +42,8 @@ def split_with_padding(a_string, splitter, num_fields, padding=None):
     return tokens
 
 
-# XXX: JonathanLange 2007-06-13, This should probably be part of bzrlib.
-# See https://launchpad.net/bugs/120135.
+# XXX: JonathanLange 2007-06-13 bugs=120135:
+# This should probably be part of bzrlib.
 def makedirs(base_transport, path, mode=None):
     """Create 'path' on 'base_transport', even if parents of 'path' don't exist
     yet.
@@ -60,7 +64,12 @@ def makedirs(base_transport, path, mode=None):
 
 
 def get_path_segments(path):
-    return path.lstrip('/').split('/')
+    """Break up the given path into segments.
+
+    If 'path' ends with a trailing slash, then the final empty segment is
+    ignored.
+    """
+    return path.strip('/').split('/')
 
 
 class UntranslatablePath(BzrError):
@@ -99,7 +108,8 @@ class LaunchpadServer(Server):
 
     def dirty(self, virtual_path):
         """Mark the branch containing virtual_path as dirty."""
-        # XXX: JonathanLange 2007-06-18, Note that we only mark branches as
+        # XXX: JonathanLange 2007-06-18 bugs=120949:
+        # Note that we only mark branches as
         # dirty if they end up calling VFS (i.e. Transport) methods. If a
         # client does a writing smart operation that doesn't use VFS, we won't
         # catch it. (e.g. Branch.set_last_revision). This problem will become
@@ -107,8 +117,6 @@ class LaunchpadServer(Server):
         #
         # Instead we should register our own smart request handlers to override
         # the builtin ones.
-        #
-        # See https://launchpad.net/bugs/120949.
         branch_id, ignored, path = self._translate_path(virtual_path)
         self._dirty_branch_ids.add(branch_id)
 
@@ -122,10 +130,12 @@ class LaunchpadServer(Server):
         """
         path_segments = get_path_segments(virtual_path)
         if len(path_segments) != 3:
-            raise NoSuchFile(virtual_path)
+            raise NoSuchFile(
+                'This method only for creating branches: %s' % (virtual_path,))
         branch_id = self._make_branch(*path_segments)
         if branch_id == '':
-            raise NoSuchFile(virtual_path)
+            raise NoSuchFile(
+                'Cannot create branch: %s' % (virtual_path,))
         makedirs(self.backing_transport, branch_id_to_path(branch_id))
 
     def _make_branch(self, user, product, branch):
@@ -153,16 +163,20 @@ class LaunchpadServer(Server):
             if user_id == self.user_id:
                 product = '+junk'
             else:
-                # XXX: JonathanLange 2007-06-04, This should perhaps be
-                # 'PermissionDenied', not 'NoSuchFile'. However bzrlib doesn't
-                # translate PermissionDenied errors. See _translate_error in
-                # bzrlib/transport/remote.py.
-                # See Launchpad bug 118736.
+                # XXX: JonathanLange 2007-06-04 bug=118736
+                # This should perhaps be 'PermissionDenied', not 'NoSuchFile'.
+                # However bzrlib doesn't translate PermissionDenied errors.
+                # See _translate_error in bzrlib/transport/remote.py.
                 raise NoSuchFile(
                     "+junk is only allowed under user directories, not team "
                     "directories.")
-        return self.authserver.createBranch(
+        branch_id, permissions = self.authserver.getBranchInformation(
             self.user_id, user, product, branch)
+        if branch_id != '':
+            return branch_id
+        else:
+            return self.authserver.createBranch(
+                self.user_id, user, product, branch)
 
     def _translate_path(self, virtual_path):
         """Translate a virtual path into an internal branch id, permissions and
@@ -202,6 +216,10 @@ class LaunchpadServer(Server):
 
         :return: The equivalent real path on the backing transport.
         """
+        segments = get_path_segments(virtual_path)
+        if (len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES):
+            raise NoSuchFile(FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
+
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
         # a branch'.
@@ -260,6 +278,11 @@ class LaunchpadTransport(Transport):
     def __init__(self, server, url):
         self.server = server
         Transport.__init__(self, url)
+
+    def external_url(self):
+        # There's no real external URL to this transport. It's heavily
+        # dependent on the process.
+        raise InProcessTransport(self)
 
     def _abspath(self, relpath):
         """Return the absolute path to `relpath` without the schema."""
@@ -349,16 +372,10 @@ class LaunchpadTransport(Transport):
         # If we can't translate the path, then perhaps we are being asked to
         # create a new branch directory. Delegate to the server, as it knows
         # how to deal with absolute virtual paths.
-        abspath = self._abspath(relpath)
-        segments = get_path_segments(abspath)
-        if len(segments) == 4 and segments[-1] != '.bzr':
-            raise NoSuchFile(path=relpath,
-                             extra=("Can only create .bzr directories "
-                                    "directly beneath branch directories."))
         try:
             return self._writing_call('mkdir', relpath, mode)
         except NoSuchFile:
-            return self.server.mkdir(abspath)
+            return self.server.mkdir(self._abspath(relpath))
 
     def put_file(self, relpath, f, mode=None):
         return self._writing_call('put_file', relpath, f, mode)

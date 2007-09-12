@@ -15,6 +15,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import initZopeless
+from canonical.lp.dbschema import ArchivePurpose
 
 
 def parse_options():
@@ -79,7 +80,7 @@ def main():
             clear_current_connection_cache()
             gc.collect()
         except:
-            log.exception("Bad muju while %s" % description)
+            log.exception("Unexpected exception while %s" % description)
             txn.abort()
             raise
 
@@ -118,7 +119,7 @@ def main():
         allowed_suites.add((distroseries.name, pocket))
 
     if not options.ppa:
-        archives = [distribution.main_archive]
+        archives = distribution.all_distro_archives
     else:
         if options.careful or options.careful_publishing:
             archives = distribution.getAllPPAs()
@@ -130,8 +131,9 @@ def main():
             return
 
     for archive in archives:
-        if not options.ppa:
-            log.info("Processing %s main_archive" % distribution.name)
+        if archive.purpose != ArchivePurpose.PPA:
+            log.info("Processing %s %s" % (
+                distribution.name, archive.title))
         else:
             log.info("Processing %s" % archive.archive_url)
 
@@ -143,11 +145,13 @@ def main():
         try_and_commit("dominating", publisher.B_dominate,
                        options.careful or options.careful_domination)
 
-        if not options.ppa:
-            try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
+        # The primary archive uses apt-ftparchive to generate the indexes,
+        # everything else uses the newer internal LP code.
+        if archive.purpose != ArchivePurpose.PRIMARY:
+            try_and_commit("building indexes", publisher.C_writeIndexes,
                            options.careful or options.careful_apt)
         else:
-            try_and_commit("building indexes", publisher.C_writeIndexes,
+            try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
                            options.careful or options.careful_apt)
 
         try_and_commit("doing release files", publisher.D_writeReleaseFiles,

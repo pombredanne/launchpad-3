@@ -26,7 +26,6 @@ __all__ = [
     'ProductAddSeriesView',
     'ProductBugContactEditView',
     'ProductReassignmentView',
-    'ProductLaunchpadUsageEditView',
     'ProductRdfView',
     'ProductSetFacets',
     'ProductSetSOP',
@@ -37,6 +36,7 @@ __all__ = [
     'PillarSearchItem',
     ]
 
+import cgi
 from operator import attrgetter
 from warnings import warn
 
@@ -52,7 +52,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
+    ILaunchpadCelebrities, IProduct,
     ICountry, IProductSet, IProductSeries, IProject, ISourcePackage,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     IBranchSet, RESOLVED_BUGTASK_STATUSES,
@@ -64,7 +64,6 @@ from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.launchpad import (
@@ -206,8 +205,7 @@ class ProductOverviewMenu(ApplicationMenu):
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
-        'series_add', 'launchpad_usage', 'administer', 'branch_visibility',
-        'rdf']
+        'series_add', 'administer', 'branch_visibility', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -257,11 +255,6 @@ class ProductOverviewMenu(ApplicationMenu):
     def branch_add(self):
         text = 'Register branch'
         return Link('+addbranch', text, icon='add')
-
-    @enabled_with_permission('launchpad.Edit')
-    def launchpad_usage(self):
-        text = 'Define Launchpad usage'
-        return Link('+launchpad', text, icon='edit')
 
     def rdf(self):
         text = structured(
@@ -365,7 +358,11 @@ class ProductTranslationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'translations'
-    links = ['translators', 'edit']
+    links = ['translators', 'edit', 'imports', 'translationdownload']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
 
     def translators(self):
         text = 'Change translators'
@@ -375,6 +372,16 @@ class ProductTranslationsMenu(ApplicationMenu):
     def edit(self):
         text = 'Edit template names'
         return Link('+potemplatenames', text, icon='edit')
+
+    def translationdownload(self):
+        text = 'Download translations'
+        preferred_series = self.context.primary_translatable
+        enabled = (preferred_series is not None)
+        link = ''
+        if enabled:
+            link = '%s/+export' % preferred_series.name
+
+        return Link(link, text, icon='download', enabled=enabled)
 
 
 def _sort_distros(a, b):
@@ -646,10 +653,12 @@ class ProductEditView(LaunchpadEditFormView):
     schema = IProduct
     label = "Edit details"
     field_names = [
-        "project", "displayname", "title", "summary", "description",
+        "displayname", "title", "summary", "description", "project",
+        "bugtracker", "official_rosetta", "official_answers",
         "homepageurl", "sourceforgeproject",
         "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
         "programminglang", "development_focus"]
+    custom_widget('bugtracker', ProductBugTrackerWidget)
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -672,26 +681,6 @@ class ProductReviewView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "reviewed",
                    "private_bugs"]
-
-
-class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
-    """View class for defining Launchpad usage."""
-
-    schema = IProductLaunchpadUsageForm
-    label = "Describe Launchpad usage"
-    custom_widget('bugtracker', ProductBugTrackerWidget)
-
-    @action("Change", name='change')
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    @property
-    def adapters(self):
-        return {self.schema: self.context}
 
 
 class ProductAddSeriesView(LaunchpadFormView):
@@ -947,11 +936,17 @@ class ProductAddView(LaunchpadFormView):
         return canonical_url(self.product)
 
 
-class ProductBugContactEditView(SQLObjectEditView):
+class ProductBugContactEditView(LaunchpadEditFormView):
     """Browser view class for editing the product bug contact."""
 
-    def changed(self):
+    schema = IProduct
+    field_names = ['bugcontact']
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
         """Redirect to the product page with a success message."""
+        self.updateContextFromData(data)
+
         product = self.context
 
         bugcontact = product.bugcontact
@@ -980,6 +975,48 @@ class ProductBugContactEditView(SQLObjectEditView):
 
         self.request.response.redirect(canonical_url(product))
 
+    def validate(self, data):
+        """Validates the new bug contact for the product.
+
+        The following values are valid as bug contacts:
+            * None, indicating that the bug contact field for the product
+              should be cleard in change_action().
+            * A valid Person (email address or launchpad id).
+            * A valid Team of which the current user is an administrator.
+
+        If the the bug contact entered does not meet any of the above criteria
+        then the submission will fail and the user will be notified of the
+        error.
+        """
+        # data will not have a bugcontact entry in cases where the bugcontact
+        # the user entered is valid according to the ValidPersonOrTeam
+        # vocabulary (i.e. is not a Person, Team or None).
+        if not data.has_key('bugcontact'):
+            self.setFieldError(
+                'bugcontact',
+                'You must choose a valid person or team to be the bug contact'
+                ' for %s.' %
+                cgi.escape(self.context.displayname))
+
+            return
+
+        contact = data['bugcontact']
+
+        if (contact is not None and contact.isTeam() and
+            contact not in self.user.getAdministratedTeams()):
+            error = (
+                "You cannot set %(team)s as the bug contact for "
+                "%(project)s because you are not an administrator of that "
+                "team.<br />If you believe that %(team)s should be the bug"
+                " contact for %(project)s, please notify one of the "
+                "<a href=\"%(url)s\">%(team)s administrators</a>."
+
+                % {'team': cgi.escape(contact.displayname),
+                   'project': cgi.escape(self.context.displayname),
+                   'url': canonical_url(contact, rootsite='mainsite')
+                          + '/+members'})
+            self.setFieldError('bugcontact', error)
+
 
 class ProductReassignmentView(ObjectReassignmentView):
     """Reassign product to a new owner."""
@@ -997,10 +1034,10 @@ class ProductReassignmentView(ObjectReassignmentView):
 
         """
         import_queue = getUtility(ITranslationImportQueue)
+        for entry in import_queue.getAllEntries(target=product):
+            if entry.importer == oldOwner:
+                entry.importer = newOwner
         for series in product.serieses:
-            for entry in import_queue.getEntryByProductSeries(series):
-                if entry.importer == oldOwner:
-                    entry.importer = newOwner
             if series.owner == oldOwner:
                 series.owner = newOwner
         for release in product.releases:

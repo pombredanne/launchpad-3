@@ -136,7 +136,7 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     # subscription-related methods
     def attend(person, time_starts, time_ends):
         """Record that this person will be attending the Sprint."""
-        
+
     def removeAttendance(person):
         """Remove the person's attendance record."""
 

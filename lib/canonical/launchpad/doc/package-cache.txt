@@ -28,12 +28,13 @@ DistributionSourcePackageCache table, including:
   ...     distribution=ubuntu)
 
   >>> ubuntu_caches.count()
-  9
+  10
 
   >>> for cache in ubuntu_caches.orderBy('name'):
   ...     print cache.name
   alsa-utils
   cnews
+  commercialpackage
   evolution
   foobar
   libstdc++

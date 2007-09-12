@@ -1,4 +1,5 @@
-<div class="portlet" tal:condition="context/is_valid_person_or_team">
+<div class="portlet" id="portlet-details"
+     tal:condition="context/is_valid_person_or_team">
   <h2 tal:content="context/browsername" />
 
   <div class="portletBody portletContent">
@@ -18,7 +19,7 @@
               <b>Preferred address:</b>
 
               <span style="white-space: nowrap">&nbsp;&nbsp;&nbsp;
-                <img src="/@@/locked" alt="" /> 
+                <img src="/@@/private" alt="" /> 
                 <span tal:replace="context/preferredemail/email">foo@bar.com</span>
               </span>
               <br />

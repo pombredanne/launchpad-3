@@ -12,7 +12,7 @@ and collecting build results.
 As soon as a build job is processed succesfully (dispatched &
 collected) the BuildQueue record representing it is removed.
 
- >>> from zope.interface.verify import verifyObject
+ >>> from canonical.launchpad.webapp.testing import verifyObject
  >>> from canonical.launchpad.interfaces import IBuildQueue
  >>> from canonical.launchpad.interfaces import IBuildQueueSet
 

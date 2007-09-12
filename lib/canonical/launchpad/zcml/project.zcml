@@ -164,11 +164,11 @@
     <browser:page
       name="+addspec"
       for="canonical.launchpad.interfaces.IProject"
-      class="canonical.launchpad.browser.SpecificationAddView"
+      class="canonical.launchpad.browser.NewSpecificationFromProjectView"
       facet="specifications"
       permission="launchpad.AnyPerson"
       template="../templates/specification-add.pt"
-      />
+    />
 
     <browser:page
         name="+register-a-blueprint-button"

@@ -438,7 +438,7 @@ class BzrSync:
         If this is the first scan of a branch, then we send out a simple
         notification email saying that the branch has been scanned.
         """
-        # XXX: thumper 2007-03-28
+        # XXX: thumper 2007-03-28 bug=29744:
         # The whole reason that this method exists is due to
         # emails being sent immediately in a zopeless environment.
         # When bug #29744 is fixed, this method will no longer be

@@ -10,7 +10,7 @@ from zope.app.form.interfaces import ConversionError
 from canonical.launchpad.interfaces import UnexpectedFormData
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
-#XXX matsubara 2006-05-10: Should I move our NewLineToSpacesWidget to 
+# XXX matsubara 2006-05-10: Should I move our NewLineToSpacesWidget to
 # this module?
 
 
@@ -78,7 +78,7 @@ class LocalDateTimeWidget(TextWidget):
             raise ConversionError('Invalid date value', v)
         tz = pytz.timezone(self.timeZoneName)
         return tz.localize(dt)
-        
+
     def _toFormValue(self, value):
         """Convert a date to its string representation.
 

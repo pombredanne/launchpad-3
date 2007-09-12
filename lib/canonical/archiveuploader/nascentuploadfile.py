@@ -466,8 +466,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
                     "%s: control file lacks mandatory field %r"
                      % (self.filename, mandatory_field))
 
-        # XXX: we never use the Maintainer information in the control
-        # file for anything. Should we? -- kiko, 2007-02-15
+        # XXX kiko 2007-02-15: We never use the Maintainer information in
+        # the control file for anything. Should we? --
         self.control = {}
         for key in control_lines.keys():
             self.control[key] = control_lines.Find(key)
@@ -738,10 +738,9 @@ class BaseBinaryUploadFile(PackageUploadFile):
             assert len(spphs) == 1, "Duplicated ancestry"
             sourcepackagerelease = spphs[0].sourcepackagerelease
         else:
-            # XXX cprov 20060809: Building from ACCEPTED is special
-            # condition, not really used in production. We should
-            # remove the support for this use case, see further
-            # info in bug #55774.
+            # XXX cprov 2006-08-09 bug=55774: Building from ACCEPTED is
+            # special condition, not really used in production. We should
+            # remove the support for this use case.
             self.logger.debug("No source published, checking the ACCEPTED queue")
 
             queue_candidates = distroseries.getQueueItems(
@@ -845,13 +844,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
         summary = desclines[0]
         description = "\n".join(desclines[1:])
 
-        # XXX: dsilvers: 20051014: erm, need to work shlibdeps out
-        # bug 3160
+        # XXX: dsilvers 2005-10-14 bug 3160: erm, need to work shlibdeps out.
         shlibdeps = ""
-        # XXX: dsilvers: 20051014: erm, source should have a copyright
-        # but not binaries. bug 3161
-        copyright = ""
-        licence = ""
 
         is_essential = encoded.get('Essential', '').lower() == 'yes'
         architecturespecific = not self.is_archindep
@@ -877,8 +871,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
             provides=encoded.get('Provides', ''),
             essential=is_essential,
             installedsize=installedsize,
-            copyright=copyright,
-            licence=licence,
             architecturespecific=architecturespecific)
 
         library_file = self.librarian.create(self.filename,

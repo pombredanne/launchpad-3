@@ -29,7 +29,7 @@ from canonical.librarian.client import LibrarianClient
 
 
 def sanitize_feisty_apt_ftparchive_output(text):
-    # See XXX barry 20070518 below.  See also bug #116048.
+    # See XXX barry 2007-05-18 bug=116048:
     #
     # This function filters feisty's apt-ftparchive output to look more like
     # dapper's output.  Specifically, it removes any lines that start with
@@ -145,11 +145,11 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         from canonical.archivepublisher.ftparchive import FTPArchiveHandler
         FTPArchiveHandler(self._logger, self._config, self._dp,
                    self._distribution, set())
-                  
+
     def testGetSourcesForOverrides(self):
         """Ensure Publisher.getSourcesForOverrides works.
-        
-        FTPArchiveHandler.getSourcesForOverride should be returning 
+
+        FTPArchiveHandler.getSourcesForOverride should be returning
         SourcePackagePublishingHistory rows that match the distrorelease,
         its main_archive, the supplied pocket and have a status of PUBLISHED.
         """
@@ -158,7 +158,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         spphs = fa.getSourcesForOverrides(
             ubuntuwarty, PackagePublishingPocket.RELEASE)
 
-        # For the above query, we are depending on the sample data to 
+        # For the above query, we are depending on the sample data to
         # contain seven rows of SourcePackagePublishghistory data.
         expectedSources = [
             ('evolution', '1.0'),
@@ -177,7 +177,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
 
     def testGetBinariesForOverrides(self):
         """Ensure Publisher.getBinariesForOverrides works.
-        
+
         FTPArchiveHandler.getBinariesForOverride should be returning
         BinaryPackagePublishingHistory rows that match the distrorelease,
         its main_archive, the supplied pocket and have a status of PUBLISHED.
@@ -251,42 +251,41 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
             "foo", "foo", "main", "foo.deb", "misc", "hoary-test", "i386")]
         fa.publishFileLists(src, bin)
 
-        # XXX cprov 20070321: Relying on byte-to-byte configuration file
+        # XXX cprov 2007-03-21: Relying on byte-to-byte configuration file
         # comparing is weak. We should improve this methodology to avoid
         # wasting time on test failures due to irrelevant format changes.
         apt_conf = fa.generateConfig(fullpublish=True)
         self._verifyFile("apt.conf", self._confdir)
 
-        # XXX cprov 20070321: This is an extra problem. Running a-f on
+        # XXX cprov 2007-03-21: This is an extra problem. Running a-f on
         # developer machines is wasteful. We need to find a away to split
         # those kind of tests and avoid to run it when performing 'make
         # check'. Although they should remain active in PQM to avoid possible
         # regressions.
         assert fa.runApt(apt_conf) == 0
-        # XXX barry 20070518: This is a hack to make this test pass on dapper
-        # and feisty.  Feisty's apt-ftparchive outputs SHA256 and MD5 hash
+        # XXX barry 2007-05-18 bug=116048:
+        # This is a hack to make this test pass on dapper and feisty.
+        # Feisty's apt-ftparchive outputs SHA256 and MD5 hash
         # lines which don't appear in dapper's version.  We can't change the
         # sample data to include these lines because that would break pqm,
         # which runs dapper.  But without those lines, a straight byte
         # comparison will fail on developers' feisty boxes.  The hack then is
         # to filter these lines out of the output from apt-ftparchive.
         # Feisty's apt-ftparchive also includes an extra blank line. :(
-        #
-        # See also bug #116048.
         self._verifyFile("Packages",
             os.path.join(self._distsdir, "hoary-test", "main", "binary-i386"),
                          sanitize_feisty_apt_ftparchive_output)
         self._verifyFile("Sources",
             os.path.join(self._distsdir, "hoary-test", "main", "source"))
 
-        # XXX cprov 20070321: see above, byte-to-byte configuration comparing
-        # is weak.
+        # XXX cprov 2007-03-21: see above, byte-to-byte configuration
+        # comparing is weak.
         # Test that a publisher run now will generate an empty apt
         # config and nothing else.
         apt_conf = fa.generateConfig()
         assert len(file(apt_conf).readlines()) == 23
 
-        # XXX cprov 20070321: see above, do not run a-f on dev machines.
+        # XXX cprov 2007-03-21: see above, do not run a-f on dev machines.
         assert fa.runApt(apt_conf) == 0
 
     def testGenerateConfigEmptyCareful(self):
@@ -318,8 +317,8 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
 
         fa.createEmptyPocketRequests(fullpublish=True)
 
-        # XXX cprov 20070321: see above, byte-to-byte configuration comparing
-        # is weak.
+        # XXX cprov 2007-03-21: see above, byte-to-byte configuration
+        # comparing is weak.
         apt_conf = fa.generateConfig(fullpublish=True)
         self.assertTrue(os.path.exists(apt_conf))
         apt_conf_content = file(apt_conf).read()
@@ -328,7 +327,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
             self._sampledir, 'apt_conf_single_empty_suite_test')).read()
         self.assertEqual(apt_conf_content, sample_content)
 
-        # XXX cprov 20070321: see above, do not run a-f on dev machines.
+        # XXX cprov 2007-03-21: see above, do not run a-f on dev machines.
         self.assertEqual(fa.runApt(apt_conf), 0)
         self.assertTrue(os.path.exists(
             os.path.join(self._distsdir, "hoary-test-updates", "main",

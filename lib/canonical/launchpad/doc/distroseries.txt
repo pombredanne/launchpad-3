@@ -18,9 +18,10 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
 
 
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistroSeries, IDistroSeriesSet, IDistributionSet)
+    ...     IDistroSeries, IDistroSeriesSet, IDistributionSet,
+    ...     IHasTranslationImports)
     >>> distroseriesset = getUtility(IDistroSeriesSet)
 
 To retrieve a specific release of a distribution, use IDistroSeriesSet.get:
@@ -62,6 +63,13 @@ We verify that a distroseries does in fact fully provide IDistroSeries:
     >>> verifyObject(IDistroSeries, warty)
     True
     >>> IDistroSeries.providedBy(warty)
+    True
+
+And IHasTranslationImports:
+
+    >>> verifyObject(IHasTranslationImports, warty)
+    True
+    >>> IHasTranslationImports.providedBy(warty)
     True
 
 To search the set of IDistroSeriess, use IDistroSeriesSet.search:
@@ -313,7 +321,7 @@ distroseries (bumby.
 the SPR returns all build records for it.
 
    >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
-   3
+   4
 
 == Translatable Packages and Packaging ==
 
@@ -515,22 +523,25 @@ and child distro series.
 
    >>> def get_diff(old_file, new_file):
    ...     from canonical.launchpad.helpers import test_diff
-   ...     # Get content as list of lines, removing X-Rosetta-Export-Date
+   ...     # Get content as list of lines, removing X-Launchpad-Export-Date
    ...     # lines to prevent time bombs in tests.
-   ...     old_file_lines = [line for line in old_file.split('\n')
-   ...                       if not line.startswith('"X-Rosetta-Export-Date:')]
-   ...     new_file_lines = [line for line in new_file.split('\n')
-   ...                       if not line.startswith('"X-Rosetta-Export-Date:')]
+   ...     old_file_lines = [
+   ...         line for line in old_file.splitlines()
+   ...         if not line.startswith('"X-Launchpad-Export-Date:')
+   ...         ]
+   ...     new_file_lines = [
+   ...         line for line in new_file.splitlines()
+   ...         if not line.startswith('"X-Launchpad-Export-Date:')
+   ...         ]
    ...
    ...     for i in range(len(old_file_lines)):
    ...         if old_file_lines[i] != new_file_lines[i]:
    ...             # The output is different.
-   ...             return u"Output doesn't match:\n\n %s\n" % test_diff(
+   ...             return "Output doesn't match:\n\n %s\n" % test_diff(
    ...                 old_file_lines, new_file_lines)
-   ...     return u''
+   ...     return ''
 
    >>> def compare_translations(orig_distroseries, dest_distroseries):
-   ...
    ...
    ...     orig_templates = sorted(
    ...         orig_distroseries.currentpotemplates,
@@ -539,23 +550,23 @@ and child distro series.
    ...         dest_distroseries.potemplates,
    ...         key=lambda x: (x.potemplatename.name, x.sourcepackagename.name))
    ...
-   ...     output_text = u''
+   ...     output_text = ''
    ...     for i in range(len(orig_templates)):
    ...         old_template = orig_templates[i]
    ...         new_template = dest_templates[i]
    ...         if old_template.priority != new_template.priority:
-   ...             output_text += u'Priority of %s is different from %s\n' % (
+   ...             output_text += 'Priority of %s is different from %s\n' % (
    ...                 old_template.title, new_template.title)
    ...         output = get_diff(old_template.export(), new_template.export())
-   ...         if output != u'':
+   ...         if output != '':
    ...            output_text += output
    ...         for old_pofile in old_template.pofiles:
    ...             new_pofile = new_template.getPOFileByLang(
    ...                 old_pofile.language.code, old_pofile.variant)
    ...             old_pofile_data = old_pofile.uncachedExport(
-   ...                 included_obsolete=False,force_utf8=True)
+   ...                 ignore_obsolete=True,force_utf8=True)
    ...             new_pofile_data = new_pofile.uncachedExport(
-   ...                 included_obsolete=False, force_utf8=True)
+   ...                 ignore_obsolete=True, force_utf8=True)
    ...             output = get_diff(old_pofile_data, new_pofile_data)
    ...             if output is not None:
    ...                 output_text += output
@@ -1127,26 +1138,27 @@ driver. Here, we expect the driver to be the owner of the distribution
  ...     print d.name
  sabdfl
 
-== Last Uploads ==
+== Lastest Uploads ==
 
-IDistroSeries provides the 'getLastUpload' method which returns a
-list of last 5 (five) IDistroSeriesSourcePackageRelease (IDRSPR)
+IDistroSeries provides the 'getLatestUpload' method which returns a
+list of the last 5 (five) IDistroSeriesSourcePackageRelease (IDRSPR)
 uploaded and published in its context.
 
   >>> warty = ubuntu['warty']
-  >>> last_uploads = warty.getLastUploads()
+  >>> latest_uploads = warty.getLatestUploads()
 
-Each element is a IDistroSeriesSourcePackageRelease instance:
+Each element is an IDistroSeriesSourcePackageRelease instance:
 
-  >>> for upload in last_uploads:
+  >>> for upload in latest_uploads:
   ...     print upload.name, upload.version
   mozilla-firefox 0.9
 
 Also, empty results (caused obviously by lack of sample data or very
 earlier development state of a distroseries) are possible:
 
-  >>> breezy_autotest = ubuntu['breezy-autotest']
-  >>> last_uploads = breezy_autotest.getLastUploads()
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+  >>> breezy_autotest = ubuntutest['breezy-autotest']
+  >>> latest_uploads = breezy_autotest.getLatestUploads()
 
-  >>> len(last_uploads) == 0
-  True
+  >>> len(latest_uploads)
+  0

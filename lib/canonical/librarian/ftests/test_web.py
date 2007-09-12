@@ -151,7 +151,7 @@ class LibrarianWebTestCase(unittest.TestCase):
 
         self.failUnlessEqual(client.getFileByAlias(id1).read(), 'sample')
         self.failUnlessEqual(client.getFileByAlias(id2).read(), 'sample')
-                    
+
     def test_robotsTxt(self):
         url = 'http://%s:%d/robots.txt' % (
             config.librarian.download_host, config.librarian.download_port)
@@ -175,7 +175,7 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
         # a non-standard database user, and because there doesn't seem
         # any point running this test under both environments.
 
-        # XXX: Disabled due to Bug #4613
+        # XXX: Stuart Bishop 2007-04-11 Bug=4613: Disabled due to Bug #4613.
         return
 
         # Add a file.
@@ -202,7 +202,7 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
         access_time_2 = LibraryFileAlias.get(id1).last_accessed
 
         self.failUnless(access_time_1 < access_time_2)
- 
+
 
 class DeletedContentTestCase(unittest.TestCase):
 
@@ -234,7 +234,7 @@ class DeletedContentTestCase(unittest.TestCase):
         url = alias.http_url
         retrieved_content = urlopen(url).read()
         self.failUnlessEqual(retrieved_content, 'xxx\nxxx\n')
-        
+
 
         # But when we flag the content as deleted
         cur = cursor()

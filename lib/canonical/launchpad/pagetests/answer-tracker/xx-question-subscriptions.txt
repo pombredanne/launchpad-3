@@ -30,7 +30,7 @@ name appears in the 'Subscribers' portlet:
     >>> print soup.first('div', 'informational message').renderContents()
     You have subscribed to this question.
 
-    >>> portlet = soup.first('div', id='question-subscribers')
+    >>> portlet = soup.first('div', id='portlet-subscribers')
     >>> portlet.first('h2')
     <h2>Subscribers to question #2</h2>
     >>> portlet.first('ul')
@@ -64,7 +64,7 @@ the question, doesn't appear anymore in the subscribers portlet:
     >>> print soup.first('div', 'informational message').renderContents()
     You have unsubscribed from this question.
 
-    >>> portlet = soup.first('div', id='question-subscribers')
+    >>> portlet = soup.first('div', id='portlet-subscribers')
     >>> portlet.first('p')
     <p>
       <i>No subscribers.</i>
@@ -92,7 +92,7 @@ A notification message is displayed notifying of the subscription:
     You have subscribed to this question.
 
     >>> soup = BeautifulSoup(user_browser.contents)
-    >>> portlet = soup.first('div', id='question-subscribers')
+    >>> portlet = soup.first('div', id='portlet-subscribers')
     >>> for subscriber_link in portlet.findAll('a'):
     ...     print subscriber_link.renderContents()
     No Privileges Person

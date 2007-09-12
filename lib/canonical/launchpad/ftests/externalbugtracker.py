@@ -6,8 +6,10 @@ __metaclass__ = type
 
 import os
 
+from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
+from canonical.launchpad.database import BugTracker
 from canonical.launchpad.components.externalbugtracker import (
-    Bugzilla, Mantis)
+    Bugzilla, Mantis, Trac, Roundup)
 
 
 def read_test_file(name):
@@ -19,6 +21,32 @@ def read_test_file(name):
 
     test_file = open(file_path, 'r')
     return test_file.read()
+
+
+def print_bugwatches(bug_watches, convert_remote_status=None):
+    """Print the bug watches for a BugTracker, ordered by remote bug id.
+
+    :bug_watches: A set of BugWatches to print.
+
+    :convert_remote_status: A convertRemoteStatus method from an
+        ExternalBugTracker instance, which will convert a bug's remote
+        status into a Launchpad BugTaskStatus. See
+        `ExternalBugTracker.convertRemoteStatus()`.
+
+    Bug watches will be printed in the form: Remote bug <id>:
+    <remote_status>. If convert_remote_status is callable it will be
+    used to convert the watches' remote statuses to Launchpad
+    BugTaskStatuses and these will be output instead.
+    """
+    watches = dict((int(bug_watch.remotebug), bug_watch)
+        for bug_watch in bug_watches)
+
+    for remote_bug_id in sorted(watches.keys()):
+        status = watches[remote_bug_id].remotestatus
+        if callable(convert_remote_status):
+            status = convert_remote_status(status)
+
+        print 'Remote bug %d: %s' % (remote_bug_id, status)
 
 
 class TestBugzilla(Bugzilla):
@@ -166,6 +194,9 @@ class TestMantis(Mantis):
             print "CALLED _getPage(%r)" % (page,)
         if page == "csv_export.php":
             return read_test_file('mantis_example_bug_export.csv')
+        elif page.startswith('view.php?id='):
+            bug_id = page.split('id=')[-1]
+            return read_test_file('mantis--demo--bug-%s.html' % bug_id)
         else:
             return ''
 
@@ -173,3 +204,47 @@ class TestMantis(Mantis):
         if self.trace_calls:
             print "CALLED _postPage(%r, ...)" % (page,)
         return ''
+
+
+class TestTrac(Trac):
+    """Trac ExternalBugTracker for testing purposes.
+
+    It overrides urlopen, so that access to a real Trac instance isn't needed,
+    and supportsSingleExports so that the tests don't fail due to the lack of
+    a network connection. Also, it overrides the default batch_query_threshold
+    for the sake of making test data sane.
+    """
+
+    batch_query_threshold = 10
+    supports_single_exports = True
+    trace_calls = False
+
+    def supportsSingleExports(self, bug_ids):
+        """See `Trac`."""
+        return self.supports_single_exports
+
+    def urlopen(self, url):
+        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
+
+        if self.trace_calls:
+            print "CALLED urlopen(%r)" % (url,)
+
+        return open(file_path + '/' + 'trac_example_ticket_export.csv', 'r')
+
+
+class TestRoundup(Roundup):
+    """Roundup ExternalBugTracker for testing purposes.
+
+    It overrides urlopen, so that access to a real Roundup instance isn't
+    needed.
+    """
+
+    trace_calls = False
+
+    def urlopen(self, url):
+        if self.trace_calls:
+            print "CALLED urlopen(%r)" % (url,)
+
+        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
+        return open(file_path + '/' + 'roundup_example_ticket_export.csv', 'r')
+

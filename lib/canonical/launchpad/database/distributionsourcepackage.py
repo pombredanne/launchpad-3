@@ -8,7 +8,6 @@ __all__ = [
     'DistributionSourcePackage',
     ]
 
-from sqlobject import SQLObjectNotFound
 from sqlobject.sqlbuilder import SQLConstant
 
 from zope.interface import implements
@@ -33,7 +32,6 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
-from canonical.launchpad.helpers import shortlist
 
 
 class DistributionSourcePackage(BugTargetBase,
@@ -87,13 +85,15 @@ class DistributionSourcePackage(BugTargetBase,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.version = %s
-            """ % sqlvalues(self.distribution, self.distribution.main_archive,
-                            self.sourcepackagename, version),
+            """ % sqlvalues(self.distribution,
+                            self.distribution.all_distro_archive_ids,
+                            self.sourcepackagename,
+                            version),
             orderBy='-datecreated',
             prejoinClauseTables=['SourcePackageRelease'],
             clauseTables=['DistroRelease', 'SourcePackageRelease'])
@@ -103,7 +103,7 @@ class DistributionSourcePackage(BugTargetBase,
             distribution=self.distribution,
             sourcepackagerelease=spph[0].sourcepackagerelease)
 
-    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
+    # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
     def currentrelease(self):
         """See IDistributionSourcePackage."""
@@ -115,10 +115,11 @@ class DistributionSourcePackage(BugTargetBase,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.status != %s
-            """ % sqlvalues(self.sourcepackagename, self.distribution,
-                            self.distribution.main_archive,
+            """ % sqlvalues(self.sourcepackagename,
+                            self.distribution,
+                            self.distribution.all_distro_archive_ids,
                             PackagePublishingStatus.REMOVED),
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             orderBy=[SQLConstant(order_const),
@@ -204,7 +205,7 @@ class DistributionSourcePackage(BugTargetBase,
             return None
         return cache.binpkgnames
 
-    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
+    # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
     def by_distroseriess(self):
         """See IDistributionSourcePackage."""
@@ -220,7 +221,7 @@ class DistributionSourcePackage(BugTargetBase,
         """See IDistributionSourcePackage."""
         return self._getPublishingHistoryQuery()
 
-    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
+    # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
     def current_publishing_records(self):
         """See IDistributionSourcePackage."""
@@ -230,14 +231,14 @@ class DistributionSourcePackage(BugTargetBase,
     def _getPublishingHistoryQuery(self, status=None):
         query = """
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s
             """ % sqlvalues(self.distribution,
-                            self.distribution.main_archive,
+                            self.distribution.all_distro_archive_ids,
                             self.sourcepackagename)
 
         if status is not None:
@@ -249,19 +250,19 @@ class DistributionSourcePackage(BugTargetBase,
             prejoinClauseTables=['SourcePackageRelease'],
             orderBy='-datecreated')
 
-    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
+    # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
     def releases(self):
         """See IDistributionSourcePackage."""
         ret = SourcePackagePublishingHistory.select("""
             sourcepackagepublishinghistory.distrorelease = DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            sourcepackagepublishinghistory.archive = %s AND
+            sourcepackagepublishinghistory.archive IN %s AND
             sourcepackagepublishinghistory.sourcepackagerelease =
                 sourcepackagerelease.id AND
             sourcepackagerelease.sourcepackagename = %s
             """ % sqlvalues(self.distribution,
-                            self.distribution.main_archive,
+                            self.distribution.all_distro_archive_ids,
                             self.sourcepackagename),
             orderBy='-datecreated',
             clauseTables=['distrorelease', 'sourcepackagerelease'])

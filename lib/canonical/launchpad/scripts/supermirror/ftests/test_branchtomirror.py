@@ -14,8 +14,7 @@ import unittest
 import urllib2
 
 import bzrlib.branch
-import bzrlib.bzrdir
-import bzrlib.errors
+from bzrlib import bzrdir
 from bzrlib.revision import NULL_REVISION
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 from bzrlib.tests.repository_implementations.test_repository import (
@@ -33,7 +32,7 @@ from canonical.launchpad.scripts.supermirror.ftests import createbranch
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror, BadUrlSsh, BadUrlLaunchpad)
 from canonical.authserver.client.branchstatus import BranchStatusClient
-from canonical.authserver.ftests.harness import AuthserverTacTestSetup
+from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.testing import LaunchpadFunctionalLayer, reset_logging
 
 
@@ -86,7 +85,7 @@ class TestBranchToMirror(unittest.TestCase):
         # Check that we can mirror an empty branch, and that the
         # last_mirrored_id for an empty branch can be distinguished
         # from an unmirrored branch.
-        
+
         # Create a branch
         srcbranchdir = self._getBranchDir("branchtomirror-testmirror-src")
         destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
@@ -97,8 +96,8 @@ class TestBranchToMirror(unittest.TestCase):
 
         # create empty source branch
         os.makedirs(srcbranchdir)
-        tree = bzrlib.bzrdir.BzrDir.create_standalone_workingtree(srcbranchdir)
-        
+        tree = bzrdir.BzrDir.create_standalone_workingtree(srcbranchdir)
+
         to_mirror.mirror(logging.getLogger())
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(None, mirrored_branch.last_revision())
@@ -138,31 +137,31 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
     def testMirrorKnitAsKnit(self):
         # Create a source branch in knit format, and check that the mirror is in
         # knit format.
-        self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
+        self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
         self.repository_format = bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
         self._testMirrorFormat()
 
     def testMirrorMetaweaveAsMetaweave(self):
         # Create a source branch in metaweave format, and check that the mirror
         # is in metaweave format.
-        self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
+        self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
         self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
         self._testMirrorFormat()
 
     def testMirrorWeaveAsWeave(self):
         # Create a source branch in weave format, and check that the mirror is
         # in weave format.
-        self.bzrdir_format = bzrlib.bzrdir.BzrDirFormat6()
+        self.bzrdir_format = bzrdir.BzrDirFormat6()
         self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat6()
         self._testMirrorFormat()
 
     def testSourceFormatChange(self):
         # Create and mirror a branch in weave format.
-        self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
+        self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
         self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
         self._createSourceBranch()
         self._mirror()
-        
+
         # Change the branch to knit format.
         shutil.rmtree('src-branch')
         self.repository_format = bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
@@ -195,7 +194,7 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
 
     def _testMirrorFormat(self):
         tree = self._createSourceBranch()
-        
+
         mirrored_branch = self._mirror()
         self.assertEqual(tree.last_revision(),
                          mirrored_branch.last_revision())
@@ -261,12 +260,12 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
     def testMissingFileRevisionData(self):
         self.build_tree(['missingrevision/',
                          'missingrevision/afile'])
-        tree = bzrlib.bzrdir.BzrDir.create_standalone_workingtree(
+        tree = bzrdir.BzrDir.create_standalone_workingtree(
             'missingrevision')
         tree.add(['afile'], ['myid'])
         tree.commit('start')
         # now we have a good branch with a file called afile and id myid
-        # we need to figure out the actual path for the weave.. or 
+        # we need to figure out the actual path for the weave.. or
         # deliberately corrupt it. like this.
         tree.branch.repository.weave_store.put_weave(
             "myid", Weave(weave_name="myid"),
@@ -356,13 +355,11 @@ class TestBadUrl(ErrorHandlingTestCase):
     def testBadUrlLaunchpadDomain(self):
         # If the host of the source branch is in the launchpad.net domain,
         # _openSourceBranch raises BadUrlLaunchpad.
-        self.branch.source = 'http://bazaar.launchpad.net/foo'
+        self.branch.source = 'http://bazaar.launchpad.dev/foo'
         self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
-
-    def testBadUrlLaunchpadHost(self):
-        # If the host of the source branch is launchpad.net, _openSourceBranch
-        # raises BadUrlLaunchpad.
-        self.branch.source = 'http://launchpad.net/foo'
+        self.branch.source = 'sftp://bazaar.launchpad.dev/bar'
+        self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
+        self.branch.source = 'http://launchpad.dev/baz'
         self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
 
     def testBadUrlLaunchpadCaught(self):
@@ -370,9 +367,9 @@ class TestBadUrl(ErrorHandlingTestCase):
         # or a host in this domain is caught, and an informative error message
         # is displayed to the user.
         expected_msg = "Launchpad does not mirror branches from Launchpad."
-        self.branch.source = 'http://bazaar.launchpad.net/foo'
+        self.branch.source = 'http://bazaar.launchpad.dev/foo'
         self._runMirrorAndCheckError(expected_msg)
-        self.branch.source = 'http://launchpad.net/foo'
+        self.branch.source = 'http://launchpad.dev/foo'
         self._runMirrorAndCheckError(expected_msg)
 
 
@@ -386,7 +383,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
     def testHTTPError(self):
         def stubOpenSourceBranch():
             raise urllib2.HTTPError(
-                'http://something', httplib.UNAUTHORIZED, 
+                'http://something', httplib.UNAUTHORIZED,
                 'Authorization Required', 'some headers',
                 open(tempfile.mkstemp()[1]))
         self.branch._openSourceBranch = stubOpenSourceBranch

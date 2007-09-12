@@ -33,12 +33,12 @@ from zope.app.content_types import guess_content_type
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
-    IBugSet, IBugActivitySet, IBugAttachmentSet, IBugExternalRefSet,
-    ICveSet, IEmailAddressSet, ILaunchpadCelebrities, PersonCreationRationale,
-    ILibraryFileAliasSet, IMessageSet, IPersonSet, CreateBugParams)
+    BugTaskStatus, CreateBugParams, IBugActivitySet, IBugAttachmentSet,
+    IBugExternalRefSet, IBugSet, ICveSet, IEmailAddressSet,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessageSet, IPersonSet,
+    PersonCreationRationale)
 from canonical.launchpad.scripts.bugexport import BUGS_XMLNS
-from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType)
+from canonical.lp.dbschema import BugTaskImportance, BugAttachmentType
 
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugimport')
@@ -124,7 +124,7 @@ class BugImporter:
         """Get the Launchpad user corresponding to the given XML node"""
         if node is None:
             return None
-        
+
         # special case for "nobody"
         name = node.get('name')
         if name == 'nobody':
@@ -139,7 +139,7 @@ class BugImporter:
         displayname = get_text(node)
         if not displayname:
             displayname = None
-        
+
         launchpad_id = self.person_id_cache.get(email)
         if launchpad_id is not None:
             person = getUtility(IPersonSet).get(launchpad_id)
@@ -206,7 +206,7 @@ class BugImporter:
     def haveImportedBug(self, bugnode):
         """Return True if the given bug has been imported already."""
         bug_id = int(bugnode.get('id'))
-        # XXX: 20070316 jamesh
+        # XXX: jamesh 2007-03-16:
         # This should be extended to cover other cases like identity
         # based on bug nickname.
         return bug_id in self.bug_id_map

@@ -270,7 +270,7 @@ class AnswerTrackerHandler:
 
     allow_unknown_users = False
 
-    # XXX flacoste 2007/04/23 The 'ticket' part is there for backward
+    # XXX flacoste 2007-04-23: The 'ticket' part is there for backward
     # compatibility with the old notification address. We probably want to
     # remove it in the future.
     _question_address = re.compile(r'^(ticket|question)(?P<id>\d+)@.*')
@@ -330,7 +330,7 @@ class AnswerTrackerHandler:
         In the other status, the message is a comment without status change.
         """
         if question.status in [
-            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, 
+            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
 	    QuestionStatus.ANSWERED]:
             question.giveAnswer(message.owner, message)
         else:
@@ -429,7 +429,7 @@ class MailHandlers:
             config.launchpad.bugs_domain: MaloneHandler(),
             config.launchpad.specs_domain: SpecificationHandler(),
             config.answertracker.email_domain: AnswerTrackerHandler(),
-            # XXX flacoste 2007/04/23 Backward compatibility for old domain.
+            # XXX flacoste 2007-04-23 Backward compatibility for old domain.
             # We probably want to remove it in the future.
             'support.launchpad.net': AnswerTrackerHandler(),
             }

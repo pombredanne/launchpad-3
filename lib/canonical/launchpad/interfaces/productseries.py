@@ -20,9 +20,12 @@ from zope.interface import Interface, Attribute
 from CVS.protocol import CVSRoot, CvsRootError
 
 from canonical.launchpad.fields import ContentNameField, URIField
-from canonical.launchpad.interfaces import (
-    IBugTarget, ISpecificationGoal, IHasAppointedDriver, IHasOwner,
-    IHasDrivers, validate_url)
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.launchpad import (
+    IHasAppointedDriver, IHasOwner, IHasDrivers)
+from canonical.launchpad.interfaces.specificationtarget import (
+    ISpecificationGoal)
+from canonical.launchpad.interfaces.validation import validate_url
 
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -56,6 +59,7 @@ def validate_cvs_root(cvsroot):
             'Please use a fully qualified host name.')
     return True
 
+
 def validate_cvs_module(cvsmodule):
     valid_module = re.compile('^[a-zA-Z][a-zA-Z0-9_/.+-]*$')
     if not valid_module.match(cvsmodule):
@@ -65,11 +69,13 @@ def validate_cvs_module(cvsmodule):
         raise LaunchpadValidationError('A CVS module can not be called "CVS".')
     return True
 
+
 def validate_cvs_branch(branch):
     if branch and re.match('^[a-zA-Z][a-zA-Z0-9_-]*$', branch):
         return True
     else:
         raise LaunchpadValidationError('Your CVS branch name is invalid.')
+
 
 def validate_release_glob(value):
     if validate_url(value, ["http", "https", "ftp"]):
@@ -81,7 +87,7 @@ def validate_release_glob(value):
 class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                      ISpecificationGoal):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
-    # XXX Mark Shuttleworth 14/10/04 would like to get rid of id in
+    # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
     # instead of using object.id.
     id = Int(title=_('ID'))
@@ -150,7 +156,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     security_contact = Attribute(
         'Currently just a reference to the Product security contact.')
 
-    # XXX: 2006-09-05 jamesh
+    # XXX: jamesh 2006-09-05:
     # While it would be more sensible to call this ProductSeries.branch,
     # I've used this name to make sure code that works with the
     # vcs-imports branch (which used to be called branch) doesn't use

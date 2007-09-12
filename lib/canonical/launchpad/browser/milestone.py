@@ -32,7 +32,7 @@ class MilestoneSetNavigation(GetitemNavigation):
     usedfor = IMilestoneSet
 
 
-# XXX: 20051214 jamesh
+# XXX: jamesh 2005-12-14:
 # This class is required in order to make use of a side effect of
 # Navigation.publishTraverse: adding context objects to
 # request.traversed_objects.
@@ -81,7 +81,7 @@ class MilestoneContextMenu(ContextMenu):
 class MilestoneView(LaunchpadView):
 
     # Listify and cache the specifications and bugtasks to avoid making
-    # the same query over and over again when evaluting in the template.
+    # the same query over and over again when evaluating in the template.
     @cachedproperty
     def specifications(self):
         return list(self.context.specifications)
@@ -90,9 +90,42 @@ class MilestoneView(LaunchpadView):
     def bugtasks(self):
         user = getUtility(ILaunchBag).user
         params = BugTaskSearchParams(user, milestone=self.context,
-                    orderby=['-importance', 'datecreated', 'id'])
-        tasks = getUtility(IBugTaskSet).search(params) 
-        return list(tasks)
+                    orderby=['-importance', 'datecreated', 'id'],
+                    omit_dupes=True)
+        tasks = getUtility(IBugTaskSet).search(params)
+        # XXX kiko 2007-08-27: Doing this in the callsite is
+        # particularly annoying, but it's not easy to do the filtering
+        # in BugTaskSet.search() unfortunately. Can we find a good way
+        # of filtering conjoined in database queries?
+        return [task for task in tasks if task.conjoined_master is None]
+
+    @property
+    def bugtask_count_text(self):
+        count = len(self.bugtasks)
+        if count == 1:
+            return "1 bug targeted"
+        else:
+            return "%d bugs targeted" % count
+
+    @property
+    def specification_count_text(self):
+        count = len(self.specifications)
+        if count == 1:
+            return "1 blueprint targeted"
+        else:
+            return "%d blueprints targeted" % count
+
+    @property
+    def is_project_milestone(self):
+        """Check, if the current milestone is a project milestone.
+
+        Return true, if the current milestone is a project milestone,
+        else return False."""
+        return IProjectMilestone.providedBy(self.context)
+
+    @property
+    def has_bugs_or_specs(self):
+        return self.bugtasks or self.specifications
 
 
 class MilestoneAddView:
@@ -114,3 +147,4 @@ class MilestoneEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect('../..')
+

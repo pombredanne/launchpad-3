@@ -24,14 +24,14 @@ def get_script():
 
 class UpdateStatsTest(LaunchpadFunctionalTestCase):
     """Test the update-stats.py script."""
-    # XXX sinzui 2007-07-12 bug=125569
+    # XXX sinzui 2007-07-12 bug=125569:
     # This test should subclass unittest.TestCase. Some reworking
     # is required to migrate this test.
     dbuser = 'statistician'
 
     def tearDown(self):
         """Tear down this test and recycle the database."""
-        # XXX sinzui 2007-07-12 bug=125569
+        # XXX sinzui 2007-07-12 bug=125569:
         # Use the DatabaseLayer mechanism to tear this test down.
         LaunchpadTestSetup().force_dirty_database()
         LaunchpadFunctionalTestCase.tearDown(self)
@@ -59,7 +59,7 @@ class UpdateStatsTest(LaunchpadFunctionalTestCase):
         # can confirm they are created as required, and set the remainders
         # to invalid values so we can confirm they are updated.
         cur.execute("""
-            DELETE FROM DistroReleaseLanguage 
+            DELETE FROM DistroReleaseLanguage
             WHERE id > (SELECT max(id) FROM DistroReleaseLanguage)/2
             """)
         cur.execute("""
@@ -199,7 +199,7 @@ class UpdateTranslationStatsTest(LaunchpadFunctionalTestCase):
 
     def tearDown(self):
         """Tear down this test and recycle the database."""
-        # XXX sinzui 2007-07-12 bug=125569
+        # XXX sinzui 2007-07-12 bug=125569:
         # Use the DatabaseLayer mechanism to tear this test down.
         LaunchpadTestSetup().force_dirty_database()
         LaunchpadFunctionalTestCase.tearDown(self)
@@ -265,8 +265,8 @@ class UpdateTranslationStatsTest(LaunchpadFunctionalTestCase):
         # Commit the current transaction because the script will run in
         # another transaction and thus it won't see the changes done on this
         # test unless we commit.
-        # XXX CarlosPerelloMarin 20070122: Unecessary flush_database_updates
-        # required. See bug #3989 for more info.
+        # XXX CarlosPerelloMarin 2007-01-22 bug=3989:
+        # Unecessary flush_database_updates required.
         from canonical.database.sqlbase import flush_database_updates
         flush_database_updates()
         import transaction
@@ -334,7 +334,7 @@ class UpdateTranslationStatsTest(LaunchpadFunctionalTestCase):
 
     def test_english(self):
         """Test that English is handled correctly by DistroSeries.
-        
+
         English exists in the POFile data, but it cannot be used by Launchpad
         since the messages that are to be translated are stored as English.
         A DistroSeriesLanguage can never be English since it represents a

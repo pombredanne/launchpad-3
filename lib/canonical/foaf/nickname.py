@@ -1,86 +1,130 @@
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 
+"""Nickname generation."""
+
+__metaclass__ = type
+__all__ = []
+
+import random
 import re
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.name import sanitize_name
 
-MIN_NICK_LENGTH = 2
+from canonical.database.sqlbase import cursor
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import sanitize_name, valid_name
 
 
 class NicknameGenerationError(Exception):
     """I get raised when something went wrong generating a nickname."""
 
-def _nick_registered(nick):
+
+def _is_nick_registered(nick):
     """Answer the question: is this nick registered?"""
-    # XXX: This should use IPersonSet.  Before we change this, we need to
+    # XXX: SteveAlexander 2005-06-12:
+    #      This should use IPersonSet.  Before we change this, we need to
     #      make sure that all users of nickname.py are running inside the
     #      launchpad web application, or are using zcml_for_scripts.
-    #      SteveAlexander, 2005-06-12
     from canonical.launchpad.database import PersonSet
     return PersonSet().getByName(nick) is not None
 
-def generate_nick(email_addr, registered=_nick_registered,
-                  report_collisions=False):
+
+def is_blacklisted(name):
+    cur = cursor()
+    cur.execute("SELECT is_blacklisted_name(%(name)s)", vars())
+    return cur.fetchone()[0]
+
+
+def generate_nick(email_addr, is_registered=_is_nick_registered):
     """Generate a LaunchPad nick from the email address provided.
 
-    A valid nick can contain lower case letters, dashes, and numbers,
-    must start with a letter or a number, and must be a minimum of
-    four characters.
+    See canonical.launchpad.validators.name for the definition of a
+    valid nick.
+
+    It is technically possible for this function to raise a
+    NicknameGenerationError, but this will only occur if an operator
+    has majorly screwed up the name blacklist.
     """
     email_addr = email_addr.strip().lower()
 
     if not valid_email(email_addr):
-        raise NicknameGenerationError("%s is not a valid email address" 
+        raise NicknameGenerationError("%s is not a valid email address"
                                       % email_addr)
 
     user, domain = re.match("^(\S+)@(\S+)$", email_addr).groups()
     user = user.replace(".", "-").replace("_", "-")
     domain_parts = domain.split(".")
 
+    def _valid_nick(nick):
+        if not valid_name(nick):
+            return False
+        elif is_registered(nick):
+            return False
+        elif is_blacklisted(nick):
+            return False
+        else:
+            return True
+
     generated_nick = sanitize_name(user)
-    if (registered(generated_nick) or 
-        len(generated_nick) < MIN_NICK_LENGTH):
-        if report_collisions:
-            print ("collision: %s already registered or shorter than %d "
-                   "characters." % ( generated_nick, MIN_NICK_LENGTH ))
+    if _valid_nick(generated_nick):
+        return generated_nick
 
-        for domain_part in domain_parts:
-            generated_nick = sanitize_name(generated_nick + "-" + domain_part)
-            if not registered(generated_nick):
-                break
-            else:
-                if report_collisions:
-                    print "collision: %s already registered" % generated_nick
+    for domain_part in domain_parts:
+        generated_nick = sanitize_name(generated_nick + "-" + domain_part)
+        if _valid_nick(generated_nick):
+            return generated_nick
 
-    if not generated_nick:
-        raise NicknameGenerationError("no nickname could be generated")
+    # We seed the random number generator so we get consistant results,
+    # making the algorithm repeatable and thus testable.
+    random_state = random.getstate()
+    random.seed(sum(ord(letter) for letter in generated_nick))
+    try:
+        attempts = 0
+        prefix = ''
+        suffix = ''
+        mutated_nick = [letter for letter in generated_nick]
+        chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
+        while attempts < 1000:
+            attempts += 1
 
-    if (registered(generated_nick) 
-        or len(generated_nick) < MIN_NICK_LENGTH):
-        if report_collisions:
-            print ("collision: %s already registered or shorter than %d "
-                   "characters" % ( generated_nick, MIN_NICK_LENGTH ))
+            # Prefer a nickname with a suffix
+            suffix += random.choice(chars)
+            if _valid_nick(generated_nick + '-' + suffix):
+                return generated_nick + '-' + suffix
 
-        x = 1
-        found_available_nick = False
-        while not found_available_nick:
-            attempt = sanitize_name(generated_nick + "-" + str(x))
-            if not registered(attempt):
-                generated_nick = attempt
-                break
-            else:
-                if report_collisions:
-                    print "collision: %s already registered" % generated_nick
+            # Next a prefix
+            prefix += random.choice(chars)
+            if _valid_nick(prefix + '-' + generated_nick):
+                return prefix + '-' + generated_nick
 
-            x += 1
+            # Or a mutated character
+            index = random.randint(0, len(mutated_nick)-1)
+            mutated_nick[index] = random.choice(chars)
+            if _valid_nick(''.join(mutated_nick)):
+                return ''.join(mutated_nick)
 
-    return generated_nick
+            # Or a prefix + generated + suffix
+            if _valid_nick(prefix + '-' + generated_nick + '-' + suffix):
+                return prefix + '-' + generated_nick + '-' + suffix
+
+            # Or a prefix + mutated + suffix
+            if _valid_nick(
+                    prefix + '-' + ''.join(mutated_nick) + '-' + suffix):
+                return prefix + '-' + ''.join(mutated_nick) + '-' + suffix
+
+        raise NicknameGenerationError(
+            "No nickname could be generated. "
+            "This should be impossible to trigger unless some twonk has "
+            "registered a match everything regexp in the black list."
+            )
+
+    finally:
+        random.setstate(random_state)
 
 
 def generate_wikiname(displayname, registered):
     """Generate a LaunchPad wikiname from the displayname provided.
-    
+
     e.g.:
-    
+
         >>> generate_wikiname('Andrew Bennetts', lambda x: False)
         'AndrewBennetts'
         >>> generate_wikiname('andrew bennetts', lambda x: False)
@@ -91,7 +135,7 @@ def generate_wikiname(displayname, registered):
         'FooBar2'
         >>> generate_wikiname(u'Andr\xe9 Lu\xeds Lopes', lambda x: False)
         u'Andr\\xe9Lu\\xedsLopes'
-        
+
     """
     # First, just try smooshing the displayname together (stripping punctuation
     # and the like), and see if that's free.

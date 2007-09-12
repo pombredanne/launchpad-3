@@ -1,8 +1,11 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-#
+"""tales.py doctests."""
+
 
 import unittest
+
 from zope.testing.doctestunit import DocTestSuite
+
 
 def test_requestapi():
     """
@@ -18,13 +21,15 @@ def test_requestapi():
 
     >>> class FakeApplicationRequest:
     ...    principal = FakePrincipal()
+    ...    def getURL(self):
+    ...        return 'http://launchpad.dev/'
     ...
 
     Let's make a fake request, where request.principal is a FakePrincipal
     object.  We can use a class or an instance here.  It really doesn't
     matter.
 
-    >>> request = FakeApplicationRequest
+    >>> request = FakeApplicationRequest()
     >>> adapter = RequestAPI(request)
 
     >>> verifyObject(IRequestAPI, adapter)
@@ -33,6 +38,35 @@ def test_requestapi():
     >>> adapter.person
     'This is a person'
 
+    """
+
+def test_cookie_scope():
+    """
+    The 'request/lp:cookie_scope' TALES expression returns a string
+    that represents the scope parameters necessary for a cookie to be
+    available for the entire Launchpad site.  It takes into account
+    the request URL and the cookie_domains setting in launchpad.conf.
+
+        >>> from canonical.launchpad.webapp.tales import RequestAPI
+        >>> def cookie_scope(url):
+        ...     class FakeRequest:
+        ...         def getURL(self):
+        ...             return url
+        ...     return RequestAPI(FakeRequest()).cookie_scope
+
+    The cookie scope will use the secure attribute if the request was
+    secure:
+
+        >>> print cookie_scope('http://launchpad.net/')
+        ; Path=/; Domain=.launchpad.net
+        >>> print cookie_scope('https://launchpad.net/')
+        ; Path=/; Secure; Domain=.launchpad.net
+
+    The domain parameter is omitted for domains that appear to be
+    separate from a Launchpad instance, such as shipit:
+
+        >>> print cookie_scope('https://shipit.ubuntu.com/')
+        ; Path=/; Secure
     """
 
 def test_dbschemaapi():
@@ -125,7 +159,7 @@ def test_add_word_breaks():
       ab/cdefghijklmn<wbr></wbr>op
 
     The string can contain HTML entities, which do not get split:
-    
+
       >>> print add_word_breaks('abcdef&anentity;hijklmnop')
       abcdef&anentity;<wbr></wbr>hijklmnop
     """
@@ -157,7 +191,9 @@ def test_break_long_words():
       <tag>1234567890123456</tag>
     """
 
+
 def test_suite():
+    """Return this module's doctest Suite. Unit tests are not run."""
     suite = DocTestSuite()
     return suite
 

@@ -62,7 +62,7 @@ class BugAttachmentSet:
                attach_type=None):
         """See IBugAttachmentSet."""
         if attach_type is None:
-            # XXX kiko: this should use DEFAULT; depends on bug 1659
+            # XXX kiko 2005-08-03 bug=1659: this should use DEFAULT.
             attach_type = IBugAttachment['type'].default
         return BugAttachment(
             bug=bug, libraryfile=filealias, type=attach_type, title=title,

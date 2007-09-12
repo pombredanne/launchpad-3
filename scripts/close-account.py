@@ -64,8 +64,8 @@ def close_account(con, log, username):
         """, vars())
 
     # Trash their calendar.
-    # XXX: Can't do this until we make the CalendarSubsciption
-    # ON DELETE CASCADE -- StuartBishop 20070131
+    # XXX StuartBishop 2007-01-31:
+    # Can't do this until we make the CalendarSubsciption ON DELETE CASCADE.
     # table_notification('Calendar')
     # if calendar_id is not None:
     #     cur.execute("""

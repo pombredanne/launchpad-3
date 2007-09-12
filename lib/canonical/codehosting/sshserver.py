@@ -24,6 +24,7 @@ from twisted.vfs.adapters import sftp
 
 from canonical.codehosting.bazaarfs import SFTPServerRoot
 from canonical.codehosting.smartserver import launch_smart_server
+from canonical.config import config
 
 from zope.interface import implements
 
@@ -66,8 +67,8 @@ class LaunchpadAvatar(avatar.ConchUser):
         self._productIDs = {}
         self._productNames = {}
 
-        # XXX: See AdaptFileSystemUserToISFTP below.
-        #  -- Andrew Bennetts 2007-01-26.
+        # XXX: Andrew Bennetts 2007-01-26:
+        # See AdaptFileSystemUserToISFTP below.
         self.filesystem = None
 
         # Set the only channel as a session that only allows requests for
@@ -88,9 +89,8 @@ class LaunchpadAvatar(avatar.ConchUser):
         """
         productID = self._productIDs.get(productName)
         if productID is not None:
-            # XXX: should the None result (i.e. not found) be remembered too, to
-            #      ensure repeatable reads?
-            #  -- Andrew Bennetts, 2005-12-13
+            # XXX: Andrew Bennetts 2005-12-13: Should the None result
+            # (i.e. not found) be remembered too, to ensure repeatable reads?
             return defer.succeed(productID)
         deferred = self._launchpad.fetchProductID(productName)
         deferred.addCallback(self._cbRememberProductID, productName)
@@ -107,8 +107,8 @@ class LaunchpadAvatar(avatar.ConchUser):
     def _cbRememberProductID(self, productID, productName):
         if productID is None:
             return None
-        # XXX: Why convert the number to a string here?
-        #  -- Andrew Bennetts, 2007-01-26
+        # XXX: Andrew Bennetts 2007-01-26:
+        # Why convert the number to a string here?
         productID = str(productID)
         self._productIDs[productName] = productID
         self._productNames[productID] = productName
@@ -132,10 +132,9 @@ class LaunchpadAvatar(avatar.ConchUser):
         return FileSystem(SFTPServerRoot(self))
 
 
-# XXX This is nasty.  We want a filesystem per SFTP session, not per avatar, so
-# we let the standard adapter grab a per avatar object, and immediately override
-# with the one we want it to use.
-# -- Andrew Bennetts, 2007-01-26
+# XXX Andrew Bennetts 2007-01-26: This is nasty.  We want a filesystem per
+# SFTP session, not per avatar, so we let the standard adapter grab a per
+# avatar object, and immediately override with the one we want it to use.
 class AdaptFileSystemUserToISFTP(sftp.AdaptFileSystemUserToISFTP):
     def __init__(self, avatar):
         sftp.AdaptFileSystemUserToISFTP.__init__(self, avatar)
@@ -168,10 +167,9 @@ class Realm:
         # Then fetch more details: the branches owned by this user (and the
         # teams they are a member of).
         def getInitialBranches(userDict):
-            # XXX: this makes many XML-RPC requests where a better API could
-            #      require only one (or include it in the team dict in the first
-            #      place).
-            #  -- Andrew Bennetts, 2005-12-13
+            # XXX: Andrew Bennetts 2005-12-13: This makes many XML-RPC
+            #      requests where a better API could require only one
+            #      (or include it in the team dict in the first place).
             deferred = self.authserver.getBranchesForUser(userDict['id'])
             def _gotBranches(branches):
                 userDict['initialBranches'] = branches
@@ -191,17 +189,24 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
 
     def __init__(self, transport=None):
         self.transport = transport
+        self._configured_banner_sent = False
 
     def sendBanner(self, text, language='en'):
         bytes = '\r\n'.join(text.encode('UTF8').splitlines() + [''])
         self.transport.sendPacket(userauth.MSG_USERAUTH_BANNER,
                                   NS(bytes) + NS(language))
 
-    # XXX - Copied from twisted/conch/ssh/userauth.py, with modifications
-    # noted. In Twisted r19857 and earlier, this method does not return a
-    # Deferred, but should. See http://twistedmatrix.com/trac/ticket/2528 for
-    # progress.
-    # -- Jonathan Lange, 2007-03-19
+    def _sendConfiguredBanner(self, passed_through):
+        if (not self._configured_banner_sent
+            and config.codehosting.banner is not None):
+            self._configured_banner_sent = True
+            self.sendBanner(config.codehosting.banner)
+        return passed_through
+
+    # XXX Jonathan Lange 2007-03-19: Copied from
+    # twisted/conch/ssh/userauth.py, with modifications noted.
+    # In Twisted r19857 and earlier, this method does not return a Deferred,
+    # but should. See http://twistedmatrix.com/trac/ticket/2528 for progress.
     def ssh_USERAUTH_REQUEST(self, packet):
         user, nextService, method, rest = getNS(packet, 3)
         if user != self.user or nextService != self.nextService:
@@ -213,6 +218,7 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         if not d:
             self._ebBadAuth(failure.Failure(ConchError('auth returned none')))
             return
+        d.addCallback(self._sendConfiguredBanner)
         d.addCallbacks(self._cbFinishedAuth)
         d.addErrback(self._ebMaybeBadAuth)
         # The following line does not appear in the original Twisted source.

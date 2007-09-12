@@ -19,7 +19,8 @@ from canonical.launchpad.interfaces import (
         IBugTaskSet, IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError,
         NotFoundError, CreateBugParams, IPillarNameSet,
-        BugTargetNotFound, IProject, ISourcePackage, IProductSeries)
+        BugTargetNotFound, IProject, ISourcePackage, IProductSeries,
+        BugTaskStatus)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
@@ -27,7 +28,7 @@ from canonical.launchpad.event.interfaces import (
 
 from canonical.launchpad.webapp.snapshot import Snapshot
 
-from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance)
+from canonical.lp.dbschema import BugTaskImportance
 
 
 def get_error_message(filename, **interpolation_items):
@@ -92,7 +93,7 @@ class EmailCommand:
     def _ensureNumberOfArguments(self):
         """Check that the number of arguments is correct.
 
-        Raise an EmailProcessingError 
+        Raise an EmailProcessingError
         """
         if self._numberOfArguments is not None:
             num_arguments_got = len(self.string_args)
@@ -448,7 +449,7 @@ class AffectsEmailCommand(EmailCommand):
             name, ignore_inactive=True)
         if pillar is None:
             raise BugTargetNotFound(
-                "There is no project named '%s' registered in Launchpad." % 
+                "There is no project named '%s' registered in Launchpad." %
                     name)
 
         # We can't check for IBugTarget, since Project is an IBugTarget
@@ -583,8 +584,9 @@ class AffectsEmailCommand(EmailCommand):
 
     def _create_bug_task(self, bug, bug_target):
         """Creates a new bug task with bug_target as the target."""
-        # XXX kiko: we could fix this by making createTask be a method on
-        # IBugTarget, but I'm not going to do this now. Bug 1690
+        # XXX kiko 2005-09-05 Bug 1690:
+        # We could fix this by making createTask be a method on
+        # IBugTarget, but I'm not going to do this now.
         bugtaskset = getUtility(IBugTaskSet)
         user = getUtility(ILaunchBag).user
         if IProduct.providedBy(bug_target):
@@ -721,12 +723,12 @@ class TagEmailCommand(EmailCommand):
         # operations so we need to convert it.
         tags = list(bug.tags)
 
-        # XXX: DaveMurphy 2007-07-11, in the following loop we process each
+        # XXX: DaveMurphy 2007-07-11: in the following loop we process each
         # tag in turn. Each tag that is either invalid or unassigned will
         # result in a mail to the submitter. This may result in several mails
         # for a single command. This will need to be addressed if that becomes
         # a problem.
-        
+
         for arg in string_args:
             # Are we adding or removing a tag?
             if arg.startswith('-'):
@@ -749,7 +751,7 @@ class TagEmailCommand(EmailCommand):
                 tags.append(arg)
 
         # Duplicates are dealt with when the tags are stored in the DB (which
-        # incidentally uses a set to achieve this). Since the code already 
+        # incidentally uses a set to achieve this). Since the code already
         # exists we don't duplicate it here.
 
         # Bug.tags expects to be given a Python list, so there is no need to

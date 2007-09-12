@@ -157,6 +157,7 @@ with an error message.
     http://answers.launchpad.dev/firefox/+question/2/+linkfaq
     >>> for message in get_feedback_messages(user_browser):
     ...     print message
+    There is 1 error.
     You didn't modify the linked FAQ.
 
 To remove the FAQ, the user selects the 'No existing...' option and 

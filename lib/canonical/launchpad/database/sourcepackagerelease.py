@@ -30,13 +30,14 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
-    ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
-    BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
+    BugTaskSearchParams, ILaunchpadCelebrities, ISourcePackageRelease,
+    ITranslationImportQueue, UNRESOLVED_BUGTASK_STATUSES
     )
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
+from canonical.launchpad.scripts.queue import QueueActionError
 
 
 class SourcePackageRelease(SQLBase):
@@ -57,6 +58,7 @@ class SourcePackageRelease(SQLBase):
     dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
         default=UTC_NOW)
     dsc = StringCol(dbName='dsc')
+    copyright = StringCol(dbName='copyright', notNull=True)
     version = StringCol(dbName='version', notNull=True)
     changelog = StringCol(dbName='changelog')
     builddepends = StringCol(dbName='builddepends')
@@ -69,7 +71,7 @@ class SourcePackageRelease(SQLBase):
     upload_archive = ForeignKey(
         foreignKey='Archive', dbName='upload_archive', notNull=True)
 
-    # XXX cprov 20060926: Those fields are set as notNull and required in
+    # XXX cprov 2006-09-26: Those fields are set as notNull and required in
     # ISourcePackageRelease, however they can't be not NULL in DB since old
     # records doesn't satisfy this condition. We will sort it before using
     # landing 'NoMoreAptFtparchive' implementation for main archive. For
@@ -163,7 +165,7 @@ class SourcePackageRelease(SQLBase):
             # imports us, so avoid circular import
             from canonical.launchpad.database.sourcepackage import \
                  SourcePackage
-            # Only process main archive to skip PPA publishings.
+            # Only process main archives to skip PPA publishings.
             if publishing.archive.purpose == ArchivePurpose.PPA:
                 continue
             sp = SourcePackage(self.sourcepackagename,
@@ -173,16 +175,17 @@ class SourcePackageRelease(SQLBase):
                 if series is None:
                     series = sp_series
                 elif series != sp_series:
-                    # XXX: we could warn about this --keybuk 22jun05
+                    # XXX: keybuk 2005-06-22: We could warn about this.
                     pass
 
         # No series -- no release
         if series is None:
             return None
 
-        # XXX: find any release with the exact same version, or which
+        # XXX: keybuk 2005-06-22:
+        # Find any release with the exact same version, or which
         # we begin with and after a dash.  We could be more intelligent
-        # about this, but for now this will work for most. --keybuk 22jun05
+        # about this, but for now this will work for most.
         for release in series.releases:
             if release.version == self.version:
                 return release
@@ -196,10 +199,10 @@ class SourcePackageRelease(SQLBase):
         upload_distro = self.uploaddistroseries.distribution
         params = BugTaskSearchParams(sourcepackagename=self.sourcepackagename,
             user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        # XXX: we need to omit duplicates here or else our bugcounts are
+        # XXX: kiko 2006-03-07:
+        # We need to omit duplicates here or else our bugcounts are
         # inconsistent. This is a wart, and we need to stop spreading
         # these things over the code.
-        #   -- kiko, 2006-03-07
         params.omit_dupes = True
         return upload_distro.searchTasks(params).count()
 
@@ -217,18 +220,20 @@ class SourcePackageRelease(SQLBase):
         clauseTables = ['BinaryPackagePublishingHistory',
                         'BinaryPackageRelease',
                         'Build']
-        # XXX cprov 20060823: will distinct=True help us here ?
+        # XXX cprov 2006-08-23: Will distinct=True help us here?
         archSerieses = sets.Set(DistroArchSeries.select(
             """
             BinaryPackagePublishingHistory.distroarchrelease =
                DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %d AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                BinaryPackageRelease.id AND
             BinaryPackageRelease.build = Build.id AND
             Build.sourcepackagerelease = %d
-            """ % (distroseries, distroseries.main_archive, self),
+            """ % (distroseries,
+                   distroseries.distribution.all_distro_archive_ids,
+                   self),
             clauseTables=clauseTables))
 
         return archSerieses
@@ -306,6 +311,14 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         if component is not None:
             self.component = component
+            # See if the new component requires a new archive:
+            distribution = self.uploaddistroseries.distribution
+            new_archive = distribution.getArchiveByComponent(component.name)
+            if new_archive is not None:
+                self.upload_archive = new_archive
+            else:
+                raise QueueActionError(
+                    "New component '%s' requires a non-existent archive.")
         if section is not None:
             self.section = section
         if urgency is not None:

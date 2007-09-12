@@ -204,7 +204,7 @@ class FTPWalker(WalkerBase):
         dirnames = []
         filenames = []
         for line in listing:
-            # XXX: Assume UNIX listings for now --keybuk 24jun05
+            # XXX keybuk 2005-06-24: Assume UNIX listings for now.
             words = line.split(None, 8)
             if len(words) < 6:
                 self.log.debug("Ignoring short line: %s", line)

@@ -6,7 +6,7 @@ from string import split, join
 from canonical.foaf.nickname import generate_nick
 from canonical.encoding import guess as ensure_unicode
 
-def data_sanitizer(data):    
+def data_sanitizer(data):
     if not data:
         return data
     try:
@@ -17,7 +17,7 @@ def data_sanitizer(data):
         # check that this is latin-1 data
         s = data.decode("latin-1").encode("utf-8")
         s.decode("utf-8")
-        return s   
+        return s
     #zope facility that doesn't work very well
     #return ensure_unicode(data)
 
@@ -29,7 +29,7 @@ class SQLThing:
 
     def commit(self):
         return self.db.commit()
-    
+
     def close(self):
         return self.db.close()
 
@@ -46,14 +46,14 @@ class SQLThing:
     def _query_to_dict(self, query, args=None):
         cursor = self._exec(query, args)
         return self._get_dicts(cursor)
-        
+
     def _query(self, query, args=None):
         #print repr(query), repr(args)
         cursor = self.db.cursor()
         cursor.execute(query, args or [])
         results = cursor.fetchall()
         return results
-    
+
     def _query_single(self, query, args=None):
         q = self._query(query, args)
         if len(q) == 1:
@@ -93,18 +93,18 @@ class SQLThing:
         if not fieldstring:
             print '@\tNo info to UPDATE'
             return
- 
+
         query = "UPDATE %s SET %s WHERE %s;" % (table, fieldstring, clause)
         try:
             self._exec(query)
             #print query
         except:
             print "Bad things happened, data was %s" % data
-            raise 
+            raise
 
-### XXX:cprov
+# XXX: cprov 2005-01-26:
 # This class needs a lot of Love, it is fitting and cleaning data
-# for the DB backend classes  
+# for the DB backend classes
 class FitData(object):
     pdisplayname = None
     pemail = None
@@ -123,9 +123,8 @@ class FitData(object):
     plang = None
 
     def __init__(self, data, name):
-        ## XXX cprov
-        ## if no data is available
-        ## Create an Empty Product
+        # XXX cprov 2005-01-26:
+        # If no data is available Create an Empty Product
         if not data:
             self.name = name
             self.displayname = name
@@ -133,11 +132,10 @@ class FitData(object):
             self.summary = 'No Summary Available'
             self.description = 'No Description Available'
             return
-        
-        ## XXX cprov
-        ## both have devels        
-        ## strange shit with wrong encode keys
-        ## multiple devels and so
+
+        # XXX cprov 2005-01-26:
+        # Both have devels strange shit with wrong encode keys
+        # multiple devels and so
         try:
             self.pdisplayname = data_sanitizer(data['devels'].keys()[0])
             self.pemail = data_sanitizer(data['devels'].values()[0])
@@ -145,7 +143,7 @@ class FitData(object):
             print '@\tNo Devel'
         except IndexError:
             print '@\tNo Devel'
-            
+
         ## both have project
         self.name = data_sanitizer(data['product']).split()[0].lower()
 
@@ -158,7 +156,7 @@ class FitData(object):
             self.displayname = data_sanitizer(data['product'])
             self.title = data_sanitizer(data['product'])
 
-        ## both have summary        
+        ## both have summary
         if 'summary' in data.keys():
             self.summary = data_sanitizer(data['summary'])
         else:
@@ -178,12 +176,12 @@ class FitData(object):
             plang_list = data['programminglang']
             temp_plang = ''
             for plang in plang_list:
-                temp_plang += ' ' + plang  
+                temp_plang += ' ' + plang
 
             plang = data_sanitizer(temp_plang)
         except KeyError:
             pass
-        
+
         try:
             screenshot = data_sanitizer(data['screenshot'])
         except KeyError:
@@ -197,7 +195,7 @@ class FitData(object):
         except IndexError:
             listurl = None
 
-    
+
         if 'sf' in data.keys():
             self.sourceforgeproject = data_sanitizer(data['sf'])
         else:
@@ -207,8 +205,8 @@ class FitData(object):
             self.freshmeatproject = data_sanitizer(data['fm'])
         else:
             self.freshmeatproject = None
- 
- 
+
+
 class Doap(SQLThing):
     #
     # SourcePackageName
@@ -220,11 +218,11 @@ class Doap(SQLThing):
                                   (product_id, package_id))
 
     def getSourcePackageByName(self, name, distroname):
-        # XXX cprov
-        # if distroname wasn't provided use Ubuntu
+        # XXX cprov 2005-01-26:
+        # If distroname wasn't provided use Ubuntu.
         if not distroname:
             distroname = 'ubuntu'
-            
+
         return self._query_single("""SELECT SourcePackage.id
             FROM SourcePackage,SourcePackagename,Distribution
             WHERE SourcePackage.distro = Distribution.id AND
@@ -241,10 +239,10 @@ class Doap(SQLThing):
 
     def getPersonByEmail(self, email):
         return self._query_single("""SELECT
-            Person.id FROM Person,emailaddress 
-            WHERE email = %s AND 
+            Person.id FROM Person,emailaddress
+            WHERE email = %s AND
             Person.id = emailaddress.person;""", (email,))
- 
+
     def getPersonByName(self, name):
         return self._query_single("""SELECT Person.id FROM Person
                                      WHERE name = %s""", (name,))
@@ -253,13 +251,13 @@ class Doap(SQLThing):
         print "@\tCreating Person %s <%s>" % (name, email)
         name = data_sanitizer(name)
 
-        #XXX: cprov
-        # It shouldn't be here
+        #XXX: cprov 2005-01-26:
+        # It shouldn't be here.
         email = email.replace("__dash__", "")
         email = email.replace("|dash|", "")
-        email = email.replace("[dash]", "")        
+        email = email.replace("[dash]", "")
         email = email.replace(" ", "")
-        
+
         items = name.split()
         if len(items) == 1:
             givenname = name
@@ -277,12 +275,12 @@ class Doap(SQLThing):
         self._insert("person", data)
         pid = self._query_single("SELECT CURRVAL('person_id_seq')")[0]
         self.createEmail(pid, email)
- 
+
     def createEmail(self, pid, email):
         data = {
             "email":    email,
             "person":   pid,
-            "status":   1, # Status 'New' 
+            "status":   1, # Status 'New'
         }
         self._insert("emailaddress", data)
 
@@ -298,9 +296,9 @@ class Doap(SQLThing):
         return self._query_single("""SELECT * FROM product WHERE name=%s;""",
                                   name)
 
-    ##XXX: cprov
-    ## Try to return the right project name (reviewed sf/fm one)
-    ## not the DOAP name.
+    # XXX: cprov 2005-01-26:
+    # Try to return the right project name (reviewed sf/fm one)
+    # not the DOAP name.
     def getProductsForUpdate(self):
         products = self._query("""SELECT name FROM product WHERE
                                   autoupdate=True AND reviewed=True;""")
@@ -315,7 +313,7 @@ class Doap(SQLThing):
         if not data:
             print '@\t No data available for Update'
             return
-        
+
         fit = FitData(data, productname)
 
         # only update peripheral data, rather than the summary and
@@ -326,24 +324,24 @@ class Doap(SQLThing):
                   "downloadurl":         fit.download,
                   "programminglang":     fit.plang,
                   "sourceforgeproject":  fit.sourceforgeproject,
-                  "freshmeatproject":    fit.freshmeatproject,             
+                  "freshmeatproject":    fit.freshmeatproject
                 }
-                                          
+
         # the query reinforces the requirement that we only update when the
-        # autoupdate field is true        
+        # autoupdate field is true
         self._update("product", dbdata, ("name='%s' and autoupdate=True"
                                          % productname))
-        print '@\tProduct %s Updated' % productname        
+        print '@\tProduct %s Updated' % productname
 
 
     def createProduct(self, owner, fitted_data):
 
         fit = fitted_data
-            
+
         datecreated = 'now()'
 
-        ##XXX: (product+lastdoap) cprov 20041015
-        ## Missed lastdoap field
+        # XXX: cprov 2004-10-15:
+        # Missed lastdoap field (product+lastdoap)
         dbdata = {"owner":               owner,
                   "name" :               fit.name,
                   "displayname":         fit.displayname,
@@ -359,7 +357,7 @@ class Doap(SQLThing):
                   "sourceforgeproject":  fit.sourceforgeproject,
                   "freshmeatproject":    fit.freshmeatproject,
                   }
-                                          
+
         self._insert("product", dbdata)
         print '@\tProduct %s created' % fit.displayname
 
@@ -368,7 +366,7 @@ class Doap(SQLThing):
                    "product": product,
                    "role": role,
                    }
-        
+
         self._insert("productrole", dbdata)
         print '@\tProduct Role %s Created' % role
 
@@ -378,62 +376,62 @@ class Doap(SQLThing):
                   "summary":     summary,
                   "displayname": displayname,
                   }
-        
+
         self._insert("productseries", dbdata)
         print '@\tProduct Series %s Created' % displayname
-            
+
     def ensureProduct(self, data, productname, ownername=None):
 
         if self.getProductByName(productname):
             self.updateProduct(data, productname)
-            return 
+            return
 
         ## Fits the data (sanitizer, multiple entries handling, clean-up, etc)
         fit = FitData(data, productname)
-        
-        # XXX cprov 
+
+        # XXX cprov 2005-01-26:
         # Problems with wierd developers name and/or email
         if fit.pdisplayname and fit.pemail:
             owner = self.ensurePerson(fit.pdisplayname, fit.pemail)[0]
         else:
             print "@\tDOAP wins a Product "
             owner = self.getPersonByName(ownername)[0]
-            
+
 
         ## Create a product based on fitted data
         self.createProduct(owner, fit)
 
         ## Get the 'just inserted' product id
         product = self.getProductByName(fit.name)[0]
-        ## XXX cprov
-        ## Hardcoded Role too Member
+        # XXX cprov 2005-01-26:
+        # Hardcoded Role too Member
         role = 1
 
-        ## create productrole        
+        ## create productrole
         self.createProductRole(owner, product, role)
-        
+
         ## productseries
 
-        ##XXX: (series+name) cprov 20041012
-        ## Hardcoded Product Series Name as "head"
+        # XXX: cprov 2004-10-12
+        # Hardcoded Product Series Name as "head" (series+name).
         name = 'head'
-        ##XXX: (series+diaplyname) cprov 20041012
-        ## Displayname composed by projectname-serie as
-        ## apache-1.2 or Mozilla-head
+        # XXX: cprov 2004-10-12
+        # Displayname composed by projectname-serie as
+        # apache-1.2 or Mozilla-head (series+diaplyname).
         displayname = fit.displayname + ' Head'
 
         summary = """This is the primary HEAD branch of the mainline
         revision control system for %s. Releases on this
         series are usually development milestones and test
         releases.""" % fit.displayname
-        
+
         self.createProductSeries(product, name, displayname, summary)
-        
+
 
     def ensurePackaging(self, productname, packagename, distroname):
-        
+
         product = self.getProductByName(productname)
-        
+
         if product:
             product_id = product[0]
         else:
@@ -442,19 +440,19 @@ class Doap(SQLThing):
             return
 
         sourcepackage = self.getSourcePackageByName(packagename, distroname)
-        
+
         if not sourcepackage:
             ## Aborting !!!
             return
 
         package_id = sourcepackage[0]
-        
+
         ## verify the respective packaging entry
         if self.getPackaging(product_id, package_id):
             print '@\tPackaging Entry Found'
             return True
-        
-        ##XXX: hardcoded Prime Packaging
+
+        # XXX: daniels 2004-12-14: hardcoded Prime Packaging.
         packaging = 1
 
         dbdata = { "product" : product_id,
@@ -466,4 +464,4 @@ class Doap(SQLThing):
         print '@\tPackaging %s - %s Created' % (productname, packagename)
         # finished with success
         return True
-        
+

@@ -56,4 +56,16 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchTeamMailingList">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.UnexpectedStatusReport">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.BadStatus">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
 </configure>
