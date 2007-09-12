@@ -82,9 +82,11 @@ and estimated size).
     >>> results = find_tag_by_id(browser.contents,'package_counters')
     >>> text = extract_text(results)
     >>> print text
-    3 Sources
+    3 source
+    packages
     (9.5 MiB)
-    3 Binaries
+    3 binary
+    packages
     (3 bytes)
     Estimated archive size:
     9.5 MiB

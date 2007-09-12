@@ -48,11 +48,19 @@
 
       <div>
         <ul id="package_counters">
-          <li id="source_counter">
-             <span tal:replace="context/number_of_sources"/> Sources
+          <li id="source_counter" tal:define="counter context/number_of_sources">
+             <span tal:replace="counter" /> source
+             <tal:sigular replace="string: package"
+                  condition="python: counter == 1" />
+             <tal:plural replace="string: packages"
+                  condition="python: counter > 1" />
              (<span tal:replace="context/sources_size/fmt:bytes" />)</li>
-          <li id="binary_counter">
-             <span tal:replace="context/number_of_binaries"/> Binaries
+          <li id="binary_counter" tal:define="counter context/number_of_binaries">
+             <span tal:replace="counter"/> binary
+             <tal:sigular replace="string: package"
+                  condition="python: counter == 1" />
+             <tal:plural replace="string: packages"
+                  condition="python: counter > 1" />
              (<span tal:replace="context/binaries_size/fmt:bytes" />)</li>
 	  <li id="total_size">
              Estimated archive size:
