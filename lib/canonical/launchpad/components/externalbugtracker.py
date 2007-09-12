@@ -21,10 +21,10 @@ from zope.interface import implements
 from canonical.config import config
 from canonical import encoding
 from canonical.database.constants import UTC_NOW
-from canonical.lp.dbschema import BugTrackerType, BugTaskStatus
+from canonical.lp.dbschema import BugTrackerType
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
-    IExternalBugtracker, UNKNOWN_REMOTE_STATUS)
+    BugTaskStatus, IExternalBugtracker, UNKNOWN_REMOTE_STATUS)
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (http://bugs.launchpad.net/)"

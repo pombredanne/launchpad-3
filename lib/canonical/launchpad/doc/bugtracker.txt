@@ -124,5 +124,54 @@ contact any external servers.
     INFO    No watches to update on http://sourceforge.net/
     INFO    No watches to update on https://bugzilla.mozilla.org/
     INFO    Skipping updating Ubuntu Bugzilla watches.
+    INFO    Time for this run: ... seconds.
     <BLANKLINE>
 
+We set a default timeout on checkwatches to 30 seconds. In order to test
+this, we can monkey-patch urllib2.urlopen so that it always raises a
+timeout and call the checkwatches cronscript machinery directly.
+
+First, we create some bug watches to test with:
+
+    >>> from canonical.launchpad.database import BugTracker
+    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.scripts.checkwatches import (
+    ...     BugWatchUpdater)
+
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+
+    >>> example_bug_tracker = BugTracker(
+    ...     name="example-bugs",
+    ...     title="Example.com Roundup",
+    ...     bugtrackertype=BugTrackerType.ROUNDUP,
+    ...     baseurl="http://bugs.example.com",
+    ...     summary="Contains bugs for Example.com",
+    ...     contactdetails="foo.bar@example.com",
+    ...     owner=sample_person)
+
+    >>> login('test@canonical.com')
+
+    >>> example_bug = getUtility(IBugSet).get(10)
+    >>> example_bugwatch = example_bug.addWatch(
+    ...     example_bug_tracker, 1, sample_person)
+
+    >>> login('no-priv@canonical.com')
+
+Next, we monkey-patch urllib2.urlopen so that it always times out.
+
+    >>> import socket
+    >>> import urllib2
+    >>> urlopen = urllib2.urlopen
+
+    >>> def do_not_urlopen(url=None, data=None):
+    ...     raise socket.timeout("Connection timed out.")
+    >>> try:
+    ...     urllib2.urlopen = do_not_urlopen
+    ...     socket.setdefaulttimeout(1)
+    ...     updater = BugWatchUpdater(transaction)
+    ...     updater._login()
+    ...     updater.updateBugTracker(example_bug_tracker)
+    ... finally:
+    ...     urllib2.urlopen = urlopen
+    ERROR:root:Connection timed out when updating http://bugs.example.com

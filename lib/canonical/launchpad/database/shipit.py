@@ -43,7 +43,7 @@ from canonical.launchpad.interfaces import (
     IShipItReport, IShipItReportSet, ShipItConstants, ILibraryFileAliasSet,
     SOFT_MAX_SHIPPINGRUN_SIZE, MAX_CDS_FOR_UNTRUSTED_PEOPLE,
     ShipItDistroSeries, ShipItArchitecture, ShipItFlavour,
-    ShippingService, ShippingRequestStatus)
+    ShippingService, ShippingRequestStatus, ShippingRequestType)
 from canonical.launchpad.database.country import Country
 
 
@@ -65,6 +65,7 @@ class ShippingRequest(SQLBase):
     shockandawe = ForeignKey(dbName='shockandawe', foreignKey='ShockAndAwe',
                              default=None)
 
+    type = EnumCol(enum=ShippingRequestType, default=None)
     status = EnumCol(
         enum=ShippingRequestStatus, notNull=True,
         default=ShippingRequestStatus.PENDING)
@@ -196,11 +197,22 @@ class ShippingRequest(SQLBase):
             distroseries=ShipItConstants.current_distroseries):
         """Set the approved and/or requested quantities of this request.
 
-        :quantities: A dictionary like the described in
-                     IShippingRequestSet.setQuantities.
+        Also set this request's status to indicate whether it's a standard or
+        custom one.
+            :param quantities: A dictionary like the described in
+                               IShippingRequestSet.setQuantities.
         """
         assert set_approved or set_requested
+        standardrequestset = getUtility(IStandardShipItRequestSet)
+        type = ShippingRequestType.STANDARD
         for flavour, arches_and_quantities in quantities.items():
+            x86 = arches_and_quantities.get(ShipItArchitecture.X86, 0)
+            amd64 = arches_and_quantities.get(ShipItArchitecture.AMD64, 0)
+            ppc = arches_and_quantities.get(ShipItArchitecture.PPC, 0)
+            standard_template = standardrequestset.getByNumbersOfCDs(
+                flavour, x86, amd64, ppc)
+            if standard_template is None:
+                type = ShippingRequestType.CUSTOM
             for arch, quantity in arches_and_quantities.items():
                 assert quantity >= 0
                 requested_cds = self._getRequestedCDsByFlavourAndArch(
@@ -213,14 +225,7 @@ class ShippingRequest(SQLBase):
                     requested_cds.quantityapproved = quantity
                 if set_requested:
                     requested_cds.quantity = quantity
-
-    def isCustom(self):
-        """See IShippingRequest"""
-        requested_cds = self.getAllRequestedCDs()
-        for flavour in ShipItFlavour.items:
-            if self.containsCustomQuantitiesOfFlavour(flavour):
-                return True
-        return False
+        self.type = type
 
     def containsCustomQuantitiesOfFlavour(self, flavour):
         """See IShippingRequest"""
