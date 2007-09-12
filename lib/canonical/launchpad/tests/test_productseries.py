@@ -263,6 +263,14 @@ class TestProductSeriesSearchImports(LaunchpadZopelessTestCase):
         results = getUtility(IProductSeriesSet).searchImports()
         self.assertEquals(list(results), [series])
 
+    def testOneSeriesNoProject(self):
+        """Series for products with no project should be returned too."""
+        series = self.getSeriesForProduct('jokosher')
+        self.failIf(series.product.project)
+        self.addImportDetailsToSeries(series)
+        results = getUtility(IProductSeriesSet).searchImports()
+        self.assertEquals(list(results), [series])
+
     def testExcludeDeactivatedProducts(self):
         """Series with import data associated to deactivated products are not
         returned.

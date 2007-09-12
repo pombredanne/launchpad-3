@@ -583,7 +583,7 @@ class ProductSeriesSet:
         product_match = "Product.project = Project.id AND Project.active"
         if text:
             product_match += " AND Product.fti @@ ftq(%s)" % quote(text)
-        conditions.append(product_match)
+        conditions.append("((%s) OR project IS NULL)" % product_match)
 
         # Now just add the filter on import status.
         if importstatus is None:
