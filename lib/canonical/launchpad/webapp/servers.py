@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 """Definition of the internet servers that Launchpad uses."""
 
 __metaclass__ = type
@@ -16,6 +17,7 @@ from zope.app.wsgi import WSGIPublisherApplication
 from zope.interface import implements
 from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
+from zope.publisher.interfaces import NotFound
 from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
 from zope.security.proxy import isinstance as zope_isinstance
 from zope.server.http.commonaccesslogger import CommonAccessLogger
@@ -26,8 +28,7 @@ from canonical.config import config
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
-        IShipItApplication, IOpenIdApplication, IPrivateXMLRPCRequest)
-
+    IShipItApplication, IOpenIdApplication, IPrivateApplication)
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
@@ -790,15 +791,24 @@ class PublicXMLRPCResponse(XMLRPCResponse):
 
 class PrivateXMLRPCPublication(PublicXMLRPCPublication):
     """The publication used for private XML-RPC requests."""
-    # For now, the same as public publications.
+
+    root_object_interface = IPrivateApplication
+
+    def traverseName(self, request, ob, name):
+        """Traverse to an end point or let normal traversal do its thing."""
+        assert isinstance(request, PrivateXMLRPCRequest), (
+            'Not a private XML-RPC request')
+        missing = object()
+        end_point = getattr(ob, name, missing)
+        if end_point is missing:
+            return super(PrivateXMLRPCPublication, self).traverseName(
+                request, ob, name)
+        return end_point
 
 
 class PrivateXMLRPCRequest(PublicXMLRPCRequest):
     """Request type for doing private XML-RPC in Launchpad."""
-
-    # Add this marker interface to the request so that LaunchpadRootNavigation
-    # can check for its presence on the resulting utility.
-    implements(IPrivateXMLRPCRequest)
+    # For now, the same as public requests.
 
 
 # ---- openid

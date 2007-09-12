@@ -9,11 +9,6 @@
       <allow interface="canonical.launchpad.interfaces.IPrivateApplication"/>
   </securedutility>
 
-  <browser:navigation
-    module="canonical.launchpad.xmlrpc"
-    classes="PrivateApplicationNavigation"
-    />
-
   <class class="canonical.launchpad.xmlrpc.faults.BranchAlreadyRegistered">
     <require like_class="xmlrpclib.Fault" />
   </class>

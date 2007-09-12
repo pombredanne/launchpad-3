@@ -17,20 +17,20 @@ external XML-RPC port.
     >>> import xmlrpclib
     >>> from canonical.functional import XMLRPCTestTransport
     >>> external_api = xmlrpclib.ServerProxy(
-    ...    public_root + '+private/mailinglists/',
+    ...    public_root + 'mailinglists/',
     ...    transport=XMLRPCTestTransport())
     >>> external_api.getPendingActions()
     Traceback (most recent call last):
     ...
     ProtocolError: <ProtocolError for
-    test@canonical.com:test@xmlrpc.launchpad.dev/+private/mailinglists/:
+    test@canonical.com:test@xmlrpc.launchpad.dev/mailinglists/:
     404 404 Not Found>
 
 However, the end point is available on the internal port and does not require
 authentication.
 
     >>> internal_api = xmlrpclib.ServerProxy(
-    ...     private_root + '+private/mailinglists/',
+    ...     private_root + 'mailinglists/',
     ...     transport=XMLRPCTestTransport())
     >>> internal_api.getPendingActions()
     {}

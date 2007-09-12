@@ -8,7 +8,6 @@ __all__ = [
     'IRosettaSelfTest',
     'ISelfTest',
     'PrivateApplication',
-    'PrivateApplicationNavigation',
     'RosettaSelfTest',
     'SelfTest',
     ]
@@ -19,29 +18,16 @@ from zope.component import getUtility
 from zope.interface import Interface, implements
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IMailingListApplication,
-    IPrivateApplication, IPrivateXMLRPCEndPoint)
+    ILaunchBag, IMailingListApplication, IPrivateApplication)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, Navigation
 
 
 class PrivateApplication:
-    implements(IPrivateApplication, IPrivateXMLRPCEndPoint)
+    implements(IPrivateApplication)
 
     @property
     def mailinglists(self):
         return getUtility(IMailingListApplication)
-
-
-class PrivateApplicationNavigation(Navigation):
-    usedfor = IPrivateApplication
-
-    def traverse(self, name):
-        # Raise a 404 on an invalid private application end point.
-        missing = object()
-        end_point = getattr(self.context, name, missing)
-        if end_point is missing:
-            raise NotFoundError(name)
-        return end_point
 
 
 class ISelfTest(Interface):

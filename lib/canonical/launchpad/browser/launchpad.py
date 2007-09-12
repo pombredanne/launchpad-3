@@ -72,9 +72,6 @@ from canonical.launchpad.interfaces import (
     IPersonSet,
     IPillarNameSet,
     IPOTemplateNameSet,
-    IPrivateApplication,
-    IPrivateXMLRPCEndPoint,
-    IPrivateXMLRPCRequest,
     IProductSet,
     IProjectSet,
     IQuestionSet,
@@ -421,7 +418,6 @@ class LaunchpadRootNavigation(Navigation):
         '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,
         'potemplatenames': IPOTemplateNameSet,
-        '+private': IPrivateApplication,
         'projects': IProductSet,
         'projectgroups': IProjectSet,
         'registry': IRegistryApplication,
@@ -447,22 +443,7 @@ class LaunchpadRootNavigation(Navigation):
 
     def traverse(self, name):
         if name in self.stepto_utilities:
-            utility = getUtility(self.stepto_utilities[name])
-            # If the utility is part of the private API, then the request must
-            # be coming from the private XML-RPC port.
-            if (IPrivateXMLRPCEndPoint.providedBy(utility) and
-                not IPrivateXMLRPCRequest.providedBy(self.request)):
-                # The utility wants to be private but the request was public.
-                return None
-            # And If the utility is not part of the private API, then the
-            # request must not be coming from the private XML-RPC port.
-            if (not IPrivateXMLRPCEndPoint.providedBy(utility) and
-                IPrivateXMLRPCRequest.providedBy(self.request)):
-                # The utility wants to be public but the request was private.
-                # This is mostly an internal error, but returning a 404 will
-                # give a better error diagnostic.
-                return None
-            return utility
+            return getUtility(self.stepto_utilities[name])
 
         # Allow traversal to ~foo for People
         if name.startswith('~'):

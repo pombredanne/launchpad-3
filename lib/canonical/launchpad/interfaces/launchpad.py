@@ -61,8 +61,6 @@ __all__ = [
     'IPasswordEncryptor',
     'IPasswordResets',
     'IPrivateApplication',
-    'IPrivateXMLRPCEndPoint',
-    'IPrivateXMLRPCRequest',
     'IReadZODBAnnotation',
     'IRegistryApplication',
     'IRosettaApplication',
@@ -201,14 +199,6 @@ class IPrivateApplication(ILaunchpadApplication):
     """Launchpad private XML-RPC application root."""
 
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
-
-
-class IPrivateXMLRPCEndPoint(Interface):
-    """Marker interface for private XML-RPC end points."""
-
-
-class IPrivateXMLRPCRequest(Interface):
-    """Marker interface for private XML-RPC requests."""
 
 
 class IAuthApplication(Interface):
