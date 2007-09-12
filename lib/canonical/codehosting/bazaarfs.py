@@ -342,7 +342,8 @@ class NameRestrictedWriteLoggingDirectory(WriteLoggingDirectory):
     the names in `ALLOWED_DIRECTORIES`.
     """
 
-    def __init__(self, flagAsDirty, path, logger=None, name=None, parent=None):
+    def __init__(self, flagAsDirty, path, logger=None, name=None,
+                 parent=None):
         self._checkName(name)
         WriteLoggingDirectory.__init__(
             self, flagAsDirty, path, logger, name, parent)
@@ -372,9 +373,9 @@ class SFTPServerBranch(WriteLoggingDirectory, LoggingMixin):
         path = '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
 
         self._listener = None
-        WriteLoggingDirectory.__init__(self, self._flagAsDirty,
-                                       os.path.join(avatar.homeDirsRoot, path),
-                                       avatar.logger, branchName, parent)
+        WriteLoggingDirectory.__init__(
+            self, self._flagAsDirty, os.path.join(avatar.homeDirsRoot, path),
+            avatar.logger, branchName, parent)
         if not os.path.exists(self.realPath):
             os.makedirs(self.realPath)
 

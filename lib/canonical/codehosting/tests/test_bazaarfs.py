@@ -46,6 +46,7 @@ class FakeLaunchpad:
 
 
 class TestTopLevelDir(AvatarTestCase):
+
     def setUp(self):
         AvatarTestCase.setUp(self)
         self.alice = LaunchpadAvatar(
@@ -90,6 +91,7 @@ class TestTopLevelDir(AvatarTestCase):
 
 
 class UserDirsTestCase(AvatarTestCase):
+
     def setUp(self):
         AvatarTestCase.setUp(self)
         self.alice = LaunchpadAvatar(
@@ -161,6 +163,7 @@ class UserDirsTestCase(AvatarTestCase):
 
 
 class ProductDirsTestCase(AvatarTestCase):
+
     def setUp(self):
         AvatarTestCase.setUp(self)
         self.avatar = LaunchpadAvatar(
@@ -204,12 +207,14 @@ class ProductDirsTestCase(AvatarTestCase):
         root = self.avatar.makeFileSystem().root
         user_dir = root.child('~alice')
 
-        d = defer.maybeDeferred(user_dir.createDirectory, 'mozilla-firefox')
-        d.addCallback(
-            lambda product_dir:
+        deferred = defer.maybeDeferred(
+            user_dir.createDirectory, 'mozilla-firefox')
+
+        def check_product_dir_absolute_path(product_dir):
             self.assertEqual(
-                '/~alice/mozilla-firefox', product_dir.getAbsolutePath()))
-        return d
+                '/~alice/mozilla-firefox', product_dir.getAbsolutePath())
+
+        return deferred.addCallback(check_product_dir_absolute_path)
 
     def testRmdirBranchDenied(self):
         # Deleting a branch directory should fail with a permission error.
@@ -310,14 +315,16 @@ class TestSFTPServerBranch(AvatarTestCase):
         root = avatar.makeFileSystem().root
         root.setListenerFactory(lambda branch_id: (lambda: None))
         userDir = root.child('~alice')
-        d = defer.maybeDeferred(userDir.createDirectory, 'mozilla-firefox')
-        d.addCallback(lambda product: product.createDirectory('new-branch'))
+        deferred = defer.maybeDeferred(
+            userDir.createDirectory, 'mozilla-firefox')
+        deferred.addCallback(
+            lambda product: product.createDirectory('new-branch'))
 
         # Store the branch directory
         def _storeServerBranch(branchDirectory):
             self.server_branch = branchDirectory
 
-        return d.addCallback(_storeServerBranch)
+        return deferred.addCallback(_storeServerBranch)
 
     def test_getAbsolutePath(self):
         """The absolute path of a branch is '/~user/product/branch'."""
@@ -349,8 +356,9 @@ class TestSFTPServerBranch(AvatarTestCase):
         This guarantees that users aren't creating directories beneath the
         branch directories and putting branches in those deep directories.
         """
-        d = defer.maybeDeferred(self.server_branch.createDirectory, 'foo')
-        return self.assertFailure(d, PermissionError)
+        deferred = defer.maybeDeferred(
+            self.server_branch.createDirectory, 'foo')
+        return self.assertFailure(deferred, PermissionError)
 
     def testCreateFileFails(self):
         """Creating a file in a branch fails.

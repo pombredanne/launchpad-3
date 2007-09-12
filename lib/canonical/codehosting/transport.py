@@ -83,11 +83,12 @@ def set_up_logging():
         parent_dir = os.path.dirname(config.codehosting.debug_logfile)
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
-        assert (
-            os.path.isdir(parent_dir), "%r should be a directory" % parent_dir)
+        assert os.path.isdir(parent_dir), (
+            "%r should be a directory" % parent_dir)
         handler = logging.FileHandler(config.codehosting.debug_logfile)
         handler.setFormatter(
-            logging.Formatter('%(asctime)s %(levelname)-8s %(name)s\t%(message)s'))
+            logging.Formatter(
+                '%(asctime)s %(levelname)-8s %(name)s\t%(message)s'))
         handler.setLevel(logging.DEBUG)
         log.addHandler(handler)
     log.setLevel(logging.DEBUG)
@@ -142,9 +143,12 @@ class LaunchpadServer(Server):
         # Instead we should register our own smart request handlers to override
         # the builtin ones.
 
-        # XXX: JonathanLange 2007-09-05: This should *not* translate the paths.
-        # Instead, it should store the paths and then translate them when we
-        # call requestMirror.
+        # XXX: JonathanLange 2007-09-05 bugs=139030: By translating paths here
+        # we are doing an extra, unnecessary database query per file
+        # operation. Instead, we should store the unique name of the branch in
+        # set and translate the paths during the calls to request mirror. This
+        # changes the code from one query per write operation to one query per
+        # changed branch.
         self.logger.debug("Marking %r as dirty", virtual_path)
         branch_id, ignored, path = self._translate_path(virtual_path)
         self._dirty_branch_ids.add(branch_id)
@@ -191,10 +195,7 @@ class LaunchpadServer(Server):
             if not user_dict:
                 raise NoSuchFile("%s doesn't exist" % (user,))
             user_id = user_dict['id']
-            if user_id == self.user_id:
-                # XXX: JonathanLange 2007-09-05, Why do we do this?
-                product = '+junk'
-            else:
+            if user_id != self.user_id:
                 # XXX: JonathanLange 2007-06-04 bug=118736
                 # This should perhaps be 'PermissionDenied', not 'NoSuchFile'.
                 # However bzrlib doesn't translate PermissionDenied errors.
