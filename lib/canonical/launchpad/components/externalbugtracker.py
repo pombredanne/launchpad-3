@@ -1324,7 +1324,7 @@ class SourceForge(ExternalBugTracker):
             # into a newline-delimited list from which we can then
             # extract the requisite data.
             status_row = status_tag.findParent().findParent()
-            status, = status_row.contents[-1]
+            status = status_row.contents[-1]
             status = status.strip()
 
             # We need to do the same for Resolution, though if we can't
@@ -1332,7 +1332,7 @@ class SourceForge(ExternalBugTracker):
             resolution_tag = soup.find(text=re.compile('Resolution:'))
             if resolution_tag:
                 resolution_row = resolution_tag.findParent().findParent()
-                resolution, = resolution_row.contents[-1]
+                resolution = resolution_row.contents[-1]
                 resolution = resolution.strip()
             else:
                 resolution = None
@@ -1431,4 +1431,6 @@ class SourceForge(ExternalBugTracker):
         if local_status is None:
             log.warn("Unknown status '%s'" % remote_status)
             return BugTaskStatus.UNKNOWN
+        else:
+            return local_status
 
