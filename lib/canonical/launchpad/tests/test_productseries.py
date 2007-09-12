@@ -258,7 +258,6 @@ class TestProductSeriesSearchImports(LaunchpadZopelessTestCase):
     def testOneSeries(self):
         """When there is one series with import data, it is returned."""
         series = self.getSeriesForProduct('firefox')
-        self.failUnless(series.product.active)
         self.addImportDetailsToSeries(series)
         results = getUtility(IProductSeriesSet).searchImports()
         self.assertEquals(list(results), [series])
@@ -272,12 +271,16 @@ class TestProductSeriesSearchImports(LaunchpadZopelessTestCase):
         self.assertEquals(list(results), [series])
 
     def testExcludeDeactivatedProducts(self):
-        """Series with import data associated to deactivated products are not
-        returned.
+        """Deactivating a product means that series associated to it are no
+        longer returned.
         """
-        series = self.getSeriesForProduct('python-gnome2-dev')
-        self.failIf(series.product.active)
+        series = self.getSeriesForProduct('firefox')
         self.addImportDetailsToSeries(series)
+        self.failUnless(series.product.active)
+        results = getUtility(IProductSeriesSet).searchImports()
+        self.assertEquals(list(results), [series])
+        series.product.active = False
+        flush_database_updates()
         results = getUtility(IProductSeriesSet).searchImports()
         self.assertEquals(list(results), [])
 

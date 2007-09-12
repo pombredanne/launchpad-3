@@ -571,17 +571,19 @@ class ProductSeriesSet:
             with non-NULL import status.
         """
         conditions = []
+        if text == u'':
+            text = None
+
         # First filter on product: match text, if necessary, and only consider
         # active projects.
-        if text:
+        if text is not None:
             conditions.append('Product.fti @@ ftq(%s)' % quote(text))
         conditions.append('Product.active IS TRUE')
         conditions.append("ProductSeries.product = Product.id")
 
-        # The subquery restricts the query to an active project that matches
-        # the text supplied.
+        # Then filter on project in the same way, if any.
         product_match = "Product.project = Project.id AND Project.active"
-        if text:
+        if text is not None:
             product_match += " AND Product.fti @@ ftq(%s)" % quote(text)
         conditions.append("((%s) OR project IS NULL)" % product_match)
 
