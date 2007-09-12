@@ -51,8 +51,7 @@ class SourcePackageReleaseView(LaunchpadView):
             else:
                 bug_url = canonical_url(bug)
                 changelog = changelog.replace(
-                    match_text, '<a title="%s" href="%s">%s</a>' % (
-                        bug.description, bug_url, match_text))
+                    match_text, '<a href="%s">%s</a>' % (bug_url, match_text))
 
         return changelog
 
