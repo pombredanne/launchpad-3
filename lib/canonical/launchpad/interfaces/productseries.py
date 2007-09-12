@@ -346,13 +346,12 @@ class IProductSeriesSet(Interface):
         """
 
     def searchImports(text=None, importstatus=None):
-        """Search through the series with import data.
+        """Search through all series that have import data.
 
-        Note that this method will never return a series for a deactivated
-        product.
+        This method will never return a series for a deactivated product.
 
-        :param text: If specifed, filter the results to those with contain
-            ``text`` in the in the product or project titles and descriptions.
+        :param text: If specifed, limit to the results to those that contain
+            ``text`` in the product or project titles and descriptions.
         :param importstatus: If specified, limit the list to series which have
             the given import status; if not specified or None, limit to series
             with non-NULL import status.
@@ -361,12 +360,11 @@ class IProductSeriesSet(Interface):
     def importcount(status=None):
         """Count the series with import data of a given status.
 
-        Note that this method will not count series for a deactivated
-        products.
+        This method will not count series for deactivated products.
 
         :param status: If specified, count the series which have the given
             import status; if not specified or None, count all series with
-            non-NULL import status.
+            a defined import status.
         """
 
     def getByCVSDetails(cvsroot, cvsmodule, cvsbranch, default=None):

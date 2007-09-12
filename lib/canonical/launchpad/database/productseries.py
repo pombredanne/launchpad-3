@@ -553,7 +553,7 @@ class ProductSeriesSet:
 
     def searchImports(self, text=None, importstatus=None):
         """See `IProductSeriesSet`."""
-        query = self._querystr(text, importstatus)
+        query = self.composeQueryString(text, importstatus)
         return ProductSeries.select(
             query, distinct=True, clauseTables=['Product', 'Project'])
 
@@ -561,8 +561,8 @@ class ProductSeriesSet:
         """See `IProductSeriesSet`."""
         return self.searchImports(status=status).count()
 
-    def _querystr(self, text=None, importstatus=None):
-        """Return a querystring for use in a query.
+    def composeQueryString(self, text=None, importstatus=None):
+        """Build SQL "where" clause for `ProductSeries` search.
 
         :param text: Text to search for in the product and project titles and
             descriptions.
@@ -570,32 +570,29 @@ class ProductSeriesSet:
             the given import status; if not specified or None, limit to series
             with non-NULL import status.
         """
-        queries = []
+        conditions = []
         # First filter on product: match text, if necessary, and only consider
         # active projects.
         if text:
-            queries.append('Product.fti @@ ftq(%s)' % quote(text))
-        queries.append('Product.active IS TRUE')
-        queries.append("ProductSeries.product = Product.id")
+            conditions.append('Product.fti @@ ftq(%s)' % quote(text))
+        conditions.append('Product.active IS TRUE')
+        conditions.append("ProductSeries.product = Product.id")
 
         # The subquery restricts the query to an active project that matches
         # the text supplied.
-        subqueries = []
-        subqueries.append('Product.project = Project.id')
+        product_match = "Product.project = Project.id AND Project.active"
         if text:
-            subqueries.append('Project.fti @@ ftq(%s) ' % quote(text))
-        subqueries.append('Project.active IS TRUE')
-        queries.append('(Product.project IS NULL OR (%s))' %
-                       " AND ".join(subqueries))
+            product_match += " AND Product.fti @@ ftq(%s)" % quote(text)
+        conditions.append(product_match)
 
         # Now just add the filter on import status.
         if importstatus is None:
-            queries.append('ProductSeries.importstatus IS NOT NULL')
+            conditions.append('ProductSeries.importstatus IS NOT NULL')
         else:
-            queries.append('ProductSeries.importstatus = %s'
-                           % sqlvalues(importstatus))
+            conditions.append('ProductSeries.importstatus = %s'
+                              % sqlvalues(importstatus))
 
-        query = " AND ".join(queries)
+        query = " AND ".join(conditions)
         return query
 
     def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):
