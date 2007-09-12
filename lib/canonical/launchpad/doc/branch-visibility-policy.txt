@@ -42,7 +42,7 @@ IProject and IProduct inherit from this interface as both projects and
 products can set branch visibility policies.
 
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IProjectSet, IHasBranchVisibilityPolicy)
     >>> project_set = getUtility(IProjectSet)

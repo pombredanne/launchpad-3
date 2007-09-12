@@ -5,9 +5,9 @@
                     xml:lang view/lang|default_language|default;
                     dir view/dir|string:ltr"
     tal:define="
-        icingrev string:117;
         rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-        icingroot string:${rooturl}+icing/rev${icingrev};
+        revno modules/canonical.launchpad.versioninfo/revno;
+        icingroot string:${rooturl}+icing/rev${revno};
         site_message modules/canonical.config/config/launchpad/site_message;
         devmode modules/canonical.config/config/devmode;
         is_demo modules/canonical.config/config/launchpad/is_demo">
@@ -233,13 +233,6 @@
                               use-macro="context/@@+main-template-macros/notifications" />
                           </tal:notifications>
                           <metal:block define-slot="main" />
-                          <tal:no_children replace="nothing">
-                          <div
-                            tal:define="structuralfooterobject CONTEXTS/lp:structuralfooterobject" 
-                            tal:condition="structuralfooterobject"
-                            tal:replace="structure structuralfooterobject/@@+structural-footer"
-                            />
-                          </tal:no_children>
                         </div>
                         <div
                           id="portlets" xml:lang="en" lang="en" dir="ltr"
@@ -294,8 +287,7 @@
         <div id="copyright">
             Copyright&nbsp;2004-2007&nbsp;<a
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
-          <tal:block
-              define="revno modules/canonical.launchpad.versioninfo/revno">
+          <tal:block>
               | build
               <tal:block condition="revno" replace="revno" />
               <tal:block condition="not: revno">unknown</tal:block>

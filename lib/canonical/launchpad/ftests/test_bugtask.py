@@ -11,9 +11,8 @@ from zope.component import getUtility
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.interfaces import (
-    IBugSet, IDistributionSet, IUpstreamBugTask, IBugTaskSet,
+    BugTaskStatus, IBugSet, IDistributionSet, IUpstreamBugTask, IBugTaskSet,
     ILaunchBag, IBugWatchSet, IProductSet)
-from canonical.lp.dbschema import BugTaskStatus
 
 
 class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
@@ -69,7 +68,7 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
         thunderbird_upstream.transitionToStatus(
             BugTaskStatus.FIXCOMMITTED, getUtility(ILaunchBag).user)
         self.thunderbird_upstream = thunderbird_upstream
-        
+
         # Add a watch to a Debian bug for bug #2, and mark the task Fix
         # Released.
         bug_two = bugset.get(2)
@@ -128,7 +127,7 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
 
     def assertBugTaskIsResolvedUpstream(self, bugtask):
         """Make sure at least one of the related upstream tasks is resolved.
-        
+
         "Resolved", for our purposes, means either that one of the related
         tasks is an upstream task in FIXCOMMITTED or FIXRELEASED state, or
         it is a task with a bugwatch, and in FIXCOMMITTED, FIXRELEASED, or
@@ -166,7 +165,7 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
 
     def assertBugTaskIsOpenUpstream(self, bugtask):
         """Make sure at least one of the related upstream tasks is open.
-        
+
         "Open", for our purposes, means either that one of the related
         tasks is an upstream task or a task with a bugwatch which has
         one of the states listed in open_states.

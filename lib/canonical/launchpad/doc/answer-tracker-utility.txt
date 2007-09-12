@@ -3,7 +3,7 @@
 There is an IQuestionSet utility that can be use to retrieve and search
 for question whatever the target they were created in.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import IQuestionSet
     >>> question_set = getUtility(IQuestionSet)
     >>> verifyObject(IQuestionSet, question_set)

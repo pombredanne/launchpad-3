@@ -70,7 +70,8 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
     UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, validate_distrotask,
     valid_upstreamtask, IProductSeriesBugTask, IBugNominationSet,
-    IProductSeries, INominationsReviewTableBatchNavigator)
+    IProductSeries, INominationsReviewTableBatchNavigator,
+    BugTaskStatus, BugTaskStatusSearchDisplay)
 
 from canonical.launchpad.searchbuilder import any, NULL
 
@@ -90,7 +91,7 @@ from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 from canonical.lazr import EnumeratedType, Item
-from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
+from canonical.lp.dbschema import BugTaskImportance
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
@@ -654,8 +655,12 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
             # comment, which were probably produced by
             # double-submissions or user errors, and which don't add
             # anything useful to the bug itself.
-            if previous_comment and previous_comment.isIdenticalTo(comment):
+            # Also omit comments with no body text or attachments to display.
+            if (comment.isEmpty() or
+                previous_comment and
+                previous_comment.isIdenticalTo(comment)):
                 continue
+
             visible_comments.append(comment)
             previous_comment = comment
 
@@ -1010,7 +1015,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         elif milestone_ignored:
             self.request.response.addWarningNotification(
                 "The milestone setting was ignored because "
-                "you reassigned the bug to %s." % 
+                "you reassigned the bug to %s." %
                 bugtask.bugtargetdisplayname)
 
         if comment_on_change:
@@ -1151,8 +1156,8 @@ class BugTaskListingView(LaunchpadView):
 
         assignee_html = PersonFormatterAPI(assignee).link('+assignedbugs')
 
-        if status in (dbschema.BugTaskStatus.INVALID,
-                      dbschema.BugTaskStatus.FIXCOMMITTED):
+        if status in (BugTaskStatus.INVALID,
+                      BugTaskStatus.FIXCOMMITTED):
             return '%s by %s' % (status_title, assignee_html)
         else:
             return '%s, assigned to %s' % (status_title, assignee_html)
@@ -1189,14 +1194,12 @@ class BugListingPortletView(LaunchpadView):
     def getOpenBugsURL(self):
         """Return the URL for open bugs on this bug target."""
         return get_buglisting_search_filter_url(
-            self.request.URL,
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
 
     def getBugsAssignedToMeURL(self):
         """Return the URL for bugs assigned to the current user on target."""
         if self.user:
-            return get_buglisting_search_filter_url(
-                self.request.URL, assignee=self.user.name)
+            return get_buglisting_search_filter_url(assignee=self.user.name)
         else:
             return str(self.request.URL) + "/+login"
 
@@ -1214,34 +1217,31 @@ class BugListingPortletView(LaunchpadView):
     def getCriticalBugsURL(self):
         """Return the URL for critical bugs on this bug target."""
         return get_buglisting_search_filter_url(
-            self.request.URL,
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
             importance=dbschema.BugTaskImportance.CRITICAL.title)
 
     def getUnassignedBugsURL(self):
         """Return the URL for critical bugs on this bug target."""
         unresolved_tasks_query_string = get_buglisting_search_filter_url(
-            self.request.URL,
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
 
         return unresolved_tasks_query_string + "&assignee_option=none"
 
     def getNewBugsURL(self):
         """Return the URL for new bugs on this bug target."""
-        return get_buglisting_search_filter_url(
-            self.request.URL, status=dbschema.BugTaskStatus.NEW.title)
+        return get_buglisting_search_filter_url(status=BugTaskStatus.NEW.title)
 
     def getAllBugsEverReportedURL(self):
         all_statuses = UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES
         all_status_query_string = get_buglisting_search_filter_url(
-            self.request.URL, status=[status.title for status in all_statuses])
+            status=[status.title for status in all_statuses])
 
         # Add the bit that simulates the "omit dupes" checkbox being unchecked.
         return all_status_query_string + "&field.omit_dupes.used="
 
 
 def get_buglisting_search_filter_url(
-        url, assignee=None, importance=None, status=None):
+        assignee=None, importance=None, status=None):
     """Return the given URL with the search parameters specified."""
     search_params = []
 
@@ -1254,7 +1254,7 @@ def get_buglisting_search_filter_url(
 
     query_string = urllib.urlencode(search_params, doseq=True)
 
-    search_filter_url = str(url) + "?search=Search"
+    search_filter_url = "+bugs?search=Search"
     if query_string:
         search_filter_url += "&" + query_string
 
@@ -1271,7 +1271,7 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     ['NEW', 'INCOMPLETE', 'CONFIRMED', 'TRIAGED', 'INPROGRESS', 'FIXCOMMITTED']
 
     >>> initial = getInitialValuesFromSearchParams(
-    ...     {'status': dbschema.BugTaskStatus.INVALID}, IBugTaskSearch)
+    ...     {'status': BugTaskStatus.INVALID}, IBugTaskSearch)
     >>> [status.name for status in initial['status']]
     ['INVALID']
 
@@ -1500,6 +1500,13 @@ class BugTaskSearchListingView(LaunchpadFormView):
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)
 
+    def setUpWidgets(self):
+        """Customize the onKeyPress event of the assignee chooser."""
+        LaunchpadFormView.setUpWidgets(self)
+
+        self.widgets["assignee"].onKeyPress = (
+            "selectWidget('assignee_option', event)")
+
     def validate(self, data):
         """Validates the form."""
         self.validateVocabulariesAdvancedForm()
@@ -1634,12 +1641,18 @@ class BugTaskSearchListingView(LaunchpadFormView):
         tasks = context.searchTasks(search_params)
         return self._getBatchNavigator(tasks)
 
-    def getWidgetValues(self, vocabulary_name, default_values=()):
-        """Return data used to render a field's widget."""
+    def getWidgetValues(
+        self, vocabulary_name=None, vocabulary=None, default_values=()):
+        """Return data used to render a field's widget.
+
+        Either `vocabulary_name` or `vocabulary` must be supplied."""
         widget_values = []
 
-        vocabulary_registry = getVocabularyRegistry()
-        for term in vocabulary_registry.get(self.context, vocabulary_name):
+        if vocabulary is None:
+            assert vocabulary_name is not None, 'No vocabulary specified.'
+            vocabulary_registry = getVocabularyRegistry()
+            vocabulary = vocabulary_registry.get(self.context, vocabulary_name)
+        for term in vocabulary:
             widget_values.append(
                 dict(
                     value=term.token, title=term.title or term.token,
@@ -1650,7 +1663,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
     def getStatusWidgetValues(self):
         """Return data used to render the status checkboxes."""
         return self.getWidgetValues(
-            vocabulary_name="BugTaskStatus",
+            vocabulary=BugTaskStatusSearchDisplay,            
             default_values=UNRESOLVED_BUGTASK_STATUSES)
 
     def getImportanceWidgetValues(self):

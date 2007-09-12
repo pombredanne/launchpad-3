@@ -115,7 +115,7 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     def chooseLink(self):
         return """(<a href="%s">Choose&hellip;</a>)
 
-            <iframe style="display: none" 
+            <iframe style="display: none"
                     id="popup_iframe_%s"
                     name="popup_iframe_%s"></iframe>
         """ % (self.popupHref(), self.name, self.name)

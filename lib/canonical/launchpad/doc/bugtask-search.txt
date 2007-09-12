@@ -33,16 +33,54 @@ isn't a bug contact, so no bugs are found for him:
     >>> found_bugtasks.count()
     0
 
-
-=== Product bug contact ===
+== Product bugs ==
 
 Firefox has a few bugs:
 
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_bugs = firefox.searchTasks(all_public)
-    >>> firefox_bugs.count() > 0
+    >>> firefox_public_bugs = firefox_bugs.count()
+    >>> firefox_public_bugs > 0
     True
+
+== Distribution and package bugs ==
+
+Ubuntu does too:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IDistributionSourcePackage)
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> all_public = BugTaskSearchParams(user=None)
+    >>> ubuntu_bugs = ubuntu.searchTasks(all_public)
+    >>> ubuntu_bugs.count() > 0
+    True
+
+and in particular, mozilla-firefox in Ubuntu has 'em:
+
+    >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+    >>> ubuntu_firefox_bugs = ubuntu_firefox.searchTasks(all_public)
+    >>> ubuntu_firefox_bugs.count() > 0
+    True
+
+== Dupes and Conjoined tasks ==
+
+You can set flags to omit duplicates:
+
+    >>> no_dupes = BugTaskSearchParams(user=None, omit_dupes=True)
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> sans_dupes = firefox.searchTasks(no_dupes)
+    >>> sans_dupes.count() < firefox_public_bugs
+    True
+
+and also series-targeted bugs:
+
+    >>> no_targeted = BugTaskSearchParams(user=None, omit_targeted=True)
+    >>> sans_targeted = ubuntu.searchTasks(no_targeted)
+    >>> sans_targeted.count() < ubuntu_bugs
+    True
+
+=== Product bug contact ===
 
 If No Privileges is specified as Firefox' bug contact, searching for his
 bugs return all of Firefox' bugs.
@@ -65,18 +103,7 @@ bugs return all of Firefox' bugs.
 
 === Package bug contact ===
 
-Firefox in Ubuntu also has a few bugs:
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IDistributionSourcePackage)
-    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
-    >>> all_public = BugTaskSearchParams(user=None)
-    >>> ubuntu_firefox_bugs = ubuntu_firefox.searchTasks(all_public)
-    >>> ubuntu_firefox_bugs.count() > 0
-    True
-
-If No Privileges Person is added as a bug contact for this package,
+If No Privileges Person is added as a bug contact for mozilla-firefox,
 searching for his bugs returns all bugs in this package, as well as the
 previous bugs (since he is also a bug contact for the Firefox product).
 
@@ -115,7 +142,13 @@ twice.
 
 == Searching in comments ==
 
-By default, comments are also searched when specifying a search text.
+Comments can be searched when specifying a search text in the bugtask
+search. Whether comments are searched is controlled by the
+search_comments config option.
+
+    >>> from canonical.config import config
+    >>> OLD_SEARCH_COMMENTS = config.malone.search_comments
+
 For example, no Firefox bugs are found when searching for
 'wordincomment'.
 
@@ -126,7 +159,7 @@ For example, no Firefox bugs are found when searching for
     0
 
 If we add a comment containg the the search string to bug one, that bug
-will be returned by the search.
+will be returned by the search if search_comments is True.
 
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
@@ -138,10 +171,20 @@ will be returned by the search.
     >>> bug_one.newMessage(no_priv, 'No subject', 'another wordincomment')
     <Message at ...>
 
+    >>> config.malone.search_comments = True
     >>> found_bugtasks = firefox.searchTasks(comment_search)
     >>> for bugtask in found_bugtasks:
     ...     print "#%s" % bugtask.bug.id
     #1
+
+If the search_comments config option is False, no bugs are found.
+
+    >>> config.malone.search_comments = False
+    >>> found_bugtasks = firefox.searchTasks(comment_search)
+    >>> [bugtask.bug.id for bugtask in found_bugtasks]
+    []
+
+    >>> config.malone.search_comments = True
 
     # Of course, searching in a project not containing bug #1 doesn't
     # return any matches.
@@ -150,6 +193,7 @@ will be returned by the search.
     >>> found_bugtasks.count()
     0
 
+    >>> config.malone.search_comments = OLD_SEARCH_COMMENTS 
 
 == Searching using bug full-text index ==
 
@@ -254,7 +298,8 @@ series.
 
 Add an Ubuntu bugtask for a bug that is confirmed upstream.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
+    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> from canonical.launchpad.ftests.test_bugtask import (
     ...     BugTaskSearchBugsElsewhereTest)
     >>> def bugTaskInfo(bugtask):
@@ -295,6 +340,9 @@ has a state associated with "resolved upstream", the bug is included
 in the results of the "open upstream" filter as well as the "resolved
 upstream" filter.
 
+(In the examples below, the last bugtask is ellipsized because its ID
+ is generated here and therefore sampledata-dependent.)
+
     >>> params = BugTaskSearchParams(
     ...     open_upstream=True, orderby='id', user=None)
     >>> open_elsewhere_tasks = ubuntu.searchTasks(params)
@@ -303,7 +351,7 @@ upstream" filter.
     ...     print bugTaskInfo(bugtask)
     17  1 mozilla-firefox (Ubuntu) Firefox does not support SVG
     26  2 Ubuntu Blackhole Trash folder
-    34 12 Ubuntu Copy, Cut and Delete operations should work on selections
+    ... ... Ubuntu Copy, Cut and Delete operations should work on selections
 
 
 We can also filter our search to include only bugs that are not known to
@@ -316,7 +364,7 @@ affect upstream, i.e., bugs that don't have an IUpstreamBugTask.
     ...     test_helper.assertShouldBeShownOnNoUpstreamTaskSearch(bugtask)
     ...     print bugTaskInfo(bugtask)
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    32 13 Ubuntu Test nominated bug
+    ... ... Ubuntu Test nominated bug
 
 If we combine upstream-related filters, we get the union of the results
 of the single filters.
@@ -331,7 +379,7 @@ of the single filters.
     26  2 Ubuntu Blackhole Trash folder
     23  9 thunderbird (Ubuntu) Thunderbird crashes
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    32 13 Ubuntu Test nominated bug
+    ... ... Ubuntu Test nominated bug
 
 
     >>> test_helper.tearDownBugsElsewhereTests()

@@ -358,7 +358,7 @@ class ProductTranslationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'translations'
-    links = ['translators', 'edit', 'imports']
+    links = ['translators', 'edit', 'imports', 'translationdownload']
 
     def imports(self):
         text = 'See import queue'
@@ -372,6 +372,16 @@ class ProductTranslationsMenu(ApplicationMenu):
     def edit(self):
         text = 'Edit template names'
         return Link('+potemplatenames', text, icon='edit')
+
+    def translationdownload(self):
+        text = 'Download translations'
+        preferred_series = self.context.primary_translatable
+        enabled = (preferred_series is not None)
+        link = ''
+        if enabled:
+            link = '%s/+export' % preferred_series.name
+
+        return Link(link, text, icon='download', enabled=enabled)
 
 
 def _sort_distros(a, b):

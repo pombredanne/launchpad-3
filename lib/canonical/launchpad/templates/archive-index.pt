@@ -41,7 +41,7 @@
       <h2>Packages</h2>
 
       <p tal:condition="not:context/number_of_sources">
-        This PPA does not contain any package yet.
+        This PPA does not contain any packages yet.
       </p>
 
       <tal:active_ppa condition="context/number_of_sources">
@@ -83,6 +83,7 @@
         <thead>
           <tr>
             <th>Source</th>
+            <th tal:condition="context/owner/isTeam">Uploader</th>
             <th>Published</th>
             <th>Status</th>
             <th>Target</th>
