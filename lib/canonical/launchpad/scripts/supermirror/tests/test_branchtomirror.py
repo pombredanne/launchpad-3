@@ -521,21 +521,33 @@ class TestCanTraverseReferences(unittest.TestCase):
         return BranchToMirror(
             'foo', 'bar', self.client, 1, 'owner/product/foo', branch_type)
 
-    def testCanTraverseReferences(self):
-        """Unit tests for BranchToMirror._canTraverseReferences."""
-        # We can only traverse branch references when pulling mirror branches.
+    def testTrueForMirrored(self):
+        """We can traverse branch references when pulling mirror branches."""
         mirror_branch = self.makeBranch(BranchType.MIRRORED)
         self.assertEqual(mirror_branch._canTraverseReferences(), True)
-        # We cannot traverse branch references when pulling import branches and
-        # hosted branches.
+    
+    def testFalseForImported(self):
+        """We cannot traverse branch references when pulling import branches.
+        """
         import_branch = self.makeBranch(BranchType.IMPORTED)
         self.assertEqual(import_branch._canTraverseReferences(), False)
+
+    def testFalseForHosted(self):
+        """We cannot traverse branch references when pulling hotsed branches.
+        """
         hosted_branch = self.makeBranch(BranchType.HOSTED)
         self.assertEqual(hosted_branch._canTraverseReferences(), False)
-        # We do not pull REMOTE branches. If the branch type is this, or any
-        # other bogus value, an AssertionError is raised.
+    
+    def testErrorForOtherRemote(self):
+        """We do not pull REMOTE branches. If the branch type is REMOTE, an
+        AssertionError is raised.
+        """
         remote_branch = self.makeBranch(BranchType.REMOTE)
         self.assertRaises(AssertionError, remote_branch._canTraverseReferences)
+
+    def testErrorForBogusType(self):
+        """If the branch type is a bogus value, AssertionError is raised.
+        """
         bogus_branch = self.makeBranch(None)
         self.assertRaises(AssertionError, bogus_branch._canTraverseReferences)
 
