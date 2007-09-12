@@ -1303,7 +1303,7 @@ class BugTaskSet:
         if params.pending_bugwatch_elsewhere:
             if params.product:
                 # Include only bugtasks that do no have bug watches that
-                # belong to a product that does not use malone.
+                # belong to a product that does not use Malone.
                 pending_bugwatch_elsewhere_clause = """
                     EXISTS (
                         SELECT TRUE 

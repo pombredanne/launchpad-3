@@ -1,4 +1,4 @@
-= Product search for pending bugwatchs =
+= Product search for pending bugwatches =
 
 Users can search for product bugs that need a bugwatch to track an
 upstream bug. This is a workflow feature for users who are adopting
@@ -10,7 +10,7 @@ locate the bugs that need a bugwatch setup.
 
 == Common searches on a product's bug page (part 1) ==
 
-No Privileges Person vists the alsa-utils front page on Launchpad.
+No Privileges Person visits the alsa-utils front page on Launchpad.
 He wants to link Launchpad bugs to to the upstream bug tracker. He can
 see that there are '0 bugs need forwarding upstream'.
 
@@ -24,7 +24,7 @@ see that there are '0 bugs need forwarding upstream'.
     '0 bugs need forwarding upstream'
 
 
-== Marking and searching for pending bigwatches ==
+== Marking and searching for pending bugwatches ==
 
 Sample Person is doing some bug reporting and triage for his adopted
 alsa-utils project. He creates two bugs, and uses the 'Affects
@@ -48,13 +48,14 @@ product. He does not provide bug watch information.
     'Bug #... in alsa-utils: ...Test Bug 1...'
 
 Sample Person visits the advanced search page for alsa-utils, and
-checks the 'Show bugs that need to be forwarded to an upstream
-bug tracker' checkbox.
+chooses to search for all bugs that need to be forwarded upstream.
+He sees one match.
 
     >>> browser.open('http://bugs.launchpad.dev/alsa-utils/')
     >>> browser.getLink('Advanced search').click()
     >>> pending_bugwatch_label = (
-    ...     'Show bugs that need to be forwarded to an upstream bug tracker')
+    ...     'Show only bugs that need to be forwarded to an upstream '
+    ...     'bug tracker')
     >>> browser.getControl(pending_bugwatch_label).selected = True
     >>> browser.getControl('Search', index=0).click()
     >>> bug_listing = find_tag_by_id(browser.contents, 'buglisting')

@@ -62,17 +62,17 @@ from canonical.launchpad.webapp import (
     redirection, stepthrough)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
-    IBug, IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
-    IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
-    IDistribution, IDistributionSourcePackage, IUpstreamProductBugTaskSearch,
-    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask,
-    IFrontPageBugTaskSearch, ILaunchBag, INullBugTask, IPerson,
-    IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
-    IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
-    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, validate_distrotask,
-    valid_upstreamtask, IProductSeriesBugTask, IBugNominationSet,
-    IProductSeries, INominationsReviewTableBatchNavigator,
-    BugTaskStatus, BugTaskStatusSearchDisplay)
+    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay, IBug,
+    IBugAttachmentSet, IBugBranchSet, IBugExternalRefSet,
+    IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch, IBugTaskSet,
+    IDistribution, IDistributionSourcePackage, IDistroBugTask,
+    IDistroSeries, IDistroSeriesBugTask, IFrontPageBugTaskSearch,
+    ILaunchBag, INominationsReviewTableBatchNavigator, INullBugTask,
+    IPerson, IPersonBugTaskSearch, IProduct, IProductSeries,
+    IProductSeriesBugTask, IProject, ISourcePackage, IUpstreamBugTask,
+    IUpstreamProductBugTaskSearch, NotFoundError,
+    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    UNRESOLVED_BUGTASK_STATUSES, validate_distrotask, valid_upstreamtask)
 
 from canonical.launchpad.searchbuilder import any, NULL
 
@@ -1739,7 +1739,6 @@ class BugTaskSearchListingView(LaunchpadFormView):
             IProduct.providedBy(self.context) or
             IProject.providedBy(self.context))
 
-
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""
         form = self.request.form
@@ -1908,9 +1907,11 @@ class BugTaskSearchListingView(LaunchpadFormView):
 
     def getBugsFixedElsewhereInfo(self):
         """Return a dict with count and URL of bugs fixed elsewhere.
-        
-        The dict also contains a label to display 'bug' or 'bugs' based on
-        the count.
+
+        The available keys are:
+        'count' - The number of bugs.
+        'url' - The URL of the search.
+        'label' - Either 'bug' or 'bugs' depending on the count.
         """
         params = self._getDefaultSearchParams()
         params.resolved_upstream = True
@@ -1924,9 +1925,11 @@ class BugTaskSearchListingView(LaunchpadFormView):
 
     def getOpenCVEBugsInfo(self):
         """Return a dict with count and URL of open bugs linked to CVEs.
-        
-        The dict also contains a label to display 'bug' or 'bugs' based on
-        the count.
+
+        The available keys are:
+        'count' - The number of bugs.
+        'url' - The URL of the search.
+        'label' - Either 'bug' or 'bugs' depending on the count.
         """
         params = self._getDefaultSearchParams()
         params.has_cve = True
@@ -1939,9 +1942,11 @@ class BugTaskSearchListingView(LaunchpadFormView):
 
     def getPendingBugWatches(self):
         """Return a dict with count and URL of bugs that need a bugwatch.
-        
-        The dict also contains a label to display 'bug' or 'bugs' based on
-        the count.
+
+        The available keys are:
+        'count' - The number of bugs.
+        'url' - The URL of the search.
+        'label' - Either 'bug' or 'bugs' depending on the count.
         """
         params = self._getDefaultSearchParams()
         params.pending_bugwatch_elsewhere = True

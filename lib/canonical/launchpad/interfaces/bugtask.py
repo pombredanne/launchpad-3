@@ -5,29 +5,29 @@
 __metaclass__ = type
 
 __all__ = [
+    'BUG_CONTACT_BUGTASK_STATUSES',
     'BugTaskSearchParams',
     'BugTaskStatus',
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
     'ConjoinedBugTaskEditError',
-    'IBugTask',
-    'INullBugTask',
-    'IBugTaskSearch',
     'IAddBugTaskForm',
-    'IPersonBugTaskSearch',
-    'IUpstreamProductBugTaskSearch',
-    'IFrontPageBugTaskSearch',
+    'IBugTask',
     'IBugTaskDelta',
-    'IUpstreamBugTask',
+    'IBugTaskSearch',
+    'IBugTaskSet',
     'IDistroBugTask',
     'IDistroSeriesBugTask',
+    'IFrontPageBugTaskSearch',
+    'INominationsReviewTableBatchNavigator',
+    'INullBugTask',
+    'IPersonBugTaskSearch',
     'IProductSeriesBugTask',
     'ISelectResultsSlicable',
-    'IBugTaskSet',
-    'INominationsReviewTableBatchNavigator',
+    'IUpstreamBugTask',
+    'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
-    'UNRESOLVED_BUGTASK_STATUSES',
-    'BUG_CONTACT_BUGTASK_STATUSES']
+    'UNRESOLVED_BUGTASK_STATUSES']
 
 from zope.component import getUtility
 from zope.interface import Attribute, Interface
@@ -410,6 +410,12 @@ class INullBugTask(IBugTask):
     have tasks reported in your context.
     """
 
+PENDING_BUGWATCH_VOCABUARY = SimpleVocabulary(
+    [SimpleTerm(
+        "pending_bugwatch",
+        title="Show only bugs that need to be forwarded to an upstream bug "
+              "tracker")])
+
 UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
     [SimpleTerm(
         "pending_bugwatch",
@@ -513,8 +519,7 @@ class IUpstreamProductBugTaskSearch(IBugTaskSearch):
     """
     status_upstream = List(
         title=_('Status Upstream'),
-        value_type=Choice(vocabulary=SimpleVocabulary(
-            [UPSTREAM_STATUS_VOCABULARY.getTerm('pending_bugwatch')])),
+        value_type=Choice(vocabulary=PENDING_BUGWATCH_VOCABUARY),
         required=False)
 
 
