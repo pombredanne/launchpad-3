@@ -612,7 +612,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
             yield UploadError(
                 "%s: second chunk is %s, expected control.tar.gz" % (
                 self.filename, control_tar))
-        elif data_tar not in ("data.tar.gz", "data.tar.bz2"):
+        if data_tar not in ("data.tar.gz", "data.tar.bz2"):
             yield UploadError(
                 "%s: third chunk is %s, expected data.tar.gz or "
                 "data.tar.bz2" % (self.filename, data_tar))
