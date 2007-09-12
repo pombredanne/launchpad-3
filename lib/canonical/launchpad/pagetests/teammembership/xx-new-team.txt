@@ -1,0 +1,68 @@
+== Validating teams ==
+
+The team renewal period cannot be less than 1 day, and when the renewal
+policy is is On Demand or Automatic, it cannot be None. The renewal
+period is checked during creation and editing.
+
+Sample Person cannot create a team without a renewal period when
+he chooses a renewal policy of Automatic. He is shown an error
+message when the from is redisplayed.
+
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+
+    >>> browser.open('http://launchpad.dev/people/')
+    >>> browser.getLink('Register a team').click()
+
+    >>> browser.title
+    'Register a new team in Launchpad'
+
+    >>> browser.getControl(name='field.name').value = 'newtestteam'
+    >>> browser.getControl('Display Name').value = 'New Test Team'
+    >>> browser.getControl(
+    ...     'Contact Email Address').value = 'newtestteam@canonical.com'
+    >>> browser.getControl('Team Description').value = 'The team description'
+    >>> browser.getControl('Subscription period').value = '365'
+    >>> browser.getControl(
+    ...     'renew their membership automatically, '
+    ...     'also notifying the admins').selected = True
+    >>> browser.getControl('Create').click()
+    >>> browser.title
+    'Register a new team in Launchpad'
+    
+    >>> for message in get_feedback_messages(browser):
+    ...     print message
+    There is 1 error.
+    You must specify a default renewal period greater than 0.
+
+Changing the renewal policy to On Demand also redisplays the form with
+an error message.
+    
+    >>> browser.getControl(
+    ...     'invite them to renew their own membership').selected = True
+    >>> browser.getControl('Create').click()
+    
+    >>> for message in get_feedback_messages(browser):
+    ...     print message
+    There is 1 error.
+    You must specify a default renewal period greater than 0.
+
+Sample Person finaly sets a sane renewal period and created the team.
+
+    >>> browser.getControl('Renewal period').value = '365'
+    >>> browser.getControl('Create').click()
+    >>> browser.title
+    'New Test Team in Launchpad'
+
+Sample Person cannot change the renewal period 'New Test Team' to zero.
+
+    >>> browser.getLink('Change details').click()
+    >>> browser.title
+    'Edit team information'
+
+    >>> browser.getControl('Renewal period').value = '0'
+    >>> browser.getControl('Save').click()
+    
+    >>> for message in get_feedback_messages(browser):
+    ...     print message
+    There is 1 error.
+    You must specify a default renewal period greater than 0.
