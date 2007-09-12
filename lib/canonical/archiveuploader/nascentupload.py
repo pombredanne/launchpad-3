@@ -29,7 +29,8 @@ from canonical.archiveuploader.nascentuploadfile import (
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
     NotFoundError, IDistributionSet, QueueInconsistentStateError)
-from canonical.launchpad.scripts.processaccepted import closeBugsForQueueItem
+from canonical.launchpad.scripts.processaccepted import (
+    close_bugs_for_queue_item)
 from canonical.lp.dbschema import PackagePublishingPocket, ArchivePurpose
 
 
@@ -931,7 +932,7 @@ class NascentUpload:
                     self.queue_root.realiseUpload()
                     # Closing bugs.
                     changesfile_object = open(self.changes.filepath, 'r')
-                    closeBugsForQueueItem(
+                    close_bugs_for_queue_item(
                         self.queue_root, changesfile_object=changesfile_object)
                     changesfile_object.close()
             else:

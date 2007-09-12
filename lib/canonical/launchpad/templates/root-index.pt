@@ -45,14 +45,20 @@
           <h2>What&#8217;s new</h2>
           <ul class="news">
             <li>
-                <a href="https://help.launchpad.net/FrequentlyAskedQuestions"
-                 ><strong>Frequently Asked Questions</strong>: manage your project FAQs
-                in the Answer Tracker</a>
+              <a href="https://help.launchpad.net/PPAQuickStart"
+                 ><strong>Personal Package Archives:</strong>
+                 beta of Launchpad's new package
+                 build and repository hosting service.</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/Mantis"><strong>Mantis
-              support:</strong> Watch remote bugs
-                in Mantis bug trackers</a>
+              <a href="https://help.launchpad.net/BranchMergeProposals">
+                <strong>Code submissions:</strong> Specify
+                the branch you intend to land your own branch on.</a>
+            </li>
+            <li>
+              <a href="https://help.launchpad.net/BugStatuses#trac">
+                <strong>Support for Trac:</strong> Trac bug
+                statuses are now captured in bug watches.</a>
             </li>
             <li>
               <a href="https://help.launchpad.net/FileDownloadsOverview">
@@ -61,9 +67,9 @@
                 available from your project's overview page</a>
             </li>
             <li>
-             <a href="https://help.launchpad.net/BugStatuses">
-               <strong>Bug status names:</strong> clarifications and
-               additions</a>
+             <a href="https://translations.launchpad.net/people/+me/+imports">
+               <strong>Translation imports:</strong> Individuals
+             now have their own translations import queue page.</a>
             </li>
           </ul>
         </div>

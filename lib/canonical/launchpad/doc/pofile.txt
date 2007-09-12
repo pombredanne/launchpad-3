@@ -989,7 +989,7 @@ In automatically generated credits, alsa_translation.owner is now
 credited as well.
 
     >>> alsa_translation.prepareTranslationCredits(translation_credits.potmsgset)
-    u'Happy translator\n\nLaunchpad Contributions:\n  Carlos Perell\xf3 Mar\xedn <http://launchpad.dev/~carlos>'
+    u'Happy translator\n\nLaunchpad Contributions:\n  Carlos Perell\xf3 Mar\xedn http://launchpad.dev/~carlos'
 
 Emails of translators is translated already.
 
@@ -998,11 +998,14 @@ Emails of translators is translated already.
     >>> print emails_of_translators.active_texts
     [u'danilo@canonical.com']
 
-But now credits Carlos when prepared automatically.
+But now credits Carlos when prepared automatically.  Two empty emails are
+added to make formatting nicer (first one is used as a separation
+between package and Launchpad contributors, and second is empty email
+for 'Launchpad Contributions' title; see bug #133817 for details).
 
     >>> alsa_translation.prepareTranslationCredits(
     ...     emails_of_translators.potmsgset)
-    u'danilo@canonical.com,carlos@canonical.com'
+    u'danilo@canonical.com,,,carlos@canonical.com'
 
 Names of translators are untranslated and there is no message set for them yet.
 
@@ -1017,11 +1020,13 @@ Names of translators are untranslated and there is no message set for them yet.
     >>> names_of_translators.active_texts
     [None]
 
-But now names credit Carlos when prepared automatically.
+But now names credit Carlos when prepared automatically.  As above, an
+empty name is added first to serve as a separator, and "Launchpad
+Contributions:" is used as a header for the added credits.
 
     >>> alsa_translation.prepareTranslationCredits(
     ...     names_of_translators.potmsgset)
-    u'Carlos Perell\xf3 Mar\xedn'
+    u',Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
 
 
 = POFile Security tests =

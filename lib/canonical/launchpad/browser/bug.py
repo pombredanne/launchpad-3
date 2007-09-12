@@ -27,9 +27,17 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, BugTaskStatus, IBug, IBugSet, IBugTaskSet,
-    IBugWatchSet, ICveSet, IFrontPageBugTaskSearch, ILaunchBag,
-    NotFoundError)
+    BugTaskStatus,
+    BugTaskSearchParams,
+    IBug,
+    IBugSet,
+    IBugTaskSet,
+    IBugWatchSet,
+    ICveSet,
+    IFrontPageBugTaskSearch,
+    ILaunchBag,
+    NotFoundError,
+    )
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.webapp import (
