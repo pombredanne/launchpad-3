@@ -1013,13 +1013,14 @@ review.
 addOrUpdateEntry adds a new entry to the import queue so we can handle it
 later with poimport script.
 
-    >>> from canonical.launchpad.components.poexport import (
-    ...     RosettaWriteTarFile)
+    >>> from canonical.launchpad.translationformat import (
+    ...     LaunchpadWriteTarFile)
     >>> from canonical.launchpad.interfaces import IPOTemplateSet
     >>> potemplate_set = getUtility(IPOTemplateSet)
     >>> potemplate_subset = potemplate_set.getSubset(
     ...     productseries=evolution_productseries)
-    >>> man_template = potemplate_subset.getPOTemplateByName('man')
+    >>> evolution_22_test_template = potemplate_subset.getPOTemplateByName(
+    ...     'evolution-2.2-test')
     >>> evolution_22_template = potemplate_subset.getPOTemplateByName(
     ...     'evolution-2.2')
 
@@ -1030,27 +1031,60 @@ We get a sample tarball to be uploaded into the system.
     ...     'es.po': 'Spanish translation',
     ...     'fr.po': 'French translation',
     ...     }
-    >>> tarfile_content = RosettaWriteTarFile.files_to_string(
+    >>> tarfile_content = LaunchpadWriteTarFile.files_to_string(
     ...     test_tar_content)
     >>> is_published = True
 
+We will need this helper function to print the queue content.
+
+    >>> def print_queue_entries():
+    ...     translationimportqueue = getUtility(ITranslationImportQueue)
+    ...     for entry in translationimportqueue:
+    ...         if entry.productseries is not None:
+    ...             context = entry.productseries.product.name
+    ...         else:
+    ...             context = '%s %s' % (
+    ...                 entry.distroseries.name, entry.sourcepackagename.name)
+    ...         template = 'None'
+    ...         if entry.potemplate is not None:
+    ...             template = entry.potemplate.name
+    ...         print '%s | %s | %s' % (context, template, entry.path)
+
 Current entries in the queue are:
 
-    >>> translationimportqueue.entryCount()
-    8
+    >>> print_queue_entries()
+    hoary evolution | None               | po/sr.po
+    firefox         | None               | foo/bar.pot
+    evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
+    evolution       | evolution-2.2-test | po/pt_BR.po
+    firefox         | None               | foo/bar.po
+    evolution       | None               | po/sr.po
+    hoary evolution | None               | po/evolution-2.2.pot
+    warty evolution | None               | po/sr.po
 
-Attach the sample tarball to the 'man' template in evolution product. There
-will be three new entries from the tarball.
+Attach the sample tarball to the 'evolution-2.2-test' template in evolution
+product. There will be three new entries from the tarball.
 
     >>> translationimportqueue.addOrUpdateEntriesFromTarball(
     ...     tarfile_content, is_published, rosetta_expert,
-    ...     productseries=evolution_productseries, potemplate=man_template)
+    ...     productseries=evolution_productseries,
+    ...     potemplate=evolution_22_test_template)
     3
 
-And the number of entries in the queue increases in three entries.
+And those new entries in the queue appear in the list.
 
-    >>> translationimportqueue.entryCount()
-    11
+    >>> print_queue_entries()
+    hoary evolution | None               | po/sr.po
+    firefox         | None               | foo/bar.pot
+    evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
+    evolution       | evolution-2.2-test | po/pt_BR.po
+    firefox         | None               | foo/bar.po
+    evolution       | None               | po/sr.po
+    hoary evolution | None               | po/evolution-2.2.pot
+    warty evolution | None               | po/sr.po
+    evolution       | evolution-2.2-test | es.po
+    evolution       | evolution-2.2-test | foo.pot
+    evolution       | evolution-2.2-test | fr.po
 
 Now, attaching the same layout to a different template for the same product,
 we get again three more entries.
@@ -1065,5 +1099,18 @@ And the import queue gets three new entries too. This part of the test is
 important to prevent problems like bug #133611, in which case were not getting
 the extra three entries.
 
-    >>> translationimportqueue.entryCount()
-    14
+    >>> print_queue_entries()
+    hoary evolution | None               | po/sr.po
+    firefox         | None               | foo/bar.pot
+    evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
+    evolution       | evolution-2.2-test | po/pt_BR.po
+    firefox         | None               | foo/bar.po
+    evolution       | None               | po/sr.po
+    hoary evolution | None               | po/evolution-2.2.pot
+    warty evolution | None               | po/sr.po
+    evolution       | evolution-2.2-test | es.po
+    evolution       | evolution-2.2-test | foo.pot
+    evolution       | evolution-2.2-test | fr.po
+    evolution       | evolution-2.2      | es.po
+    evolution       | evolution-2.2      | foo.pot
+    evolution       | evolution-2.2      | fr.po

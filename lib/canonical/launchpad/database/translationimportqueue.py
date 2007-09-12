@@ -585,9 +585,6 @@ class TranslationImportQueue:
         if pofile is not None:
             queries.append(
                 'TranslationImportQueueEntry.pofile = %s' % sqlvalues(pofile))
-        if format is not None:
-            queries.append(
-                'TranslationImportQueueEntry.format = %s' % sqlvalues(format))
         if sourcepackagename is not None:
             # The import is related with a sourcepackage and a distribution.
             queries.append(
@@ -598,6 +595,10 @@ class TranslationImportQueue:
                     distroseries))
         else:
             # The import is related with a productseries.
+            assert productseries is not None, (
+                'sourcepackagename and productseries cannot be both None at'
+                ' the same time.')
+
             queries.append(
                 'TranslationImportQueueEntry.productseries = %s' % sqlvalues(
                     productseries))
