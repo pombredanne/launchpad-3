@@ -42,14 +42,17 @@ class SourcePackageReleaseView(LaunchpadView):
 
         # Linkify bug numbers of the format "LP: #<number>"
         matches = re.findall(r'(LP: #(\d+))', changelog)
+        bug_set = getUtility(IBugSet)
         for match_text, bug_id in matches:
             try:
-                bug_url = canonical_url(getUtility(IBugSet).get(bug_id))
+                bug = bug_set.get(bug_id)
             except NotFoundError:
                 pass
             else:
+                bug_url = canonical_url(bug)
                 changelog = changelog.replace(
-                    match_text, '<a href="%s">%s</a>' % (bug_url, match_text))
+                    match_text, '<a title="%s" href="%s">%s</a>' % (
+                        bug.description, bug_url, match_text))
 
         return changelog
 
