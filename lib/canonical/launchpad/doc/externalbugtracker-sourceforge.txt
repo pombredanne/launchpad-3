@@ -107,7 +107,8 @@ raised.
 
 == Updating Bug Watches ==
 
-First, we create some bug watches to test with:
+First, we create some bug watches to test with. Example.com hosts a
+SourceForge instance which has several bugs that we wish to watch:
 
     >>> from canonical.launchpad.database import BugTracker
     >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
@@ -118,13 +119,16 @@ First, we create some bug watches to test with:
     >>> example_bug_tracker = BugTracker(
     ...     name="example-bugs",
     ...     title="Example.com SourceForge",
-    ...     bugtrackertype=BugTrackerType.ROUNDUP,
-    ...     baseurl="http://sourceforge.test",
+    ...     bugtrackertype=BugTrackerType.SOURCEFORGE,
+    ...     baseurl="http://example.com",
     ...     summary="Contains bugs for Example.com",
     ...     contactdetails="foo.bar@example.com",
     ...     owner=sample_person)
 
     >>> login('test@canonical.com')
+
+Launchpad.dev bug #10 is the same bug as reported in example.com bug
+#1722250, so we add a watch against the remote bug.
 
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
@@ -132,19 +136,19 @@ First, we create some bug watches to test with:
 
     >>> login('no-priv@canonical.com')
 
-Collect the Example.com watches:
-
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1722250: None
 
-And have a SourceForge instance process them:
+Our SourceForge ExternalBugTracker can now process, and retrieve a
+remote status for, the bug watch that we have created.
 
     >>> sourceforge = TestSourceForge(example_bug_tracker.baseurl)
     >>> sourceforge.updateBugWatches(example_bug_tracker.watches)
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1722250: Open:None
 
-We'll add some more watches now.
+We now add some more watches against remote bugs in the example.com bug
+tracker with a variety of statuses.
 
     >>> from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
     >>> print_bugwatches(example_bug_tracker.watches,
@@ -152,19 +156,19 @@ We'll add some more watches now.
     Remote bug 1722250: New
 
     >>> remote_bugs = [
-    ...     (1722251, 'Confirmed'),
-    ...     (1722252, 'Incomplete'),
-    ...     (1722253, 'Incomplete'),
-    ...     (1722254, 'In Progress'),
-    ...     (1722255, 'In Progress'),
-    ...     (1722256, 'Fix Committed'),
-    ...     (1722257, 'Fix Released'),
-    ...     (1722258, 'Incomplete'),
-    ...     (1722259, 'Incomplete'),
+    ...     1722251,
+    ...     1722252,
+    ...     1722253,
+    ...     1722254,
+    ...     1722255,
+    ...     1722256,
+    ...     1722257,
+    ...     1722258,
+    ...     1722259,
     ... ]
 
     >>> bug_watch_set = getUtility(IBugWatchSet)
-    >>> for remote_bug_id, remote_status in remote_bugs:
+    >>> for remote_bug_id in remote_bugs:
     ...     bug_watch = bug_watch_set.createBugWatch(
     ...         bug=example_bug, owner=sample_person,
     ...         bugtracker=example_bug_tracker,
@@ -182,6 +186,10 @@ We'll add some more watches now.
     CALLED _getPage(u'support/tracker.php?aid=1722257')
     CALLED _getPage(u'support/tracker.php?aid=1722258')
     CALLED _getPage(u'support/tracker.php?aid=1722259')
+
+The bug statuses have now been imported from the Example.com bug
+tracker, so the bug watches should now have valid Launchpad bug
+statuses:
 
     >>> print_bugwatches(example_bug_tracker.watches,
     ...     sourceforge.convertRemoteStatus)
