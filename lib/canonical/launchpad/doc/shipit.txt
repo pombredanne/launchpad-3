@@ -997,9 +997,58 @@ requests for CDs of the current distroseries or all requests.
         Edubuntu Requested Mac CDs: 0
 
 
-To help identifying if we're reaching new users with every series, we have a
-report which shows the distribution of requests. Both for the current series
+To help identify if we're reaching new users with every series, we have a
+report which shows the distribution of requests, both for the current series
 and to the previous one.
+
+This report is indexed vertically by number of requests and it contains
+two sets of columns (one for the current series and other for the
+accumulated totals of all previous series).  Each of these sets contains
+another two sets, for requests and shipments, which in turn contain 4 other
+columns ('# of people', '%', 'people with karma' and 'avg CDs per request').
+This is the description of each column, in its context:
+
+    - Current series
+        ** requests
+            - # of people
+                Number of people which made N requests of the current series,
+                where N is the row number.
+
+            - %
+                The percentage represented by the above number of people from
+                the total of requesters of the current series.
+
+            - people with karma
+                Of these people which requested, how many of them have 10
+                or more karma entries.
+
+            - avg CDs per request
+                Average size of the requests of the current series made
+                all these people (not just the ones with karma).
+
+        ** shipments
+            Same as above but for shipments rather than requests.
+
+    - Previous series
+        ** requests
+            - # of people
+                Number of people which made N requests of previous series
+                (where N is the row number) /and/ also made requests of
+                the current series.
+            - %
+                The percentage represented by the above number of people from
+                the total of requesters of the current series.
+
+            - people with karma
+                Of these people which requested, how many of them have 10
+                or more karma entries.
+                
+            - avg CDs per request
+                Average size of the requests of previous series made by
+                all these people (not just the ones with karma).
+
+        ** shipments
+            Same as above but for shipments rather than requests.
 
   >>> csv_file = requestset.generateRequestDistributionReport()
 
