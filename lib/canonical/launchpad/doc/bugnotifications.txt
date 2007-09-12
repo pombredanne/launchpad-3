@@ -1,10 +1,13 @@
+
 = Bug notifications =
+
 
 == What is a bug notification? ==
 
 A bug notification gets added when something interesting happens to the
 bug. It's stored in a a table, and later on a cronscript constructs an
 email and sends the notification to the bug's subscribers.
+
 
 == When do bug notifications get added? ==
 
@@ -16,6 +19,7 @@ be sent. To start with, let's login:
 
 Here are the things that cause bug notifications to be add, and what
 those notifications look like.
+
 
 === Reporting a new bug ===
 
@@ -47,6 +51,7 @@ those notifications look like.
     >>> print latest_notification.message.text_contents
     this is a comment
 
+
 === Editing a bug report ===
 
     >>> from zope.interface import implements
@@ -75,10 +80,12 @@ those notifications look like.
     ** Description changed:
     ...
 
+
 === Filing a new task on an existing bug ===
 
 There are three kinds of tasks that can be added to an existing
 bug. Let's take a look at each type.
+
 
     ==== Distro Task ====
 
@@ -106,6 +113,7 @@ bug. Let's take a look at each type.
     ** Also affects: mozilla-firefox (Debian)
     ...
 
+
     ==== Distro Series Task ====
 
     Similar to a distro task, except that a task filed on a specific
@@ -129,6 +137,7 @@ bug. Let's take a look at each type.
     >>> print latest_notification.message.text_contents
     ** Also affects: mozilla-firefox (Debian Sid)
     ...
+
 
     ==== Upstream Task ====
 
@@ -156,6 +165,7 @@ bug. Let's take a look at each type.
     ** Also affects: evolution
     ...
 
+
     ==== ProductSeries Task ====
 
     Similar to an upstream task, except that a task filed on a specific
@@ -176,6 +186,7 @@ bug. Let's take a look at each type.
     ** Also affects: evolution/trunk
     ...
 
+
 === Commenting on a bug report ===
 
     >>> from canonical.launchpad.interfaces import IBugMessageSet
@@ -195,6 +206,7 @@ bug. Let's take a look at each type.
     True
     >>> print latest_notification.message.text_contents
     just a test comment
+
 
 === Editing a task ===
 
@@ -245,6 +257,7 @@ task Fixed, and assigns himself to it.
     >>> print latest_notification.message.text_contents
     ** Changed in: evolution/trunk
     ...
+
 
 === Adding and editing a bug watch ===
 
@@ -301,6 +314,7 @@ the changes made:
     ** Bug watch removed: The Mozilla.org Bug Tracker #2000
     https://bugzilla.mozilla.org/show_bug.cgi?id=2000
 
+
 === Adding and editing a CVE reference ===
 
 Adding a CVE reference to a bug also causes a notification email to go
@@ -324,6 +338,7 @@ this document:
     False
     >>> print latest_notification.message.text_contents
     ** CVE added: http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=2004-0276
+
 
 === Marking a bug as a duplicate ===
 
@@ -406,6 +421,7 @@ message is sent.
     >>> print latest_notification.message.text_contents
     ** This bug is no longer a duplicate of bug 3
        Bug Title Test
+
 
 === Expiring notifications ===
 

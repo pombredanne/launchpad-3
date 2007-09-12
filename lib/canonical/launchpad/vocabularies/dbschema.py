@@ -41,9 +41,6 @@ __all__ = [
 from canonical.lp import dbschema
 
 from canonical.launchpad.webapp.vocabulary import vocab_factory
-from canonical.launchpad.interfaces import (
-    QuestionAction, QuestionPriority, QuestionSort, QuestionStatus)
-
 
 # DB Schema Vocabularies
 

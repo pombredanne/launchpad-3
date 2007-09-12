@@ -295,9 +295,6 @@ sample_bug = '''\
   <importance>HIGH</importance>
   <milestone>future</milestone>
   <assignee email="bar@example.com">Bar User</assignee>
-  <urls>
-    <url href="https://launchpad.net/">Launchpad</url>
-  </urls>
   <cves>
     <cve>2005-2736</cve>
     <cve>2005-2737</cve>
@@ -423,9 +420,6 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertEqual(bug.private, True)
         self.assertEqual(bug.security_related, True)
         self.assertEqual(bug.name, 'some-bug')
-        self.assertEqual(bug.externalrefs.count(), 1)
-        self.assertEqual(bug.externalrefs[0].url, 'https://launchpad.net/')
-        self.assertEqual(bug.externalrefs[0].title, 'Launchpad')
         self.assertEqual(sorted(cve.sequence for cve in bug.cves),
                          ['2005-2730', '2005-2736', '2005-2737'])
         self.assertEqual(bug.tags, ['bar', 'foo'])
