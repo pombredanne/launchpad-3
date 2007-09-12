@@ -678,7 +678,7 @@ class QuestionWorkflowView(LaunchpadFormView):
             _('Thanks for your comment.'), data)
 
     @property
-    def can_answer(self):
+    def show_call_to_answer(self):
         """Return whether the call to answer should be displayed."""
         return (self.user != self.context.owner and
                 self.context.can_give_answer)

@@ -63,8 +63,8 @@ and the rejection message is added to the question board.
 
 The call to help with this problem is not displayed.
 
-    >>> content(['div'], {'id' : 'can-you-help-with-this-problem'}) == []
-    True
+    >>> print content.find(id='can-you-help-with-this-problem')
+    None
 
 Selecting the 'Reject' action again, will simply display a message
 stating that the question is already rejected:

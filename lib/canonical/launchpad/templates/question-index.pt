@@ -86,7 +86,7 @@
 
       <div xml:lang="en" lang="en" dir="ltr">
         <div id="can-you-help-with-this-problem"
-          tal:condition="view/can_answer">
+          tal:condition="view/show_call_to_answer">
           <h2>
             Can you help with this problem?
           </h2>

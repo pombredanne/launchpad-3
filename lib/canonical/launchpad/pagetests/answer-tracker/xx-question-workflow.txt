@@ -403,11 +403,10 @@ a similar problem so he asks his own question.
     >>> user_browser.open('http://launchpad.dev/firefox/+question/2')
  
     >>> content = find_main_content(user_browser.contents)
-    >>> content(['div'], {'id' : 'can-you-help-with-this-problem'}) == []
-    True
+    >>> print content.find(id='can-you-help-with-this-problem')
+    None
  
-    >>> heading = content(['div'], {'id' : 'ask-your-own-question'})[0].h2
-    >>> print heading.renderContents()
+    >>> print content.find(id='ask-your-own-question').h2.renderContents()
     Got a question of your own?
     
     >>> user_browser.getLink('ask your own question separately').click()
