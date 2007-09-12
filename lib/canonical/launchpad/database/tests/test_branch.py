@@ -122,8 +122,8 @@ class TestBranchDeletion(TestCase):
                          "series is not deletable.")
         self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
 
-    def test_revisionsDisableDeletion(self):
-        """A branch that has some revisions cannot be deleted."""
+    def test_revisionsDeletable(self):
+        """A branch that has some revisions can be deleted."""
         # We want the changes done in the setup to stay around, and by
         # default the switchDBUser aborts the transaction.
         transaction.commit()
@@ -135,8 +135,44 @@ class TestBranchDeletion(TestCase):
         self.branch.createBranchRevision(0, revision)
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
+        self.assertEqual(self.branch.canBeDeleted(), True,
+                         "A branch that has a revision is deletable.")
+        unique_name = self.branch.unique_name
+        BranchSet().delete(self.branch)
+        self.assertEqual(BranchSet().getByUniqueName(unique_name), None,
+                         "Branch was not deleted.")
+
+    def test_landingTargetDisablesDeletion(self):
+        """A branch with a landing target cannot be deleted."""
+        target_branch = BranchSet().new(
+            BranchType.HOSTED, 'landing-target', self.user, self.user,
+            self.product, None)
+        self.branch.addLandingTarget(self.user, target_branch)
         self.assertEqual(self.branch.canBeDeleted(), False,
-                         "A branch that has a revision is not deletable.")
+                         "A branch with a landing target is not deletable.")
+        self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
+
+    def test_landingCandidateDisablesDeletion(self):
+        """A branch with a landing candidate cannot be deleted."""
+        source_branch = BranchSet().new(
+            BranchType.HOSTED, 'landing-candidate', self.user, self.user,
+            self.product, None)
+        source_branch.addLandingTarget(self.user, self.branch)
+        self.assertEqual(self.branch.canBeDeleted(), False,
+                         "A branch with a landing candidate is not deletable.")
+        self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
+
+    def test_landingTargetDisablesDeletion(self):
+        """A branch with a landing target cannot be deleted."""
+        source_branch = BranchSet().new(
+            BranchType.HOSTED, 'landing-candidate', self.user, self.user,
+            self.product, None)
+        target_branch = BranchSet().new(
+            BranchType.HOSTED, 'landing-target', self.user, self.user,
+            self.product, None)
+        source_branch.addLandingTarget(self.user, target_branch, self.branch)
+        self.assertEqual(self.branch.canBeDeleted(), False,
+                         "A branch with a dependent target is not deletable.")
         self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
 
 

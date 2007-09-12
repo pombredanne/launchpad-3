@@ -545,18 +545,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -1074,7 +1062,6 @@ INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackag
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (31, 12, 20, NULL, NULL, NULL, NULL, 20, NULL, 50, NULL, NULL, '2007-03-15 20:41:18.635493', 16, NULL, NULL, '', NULL, 'Jokosher', '2007-03-15 20:41:42.256326', NULL, NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (32, 13, 17, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-07-27 20:00:58.299796', 12, NULL, NULL, NULL, NULL, 'Launchpad', NULL, NULL, NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (33, 14, 20, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-08-09 11:39:16.836856', 63, NULL, NULL, NULL, NULL, 'Jokosher', NULL, NULL, NULL, NULL, NULL);
-
 
 ALTER TABLE bugtask ENABLE TRIGGER ALL;
 
