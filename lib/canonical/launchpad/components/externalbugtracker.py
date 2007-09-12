@@ -89,7 +89,7 @@ class BugNotFound(Exception):
 # Helper function
 #
 def get_external_bugtracker(bugtracker, version=None):
-    """Return an ExternalBugTracker for bugtracker."""
+    """Return an `ExternalBugTracker` for bugtracker."""
     bugtrackertype = bugtracker.bugtrackertype
     if bugtrackertype == BugTrackerType.BUGZILLA:
         return Bugzilla(bugtracker.baseurl, version)
@@ -1324,7 +1324,7 @@ class SourceForge(ExternalBugTracker):
             # into a newline-delimited list from which we can then
             # extract the requisite data.
             status_row = status_tag.findParent().findParent()
-            status, = status_row.contents[-1:]
+            status, = status_row.contents[-1]
             status = status.strip()
 
             # We need to do the same for Resolution, though if we can't
@@ -1332,11 +1332,8 @@ class SourceForge(ExternalBugTracker):
             resolution_tag = soup.find(text=re.compile('Resolution:'))
             if resolution_tag:
                 resolution_row = resolution_tag.findParent().findParent()
-                resolution, = resolution_row.contents[-1:]
+                resolution, = resolution_row.contents[-1]
                 resolution = resolution.strip()
-
-                if resolution == 'None':
-                    resolution = None
             else:
                 resolution = None
 
@@ -1351,7 +1348,7 @@ class SourceForge(ExternalBugTracker):
             bug_id = int(bug_id)
         except ValueError:
             raise InvalidBugId(
-                "bug_id must be convertable an integer: %s" % str(bug_id))
+                "bug_id must be convertible an integer: %s" % str(bug_id))
 
         try:
             remote_bug = self.bugs[bug_id]
@@ -1359,11 +1356,10 @@ class SourceForge(ExternalBugTracker):
             raise BugNotFound(bug_id)
         else:
             try:
-                return '%s:%s' % (
-                    remote_bug['status'], remote_bug['resolution'])
+                return '%(status)s:%(resolution)s' % remote_bug
             except KeyError:
                 raise UnparseableBugData(
-                    "Remote bug %s does not define a status.")
+                    "Remote bug %i does not define a status." % bug_id)
 
 
     def convertRemoteStatus(self, remote_status):
@@ -1429,11 +1425,10 @@ class SourceForge(ExternalBugTracker):
         if status not in status_map:
             log.warn("Unknown status '%s'" % remote_status)
             return BugTaskStatus.UNKNOWN
-        elif resolution in status_map[status]:
-            return status_map[status][resolution]
-        elif resolution in status_map['Open']:
-            return status_map['Open'][resolution]
-        else:
+
+        local_status = status_map[status].get(
+            resolution, status_map['Open'].get(resolution))
+        if local_status is None:
             log.warn("Unknown status '%s'" % remote_status)
             return BugTaskStatus.UNKNOWN
 

@@ -267,5 +267,5 @@ class TestSourceForge(SourceForge):
         bug_id = page_re.match(page).groups()[0]
 
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
-        return open(file_path + '/' + 
+        return open(file_path + '/' +
             'sourceforge-sample-bug-%s.html' % bug_id, 'r')
