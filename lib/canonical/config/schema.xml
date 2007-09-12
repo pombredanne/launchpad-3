@@ -1049,6 +1049,7 @@ k            </description>
 
     <sectiontype name="checkwatches">
         <key name="batch_query_threshold" datatype="integer" default="10" />
+        <key name="default_socket_timeout" datatype="integer" default="30" />
     </sectiontype>
 
     <sectiontype name="canonical" extends="database_options">
