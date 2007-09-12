@@ -70,7 +70,10 @@ class ImportProcess:
                         package = (
                             entry_to_import.productseries.product.displayname)
                     else:
-                        package = "unknown package"
+                        raise AssertionError(
+                            "Import queue entry %d has neither a "
+                            "source package name nor a product series."
+                            % entry_to_import.id)
                     raise AssertionError(
                         "Broken translation import queue entry %d (for %s): "
                         "it's Approved but lacks the place where it should "

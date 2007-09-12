@@ -1001,11 +1001,12 @@ review.
     NEEDS_REVIEW
 
 
-= Error handling =
+= Invalid data =
 
-Because of bug 138650, if administrators fail to correct certain errors in
-requests while approving them, we may end up with an approved but incomplete
-entry that has no place to go.
+If administrators fail to correct certain errors in requests while approving
+them, and the admin user interface mistakenly accepts the approval, we may
+end up with an approved but incomplete entry that has no place to go (see
+bug 138650 for an example).
 
 If such bad requests do end up on the import queue, the import queue code will
 raise errors about them.
