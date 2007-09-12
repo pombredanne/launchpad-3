@@ -89,6 +89,7 @@ Initializing the sane_builder. It was not rescued, since the job
 identifier is sane (Build.id == 8 and BuildQueue.id == 1 exist):
 
   >>> class SaneBuildingSlave:
+  ...     """A mock slave that is currently building."""
   ...     def status(self):
   ...         return ('BuilderStatus.BUILDING', '8-1')
   ...     def clean(self):
@@ -103,6 +104,7 @@ identifier is sane (Build.id == 8 and BuildQueue.id == 1 exist):
 A sane WAITING slave:
 
   >>> class SaneWaitingSlave:
+  ...     """A mock slave that is currently waiting."""
   ...     def status(self):
   ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '8-1')
   ...     def clean(self):
@@ -117,6 +119,7 @@ A sane WAITING slave:
 A sane WAITING slave but with wrong BuildQueue/Build relation:
 
   >>> class SaneWaitingSlave:
+  ...     """A mock slave waiting with a bogus Build/BuildQueue relation."""
   ...     def status(self):
   ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '7-1')
   ...     def clean(self):
@@ -135,6 +138,7 @@ Let's test slaves with job identifier pointing non-existent
 Build/BuildQueue entries. first a lost slave in status 'BUILDING':
 
   >>> class LostBuildingSlave:
+  ...     """A mock slave building bogus Build/BuildQueue IDs."""
   ...     def status(self):
   ...         return ('BuilderStatus.BUILDING', '1000-10000')
   ...     def abort(self):
@@ -149,6 +153,7 @@ Build/BuildQueue entries. first a lost slave in status 'BUILDING':
 Then a lost slave in status 'WAITING':
 
   >>> class LostWaitingSlave:
+  ...     """A mock slave waiting with bogus Build/BuildQueue IDs."""
   ...     def status(self):
   ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '1000-10000')
   ...     def clean(self):
@@ -167,14 +172,16 @@ Let's create a bunch of mock slaves for testing the Builder State Handler:
 
   >>> import xmlrpclib
   >>> class BrokenSlave:
+  ...     """A mock slave that reports that it is broken."""
   ...     def status(self):
   ...         raise xmlrpclib.Fault(8001, "Broken slave")
 
 
-Make ensurePresent() always return True, it teoretically means the
+Make ensurePresent() always return True, it theoretically means the
 slave has the requested file in cache.
 
   >>> class OkSlave:
+  ...     """An idle mock slave that prints information about itself."""
   ...     def status(self):
   ...         return ('BuilderStatus.IDLE', '')
   ...     def ensurepresent(self, sha1, url):
@@ -197,6 +204,7 @@ slave has the requested file in cache.
 
 
   >>> class BuildingSlave(OkSlave):
+  ...     """A mock slave that looks like it's currently building."""
   ...     def status(self):
   ...         buildlog = xmlrpclib.Binary("This is a build log")
   ...         return ('BuilderStatus.BUILDING', '1-1', buildlog)
@@ -208,11 +216,13 @@ slave has the requested file in cache.
 
 
   >>> class AbortedSlave(OkSlave):
+  ...     """A mock slave that looks like it's aborted."""
   ...     def status(self):
   ...         return ('BuilderStatus.ABORTED', '1-1')
 
 
   >>> class WaitingSlave(OkSlave):
+  ...     """A mock slave that looks like it's currently waiting."""
   ...     def __init__(self, state, dependencies=None):
   ...         self.state = state
   ...         self.dependencies = dependencies
@@ -226,6 +236,7 @@ slave has the requested file in cache.
   ...             return s
 
   >>> class AbortingSlave(OkSlave):
+  ...     """A mock slave that looks like it's in the process of aborting."""
   ...     def status(self):
   ...         return ('BuilderStatus.ABORTING', '1-1')
 

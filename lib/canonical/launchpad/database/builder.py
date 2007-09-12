@@ -22,6 +22,7 @@ from zope.component import getUtility
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildmaster.master import BuilddMaster
 from canonical.database.constants import UTC_NOW
@@ -181,20 +182,18 @@ class Builder(SQLBase):
         # an error rather than assuming it reset ok.
         resume_process.communicate()
 
-    @property
+    @cachedproperty
     def slave(self):
         """See IBuilder."""
-        # A cached attribute _slave is used to allow tests to replace
-        # the _slave object, which is usually an XMLRPC client, with a
+        # A cached attribute is used to allow tests to replace
+        # the slave object, which is usually an XMLRPC client, with a
         # stub object that removes the need to actually create a buildd
         # slave in various states - which can be hard to create.
-        if getattr(self, '_slave', None) is None:
-            self._slave = BuilderSlave(self.url)
-        return self._slave
+        return BuilderSlave(self.url)
 
     def setSlaveForTesting(self, new_slave):
         """See IBuilder."""
-        self._slave = new_slave
+        self.slave = new_slave
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
