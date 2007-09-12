@@ -79,8 +79,9 @@ class ArchiveOverviewMenu(ApplicationMenu):
         text = 'View build records'
         return Link('+builds', text, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def view_tos(self):
-        text = 'View Terms of Service'
+        text = 'Review terms of service'
         return Link('+view-tos', text, icon='info')
 
 
