@@ -8,8 +8,6 @@ import sys
 import unittest
 
 from canonical.config import config
-from canonical.database.sqlbase import (
-    flush_database_updates, clear_current_connection_cache)
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, PackageCopyError, PackageCopier)

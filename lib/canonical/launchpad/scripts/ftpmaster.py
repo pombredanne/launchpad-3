@@ -1354,7 +1354,7 @@ class PackageCopier(LaunchpadScript):
                 dasbpr = distroarchseries.getBinaryPackage(
                     binary.name)[binary.version]
                 # Only include objects with published binaries.
-                if not dasbpr or not dasbpr.current_publishing_record:
+                if dasbpr is None or dasbpr.current_publishing_record is None:
                     continue
                 target_binaries.append(dasbpr)
 

@@ -533,7 +533,8 @@ both a source and binary package of that name.
     >>> package_name_terms.count()
     2
     >>> [(term.token, term.title) for term in package_name_terms]
-    [('mozilla-firefox', u'iceweasel huh ?'), ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
+    [('mozilla-firefox', u'iceweasel huh ?'),
+     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
 
 Searching for "mozilla" should return the binary package name above, and
 the source package named "mozilla".
@@ -542,7 +543,9 @@ the source package named "mozilla".
     >>> package_name_terms.count()
     3
     >>> [(term.token, term.title) for term in package_name_terms]
-    [('mozilla', 'Not uploaded'), ('mozilla-firefox', u'iceweasel huh ?'), ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
+    [('mozilla', 'Not uploaded'),
+     ('mozilla-firefox', u'iceweasel huh ?'),
+     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
 
 The search does a case-insensitive, substring match.
 
@@ -566,7 +569,8 @@ All the binary packages in Launchpad.
     >>> len(bpn_terms)
     2
     >>> [(term.token, term.title) for term in bpn_terms]
-    [('mozilla-firefox', u'iceweasel huh ?'), ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
+    [('mozilla-firefox', u'iceweasel huh ?'),
+     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
 
 
 === SourcePackageNameVocabulary ===
@@ -581,7 +585,8 @@ All the source packages in Launchpad.
     >>> len(spn_terms)
     2
     >>> [(term.token, term.title) for term in spn_terms]
-    [('mozilla', 'Not yet built'), ('mozilla-firefox', u'Source of: mozilla-firefox, mozilla-firefox-data')]
+    [('mozilla', 'Not yet built'),
+     ('mozilla-firefox', u'Source of: mozilla-firefox, mozilla-firefox-data')]
 
     >>> spn_terms = spn_vocabulary.searchForTerms("pmount")
     >>> len(spn_terms)
