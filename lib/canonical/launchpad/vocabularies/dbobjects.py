@@ -309,19 +309,26 @@ class TranslatableLanguageVocabulary(LanguageVocabulary):
     """All the translatable languages known by Launchpad.
 
     English is not a translatable language. It is excluded from the terms.
+    Languages that are not visible and the are not translatable either.
     """
 
     def __contains__(self, language):
-        """See `IVocabulary`."""
-        if ILanguage.providedBy(language) and language.code == 'en':
+        """See `IVocabulary`.
+        
+        This vocabulary excludes English and languages that are not visible.
+        """
+        if not ILanguage.providedBy(language) or language.code == 'en':
             return False
-        return super(
-            TranslatableLanguageVocabulary, self).__contains__(language)
+        return language.visible == True
 
     def __iter__(self):
-        """See `IVocabulary`."""
+        """See `IVocabulary`.
+        
+        Yield languages that are visible and not English.
+        """
         languages = self._table.select(
-            "Language.code != 'en'", orderBy=self._orderBy)
+            "Language.code != 'en' AND Language.visible = True",
+            orderBy=self._orderBy)
         for language in languages:
             yield self.toTerm(language)
 
@@ -329,8 +336,13 @@ class TranslatableLanguageVocabulary(LanguageVocabulary):
         """See `IVocabulary`."""
         if token == 'en':
             raise LookupError(token)
-        return super(
-            TranslatableLanguageVocabulary, self).getTermByToken(token)
+        try:
+            found_language = self._table.selectOne(
+                "Language.code = %s AND Language.visible = True" %
+                sqlvalues(token))
+        except SQLObjectNotFound:
+            raise LookupError(token)
+        return self.getTerm(found_language)
 
 
 class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):

@@ -63,7 +63,14 @@ class Language(SQLBase):
 
     @property
     def alt_suggestion_language(self):
-        """See ILanguage."""
+        """See ILanguage.
+        
+        Non-visible languages and English are not translatable, so they
+        are excluded. Brazilian Portuguese has diverged from Portuguese
+        to such a degree that it should be treated as a parent language.
+        Norwegian languages Nynorsk (nn) and Bokmaal (nb) are similar
+        and may provide suggestions for each other.
+        """
         if self.code in ['pt_BR',]:
             return None
         elif self.code == 'nn':
@@ -71,8 +78,12 @@ class Language(SQLBase):
         elif self.code == 'nb':
             return Language.byCode('nn')
         codes = self.code.split('_')
-        if len(codes) == 2:
-            return Language.byCode(codes[0])
+        if len(codes) == 2 and codes[0] != 'en':
+            language = Language.byCode(codes[0])
+            if language.visible == True:
+                return language
+            else:
+                return None
         return None
 
     @property

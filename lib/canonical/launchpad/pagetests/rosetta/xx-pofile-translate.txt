@@ -39,7 +39,7 @@ In fact, no input widgets at all are displayed.
 
 Rendering the form in read-only mode does not actually stop an anonymous
 visitor (e.g. a spam bot, or a user whose login has expired) from submitting
-data.  That part is more convenience than security.  The server does not
+data. That part is more convenience than security. The server does not
 remember what form it provided to which requester.
 
 Separately from that, however, the form also rejects anonymous POST
@@ -58,7 +58,7 @@ submissions.
 English is not translatable since we store the untranslated messages
 as English. The translate view uses often uses two languages during
 the translation, one for the PO message set, and the other to 'make
-suggestions from'. English cannot be either of these. 
+suggestions from'. English cannot be either of these.
 
 If someone were to attempt an English translation, to create an en
 PO message set, he will get an error:
@@ -78,7 +78,7 @@ the 'make suggestions from' feature.
 
 Because the server does not remember what forms it served to whom, it is
 essential that every form element identifier provide all the context the
-server needs to find back the objects it relates to.  These HTML identifiers
+server needs to find back the objects it relates to. These HTML identifiers
 are created in several places in the code and parsed in yet other places, so
 they must adhere religiously to an agreed-to format.
 
@@ -101,8 +101,8 @@ they must adhere religiously to an agreed-to format.
 
 Elements related 1:1 to a translatable message on this form have names and
 identifiers constructed as "msgset_<id>," where <id> is the unpadded decimal
-id of their POTMsgSet.  The singular form, which plays a special role, has a
-suffix 'singular' appended.  We'll see other suffixes later.
+id of their POTMsgSet. The singular form, which plays a special role, has a
+suffix 'singular' appended. We'll see other suffixes later.
 
     >>> msgset_130 = get_tags(browser, 'id', 'msgset_130')
     >>> for id in msgset_130:
@@ -140,7 +140,7 @@ constructed as an underscore-separated sequence of:
     msgset_130_es_suggestion_702_0_radiobutton
     msgset_130_singular
 
-Radio buttons are grouped by their name attribute.  The translate page shows
+Radio buttons are grouped by their name attribute. The translate page shows
 each translatable message with one radiobutton to select the existing
 translation (the default); a group (possibly empty) of suggested translations;
 and one for a custom translation entered into a text input field.

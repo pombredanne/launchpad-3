@@ -628,11 +628,10 @@ All the languages known by Launchpad.
 === TranslatableLanguageVocabulary ===
 
 All the translatable languages known by Launchpad. English is not
-a translatable language.
+a translatable language, nor are Languages that are not visible.
 
-The languages in this vocabulary are the same as LanguageVocabulary,
-save for the absence of English. The vocabulary will behave identical
-to LanguageVocabulary in tests when the language is not English.
+The vocabulary will behave identical to LanguageVocabulary in tests
+when the language is not English and is visible.
 
     >>> translatable_language_vocabulary = vocabulary_registry.get(
     ...     None, 'TranslatableLanguage')
@@ -667,30 +666,54 @@ to LanguageVocabulary in tests when the language is not English.
     ...
     LookupError:...
 
-English is not in TranslatableLanguageVocabulary. The vocabulary will
-return a LookupError when it is passed the English.
+English and non-visible languages are not in the
+TranslatableLanguageVocabulary. The vocabulary will return a
+LookupError if asked to return these languages.
 
     >>> translatable_languages = set(
     ...     t.token for t in translatable_language_vocabulary)
     >>> languages = set(l.token for l in language_vocabulary)
     >>> difference = list(languages - translatable_languages)
-    >>> len(difference)
-    1
-    >>> difference
-    ['en']
+    >>> difference >= 1
+    True
+
+English is not in the TranslatableLanguageVocabulary.
+
+    >>> 'en' in difference
+    True
 
     >>> english = language_set['en']
     >>> english in translatable_language_vocabulary
-    False
-    >>> u'en' in translatable_language_vocabulary
     False
 
     >>> translatable_language_vocabulary.getTerm(english)
     Traceback (most recent call last):
     ...
-    LookupError:...    
-    
+    LookupError:...
+
     >>> translatable_language_vocabulary.getTermByToken('en')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+Non-visible languages are not in the TranslatableLanguageVocabulary.
+Chinese (zh) is one such language.
+
+    >>> 'zh' in difference
+    True
+
+    >>> chinese = language_set['zh']
+    >>> chinese.visible
+    False
+    >>> chinese in translatable_language_vocabulary
+    False
+
+    >>> translatable_language_vocabulary.getTerm(chinese)
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+    >>> translatable_language_vocabulary.getTermByToken('zh')
     Traceback (most recent call last):
     ...
     LookupError:...
@@ -1477,8 +1500,8 @@ of spec_b.
     >>> [spec.name for spec in spec_b.dependencies]
     [u'spec-c']
 
-No circular dependencies - the vocabulary excludes specifications that 
-are a dependency of the context spec. 
+No circular dependencies - the vocabulary excludes specifications that
+are a dependency of the context spec.
 
     >>> spec_a in spec_b.all_blocked
     True
