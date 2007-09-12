@@ -423,6 +423,12 @@ special = {
             layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
             stdout_logging_level=logging.WARNING
             ),
+    'buildd-scoring.txt': LayeredDocFileSuite(
+            '../doc/buildd-scoring.txt',
+            setUp=builddmasterSetUp,
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
+            stdout_logging_level=logging.DEBUG
+            ),
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
             setUp=branchscannerSetUp, tearDown=branchscannerTearDown,

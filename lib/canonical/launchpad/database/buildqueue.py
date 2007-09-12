@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+import logging
 import pytz
 
 from zope.interface import implements
@@ -25,7 +26,6 @@ from canonical.launchpad.interfaces import (
     IBuildQueue, IBuildQueueSet, NotFoundError)
 from canonical.lp.dbschema import (
     BuildStatus, PackagePublishingStatus, SourcePackageUrgency)
-
 
 
 class BuildQueue(SQLBase):
@@ -120,9 +120,11 @@ class BuildQueue(SQLBase):
         """See IBuildQueue"""
         return self.build.is_trusted
 
-
-    def score(self, logger):
+    def score(self):
         """See IBuildQueue"""
+        # Grab any logger instance available.
+        logger = logging.getLogger()
+    
         if self.manual:
             logger.debug(
                 "%s (%d) MANUALLY RESCORED" % (self.name, self.lastscore))
