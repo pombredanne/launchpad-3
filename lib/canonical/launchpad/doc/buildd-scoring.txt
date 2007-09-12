@@ -48,7 +48,7 @@ BuildQueue entries.
     ...     SourcePackageUrgency, PackagePublishingPocket)
     >>> from zope.security.proxy import removeSecurityProxy
 
-    >>> def createBuildQueue(
+    >>> def setUpBuildQueueEntry(
     ...     component=main_component, urgency=SourcePackageUrgency.HIGH,
     ...     date_created=LOCAL_NOW, manual=False):
     ...
@@ -67,16 +67,17 @@ BuildQueue entries.
     ...
     ...     return build_queue
 
+    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> logger = FakeLogger()
 
  * 1000 points for component 'main',
  * 15 points for urgency HIGH.
  * nothing for queue_time
 
-    >>> bq0 = createBuildQueue()
-    >>> bq0.lastscore
-    0
-    >>> print bq0.score()
-    i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+15 C+1000  = 1015
+    >>> bq0 = setUpBuildQueueEntry()
+
+    >>> bq0.score(logger)
+    DEBUG i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+15 C+1000 T+0 = 1015
     >>> bq0.lastscore
     1015
 
@@ -85,13 +86,11 @@ BuildQueue entries.
  * nothing for queue_time
 
     >>> time1 = LOCAL_NOW - datetime.timedelta(seconds=300)
-    >>> bq1 = createBuildQueue(
+    >>> bq1 = setUpBuildQueueEntry(
     ...      urgency=SourcePackageUrgency.LOW, date_created=time1)
-    >>> bq1.lastscore
-    0
 
-    >>> print bq1.score()
-    i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+5 C+1000 = 1005
+    >>> bq1.score(logger)
+    DEBUG i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+5 C+1000 T+0 = 1005
 
     >>> bq1.lastscore
     1005
@@ -101,14 +100,12 @@ BuildQueue entries.
  * 5 points for queue_time ( > 300 seconds)
 
     >>> time2 = LOCAL_NOW - datetime.timedelta(seconds=310)
-    >>> bq2 = createBuildQueue(
+    >>> bq2 = setUpBuildQueueEntry(
     ...      component=universe_component, urgency=SourcePackageUrgency.HIGH,
     ...      date_created=time2)
-    >>> bq2.lastscore
-    0
 
-    >>> print bq2.score()
-    i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+15 C+250 270 = 270
+    >>> bq2.score(logger)
+    DEBUG i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+15 C+250 T+5 = 270
 
     >>> bq2.lastscore
     270
@@ -118,14 +115,12 @@ BuildQueue entries.
  * 10 points for queue_time ( > 900 seconds)
 
     >>> time3 = LOCAL_NOW - datetime.timedelta(seconds=1000)
-    >>> bq3 = createBuildQueue(
+    >>> bq3 = setUpBuildQueueEntry(
     ...      component=multiverse_component, urgency=SourcePackageUrgency.MEDIUM,
     ...      date_created=time3)
-    >>> bq3.lastscore
-    0
 
-    >>> print bq3.score()
-    i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+10 C+0 20 = 20
+    >>> bq3.score(logger)
+    DEBUG i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+10 C+0 T+10 = 20
 
     >>> bq3.lastscore
     20
@@ -135,14 +130,12 @@ BuildQueue entries.
  * 15 points for queue_time ( > 1800 seconds)
 
     >>> time4 = LOCAL_NOW - datetime.timedelta(seconds=3600)
-    >>> bq4 = createBuildQueue(
+    >>> bq4 = setUpBuildQueueEntry(
     ...      component=main_component, urgency=SourcePackageUrgency.EMERGENCY,
     ...      date_created=time4)
-    >>> bq4.lastscore
-    0
 
-    >>> print bq4.score()
-    i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+20 C+1000 1035 = 1035
+    >>> bq4.score(logger)
+    DEBUG i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+20 C+1000 T+15 = 1035
 
     >>> bq4.lastscore
     1035
@@ -152,14 +145,12 @@ BuildQueue entries.
  * 20 points for queue_time ( > 3600 seconds)
 
     >>> time5 = LOCAL_NOW - datetime.timedelta(seconds=4000)
-    >>> bq5 = createBuildQueue(
+    >>> bq5 = setUpBuildQueueEntry(
     ...      component=restricted_component, urgency=SourcePackageUrgency.LOW,
     ...      date_created=time5)
-    >>> bq5.lastscore
-    0
 
-    >>> print bq5.score()
-    i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+5 C+750 775 = 775
+    >>> bq5.score(logger)
+    DEBUG i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+5 C+750 T+20 = 775
 
     >>> bq5.lastscore
     775
@@ -169,13 +160,13 @@ By setting manual attribute of a BuildQueue entry we prevent it to be
 rescored, which allows us to set an arbitrary value on it.
 
     >>> time6 = LOCAL_NOW
-    >>> bq6 = createBuildQueue(
+    >>> bq6 = setUpBuildQueueEntry(
     ...      urgency=SourcePackageUrgency.LOW, date_created=time6, manual=True)
 
     >>> bq6.lastscore = 5000
 
-    >>> print bq6.score()
-    pmount (5000) MANUALLY RESCORED
+    >>> bq6.score(logger)
+    DEBUG pmount (5000) MANUALLY RESCORED
 
     >>> bq6.lastscore
     5000

@@ -121,11 +121,12 @@ class BuildQueue(SQLBase):
         return self.build.is_trusted
 
 
-    def score(self):
+    def score(self, logger):
         """See IBuildQueue"""
         if self.manual:
-            return (
+            logger.debug(
                 "%s (%d) MANUALLY RESCORED" % (self.name, self.lastscore))
+            return
 
         score_componentname = {
             'multiverse': 0,
@@ -171,13 +172,15 @@ class BuildQueue(SQLBase):
         for limit, dep_score in queue_time_scores:
             if eta.seconds > limit:
                 score += dep_score
-                msg += "%d " % score
+                msg += "T+%d " % dep_score
                 break
+        else:
+            msg += "T+0 "
 
         # Store current score value.
         self.lastscore = score
 
-        return msg + " = %d" % self.lastscore
+        logger.debug("%s= %d" % (msg, self.lastscore))
 
     def getLogFileName(self):
         """See IBuildQueue"""

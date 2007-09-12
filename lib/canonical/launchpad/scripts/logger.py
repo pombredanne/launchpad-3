@@ -53,6 +53,10 @@ class FakeLogger:
     def info(self, *stuff, **kw):
         self.message('INFO', *stuff, **kw)
 
+    def debug(self, *stuff, **kw):
+        self.message('DEBUG', *stuff, **kw)
+
+
 class LibrarianFormatter(logging.Formatter):
     """A logging.Formatter that stores tracebacks in the Librarian and emits
     a URL rather than emitting the traceback directly.

@@ -463,7 +463,7 @@ class BuilddMaster:
         for job in candidates:
             if job.files:
                 jobs.append(job)
-                scoring_details = job.score()
+                scoring_details = job.score(self._logger)
                 self._logger.debug(scoring_details)
             else:
                 distro = job.archseries.distroseries.distribution

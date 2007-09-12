@@ -8,8 +8,6 @@ import subprocess
 import sys
 from unittest import TestCase, TestLoader
 
-from zope.component import getUtility
-
 from canonical.config import config
 from canonical.testing import LaunchpadLayer
 
@@ -89,21 +87,6 @@ class TestCronscriptBase(TestCase):
     def testRunQueueBuilderLocked(self):
         """Check is buildd-queue-builder.py respect build-master lock."""
         self.assertLocked(runner=self.runBuilddQueueBuilder)
-
-    def testRunQueueBuilderNotLockedByCronDaily(self):
-        """Check if buildd-queue-builder doesn't respect cron.daily lock.
-
-        Respecting cron.daily lockfile is a deprecated requirement.
-
-        Possible missing build dependencies are handled properly by
-        the builders, there is not reason to suppress queue-builder
-        runs while cron.daily is also running.
-        """
-        lock = open(config.builddmaster.crondaily_lockfile, 'w')
-        lock.write('Go away !')
-        lock.close()
-        self.assertRuns(runner=self.runBuilddQueueBuilder)
-        os.remove(config.builddmaster.crondaily_lockfile)
 
 
 def test_suite():

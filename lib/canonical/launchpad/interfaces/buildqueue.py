@@ -63,7 +63,7 @@ class IBuildQueue(Interface):
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""
 
-    def score():
+    def score(logger):
         """Perform scoring based on heuristic values.
 
         Creates a 'score' (priority) value based on:
@@ -81,7 +81,7 @@ class IBuildQueue(Interface):
         This method automatically updates IBuildQueue.lastscore value and
         skips 'manually-scored' records.
 
-        return a string with the scoring details that can be logged.
+        Receives a 'logger' instance to printout scoring details.
         """
     def destroySelf():
         """Delete this entry from the database."""
