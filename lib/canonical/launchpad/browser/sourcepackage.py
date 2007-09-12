@@ -8,6 +8,7 @@ __all__ = [
     'SourcePackageNavigation',
     'SourcePackageSOP',
     'SourcePackageFacets',
+    'SourcePackageTranslateRedirectView',
     'SourcePackageView',
     ]
 
@@ -244,3 +245,24 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
     def searchName(self):
         return False
 
+
+class SourcePackageTranslateRedirectView:
+    """Redirects to translations site for +translate page.
+
+    XXX CarlosPerelloMarin 2007-08-12: This redirect is only useful until all
+    supported Ubuntu distro series stop pointing to
+    https://launchpad.net/ubuntu/.../+translate URLs and instead, use the
+    translations.launchpad.net domain. See bug #138090 for more details.
+    """
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __call__(self):
+        """Redirect to the +translate page in the translations site."""
+        self.request.response.redirect(
+            '/'.join([
+                canonical_url(self.context, rootsite='translations'),
+                '+translate'
+                ]))

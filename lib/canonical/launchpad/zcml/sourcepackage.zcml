@@ -107,6 +107,13 @@
       />
   </browser:pages>
 
+  <browser:page
+    name="+translate"
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    class="canonical.launchpad.browser.SourcePackageTranslateRedirectView"
+    permission="zope.Public"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.ISourcePackage"
     permission="zope.Public"
