@@ -3,7 +3,7 @@
 """Helper functions for the process-accepted.py script."""
 
 __metaclass__ = type
-__all__ = ['close_bugs', 'closeBugsForQueueItem']
+__all__ = ['close_bugs', 'close_bugs_for_queue_item']
 
 from zope.component import getUtility
 
@@ -41,14 +41,14 @@ def close_bugs(queue_ids):
     """Close any bugs referenced by the queue items.
 
     Retrieve PackageUpload objects for the given ID list and perform
-    closeBugsForQueueItem on each of them.
+    close_bugs_for_queue_item on each of them.
     """
     for queue_id in queue_ids:
         queue_item = getUtility(IPackageUploadSet).get(queue_id)
-        closeBugsForQueueItem(queue_item)
+        close_bugs_for_queue_item(queue_item)
 
 
-def closeBugsForQueueItem(queue_item, changesfile_object=None):
+def close_bugs_for_queue_item(queue_item, changesfile_object=None):
     """Close bugs for a given queue item.
 
     'queue_item' is an IPackageUpload instance and is given by the user.
