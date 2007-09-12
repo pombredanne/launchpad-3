@@ -588,7 +588,11 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: [PPA name16] Accepted bar 1.0-1 (source)"]
+            "Subject: [PPA name16] Accepted bar 1.0-1 (source)",
+            "You are receiving this email because you are the uploader of "
+                "the above",
+            "PPA package."
+            ]
         self.assertEmail(contents)
 
         queue_items = self.breezy.getQueueItems(
@@ -655,7 +659,11 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
 
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
-            "Personal Package Archive for Andrew Bennetts is disabled"]
+            "Personal Package Archive for Andrew Bennetts is disabled",
+            "If you don't understand why your files were rejected please "
+                "send an email",
+            "to launchpad-users@lists.canonical.com for help."
+        ]
         self.assertEmail(contents)
 
     def testPPADistroSeriesOverrides(self):

@@ -409,7 +409,11 @@ class PackageUpload(SQLBase):
             "CHANGESFILE": guess_encoding("".join(changes_lines)),
         }
         debug(self.logger, "Sending rejection email.")
-        rejection_template = get_email_template('upload-rejection.txt')
+        if self.isPPA():
+            rejection_template = get_email_template(
+                'ppa-upload-rejection.txt')
+        else:
+            rejection_template = get_email_template('upload-rejection.txt')
         sender = format_address(config.uploader.default_sender_name,
                                 config.uploader.default_sender_address)
         self._sendMail(
@@ -447,11 +451,9 @@ class PackageUpload(SQLBase):
                 new_template % interpolations)
             return
 
-        # Every message sent from here onwards uses the accepted template.
-        accepted_template = get_email_template('upload-accepted.txt')
-
         if self.isPPA():
             # PPA uploads receive an acceptance message.
+            accepted_template = get_email_template('ppa-upload-accepted.txt')
             interpolations["STATUS"] = "[PPA %s] Accepted" % (
                 self.archive.owner.name)
             subject = "[PPA %s] Accepted %s %s (%s)" % (
@@ -463,6 +465,9 @@ class PackageUpload(SQLBase):
                 subject,
                 accepted_template % interpolations)
             return
+
+        # Every message sent from here onwards uses the accepted template.
+        accepted_template = get_email_template('upload-accepted.txt')
 
         # Auto-approved uploads to backports skips the announcement,
         # they are usually processed with the sync policy.
