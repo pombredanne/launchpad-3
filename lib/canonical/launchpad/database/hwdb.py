@@ -18,10 +18,11 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import (
-    HWSubmissionError, HWSubmissionFormat, HWSubmissionProcessingStatus,
-    IHWSubmission, IHWSubmissionSet, IHWSystemFingerprint,
-    IHWSystemFingerprintSet, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IPersonSet, PersonCreationRationale)
+    HWSubmissionFormat, HWSubmissionInvalidEmailAddress,
+    HWSubmissionKeyNotUnique, HWSubmissionProcessingStatus, IHWSubmission,
+    IHWSubmissionSet, IHWSystemFingerprint, IHWSystemFingerprintSet,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet,
+    PersonCreationRationale)
 
 class HWSubmission(SQLBase):
     """See `IHWSubmission`."""
@@ -63,7 +64,7 @@ class HWSubmissionSet:
         submission_exists = HWSubmission.selectOneBy(
             submission_id=submission_id)
         if submission_exists is not None:
-            raise HWSubmissionError(
+            raise HWSubmissionKeyNotUnique(
                 'A submission with this ID already exists')
         
         personset = getUtility(IPersonSet)
@@ -73,7 +74,7 @@ class HWSubmissionSet:
                 emailaddress,
                 PersonCreationRationale.OWNER_SUBMITTED_HARDWARE_TEST)
             if owner is None:
-                raise HWSubmissionError, 'invalid email address'
+                raise HWSubmissionInvalidEmailAddress, 'invalid email address'
 
         fingerprint = HWSystemFingerprint.selectOneBy(
             fingerprint=system_fingerprint)
@@ -85,9 +86,14 @@ class HWSubmissionSet:
             name=filename,
             size=filesize,
             file=raw_submission,
-            # We expect data in XML format, and simply assume here that we
-            # received such data.  It will turn out later, when the data
-            # is parsed, if this assumption is correct.
+            # We expect submissions only from the HWDB client, which should
+            # know that it is supposed to send XML data. Other programs
+            # might submit other data (or at least claim to be sending some
+            # other content type), but the content type as sent by the
+            # client can be checked in the browser class which manages the
+            # submissions. A real check, if we have indeed an XML file,
+            # cannot be done without parsing, and this will be done later,
+            # in a cron job.
             contentType='text/xml',
             expires=None)
 

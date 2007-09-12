@@ -5,8 +5,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'HWSubmissionError',
     'HWSubmissionFormat',
+    'HWSubmissionInvalidEmailAddress',
+    'HWSubmissionKeyNotUnique',
     'HWSubmissionProcessingStatus',
     'IHWSubmission',
     'IHWSubmissionSet',
@@ -21,8 +22,11 @@ from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
-class HWSubmissionError(Exception):
+class HWSubmissionKeyNotUnique(Exception):
     """Prevent two or more submission with identical submission_id."""
+
+class HWSubmissionInvalidEmailAddress(Exception):
+    """Reject submissions with invaild email addresses."""
 
 
 class HWSubmissionProcessingStatus(DBEnumeratedType):
@@ -98,7 +102,7 @@ class IHWSubmissionSet(Interface):
         """Store submitted raw hardware information in a Librarian file.
 
         If a submission with an identical submission_id already exists,
-        an HWSubmissionError is raised."""
+        an HWSubmissionKeyNotUnique exception is raised."""
 
     def getBySubmissionID(submission_id, user=None):
         """Return the submission with the given submission ID, or None.
