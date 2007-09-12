@@ -63,7 +63,7 @@ class ArchiveOverviewMenu(ApplicationMenu):
 
     usedfor = IArchive
     facet = 'overview'
-    links = ['admin', 'edit', 'builds']
+    links = ['admin', 'edit', 'builds', 'view_tos']
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -78,6 +78,10 @@ class ArchiveOverviewMenu(ApplicationMenu):
     def builds(self):
         text = 'View build records'
         return Link('+builds', text, icon='info')
+
+    def view_tos(self):
+        text = 'View Terms of Service'
+        return Link('+view-tos', text, icon='info')
 
 
 class ArchiveView(LaunchpadView):

@@ -298,7 +298,8 @@ series.
 
 Add an Ubuntu bugtask for a bug that is confirmed upstream.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
+    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> from canonical.launchpad.ftests.test_bugtask import (
     ...     BugTaskSearchBugsElsewhereTest)
     >>> def bugTaskInfo(bugtask):
@@ -339,6 +340,9 @@ has a state associated with "resolved upstream", the bug is included
 in the results of the "open upstream" filter as well as the "resolved
 upstream" filter.
 
+(In the examples below, the last bugtask is ellipsized because its ID
+ is generated here and therefore sampledata-dependent.)
+
     >>> params = BugTaskSearchParams(
     ...     open_upstream=True, orderby='id', user=None)
     >>> open_elsewhere_tasks = ubuntu.searchTasks(params)
@@ -347,7 +351,7 @@ upstream" filter.
     ...     print bugTaskInfo(bugtask)
     17  1 mozilla-firefox (Ubuntu) Firefox does not support SVG
     26  2 Ubuntu Blackhole Trash folder
-    35 12 Ubuntu Copy, Cut and Delete operations should work on selections
+    ... ... Ubuntu Copy, Cut and Delete operations should work on selections
 
 
 We can also filter our search to include only bugs that are not known to
@@ -360,7 +364,7 @@ affect upstream, i.e., bugs that don't have an IUpstreamBugTask.
     ...     test_helper.assertShouldBeShownOnNoUpstreamTaskSearch(bugtask)
     ...     print bugTaskInfo(bugtask)
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    33 14 Ubuntu Test nominated bug
+    ... ... Ubuntu Test nominated bug
 
 If we combine upstream-related filters, we get the union of the results
 of the single filters.
@@ -375,7 +379,7 @@ of the single filters.
     26  2 Ubuntu Blackhole Trash folder
     23  9 thunderbird (Ubuntu) Thunderbird crashes
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    33 14 Ubuntu Test nominated bug
+    ... ... Ubuntu Test nominated bug
 
 
     >>> test_helper.tearDownBugsElsewhereTests()

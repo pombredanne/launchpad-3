@@ -946,7 +946,7 @@ class NascentUpload:
         includes decisions such as moving the package to the commercial
         archive if the package's component is 'commercial'.
 
-        PPA uploads with commercial files and normal uploads with a mixture 
+        PPA uploads with commercial files and normal uploads with a mixture
         of commercial and non-commercial files will be rejected.
         """
 
@@ -974,7 +974,7 @@ class NascentUpload:
             if not archive:
                 # Don't override the archive to None here or the rest of the
                 # processing will throw exceptions.
-                self.reject("Commercial archive for distro '%s' not found" % 
+                self.reject("Commercial archive for distro '%s' not found" %
                     self.policy.distroseries.distribution.name)
             else:
                 # Reset the archive in the policy to the commercial archive.

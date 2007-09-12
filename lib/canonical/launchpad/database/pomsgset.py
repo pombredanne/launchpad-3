@@ -76,7 +76,7 @@ class POMsgSetMixIn:
         return subs[self]
 
     def initializeSubmissionsCaches(self, related_submissions=None):
-        """See `IPOMsgSet`.""" 
+        """See `IPOMsgSet`."""
         if self._hasSubmissionsCaches():
             return
 

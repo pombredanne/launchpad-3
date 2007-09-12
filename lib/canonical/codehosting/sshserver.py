@@ -107,7 +107,7 @@ class LaunchpadAvatar(avatar.ConchUser):
     def _cbRememberProductID(self, productID, productName):
         if productID is None:
             return None
-        # XXX: Andrew Bennetts 2007-01-26: 
+        # XXX: Andrew Bennetts 2007-01-26:
         # Why convert the number to a string here?
         productID = str(productID)
         self._productIDs[productName] = productID
