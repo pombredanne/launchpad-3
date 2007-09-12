@@ -8,7 +8,7 @@ The build record may have many BinaryPackageRelease records pointing
 at it and it may reference a build log if the build was done on a
 launchpad build daemon.
 
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, IBuildSet)
   >>> from canonical.lp.dbschema import BuildStatus

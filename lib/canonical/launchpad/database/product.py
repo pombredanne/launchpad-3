@@ -316,7 +316,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     def getTargetTypes(self):
         """See `QuestionTargetMixin`.
-        
+
         Defines product as self.
         """
         return {'product': self}

@@ -45,22 +45,21 @@
           <h2>What&#8217;s new</h2>
           <ul class="news">
             <li>
-              <a href="https://help.launchpad.net/FrequentlyAskedQuestions"
-                 >Frequently Asked Questions: create standard answers to FAQs
-                in the Answer Tracker</a>
+              <a href="https://help.launchpad.net/PPAQuickStart"
+                 >Personal Package Archives: beta of Launchpad's new Ubuntu
+                 build and repository hosting service.</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/Mantis">Watch remote bugs
-                in Mantis bug trackers</a>
+              <a href="https://help.launchpad.net/BranchMergeProposals">Specify
+                the branch you intend to land your branch on.</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/FileDownloadsOverview">File
-                downloads: make installers, documentation and other files
-                available from your project's overview page</a>
+              <a href="https://help.launchpad.net/BugStatuses#trac">Trac bug
+                statuses are now captured in bug watches.</a>
             </li>
             <li>
-             <a href="https://help.launchpad.net/BugStatuses">New clearer bug
-                status names</a>
+             <a href="https://translations.launchpad.net/people/+me/+imports">Individuals
+             now have their own translations import queue page.</a>
             </li>
           </ul>
         </div>

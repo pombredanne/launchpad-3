@@ -181,7 +181,7 @@ class BugWatchSet(BugSetBase):
     def createBugWatch(self, bug, owner, bugtracker, remotebug):
         """See canonical.launchpad.interfaces.IBugWatchSet."""
         return BugWatch(
-            bug=bug, owner=owner, datecreated=UTC_NOW, lastchanged=UTC_NOW, 
+            bug=bug, owner=owner, datecreated=UTC_NOW, lastchanged=UTC_NOW,
             bugtracker=bugtracker, remotebug=remotebug)
 
     def parseBugzillaURL(self, scheme, host, path, query):

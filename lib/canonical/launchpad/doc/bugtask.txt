@@ -1,5 +1,4 @@
-Introduction
-============
+= Introduction =
 
 Bugs are problems in software. When a bug gets assigned to a specific
 upstream or distro/sourcepackagename, a bug /task/ is created. In
@@ -7,11 +6,11 @@ essence, a bug task is a bug that needs to be fixed in a specific
 place. Where a bug has things like a title, comments and subscribers,
 it's the bug task that tracks importance, assignee, etc.
 
-Working with Bug Tasks in Launchpad
-===================================
+= Working with Bug Tasks in Launchpad =
 
-Creating Bug Tasks
-------------------
+
+== Creating Bug Tasks ==
+
 
 All BugTask creation and retrieval is done through an IBugTaskSet utility.
 
@@ -43,7 +42,8 @@ to access those other objects:
 
 Next, we need to grab some values to provide for importance and status.
 
-    >>> from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance)
+    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> STATUS_NEW = BugTaskStatus.NEW
     >>> STATUS_CONFIRMED = BugTaskStatus.CONFIRMED
     >>> STATUS_FIXRELEASED = BugTaskStatus.FIXRELEASED
@@ -90,29 +90,21 @@ Next, we need to grab some values to provide for importance and status.
     True
 
 The created bugtasks are guaranteed to implement the correct interface.
-(We need to refetch them from the database to ensure we get
-non-security-proxied objects.)
 
-    >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.database.bugtask import BugTask
-    >>> verifyObject(IDistroSeriesBugTask,
-    ...              BugTask.get(distro_series_task.id))
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(IDistroSeriesBugTask, distro_series_task)
     True
-    >>> verifyObject(IDistroBugTask,
-    ...              BugTask.get(distro_task.id))
+    >>> verifyObject(IDistroBugTask, distro_task)
     True
-    >>> verifyObject(IUpstreamBugTask,
-    ...              BugTask.get(upstream_task.id))
+    >>> verifyObject(IUpstreamBugTask, upstream_task)
     True
-
 
 # XXX: Brad Bollenbach 2005-02-24: See the bottom of this file for a chunk of
 # test documentation that is missing from here, due to problems with resetting
 # the connection after a ProgrammingError is raised. ARGH.
 
 
-Bug Task Targets
-----------------
+== Bug Task Targets ==
 
 The "target" of an IBugTask is one of the following things:
 
@@ -199,14 +191,14 @@ the name of the source package (if any); and the name of the binary
 package (but only if it's named differently from the source
 package).
 
-Editing Bug Tasks
------------------
+
+== Editing Bug Tasks ==
 
 When changing status we must pass the user making the change. Some
 statuses are restricted to Bug Contacts only.
 
-Upstream Bug Tasks
-^^^^^^^^^^^^^^^^^^
+
+=== Upstream Bug Tasks ===
 
 To edit an upstream task, you must be logged in. Anonymous users
 cannot edit upstream tasks.
@@ -224,8 +216,8 @@ Let's login and try again.
     >>> upstream_task.transitionToStatus(
     ...     STATUS_FIXRELEASED, getUtility(ILaunchBag).user)
 
-Distro and Distro Series Bug Tasks
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+=== Distro and Distro Series Bug Tasks ===
 
 Any logged-in user can edit tasks filed on distros as long as the bug
 is not marked private. So, as an anonymous user, we can edit anything:
@@ -253,8 +245,8 @@ We can edit the task:
     ...     STATUS_FIXRELEASED, getUtility(ILaunchBag).user)
     >>> distro_series_task.transitionToAssignee(sample_person)
 
-Conjoined Bug Tasks
--------------------
+
+=== Conjoined Bug Tasks ===
 
 A bugtask open on the current development series for a distro is kept
 in sync with the "generic" bugtask for that distro, because they
@@ -628,8 +620,8 @@ is therefore Invalid also. In other words, conjoined again.
     >>> current_series_netapplet_task.date_closed is None
     False
 
-Null Bug Tasks
---------------
+
+== Null Bug Tasks ==
 
 Sometimes we need to be able to render a page for a bug in a context,
 when the bug hasn't actually been filed yet in that context. For cases
@@ -702,8 +694,8 @@ two more examples:
     >>> IDistroSeriesBugTask.providedBy(warty_null_bugtask)
     True
 
-Bug Privacy
-===========
+
+= Bug Privacy =
 
 A bug is either private or public. Private bugs are only visible (e.g. in search
 listings) to explicit subscribers and Launchpad admins. Public bugs are visible
@@ -714,8 +706,8 @@ to anyone.
     >>> from canonical.launchpad.event.sqlobjectevent import (
     ...     SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
 
-Privacy and Unpriviledged Users
--------------------------------
+
+== Privacy and Unpriviledged Users ==
 
 Let's log in as the user Foo Bar (to be allowed to edit bugs):
 
@@ -793,8 +785,8 @@ maintained by Foo Bar.
     >>> [bugtask.bug.id for bugtask in foobar_maintained_tasks]
     [2]
 
-Privacy and Priviledged Users
------------------------------
+
+== Privacy and Priviledged Users ==
 
 Now, we'll log in as Mark Shuttleworth, who was assigned to this bug
 when it was marked private:
@@ -809,8 +801,8 @@ And note that he can access and set the bugtask attributes:
     >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
 
-Privacy and Team Awareness
---------------------------
+
+== Privacy and Team Awareness ==
 
 No Privileges Person can't see the private bug, because he's not a subscriber:
 
@@ -845,8 +837,8 @@ if we query logged in as a user who can't see that bug).
     >>> sorted(bugtask.bug.id for bugtask in foobar_maintained_tasks)
     [1, 4, 5, 7, 13]
 
-Privacy and Launchpad Admins
-----------------------------
+
+== Privacy and Launchpad Admins ==
 
 Let's log in as Daniel Henrique Debonzi:
 
@@ -889,8 +881,10 @@ And attribute setting:
     >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
 
-Sorting Bug Tasks
------------------
+
+
+== Sorting Bug Tasks ==
+
 
 Bug tasks need to sort in a very particular order. We want product tasks
 first, then ubuntu tasks, then other distro-related tasks. In the
@@ -913,8 +907,8 @@ Let's just make sure that the tasks on bug_one sort correctly.
     Ubuntu Warty
     mozilla-firefox (Debian)
 
-BugTask Adaptation
-------------------
+
+== BugTask Adaptation ==
 
 An IBugTask can be adapted to an IBug.
 
@@ -925,8 +919,8 @@ An IBugTask can be adapted to an IBug.
    >>> bug.title
    u'Firefox does not support SVG'
 
-The targetnamecache attribute of BugTask
-----------------------------------------
+
+== The targetnamecache attribute of BugTask ==
 
 The BugTask table has this targetnamecache attribute which stores a computed
 value to allow us to sort and search on that value without having to do lots
@@ -978,8 +972,8 @@ Of course, it's also computed and set when a bugtask is created.
     >>> bugtaskset.get(upstream_task_id).bugtargetdisplayname
     u'Mozilla Thunderbird NG'
 
-Target Uses Malone
-------------------
+
+== Target Uses Malone ==
 
 Bug tasks have a flag, target_uses_malone, that says whether the bugtask
 target uses Malone as its official bugtracker.
@@ -996,8 +990,105 @@ target uses Malone as its official bugtracker.
     Ubuntu Warty                   True
     mozilla-firefox (Debian)       False
 
-Handling IntegrityError and ProgrammingError
---------------------------------------------
+
+== findExpirableBugTasks ==
+
+BugTaskSet provides findExpirableBugTasks to find bugtasks that
+qualify for expiration. The bugtasks must have the status of
+Incomplete, be unassigned, and affecting a distribution or
+product that uses Malone.
+
+
+findExpirableBugTasks requires a parameter for the minimum days old
+(min_days_old) that the bugtask has been in the Incomplete status.
+
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks()
+    Traceback (most recent call last):
+    ...
+    TypeError: findExpirableBugTasks() takes exactly 2 arguments (1 given)
+
+There are no expirable bugtasks in the sampledata.
+
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(9999)
+    >>> len(expirable_bugtasks)
+    0
+
+Let's make some bugtasks that qualify for expiration. A Jokosher
+bugtask and a conjoined pair of ubuntu_hoary and ubuntu bugtasks
+will suffice.
+
+    >>> # date_incomplete and date_confirmed are guarded by bugtasks's
+    >>> # transition logic and ZCML. This function will change the
+    >>> # underlying SQLObject's value for a column.
+    >>> from canonical.launchpad.ftests import set_so_attr
+
+    >>> from datetime import datetime, timedelta
+    >>> from pytz import UTC
+    >>> now = datetime.now(UTC)    
+    
+    # ubuntu_hoary_bugtask has a conjoined slave, Bugtask 26.
+    >>> ubuntu_hoary_bugtask = bugtaskset.get(28)
+    >>> ubuntu_hoary_bugtask.transitionToStatus(
+    ...     BugTaskStatus.INCOMPLETE, sample_person)
+    >>> set_so_attr(ubuntu_hoary_bugtask,
+    ...     'date_incomplete', now - timedelta(days=351))
+
+    # ubuntu_bugtask is a conjoined slave to Bugtask 26.
+    >>> ubuntu_bugtask = bugtaskset.get(26)
+    >>> set_so_attr(ubuntu_bugtask,
+    ...     'date_incomplete', now - timedelta(days=351))
+
+    # A bugtask for a product that is expirable.
+    >>> jokosher_bugtask = bugtaskset.get(31)
+    >>> jokosher_bugtask.transitionToStatus(
+    ...     BugTaskStatus.INCOMPLETE, sample_person)
+    >>> set_so_attr(jokosher_bugtask,
+    ...     'date_incomplete', now - timedelta(days=145))
+
+    >>> def summarize_bugtask(bugtasks):
+    ...     print 'AFFECTS  BUGTASK  UNASSIGNED  DAYS_OLD  STATUS  MALONE'
+    ...     for bugtask in bugtasks:
+    ...         print ('%s  %s  %s  %s  %s  %s' %
+    ...             (bugtask.bugtargetdisplayname,
+    ...              bugtask.id, bugtask.assignee is None,
+    ...              (now - bugtask.date_incomplete).days,
+    ...              bugtask.status.title, bugtask.target_uses_malone))
+    >>> bugtasks = [ubuntu_hoary_bugtask, ubuntu_bugtask, jokosher_bugtask]
+    >>> summarize_bugtask(bugtasks)
+    AFFECTS       BUGTASK  UNASSIGNED  DAYS_OLD  STATUS      MALONE
+    Ubuntu Hoary  28       True        351       Incomplete  True
+    Ubuntu        26       True        351       Incomplete  True
+    Jokosher      31       True        145       Incomplete  True
+
+    # Flush the caches so that the bugtasks defined above get
+    # their content from the modified DB.
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+
+The value of the min_days_old controls the bugtasks that are returned.
+The ubuntu_bugtask is never returned; it is a conjoined slave to the
+ubuntu_hoary_bugtask. Slave bugtasks cannot be directly expired because
+only the master bugtask can change the status.
+
+    # No bugtask is older than 351 days.
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(351)
+    >>> len(expirable_bugtasks)
+    0
+
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(350)
+    >>> len(expirable_bugtasks)
+    1
+    >>> [bugtask.bugtargetdisplayname for bugtask in expirable_bugtasks]
+    [u'Ubuntu Hoary']
+
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(144)
+    >>> len(expirable_bugtasks)
+    2
+    >>> [bugtask.bugtargetdisplayname for bugtask in expirable_bugtasks]
+    [u'Jokosher', u'Ubuntu Hoary']
+
+
+== Handling IntegrityError and ProgrammingError ==
 
 # XXX: Brad Bollenbach 2005-02-24: This bit testing the IntegrityError
 # should be higher up in the file (under the explanation about creating

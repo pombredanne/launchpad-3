@@ -116,11 +116,12 @@ def find_main_content(content):
 
 def get_feedback_messages(browser):
     """Find and return the feedback messages of the page."""
-    message_classes = ['message', 'informational message', 'error message']
+    message_classes = [
+        'message', 'informational message', 'error message', 'warning message']
     soup = BeautifulSoup(
         browser.contents,
         parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
-    return [tag.string for tag in soup]
+    return [extract_text(tag) for tag in soup]
 
 
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
@@ -213,6 +214,14 @@ def print_action_links(content):
     for entry in entries:
         print '%s: %s' % (entry.a.string, entry.a['href'])
 
+def print_comments(page):
+    """Print the comments on a BugTask index page."""
+    main_content = find_main_content(page)
+    for comment in main_content('div', 'boardCommentBody'):
+        for li_tag in comment('li'):
+            print "Attachment: %s" % li_tag.a.renderContents()
+        print comment.div.renderContents()
+        print "-"*40
 
 def setUpGlobs(test):
     # Our tests report being on a different port.
@@ -245,6 +254,7 @@ def setUpGlobs(test):
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
+    test.globs['print_comments'] = print_comments
 
 
 class PageStoryTestCase(unittest.TestCase):
