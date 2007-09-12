@@ -57,12 +57,12 @@ class BuildQueue(SQLBase):
         return self.build.sourcepackagerelease.urgency
 
     @property
-    def component_name(self):
+    def current_component(self):
         """See IBuildQueue."""
         pub = self._currentPublication()
         if pub is not None:
-            return pub.component.name
-        return self.build.sourcepackagerelease.component.name
+            return pub.component
+        return self.build.sourcepackagerelease.component
 
     def _currentPublication(self):
         """See IBuildQueue."""
@@ -163,8 +163,8 @@ class BuildQueue(SQLBase):
         msg += "U+%d " % score_urgency[self.urgency]
 
         # Calculates the component-related part of the score.
-        score += score_componentname[self.component_name]
-        msg += "C+%d " % score_componentname[self.component_name]
+        score += score_componentname[self.current_component.name]
+        msg += "C+%d " % score_componentname[self.current_component.name]
 
         # Calculates the build queue time component of the score.
         right_now = datetime.now(pytz.timezone('UTC'))
