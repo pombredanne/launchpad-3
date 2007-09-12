@@ -453,14 +453,13 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
     def createBranchReference(self, url):
         """Create a pure branch reference that points to the specified URL.
 
-        We do this manually because the bzrlib API does not support creating a
-        branch reference without opening it (see
-        `bzrlib.branch.BranchReferenceFormat.initialize`).
-
         :param path: relative path to the branch reference.
         :param url: target of the branch reference.
         :return: file url to the created pure branch reference.
         """
+        # XXX DavidAllouche 2007-09-12
+        # We do this manually because the bzrlib API does not support creating
+        # a branch reference without opening it. See bug 139109.
         t = get_transport(self.get_url('.'))
         t.mkdir('reference')
         a_bzrdir = bzrdir.BzrDir.create(self.get_url('reference'))
