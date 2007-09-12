@@ -552,24 +552,30 @@ class TestCanTraverseReferences(unittest.TestCase):
         self.assertRaises(AssertionError, bogus_branch._canTraverseReferences)
 
 
+class StubbedBranchToMirrorForCheckBranchReference(BranchToMirror):
+    """"Partially stubbed BranchToMirror for checkBranchReference unit tests.
+    """
+    
+    def _getBranchReference(self, url):
+        self.testcase.get_branch_reference_calls.append(url)
+        return self.testcase.reference_values[url]
+
+    def _canTraverseReferences(self):
+        assert self.testcase.can_traverse_references is not None
+        return self.testcase.can_traverse_references
+
+
 class TestCheckBranchReference(unittest.TestCase):
     """Unit tests for BranchToMirror._checkBranchReference."""
 
     def setUp(self):
         client = BranchStatusClient()
-        self.branch = BranchToMirror(
+        self.branch = StubbedBranchToMirrorForCheckBranchReference(
             'foo', 'bar', client, 1, 'owner/product/foo', None)
-        def mockGetBranchReference(url):
-            self.get_branch_reference_calls.append(url)
-            return self.reference_values[url]
+        self.branch.testcase = self
         self.get_branch_reference_calls = []
-        self.reference_values = {}
-        self.branch._getBranchReference = mockGetBranchReference
-        def mockCanTraverseReferences():
-            assert self.can_traverse_references is not None
-            return self.can_traverse_references
+        self.reference_values = {}        
         self.can_traverse_references = None
-        self.branch._canTraverseReferences = mockCanTraverseReferences
 
     def setUpReferences(self, locations):
         """Set up self.branch and self.reference_values to model a chain of
