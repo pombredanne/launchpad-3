@@ -17,7 +17,6 @@ from zope.app.wsgi import WSGIPublisherApplication
 from zope.interface import implements
 from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
-from zope.publisher.interfaces import NotFound
 from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
 from zope.security.proxy import isinstance as zope_isinstance
 from zope.server.http.commonaccesslogger import CommonAccessLogger

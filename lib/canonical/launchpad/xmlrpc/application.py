@@ -19,7 +19,7 @@ from zope.interface import Interface, implements
 
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMailingListApplication, IPrivateApplication)
-from canonical.launchpad.webapp import LaunchpadXMLRPCView, Navigation
+from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 
 class PrivateApplication:
