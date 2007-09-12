@@ -172,13 +172,13 @@ to raise the correct exception:
 Check if page still working for sourcepackages with no builds. (bug #62545)
 
   >>> browser.open(
-  ...    "http://launchpad.dev/ubuntu/hoary/+source/pmount/+builds")
+  ...    "http://launchpad.dev/ubuntu/hoary/+source/mozilla-firefox/+builds")
   >>> browser.getControl(name="build_state").value = ['all']
   >>> browser.getControl("Update").click()
 
   >>> print find_tag_by_id(browser.contents, 'empty-result')
    <div id="empty-result">
-           No builds for pmount in Test Distro Hoary.
+           No builds for mozilla-firefox in Test Distro Hoary.
    </div>
 
 

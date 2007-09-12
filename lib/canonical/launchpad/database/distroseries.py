@@ -796,13 +796,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
                 for pubrecord in result]
 
-    def getBuildRecords(self, status=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         # find out the distroarchseries in question
         arch_ids = [arch.id for arch in self.architectures]
         # use facility provided by IBuildSet to retrieve the records
         return getUtility(IBuildSet).getBuildsByArchIds(
-            arch_ids, status, name, pocket)
+            arch_ids, build_state, name, pocket)
 
     def createUploadedSourcePackageRelease(
         self, sourcepackagename, version, maintainer, builddepends,

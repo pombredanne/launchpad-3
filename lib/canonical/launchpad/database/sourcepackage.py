@@ -470,7 +470,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See canonical.launchpad.interfaces.ISourcePackage."""
         return not self.__eq__(other)
 
-    def getBuildRecords(self, status=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None):
         """See `IHasBuildRecords`"""
         clauseTables = ['SourcePackageRelease',
                         'SourcePackagePublishingHistory']
@@ -480,13 +480,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         SourcePackageRelease.sourcepackagename = %s AND
         SourcePackagePublishingHistory.distrorelease = %s AND
         SourcePackagePublishingHistory.archive IN %s AND
-        SourcePackagePublishingHistory.status = %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
         SourcePackageRelease.id
         """ % sqlvalues(self.sourcepackagename,
                         self.distroseries,
-                        self.distribution.all_distro_archive_ids,
-                        PackagePublishingStatus.PUBLISHED)]
+                        self.distribution.all_distro_archive_ids)]
 
         # XXX cprov 2006-09-25: It would be nice if we could encapsulate
         # the chunk of code below (which deals with the optional paramenters)
@@ -498,9 +496,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             "NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
             % sqlvalues(BuildStatus.FULLYBUILT))
 
-        if status is not None:
+        if build_state is not None:
             condition_clauses.append("Build.buildstate=%s"
-                                     % sqlvalues(status))
+                                     % sqlvalues(build_state))
 
         if pocket:
             condition_clauses.append(
@@ -511,11 +509,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # * SUPERSEDED by -datecreated
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
-        if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
+        if build_state in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
             orderBy = ["-BuildQueue.lastscore"]
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
-        elif status == BuildStatus.SUPERSEDED or status is None:
+        elif build_state == BuildStatus.SUPERSEDED or build_state is None:
             orderBy = ["-Build.datecreated"]
         else:
             orderBy = ["-Build.datebuilt"]
