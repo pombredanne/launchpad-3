@@ -32,6 +32,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
+
 class DistributionSourcePackageSOP(StructuralObjectPresentation):
 
     def getIntroHeading(self):
@@ -59,10 +60,13 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionSourcePackage
     facet = 'overview'
-    links = ['managebugcontacts']
+    links = ['managebugcontacts', 'publishinghistory']
 
     def managebugcontacts(self):
-        return Link('+subscribe', 'Bugmail Settings', icon='edit')
+        return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
+
+    def publishinghistory(self):
+        return Link('+publishinghistory', 'Show publishing history')
 
 
 class DistributionSourcePackageBugsMenu(DistributionSourcePackageOverviewMenu):
