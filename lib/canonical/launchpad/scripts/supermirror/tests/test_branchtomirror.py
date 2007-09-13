@@ -278,7 +278,7 @@ class StubbedBranchStatusClient(BranchStatusClient):
 
 class StubbedBranchToMirror(BranchToMirror):
     """Partially stubbed subclass of BranchToMirror, for unit tests."""
-    
+
     enable_checkBranchReference = False
     enable_checkSourceUrl = True
 
@@ -292,17 +292,16 @@ class StubbedBranchToMirror(BranchToMirror):
 
     def _openSourceBranch(self):
         self.testcase.open_call_count += 1
-    
+
     def _mirrorToDestBranch(self):
         pass
-    
+
     def _mirrorSuccessful(self, logger):
         pass
 
     def _mirrorFailed(self, logger, error_msg):
         self.testcase.errors.append(error_msg)
 
-    
 
 class ErrorHandlingTestCase(unittest.TestCase):
 
@@ -312,7 +311,7 @@ class ErrorHandlingTestCase(unittest.TestCase):
 
     def _errorHandlingSetUp(self):
         """Setup code that is specific to ErrorHandlingTestCase.
-        
+
         This is needed because TestReferenceMirroring uses a diamond-shaped
         class hierarchy and we do not want to end up calling unittest.TestCase
         twice.
@@ -480,12 +479,12 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
         self.branch.source = reference_url
         self.assertEqual(
             self.branch._getBranchReference(reference_url), reference_value)
-    
+
     def testGetBranchReferenceNone(self):
         """BranchToMirror._getBranchReference gives None for a normal branch.
         """
         self.make_branch('repo')
-        branch_url = self.get_url('repo')        
+        branch_url = self.get_url('repo')
         self.assertIs(
             self.branch._getBranchReference(branch_url), None)
 
@@ -525,7 +524,7 @@ class TestCanTraverseReferences(unittest.TestCase):
         """We can traverse branch references when pulling mirror branches."""
         mirror_branch = self.makeBranch(BranchType.MIRRORED)
         self.assertEqual(mirror_branch._canTraverseReferences(), True)
-    
+
     def testFalseForImported(self):
         """We cannot traverse branch references when pulling import branches.
         """
@@ -537,7 +536,7 @@ class TestCanTraverseReferences(unittest.TestCase):
         """
         hosted_branch = self.makeBranch(BranchType.HOSTED)
         self.assertEqual(hosted_branch._canTraverseReferences(), False)
-    
+
     def testErrorForOtherRemote(self):
         """We do not pull REMOTE branches. If the branch type is REMOTE, an
         AssertionError is raised.
@@ -553,9 +552,9 @@ class TestCanTraverseReferences(unittest.TestCase):
 
 
 class StubbedBranchToMirrorForCheckBranchReference(BranchToMirror):
-    """"Partially stubbed BranchToMirror for checkBranchReference unit tests.
+    """Partially stubbed BranchToMirror for checkBranchReference unit tests.
     """
-    
+
     def _getBranchReference(self, url):
         self.testcase.get_branch_reference_calls.append(url)
         return self.testcase.reference_values[url]
@@ -574,12 +573,20 @@ class TestCheckBranchReference(unittest.TestCase):
             'foo', 'bar', client, 1, 'owner/product/foo', None)
         self.branch.testcase = self
         self.get_branch_reference_calls = []
-        self.reference_values = {}        
+        self.reference_values = {}
         self.can_traverse_references = None
 
     def setUpReferences(self, locations):
-        """Set up self.branch and self.reference_values to model a chain of
-        branch references."""
+        """Set up the stubbed BranchToMirror to model a chain of references.
+
+        Branch references can point to other branch references, forming a chain
+        of locations. If the chain ends in a real branch, then the last
+        location is None. If the final branch reference is a circular
+        reference, or a branch reference that cannot be opened, the last
+        location is not None.
+
+        :param locations: sequence of branch location URL strings.
+        """
         self.branch.source = locations[0]
         for i in range(len(locations) - 1):
             self.reference_values[locations[i]] = locations[i+1]
