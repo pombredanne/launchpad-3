@@ -8,83 +8,82 @@
     </metal:rightportlets>
 
     <div metal:fill-slot="main">
-      <h1>
-        Language packs available for
-        <tal:distribution replace="view/displayname" />
+      <h1 tal:content="view/label">
+        Language packs for Ubuntu 5.04
       </h1>
 
       <p id="description">
+        A language pack is an export of all translation files used on run time
+        by the applications in
+        <tal:distribution replace="view/displayname" />.
         These language packs are the last ones generated or in use by
         <tal:distribution replace="view/displayname" />
       </p>
 
-      <h2>Current Base Language Pack</h2>
-      <p>
-        A base language pack is the one that includes all files with
-        translations available in
-        <tal:distribution replace="view/displayname" /> relase.
-      </p>
-      <p tal:condition="context/language_pack_base">
-        Current
-        <a tal:attributes="href context/language_pack_base/file/http_url">
-          base language pack
-        </a>
-        was exported on
-        <tal:export-date
-          replace="context/language_pack_base/date_exported/fmt:datetime" />.
-      </p>
-      <p tal:condition="not: context/language_pack_base">
-        There is no base language pack export used yet.
-      </p>
+      <h2>Current language packs</h2>
+      <ul>
+        <li>
+          <a tal:condition="context/language_pack_base"
+             tal:attributes="href context/language_pack_base/file/http_url">
+            <img alt="download icon" src="/@@/download" />
+          </a>
+          Base pack: 
+          <tal:export-date
+            condition="context/language_pack_base"
+            replace="context/language_pack_base/date_exported/fmt:datetime" />
+          <tal:not-export-date condition="not: context/language_pack_base">
+            none yet
+          </tal:not-export-date>
+          <br />A complete set of translations for the OS.
+        </li>
+        <li>
+          <a tal:condition="context/language_pack_delta"
+             tal:attributes="href context/language_pack_delta/file/http_url">
+            <img alt="download icon" src="/@@/download" />
+          </a>
+          Delta pack: 
+          <tal:export-date
+            condition="context/language_pack_delta"
+            replace="context/language_pack_delta/date_exported/fmt:datetime" />
+          <tal:not-export-date condition="not: context/language_pack_delta">
+            none yet
+          </tal:not-export-date>
+          <br />Translation updates, applied on top of the base pack.
+        </li>
+      </ul>
 
-      <h2>Current Delta Language Pack</h2>
-      <p>
-        A delta language pack is the one that includes all files with
-        translations updated since the
-        <tal:distribution replace="view/displayname" /> release's base
-        language pack export was done.
-      </p>
-      <p tal:condition="context/language_pack_delta">
-        Current
-        <a tal:attributes="href context/language_pack_delta/file/http_url">
-          delta language pack
-        </a>
-        was exported on
-        <tal:export-date
-          replace="context/language_pack_delta/date_exported/fmt:datetime" />.
-      </p>
-      <p tal:condition="not: context/language_pack_delta">
-        There is no delta language pack export used yet.
-      </p>
-
-      <h2>Current Language Pack being tested</h2>
-      <p>
-        A language pack being tested is one that is in the process to become
-        either a new base one or a delta one for
-        <tal:distribution replace="view/displayname" /> release. It depends on
-        the type of language pack to know which one will become.
-      </p>
-      <p tal:condition="context/language_pack_proposed">
-        Current
-        <a tal:attributes="href context/language_pack_proposed/file/http_url">
-          language pack being tested
-        </a>
-        was exported on
-        <tal:export-date
-          replace="context/language_pack_proposed/date_exported/fmt:datetime" />.
-      </p>
-      <p tal:condition="not: context/language_pack_proposed">
-        There is no language pack export being tested right now.
+      <h2>Language pack being tested</h2>
+      <ul tal:condition="context/language_pack_proposed">
+        <li>
+          <a tal:attributes="
+                href context/language_pack_proposed/file/http_url">
+            <img alt="download icon" src="/@@/download" />
+          </a>
+          <tal:type content="context/language_pack_proposed/type/name" />
+          language pack:
+          <tal:export-date
+            condition="context/language_pack_proposed"
+            replace="context/language_pack_proposed/date_exported/fmt:datetime"
+            />
+          <br />This one is bein tested to become the new
+          <tal:type content="context/language_pack_proposed/type/name" />
+          language pack.
+        </li>
+      </ul>
+      <p tal:condition="not:context/language_pack_proposed">
+        No pack is being tested right now.
       </p>
 
       <tal:has-unused condition="view/unused_language_packs">
-        <h2>List of others language packs not being used.</h2>
+        <h2>Not used packs</h2>
         <ul>
           <li tal:repeat="lang_pack view/unused_language_packs">
             <a tal:attributes="href lang_pack/file/http_url">
-              <tal:type replace="lang_pack/type/title" /> language pack
-            </a> exported on
-            <tal:date-exported content="lang_pack/date_exported/fmt:datetime" />.
+              <img alt="download icon" src="/@@/download" />
+            </a>
+            <tal:type content="lang_pack/type/title" /> language pack: 
+            <tal:date-exported
+                content="lang_pack/date_exported/fmt:datetime" />.
           </li>
         </ul>
       </tal:has-unused>

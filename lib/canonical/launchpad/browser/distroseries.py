@@ -288,8 +288,11 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         if self.text:
             self.searchrequested = True
 
-        self.displayname = '%s %s' % (self.context.distribution.displayname,
-                                       self.context.version)
+        self.displayname = '%s %s' % (
+            self.context.distribution.displayname,
+            self.context.version)
+
+        self.label = 'Language packs for %s' % self.displayname
 
     @cachedproperty
     def cached_packagings(self):

@@ -54,17 +54,20 @@ Also, that change is shown in the public language pack listing web page:
     >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary')
     >>> browser.getLink('See language packs').click()
     >>> print extract_text(find_main_content(browser.contents))
-    Language packs available for Ubuntu 5.04
+    Language packs for Ubuntu 5.04
     ...
-    Current base language pack was exported on 2007-09-10 19:14:26 UTC.
-    ...
-    There is no delta language pack export used yet.
-    ...
-    There is no language pack export being tested right now.
-    List of others language packs not being used.
-    Full language pack exported on 2007-09-10 19:16:01 UTC.
-    Delta language pack exported on 2007-09-10 19:15:19 UTC.
-    Delta language pack exported on 2007-09-10 19:15:01 UTC.
+    Current language packs
+    Base pack: 2007-09-10 19:14:26 UTC
+    A complete set of translations for the OS.
+    Delta pack:
+    none yet
+    Translation updates, applied on top of the base pack.
+    Language pack being tested
+    No pack is being tested right now.
+    Not used packs
+    Full language pack: 2007-09-10 19:16:01 UTC.
+    Delta language pack: 2007-09-10 19:15:19 UTC.
+    Delta language pack: 2007-09-10 19:15:01 UTC.
 
 There is also an option to set/unset whether next language pack generation is
 a full export:
