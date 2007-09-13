@@ -335,9 +335,10 @@ class BranchToMirror:
             self._mirrorFailed(logger, msg)
 
         except NotBranchError, e:
+            hosted_branch_error = NotBranchError(
+                "sftp://bazaar.launchpad.net/~%s" % self.unique_name)
             message_by_type = {
-                BranchType.HOSTED: str(NotBranchError(
-                "sftp://bazaar.launchpad.net/~%s" % self.unique_name)),
+                BranchType.HOSTED: str(hosted_branch_error),
                 BranchType.IMPORTED: "Not a branch.",
                 }
             msg = message_by_type.get(self.branch_type, str(e))
