@@ -12,7 +12,7 @@ changing the status, the target, and the new status.
 
     >>> from canonical.launchpad.interfaces import (
     ...     CreateBugParams, IProductSet)
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> bug_params = CreateBugParams(
     ...     owner=no_priv, title='Sample bug', comment='This is a sample bug.')
     >>> firefox = getUtility(IProductSet).getByName('firefox')

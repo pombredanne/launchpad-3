@@ -8,6 +8,7 @@ import tarfile
 from StringIO import StringIO
 import datetime
 import pytz
+import re
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -52,7 +53,6 @@ class SourcePackageRelease(SQLBase):
     maintainer = ForeignKey(foreignKey='Person', dbName='maintainer',
         notNull=True)
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
-    manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
         default=SourcePackageUrgency.LOW, notNull=True)
     dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
@@ -278,7 +278,7 @@ class SourcePackageRelease(SQLBase):
 
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""
-	# Look for a published build
+        # Look for a published build
         query = """
         Build.id = BinaryPackageRelease.build AND
         BinaryPackageRelease.id =
@@ -323,6 +323,25 @@ class SourcePackageRelease(SQLBase):
             self.section = section
         if urgency is not None:
             self.urgency = urgency
+
+    @property
+    def change_summary(self):
+        """See ISourcePackageRelease"""
+        # this regex is copied from apt-listchanges.py courtesy of MDZ
+        new_stanza_line = re.compile(
+            '^\S+ \((?P<version>.*)\) .*;.*urgency=(?P<urgency>\w+).*')
+        logfile = StringIO(self.changelog)
+        change = ''
+        top_stanza = False
+        for line in logfile.readlines():
+            match = new_stanza_line.match(line)
+            if match:
+                if top_stanza:
+                    break
+                top_stanza = True
+            change += line
+
+        return change
 
     def attachTranslationFiles(self, tarball_alias, is_published,
         importer=None):
