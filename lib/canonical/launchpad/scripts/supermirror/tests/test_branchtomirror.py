@@ -647,7 +647,7 @@ class TestCheckBranchReference(unittest.TestCase):
             'http://example.com/reference'])
 
     def testSelfReferencingBranch(self):
-        """_checkBranchReference raise BranchReferenceLoopError if
+        """_checkBranchReference raises BranchReferenceLoopError if
         _canTraverseReferences is true and the source url points to a
         self-referencing branch."""
         self.can_traverse_references = True
