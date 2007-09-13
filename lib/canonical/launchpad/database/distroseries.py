@@ -807,7 +807,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def createUploadedSourcePackageRelease(
         self, sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator,
-        urgency, changelog, dsc, dscsigningkey, section, manifest,
+        urgency, changelog, dsc, dscsigningkey, section,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, dateuploaded=DEFAULT):
         """See IDistroSeries."""
@@ -817,7 +817,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             builddepends=builddepends, builddependsindep=builddependsindep,
             architecturehintlist=architecturehintlist, component=component,
             creator=creator, urgency=urgency, changelog=changelog, dsc=dsc,
-            dscsigningkey=dscsigningkey, section=section, manifest=manifest,
+            dscsigningkey=dscsigningkey, section=section,
             dsc_maintainer_rfc822=dsc_maintainer_rfc822, dsc_format=dsc_format,
             dsc_standards_version=dsc_standards_version, copyright=copyright,
             dsc_binaries=dsc_binaries, upload_archive=archive)

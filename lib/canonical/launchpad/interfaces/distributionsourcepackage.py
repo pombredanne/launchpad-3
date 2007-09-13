@@ -37,11 +37,6 @@ class IDistributionSourcePackage(IBugTarget):
     # XXX sabdfl 2005-10-16:
     distro = Attribute("The distribution.")
 
-    by_distroseries = Attribute(
-        "Return a list of DistroSeriesSourcePackage objects, each "
-        "representing this same source package in the serieses of this "
-        "distribution.")
-
     subscribers = Attribute("The subscribers to this package.")
 
     currentrelease = Attribute(
@@ -81,6 +76,12 @@ class IDistributionSourcePackage(IBugTarget):
         """Return the a DistributionSourcePackageRelease with the given
         version, or None if there has never been a release with that
         version in this distribution.
+        """
+
+    def get_distroseries_packages():
+        """Return a list of DistroSeriesSourcePackage objects, each 
+        representing this same source package in the serieses of this
+        distribution.
         """
 
     def bugtasks(quantity=None):
