@@ -26,6 +26,7 @@ if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     ARCHIVEROOT_PARTNER=/srv/launchpad.net/ubuntu-archive/ubuntu-partner
     GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
 else
+    # GNUPGHOME does not need to be set, keys can come from ~/.gnupg
     ARCHIVEROOT_PARTNER=/srv/launchpad.net/ppa/ubuntu-partner
 fi
 DISTSROOT_PARTNER=$ARCHIVEROOT_PARTNER/dists
