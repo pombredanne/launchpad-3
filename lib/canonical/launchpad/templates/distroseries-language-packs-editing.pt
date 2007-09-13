@@ -5,9 +5,6 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad">
   <body>
-    <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure context/@@+portlet-details" />
-    </metal:leftportlets>
     <div metal:fill-slot="main">
       <div metal:use-macro="context/@@launchpad_form/form" />
     </div>
