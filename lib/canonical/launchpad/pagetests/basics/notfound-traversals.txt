@@ -192,7 +192,7 @@ Test the DARBPR page for a REMOVED package:
 >>> check("/ubuntu/hoary/+source/evolution/+edit-packaging", auth=True)
 >>> check("/ubuntu/hoary/+source/evolution/+gethelp")
 
-The +translate page in main host is obsolete so it's now a redirect to the
+The +translate page in the main host is obsolete so it's now a redirect to the
 translations site. This way, we don't break existing links to it. Before
 removing this, you must be completely sure that no supported Ubuntu release
 is still pointing to this old URL (see bug #138090).

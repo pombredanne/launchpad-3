@@ -252,7 +252,9 @@ class SourcePackageTranslateRedirectView:
     XXX CarlosPerelloMarin 2007-08-12: This redirect is only useful until all
     supported Ubuntu distro series stop pointing to
     https://launchpad.net/ubuntu/.../+translate URLs and instead, use the
-    translations.launchpad.net domain. See bug #138090 for more details.
+    translations.launchpad.net domain for the 'Translate this application'
+    menu entry available in most graphical applications. See bug #138090 for
+    more details.
     """
 
     def __init__(self, context, request):
@@ -265,4 +267,4 @@ class SourcePackageTranslateRedirectView:
             '/'.join([
                 canonical_url(self.context, rootsite='translations'),
                 '+translate'
-                ]))
+                ]), status=301)

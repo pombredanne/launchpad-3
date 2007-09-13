@@ -6,11 +6,11 @@ On this section, we are going to test the view class for an IPOTemplate.
 First, we need some imports.
 
     >>> from StringIO import StringIO
-    >>> from zope.component import getView
     >>> from zope.publisher.browser import FileUpload
     >>> from canonical.launchpad.interfaces import (
     ...     ITranslationImportQueue, IPOTemplateSet, IDistributionSet,
     ...     ISourcePackageNameSet)
+    >>> from canonical.launchpad.layers import TranslationsLayer
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 All the tests will be submitted as comming from the No Privilege person.
@@ -48,13 +48,12 @@ headers.
 
 Now, we do the upload.
 
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL=get_url(potemplate, '+upload', 'translations'),
-    ...     form={
-    ...         'file': FileUpload(FileUploadArgument()),
-    ...         'UPLOAD': 'Upload'})
-    >>> request.method = 'POST'
-    >>> potemplate_view = getView(potemplate, '+upload', request)
+    >>> form = {
+    ...     'file': FileUpload(FileUploadArgument()),
+    ...     'UPLOAD': 'Upload'}
+    >>> potemplate_view = create_view(
+    ...     potemplate, '+upload', form=form, layer=TranslationsLayer)
+    >>> potemplate_view.request.method = 'POST'
     >>> potemplate_view.initialize()
 
 As we can see, we have now three entries in our queue.
@@ -79,13 +78,12 @@ that feature...
 
 We do the upload...
 
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL=get_url(potemplate, '+upload', 'translations'),
-    ...     form={
-    ...         'file': FileUpload(FileUploadArgument()),
-    ...         'UPLOAD': 'Upload'})
-    >>> request.method = 'POST'
-    >>> potemplate_view = getView(potemplate, '+upload', request)
+    >>> form = {
+    ...     'file': FileUpload(FileUploadArgument()),
+    ...     'UPLOAD': 'Upload'}
+    >>> potemplate_view = create_view(
+    ...     potemplate, '+upload', form=form, layer=TranslationsLayer)
+    >>> potemplate_view.request.method = 'POST'
     >>> potemplate_view.initialize()
 
 As we can see, we have now another entry in our queue.
@@ -115,8 +113,7 @@ Let's check the traversal code.
 
 First, what happens if we get any method that is not supported?
 
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL=get_url(potemplate, '', 'translations'))
+    >>> request = LaunchpadTestRequest()
     >>> request.method = 'PUT'
     >>> navigation = POTemplateNavigation(potemplate, request)
     >>> navigation.traverse('es')

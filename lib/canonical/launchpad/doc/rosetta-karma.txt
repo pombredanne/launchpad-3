@@ -352,18 +352,18 @@ product from where the IPOTemplate is and he has rights to change the
 description.
 
     >>> from zope.component import getView
+    >>> from canonical.launchpad.layers import TranslationsLayer
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> sample_person = personset.getByEmail('test@canonical.com')
     >>> login('test@canonical.com')
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL=get_url(potemplate, '+edit', 'translations'),
-    ...     form={
+    >>> form = {
     ...     u'field.owner': u'test@canonical.com',
     ...     u'field.priority': u'0',
     ...     u'field.description': u'This is a new description',
-    ...     u'UPDATE_SUBMIT': u'Change'})
-    >>> request.method = 'POST'
-    >>> potemplate_view = getView(potemplate, '+edit', request)
+    ...     u'UPDATE_SUBMIT': u'Change'}
+    >>> potemplate_view = create_view(
+    ...     potemplate, '+edit', form=form, layer=TranslationsLayer)
+    >>> potemplate_view.request.method = 'POST'
 
 Let's see the description we have atm:
 
