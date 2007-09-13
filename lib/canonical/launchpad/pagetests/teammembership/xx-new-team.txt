@@ -8,7 +8,7 @@ Sample Person cannot create a team without a renewal period when
 he chooses a renewal policy of Automatic. He is shown an error
 message when the from is redisplayed.
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
 
     >>> browser.open('http://launchpad.dev/people/')
     >>> browser.getLink('Register a team').click()
