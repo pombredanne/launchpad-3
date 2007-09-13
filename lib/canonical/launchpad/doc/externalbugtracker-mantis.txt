@@ -32,7 +32,7 @@ If the status can't be converted, Unknown is returned, and a warning
 is logged.
 
     >>> alsa_mantis.convertRemoteStatus(('foo: bar')).title
-    WARNING:...:Unknown status/resolution foo/bar
+    WARNING:...:Unknown status/resolution foo/bar.
     'Unknown'
 
 UNKNOWN_REMOTE_STATUS maps to Unknown without generating a
