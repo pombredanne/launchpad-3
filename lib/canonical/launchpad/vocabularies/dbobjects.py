@@ -69,7 +69,7 @@ from zope.security.proxy import isinstance as zisinstance
 from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectNotFound
 
 from canonical.launchpad.webapp.vocabulary import (
-    CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary, 
+    CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import DistroSeriesStatus
@@ -224,7 +224,7 @@ class FAQVocabulary:
     implements(IHugeVocabulary)
 
     displayname = 'Select a FAQ'
-    
+
     def __init__(self, context):
         """Create a new vocabulary for the context.
 
@@ -298,7 +298,7 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
 
 class TranslatableLanguageVocabulary(LanguageVocabulary):
     """All the translatable languages known by Launchpad.
-    
+
     English is not a translatable language. It is excluded from the terms.
     """
 
@@ -593,7 +593,7 @@ class ValidPersonOrTeamVocabulary(
             ircid_match_query,
             clauseTables=['ValidPersonOrTeamCache', 'IRCId'])
 
-        # XXX Guilherme Salgado 2006-01-30 bug=30053: 
+        # XXX Guilherme Salgado 2006-01-30 bug=30053:
         # We have to explicitly provide an orderBy here as a workaround
         return name_matches.union(ircid_matches).union(
             email_matches, orderBy=['displayname', 'name'])
@@ -1106,7 +1106,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
     def _all_specs(self):
         return self._filter_specs(self.context.target.specifications())
-    
+
     def __iter__(self):
         return (self.toTerm(spec) for spec in self._all_specs())
 

@@ -4,8 +4,10 @@
 
 __metaclass__ = type
 __all__ = [
+    "BranchLinkToBugView",
     "BugBranchAddView",
-    "BugBranchStatusView"]
+    "BugBranchStatusView",
+    ]
 
 from zope.app.form.interfaces import IInputWidget, IDisplayWidget
 from zope.app.form.utility import setUpWidgets
@@ -13,7 +15,8 @@ from zope.event import notify
 
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import IBugBranch
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import (
+    action, canonical_url, LaunchpadFormView)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.authorization import check_permission
 
@@ -80,3 +83,34 @@ class BugBranchStatusView:
 
     def nextURL(self):
         return canonical_url(self.context.bug)
+
+
+class BranchLinkToBugView(LaunchpadFormView):
+    """The view to create bug-branch links."""
+    schema = IBugBranch
+    # In order to have the bug field rendered using the appropriate
+    # widget, we set the LaunchpadFormView attribute for_input to True
+    # to get the read only fields rendered as input widgets.
+    for_input=True
+
+    field_names = ['bug', 'status', 'whiteboard']
+
+    @action('Link', name='link')
+    def link_action(self, action, data):
+        bug = data['bug']
+        bug_branch = bug.addBranch(
+            branch=self.context, whiteboard=data['whiteboard'],
+            status=data['status'])
+        self.next_url = canonical_url(self.context)
+
+    def validate(self, data):
+        """Make sure that this bug isn't already linked to the branch."""
+        if 'bug' not in data:
+            return
+
+        link_bug = data['bug']
+        for bug in self.context.related_bugs:
+            if bug == link_bug:
+                self.setFieldError(
+                    'bug',
+                    'Bug #%s is already linked to this branch' % bug.id)

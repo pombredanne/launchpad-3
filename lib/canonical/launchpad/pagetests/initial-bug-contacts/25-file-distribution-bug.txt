@@ -16,8 +16,9 @@ bug contacts, if there are any.
     ...     "anyone can see this")
     >>> browser.getControl("Submit Bug Report").click()
 
-    >>> print browser.url
-    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/16
+    >>> bug_id = browser.url.split("/")[-1]
+    >>> print browser.url.replace(bug_id, "BUG-ID")
+    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/BUG-ID
 
 We should have three subscribers now. The bug reporter (also a package
 contact), sabdfl, the distro contact, carlos, and the other package
@@ -35,7 +36,7 @@ contact, the Launchpad Admins team.
     >>> login(ANONYMOUS)
 
     >>> bugset = getUtility(IBugSet)
-    >>> subscriber_names(bugset.get(16))
+    >>> subscriber_names(bugset.get(bug_id))
     [u'landscape-developers', u'name16', u'sabdfl']
 
     >>> logout()
@@ -60,12 +61,13 @@ Cc'd, because the Ubuntu distribution does not have a security contact.
     ...     "This bug is a security vulnerability").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
-    >>> print browser.url
-    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/17
+    >>> other_bug_id = browser.url.split("/")[-1]
+    >>> print browser.url.replace(other_bug_id, "BUG-ID")
+    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/BUG-ID
 
     >>> login("mark@hbd.com")
 
-    >>> subscriber_names(bugset.get(17))
+    >>> subscriber_names(bugset.get(other_bug_id))
     [u'sabdfl', u'ubuntu-team']
 
     >>> logout()

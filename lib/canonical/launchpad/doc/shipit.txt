@@ -7,7 +7,7 @@ these CDs are sent to the user.
 
   >>> from datetime import date
   >>> from zope.component import getUtility
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.ftests import login
   >>> from canonical.launchpad.database import ShippingRun
@@ -44,14 +44,13 @@ can identify people making requests from multiple different accounts.
   >>> request.normalized_address
   u'antoniorodriguescajado1506saocarlos'
 
-A request can be a custom or a standard one; if the request contains custom
-quantities for any flavour, then that request is considered custom.
+A request can be custom or standard; if the request contains custom
+quantities for a flavour, then that request is considered a custom one
+for that specific flavour.
 
   >>> request.containsCustomQuantitiesOfFlavour(ShipItFlavour.KUBUNTU)
   False
   >>> request.containsCustomQuantitiesOfFlavour(ShipItFlavour.UBUNTU)
-  True
-  >>> request.isCustom()
   True
 
 We're not allowed to add a second request for the same recipient, while the
@@ -997,61 +996,123 @@ requests for CDs of the current distroseries or all requests.
         Edubuntu Requested Mac CDs: 0
 
 
-To help identifying if we're reaching new users with every series, we have a
-report which shows the distribution of requests. Both for the current series
+To help identify if we're reaching new users with every series, we have a
+report which shows the distribution of requests, both for the current series
 and to the previous one.
+
+This report is indexed vertically by number of requests and it contains
+two sets of columns (one for the current series and other for the
+accumulated totals of all previous series).  Each of these sets contains
+another two sets, for requests and shipments, which in turn contain 4 other
+columns ('# of people', '%', 'people with karma' and 'avg CDs per request').
+This is the description of each column, in its context:
+
+    - Current series
+        ** requests
+            - # of people
+                Number of people which made N requests of the current series,
+                where N is the row number.
+
+            - %
+                The percentage represented by the above number of people from
+                the total of requesters of the current series.
+
+            - people with karma
+                Of these people which requested, how many of them have 10
+                or more karma entries.
+
+            - avg CDs per request
+                Average size of the requests of the current series made
+                all these people (not just the ones with karma).
+
+        ** shipments
+            Same as above but for shipments rather than requests.
+
+    - Previous series
+        ** requests
+            - # of people
+                Number of people which made N requests of previous series
+                (where N is the row number) /and/ also made requests of
+                the current series.
+            - %
+                The percentage represented by the above number of people from
+                the total of requesters of the current series.
+
+            - people with karma
+                Of these people which requested, how many of them have 10
+                or more karma entries.
+                
+            - avg CDs per request
+                Average size of the requests of previous series made by
+                all these people (not just the ones with karma).
+
+        ** shipments
+            Same as above but for shipments rather than requests.
 
   >>> csv_file = requestset.generateRequestDistributionReport()
 
   # Skip the first two lines since they have headers which are supposed to
   # span across multiple columns, screwing our pprint_csv() function.
-  >>> header1, header2, content = csv_file.read().split('\n', 2)
+  >>> header1, blankline1, header2, blankline2, content = (
+  ...     csv_file.read().split('\n', 4))
   >>> print header1
-  "","","Current Series Only","","","","","Previous Series Only",""
+  "","","","Current Series Only","","","","","","","Previous Series Only","","",""
   >>> print header2
-  "","requests","","shipped","","requests","","shipped",""
+  "","requests","","","","shipments","","","","requests","","","","shipments","","",""
   >>> pprint_csv(content)
   ------------------------------------------------------------ Line 1
          # of requests: 0
            # of people: 0
                      %: 0.0
+     people with karma: 0
    avg CDs per request: 0
            # of people: 0
                      %: 0.0
+     people with karma: 0
   avg CDs per shipment: 0
            # of people: 8
                      %: 80.0
+     people with karma: 1
    avg CDs per request: 0.0
            # of people: 8
                      %: 80.0
+     people with karma: 1
   avg CDs per shipment: 0.0
   ------------------------------------------------------------ Line 2
          # of requests: 1
            # of people: 9
                      %: 90.0
+     people with karma: 1
    avg CDs per request: 7.66
            # of people: 7
                      %: 87.5
+     people with karma: 0
   avg CDs per shipment: 7.28
            # of people: 2
                      %: 20.0
+     people with karma: 0
    avg CDs per request: 24.0
            # of people: 2
                      %: 20.0
+     people with karma: 0
   avg CDs per shipment: 24.0
   ------------------------------------------------------------ Line 3
          # of requests: 2
            # of people: 1
                      %: 10.0
+     people with karma: 0
    avg CDs per request: 1.5
            # of people: 1
                      %: 12.5
+     people with karma: 0
   avg CDs per shipment: 1.5
            # of people: 0
                      %: 0.0
+     people with karma: 0
    avg CDs per request: 0
            # of people: 0
                      %: 0.0
+     people with karma: 0
   avg CDs per shipment: 0
 
 

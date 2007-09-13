@@ -202,12 +202,6 @@ class POSubmissionSet:
                 # Any other POSubmission we see here has to be non-fuzzy, and
                 # so it's relevant to any POMsgSets that refer to the same
                 # primemsgid, including the POMsgSet it itself is attached to.
-
-                # XXX: JeroenVermeulen 2007-08-02 bug=132660: this assertion
-                # may still trigger the unnecessary queries.  Remove it after
-                # testing with production data!
-                assert not submission.pomsgset.isfuzzy, (
-                        "Fuzzy POMsgSet submission fetched as a suggestion.")
                 for recipient in takers_for_primemsgid[primemsgid]:
                     result[recipient].append(submission)
 

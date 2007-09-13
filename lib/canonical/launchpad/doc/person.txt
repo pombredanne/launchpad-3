@@ -5,7 +5,7 @@ some people which have done work on the free software community but are not
 Launchpad users.
 
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.database.sqlbase import sqlvalues, flush_database_updates
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IPerson, IEmailAddressSet, IHasTranslationImports)
