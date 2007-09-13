@@ -108,7 +108,8 @@ class BranchToMirror:
 
     def _checkBranchReference(self):
         """Check whether the source branch is a branch reference, and whether
-        it refers to an acceptable location."""
+        it refers to an acceptable location.
+        """
         traversed_references = []
         source_location = self.source
         while True:
@@ -292,7 +293,6 @@ class BranchToMirror:
             self._mirrorFailed(logger, msg)
 
         except NotBranchError, e:
-            
             message_by_type = {
                 BranchType.HOSTED: str(NotBranchError(
                 "sftp://bazaar.launchpad.net/~%s" % self.branch_unique_name)),
