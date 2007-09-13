@@ -83,6 +83,9 @@ class BranchToMirror:
         self.branch_status_client = branch_status_client
         self.branch_id = branch_id
         self.branch_unique_name = branch_unique_name
+        # The branch_type argument should always be set to a BranchType enum in
+        # production use, but it is expected that tests that do not depend on
+        # its value will pass None.
         self.branch_type = branch_type
         self._source_branch = None
         self._dest_branch = None
