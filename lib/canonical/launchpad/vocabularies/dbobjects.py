@@ -309,13 +309,13 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
 class TranslatableLanguageVocabulary(LanguageVocabulary):
     """All the translatable languages known by Launchpad.
 
-    English is not a translatable language. It is excluded from the terms.
-    Languages that are not visible and the are not translatable either.
+    Messages cannot be translated into English or a non-visible language.
+    This vocabulary contains all the languages known to Launchpad,
+    excluding English and non-visible languages.
     """
-
     def __contains__(self, language):
         """See `IVocabulary`.
-        
+
         This vocabulary excludes English and languages that are not visible.
         """
         assert ILanguage.providedBy(language), (
@@ -323,12 +323,13 @@ class TranslatableLanguageVocabulary(LanguageVocabulary):
             "left operand, got %s instead." % type(language))
         if language.code == 'en':
             return False
-        return language.visible == True
+        return language.visible == True and super(
+            TranslatableLanguageVocabulary, self).__contains__(language)
 
     def __iter__(self):
         """See `IVocabulary`.
-        
-        Yield languages that are visible and not English.
+
+        Iterate languages that are visible and not English.
         """
         languages = self._table.select(
             "Language.code != 'en' AND Language.visible = True",
@@ -340,17 +341,11 @@ class TranslatableLanguageVocabulary(LanguageVocabulary):
         """See `IVocabulary`."""
         if token == 'en':
             raise LookupError(token)
-        try:
-            found_language = self._table.selectOne(
-                "Language.code = %s AND Language.visible = True" %
-                sqlvalues(token))
-        except SQLObjectNotFound:
+        term = super(TranslatableLanguageVocabulary, self).getTermByToken(
+            token)
+        if not term.value.visible:
             raise LookupError(token)
-
-        if found_language is not None:
-            return self.getTerm(found_language)
-        else:
-            raise LookupError(token)
+        return term
 
 
 class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):

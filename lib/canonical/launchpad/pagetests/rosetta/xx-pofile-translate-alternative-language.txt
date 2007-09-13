@@ -7,12 +7,12 @@ a language from the 'Make suggestions from' control.
 
 Carlos is going to translate some messages.
 
-    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
 
 
 == The 'Make suggestions from' control ==
 
-Carlos chooses to translate evolution 2.2 messages in to Spanish.
+Carlos chooses to translate Evolution 2.2 messages in to Spanish.
 
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
@@ -72,7 +72,7 @@ navigation bar between the translation controls and the messages.
     >>> print extract_text(navigation)
     1 ... 10  of 13 results ...
 
-Carlos activates the 'Save & Continue' button to see the next page of
+Carlos uses the 'Save & Continue' button to see the next page of
 messages.
 
     >>> browser.getControl('Save & Continue').click()

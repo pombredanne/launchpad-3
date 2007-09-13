@@ -60,8 +60,11 @@ as English. The translate view uses often uses two languages during
 the translation, one for the PO message set, and the other to 'make
 suggestions from'. English cannot be either of these.
 
-If someone were to attempt an English translation, to create an en
-PO message set, he will get an error:
+If someone were to attempt an English translation, to create an 'en'
+PO message set, he will get an error. The user would generally have
+to hack the URL, but he may have old bookmarks, or have followed old
+links from off-site; Launchpad did make links for English translations
+in the past.
 
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'

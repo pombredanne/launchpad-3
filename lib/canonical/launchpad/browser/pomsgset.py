@@ -41,7 +41,7 @@ from canonical.launchpad.browser.potemplate import (
     POTemplateFacets, POTemplateSOP)
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
-    ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
+    IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
     IPOSubmissionSet, TranslationConflict)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Link, LaunchpadView, canonical_url)
@@ -612,7 +612,7 @@ class BaseTranslationView(LaunchpadView):
             except LookupError:
                 # Oops, a bogus code was provided in the request.
                 # This is UnexpectedFormData caused by a hacked URL, or an
-                # old URL. The alternative_language field once used
+                # old URL. The alternative_language field used to use
                 # LanguageVocabulary that contained untranslatable languages.
                 second_lang_code = None
         elif second_lang_code is None and fallback_language is not None:
