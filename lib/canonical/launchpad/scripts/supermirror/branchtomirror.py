@@ -107,7 +107,8 @@ class BranchToMirror:
             raise BadUrlSsh(self.source)
 
     def _checkBranchReference(self):
-        """Check whether the source branch is a branch reference."""
+        """Check whether the source branch is a branch reference, and whether
+        it refers to an acceptable location."""
         traversed_references = []
         source_location = self.source
         while True:
