@@ -110,8 +110,22 @@ class BranchToMirror:
             raise BadUrlSsh(self.source)
 
     def _checkBranchReference(self):
-        """Check whether the source branch is a branch reference, and whether
-        it refers to an acceptable location.
+        """Check whether the source is an acceptable branch reference.
+
+        For HOSTED or IMPORTED branches, branch references are not allowed. For
+        MIRRORED branches, branch references are allowed if they do not
+        constitute a reference cycle and if they do not point to an unsafe
+        location.
+
+        :raise BranchReferenceForbidden: the source location contains a branch
+            reference, and branch references are not allowed for this branch
+            type.
+
+        :raise BranchReferenceLoopError: the source location contains a branch
+            reference that leads to a reference cycle.
+
+        :raise BranchReferenceValueError: the source location contains a branch
+            reference that ultimately points to an unsafe location.
         """
         traversed_references = []
         source_location = self.source
@@ -130,8 +144,19 @@ class BranchToMirror:
             source_location = reference_value
 
     def _canTraverseReferences(self):
-        """Whether we should traverse branch references when opening the source
-        branch."""
+        """Whether we can traverse references when mirroring this branch type.
+
+        We do not traverse references for HOSTED branches because that may
+        cause us to connect to remote locations, which we do not allow because
+        we want hosted branches to be mirrored quickly.
+
+        We do not traverse references for IMPORTED branches because the
+        code-import system should never produce branch references.
+
+        We traverse branche references for MIRRORED branches because they
+        provide a useful redirection mechanism and we want to be consistent
+        with the bzr command line.
+        """
         traverse_references_from_branch_type = {
             BranchType.HOSTED: False,
             BranchType.MIRRORED: True,
