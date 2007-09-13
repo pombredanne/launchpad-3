@@ -213,8 +213,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         if latest_package:
             return DistroSeriesSourcePackageRelease(
                     self.distroseries, latest_package.sourcepackagerelease)
-        else:
-            return None
+        return None
 
     def __getitem__(self, version):
         """See `ISourcePackage`."""
