@@ -98,6 +98,7 @@ We can see that the header has the same 'PO-Revision-Date' than the file we
 just imported.
 
     >>> print pofile.header
+    Project-Id-Version:...
     PO-Revision-Date: 2005-05-03 20:41+0100
     ...
 
@@ -154,7 +155,7 @@ The status is now FAILED:
 We can see that the header remains unchanged
 
     >>> print pofile.header
-    ...
+    Project-Id-Version:...
     PO-Revision-Date: 2005-05-03 20:41+0100
     ...
 

@@ -213,6 +213,9 @@ class TestMantis(Mantis):
             print "CALLED _getPage(%r)" % (page,)
         if page == "csv_export.php":
             return read_test_file('mantis_example_bug_export.csv')
+        elif page.startswith('view.php?id='):
+            bug_id = page.split('id=')[-1]
+            return read_test_file('mantis--demo--bug-%s.html' % bug_id)
         else:
             return ''
 

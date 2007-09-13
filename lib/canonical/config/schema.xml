@@ -198,32 +198,6 @@ k            </description>
         </key>
         <key name="browser_notification_level" required="no"
             datatype="canonical.config.loglevel" default="info" />
-        <key name="supermirror_root" datatype="canonical.config.urlbase"
-            default="http://bazaar.launchpad.net/">
-            <description>
-                The prefix of the URL for the public area of the Supermirror.
-                This value is usually not meaningful to change, so it should
-                generally not be set explicitly so the default value is used.
-
-                This should end with a slash.
-
-                If that value is changed in production, the
-                branch_url_constraint_not_supermirror database constraint
-                should be updated.
-            </description>
-            <example>http://bazaar.launchpad.net/</example>
-        </key>
-        <key name="smartserver_root" datatype="canonical.config.urlbase"
-            default="bzr+ssh://bazaar.launchpad.net/">
-            <description>
-                The prefix of the URL for the codehosting smart server.
-                This value is usually not meaningful to change, so it should
-                generally not be set explicitly so the default value is used.
-
-                This should end with a slash.
-            </description>
-            <example>bzr+ssh://bazaar.launchpad.net/</example>
-        </key>
         <key name="bzr_imports_root_url" datatype="canonical.config.urlbase"
             default="http://escudero.ubuntu.com:680/">
             <description>
@@ -231,15 +205,6 @@ k            </description>
                 other RCSes like CVS.  Used to generate URLs for the branch
                 puller to use, not for public URLs.
             </description>
-        </key>
-        <key name="codebrowse_root" datatype="canonical.config.urlbase"
-             default="http://codebrowse.launchpad.net/">
-            <description>
-                The URL prefix for links to the Bazaar code browser.
-                Links are formed by appending the branch's unique name
-                to the root URL.
-            </description>
-            <example>http://codebrowse.launchpad.net/</example>
         </key>
         <key name="default_blob_expiry" datatype="integer" default="10800">
             <description>
@@ -574,6 +539,19 @@ k            </description>
               without being truncated when displayed on the main bug
               page.
           </description>
+        </key>
+        <key name="expiration_dbuser" datatype="string" 
+            default="bugnotification">
+            <description>
+                The database user that will be used to expire bugtask.
+            </description>
+        </key>
+        <key name="days_before_expiration" datatype="integer"
+             default="60">
+            <description>
+                The number of days of inactivity required before an unassigned
+                bugtask with the status of INCOMPLETE is expired.
+            </description>
         </key>
         <key name="search_comments" datatype="boolean" required="no"
              default="no">
@@ -948,8 +926,6 @@ k            </description>
 
     <sectiontype name="codehosting">
         <key name="authserver" datatype="string" />
-        <key name="upload_url_base" datatype="string"
-             default="sftp://%s@bazaar.launchpad.net" />
         <key name="host_key_pair_path" datatype="string" />
         <key name="branches_root" datatype="string" />
         <key name="banner" datatype="string" />
@@ -957,6 +933,41 @@ k            </description>
         <key name="launch" datatype="boolean" required="no" default="no" />
         <key name="spew" datatype="boolean" required="no" default="no" />
         <key name="logfile" datatype="string" required="no" default="-" />
+        <key name="smartserver_root" datatype="canonical.config.urlbase"
+            default="bzr+ssh://%(user)s@bazaar.launchpad.net/">
+            <description>
+                The prefix of the URL for the codehosting smart server.
+                This value is usually not meaningful to change, so it should
+                generally not be set explicitly so the default value is used.
+
+                This should end with a slash.
+            </description>
+            <example>bzr+ssh://bazaar.launchpad.net/</example>
+        </key>
+        <key name="supermirror_root" datatype="canonical.config.urlbase"
+            default="http://bazaar.launchpad.net/">
+            <description>
+                The prefix of the URL for the public area of the Supermirror.
+                This value is usually not meaningful to change, so it should
+                generally not be set explicitly so the default value is used.
+
+                This should end with a slash.
+
+                If that value is changed in production, the
+                branch_url_constraint_not_supermirror database constraint
+                should be updated.
+            </description>
+            <example>http://bazaar.launchpad.net/</example>
+        </key>
+        <key name="codebrowse_root" datatype="canonical.config.urlbase"
+             default="http://codebrowse.launchpad.net/">
+            <description>
+                The URL prefix for links to the Bazaar code browser.
+                Links are formed by appending the branch's unique name
+                to the root URL.
+            </description>
+            <example>http://codebrowse.launchpad.net/</example>
+        </key>
     </sectiontype>
 
     <sectiontype name="authserver" extends="database_options">
@@ -1036,6 +1047,7 @@ k            </description>
 
     <sectiontype name="checkwatches">
         <key name="batch_query_threshold" datatype="integer" default="10" />
+        <key name="default_socket_timeout" datatype="integer" default="30" />
     </sectiontype>
 
     <sectiontype name="canonical" extends="database_options">

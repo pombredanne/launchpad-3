@@ -25,6 +25,7 @@ __all__ = [
     ]
 
 
+from zope.formlib.form import NoInputData
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
@@ -702,14 +703,26 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     @invariant
     def defaultRenewalPeriodIsRequiredForSomeTeams(person):
-        """Teams for which memberships can be renewed automatically or by
-        the members themselves must specify a default renewal period.
+        """Teams may specify a default renewal period.
+
+        The team renewal period cannot be less than 1 day, and when the
+        renewal policy is is 'On Demand' or 'Automatic', it cannot be None.
         """
+        # The person arg is a zope.formlib.form.FormData instance.
+        # Instead of checking 'not person.isTeam()' or 'person.teamowner',
+        # we check for a field in the schema to identify this as a team.
+        try:
+            renewal_policy = person.renewal_policy
+        except NoInputData:
+            # This is not a team.
+            return
+
+        renewal_period = person.defaultrenewalperiod
         automatic, ondemand = [TeamMembershipRenewalPolicy.AUTOMATIC,
                                TeamMembershipRenewalPolicy.ONDEMAND]
-        if (person.teamowner is not None
-                and person.renewal_policy in [automatic, ondemand]
-                and person.defaultrenewalperiod <= 0):
+        cannot_be_none = renewal_policy in [automatic, ondemand]
+        if ((renewal_period is None and cannot_be_none)
+            or (renewal_period is not None and renewal_period <= 0)):
             raise Invalid(
                 'You must specify a default renewal period greater than 0.')
 

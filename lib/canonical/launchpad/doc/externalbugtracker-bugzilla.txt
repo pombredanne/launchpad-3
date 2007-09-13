@@ -193,7 +193,7 @@ If we change the bugtask status, it will be updated again even though
 the remote status hasn't changed. This can happen if we change the
 status mapping.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> thunderbird_task.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])

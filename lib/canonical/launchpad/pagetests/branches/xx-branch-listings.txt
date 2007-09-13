@@ -190,11 +190,10 @@ We display badges for associated bugs.
   ...     first_cell = row.find('td')
   ...     anchors = first_cell.fetch('a')
   ...     print anchors[0].get('href')
-  ...     for anchor in anchors[1:]:
-  ...        print "  Bug:", anchor.get('href')
+  ...     for img in first_cell.findAll('img'):
+  ...        print img['title']
   /~name12/firefox/main
-    Bug: http://bugs.launchpad.dev/bugs/4
-    Bug: http://bugs.launchpad.dev/bugs/5
+    Related to a bug
   /~name12/gnome-terminal/2.6
   /~name12/gnome-terminal/main
   /~name12/gnome-terminal/klingon
