@@ -387,10 +387,10 @@ class POTMsgSet(SQLBase):
             u'_: NAME OF TRANSLATORS\nYour names'
             ]
         kde_credits = ((self.primemsgid_.msgid == u'Your emails' and
-                        self.context='EMAIL OF TRANSLATORS') or
+                        self.context == u'EMAIL OF TRANSLATORS') or
                        (self.primemsgid_.msgid == u'Your names' and
-                        self.context='NAME OF TRANSLATORS'))
-        return regular_credits or old_kde_credits or kde_credits
+                        self.context == u'NAME OF TRANSLATORS'))
+        return (regular_credits or old_kde_credits or kde_credits)
 
     def makeHTMLId(self, suffix=None):
         """See `IPOTMsgSet`."""
