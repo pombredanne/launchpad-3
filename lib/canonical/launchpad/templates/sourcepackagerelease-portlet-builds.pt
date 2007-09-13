@@ -14,8 +14,8 @@
         <span tal:content="build/distroarchseries/architecturetag">i386</span>
       </a>
       <span tal:replace="build/buildstate/title">Failure</span>
-      <span tal:condition="build/upload_status">
-        (<span tal:replace="build/upload_status/name">NEW</span>)
+      <span tal:condition="build/package_upload">
+        (<span tal:replace="build/package_upload/status/name">NEW</span>)
       </span>
     </li>
     </ul>

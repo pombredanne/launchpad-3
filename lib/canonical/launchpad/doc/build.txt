@@ -47,8 +47,25 @@ Let's check the complex properties of a build object.
   >>> firefox_build.is_trusted
   True
 
-  >>> firefox_build.upload_status
+The build can report any corresponding uploads using the package_upload
+property:
+
+  >>> firefox_build.package_upload
+  <PackageUpload ...>
+
+  Zope proxied package uploads do not give permission to see them if you
+  are not logged in, except for the status attribute.  Firefox's build
+  upload is in the NEW state:
+
+  >>> firefox_build.package_upload.status
   <DBItem PackageUploadStatus.NEW, (0) New>
+
+If the build does not have any uploads, None is returned:
+
+  >>> at_build = getUtility(IBuildSet).getByBuildID(20)
+  >>> print at_build.package_upload
+  None
+
 
 Test "retry" functionality:
 

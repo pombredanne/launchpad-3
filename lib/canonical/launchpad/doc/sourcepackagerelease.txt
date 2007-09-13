@@ -1,5 +1,4 @@
-Source Package Release
-======================
+= Source Package Release =
 
 The SourcePackageRelease table represents a particular release of a
 SourcePackageName, but isn't tied to any particular DistroSeries
@@ -11,8 +10,7 @@ uploaded DSC (Debian Source Control) file.
 This model allow us to have more granular control of the fields,
 enabling faster searches, faster readings and model constraints.
 
-Basic attributes
-----------------
+== Basic attributes ==
 
 Let's get one from the database:
 
@@ -50,6 +48,19 @@ if the 'age' result looks sane:
    >>> spr.dateuploaded = (local_now - datetime.timedelta(days=10))
    >>> spr.age.days == 10
    True
+
+Mozilla-firefox 0.9 has got some builds. including a PPA build.  The 'builds'
+property only returns the non-PPA builds.
+
+   >>> from canonical.launchpad.interfaces import IPersonSet
+   >>> from canonical.launchpad.database.build import Build
+   >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
+   >>> Build.selectBy(archive=cprov_ppa, sourcepackagerelease=spr).count()
+   1
+   >>> spr.builds.count()
+   4
+   >>> set(build.archive.purpose.name for build in spr.builds)
+   set(['PRIMARY'])
 
 We can use the magic productrelease property to map this to a ProductRelease:
 
@@ -229,8 +240,7 @@ Optionally you can pass also status & archive:
    True
 
 
-Counting bugs
--------------
+== Counting bugs ==
 
 The SourcePackageRelease offers a convenient way of checking how many
 bugs are open against this package in the distribution to which it was
@@ -244,8 +254,8 @@ uploaded. Because of bug privacy, this method needs a user supplied.
    >>> print spr.countOpenBugsInUploadedDistro(no_priv)
    1
 
-Uploading translations
-----------------------
+
+== Uploading translations ==
 
 It's time to check the translation upload function.
 
