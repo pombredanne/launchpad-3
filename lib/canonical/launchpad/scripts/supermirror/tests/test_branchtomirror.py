@@ -70,8 +70,8 @@ class TestBranchToMirror(unittest.TestCase):
 
         client = BranchStatusClient()
         to_mirror = BranchToMirror(
-            srcbranchdir, destbranchdir, client, 1, None, None)
-
+            srcbranchdir, destbranchdir, client, branch_id=1, unique_name=None,
+            branch_type=None)
         tree = createbranch(srcbranchdir)
         to_mirror.mirror(logging.getLogger())
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
@@ -95,7 +95,8 @@ class TestBranchToMirror(unittest.TestCase):
 
         client = BranchStatusClient()
         to_mirror = BranchToMirror(
-            srcbranchdir, destbranchdir, client, 1, None, None)
+            srcbranchdir, destbranchdir, client, branch_id=1, unique_name=None,
+            branch_type=None)
 
         # create empty source branch
         os.makedirs(srcbranchdir)
@@ -181,7 +182,8 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
         client = BranchStatusClient()
         source_url = os.path.abspath('src-branch')
         to_mirror = BranchToMirror(
-            source_url, 'dest-branch', client, 1, None, None)
+            source_url, 'dest-branch', client, branch_id=1, unique_name=None,
+            branch_type=None)
         to_mirror.mirror(logging.getLogger())
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         return mirrored_branch
@@ -221,22 +223,23 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         TestCaseInTempDir.tearDown(self)
 
     def testUnopenableSourceDoesNotCreateMirror(self):
-        non_existant_branch = os.path.abspath('nonsensedir')
+        non_existent_source = os.path.abspath('nonsensedir')
         dest_dir = 'dest-dir'
         client = BranchStatusClient()
         mybranch = BranchToMirror(
-            non_existant_branch, dest_dir, client, 1, 'foo/bar/baz', None)
+            non_existent_source, dest_dir, client, branch_id=1,
+            unique_name='foo/bar/baz', branch_type=None)
         mybranch.mirror(logging.getLogger())
         self.failIf(os.path.exists(dest_dir), 'dest-dir should not exist')
 
     def testMissingSourceWhines(self):
-        non_existant_branch = os.path.abspath('nonsensedir')
+        non_existent_source = os.path.abspath('nonsensedir')
         client = BranchStatusClient()
         # ensure that we have no errors muddying up the test
         client.mirrorComplete(1, NULL_REVISION)
         mybranch = BranchToMirror(
-            non_existant_branch, "anothernonsensedir", client, 1,
-            'foo/bar/baz', None)
+            non_existent_source, "non-existent-destination",
+            client, branch_id=1, unique_name='foo/bar/baz', branch_type=None)
         mybranch.mirror(logging.getLogger())
         transaction.abort()
         branch = database.Branch.get(1)
@@ -261,8 +264,8 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         client.mirrorComplete(1, NULL_REVISION)
         source_url = os.path.abspath('missingrevision')
         mybranch = BranchToMirror(
-            source_url, "missingrevisiontarget", client, 1,
-            'foo/bar/baz', None)
+            source_url, "non-existent-destination", client, branch_id=1,
+            unique_name='foo/bar/baz', branch_type=None)
         mybranch.mirror(logging.getLogger())
         transaction.abort()
         branch = database.Branch.get(1)
@@ -319,7 +322,8 @@ class ErrorHandlingTestCase(unittest.TestCase):
         """
         client = StubbedBranchStatusClient()
         self.branch = StubbedBranchToMirror(
-            'foo', 'bar', client, 1, 'owner/product/foo', None)
+            src='foo', dest='bar', branch_status_client=client, branch_id=1,
+            unique_name='owner/product/foo', branch_type=None)
         self.errors = []
         self.open_call_count = 0
         self.branch.testcase = self
@@ -519,7 +523,9 @@ class TestCanTraverseReferences(unittest.TestCase):
     def makeBranch(self, branch_type):
         """Helper to create a BranchToMirror with a specified branch_type."""
         return BranchToMirror(
-            'foo', 'bar', self.client, 1, 'owner/product/foo', branch_type)
+            src='foo', dest='bar', branch_status_client=self.client,
+            branch_id=1, unique_name='owner/product/foo',
+            branch_type=branch_type)
 
     def testTrueForMirrored(self):
         """We can traverse branch references when pulling mirror branches."""
