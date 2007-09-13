@@ -179,6 +179,28 @@ class Branch(SQLBase):
         """See `IBranch`."""
         return self.revision_count > 0 and not self.private
 
+    def _getNameDict(self, person):
+        """Return a simple dict with the person name or placeholder."""
+        if person is not None:
+            name = person.name
+        else:
+            name = "<name>"
+        return {'user': name}
+
+    def getBzrUploadURL(self, person=None):
+        """See `IBranch`."""
+        root = config.codehosting.smartserver_root % self._getNameDict(person)
+        return root + self.unique_name
+
+    def getBzrDownloadURL(self, person=None):
+        """See `IBranch`."""
+        if self.private:
+            root = config.codehosting.smartserver_root
+        else:
+            root = config.codehosting.supermirror_root
+        root = root % self._getNameDict(person)
+        return root + self.unique_name
+
     @property
     def related_bugs(self):
         """See `IBranch`."""
@@ -630,7 +652,7 @@ class BranchSet:
     def getByUrl(self, url, default=None):
         """See `IBranchSet`."""
         assert not url.endswith('/')
-        prefix = config.launchpad.supermirror_root
+        prefix = config.codehosting.supermirror_root
         if url.startswith(prefix):
             branch = self.getByUniqueName(url[len(prefix):])
         else:
