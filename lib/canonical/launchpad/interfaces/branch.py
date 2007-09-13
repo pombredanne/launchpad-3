@@ -199,7 +199,7 @@ class BranchURIField(URIField):
 
         # URIField has already established that we have a valid URI
         uri = URI(value)
-        supermirror_root = URI(config.launchpad.supermirror_root)
+        supermirror_root = URI(config.codehosting.supermirror_root)
         launchpad_domain = config.launchpad.vhosts.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             message = _(
@@ -444,6 +444,23 @@ class IBranch(IHasOwner):
 
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
+
+    def getBzrUploadURL(person=None):
+        """Return the URL for this person to push to the branch.
+
+        If user is None a placeholder is used for the username if
+        one is required.
+        """
+
+    def getBzrDownloadURL(person=None):
+        """Return the URL for this person to branch the branch.
+
+        If the branch is public, the anonymous http location is used,
+        otherwise the url uses the smartserver.
+
+        If user is None a placeholder is used for the username if
+        one is required.
+        """
 
     def canBeDeleted():
         """Can this branch be deleted in its current state.
