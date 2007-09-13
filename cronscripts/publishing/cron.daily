@@ -182,9 +182,9 @@ LSLR=ls-lR.gz
 # Run dsync over primary archive only.
 
 ( cd $ARCHIVEROOT ; \
-  dsync-flist -q generate $DSYNCLIST --md5 ; \
+  dsync-flist -q generate $DSYNCLIST -e 'Packages*' -e 'Sources*' -e 'Release*' --md5 ; \
   dsync-flist -q md5sums $DSYNCLIST | gzip -9n > ${MD5LIST} ; \
-  ) #dsync-flist -q link-dups $DSYNCLIST || true )
+  dsync-flist -q link-dups $DSYNCLIST || true )
 
 # Clear out empty and thus redundant dirs
 find $ARCHIVEROOT -type d -empty | xargs -r rmdir
