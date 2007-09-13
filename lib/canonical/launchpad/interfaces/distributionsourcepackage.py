@@ -128,4 +128,4 @@ class IDistributionSourcePackageManageBugcontacts(Interface):
         title=u"I want to receive all bugmail for this source package",
         required=False)
 
-        
+

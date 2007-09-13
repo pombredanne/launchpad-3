@@ -61,6 +61,9 @@ class MockLogger:
     def error(self, txt):
         self.logs.append("ERROR: %s" % txt)
 
+    def warn(self, txt):
+        self.logs.append("WARN: %s" % txt)
+
 
 class TestArchiveOverrider(LaunchpadZopelessTestCase):
     layer = LaunchpadZopelessLayer
@@ -80,9 +83,9 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         commercial_component = getUtility(IComponentSet)['commercial']
         self.ubuntu_warty = self.ubuntu['warty']
         self.ubuntu_hoary = self.ubuntu['hoary']
-        ComponentSelection(distroseries=self.ubuntu_warty, 
+        ComponentSelection(distroseries=self.ubuntu_warty,
                            component=commercial_component)
-        ComponentSelection(distroseries=self.ubuntu_hoary, 
+        ComponentSelection(distroseries=self.ubuntu_hoary,
                            component=commercial_component)
 
     def test_initialize_success(self):
@@ -258,7 +261,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         # Apply the override.
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
-            component_name='commercial', section_name='base', 
+            component_name='commercial', section_name='base',
             priority_name='extra')
         changer.initialize()
         self.assertRaises(
@@ -344,9 +347,6 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         Inspect the log and to ensure we are passing correct arguments and
         picking the correct source.
         """
-        # XXX cprov 2006-04-24: this test needs to be extended to check the
-        # behaviour when there are published binaries (needs richer
-        # sampledata)
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
             component_name='main', section_name='base',
@@ -358,7 +358,13 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
+            "INFO: 'mozilla-firefox/main/base/IMPORTANT' "
+                "binary overridden in warty/i386\n"
             "INFO: 'mozilla-firefox/main/base/EXTRA' "
+                "binary overridden in warty/hppa\n"
+            "INFO: 'mozilla-firefox-data/main/base/EXTRA' "
+                "binary overridden in warty/hppa\n"
+            "INFO: 'mozilla-firefox-data/main/base/EXTRA' "
                 "binary overridden in warty/i386")
 
     def test_processChildrenChange_error(self):
@@ -378,6 +384,19 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
             "ERROR: 'pmount' source isn't published in warty")
+
+        changer = ArchiveOverrider(
+            self.log, distro_name='ubuntu', suite='hoary',
+            component_name='main', section_name='base',
+            priority_name='extra')
+        changer.initialize()
+        changer.processChildrenChange('pmount')
+        self.assertEqual(
+            self.log.read(),
+            "INFO: Override Component to: 'main'\n"
+            "INFO: Override Section to: 'base'\n"
+            "INFO: Override Priority to: 'EXTRA'\n"
+            "WARN: 'pmount' has no binaries published in hoary")
 
 
 class TestArchiveCruftChecker(LaunchpadZopelessTestCase):

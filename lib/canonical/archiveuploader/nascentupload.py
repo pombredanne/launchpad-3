@@ -29,7 +29,8 @@ from canonical.archiveuploader.nascentuploadfile import (
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
     NotFoundError, IDistributionSet, QueueInconsistentStateError)
-from canonical.launchpad.scripts.processaccepted import closeBugsForQueueItem
+from canonical.launchpad.scripts.processaccepted import (
+    close_bugs_for_queue_item)
 from canonical.lp.dbschema import PackagePublishingPocket, ArchivePurpose
 
 
@@ -931,7 +932,7 @@ class NascentUpload:
                     self.queue_root.realiseUpload()
                     # Closing bugs.
                     changesfile_object = open(self.changes.filepath, 'r')
-                    closeBugsForQueueItem(
+                    close_bugs_for_queue_item(
                         self.queue_root, changesfile_object=changesfile_object)
                     changesfile_object.close()
             else:
@@ -946,7 +947,7 @@ class NascentUpload:
         includes decisions such as moving the package to the commercial
         archive if the package's component is 'commercial'.
 
-        PPA uploads with commercial files and normal uploads with a mixture 
+        PPA uploads with commercial files and normal uploads with a mixture
         of commercial and non-commercial files will be rejected.
         """
 
@@ -974,7 +975,7 @@ class NascentUpload:
             if not archive:
                 # Don't override the archive to None here or the rest of the
                 # processing will throw exceptions.
-                self.reject("Commercial archive for distro '%s' not found" % 
+                self.reject("Commercial archive for distro '%s' not found" %
                     self.policy.distroseries.distribution.name)
             else:
                 # Reset the archive in the policy to the commercial archive.

@@ -31,11 +31,11 @@ class BadUrlLaunchpad(Exception):
 
 def identical_formats(branch_one, branch_two):
     """Check if two branches have the same bzrdir, repo, and branch formats."""
-    # XXX AndrewBennetts 2006-05-18 bug=45277: 
+    # XXX AndrewBennetts 2006-05-18 bug=45277:
     # comparing format objects is ugly.
     b1, b2 = branch_one, branch_two
     return (
-        b1.bzrdir._format.__class__ == b2.bzrdir._format.__class__ and 
+        b1.bzrdir._format.__class__ == b2.bzrdir._format.__class__ and
         b1.repository._format.__class__ == b2.repository._format.__class__ and
         b1._format.__class__ == b2._format.__class__
     )
@@ -71,10 +71,11 @@ class BranchToMirror:
         if self.source.startswith('/'):
             return
         uri = URI(self.source)
+        launchpad_domain = config.launchpad.vhosts.mainsite.hostname
+        if uri.underDomain(launchpad_domain):
+            raise BadUrlLaunchpad(self.source)
         if uri.scheme in ['sftp', 'bzr+ssh']:
             raise BadUrlSsh(self.source)
-        if uri.host == 'launchpad.net' or uri.host.endswith('.launchpad.net'):
-            raise BadUrlLaunchpad(self.source)
 
     def _openSourceBranch(self):
         """Open the branch to pull from, useful to override in tests."""
@@ -243,19 +244,5 @@ class BranchToMirror:
         return self.source == other.source and self.dest == other.dest
 
     def __repr__(self):
-        return ("<BranchToMirror source=%s dest=%s at %x>" % 
+        return ("<BranchToMirror source=%s dest=%s at %x>" %
                 (self.source, self.dest, id(self)))
-
-    def isUploadBranch(self):
-        """Whether this branch is pulled from the private SFTP area."""
-        upload_source_prefix = config.codehosting.branches_root
-        return self.source.startswith(upload_source_prefix)
-
-    def isImportBranch(self):
-        """Whether this branch is pulled from importd."""
-        import_source_prefix = config.launchpad.bzr_imports_root_url
-        return self.source.startswith(import_source_prefix)
-
-    def isMirrorBranch(self):
-        """Whether this branch is pulled from the internet."""
-        return not self.isUploadBranch() and not self.isImportBranch()

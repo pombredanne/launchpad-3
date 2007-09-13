@@ -16,7 +16,7 @@ import unittest
 
 import transaction
 
-from bzrlib.tests import TestCase as BzrlibTestCase
+from bzrlib.tests import TestCaseWithTransport
 
 from zope.component import getUtility
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
@@ -110,13 +110,13 @@ class ServerTestCase(TrialTestCase):
         return self.server.getTransport(relpath)
 
 
-class BranchTestCase(BzrlibTestCase):
+class BranchTestCase(TestCaseWithTransport):
     """Base class for tests that do a lot of things with branches."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        BzrlibTestCase.setUp(self)
+        TestCaseWithTransport.setUp(self)
         self._integer = 0
         self.cursor = cursor()
         self.branch_set = getUtility(IBranchSet)
@@ -191,7 +191,7 @@ class BranchTestCase(BzrlibTestCase):
         old_policy = getSecurityPolicy()
         setSecurityPolicy(LaunchpadSecurityPolicy)
         self.addCleanup(lambda: setSecurityPolicy(old_policy))
-    
+
 
 def deferToThread(f):
     """Run the given callable in a separate thread and return a Deferred which

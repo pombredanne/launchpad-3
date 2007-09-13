@@ -51,7 +51,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
     def getTargetTypes(self):
         """See `QuestionTargetMixin`.
-        
+
         Defines distribution and sourcepackagename as this object's
         distribution and sourcepackagename.
         """
@@ -60,7 +60,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
     def questionIsForTarget(self, question):
         """See `QuestionTargetMixin`.
-        
+
         Return True when the question's distribution and sourcepackagename
         are this object's distribution and sourcepackagename.
         """
@@ -258,17 +258,6 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         if not self.currentrelease:
             return None
         return self.currentrelease.format
-
-    @property
-    def manifest(self):
-        """For the moment, the manifest of a SourcePackage is defined as the
-        manifest of the .currentrelease of that SourcePackage in the
-        distroseries. In future, we might have a separate table for the
-        current working copy of the manifest for a source package.
-        """
-        if not self.currentrelease:
-            return None
-        return self.currentrelease.manifest
 
     @property
     def releases(self):

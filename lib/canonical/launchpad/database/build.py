@@ -130,7 +130,7 @@ class Build(SQLBase):
         from canonical.launchpad.database.distroarchseriesbinarypackagerelease\
             import (DistroArchSeriesBinaryPackageRelease)
         return [DistroArchSeriesBinaryPackageRelease(
-            self.distroarchseries, bp) 
+            self.distroarchseries, bp)
             for bp in self.binarypackages]
 
     @property
