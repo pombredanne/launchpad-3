@@ -33,20 +33,24 @@ __all__ = [
 
 
 class BadUrlSsh(Exception):
-    """Raised when trying to mirror a branch from sftp or bzr+ssh."""
+    """Tried to mirror a branch from sftp or bzr+ssh."""
 
 
 class BadUrlLaunchpad(Exception):
-    """Raised when trying to mirror a branch from lanchpad.net."""
+    """Tried to mirror a branch from launchpad.net."""
 
 class BranchReferenceForbidden(Exception):
-    """Raised when trying to mirror a branch reference and the branch type does
-    not allow references.
+    """Trying to mirror a branch reference and the branch type does not allow
+    references.
     """
 
 
 class BranchReferenceValueError(Exception):
-    """Raised when encountering a branch reference with a dangerous value."""
+    """Encountered a branch reference with an unsafe value.
+
+    An unsafe value is a local URL, such as a file:// URL or an http:// URL in
+    canonical.com, that may cause disclosure of restricted data.
+    """
 
     def __init__(self, url):
         Exception.__init__(self, url)
@@ -54,7 +58,11 @@ class BranchReferenceValueError(Exception):
 
 
 class BranchReferenceLoopError(Exception):
-    """Raised when encountering a branch reference loop."""
+    """Encountered a branch reference cycle.
+
+    A branch reference may point to another branch reference, and so on. A
+    branch reference cycle is an infinite loop of references.
+    """
 
 
 def identical_formats(branch_one, branch_two):
