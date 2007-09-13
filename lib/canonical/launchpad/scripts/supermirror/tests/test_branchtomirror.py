@@ -718,8 +718,9 @@ class TestErrorHandling(ErrorHandlingTestCase):
         self.runMirrorAndAssertErrorStartsWith(expected_msg)
 
     def testNotBranchErrorMirrored(self):
-        # Should receive a user-friendly message we are asked to mirror a
-        # non-branch.
+        """Should receive a user-friendly message we are asked to mirror a
+        non-branch.
+        """
         def stubOpenSourceBranch():
             raise NotBranchError('http://example.com/not-branch')
         self.branch._openSourceBranch = stubOpenSourceBranch
@@ -728,9 +729,10 @@ class TestErrorHandling(ErrorHandlingTestCase):
         self.runMirrorAndAssertErrorEquals(expected_msg)
 
     def testNotBranchErrorHosted(self):
-        # The not-a-branch error message should *not* include the Branch id
-        # from the database. Instead, the path should be translated to a
-        # user-visible location.
+        """The not-a-branch error message should *not* include the Branch id
+        from the database. Instead, the path should be translated to a
+        user-visible location.
+        """
         split_id = split_branch_id(self.branch.branch_id)
         def stubOpenSourceBranch():
             raise NotBranchError('/srv/sm-ng/push-branches/%s/.bzr/branch/'
@@ -742,9 +744,10 @@ class TestErrorHandling(ErrorHandlingTestCase):
         self.runMirrorAndAssertErrorEquals(expected_msg)
 
     def testNotBranchErrorImported(self):
-        # The not-a-branch error message for import branch should not disclose
-        # the internal URL. Since there is no user-visible URL to blame, we do
-        # not display any URL at all.
+        """The not-a-branch error message for import branch should not disclose
+        the internal URL. Since there is no user-visible URL to blame, we do
+        not display any URL at all.
+        """
         def stubOpenSourceBranch():
             raise NotBranchError('http://canonical.example.com/internal/url')
         self.branch._openSourceBranch = stubOpenSourceBranch
