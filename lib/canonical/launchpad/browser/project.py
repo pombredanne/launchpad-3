@@ -589,7 +589,7 @@ class ProjectBranchesView(BranchListingView):
 
     @property
     def no_branch_message(self):
-        if self.selected_lifecycle_status:
+        if self.selected_lifecycle_status is not None:
             message = (
                 'There may be branches registered for %s '
                 'but none of them match the current filter criteria '
