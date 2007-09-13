@@ -741,7 +741,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
         self.branch._openSourceBranch = stubOpenSourceBranch
         self.branch.branch_type = BranchType.HOSTED
         expected_msg = 'Not a branch: sftp://bazaar.launchpad.net/~%s' % (
-            self.branch.branch_unique_name,)
+            self.branch.unique_name,)
         self.runMirrorAndAssertErrorEquals(expected_msg)
 
     def testNotBranchErrorImported(self):

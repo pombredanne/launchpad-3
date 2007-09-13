@@ -77,12 +77,12 @@ class BranchToMirror:
     """
 
     def __init__(self, src, dest, branch_status_client, branch_id,
-                 branch_unique_name, branch_type):
+                 unique_name, branch_type):
         self.source = src
         self.dest = dest
         self.branch_status_client = branch_status_client
         self.branch_id = branch_id
-        self.branch_unique_name = branch_unique_name
+        self.unique_name = unique_name
         # The branch_type argument should always be set to a BranchType enum in
         # production use, but it is expected that tests that do not depend on
         # its value will pass None.
@@ -266,7 +266,7 @@ class BranchToMirror:
         else:
             scheme = 'http'
         hostname = config.launchpad.vhosts.code.hostname
-        return scheme + '://' + hostname + '/~' + self.branch_unique_name
+        return scheme + '://' + hostname + '/~' + self.unique_name
 
     def mirror(self, logger):
         """Open source and destination branches and pull source into
@@ -323,7 +323,7 @@ class BranchToMirror:
         except NotBranchError, e:
             message_by_type = {
                 BranchType.HOSTED: str(NotBranchError(
-                "sftp://bazaar.launchpad.net/~%s" % self.branch_unique_name)),
+                "sftp://bazaar.launchpad.net/~%s" % self.unique_name)),
                 BranchType.IMPORTED: "Not a branch.",
                 }
             msg = message_by_type.get(self.branch_type, str(e))
