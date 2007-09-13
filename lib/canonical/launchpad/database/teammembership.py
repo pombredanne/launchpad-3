@@ -267,7 +267,7 @@ class TeamMembership(SQLBase):
         else:
             _cleanTeamParticipation(self.person, self.team)
 
-        # Flush all updates to ensure any subsequet calls to this method on
+        # Flush all updates to ensure any subsequent calls to this method on
         # the same transaction will operate on the correct data.  That is the
         # case with our script to expire team memberships.
         flush_database_updates()

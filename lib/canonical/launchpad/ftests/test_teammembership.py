@@ -6,7 +6,8 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.database import teammembership
+from canonical.database.sqlbase import cursor
+from canonical.launchpad.database import TeamMembership
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     IPersonSet, ITeamMembershipSet, TeamMembershipStatus)
@@ -55,21 +56,16 @@ class TestTeamMembership(unittest.TestCase):
         operate on the correct data.
         """
         login('foo.bar@canonical.com')
-        orig_flush_db_updates = teammembership.flush_database_updates
-        self.flush_db_updates_called = False
-        def fake_flush_db_updates():
-            orig_flush_db_updates()
-            self.flush_db_updates_called = True
-        teammembership.flush_database_updates = fake_flush_db_updates
-        try:
-            tm = teammembership.TeamMembership.selectFirstBy(
-                status=TeamMembershipStatus.APPROVED, orderBy='id')
-            tm.setStatus(TeamMembershipStatus.DEACTIVATED,
-                         getUtility(IPersonSet).getByName('name16'))
-        finally:
-            teammembership.flush_database_updates = orig_flush_db_updates
-        self.failUnless(self.flush_db_updates_called)
-        self.failIf(tm.person in tm.team.activemembers)
+        tm = TeamMembership.selectFirstBy(
+            status=TeamMembershipStatus.APPROVED, orderBy='id')
+        tm.setStatus(TeamMembershipStatus.DEACTIVATED,
+                     getUtility(IPersonSet).getByName('name16'))
+        # Bypass SQLObject to make sure the update was really flushed to the
+        # database.
+        cur = cursor()
+        cur.execute("SELECT status FROM teammembership WHERE id = %d" % tm.id)
+        [new_status] = cur.fetchone()
+        self.assertEqual(new_status, TeamMembershipStatus.DEACTIVATED.value)
 
 
 def test_suite():
