@@ -24,6 +24,7 @@ ztm.abort()
 
 batch = people_ids[:50]
 people_ids = people_ids[50:]
+removed_entries = 0
 while batch:
     for [id] in batch:
         ztm.begin()
@@ -36,6 +37,9 @@ while batch:
                        % (person.unique_displayname, team.unique_displayname))
                 tp = TeamParticipation.selectOneBy(person=person, team=team)
                 tp.destroySelf()
+                removed_entries += 1
         ztm.commit()
     batch = people_ids[:50]
     people_ids = people_ids[50:]
+
+print "Removed %d entries in total." % removed_entries
