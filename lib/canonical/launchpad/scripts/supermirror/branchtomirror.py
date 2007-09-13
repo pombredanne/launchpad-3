@@ -233,12 +233,18 @@ class BranchToMirror:
         return branch
 
     def _mirrorFailed(self, logger, error_msg):
-        """Log that the mirroring of this branch failed."""
+        """Record that the mirroring of this branch failed.
+
+        Update the branch status in the database and emit a log message.
+        """
         self.branch_status_client.mirrorFailed(self.branch_id, str(error_msg))
         logger.info('Recorded failure: %s', str(error_msg))
 
     def _mirrorSuccessful(self, logger):
-        """Log that the mirroring of this branch was successful."""
+        """Record that the mirroring of this branch was successful.
+
+        Update the branch status in the database and emit a log message.
+        """
         last_rev = self._dest_branch.last_revision()
         if last_rev is None:
             last_rev = NULL_REVISION
