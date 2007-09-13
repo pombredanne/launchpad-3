@@ -304,6 +304,7 @@ class StubbedBranchToMirror(BranchToMirror):
 
 
 class ErrorHandlingTestCase(unittest.TestCase):
+    """Base class to test BranchToMirror error reporting."""
 
     def setUp(self):
         unittest.TestCase.setUp(self)
