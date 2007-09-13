@@ -1348,18 +1348,18 @@ class SourceForge(ExternalBugTracker):
             bug_id = int(bug_id)
         except ValueError:
             raise InvalidBugId(
-                "bug_id must be convertible an integer: %s" % str(bug_id))
+                "bug_id must be convertible to an integer: %s" % str(bug_id))
 
         try:
             remote_bug = self.bugs[bug_id]
         except KeyError:
             raise BugNotFound(bug_id)
-        else:
-            try:
-                return '%(status)s:%(resolution)s' % remote_bug
-            except KeyError:
-                raise UnparseableBugData(
-                    "Remote bug %i does not define a status." % bug_id)
+
+        try:
+            return '%(status)s:%(resolution)s' % remote_bug
+        except KeyError:
+            raise UnparseableBugData(
+                "Remote bug %i does not define a status." % bug_id)
 
 
     def convertRemoteStatus(self, remote_status):
