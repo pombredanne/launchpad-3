@@ -132,7 +132,7 @@ class BranchContextMenu(ContextMenu):
         """Return a link to the branch's file listing on codebrowse."""
         text = 'Browse code'
         enabled = self.context.code_is_browseable
-        url = (config.launchpad.codebrowse_root
+        url = (config.codehosting.codebrowse_root
                + self.context.unique_name
                + '/files')
         return Link(url, text, icon='info', enabled=enabled)
@@ -141,7 +141,7 @@ class BranchContextMenu(ContextMenu):
         """Return a link to the branch's revisions on codebrowse."""
         text = 'Browse revisions'
         enabled = self.context.code_is_browseable
-        url = (config.launchpad.codebrowse_root
+        url = (config.codehosting.codebrowse_root
                + self.context.unique_name
                + '/changes')
         return Link(url, text, icon='info', enabled=enabled)
@@ -226,17 +226,35 @@ class BranchView(LaunchpadView):
     @property
     def codebrowse_url(self):
         """Return the link to codebrowse for this branch."""
-        return config.launchpad.codebrowse_root + self.context.unique_name
+        return config.codehosting.codebrowse_root + self.context.unique_name
 
-
-    def supermirror_url(self):
-        """Public URL of the branch on the Supermirror."""
-        # Private branches are not available through anonymous http,
-        # so an appropriate bzr+ssh url should be shown.
-        if self.context.private:
-            return config.launchpad.smartserver_root + self.context.unique_name
+    def bzr_download_url(self):
+        """Return the generic URL for downloading the branch."""
+        if self.user_can_download():
+            return self.context.getBzrDownloadURL()
         else:
-            return config.launchpad.supermirror_root + self.context.unique_name
+            return None
+
+    def bzr_user_download_url(self):
+        """Return the specific URL for the user to download the branch."""
+        if self.user_can_download():
+            return self.context.getBzrDownloadURL(self.user)
+        else:
+            return None
+
+    def bzr_upload_url(self):
+        """Return the generic URL for uploading the branch."""
+        if self.user_can_upload():
+            return self.context.getBzrUploadURL()
+        else:
+            return None
+
+    def bzr_user_upload_url(self):
+        """Return the specific URL for the user to upload to the branch."""
+        if self.user_can_upload():
+            return self.context.getBzrUploadURL(self.user)
+        else:
+            return None
 
     def edit_link_url(self):
         """Target URL of the Edit link used in the actions portlet."""
@@ -263,12 +281,14 @@ class BranchView(LaunchpadView):
 
     def user_can_upload(self):
         """Whether the user can upload to this branch."""
-        return self.user.inTeam(self.context.owner)
+        return (self.user is not None and
+                self.user.inTeam(self.context.owner) and
+                self.context.branch_type == BranchType.HOSTED)
 
-    def upload_url(self):
-        """The URL the logged in user can use to upload to this branch."""
-        url_base = config.codehosting.upload_url_base % (self.user.name,)
-        return '%s/%s' % (url_base, self.context.unique_name)
+    def user_can_download(self):
+        """Whether the user can download this branch."""
+        return (self.context.branch_type != BranchType.REMOTE and
+                self.context.revision_count > 0)
 
     def is_hosted_branch(self):
         """Whether this is a user-provided hosted branch."""
