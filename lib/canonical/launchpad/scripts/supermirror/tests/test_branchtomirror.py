@@ -533,7 +533,7 @@ class TestCanTraverseReferences(unittest.TestCase):
         self.assertEqual(import_branch._canTraverseReferences(), False)
 
     def testFalseForHosted(self):
-        """We cannot traverse branch references when pulling hotsed branches.
+        """We cannot traverse branch references when pulling hosted branches.
         """
         hosted_branch = self.makeBranch(BranchType.HOSTED)
         self.assertEqual(hosted_branch._canTraverseReferences(), False)
