@@ -620,10 +620,18 @@ All the languages known by Launchpad.
     >>> print term.token, term.value.displayname, term.title
     pt_BR Portuguese (Brazil) (pt_BR) Portuguese (Brazil) (pt_BR)
 
+    # A language token/code may not be used with 'in' tests.
+    >>> u'es' in language_vocabulary
+    Traceback (most recent call last):
+    ...
+    AssertionError: 'in LanguageVocabulary' requires ILanguage
+    as left operand, got <type 'unicode'> instead.
+
     >>> language_vocabulary.getTermByToken('foo')
     Traceback (most recent call last):
     ...
     LookupError:...
+
 
 === TranslatableLanguageVocabulary ===
 
@@ -654,12 +662,15 @@ when the language is not English and is visible.
     >>> print term.token, term.value.displayname, term.title
     pt_BR Portuguese (Brazil) (pt_BR) Portuguese (Brazil) (pt_BR)
 
-    >>> # The vocabulary supports value (Language) container tests, not
-    >>> # token (string) tests.
     >>> es in translatable_language_vocabulary
     True
+
+    # A language token/code may not be used with 'in' tests.
     >>> u'es' in translatable_language_vocabulary
-    False
+    Traceback (most recent call last):
+    ...
+    AssertionError: 'in TranslatableLanguageVocabulary' requires
+    ILanguage as left operand, got <type 'unicode'> instead.
 
     >>> translatable_language_vocabulary.getTermByToken('foo')
     Traceback (most recent call last):

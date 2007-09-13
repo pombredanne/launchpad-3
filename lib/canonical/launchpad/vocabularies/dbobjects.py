@@ -282,8 +282,9 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
 
     def __contains__(self, language):
         """See `IVocabulary`."""
-        if not ILanguage.providedBy(language):
-            return False
+        assert ILanguage.providedBy(language), (
+            "'in LanguageVocabulary' requires ILanguage as left operand, "
+            "got %s instead." % type(language))
         return super(LanguageVocabulary, self).__contains__(language)
 
     def toTerm(self, obj):
@@ -317,7 +318,10 @@ class TranslatableLanguageVocabulary(LanguageVocabulary):
         
         This vocabulary excludes English and languages that are not visible.
         """
-        if not ILanguage.providedBy(language) or language.code == 'en':
+        assert ILanguage.providedBy(language), (
+            "'in TranslatableLanguageVocabulary' requires ILanguage as "
+            "left operand, got %s instead." % type(language))
+        if language.code == 'en':
             return False
         return language.visible == True
 
@@ -342,7 +346,11 @@ class TranslatableLanguageVocabulary(LanguageVocabulary):
                 sqlvalues(token))
         except SQLObjectNotFound:
             raise LookupError(token)
-        return self.getTerm(found_language)
+
+        if found_language is not None:
+            return self.getTerm(found_language)
+        else:
+            raise LookupError(token)
 
 
 class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
