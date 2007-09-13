@@ -55,10 +55,17 @@ property only returns the non-PPA builds.
    >>> from canonical.launchpad.interfaces import IPersonSet
    >>> from canonical.launchpad.database.build import Build
    >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
-   >>> Build.selectBy(archive=cprov_ppa, sourcepackagerelease=spr).count()
+   >>> ff_ppa_build = Build.selectBy(
+   ...     archive=cprov_ppa, sourcepackagerelease=spr)
+   >>> ff_ppa_build.count()
    1
+   >>> ff_ppa_build[0].archive.purpose.name
+   'PPA'
    >>> spr.builds.count()
    4
+
+All the builds returned are for non-PPA archives:
+
    >>> set(build.archive.purpose.name for build in spr.builds)
    set(['PRIMARY'])
 

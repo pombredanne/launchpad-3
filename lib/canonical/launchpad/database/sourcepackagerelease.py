@@ -90,7 +90,7 @@ class SourcePackageRelease(SQLBase):
     @property
     def builds(self):
         """See `ISourcePackageRelease`."""
-        # Excluding PPA builds may seem like a string thing to do but
+        # Excluding PPA builds may seem like a strange thing to do but
         # when copy-package works for copying packages across archives,
         # a build may well have a different archive to the corresponding
         # sourcepackagerelease.

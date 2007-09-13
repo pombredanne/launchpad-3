@@ -52,6 +52,8 @@ property:
 
   >>> firefox_build.package_upload
   <PackageUpload ...>
+  >>> removeSecurityProxy(firefox_build.package_upload).id
+  1
 
   Zope proxied package uploads do not give permission to see them if you
   are not logged in, except for the status attribute.  Firefox's build
