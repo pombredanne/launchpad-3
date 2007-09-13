@@ -207,11 +207,11 @@ class ExternalBugTracker:
                 try:
                     new_remote_status = self.getRemoteStatus(bug_id)
                 except InvalidBugId, error:
-                    log.warn("Invalid bug %r on %s (local bugs: %s)" %
+                    log.warn("Invalid bug %r on %s (local bugs: %s)." %
                              (bug_id, self.baseurl, local_ids))
                     new_remote_status = UNKNOWN_REMOTE_STATUS
                 except BugNotFound:
-                    log.warn("Didn't find bug %r on %s (local bugs: %s)" %
+                    log.warn("Didn't find bug %r on %s (local bugs: %s)." %
                              (bug_id, self.baseurl, local_ids))
                     new_remote_status = UNKNOWN_REMOTE_STATUS
                 new_malone_status = self.convertRemoteStatus(new_remote_status)
@@ -226,7 +226,7 @@ class ExternalBugTracker:
             except:
                 # If something unexpected goes wrong, we shouldn't break the
                 # updating of the other bugs.
-                log.error("Failure updating bug %r on %s (local bugs: %s)" %
+                log.error("Failure updating bug %r on %s (local bugs: %s)." %
                             (bug_id, bug_tracker_url, local_ids),
                           exc_info=True)
 
@@ -333,7 +333,7 @@ class Bugzilla(ExternalBugTracker):
             malone_status = BugTaskStatus.NEW
         else:
             log.warning(
-                "Unknown Bugzilla status '%s' at %s" % (
+                "Unknown Bugzilla status '%s' at %s." % (
                     remote_status, self.baseurl))
             malone_status = BugTaskStatus.UNKNOWN
 
@@ -484,7 +484,7 @@ class DebBugs(ExternalBugTracker):
             self.db_location = db_location
 
         if not os.path.exists(os.path.join(self.db_location, 'db-h')):
-            log.error("There's no debbugs db at %s" % self.db_location)
+            log.error("There's no debbugs db at %s." % self.db_location)
             self.debbugs_db = None
             return
 
@@ -521,7 +521,7 @@ class DebBugs(ExternalBugTracker):
             return BugTaskStatus.UNKNOWN
         parts = remote_status.split(' ')
         if len(parts) < 2:
-            log.error('Malformed debbugs status: %r' % remote_status)
+            log.error('Malformed debbugs status: %r.' % remote_status)
             return BugTaskStatus.UNKNOWN
         status = parts[0]
         severity = parts[1]
@@ -531,7 +531,7 @@ class DebBugs(ExternalBugTracker):
         try:
             malone_status = debbugsstatusmap[status]
         except KeyError:
-            log.warn('Unknown debbugs status "%s"' % status)
+            log.warn('Unknown debbugs status "%s".' % status)
             malone_status = BugTaskStatus.UNKNOWN
         if status == 'open':
             confirmed_tags = [
@@ -730,7 +730,7 @@ class Mantis(ExternalBugTracker):
             for bug_line in csv.reader(csv_data):
                 self._processBugLine(bug_line)
         except csv.Error, e:
-            log.warn("Exception parsing CSV file: %s" % e)
+            log.warn("Exception parsing CSV file: %s." % e)
 
     def _processBugLine(self, bug_line):
         """Processes a single line of the CSV.
@@ -743,19 +743,19 @@ class Mantis(ExternalBugTracker):
             try:
                 data = bug_line.pop(0)
             except IndexError:
-                log.warn("Line %r incomplete" % bug_line)
+                log.warn("Line '%r' incomplete." % bug_line)
                 return
             bug[header] = data
         for field in required_fields:
             if field not in bug:
-                log.warn("Bug %s lacked field %r" % (bug['id'], field))
+                log.warn("Bug %s lacked field '%r'." % (bug['id'], field))
                 return
             try:
                 # See __init__ for an explanation of why we use integer
                 # IDs in the internal data structure.
                 bug_id = int(bug['id'])
             except ValueError:
-                log.warn("Bug with invalid ID: %r" % bug['id'])
+                log.warn("Encountered invalid bug ID: %r." % bug['id'])
                 return
 
         self.bugs[bug_id] = bug
@@ -807,7 +807,7 @@ class Mantis(ExternalBugTracker):
                 # XXX: kiko 2007-07-05: Pretty inconsistently used
                 return BugTaskStatus.FIXRELEASED
 
-        log.warn("Unknown status/resolution %s/%s" %
+        log.warn("Unknown status/resolution %s/%s." %
                  (remote_status, remote_resolution))
         return BugTaskStatus.UNKNOWN
 
@@ -941,7 +941,7 @@ class Trac(ExternalBugTracker):
             except KeyError:
                 # Some Trac instances don't include the bug status in their
                 # CSV exports. In those cases we raise a warning.
-                log.warn("Trac ticket %i defines no status" % bug_id)
+                log.warn("Trac ticket %i defines no status." % bug_id)
                 return UNKNOWN_REMOTE_STATUS
 
     def convertRemoteStatus(self, remote_status):
@@ -964,7 +964,7 @@ class Trac(ExternalBugTracker):
         try:
             return status_map[remote_status]
         except KeyError:
-            log.warn("Unknown status '%s'" % remote_status)
+            log.warn("Unknown remote status '%s'." % remote_status)
             return BugTaskStatus.UNKNOWN
 
 class Roundup(ExternalBugTracker):
@@ -1036,7 +1036,7 @@ class Roundup(ExternalBugTracker):
 
         If the baseurl passed is one which points to bugs.python.org,
         the behaviour of the Roundup bugtracker will be different from
-        that which it exhbits to every other Roundup bug tracker, since
+        that which it exhibits to every other Roundup bug tracker, since
         the Python Roundup instance is very specific to Python and in
         fact behaves rather more like SourceForge than Roundup.
         """
@@ -1072,7 +1072,7 @@ class Roundup(ExternalBugTracker):
                 "&@startwith=0")
 
     def isPython(self):
-        """Return True if the remote bug tracker isi at bugs.python.org.
+        """Return True if the remote bug tracker is at bugs.python.org.
 
         Return False otherwise.
         """
@@ -1171,11 +1171,11 @@ class Roundup(ExternalBugTracker):
             try:
                 return self.status_map[int(remote_status)]
             except (KeyError, ValueError):
-                log.warn("Unknown status '%s'" % remote_status)
+                log.warn("Unknown remote status '%s'." % remote_status)
                 return BugTaskStatus.UNKNOWN
 
     def _convertPythonRemoteStatus(self, remote_status):
-        """See `IExternalBugTracker`.
+        """Convert a Python bug status into a BugTaskStatus.
 
         :remote_status: A bugs.python.org status string in the form
             '<status>:<resolution>', where status is an integer and
@@ -1195,7 +1195,7 @@ class Roundup(ExternalBugTracker):
             # If we can't find the status in our status map we can give
             # up now.
             if not self.status_map.has_key(status):
-                log.warn("Unknown status '%s'" % remote_status)
+                log.warn("Unknown remote status '%s'." % remote_status)
                 return BugTaskStatus.UNKNOWN
         except ValueError:
             raise AssertionError("The remote status must be an integer.")
@@ -1216,6 +1216,6 @@ class Roundup(ExternalBugTracker):
         elif self.status_map[1].has_key(resolution):
             return self.status_map[1][resolution]
         else:
-            log.warn("Unknown status '%s'" % remote_status)
+            log.warn("Unknown remote status '%s'." % remote_status)
             return BugTaskStatus.UNKNOWN
 

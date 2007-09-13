@@ -6,8 +6,6 @@ __metaclass__ = type
 
 import os
 
-from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
-from canonical.launchpad.database import BugTracker
 from canonical.launchpad.components.externalbugtracker import (
     Bugzilla, Mantis, Trac, Roundup)
 
