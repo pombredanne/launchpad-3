@@ -22,8 +22,8 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IHasTranslationImports, IPillarNameSet, ITranslationImportQueue,
-    UnexpectedFormData)
+    IDistribution, IHasTranslationImports, IPillarNameSet,
+    ITranslationImportQueue, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, custom_widget, safe_action)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -246,10 +246,20 @@ class HasTranslationImportsView(LaunchpadFormView):
         if (filter_target_widget is not None and
             filter_target_widget.hasValidInput()):
             target = filter_target_widget.getInputValue()
+            pillar_name_set = getUtility(IPillarNameSet)
             if target == 'all':
                 target = None
+            elif '/' in target:
+                # It's a distroseries, for them we have
+                # 'distribution.name/distroseries.name' to identify it.
+                distribution_name, distroseries_name = target.split('/', 1)
+                pillar = pillar_name_set.getByName(distribution_name)
+                if IDistribution.providedBy(pillar):
+                    target = pillar.getSeries(distroseries_name)
+                else:
+                    raise UnexpectedFormData(
+                        "Got a bad target option %s" % target)
             else:
-                pillar_name_set = getUtility(IPillarNameSet)
                 target = pillar_name_set.getByName(target)
         filter_extension_widget = self.widgets.get('filter_extension')
         if filter_extension_widget.hasValidInput():
@@ -339,7 +349,7 @@ class TranslationImportStatusVocabularyFactory:
     implements(IContextSourceBinder)
 
     def __call__(self, context):
-        terms = [SimpleTerm('all', 'all', 'All')]
+        terms = [SimpleTerm('all', 'all', 'All statuses')]
         for status in RosettaImportStatus.items:
             terms.append(SimpleTerm(status.name, status.name, status.title))
         return SimpleVocabulary(terms)

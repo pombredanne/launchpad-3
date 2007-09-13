@@ -83,6 +83,15 @@ class IArchive(IHasOwner):
         :return: SelectResults containing `IBinaryPackagePublishingHistory`.
         """
 
+    def allowUpdatesToReleasePocket():
+        """Return whether the archive allows publishing to the release pocket.
+
+        If a distroseries is stable, normally release pocket publishings are
+        not allowed.  However some archive types allow this.
+
+        :return: True or False
+        """
+
 class IPPAActivateForm(Interface):
     """Schema used to activate PPAs."""
 
@@ -91,7 +100,7 @@ class IPPAActivateForm(Interface):
         description=_(
         "A short description of contents and goals of this PPA. This text "
         "will be presented in the PPA page and will also allow other users "
-        "to find your PPA int their searches. URLs are allowed and will "
+        "to find your PPA in their searches. URLs are allowed and will "
         "be rendered as links."))
 
     accepted = Bool(
@@ -110,8 +119,8 @@ class IArchiveSet(Interface):
         If purpose is ArchivePurpose.PPA, owner must be set.
         """
 
-    def ensure(owner, distribution, purpose):
-        """Ensure the owner has an valid archive."""
+    def ensure(owner, distribution, purpose, description):
+        """Ensure the owner has a valid archive."""
 
     def get(archive_id):
         """Return the IArchive with the given archive_id."""

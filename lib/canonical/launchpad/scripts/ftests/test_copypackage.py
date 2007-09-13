@@ -8,8 +8,6 @@ import sys
 import unittest
 
 from canonical.config import config
-from canonical.database.sqlbase import (
-    flush_database_updates, clear_current_connection_cache)
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, PackageCopyError, PackageCopier)
@@ -57,8 +55,8 @@ class TestCopyPackageScript(LaunchpadZopelessTestCase):
         self.assertEqual(0, returncode)
 
         # Test that the database has been modified.  We're only checking
-        # that the number of rows has updated by one; content checks are
-        # done in other tests.
+        # that the number of rows has increase; content checks are done
+        # in other tests.
         self.layer.txn.abort()
 
         num_source_pub_after = SecureSourcePackagePublishingHistory.select(
@@ -66,8 +64,9 @@ class TestCopyPackageScript(LaunchpadZopelessTestCase):
         num_bin_pub_after = SecureBinaryPackagePublishingHistory.select(
             "True").count()
 
-        self.assertEqual(num_source_pub+1, num_source_pub_after)
-        self.assertEqual(num_bin_pub+1, num_bin_pub_after)
+        self.assertEqual(num_source_pub + 1, num_source_pub_after)
+        # 'mozilla-firefox' source produced 2 binaries.
+        self.assertEqual(num_bin_pub + 2, num_bin_pub_after)
 
 
 class TestCopyPackage(LaunchpadZopelessTestCase):
@@ -134,9 +133,10 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
             u'mozilla-firefox 0.9 (i386 binary) in ubuntu warty')
 
         # Check stored results.  The copied_source should be valid and
-        # the number of binaries copied should be one.
+        # the number of binaries copied should be four (2 binaries in 2
+        # architectures).
         self.assertEqual(bool(copied_source), True)
-        self.assertEqual(len(copied_binaries), 1)
+        self.assertEqual(len(copied_binaries), 4)
 
         # Inspect copied source, its title should be the same as the original
         # source.

@@ -36,7 +36,7 @@ in sample data.
   <!DOCTYPE...
   ...All targets...
   ...Evolution...
-  ...All...
+  ...All statuses...
   ...Approved...
   ...Imported...
   ...Deleted...
@@ -179,3 +179,43 @@ We can also filter by target. In this case, Evolution.
   >>> print browser.contents
   <!DOCTYPE...
   ...1...5...of...102 results...
+
+Also, we can filter by distro series, to do that, first we need to upload
+something in the queue.
+
+    >>> import transaction
+    >>> from StringIO import StringIO
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
+    ...     'evolution/+pots/evolution-2.2/+upload')
+    >>> file_ctrl = admin_browser.getControl('File:')
+    >>> file_ctrl.add_file(
+    ...     StringIO('foo'), 'application/x-po', 'foo.pot')
+    >>> admin_browser.getControl('Upload').click()
+    >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
+    ...     print extract_text(tag.renderContents())
+    Thank you for your upload. The file content will be imported soon into
+    Launchpad. You can track its status from the Translation Import Queue
+
+    # Commit the transaction so librarian stores the uploaded file.
+    >>> transaction.commit()
+
+Now, main translation import queue page allows you to filter by distribution:
+
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/+imports')
+    >>> user_browser.getControl(
+    ...     name='field.filter_target', index=0).value = ['ubuntu/hoary']
+    >>> user_browser.getControl('Filter').click()
+    >>> print user_browser.url
+    http://translations.launchpad.dev/+imports/+index?field.filter_target=ubuntu/hoary&...
+
+And we only get the entry we just uploaded.
+
+    >>> import_list = find_tag_by_id(
+    ...     user_browser.contents, 'import-entries-list')
+    >>> first_entry = import_list.findNext('tr')
+    >>> print extract_text(first_entry)
+    foo.pot in
+    evolution in Ubuntu Hoary
+    Needs Review

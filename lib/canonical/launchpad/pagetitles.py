@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """This module is used by the Launchpad webapp to determine titles for pages.
 
@@ -103,6 +103,8 @@ archive_admin = ContextTitle('Administer %s')
 
 archive_activate = 'Activate Personal Package Archive'
 
+archive_view_tos = 'Personal Package Archive Terms of Service'
+
 archive_builds = ContextTitle('Builds for %s')
 
 archive_edit = ContextTitle('Edit %s')
@@ -148,6 +150,9 @@ def branch_index(context, view):
             context.displayname, context.author.title)
     else:
         return smartquote('"%s" branch in Launchpad') % (context.displayname)
+
+branch_link_to_bug = ContextDisplayName(smartquote(
+    'Link branch "%s" to a bug report'))
 
 def branch_listing_cross_product(context, view):
     return view.page_title
@@ -263,6 +268,11 @@ bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
 bugtask_choose_affected_product = LaunchbagBugID(
     'Bug #%d - Record as affecting another project')
+
+# This page is used for both projects/distros so we have to say 'software'
+# rather than distro or project here.
+bugtask_confirm_bugtracker_creation = LaunchbagBugID(
+    'Bug #%d - Record as affecting another software')
 
 bugtask_edit = BugTaskPageTitle()
 
@@ -411,7 +421,9 @@ distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
-distributionsourcepackage_index = ContextTitle('%s')
+distrosourcepackage_index = ContextTitle('%s')
+
+distrosourcepackage_publishinghistory = ContextTitle('Publishing history of %s')
 
 distributionsourcepackage_manage_bugcontacts = ContextTitle('Bug contacts for %s')
 
@@ -881,6 +893,8 @@ productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
 products_index = 'Projects registered in Launchpad'
+
+productseries_export = ContextTitle('Download translations for "%s"')
 
 productseries_index = ContextTitle('Overview of %s')
 

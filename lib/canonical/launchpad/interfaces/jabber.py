@@ -31,7 +31,7 @@ class IJabberIDSet(Interface):
 
     def getByJabberID(jabberid, default=None):
         """Return the JabberID with the given jabberid.
-        
+
         Return the default value if not found.
         """
 

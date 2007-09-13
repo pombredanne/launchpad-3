@@ -26,7 +26,7 @@ class ICodeImport(Interface):
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
 
-    # XXX DavidAllouche 2007-07-04: 
+    # XXX DavidAllouche 2007-07-04:
     # Branch should really be readonly, but there is a corner case of the
     # code-import-sync script where we have a need to change it. The readonly
     # parameter should be set back to True after the transition to the new
@@ -105,7 +105,7 @@ class ICodeImportSet(Interface):
             cvs_root=None, cvs_module=None):
         """Create a new CodeImport."""
 
-    # XXX DavidAllouche 2007-07-05: 
+    # XXX DavidAllouche 2007-07-05:
     # newWithId is only needed for code-import-sync-script. This method
     # should be removed after the transition to the new code import system is
     # complete.

@@ -23,6 +23,11 @@
       />
     </content>
 
+    <adapter
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        provides="canonical.launchpad.interfaces.ITranslationFile"
+        factory="canonical.launchpad.database.POTemplateToTranslationFileAdapter" />
+
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="POTemplateNavigation POTemplateSubsetNavigation
@@ -95,6 +100,11 @@
         label="Administer PO template"
         permission="launchpad.Admin"
         template="../templates/potemplate-edit.pt"
+        fields="potemplatename name description header iscurrent owner
+                productseries distroseries sourcepackagename
+                from_sourcepackagename sourcepackageversion binarypackagename
+                languagepack path source_file_format priority
+                date_last_updated"
         />
 
     <browser:page

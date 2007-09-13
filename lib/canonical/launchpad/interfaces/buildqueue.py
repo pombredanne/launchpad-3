@@ -90,26 +90,26 @@ class IBuildQueue(Interface):
     def getLogFileName():
         """Get the preferred filename for the buildlog of this build."""
 
-    def updateBuild_IDLE(slave, build_id, build_status, logtail,
+    def updateBuild_IDLE(build_id, build_status, logtail,
                          filemap, dependencies, logger):
         """Somehow the builder forgot about the build job.
 
         Log this and reset the record.
         """
 
-    def updateBuild_BUILDING(slave, build_id, build_status,
-                             logtail, filemap, dependencies, logger):
+    def updateBuild_BUILDING(build_id, build_status, logtail, filemap,
+                             dependencies, logger):
         """Build still building, collect the logtail"""
 
-    def updateBuild_ABORTING(slave, buildid, build_status,
-                             logtail, filemap, dependencies, logger):
+    def updateBuild_ABORTING(buildid, build_status, logtail, filemap,
+                             dependencies, logger):
         """Build was ABORTED.
 
         Master-side should wait until the slave finish the process correctly.
         """
 
-    def updateBuild_ABORTED(slave, buildid, build_status,
-                            logtail, filemap, dependencies, logger):
+    def updateBuild_ABORTED(buildid, build_status, logtail, filemap,
+                            dependencies, logger):
         """ABORTING process has successfully terminated.
 
         Clean the builder for another jobs.

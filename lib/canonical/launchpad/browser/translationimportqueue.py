@@ -21,7 +21,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.hastranslationimports import (
     HasTranslationImportsView)
 from canonical.launchpad.interfaces import (
-    IEditTranslationImportQueueEntry, ILanguageSet, IPOFileSet,
+    IDistroSeries, IEditTranslationImportQueueEntry, ILanguageSet, IPOFileSet,
     IPOTemplateSet, ITranslationImportQueue, ITranslationImportQueueEntry,
     NotFoundError)
 from canonical.launchpad.webapp import (
@@ -241,5 +241,11 @@ class TranslationImportTargetVocabularyFactory:
 
         terms = [SimpleTerm('all', 'all', 'All targets')]
         for target in targets:
-            terms.append(SimpleTerm(target.name, target.name, target.displayname))
+            if IDistroSeries.providedBy(target):
+                # Distroseries are not pillar names, we need to note
+                # distribution.name/distroseries.name
+                term_name = '%s/%s' % (target.distribution.name, target.name)
+            else:
+                term_name = target.name
+            terms.append(SimpleTerm(term_name, term_name, target.displayname))
         return SimpleVocabulary(terms)
