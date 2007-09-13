@@ -83,43 +83,6 @@ class IdenticalFormatsTestCase(unittest.TestCase):
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatB())))
 
 
-class TestBranchKind(unittest.TestCase):
-    """Test cases for methods used to classify branches."""
-
-    def iterSampleBranches(self):
-        sample_urls = [
-            'http://escudero.ubuntu.com:680/0000000e', # import branch
-            'http://example.com/gnome-terminal/main', # mirror branch
-            '/tmp/sftp-test/branches/00/00/00/19', # upload branch
-            ]
-        for source in sample_urls:
-            yield branchtomirror.BranchToMirror(
-                src=source, dest=None,
-                branch_status_client=None, branch_id=None,
-                branch_unique_name=None, branch_type=None)
-
-    def testIsUploadBranch(self):
-        # isUploadBranch is true if and only if the source url is that of an
-        # upload branch.
-        is_upload_values = [branch_to_mirror.isUploadBranch()
-            for branch_to_mirror in self.iterSampleBranches()]
-        self.assertEqual(is_upload_values, [False, False, True])
-
-    def testIsMirrorBranch(self):
-        # isMirrorBranch is true if and only if the source url is that of a
-        # mirror branch.
-        is_mirror_values = [branch_to_mirror.isMirrorBranch()
-            for branch_to_mirror in self.iterSampleBranches()]
-        self.assertEqual(is_mirror_values, [False, True, False])
-
-    def testIsImportBranch(self):
-        # isImportBranch is true if and only if the source url is that of an
-        # import branch.
-        is_import_values = [branch_to_mirror.isImportBranch()
-            for branch_to_mirror in self.iterSampleBranches()]
-        self.assertEqual(is_import_values, [True, False, False])
-
-
 class TestCanonicalUrl(unittest.TestCase):
     """Test cases for rendering the canonical url of a branch."""
 

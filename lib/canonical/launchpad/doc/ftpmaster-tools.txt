@@ -1,4 +1,4 @@
-FTPMASTER Tools
+= FTPMASTER Tools = 
 
 Queue Tool is a script designed to handle queue content.
 This test  will check its output, since the script itself would
@@ -367,8 +367,8 @@ only the 0.9 version is overridden:
   >>> warty386 = getUtility(IDistributionSet)['ubuntu']['warty']['i386']
   >>> for release in warty386.getBinaryPackage('mozilla-firefox').releases:
   ...     (release.version, release.component.name)
-  (u'1.0', u'main')
-  (u'0.9', u'universe')
+  (u'1.0', u'universe')
+  (u'0.9', u'main')
 
 
 Testing full (source and binary) override of package 'pmount', moving
@@ -388,6 +388,7 @@ to component 'main':
   INFO    Override Component to: 'main'
   INFO    Override Section to: 'editors'
   INFO    'pmount/main/editors' source overridden
+  WARNING 'pmount' has no binaries published in hoary
   INFO    Commiting transaction, changes will be visible after next publisher run.
   <BLANKLINE>
 

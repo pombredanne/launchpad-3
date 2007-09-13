@@ -58,7 +58,7 @@ Now run a search for mozilla-firefox and check that it is found:
   '...mozilla-firefox...0.9...'
   >>> binaries=find_tag_by_id(browser.contents, 'binaries')
   >>> extract_text(binaries).strip()
-  u'mozilla-firefox'
+  u'mozilla-firefox\nmozilla-firefox\nmozilla-firefox-data'
 
 Follow the link to the binaries page and make sure it's the right binary.
 
