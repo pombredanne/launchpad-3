@@ -71,10 +71,11 @@ class BranchToMirror:
         if self.source.startswith('/'):
             return
         uri = URI(self.source)
+        launchpad_domain = config.launchpad.vhosts.mainsite.hostname
+        if uri.underDomain(launchpad_domain):
+            raise BadUrlLaunchpad(self.source)
         if uri.scheme in ['sftp', 'bzr+ssh']:
             raise BadUrlSsh(self.source)
-        if uri.host == 'launchpad.net' or uri.host.endswith('.launchpad.net'):
-            raise BadUrlLaunchpad(self.source)
 
     def _openSourceBranch(self):
         """Open the branch to pull from, useful to override in tests."""
@@ -245,17 +246,3 @@ class BranchToMirror:
     def __repr__(self):
         return ("<BranchToMirror source=%s dest=%s at %x>" %
                 (self.source, self.dest, id(self)))
-
-    def isUploadBranch(self):
-        """Whether this branch is pulled from the private SFTP area."""
-        upload_source_prefix = config.codehosting.branches_root
-        return self.source.startswith(upload_source_prefix)
-
-    def isImportBranch(self):
-        """Whether this branch is pulled from importd."""
-        import_source_prefix = config.launchpad.bzr_imports_root_url
-        return self.source.startswith(import_source_prefix)
-
-    def isMirrorBranch(self):
-        """Whether this branch is pulled from the internet."""
-        return not self.isUploadBranch() and not self.isImportBranch()

@@ -63,6 +63,7 @@ class SvnSanityTestCase(helpers.JobTestCase):
         up a SVNStrategy instance usable for unit-testing internal methods.
         """
         job = self.makeTestingSvnJob(svn_url)
+        job.autotest = True # Sanity check is only enabled on autotest.
         strategy = SVNStrategy()
         strategy.job = job
         strategy.aJob = job
@@ -103,10 +104,19 @@ class TestSvnSanity(SvnSanityTestCase):
     def testSanityIsOverriddenFalse(self):
         # SvnStrategy._sanityIsOverridden returns false for an URL not in the
         # exception list
-        not_whitelisted_url = 'svn://example.com/trunk'
+        not_whitelisted_url = 'svn://example.com/bogus'
         strategy = self.makeTestingSvnStrategy(not_whitelisted_url)
         self.assertFalse(not_whitelisted_url in strategy._svn_url_whitelist)
         self.assertFalse(strategy._sanityIsOverridden())
+
+    def testSanityIsOverriddenIfNotAutotest(self):
+        # SvnStrategy._sanityIsOverridden returns true if the job is not run on
+        # autotest.
+        not_whitelisted_url = 'svn://example.com/bogus'
+        strategy = self.makeTestingSvnStrategy(not_whitelisted_url)
+        strategy.job.autotest = False
+        self.assertFalse(not_whitelisted_url in strategy._svn_url_whitelist)
+        self.assertTrue(strategy._sanityIsOverridden())
 
     def testSanityIsOverriddenTrue(self):
         # SvnStrategy._sanityIsOverridden returns true for an URL in the

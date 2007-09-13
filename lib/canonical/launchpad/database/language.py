@@ -38,9 +38,23 @@ class Language(SQLBase):
         'Person', joinColumn="language",
         intermediateTable='Translator', otherColumn='translator')
 
-    countries = SQLRelatedJoin(
+    _countries = SQLRelatedJoin(
         'Country', joinColumn='language', otherColumn='country',
         intermediateTable='SpokenIn')
+
+    # Define a read/write property `countries` so it can be passed
+    # to language administration `LaunchpadFormView`.
+    def _getCountries(self):
+        return self._countries
+
+    def _setCountries(self, countries):
+        for country in self._countries:
+            if country not in countries:
+                self.removeCountry(country)
+        for country in countries:
+            if country not in self._countries:
+                self.addCountry(country)
+    countries = property(_getCountries, _setCountries)
 
     @property
     def displayname(self):

@@ -550,7 +550,7 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
             # There's a person assigned to fix this task, so show that
             # information too.
             bug_info.append(
-                u"     Assignee: %s" % bugtask.assignee.displayname)
+                u"     Assignee: %s" % bugtask.assignee.unique_displayname)
         bug_info.append(u"         Status: %s\n" % bugtask.status.title)
 
     if bug.tags:
@@ -752,9 +752,11 @@ def get_bug_edit_notification_texts(bug_delta):
                 oldval_display = u"(unassigned)"
                 newval_display = u"(unassigned)"
                 if bugtask_delta.assignee.get('old'):
-                    oldval_display = bugtask_delta.assignee['old'].browsername
+                    oldval_display = (
+                        bugtask_delta.assignee['old'].unique_displayname)
                 if bugtask_delta.assignee.get('new'):
-                    newval_display = bugtask_delta.assignee['new'].browsername
+                    newval_display = (
+                        bugtask_delta.assignee['new'].unique_displayname)
 
                 changerow = (
                     u"%(label)13s: %(oldval)s => %(newval)s\n" % {
@@ -792,8 +794,8 @@ def get_bug_edit_notification_texts(bug_delta):
                 added_bugtask.importance.title)
             if added_bugtask.assignee:
                 assignee = added_bugtask.assignee
-                change_info += u"%13s: %s <%s>\n" % (
-                    u"Assignee", assignee.name, assignee.preferredemail.email)
+                change_info += u"%13s: %s\n" % (u"Assignee",
+                    assignee.unique_displayname)
             change_info += u"%13s: %s" % (
                 u"Status", added_bugtask.status.title)
             changes.append(change_info)

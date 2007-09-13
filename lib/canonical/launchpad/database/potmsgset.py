@@ -76,7 +76,7 @@ class POTMsgSet(SQLBase):
         format_importer = getUtility(
             ITranslationImporter).getTranslationFormatImporter(
                 self.potemplate.source_file_format)
-        if format_importer.has_alternative_msgid:
+        if format_importer.uses_source_string_msgids:
             # This format uses English translations as the way to store the
             # singular_text.
             pomsgset = self.getPOMsgSet('en')

@@ -233,13 +233,6 @@ class ShipItRequestView(GeneralFormView):
         return [getattr(self, field_name + '_widget')
                 for field_name in self.quantity_fields_mapping.values()]
 
-    def currentOrderIsCustom(self):
-        """Return True if the current order contains custom quantities of CDs
-        of self.flavour.
-        """
-        return self.current_order.containsCustomQuantitiesOfFlavour(
-            self.flavour)
-
     def _setUpWidgets(self, context=None):
         # First we set up the standard widgets
         setUpWidgets(
