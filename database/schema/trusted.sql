@@ -9,7 +9,7 @@ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
     import re
     name = args[0]
-    pat = r"^[a-z0-9][a-z0-9\+\.\-]*$"
+    pat = r"^[a-z0-9][a-z0-9\+\.\-]*\Z"
     if re.match(pat, name):
         return 1
     return 0
@@ -32,7 +32,7 @@ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
     import re
     name = args[0]
-    pat = r"^(?i)[a-z0-9][a-z0-9+\.\-@_]+$"
+    pat = r"^(?i)[a-z0-9][a-z0-9+\.\-@_]*\Z"
     if re.match(pat, name):
         return 1
     return 0

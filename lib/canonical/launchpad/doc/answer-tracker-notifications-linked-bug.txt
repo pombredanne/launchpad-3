@@ -5,8 +5,7 @@ of changes to the bug status:
 
     >>> from zope.event import notify
     >>> from zope.interface import providedBy
-    >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces import BugTaskStatus, IPersonSet
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
 

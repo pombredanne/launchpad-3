@@ -38,7 +38,7 @@ But if we marked the bug as fixed in the other, the count will increase
 by one.
 
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> elsewhere.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> syncUpdate(elsewhere)
