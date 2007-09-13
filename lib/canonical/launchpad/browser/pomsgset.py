@@ -40,8 +40,8 @@ from canonical.launchpad.browser.potemplate import (
     POTemplateFacets, POTemplateSOP)
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
-    ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
-    IPOSubmissionSet, TranslationConflict)
+    ILanguageSet, ILaunchBag, IPOFileAlternativeLanguage,
+    IPOMsgSetSuggestions, IPOSubmissionSet, TranslationConflict)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Link, LaunchpadView, canonical_url)
 from canonical.launchpad.webapp import urlparse
@@ -616,6 +616,18 @@ class BaseTranslationView(LaunchpadView):
                 # XXX: kiki 2006-09-28: Should this be UnexpectedFormData too?
                 second_lang_code = None
             else:
+                user = getUtility(ILaunchBag).user
+                if alternative_language is not None and user is not None:
+                    choices = set(user.translatable_languages)
+                    if choices and alternative_language not in choices:
+                        self.request.response.addInfoNotification(
+                            u"Not showing suggestions from selected "
+                            "alternative language %s.  If you wish to see "
+                            "suggestions from this language, add it to your "
+                            "preferred languages first."
+                            % alternative_language.displayname)
+                        alternative_language = None
+                        second_lang_code = None
                 initial_values['alternative_language'] = alternative_language
 
         self.alternative_language_widget = CustomWidgetFactory(

@@ -4,10 +4,6 @@ The translation forms allow the user to select an alternative language.  The
 form will suggest translations from this alternative language as well as those
 in the form's main language.
 
-An anonymous user is offered all available languages except English for
-alternative suggestions.  We do not offer suggestions from standard English
-since that is the one language we always translate from, never to.
-
     >>> def get_alternative_languages_widget(browser):
     ...     """Check and return alternative languages widget offered on page.
     ...
@@ -28,6 +24,10 @@ since that is the one language we always translate from, never to.
     ...
     ...     return browser.getControl(
     ...         name='field.alternative_language')
+
+An anonymous user is offered all available languages except English for
+alternative suggestions.  We do not offer suggestions from standard English
+since that is the one language we always translate from, never to.
 
     >>> translate_page = (
     ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
@@ -77,14 +77,60 @@ The Spanish translations now show up as suggestions.  For example, where
 "cards" might translate to Catalan as "targetas," the Spanish equivalent is
 "tarjetas."
 
-    >>> extract_text(find_main_content(browser.contents))
-    u'Template "evolution-2.2" in Ubuntu Hoary package "evolution"...
-    ...cards...
-    ...Current...Catalan:...(no translation yet)...tarjetas...
-    ...'
+    >>> print extract_text(find_main_content(browser.contents))
+    Template "evolution-2.2" in Ubuntu Hoary package "evolution"
+    Translating into Catalan
+    ...
+    English: cards
+    ...
+    Current Catalan: (no translation yet)
+    Suggestions:
+    ...
+    tarjetas
+    Spanish
+    ...
 
-    tarjetas Spanish volution-2.2 in Ubuntu Hoary package "evolution"
-    ...'
+Carlos may also attempt to request a page with suggestions from another
+language that is not in his preferred-languages list.  He may have clicked on
+a link produced by someone else, or generate or edit his URLs, or simply be
+coming from a cached page or outdated bookmark.  In this case the language is
+Japanese (ja).
+
+    >>> browser.open(translate_page +
+    ...     "?field.alternative_language=ja&field.alternative_language-empty-marker=1&select_alternate_language=Change")
+
+This leads to a subtle technical problem as the alternative-language dropdown
+would have to be initialized to a language that wasn't in its list of items.
+To avoid that, the page omits the suggestions.  It does warn Carlos that the
+suggestions will be shown only if he adds Japanese to his preferred languages
+first.
+
+    >>> for message in get_feedback_messages(browser):
+    ...     print message
+    Not showing suggestions from selected alternative language Japanese (ja).
+    If you wish to see suggestions from this language, add it to your
+    preferred languages first.
+
+This distinction between alternative languages from the user's preferred set
+and other alternative languages does not exist, of course, if no preferred
+languages are defined.  Suggestions just work for anonymous users.
+
+    >>> anon_browser.open(re.sub('/es/', '/ca/', translate_page))
+    >>> anon_browser.getControl('Spanish (es)').selected = True
+    >>> anon_browser.getControl(name='select_alternate_language').click()
+
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Template "evolution-2.2" in Ubuntu Hoary package "evolution"
+    Browsing Catalan translation
+    ...
+    English: cards
+    ...
+    Current Catalan: (no translation yet)
+    Suggestions:
+    ...
+    tarjetas
+    Spanish
+    ...
 
 
 == Filtering & Navigation ==
@@ -132,3 +178,4 @@ UnexpectedFormData exception:
     Traceback (most recent call last):
     ...
     UnexpectedFormData: You specified...
+
