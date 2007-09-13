@@ -5,8 +5,7 @@ single Launchpad project or within all projects.
 
 We go to the blueprints index page, and search for specifications with
 the string `svg` in their name and title in all projects.
-    ...Support Native SVG Objects
-    ...
+
     >>> browser.open('http://blueprints.launchpad.dev/')
     >>> browser.getControl(name='field.search_text').value = 'svg'
     >>> browser.getControl(name='field.scope').value = ['all']
@@ -40,6 +39,10 @@ possible for a client to request the results directly (for example, if
 the client is a robot, and is not interacting with the form we set up).
 If no value is supplied for the scope parameter, we assume that the
 client wanted to search all projects.
+
+We request a URL with the search text `svg` and no scope parameter. We
+can expect the search to be performed over all projects, just like when
+selecting the `all` scope.
 
     >>> browser.open('http://blueprints.launchpad.dev/specs?'
     ...     'field.actions.search=Find+Blueprints&field.scope.target='
