@@ -20,10 +20,10 @@ from zope.interface import implements
 from canonical.config import config
 from canonical import encoding
 from canonical.database.constants import UTC_NOW
-from canonical.lp.dbschema import BugTrackerType, BugTaskStatus
+from canonical.lp.dbschema import BugTrackerType
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
-    IExternalBugtracker, UNKNOWN_REMOTE_STATUS)
+    BugTaskStatus, IExternalBugtracker, UNKNOWN_REMOTE_STATUS)
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (http://bugs.launchpad.net/)"
@@ -138,11 +138,16 @@ class ExternalBugTracker:
         The bug is returned as a tuple in the form (id, bug). This ensures
         that bug ids are formatted correctly for the current
         ExternalBugTracker.
+
+        A BugTrackerConnectError will be raised if anything goes wrong.
         """
         raise NotImplementedError(self.getRemoteBug)
 
     def getRemoteBugBatch(self, bug_ids):
-        """Retrieve and return a set of bugs from the remote database."""
+        """Retrieve and return a set of bugs from the remote database.
+
+        A BugTrackerConnectError will be raised if anything goes wrong.
+        """
         raise NotImplementedError(self.getRemoteBugBatch)
 
     def getRemoteStatus(self, bug_id):
@@ -1082,8 +1087,37 @@ class Trac(ExternalBugTracker):
             # assume that CSV exports of single tickets aren't supported.
             return False
 
+    def getRemoteBug(self, bug_id):
+        """See `ExternalBugTracker`.""" 
+        bug_id = int(bug_id)
+        query_url = "%s/%s" % (self.baseurl, self.ticket_url % bug_id)
+        reader = csv.DictReader(self._fetchPage(query_url))
+        return (bug_id, reader.next())
+
+    def getRemoteBugBatch(self, bug_ids):
+        """See `ExternalBugTracker`."""
+        id_string = '&'.join(['id=%s' % id for id in bug_ids])
+        query_url = "%s/%s" % (self.baseurl, self.batch_url % id_string)
+        remote_bugs = csv.DictReader(self._fetchPage(query_url))
+
+        bugs = {}
+        for remote_bug in remote_bugs:
+            # We're only interested in the bug if it's one of the ones in
+            # bug_ids, just in case we get all the tickets in the Trac
+            # instance back instead of only the ones we want.
+            if remote_bug['id'] not in bug_ids:
+                continue
+
+            bugs[int(remote_bug['id'])] = remote_bug
+
+        return bugs
+
     def initializeRemoteBugDB(self, bug_ids):
-        """Do any initialization before each bug watch is updated.
+        """See `ExternalBugTracker`.
+
+        This method overrides ExternalBugTracker.initializeRemoteBugDB()
+        so that the remote Trac instance's support for single ticket
+        exports can be taken into account.
 
         If the URL specified for the bugtracker is not valid a
         BugTrackerConnectError will be raised.
@@ -1099,38 +1133,13 @@ class Trac(ExternalBugTracker):
             for bug_id in bug_ids:
                 # If we can't get the remote bug for any reason a
                 # BugTrackerConnectError will be raised at this point.
-                # We don't use _getPage at this point for the simple reason
-                # that it doesn't return a file-like object, so we can't use
-                # the csv module's helpful DictReader on its output.
-                bug_id = int(bug_id)
-                try:
-                    csv_data = self.urlopen(
-                        "%s/%s" % (self.baseurl, self.ticket_url % bug_id))
-                except (urllib2.HTTPError, urllib2.URLError), val:
-                    raise BugTrackerConnectError(self.baseurl, val)
-
-                reader = csv.DictReader(csv_data)
-                self.bugs[bug_id] = reader.next()
+                remote_id, remote_bug = self.getRemoteBug(bug_id)
+                self.bugs[remote_id] = remote_bug
 
         # For large lists of bug ids we retrieve bug statuses as a batch from
         # the remote bug tracker so as to avoid effectively DOSing it.
         else:
-            id_string = '&'.join(['id=%s' % id for id in bug_ids])
-            query_url = "%s/%s" % (self.baseurl, self.batch_url % id_string)
-            try:
-                csv_data = self.urlopen(query_url)
-            except (urllib2.HTTPError, urllib2.URLError), val:
-                raise BugTrackerConnectError(query_url, val)
-
-            remote_bugs = csv.DictReader(csv_data)
-            for remote_bug in remote_bugs:
-                # We're only interested in the bug if it's one of the ones in
-                # bug_ids, just in case we get all the tickets in the Trac
-                # instance back instead of only the ones we want.
-                if remote_bug['id'] not in bug_ids:
-                    continue
-
-                self.bugs[int(remote_bug['id'])] = remote_bug
+            self.bugs = self.getRemoteBugBatch(bug_ids)
 
     def getRemoteStatus(self, bug_id):
         """Return the remote status for the given bug id.

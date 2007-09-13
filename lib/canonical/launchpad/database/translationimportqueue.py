@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd. All rights reserved.
+# Copyright 2005-2007 Canonical Ltd. All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -575,22 +575,35 @@ class TranslationImportQueue:
             contentType=format_importer.content_type)
 
         # Check if we got already this request from this user.
+        queries = ['TranslationImportQueueEntry.path = %s' % sqlvalues(path)]
+        queries.append(
+            'TranslationImportQueueEntry.importer = %s' % sqlvalues(importer))
+        if potemplate is not None:
+            queries.append(
+                'TranslationImportQueueEntry.potemplate = %s' % sqlvalues(
+                    potemplate))
+        if pofile is not None:
+            queries.append(
+                'TranslationImportQueueEntry.pofile = %s' % sqlvalues(pofile))
         if sourcepackagename is not None:
             # The import is related with a sourcepackage and a distribution.
-            entry = TranslationImportQueueEntry.selectOne(
-                "TranslationImportQueueEntry.path = %s AND"
-                " TranslationImportQueueEntry.importer = %s AND"
-                " TranslationImportQueueEntry.sourcepackagename = %s AND"
-                " TranslationImportQueueEntry.distrorelease = %s" % sqlvalues(
-                    path, importer.id, sourcepackagename.id, distroseries.id)
-                )
+            queries.append(
+                'TranslationImportQueueEntry.sourcepackagename = %s' % (
+                    sqlvalues(sourcepackagename)))
+            queries.append(
+                'TranslationImportQueueEntry.distrorelease = %s' % sqlvalues(
+                    distroseries))
         else:
-            entry = TranslationImportQueueEntry.selectOne(
-                "TranslationImportQueueEntry.path = %s AND"
-                " TranslationImportQueueEntry.importer = %s AND"
-                " TranslationImportQueueEntry.productseries = %s" % sqlvalues(
-                    path, importer.id, productseries.id)
-                )
+            # The import is related with a productseries.
+            assert productseries is not None, (
+                'sourcepackagename and productseries cannot be both None at'
+                ' the same time.')
+
+            queries.append(
+                'TranslationImportQueueEntry.productseries = %s' % sqlvalues(
+                    productseries))
+
+        entry = TranslationImportQueueEntry.selectOne(' AND '.join(queries))
 
         if entry is not None:
             # It's an update.

@@ -1245,7 +1245,7 @@ Bug contacts can set some restricted statuses:
 
 Everyone else gets an explanatory error message:
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> upstream_task.transitionToStatus(BugTaskStatus.NEW, email_user)
 
     >>> login('foo.bar@canonical.com')
@@ -1471,7 +1471,7 @@ The user is a distribution member
     1
     >>> print bug_notification.message.text_contents
     ** Changed in: mozilla-firefox (Ubuntu)
-        Assignee: No Privileges Person => Sample Person
+        Assignee: No Privileges Person (no-priv) => Sample Person (name12)
     ...
 
 
