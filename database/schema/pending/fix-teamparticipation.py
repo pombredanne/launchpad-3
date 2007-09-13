@@ -32,8 +32,8 @@ while batch:
             try:
                 path = person.findPathToTeam(team)
             except AssertionError, e:
-                print str(e)
-                print "*****removing this indirect membership*****"
+                print ("Removing TeamParticipation entry for %s on %s"
+                       % (person.unique_displayname, team.unique_displayname))
                 tp = TeamParticipation.selectOneBy(person=person, team=team)
                 tp.destroySelf()
         ztm.commit()
