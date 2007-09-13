@@ -623,11 +623,11 @@ class TestCheckBranchReference(unittest.TestCase):
         true and the source URL points to a branch reference to a remote
         location.
         """
+        self.can_traverse_references = True
         self.setUpReferences([
             'http://example.com/reference',
             'http://example.com/branch',
             None])
-        self.can_traverse_references = True
         self.branch._checkBranchReference() # This must not raise.
         self.assertGetBranchReferenceCallsEqual([
             'http://example.com/reference', 'http://example.com/branch'])
@@ -637,10 +637,10 @@ class TestCheckBranchReference(unittest.TestCase):
         _canTraverseReferences is true and the source url points to a 'file'
         branch reference.
         """
+        self.can_traverse_references = True
         self.setUpReferences([
             'http://example.com/reference',
             'file://local/branch'])
-        self.can_traverse_references = True
         self.assertRaises(
             BranchReferenceValueError, self.branch._checkBranchReference)
         self.assertGetBranchReferenceCallsEqual([
@@ -650,10 +650,10 @@ class TestCheckBranchReference(unittest.TestCase):
         """_checkBranchReference raise BranchReferenceLoopError if
         _canTraverseReferences is true and the source url points to a
         self-referencing branch."""
+        self.can_traverse_references = True
         self.setUpReferences([
             'http://example.com/reference',
             'http://example.com/reference'])
-        self.can_traverse_references = True
         self.assertRaises(
             BranchReferenceLoopError, self.branch._checkBranchReference)
         self.assertGetBranchReferenceCallsEqual([
@@ -663,11 +663,11 @@ class TestCheckBranchReference(unittest.TestCase):
         """_checkBranchReference raises BranchReferenceLoopError if
         _canTraverseReferences is true and the source url points to a loop of
         branch references."""
+        self.can_traverse_references = True
         self.setUpReferences([
             'http://example.com/reference-1',
             'http://example.com/reference-2',
             'http://example.com/reference-1'])
-        self.can_traverse_references = True
         self.assertRaises(
             BranchReferenceLoopError, self.branch._checkBranchReference)
         self.assertGetBranchReferenceCallsEqual([
