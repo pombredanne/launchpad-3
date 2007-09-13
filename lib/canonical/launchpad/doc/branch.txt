@@ -928,8 +928,8 @@ products that belong to a given project.
 
 Filtering by status must work here too.
 
-Since the branches for the Mozilla project in the sample data do not have
-useful statuses, we set them here.
+We update the branches for the Mozilla project in the sample data to use a
+variety of different statuses, so that we can demonstrate filtering by status.
 
     >>> def setMultipleStatus(branch_status_pairs):
     ...     for unique_name, new_status_name in branch_status_pairs:
