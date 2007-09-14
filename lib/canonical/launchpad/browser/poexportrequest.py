@@ -81,5 +81,8 @@ class BaseExportView(LaunchpadView):
                 default_format))
         for exporter in exporters:
             format = exporter.format
-            is_default = (format == default_format)
+            if format == default_format:
+                is_default = True
+            else:
+                is_default = False
             yield BrowserFormat(format.title, format.name, is_default)

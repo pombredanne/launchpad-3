@@ -88,6 +88,23 @@ class TranslationImporterTestCase(unittest.TestCase):
         self.failUnless(xpi_format_importer is not None, (
             'There is no importer for XPI file format!'))
 
+    def testGetTranslationFileFormatByFileExtension(self):
+        """Checked whether file format precedence works correctly."""
+
+        po_format = (
+            self.translation_importer.getTranslationFileFormatByFileExtension(
+                ".po", u""))
+
+        self.failUnless(po_format==TranslationFileFormat.PO, (
+            'Regular PO file is not recognized as such!'))
+
+        kde_po_format = (
+            self.translation_importer.getTranslationFileFormatByFileExtension(
+                ".po", u'msgid "_: kde context\nmessage"\nmsgstr ""'))
+
+        self.failUnless(kde_po_format==TranslationFileFormat.KDEPO, (
+            'KDE PO file is not recognized as such!'))
+
     def testFileExtensionsWithImporters(self):
         """Check whether we get the right list of file extensions handled."""
         self.assertEqual(

@@ -80,7 +80,7 @@ class TranslationImporter:
         for importer in importers.itervalues():
             file_extensions.extend(importer.file_extensions)
 
-        return sorted(file_extensions)
+        return sorted(set(file_extensions))
 
     def getTranslationFileFormatByFileExtension(self, file_extension, content):
         """See `ITranslationImporter`."""
@@ -90,7 +90,7 @@ class TranslationImporter:
                     if (format ==
                         importers[try_first_format].try_this_format_before):
                         return importers[try_first_format].format(content)
-                return importer.format(content)
+                return importers[format].format(content)
 
         return None
 

@@ -18,7 +18,6 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import ITranslationFormatImporter
-from canonical.launchpad.translationformat.gettext_po_parser import POParser
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.lp.dbschema import TranslationFileFormat
@@ -37,12 +36,13 @@ class KdePOImporter(GettextPOImporter):
         # and with extremely big PO files, this will be too slow).  Thus,
         # a heuristic verified to be correct on all PO files from
         # Ubuntu language packs.
-        if ("""msgid "_n: """ in content or
-            """msgid ""\n"_n: """ in content or
-            """msgid "_: """ in content or
-            """msgid ""\n"_: """ in content):
+        if (u'msgid "_n: ' in content or
+            u'msgid ""\n"_n: ' in content or
+            u'msgid "_: ' in content or
+            u'msgid ""\n"_: ' in content):
             return TranslationFileFormat.KDEPO
-        return TranslationFileFormat.PO
+        else:
+            return TranslationFileFormat.PO
 
     @property
     def try_this_format_before(self):

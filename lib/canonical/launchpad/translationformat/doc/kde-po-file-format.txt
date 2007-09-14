@@ -10,10 +10,9 @@ Such features include plural forms support and context support.
 
     >>> from zope.app import datetimeutils
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.launchpad.interfaces import ITranslationImportQueue
-    >>> from canonical.launchpad.interfaces import IPersonSet, IProductSet
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from canonical.launchpad.interfaces import IPOTemplateNameSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IPOTemplateNameSet, IPersonSet,
+    ...	    IProductSet, ITranslationImportQueue)
     >>> from canonical.launchpad.database import (
     ...     POTemplateSubset, SourcePackageName)
     >>> from canonical.launchpad.scripts.po_import import (
@@ -22,6 +21,7 @@ Such features include plural forms support and context support.
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
+    >>> ISO_FORMATTED_DATE = datetime.datetime.now(UTC).isoformat()
 
 We need this for the Librarian to work properly.
 
@@ -41,13 +41,19 @@ Here's a fake logger to capture any errors that happen.
 
     >>> from canonical.launchpad.scripts import FakeLogger
 
-This is a function for importing a pofile or potemplate from a string,
-printing out the import status after import is done.
+To ease the pain of importing many files during testing, lets introduce
+a helper function to import either a PO file or a PO template from the string
+with the contents of the file.
 
     >>> def import_pofile_or_potemplate(file_contents, person, series,
     ...                                 pofile=None, potemplate=None):
+    ...     """Import a `POFile` or `POTemplate` from the string.
+    ...
+    ...	    If pofile is None, it imports a potemplate.
+    ...	    Returns `TranslationImportQueueEntry` as added to the import queue.
+    ...	    """
     ...     translation_import_queue = getUtility(ITranslationImportQueue)
-    ...     if pofile:
+    ...     if pofile is not None:
     ...         entry = translation_import_queue.addOrUpdateEntry(
     ...             pofile.path, file_contents, True, person,
     ...             productseries=series, pofile=pofile)
@@ -58,11 +64,10 @@ printing out the import status after import is done.
     ...     transaction.commit()
     ...     entry.status = RosettaImportStatus.APPROVED
     ...     syncUpdate(entry)
-    ...     if pofile:
+    ...     if pofile is not None:
     ...         pofile.importFromQueue(FakeLogger())
     ...     else:
     ...         potemplate.importFromQueue(FakeLogger())
-    ...     print entry.status.name
     ...     return entry
 
 We'll be doing all our imports into Firefox trunk as
@@ -97,13 +102,14 @@ sets the format to regular PO if it's not a KDE style file.
     ...
     ... msgid "foo"
     ... msgstr ""
-    ... ''' % datetime.datetime.now(UTC).isoformat()
+    ... ''' % ISO_FORMATTED_DATE
 
 Importing this file works, but the format is set to Gettext PO.
 
     >>> entry = import_pofile_or_potemplate(non_kde_template, carlos,
     ...                                     firefox_trunk,
     ...                                     potemplate=firefox_potemplate)
+    >>> print entry.status.name
     IMPORTED
     >>> print entry.format.title
     PO format
@@ -131,7 +137,7 @@ message is preceded with '_n: '.
     ... #, c-format
     ... msgid "_n: %%d foo\n%%d foos"
     ... msgstr ""
-    ... ''' % datetime.datetime.now(UTC).isoformat()
+    ... ''' % ISO_FORMATTED_DATE
 
 And strangely, importing this file actually works, and format is changed
 to KDE PO format.
@@ -139,6 +145,7 @@ to KDE PO format.
     >>> entry = import_pofile_or_potemplate(plural_forms_template, carlos,
     ...                                     firefox_trunk,
     ...                                     potemplate=firefox_potemplate)
+    >>> print entry.status.name
     IMPORTED
     >>> print entry.format.title
     KDE PO format
@@ -162,8 +169,8 @@ plural with a newline.
     >>> print potmsgset.msgid_plural
     %d foos
 
-For translations, specially formatted msgstr is used to hold all plural forms.
-They are simply newline-separated strings.
+For translations, a specially formatted msgstr is used to hold all plural
+forms. They are simply newline-separated strings.
 
     >>> firefox_serbian_pofile = firefox_potemplate.newPOFile('sr')
     >>> firefox_serbian_pofile.path='sr.po'
@@ -173,17 +180,22 @@ They are simply newline-separated strings.
     ... "POT-Creation-Date: 2004-07-11 16:16+0900\n"
     ... "Content-Type: text/plain; charset=CHARSET\n"
     ... "Language: Serbian\n"
-    ... "Plural-Forms: nplurals=3; plural=(n%%10==1 && n%%100!=11 ? 0 : n%%10>=2 && n%%10<=4 && (n%%100<10 || n%%100>=20) ? 1 : 2);\n"
+    ... "Plural-Forms: nplurals=3; plural=(n%%10==1 && n%%100!=11 ? 0 : "
+    ... "n%%10>=2 && n%%10<=4 && (n%%100<10 || n%%100>=20) ? 1 : 2);\n"
     ... "X-Launchpad-Export-Date: %s\n"
     ...
-    ... # This is not considered a plural forms message
+    ... # This is not considered a plural forms message because of a missing 
+    ... # space in '_n: '.
     ... msgid "_n:bar\nbars"
     ... msgstr "non-plural forms message"
     ...
+    ... # "c-format" flag enforces printf-specifiers checking, so we use that
+    ... # to make sure import doesn't fail on a differing number of specifiers
+    ... # in a msgid and in a msgstr.
     ... #, c-format
     ... msgid "_n: %%d foo\n%%d foos"
     ... msgstr "%%d translation\n%%d translationes\n%%d translations"
-    ... ''' % datetime.datetime.now(UTC).isoformat()
+    ... ''' % ISO_FORMATTED_DATE
 
 Importing this file succeeds, even if the number of %d printf specifications
 doesn't match: this is because this is now specially handled with KDE PO format
@@ -192,6 +204,7 @@ support.
     >>> entry = import_pofile_or_potemplate(firefox_serbian_pofile_contents,
     ...                                     carlos, firefox_trunk,
     ...                                     pofile=firefox_serbian_pofile)
+    >>> print entry.status.name
     IMPORTED
     >>> print entry.format.title
     KDE PO format
@@ -220,12 +233,12 @@ Lets define a helper function for the exports.
     ...
     ...     translation_exporter = getUtility(ITranslationExporter)
     ...     translation_format_exporter = (
-    ...         translation_exporter.getTranslationFormatExporterByFileFormat(
+    ...         translation_exporter.getExporterProducingTargetFileFormat(
     ...             format))
     ...     requested_file = ITranslationFile(translation_file)
     ...     exported_file = translation_format_exporter.exportTranslationFiles(
     ...         [requested_file])
-    ...     return removeAllProxies(exported_file.content_file).read()
+    ...     return removeAllProxies(exported_file)._content_file.read()
 
 Template export turns it back into a KDE-style PO file:
 
@@ -333,13 +346,14 @@ We can have a template with a message with context.
     ...
     ... msgid "_: Different Context\nMessage"
     ... msgstr ""
-    ... ''' % datetime.datetime.now(UTC).isoformat()
+    ... ''' % ISO_FORMATTED_DATE
 
-Importing this template works and format is recognized as the KDE PO format.
+Importing this template works and the format is recognized as a KDE PO format.
 
     >>> entry = import_pofile_or_potemplate(kde_context_template, carlos,
     ...                                     firefox_trunk,
     ...                                     potemplate=firefox_potemplate)
+    >>> print entry.status.name
     IMPORTED
     >>> print entry.format.title
     KDE PO format
@@ -374,10 +388,11 @@ We can also import translated file with message contexts:
     ...
     ... msgid "_: Different Context\nMessage"
     ... msgstr "Second translation"
-    ... ''' % datetime.datetime.now(UTC).isoformat()
+    ... ''' % ISO_FORMATTED_DATE
     >>> entry = import_pofile_or_potemplate(kde_context_translation, carlos,
     ...                                     firefox_trunk,
     ...                                     pofile=firefox_serbian_pofile)
+    >>> print entry.status.name
     IMPORTED
     >>> print entry.format.title
     KDE PO format
@@ -423,7 +438,7 @@ Exporting a PO template as a KDE PO file joins the context back together:
     "Message"
     msgstr ""
 
-And similar happens with a translation:
+And the same happens with a translation:
 
     >>> print export_with_format(firefox_serbian_pofile,
     ...                          TranslationFileFormat.KDEPO)

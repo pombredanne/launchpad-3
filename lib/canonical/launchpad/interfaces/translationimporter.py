@@ -79,10 +79,11 @@ class ITranslationImporter(Interface):
         title=u'List of file extensions we have imports for.',
         required=True, readonly=True)
 
-    def getTranslationFileFormatByFileExtension(file_extension):
+    def getTranslationFileFormatByFileExtension(file_extension, contents):
         """Return the translation file format for the given file extension.
 
         :param file_extension: File extension including the dot.
+        :param contents: File contents.
         :return: A `TranslationFileFormat` for the given file extension
             or None if it's not a known extension.
         """
@@ -116,12 +117,15 @@ class ITranslationImporter(Interface):
 class ITranslationFormatImporter(Interface):
     """Translation file format importer."""
 
-    # XXX CarlosPerelloMarin 20070905: This should be moved to use the new
-    # Enum infrastructure. See bug #135853 for more information.
-    format = Choice(
-        title=u'The file format of the import.',
-        vocabulary='TranslationFileFormat',
-        required=True)
+    def format(contents):
+        """The file format of the import.
+
+        :param contents: A unicode string with the contents of the file
+            being imported.  A returned format may sometimes be different
+            from the base format of the `ITranslationFormatImporter`, and
+            that is determined based on the `contents`.
+        :return: A `TranslationFileFormat` value.
+        """
 
     # Example of this: KdePOImporter is based off GettextPOImporter, and
     # it knows that a .format(content) check should be done on that first.
