@@ -31,6 +31,7 @@ __all__ = [
     ]
 
 import cgi
+import gettext
 import re
 import urllib
 from operator import attrgetter
@@ -61,17 +62,17 @@ from canonical.launchpad.webapp import (
     redirection, stepthrough)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
-    IBug, IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
-    IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
-    IDistribution, IDistributionSourcePackage,
-    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask,
-    IFrontPageBugTaskSearch, ILaunchBag, INullBugTask, IPerson,
-    IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
-    IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
-    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, validate_distrotask,
-    valid_upstreamtask, IProductSeriesBugTask, IBugNominationSet,
-    IProductSeries, INominationsReviewTableBatchNavigator,
-    BugTaskStatus, BugTaskStatusSearchDisplay)
+    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay, IBug,
+    IBugAttachmentSet, IBugBranchSet, IBugExternalRefSet,
+    IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch, IBugTaskSet,
+    IDistribution, IDistributionSourcePackage, IDistroBugTask,
+    IDistroSeries, IDistroSeriesBugTask, IFrontPageBugTaskSearch,
+    ILaunchBag, INominationsReviewTableBatchNavigator, INullBugTask,
+    IPerson, IPersonBugTaskSearch, IProduct, IProductSeries,
+    IProductSeriesBugTask, IProject, ISourcePackage, IUpstreamBugTask,
+    IUpstreamProductBugTaskSearch, NotFoundError,
+    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    UNRESOLVED_BUGTASK_STATUSES, validate_distrotask, valid_upstreamtask)
 
 from canonical.launchpad.searchbuilder import any, NULL
 
@@ -1423,6 +1424,8 @@ class BugTaskSearchListingView(LaunchpadFormView):
     def schema(self):
         if self._personContext():
             return IPersonBugTaskSearch
+        elif self.isUpstreamProduct:
+            return IUpstreamProductBugTaskSearch
         else:
             return IBugTaskSearch
 
@@ -1732,7 +1735,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
 
     def shouldShowUpstreamStatusBox(self):
         """Should the upstream status filtering widgets be shown?"""
-        return not (
+        return self.isUpstreamProduct or not (
             IProduct.providedBy(self.context) or
             IProject.providedBy(self.context))
 
@@ -1839,6 +1842,13 @@ class BugTaskSearchListingView(LaunchpadFormView):
                     name, error_message %
                         cgi.escape(self.request.get('field.%s' % name)))
 
+    @property
+    def isUpstreamProduct(self):
+        """Is the context a Product that does not use Malone?"""
+        return (
+            IProduct.providedBy(self.context)
+            and not self.context.official_malone)
+
     def _upstreamContext(self):
         """Is this page being viewed in an upstream context?
 
@@ -1896,23 +1906,57 @@ class BugTaskSearchListingView(LaunchpadFormView):
         return IDistributionSourcePackage(self.context, None)
 
     def getBugsFixedElsewhereInfo(self):
-        """Return a dict with count and URL of bugs fixed elsewhere."""
+        """Return a dict with count and URL of bugs fixed elsewhere.
+
+        The available keys are:
+        'count' - The number of bugs.
+        'url' - The URL of the search.
+        'label' - Either 'bug' or 'bugs' depending on the count.
+        """
         params = self._getDefaultSearchParams()
         params.resolved_upstream = True
         fixed_elsewhere = self.context.searchTasks(params)
+        count = fixed_elsewhere.count()
+        label = gettext.ngettext('bug', 'bugs', count)
         search_url = (
             "%s/+bugs?field.status_upstream=resolved_upstream" %
                 canonical_url(self.context))
-        return dict(count=fixed_elsewhere.count(), url=search_url)
+        return dict(count=count, url=search_url, label=label)
 
     def getOpenCVEBugsInfo(self):
-        """Return a dict with count and URL of open bugs linked to CVEs."""
+        """Return a dict with count and URL of open bugs linked to CVEs.
+
+        The available keys are:
+        'count' - The number of bugs.
+        'url' - The URL of the search.
+        'label' - Either 'bug' or 'bugs' depending on the count.
+        """
         params = self._getDefaultSearchParams()
         params.has_cve = True
         open_cve_bugs = self.context.searchTasks(params)
+        count = open_cve_bugs.count()
+        label = gettext.ngettext('bug', 'bugs', count)
         search_url = (
             "%s/+bugs?field.has_cve=on" % canonical_url(self.context))
-        return dict(count=open_cve_bugs.count(), url=search_url)
+        return dict(count=count, url=search_url, label=label)
+
+    def getPendingBugWatches(self):
+        """Return a dict with count and URL of bugs that need a bugwatch.
+
+        The available keys are:
+        'count' - The number of bugs.
+        'url' - The URL of the search.
+        'label' - Either 'bug' or 'bugs' depending on the count.
+        """
+        params = self._getDefaultSearchParams()
+        params.pending_bugwatch_elsewhere = True
+        pending_bugwatch_elsewhere = self.context.searchTasks(params)
+        count = pending_bugwatch_elsewhere.count()
+        label = gettext.ngettext('bug', 'bugs', count)
+        search_url = (
+            "%s/+bugs?field.status_upstream=pending_bugwatch" %
+            canonical_url(self.context))
+        return dict(count=count, url=search_url, label=label)
 
 
 class BugNominationsView(BugTaskSearchListingView):

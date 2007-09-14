@@ -124,7 +124,6 @@ class DistroSeriesSourcePackageRelease:
     def binaries(self):
         """See IDistroSeriesSourcePackageRelease."""
         clauseTables = [
-            'SourcePackageRelease',
             'BinaryPackageRelease',
             'DistroArchRelease',
             'Build',
@@ -132,7 +131,6 @@ class DistroSeriesSourcePackageRelease:
         ]
 
         query = """
-        SourcePackageRelease.id=Build.sourcepackagerelease AND
         BinaryPackageRelease.build=Build.id AND
         DistroArchRelease.id =
             BinaryPackagePublishingHistory.distroarchrelease AND
@@ -147,7 +145,7 @@ class DistroSeriesSourcePackageRelease:
 
         return BinaryPackageRelease.select(
                 query, prejoinClauseTables=['Build'],
-                clauseTables=clauseTables)
+                clauseTables=clauseTables, distinct=True)
 
     @property
     def meta_binaries(self):
