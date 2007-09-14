@@ -124,7 +124,8 @@ rely on a working network connection.
     [1722250]
 
 If a remote bug doesn't define the requisite data, an error will be
-raised.
+raised. We use a special sample bug, bug 0, which defines no status or
+resolution, to demonstrate this:
 
     >>> sourceforge.initializeRemoteBugDB([0])
     Traceback (most recent call last):
