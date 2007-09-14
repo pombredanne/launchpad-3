@@ -83,8 +83,7 @@ somebody are subject to expiration.
     True
 
     # A question linked to an non-Invalid bug is not expirable.
-    >>> from canonical.launchpad.interfaces import IBugSet
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus, IBugSet
     >>> fixed_bug = getUtility(IBugSet).get(9)
     >>> bugtasks = fixed_bug.bugtasks
     >>> bugtasks[1].transitionToStatus(BugTaskStatus.INVALID, no_priv)
@@ -167,7 +166,7 @@ But the other ones status was changed to 'Expired':
     Expired
 
 The message explaining the reason for the expiration was posted by the
-Answer Tracker Janitor celebrity:
+Launchpad Janitor celebrity:
 
     >>> expiration_message = old_needs_info_question.messages[-1]
     >>> print expiration_message.action.name

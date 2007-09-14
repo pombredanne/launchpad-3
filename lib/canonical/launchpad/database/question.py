@@ -25,12 +25,12 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, IDistribution, IDistributionSet,
+    BugTaskStatus, IBugLinkTarget, IDistribution, IDistributionSet,
     IDistributionSourcePackage, IFAQ, InvalidQuestionStateError, ILanguage,
     ILanguageSet, ILaunchpadCelebrities, IMessage, IPerson, IProduct,
     IProductSet, IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
-    QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionSort,
-    QuestionStatus, QuestionParticipation, QuestionPriority)
+    QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionParticipation,
+    QuestionPriority, QuestionSort, QuestionStatus)
 
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -53,8 +53,6 @@ from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr import DBItem, Item
-
-from canonical.lp.dbschema import BugTaskStatus
 
 
 class notify_question_modified:
@@ -559,7 +557,7 @@ class QuestionSet:
                     AND Question.datelastquery < 
                         (current_timestamp - interval '%s days')
                     AND Question.assignee IS NULL
-                    AND BugTask.id IS NULL)
+                    AND BugTask.status IS NULL)
             """ % sqlvalues(
                 BugTaskStatus.INVALID,
                 QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
@@ -580,7 +578,7 @@ class QuestionSet:
     def getMostActiveProjects(self, limit=5):
         """See `IQuestionSet`."""
         cur = cursor()
-        cur.execute('''
+        cur.execute("""
             SELECT product, distribution, count(*) AS "question_count"
             FROM (
                 SELECT product, distribution
@@ -598,7 +596,7 @@ class QuestionSet:
             GROUP BY product, distribution
             ORDER BY question_count DESC
             LIMIT %s
-            ''' % sqlvalues(limit))
+            """ % sqlvalues(limit))
 
         projects = []
         product_set = getUtility(IProductSet)
