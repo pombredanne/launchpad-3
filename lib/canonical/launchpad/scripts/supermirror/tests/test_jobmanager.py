@@ -11,7 +11,7 @@ from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)
 from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
-from canonical.launchpad.scripts.supermirror.ftests import createbranch
+from canonical.launchpad.scripts.supermirror.tests import createbranch
 from canonical.launchpad.scripts.supermirror import jobmanager
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
@@ -42,8 +42,10 @@ class TestJobManager(unittest.TestCase):
     def testSingleAddBranches(self):
         # Get a list of branches and ensure that it can add a branch object.
         expected_branch = BranchToMirror(
-            'managersingle', config.supermirror.branchesdest + '/00/00/00/00',
-            None, None, None)
+            src='managersingle',
+            dest=config.supermirror.branchesdest + '/00/00/00/00',
+            branch_status_client=None, branch_id=None, unique_name=None,
+            branch_type=None)
         fakeclient = self.makeFakeClient(
             [(0, 'managersingle', u'name//trunk')], [], [])
         manager = jobmanager.JobManager(BranchType.HOSTED)
@@ -85,10 +87,14 @@ class TestJobManager(unittest.TestCase):
         import_manager = jobmanager.JobManager(BranchType.IMPORTED)
         import_manager.addBranches(client)
         expected_branch = BranchToMirror(
-            'http://escudero.ubuntu.com:680/0000000e',
-            config.supermirror.branchesdest + '/00/00/00/0e',
-            None, None, None)
+            src='http://escudero.ubuntu.com:680/0000000e',
+            dest=config.supermirror.branchesdest + '/00/00/00/0e',
+            branch_status_client=None, branch_id=None, unique_name=None,
+            branch_type=None)
         self.assertEqual(import_manager.branches_to_mirror, [expected_branch])
+        branch_types = [branch.branch_type
+                        for branch in import_manager.branches_to_mirror]
+        self.assertEqual(branch_types, [BranchType.IMPORTED])
 
     def testUploadAddBranches(self):
         client = self.makeFakeClient(
@@ -97,10 +103,14 @@ class TestJobManager(unittest.TestCase):
         upload_manager = jobmanager.JobManager(BranchType.HOSTED)
         upload_manager.addBranches(client)
         expected_branch = BranchToMirror(
-            '/tmp/sftp-test/branches/00/00/00/19',
-            config.supermirror.branchesdest + '/00/00/00/19',
-            None, None, None)
+            src='/tmp/sftp-test/branches/00/00/00/19',
+            dest=config.supermirror.branchesdest + '/00/00/00/19',
+            branch_status_client=None, branch_id=None, unique_name=None,
+            branch_type=None)
         self.assertEqual(upload_manager.branches_to_mirror, [expected_branch])
+        branch_types = [branch.branch_type
+                        for branch in upload_manager.branches_to_mirror]
+        self.assertEqual(branch_types, [BranchType.HOSTED])
 
     def testMirrorAddBranches(self):
         client = self.makeFakeClient(
@@ -110,10 +120,14 @@ class TestJobManager(unittest.TestCase):
         mirror_manager = jobmanager.JobManager(BranchType.MIRRORED)
         mirror_manager.addBranches(client)
         expected_branch = BranchToMirror(
-            'http://example.com/gnome-terminal/main',
-            config.supermirror.branchesdest + '/00/00/00/0f',
-            None, None, None)
+            src='http://example.com/gnome-terminal/main',
+            dest=config.supermirror.branchesdest + '/00/00/00/0f',
+            branch_status_client=None, branch_id=None, unique_name=None,
+            branch_type=None)
         self.assertEqual(mirror_manager.branches_to_mirror, [expected_branch])
+        branch_types = [branch.branch_type
+                        for branch in mirror_manager.branches_to_mirror]
+        self.assertEqual(branch_types, [BranchType.MIRRORED])
 
 
 class TestJobManagerInLaunchpad(unittest.TestCase):
@@ -183,7 +197,7 @@ class TestJobManagerInLaunchpad(unittest.TestCase):
             targetdir = os.path.join(self.testdir, branchtarget(target))
         return BranchToMirror(
                 branchdir, targetdir, branch_status_client, target,
-                unique_name)
+                unique_name, branch_type=None)
 
 
 class FakeBranchStatusClient:
