@@ -28,4 +28,4 @@ We should be redirected to the next page because the validation didn't get
 it as an error.
 
   >>> browser.url
-  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=13&batch=1'
+  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?batch=1&start=13'

@@ -806,12 +806,7 @@ class BaseTranslationView(LaunchpadView):
         else:
             base_url = new_url
 
-        final_parameters = []
-        for (key, value) in parameters.items():
-            final_parameters.append((key, value))
-
-        new_query = urllib.urlencode(
-            [(key, value) for (key, value) in final_parameters])
+        new_query = urllib.urlencode(sorted(parameters.items()))
 
         if new_query:
             new_url = '%s?%s' % (base_url, new_query)
