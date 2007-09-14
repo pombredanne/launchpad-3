@@ -1301,26 +1301,42 @@ class BugTaskSet:
         """
         upstream_clauses = []
         if params.pending_bugwatch_elsewhere:
-            # Include only bugtasks that have other bugtasks on targets
-            # not using Malone, which are not Invalid, and have no bug
-            # watch.
-            pending_bugwatch_elsewhere_clause = """
-                EXISTS (
-                    SELECT TRUE FROM BugTask AS RelatedBugTask
-                    LEFT OUTER JOIN Distribution AS OtherDistribution
-                        ON RelatedBugTask.distribution = OtherDistribution.id
-                    LEFT OUTER JOIN Product AS OtherProduct
-                        ON RelatedBugTask.product = OtherProduct.id
-                    WHERE RelatedBugTask.bug = BugTask.bug
-                        AND RelatedBugTask.id != BugTask.id
-                        AND RelatedBugTask.bugwatch IS NULL
-                        AND (
-                            OtherDistribution.official_malone IS FALSE
-                            OR OtherProduct.official_malone IS FALSE
-                            )
-                        AND RelatedBugTask.status != %s
-                    )
-                """ % sqlvalues(BugTaskStatus.INVALID)
+            if params.product:
+                # Include only bugtasks that do no have bug watches that
+                # belong to a product that does not use Malone.
+                pending_bugwatch_elsewhere_clause = """
+                    EXISTS (
+                        SELECT TRUE 
+                        FROM BugTask AS RelatedBugTask
+                            LEFT OUTER JOIN Product AS OtherProduct
+                                ON RelatedBugTask.product = OtherProduct.id
+                        WHERE RelatedBugTask.bug = BugTask.bug
+                            AND RelatedBugTask.id = BugTask.id
+                            AND RelatedBugTask.bugwatch IS NULL
+                            AND OtherProduct.official_malone IS FALSE
+                            AND RelatedBugTask.status != %s)
+                    """ % sqlvalues(BugTaskStatus.INVALID)
+            else:
+                # Include only bugtasks that have other bugtasks on targets
+                # not using Malone, which are not Invalid, and have no bug
+                # watch.
+                pending_bugwatch_elsewhere_clause = """
+                    EXISTS (
+                        SELECT TRUE 
+                        FROM BugTask AS RelatedBugTask
+                            LEFT OUTER JOIN Distribution AS OtherDistribution
+                                ON RelatedBugTask.distribution = 
+                                    OtherDistribution.id
+                            LEFT OUTER JOIN Product AS OtherProduct
+                                ON RelatedBugTask.product = OtherProduct.id
+                        WHERE RelatedBugTask.bug = BugTask.bug
+                            AND RelatedBugTask.id != BugTask.id
+                            AND RelatedBugTask.bugwatch IS NULL
+                            AND (
+                                OtherDistribution.official_malone IS FALSE
+                                OR OtherProduct.official_malone IS FALSE)
+                            AND RelatedBugTask.status != %s)
+                    """ % sqlvalues(BugTaskStatus.INVALID)
 
             upstream_clauses.append(pending_bugwatch_elsewhere_clause)
 

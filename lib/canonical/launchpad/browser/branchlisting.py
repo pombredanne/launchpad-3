@@ -160,7 +160,7 @@ class BranchListingView(LaunchpadFormView):
     def no_branch_message(self):
         """This may also be overridden in derived classes to provide
         context relevant messages if there are no branches returned."""
-        if self.selected_lifecycle_status:
+        if self.selected_lifecycle_status is not None:
             message = (
                 'There may be branches related to %s '
                 'but none of them match the current filter criteria '

@@ -36,8 +36,6 @@ class ProductRelease(SQLBase):
     owner = ForeignKey(dbName="owner", foreignKey="Person", notNull=True)
     productseries = ForeignKey(dbName='productseries',
                                foreignKey='ProductSeries', notNull=True)
-    manifest = ForeignKey(dbName='manifest', foreignKey='Manifest',
-                          default=None)
 
     files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease',
                             orderBy='-date_uploaded')
