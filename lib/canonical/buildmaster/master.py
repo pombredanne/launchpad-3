@@ -12,10 +12,8 @@ __metaclass__ = type
 
 
 import apt_pkg
-import datetime
 import logging
 import operator
-import pytz
 
 from zope.component import getUtility
 
@@ -325,81 +323,6 @@ class BuilddMaster:
             return self._logger
         return logging.getLogger("%s.%s" % (self._logger.name, subname))
 
-    def scoreBuildQueueEntry(self, job, now=None):
-        """Score Build Job according several fields
-
-        Generate a Score index according some job properties:
-        * distribution series component
-        * sourcepackagerelease urgency
-        """
-        if now is None:
-            now = datetime.datetime.now(pytz.timezone('UTC'))
-
-        if job.manual:
-            self._logger.debug("%s (%d) MANUALLY RESCORED"
-                               % (job.name, job.lastscore))
-            return
-
-        score = 0
-        score_componentname = {
-            'multiverse': 0,
-            'universe': 250,
-            'restricted': 750,
-            'main': 1000,
-            'partner' : 1250,
-            }
-
-        score_urgency = {
-            dbschema.SourcePackageUrgency.LOW: 5,
-            dbschema.SourcePackageUrgency.MEDIUM: 10,
-            dbschema.SourcePackageUrgency.HIGH: 15,
-            dbschema.SourcePackageUrgency.EMERGENCY: 20,
-            }
-
-        # Define a table we'll use to calculate the score based on the time
-        # in the build queue.  The table is a sorted list of (upper time
-        # limit in seconds, score) tuples.
-        queue_time_scores = [
-            (14400, 100),
-            (7200, 50),
-            (3600, 20),
-            (1800, 15),
-            (900, 10),
-            (300, 5),
-        ]
-
-        score = 0
-        msg = "%s (%d) -> " % (job.build.title, job.lastscore)
-
-        # Calculate the urgency-related part of the score
-        score += score_urgency[job.urgency]
-        msg += "U+%d " % score_urgency[job.urgency]
-
-        # Calculate the component-related part of the score
-        score += score_componentname[job.component_name]
-        msg += "C+%d " % score_componentname[job.component_name]
-
-        # Calculate the build queue time component of the score
-        eta = now - job.created
-        for limit, dep_score in queue_time_scores:
-            if eta.seconds > limit:
-                score += dep_score
-                msg += "%d " % score
-                break
-
-        # Score the package down if it has unsatisfiable build-depends
-        # in the hope that doing so will allow the depended on package
-        # to be built first.
-        if job.builddependsindep:
-            depindep_score, missing_deps = self._scoreAndCheckDependencies(
-                job.builddependsindep, job.archseries)
-            # sum dependency score
-            score += depindep_score
-
-        # store current score value
-        job.lastscore = score
-        self._logger.debug(msg + " = %d" % job.lastscore)
-
     def _scoreAndCheckDependencies(self, dependencies_line, archseries):
         """Check dependencies line within a distroarchseries.
 
@@ -540,7 +463,7 @@ class BuilddMaster:
         for job in candidates:
             if job.files:
                 jobs.append(job)
-                self.scoreBuildQueueEntry(job)
+                job.score()
             else:
                 distro = job.archseries.distroseries.distribution
                 distroseries = job.archseries.distroseries

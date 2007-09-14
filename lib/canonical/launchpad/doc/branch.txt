@@ -938,6 +938,63 @@ extra display information.
     ...     print branch.lifecycle_status.title, branch.unique_name
     Development ~name12/gnome-terminal/main
 
+== Getting branches for a project ==
+
+Similarly as for a product, we can retrieve the branches associated to all the
+products that belong to a given project.
+
+    >>> from canonical.launchpad.interfaces import IProjectSet
+    >>> def printMozillaBranches(lifecycle_statuses=None):
+    ...     mozilla = getUtility(IProjectSet).getByName('mozilla')
+    ...     branches = branchset.getBranchesForProject(
+    ...         mozilla, lifecycle_statuses)
+    ...     for branch in branches:
+    ...         print branch.lifecycle_status.title, branch.unique_name
+
+    >>> printMozillaBranches()
+    New ~name12/firefox/main
+    New ~sabdfl/firefox/release--0.9.1
+    New ~sabdfl/firefox/release-0.8
+    New ~sabdfl/firefox/release-0.9
+    New ~sabdfl/firefox/release-0.9.2
+    New ~stevea/thunderbird/main
+
+Filtering by status must work here too.
+
+We update the branches for the Mozilla project in the sample data to use a
+variety of different statuses, so that we can demonstrate filtering by status.
+
+    >>> def setMultipleStatus(branch_status_pairs):
+    ...     for unique_name, new_status_name in branch_status_pairs:
+    ...         branch = branchset.getByUniqueName(unique_name)
+    ...         new_status = getattr(BranchLifecycleStatus, new_status_name)
+    ...         branch.lifecycle_status = new_status
+    ...         syncUpdate(branch)
+    >>> login('foo.bar@canonical.com')
+    >>> setMultipleStatus([
+    ...     ('~name12/firefox/main', 'DEVELOPMENT'),
+    ...     ('~sabdfl/firefox/release-0.8', 'ABANDONED'),
+    ...     ('~sabdfl/firefox/release-0.9', 'ABANDONED'),
+    ...     ('~sabdfl/firefox/release--0.9.1', 'ABANDONED'),
+    ...     ('~sabdfl/firefox/release-0.9.2', 'MATURE'),
+    ...     ('~stevea/thunderbird/main', 'DEVELOPMENT')])
+    
+    >>> printMozillaBranches()
+    Abandoned ~sabdfl/firefox/release--0.9.1
+    Abandoned ~sabdfl/firefox/release-0.8
+    Abandoned ~sabdfl/firefox/release-0.9
+    Mature ~sabdfl/firefox/release-0.9.2
+    Development ~name12/firefox/main
+    Development ~stevea/thunderbird/main
+
+    >>> printMozillaBranches(DEFAULT_BRANCH_STATUS_IN_LISTING)
+    Mature ~sabdfl/firefox/release-0.9.2
+    Development ~name12/firefox/main
+    Development ~stevea/thunderbird/main
+
+    >>> printMozillaBranches([BranchLifecycleStatus.DEVELOPMENT])
+    Development ~name12/firefox/main
+    Development ~stevea/thunderbird/main
 
 == Associated product series ==
 
