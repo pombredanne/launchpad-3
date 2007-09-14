@@ -3,8 +3,9 @@
 import os
 import socket
 
-from canonical.config import config
 from contrib.glock import GlobalLock, LockAlreadyAcquired
+
+from canonical.config import config
 from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)
@@ -42,7 +43,7 @@ class JobManager:
             branch_dest = os.path.join(destination, path)
             branch = BranchToMirror(
                 branch_src, branch_dest, branch_status_client, branch_id,
-                unique_name)
+                unique_name, self.branch_type)
             self.branches_to_mirror.append(branch)
 
     def lock(self):
