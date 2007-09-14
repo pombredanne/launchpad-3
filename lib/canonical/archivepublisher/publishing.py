@@ -281,6 +281,11 @@ class Publisher(object):
             return False
         return True
 
+    def _makeFileGroupWriteableAndWorldReadable(self, file_path):
+        """Make the file group writable and world readable."""
+        mode = stat.S_IMODE(os.stat(file_path).st_mode)
+        os.chmod(file_path, mode | stat.S_IWGRP | stat.S_IROTH)
+
     def _writeComponentIndexes(self, distroseries, pocket, component):
         """Write Index files for single distroseries + pocket + component.
 
@@ -320,11 +325,8 @@ class Publisher(object):
         os.rename(temp_index, source_index_path)
         os.rename(temp_index_gz, source_index_gz_path)
 
-        # Make the files group writable and world readable.
-        mode = stat.S_IMODE(os.stat(source_index_path).st_mode)
-        os.chmod(source_index_path, mode | stat.S_IWGRP | stat.S_IROTH)
-        mode = stat.S_IMODE(os.stat(source_index_gz_path).st_mode)
-        os.chmod(source_index_gz_path, mode | stat.S_IWGRP | stat.S_IROTH)
+        self._makeFileGroupWriteableAndWorldReadable(source_index_path)
+        self._makeFileGroupWriteableAndWorldReadable(source_index_gz_path)
 
         for arch in distroseries.architectures:
             arch_path = 'binary-%s' % arch.architecturetag
@@ -360,11 +362,8 @@ class Publisher(object):
             os.rename(temp_index_gz, package_index_gz_path)
 
             # Make the files group writable and world readable.
-            mode = stat.S_IMODE(os.stat(package_index_path).st_mode)
-            os.chmod(package_index_path, mode | stat.S_IWGRP | stat.S_IROTH)
-            mode = stat.S_IMODE(os.stat(package_index_gz_path).st_mode)
-            os.chmod(
-                package_index_gz_path, mode | stat.S_IWGRP | stat.S_IROTH)
+            self._makeFileGroupWriteableAndWorldReadable(package_index_path)
+            self._makeFileGroupWriteableAndWorldReadable(package_index_gz_path)
 
         # Inject static requests for Release files into self.apt_handler
         # in a way which works for NoMoreAptFtpArchive without changing
