@@ -1100,7 +1100,7 @@ class AdminDistroSeriesLanguagePacks(
             OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
             EditDistroSeriesByOwnersOrDistroOwnersOrAdmins.checkAuthenticated(
                 self, user) or
-            user.inTeam(self.context.distribution.language_pack_admin))
+            user.inTeam(self.obj.distribution.language_pack_admin))
 
 
 class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
