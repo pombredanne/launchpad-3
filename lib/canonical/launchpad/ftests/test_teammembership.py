@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 
+import subprocess
 import unittest
 from datetime import datetime
 
@@ -11,7 +12,7 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import (
     flush_database_caches, flush_database_updates, cursor)
-from canonical.launchpad.database import TeamMembership
+from canonical.launchpad.database import TeamMembership, TeamParticipation
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     IPersonSet, ITeamMembershipSet, TeamMembershipStatus)
@@ -111,6 +112,45 @@ class TestTeamMembership(unittest.TestCase):
         cur.execute("SELECT status FROM teammembership WHERE id = %d" % tm.id)
         [new_status] = cur.fetchone()
         self.assertEqual(new_status, TeamMembershipStatus.DEACTIVATED.value)
+
+
+class TestCheckTeamParticipationScript(unittest.TestCase):
+    layer = LaunchpadFunctionalLayer
+
+    def _runScript(self):
+        process = subprocess.Popen(
+            'cronscripts/check-teamparticipation.py', shell=True,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        (out, err) = process.communicate()
+        self.assertEqual(process.returncode, 0, (out, err))
+        return out, err
+
+    def test_no_output_if_no_invalid_entries(self):
+        """No output if there's no invalid teamparticipation entries."""
+        out, err = self._runScript()
+        self.assertEqual((out, err), ('', ''))
+
+    def test_report_invalid_teamparticipation_entries(self):
+        cur = cursor()
+        cur.execute("""
+            SELECT p.id, t.id
+            FROM person AS p, person AS t
+            WHERE (p.id, t.id) NOT IN (
+                SELECT person, team FROM teamparticipation)
+                AND p.id != t.id
+                AND p.teamowner IS NULL
+                AND t.teamowner IS NOT NULL
+                LIMIT 1
+            """)
+        [person, team] = cur.fetchone()
+        tp = TeamParticipation(person=person, team=team)
+        import transaction
+        transaction.commit()
+        out, err = self._runScript()
+        self.assertEqual(err, '', (out, err))
+        self.failUnless(
+            'Invalid teamParticipation entry for' in out, (out, err))
 
 
 def test_suite():
