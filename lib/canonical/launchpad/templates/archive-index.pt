@@ -48,19 +48,11 @@
 
       <div>
         <ul id="package_counters">
-          <li id="source_counter" tal:define="counter context/number_of_sources">
-             <span tal:replace="counter" /> source
-             <tal:sigular replace="string: package"
-                  condition="python: counter == 1" />
-             <tal:plural replace="string: packages"
-                  condition="python: counter > 1" />
+          <li id="source_counter">
+             <span tal:replace="view/source_count_text" />
              (<span tal:replace="context/sources_size/fmt:bytes" />)</li>
-          <li id="binary_counter" tal:define="counter context/number_of_binaries">
-             <span tal:replace="counter"/> binary
-             <tal:sigular replace="string: package"
-                  condition="python: counter == 1" />
-             <tal:plural replace="string: packages"
-                  condition="python: counter > 1" />
+          <li id="binary_counter">
+             <span tal:replace="view/binary_count_text" />
              (<span tal:replace="context/binaries_size/fmt:bytes" />)</li>
 	  <li id="total_size">
              Estimated archive size:
@@ -82,7 +74,7 @@
         </form>
       </div>
 
-      <div style="padding: 1em;" tal:define="batch view/search_results">
+      <div style="padding-top: 1em;" tal:define="batch view/search_results">
 
       <tal:navigation_top
            condition="python: view.name_filter is not None"

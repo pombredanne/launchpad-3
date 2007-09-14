@@ -26,6 +26,10 @@ source record) PPAs are presented.
     packages to help my friends.
     3
     3
+    Mark Shuttleworth
+    packages to help the humanity (you know, ubuntu)
+    1
+    1
 
 We have a checkbox to allow inactive PPA results.
 
@@ -44,8 +48,8 @@ We have a checkbox to allow inactive PPA results.
     0
     Mark Shuttleworth
     packages to help the humanity (you know, ubuntu)
-    0
-    0
+    1
+    1
 
 This checkbox value is propagated to subsequent searches:
 
@@ -82,14 +86,29 @@ and estimated size).
     >>> results = find_tag_by_id(browser.contents,'package_counters')
     >>> text = extract_text(results)
     >>> print text
-    3 source
-    packages
+    3 source packages
     (9.5 MiB)
-    3 binary
-    packages
+    3 binary packages
     (3 bytes)
     Estimated archive size:
     9.5 MiB
+
+Just quickly check if the singular form of this section is handled
+properly.
+
+    >>> anon_browser.open("http://launchpad.dev/~sabdfl/+archive")
+    >>> anon_browser.title
+    'Personal Package Archive for Mark Shuttleworth'
+
+    >>> results = find_tag_by_id(anon_browser.contents,'package_counters')
+    >>> text = extract_text(results)
+    >>> print text
+    1 source package
+    (0 bytes)
+    1 binary package
+    (0 bytes)
+    Estimated archive size:
+    2.0 KiB
 
 The sample data has two packages belonging to Celso. Two table rows
 will be presented to user containing:
