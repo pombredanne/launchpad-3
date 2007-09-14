@@ -64,7 +64,7 @@ class notify_question_modified:
 
     The list of edited_fields will be computed by comparing the snapshot
     with the modified question. The fields that are checked for
-    modifications are: status, messages, dateanswered, answerer, answer,
+    modifications are: status, messages, date_solved, answerer, answer,
     datelastquery and datelastresponse.
 
     The user triggering the event is taken from the returned message.
@@ -78,7 +78,7 @@ class notify_question_modified:
             msg = func(self, *args, **kwargs)
 
             edited_fields = ['messages']
-            for field in ['status', 'dateanswered', 'answerer', 'answer',
+            for field in ['status', 'date_solved', 'answerer', 'answer',
                           'datelastquery', 'datelastresponse', 'target']:
                 if getattr(self, field) != getattr(old_question, field):
                     edited_fields.append(field)
@@ -119,7 +119,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     datedue = UtcDateTimeCol(notNull=False, default=None)
     datelastquery = UtcDateTimeCol(notNull=True, default=DEFAULT)
     datelastresponse = UtcDateTimeCol(notNull=False, default=None)
-    dateanswered = UtcDateTimeCol(notNull=False, default=None)
+    date_solved = UtcDateTimeCol(notNull=False, default=None)
     product = ForeignKey(
         dbName='product', foreignKey='Product', notNull=False, default=None)
     distribution = ForeignKey(
@@ -217,7 +217,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         # information as well.
         self.answerer = None
         self.answer = None
-        self.dateanswered = None
+        self.date_solved = None
 
         return self._newMessage(
             user, comment, datecreated=datecreated,
@@ -298,7 +298,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             new_status=new_status)
 
         if self.owner == user:
-            self.dateanswered = msg.datecreated
+            self.date_solved = msg.datecreated
             self.answerer = user
 
         return msg
@@ -345,7 +345,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             action=QuestionAction.CONFIRM,
             new_status=QuestionStatus.SOLVED)
         if answer:
-            self.dateanswered = msg.datecreated
+            self.date_solved = msg.datecreated
             self.answerer = answer.owner
             self.answer = answer
 
@@ -381,7 +381,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             user, comment, datecreated=datecreated,
             action=QuestionAction.REJECT, new_status=QuestionStatus.INVALID)
         self.answerer = user
-        self.dateanswered = msg.datecreated
+        self.date_solved = msg.datecreated
         self.answer = msg
         return msg
 
@@ -413,7 +413,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             action=QuestionAction.REOPEN, new_status=QuestionStatus.OPEN)
         self.answer = None
         self.answerer = None
-        self.dateanswered = None
+        self.date_solved = None
         return msg
 
     # subscriptions
@@ -841,7 +841,7 @@ class QuestionTargetSearch(QuestionSearch):
 
     def getConstraints(self):
         """See `QuestionSearch`.
-        
+
         Return target and language constraints in addition to the base class
         constraints.
         """
@@ -945,7 +945,7 @@ class QuestionPersonSearch(QuestionSearch):
 
     def getConstraints(self):
         """See `QuestionSearch`.
-        
+
         Return the base class constraints plus additional constraints upon
         the Person's participation in Questions.
         """

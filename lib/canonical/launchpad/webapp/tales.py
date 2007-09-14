@@ -305,21 +305,22 @@ class NoneFormatter:
     implements(ITraversable)
 
     allowed_names = set([
-        'nl_to_br',
-        'nice_pre',
+        'approximatedate',
+        'approximateduration',
         'breadcrumbs',
         'break-long-words',
         'date',
-        'time',
         'datetime',
-        'approximatedate',
         'displaydate',
-        'rfc822utcdatetime',
-        'exactduration',
-        'approximateduration',
-        'pagetitle',
-        'text-to-html',
         'email-to-html',
+        'exactduration',
+        'lower',
+        'nice_pre',
+        'nl_to_br',
+        'pagetitle',
+        'rfc822utcdatetime',
+        'text-to-html',
+        'time',
         'url',
         ])
 
@@ -672,7 +673,38 @@ class PersonFormatterAPI(ObjectFormatterAPI):
 
 
 class BranchFormatterAPI(ObjectFormatterAPI):
-    """Adapter for IPerson objects to a formatted string."""
+    """Adapter for IBranch objects to a formatted string."""
+
+    implements(ITraversable)
+
+    allowed_names = set([
+        'url',
+        ])
+
+    def traverse(self, name, furtherPath):
+        if name == 'link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.link(extra_path)
+        elif name in self.allowed_names:
+            return getattr(self, name)()
+        else:
+            raise TraversalError, name
+
+    def link(self, extra_path):
+        """Return an HTML link to the branch page containing an icon
+        followed by the branch's unique name.
+        """
+        branch = self._context
+        url = canonical_url(branch)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        return ('<a href="%s" title="%s"><img src="/@@/branch" alt=""/>'
+                '&nbsp;%s</a>' % (url, branch.displayname, branch.unique_name))
+
+
+class BugTaskFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IBugTask objects to a formatted string."""
 
     implements(ITraversable)
 
@@ -694,12 +726,13 @@ class BranchFormatterAPI(ObjectFormatterAPI):
         """Return an HTML link to the person's page containing an icon
         followed by the person's name.
         """
-        branch = self._context
-        url = canonical_url(branch)
+        bugtask = self._context
+        url = canonical_url(bugtask)
         if extra_path:
             url = '%s/%s' % (url, extra_path)
-        return '<a href="%s"><img src="/@@/branch" alt=""/>&nbsp;%s</a>' % (
-            url, branch.displayname)
+        image_html = BugTaskImageDisplayAPI(bugtask).icon()
+        return '<a href="%s">%s&nbsp;Bug #%d: %s</a>' % (
+            url, image_html, bugtask.bug.id, bugtask.bug.title)
 
 
 class NumberFormatterAPI:
@@ -1452,7 +1485,7 @@ class FormattersAPI:
 
         def is_quoted(line):
             """Test that a line is a quote and not Python.
-            
+
             Note that passages may be wrongly be interpreted as Python
             because they start with '>>> '. The function does not check
             that next and previous lines of text consistently uses '>>> '
@@ -1464,7 +1497,7 @@ class FormattersAPI:
 
         def strip_leading_p_tag(line):
             """Return the characters after the paragraph mark (<p>).
-            
+
             The caller must be certain the line starts with a paragraph mark.
             """
             assert line.startswith('<p>'), (
@@ -1473,7 +1506,7 @@ class FormattersAPI:
 
         def strip_trailing_p_tag(line):
             """Return the characters before the line paragraph mark (</p>).
-            
+
             The caller must be certain the line ends with a paragraph mark.
             """
             assert line.endswith('</p>'), (
@@ -1587,6 +1620,10 @@ class FormattersAPI:
             r'<email address hidden>', self._stringtoformat)
         return text
 
+    def lower(self):
+        """Return the string in lowercase"""
+        return self._stringtoformat.lower()
+
     def shorten(self, maxlength):
         """Use like tal:content="context/foo/fmt:shorten/60"."""
         if len(self._stringtoformat) > maxlength:
@@ -1597,6 +1634,8 @@ class FormattersAPI:
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
             return self.nl_to_br()
+        elif name == 'lower':
+            return self.lower()
         elif name == 'break-long-words':
             return self.break_long_words()
         elif name == 'text-to-html':

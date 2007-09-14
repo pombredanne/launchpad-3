@@ -261,7 +261,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         inline list with links to see the questions for each language:
         '_Hungarian_ (2), _Romanian_ (1)'. An empty string is returned
         when all questions are in a language spoken by the answer contacts.
-        
+
         This method is relevant to QuestionTargets. Subclasses of this
         View that want to list unspoken languages for other objects must
         provide their own implementation.
