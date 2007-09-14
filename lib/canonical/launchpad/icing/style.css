@@ -86,6 +86,7 @@ h6 {font-size: 1em;    margin: 0;              padding: 0;}
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: 80%;}
+.offline {text-align: center; max-width: 30em; margin: 2em auto;}
 .unavailable {color: #999; background: none;}
 .oopsid {color: #cc0000; font-weight: bold;}
 
@@ -1143,23 +1144,22 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
   color: #9f2b33;
 }
 
-
-.statusNEW          { color: #993300; }
-.statusINCOMPLETE   { color: Red; }
-.statusCONFIRMED    { color: Red; }
-.statusTRIAGED      { color: Black; }
-.statusINPROGRESS   { color: Black; }
-.statusFIXRELEASED  { color: Black; }
-.statusFIXCOMMITTED { color: Black; }
-.statusINVALID      { color: Gray; }
-.statusWONTFIX      { color: Gray; }
-.importanceCRITICAL  { color: Red; }
-.importanceHIGH      { color: #ff6600; }
-.importanceMEDIUM    { color: Green; }
-.importanceLOW       { color: Black; }
-.importanceWISHLIST  { color: Blue; }
-.importanceUNDECIDED { color: #999; }
-.status :link, .importance :link {color: inherit; text-decoration: none;}
+.statusNEW,           .statusNEW a           {color: #930;}
+.statusINCOMPLETE,    .statusINCOMPLETE a    {color: red;}
+.statusCONFIRMED,     .statusCONFIRMED a     {color: red;}
+.statusTRIAGED,       .statusTRIAGED a       {color: black;}
+.statusINPROGRESS,    .statusINPROGRESS a    {color: black;}
+.statusFIXRELEASED,   .statusFIXRELEASED a   {color: black;}
+.statusFIXCOMMITTED,  .statusFIXCOMMITTED a  {color: black;}
+.statusINVALID,       .statusINVALID a       {color: gray;}
+.statusWONTFIX,       .statusWONTFIX a       {color: gray;}
+.importanceCRITICAL,  .importanceCRITICAL a  {color: red;}
+.importanceHIGH,      .importanceHIGH a      {color: #f60;}
+.importanceMEDIUM,    .importanceMEDIUM a    {color: green;}
+.importanceLOW,       .importanceLOW a       {color: black;}
+.importanceWISHLIST,  .importanceWISHLIST a  {color: blue;}
+.importanceUNDECIDED, .importanceUNDECIDED a {color: #999;}
+.status :link, .importance :link {text-decoration: none;}
 
 #bug-description {font-family: monospace;}
 
