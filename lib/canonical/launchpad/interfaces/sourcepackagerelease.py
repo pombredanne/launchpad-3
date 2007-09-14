@@ -66,7 +66,8 @@ class ISourcePackageRelease(Interface):
     copyright = Attribute(
         "Copyright information for this SourcePackageRelease, if available.")
     section = Attribute("Section this Source Package Release belongs to")
-    builds = Attribute("Builds for this sourcepackagerelease")
+    builds = Attribute("Builds for this sourcepackagerelease excluding PPA "
+        "archives.")
     files = Attribute("IBinaryPackageFile entries for this "
         "sourcepackagerelease")
     sourcepackagename = Attribute("SourcePackageName table reference")

@@ -229,8 +229,8 @@ status is shown in parentheses after the build status.
     >>> browser.open("http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9")
     >>> print extract_text(find_tag_by_id(browser.contents,"portlet-builds"))
     Builds of mozilla-firefox - 0.9
-    warty i386 Successfully built
-    hoary i386 Currently building
-    breezy-autotest i386 Successfully built (NEW)
     warty hppa Successfully built
+    hoary i386 Currently building
+    warty i386 Successfully built
+    breezy-autotest i386 Successfully built (NEW)
 
