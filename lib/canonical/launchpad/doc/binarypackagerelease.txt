@@ -1,5 +1,4 @@
-        Binary Package Release
-        ^^^^^^^^^^^^^^^^^^^^^^
+= BinaryPackageRelease =
 
 BinaryPackageRelease stores unique versions of binarypackagenames
 across build records.
@@ -127,20 +126,20 @@ different architectures:
 
    >>> result = binset.findByNameInDistroSeries(warty, 'moz')
    >>> print len(list(result))
-   2
+   5
    >>> result = binset.findByNameInDistroSeries(warty, 'nosuchpackage')
    >>> print len(list(result))
    0
-   >>> result = binset.findByNameInDistroSeries(warty, 'Web Browser',
-   ...                                           fti=True)
+   >>> result = binset.findByNameInDistroSeries(
+   ...      warty, 'Web Browser', fti=True)
    >>> print len(list(result))
-   1
-   >>> result = binset.findByNameInDistroSeries(warty, 'X50keBLvzk',
-   ...                                           fti=True)
+   2
+   >>> result = binset.findByNameInDistroSeries(
+   ...     warty, 'X50keBLvzk', fti=True)
    >>> print len(list(result))
    0
-   >>> result = binset.findByNameInDistroSeries(warty, 'moz',
-   ...                                           archtag="nosucharch")
+   >>> result = binset.findByNameInDistroSeries(
+   ...     warty, 'moz', archtag="nosucharch")
    >>> print len(list(result))
    0
 
@@ -150,27 +149,27 @@ getByNameInDistroSeries
 
    >>> result = binset.getByNameInDistroSeries(warty)
    >>> print len(list(result))
-   7
+   9
    >>> result = binset.getByNameInDistroSeries(warty, 'mozilla-firefox')
    >>> print len(list(result))
-   2
+   3
    >>> result = binset.getByNameInDistroSeries(warty, 'nosuchpackage')
    >>> print len(list(result))
    0
-   >>> result = binset.getByNameInDistroSeries(warty, 'mozilla-firefox',
-   ...                                          version='0.9')
-   >>> print len(list(result))
-   1
-   >>> result = binset.getByNameInDistroSeries(warty, 'mozilla-firefox',
-   ...                                          version='nosuchversion')
-   >>> print len(list(result))
-   0
-   >>> result = binset.getByNameInDistroSeries(warty, 'mozilla-firefox',
-   ...                                          archtag='i386')
+   >>> result = binset.getByNameInDistroSeries(
+   ...     warty, 'mozilla-firefox', version='0.9')
    >>> print len(list(result))
    2
-   >>> result = binset.getByNameInDistroSeries(warty, 'mozilla-firefox',
-   ...                                          archtag='nosucharch')
+   >>> result = binset.getByNameInDistroSeries(
+   ...     warty, 'mozilla-firefox', version='nosuchversion')
+   >>> print len(list(result))
+   0
+   >>> result = binset.getByNameInDistroSeries(
+   ...     warty, 'mozilla-firefox', archtag='i386')
+   >>> print len(list(result))
+   2
+   >>> result = binset.getByNameInDistroSeries(
+   ...     warty, 'mozilla-firefox', archtag='nosucharch')
    >>> print len(list(result))
    0
 

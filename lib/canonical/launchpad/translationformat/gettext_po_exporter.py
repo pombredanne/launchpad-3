@@ -439,7 +439,7 @@ class GettextPOExporter:
         # 'context' is ignored because it's only required by the way the
         # exporters are instantiated but it isn't used by this class.
         self.format = TranslationFileFormat.PO
-        self.supported_formats = [
+        self.supported_source_formats = [
             TranslationFileFormat.PO,
             TranslationFileFormat.KDEPO,
             TranslationFileFormat.XPI]

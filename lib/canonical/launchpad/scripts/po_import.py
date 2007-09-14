@@ -64,11 +64,21 @@ class ImportProcess:
                     continue
 
                 if entry_to_import.import_into is None:
+                    if entry_to_import.sourcepackagename is not None:
+                        package = entry_to_import.sourcepackagename.name
+                    elif entry_to_import.productseries is not None:
+                        package = (
+                            entry_to_import.productseries.product.displayname)
+                    else:
+                        raise AssertionError(
+                            "Import queue entry %d has neither a "
+                            "source package name nor a product series."
+                            % entry_to_import.id)
                     raise AssertionError(
-                        "Entry '%s' is broken: it's Approved but lacks the "
-                        "place where it should be imported!  A DBA will need "
-                        "to fix this by hand."
-                        % entry_to_import.displayname())
+                        "Broken translation import queue entry %d (for %s): "
+                        "it's Approved but lacks the place where it should "
+                        "be imported!  A DBA will need to fix this by hand."
+                        % (entry_to_import.id, package))
 
                 # Do the import.
                 title = '[Unknown Title]'

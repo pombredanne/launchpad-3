@@ -34,7 +34,7 @@ class KdePOExporter(GettextPOExporter):
         # KdePOExporter is also able to export `TranslationFileFormat.PO`,
         # but there is not much practical use for that, so we are not listing
         # it as one of the supported formats for this exporter.
-        self.supported_formats = [TranslationFileFormat.KDEPO]
+        self.supported_source_formats = [TranslationFileFormat.KDEPO]
 
     def exportTranslationMessage(self, translation_message):
         """See `ITranslationFormatExporter`."""
