@@ -13,6 +13,8 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
+from operator import attrgetter
+
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -86,7 +88,7 @@ class TranslationImporter:
     def getTranslationFileFormat(self, file_extension, file_contents):
         """See `ITranslationImporter`."""
         all_importers = importers.values()
-        all_importers.sort(key=attrgetter('priority'))
+        all_importers.sort(key=attrgetter('priority'), reverse=True)
         for importer in all_importers:
             if file_extension in importer.file_extensions:
                 return importer.getFormat(file_contents)
