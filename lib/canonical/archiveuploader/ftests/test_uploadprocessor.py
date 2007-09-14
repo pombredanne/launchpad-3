@@ -147,7 +147,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
     This test case is able to setup a fresh distroseries in Ubuntu.
     """
 
-    def _checkPartnerUploadEmail(self):
+    def _checkPartnerUploadEmailSuccess(self):
         """Ensure partner uploads generate the right email."""
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         foo_bar = "Foo Bar <foo.bar@canonical.com>"
@@ -370,7 +370,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.processUpload(uploadprocessor, upload_dir)
 
         # Check it went ok to the NEW queue and all is going well so far.
-        self._checkPartnerUploadEmail()
+        self._checkPartnerUploadEmailSuccess()
 
         # Find the sourcepackagerelease and check its component.
         foocomm_name = SourcePackageName.selectOneBy(name="foocomm")
@@ -417,7 +417,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.processUpload(uploadprocessor, upload_dir)
 
         # Check it went ok to the NEW queue and all is going well so far.
-        self._checkPartnerUploadEmail()
+        self._checkPartnerUploadEmailSuccess()
 
         # Find the binarypackagerelease and check its component.
         foocomm_binname = BinaryPackageName.selectOneBy(name="foocomm")
@@ -519,8 +519,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("foocomm_1.0-1_proposed")
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Check that it was successful.
-        self._checkPartnerUploadEmail()
+        self._checkPartnerUploadEmailSuccess()
 
     def testPartnerUploadToReleasePocketInStableDistroseries(self):
         """Partner package upload to release pocket in stable distroseries.
@@ -539,10 +538,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("foocomm_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Check that it was successful.
-        self._checkPartnerUploadEmail()
+        self._checkPartnerUploadEmailSuccess()
 
-    def _uploadPartnerToNonReleasePocketAndCheck(self):
+    def _uploadPartnerToNonReleasePocketAndCheckFail(self):
         """Upload partner package to non-release pocket.
 
         Helper function to upload a partner package to a non-release
@@ -578,21 +576,21 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         self.breezy.status = DistroSeriesStatus.DEVELOPMENT
         self.layer.txn.commit()
-        self._uploadPartnerToNonReleasePocketAndCheck()
+        self._uploadPartnerToNonReleasePocketAndCheckFail()
 
         self.breezy.status = DistroSeriesStatus.EXPERIMENTAL
         self.layer.txn.commit()
-        self._uploadPartnerToNonReleasePocketAndCheck()
+        self._uploadPartnerToNonReleasePocketAndCheckFail()
 
         # Check stable states:
 
         self.breezy.status = DistroSeriesStatus.CURRENT
         self.layer.txn.commit()
-        self._uploadPartnerToNonReleasePocketAndCheck()
+        self._uploadPartnerToNonReleasePocketAndCheckFail()
 
         self.breezy.status = DistroSeriesStatus.SUPPORTED
         self.layer.txn.commit()
-        self._uploadPartnerToNonReleasePocketAndCheck()
+        self._uploadPartnerToNonReleasePocketAndCheckFail()
 
 
 class TestUploadProcessorPPA(TestUploadProcessorBase):

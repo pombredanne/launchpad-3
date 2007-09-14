@@ -115,15 +115,15 @@ class TestPublishDistro(TestNativePublishingBase):
             os.path.join("%s" % distsroot, distroseries, 'Release'))
         shutil.rmtree(tmp_path)
 
-    def testDistsrootNotOverrideCommercialArchive(self):
+    def testDistsrootNotOverridePartnerArchive(self):
         """Test the -R option to publish-distro.
 
-        Make sure the -R option does not affect the commercial archive.
+        Make sure the -R option does not affect the partner archive.
         """
         ubuntu = getUtility(IDistributionSet)['ubuntutest']
-        commercial_archive = ubuntu.getArchiveByComponent('commercial')
+        partner_archive = ubuntu.getArchiveByComponent('partner')
         tmp_path, distsroot = self.publishToArchiveWithOverriddenDistsroot(
-            commercial_archive)
+            partner_archive)
         distroseries = 'breezy-autotest'
         self.assertNotExists(os.path.join(tmp_path, distroseries, 'Release'))
         self.assertExists(

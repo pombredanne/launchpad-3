@@ -132,7 +132,7 @@ class TestPublisher(TestNativePublishingBase):
         # Nothing to test from these two calls other than that they don't blow
         # up as there is an assertion in the code to make sure it's not
         # publishing out of a release pocket in a stable distroseries,
-        # excepting PPA and commercial which are allowed to do that.
+        # excepting PPA and partner which are allowed to do that.
         publisher.C_writeIndexes(is_careful=False)
         publisher.D_writeReleaseFiles(is_careful=False)
 

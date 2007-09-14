@@ -687,7 +687,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             " AND ".join(main_clauses), clauseTables=['Archive'], orderBy="id")
 
         # PPA and partner repo candidates.
-        # These archives do not exclude sources in the release pocket for
+        # These archives allow uploads of sources in the release pocket for
         # a stable distroseries.
         other_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
             sqlvalues(self)]
