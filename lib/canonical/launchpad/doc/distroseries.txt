@@ -615,15 +615,62 @@ Get the needed objects to prepare this test.
     ...     'evolution-2.2')
     >>> pofile_es_humpy = potemplate_humpy.getPOFileByLang('es')
 
-    >>> from canonical.launchpad.ftests import time_counter
-    >>> # "Clock" that's guaranteed always to progress between calls.
-    >>> now = time_counter(delta=datetime.datetime.resolution).next
-
 The one submitting the string will be Carlos.  He's an editor for this POFile.
 
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
 
-Update a string in the parent release.
+    >>> from canonical.launchpad.ftests import time_counter
+    >>> # "Clock" that's guaranteed always to progress between calls.
+    >>> now = time_counter(delta=datetime.datetime.resolution).next
+
+As it happens, our templates have some messages with the same msgids but
+different contexts.  These exist in both Hoary and Humpy, but one is
+translated only in Hoary; another only in Humpy; another in both, with the one
+in Humpy the most recent; and yet another in both but with the one in Hoary
+the most recent.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    >>> def add_messageset_to_template(potemplate, sequence, msgid, context):
+    ...     """Add a message set to the given `POTemplate`."""
+    ...     context_msg = potemplate.createMessageSetFromText(
+    ...         msgid, context)
+    ...     context_msg = removeSecurityProxy(context_msg)
+    ...     context_msg.sequence = sequence
+    ...     potemplate.invalidateCache()
+    ...     return context_msg
+
+    >>> def add_translation(pofile, potmsgset, translation):
+    ...     """Set translation for given message set in given `POFile`."""
+    ...     pomsgset = pofile.createMessageSetFromMessageSet(potmsgset)
+    ...     pomsgset.updateTranslationSet(
+    ...         carlos, { 0: translation }, fuzzy=False, published=False,
+    ...         lock_timestamp=now())
+
+    >>> context_msg = add_messageset_to_template(
+    ...     potemplate_hoary, 100, u"A contexted message", None)
+    >>> add_translation(pofile_es_hoary, context_msg, "Hoary0")
+    >>> context_msg = add_messageset_to_template(
+    ...     potemplate_humpy, 100, u"A contexted message", None)
+    >>> context_msg = add_messageset_to_template(
+    ...     potemplate_hoary, 101, u"A contexted message", u"context1")
+    >>> context_msg = add_messageset_to_template(
+    ...     potemplate_humpy, 101, u"A contexted message", u"context1")
+    >>> add_translation(pofile_es_humpy, context_msg, "Humpy1")
+    >>> context_msg = add_messageset_to_template(
+    ...     potemplate_hoary, 102, u"A contexted message", u"context2")
+    >>> add_translation(pofile_es_hoary, context_msg, "Hoary2")
+    >>> context_msg = add_messageset_to_template(
+    ...     potemplate_humpy, 102, u"A contexted message", u"context2")
+    >>> add_translation(pofile_es_humpy, context_msg, "Humpy2")
+    >>> context_msg_hoary = add_messageset_to_template(
+    ...     potemplate_hoary, 103, u"A contexted message", u"context3")
+    >>> context_msg_humpy = add_messageset_to_template(
+    ...     potemplate_humpy, 103, u"A contexted message", u"context3")
+    >>> add_translation(pofile_es_humpy, context_msg_humpy, "Humpy3")
+    >>> add_translation(pofile_es_hoary, context_msg_hoary, "Hoary3")
+
+Carlos also updates a regular string in the parent release.
 
     >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(u'evolution addressbook')
     >>> pomsgset_hoary.updateTranslationSet(
@@ -653,9 +700,9 @@ We update these statistics first, since we have not gone through the regular
 UI for updating translations, and receive the current numbers as a byproduct.
 
     >>> pofile_es_hoary.updateStatistics()
-    (7, 2, 1, 1)
+    (7, 2, 4, 1)
     >>> pofile_es_humpy.updateStatistics()
-    (7, 2, 0, 0)
+    (7, 2, 3, 0)
 
 The statistics for messages translated in Launchpad reflect the fact that we
 translated one previously untranslated string in Hoary.  The number for this
@@ -672,12 +719,12 @@ category of message is called rosettaCount.
     2
 
     >>> pofile_es_hoary.rosettaCount()
-    1
+    4
     >>> pofile_es_humpy.rosettaCount()
-    0
+    3
 
-When we compare the full translations for hoary and humpy, we see exactly the
-changes we just made, and nothing else.
+When we compare the full translations for hoary and humpy, we see the changes
+we just made, as well as the differences between the messages-with-context.
 
     >>> print compare_translations(hoary, humpy)
     Output doesn't match:
@@ -710,13 +757,35 @@ changes we just made, and nothing else.
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:104
      msgid " cards"
+    @@ -277,16 +277,16 @@
+     msgstr ""
+    <BLANKLINE>
+     msgid "A contexted message"
+    -msgstr "Hoary0"
+    +msgstr ""
+    <BLANKLINE>
+     msgctxt "context1"
+     msgid "A contexted message"
+    -msgstr ""
+    +msgstr "Humpy1"
+    <BLANKLINE>
+     msgctxt "context2"
+     msgid "A contexted message"
+    -msgstr "Hoary2"
+    +msgstr "Humpy2"
+    <BLANKLINE>
+     msgctxt "context3"
+     msgid "A contexted message"
+    -msgstr "Hoary3"
+    +msgstr "Humpy3"
 
-Let's migrate the updates from Hoary to Humpy.
+Now we migrate the updates from Hoary to Humpy.
 
     >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
 
-Our updates are copied to Humpy.  The one remaining difference between Hoary's
-and Humpy's translations is that we updated one translation in Humpy itself.
+Our updates are copied to Humpy.  The remaining differences between Hoary and
+Humpy are the messages that were translated in Humpy more recently than they
+were in Hoary, or were translated in Humpy but not at all in Hoary.
 
     >>> print compare_translations(hoary, humpy)
     Output doesn't match:
@@ -733,11 +802,27 @@ and Humpy's translations is that we updated one translation in Humpy itself.
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
      #, fuzzy
+    @@ -281,12 +281,12 @@
+    <BLANKLINE>
+     msgctxt "context1"
+     msgid "A contexted message"
+    -msgstr ""
+    +msgstr "Humpy1"
+    <BLANKLINE>
+     msgctxt "context2"
+     msgid "A contexted message"
+    -msgstr "Hoary2"
+    +msgstr "Humpy2"
+    <BLANKLINE>
+     msgctxt "context3"
+     msgid "A contexted message"
+    -msgstr "Hoary3"
+    +msgstr "Humpy3"
 
-That change in Humpy supersedes any translation changes that may be made in
-its parent distroseries for that same message.  So even if someone now
-translate the message in Hoary as well, Humpy will retain its own translation
-of that string when we next migrate updates.
+Changes in Humpy supersede any translation changes that may be made in its
+parent distroseries for that same message.  So even if someone now translates
+the same messages in Hoary as well, Humpy will retain its own translations
+of those string when we next migrate updates.
 
     >>> pomsgset_hoary = pofile_es_hoary.getPOMsgSet(
     ...     u'current addressbook folder')
@@ -761,19 +846,24 @@ of that string when we next migrate updates.
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
      #, fuzzy
+    @@ -281,12 +281,12 @@
+    ...
 
-The Hoary message is updated, but even though the Humpy version is older, it is
-not overwritten by the copy.
+The Hoary message is updated, but even though the Humpy version is older, it
+is not overwritten by the copy.  (The differences in the part where we had
+messages with contexts remain as they were.)
 
 We can also see that the statistics are updated and both distributions show
-the same numbers (though one of the messages in the rosettaCount actually
-differs between the two distro series).
+mostly the same numbers (though some messages in the rosettaCount actually
+differ between the two distro series).  The only difference is that 1 message
+that was untranslated in Humpy got copied from Hoary, whereas another that was
+translated in Humpy but not in Hoary, wasn't.
 
     >>> pofile_es_hoary.currentCount() == pofile_es_humpy.currentCount()
     True
     >>> pofile_es_hoary.updatesCount() == pofile_es_humpy.updatesCount()
     True
-    >>> pofile_es_hoary.rosettaCount() == pofile_es_humpy.rosettaCount()
+    >>> pofile_es_hoary.rosettaCount() == pofile_es_humpy.rosettaCount() - 1
     True
 
 Finally, prepare a new distro series to do the copy using an external script
@@ -788,9 +878,9 @@ to do the translation migration to this new distro series.
 The script starts its own transactions, so we need to commit here to be sure
 the new series will be available in the script.
 
-    >>> import transaction
     >>> import subprocess
     >>> import sys
+    >>> import transaction
     >>> transaction.commit()
 
 Now, we execute the script that will migrate/copy all current templates and
