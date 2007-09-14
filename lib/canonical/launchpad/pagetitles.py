@@ -151,6 +151,9 @@ def branch_index(context, view):
     else:
         return smartquote('"%s" branch in Launchpad') % (context.displayname)
 
+branch_link_to_bug = ContextDisplayName(smartquote(
+    'Link branch "%s" to a bug report'))
+
 def branch_listing_cross_product(context, view):
     return view.page_title
 
@@ -418,7 +421,9 @@ distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
-distributionsourcepackage_index = ContextTitle('%s')
+distrosourcepackage_index = ContextTitle('%s')
+
+distrosourcepackage_publishinghistory = ContextTitle('Publishing history of %s')
 
 distributionsourcepackage_manage_bugcontacts = ContextTitle('Bug contacts for %s')
 
@@ -905,7 +910,8 @@ project_add = 'Register a project group with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
 
-project_branches = ContextTitle('Bazaar branches for %s')
+project_branches = ContextTitle(
+    smartquote("%s's Bazaar branches registered in Launchpad"))
 
 project_bugs = ContextTitle('Bugs in %s')
 

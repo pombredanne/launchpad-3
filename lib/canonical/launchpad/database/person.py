@@ -937,9 +937,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                     sourcepackagename=None):
         """See `IPerson`."""
         # Teams don't get Karma. Inactive accounts don't get Karma.
+        # The system user and janitor, does not get karma.
         # No warning, as we don't want to place the burden on callsites
         # to check this.
-        if not self.is_valid_person:
+        if (not self.is_valid_person
+            or self.id is getUtility(
+                ILaunchpadCelebrities).janitor.id):
             return None
 
         if product is not None:

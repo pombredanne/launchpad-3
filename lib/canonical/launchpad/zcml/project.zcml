@@ -48,6 +48,11 @@
         />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
+        name="+branches"
+        layer="canonical.launchpad.layers.CodeLayer"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
         name="+bugs"
         layer="canonical.launchpad.layers.BugsLayer"
         />
@@ -74,11 +79,6 @@
             name="+index"
             facet="overview"
             template="../templates/project-index.pt"
-            />
-        <browser:page
-            name="+branches"
-            facet="overview"
-            template="../templates/project-branches.pt"
             />
         <browser:page
             name="+bounties"
@@ -116,6 +116,15 @@
             template="../templates/object-portlet-milestones.pt"
             />
     </browser:pages>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectBranchesView"
+        facet="branches"
+        permission="zope.Public"
+        name="+branches"
+        template="../templates/project-branches.pt"
+    />
 
     <browser:page
         for="canonical.launchpad.interfaces.IProject"

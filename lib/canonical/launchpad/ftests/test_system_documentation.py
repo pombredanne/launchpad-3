@@ -189,7 +189,6 @@ def _createUbuntuBugTaskLinkedToQuestion():
     bug = ubuntu.createBug(params)
     ubuntu_question.linkBug(bug)
     [ubuntu_bugtask] = bug.bugtasks
-    bugtask_id = ubuntu_bugtask.id
     login(ANONYMOUS)
     return ubuntu_bugtask.id
 
@@ -428,6 +427,12 @@ special = {
             layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
             stdout_logging_level=logging.WARNING
             ),
+    'buildd-scoring.txt': LayeredDocFileSuite(
+            '../doc/buildd-scoring.txt',
+            setUp=builddmasterSetUp,
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
+            stdout_logging_level=logging.DEBUG
+            ),
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
             setUp=branchscannerSetUp, tearDown=branchscannerTearDown,
@@ -526,6 +531,12 @@ special = {
             tearDown=uploadQueueTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
+    'bugtask-expiration.txt': LayeredDocFileSuite(
+            '../doc/bugtask-expiration.txt',
+            setUp=uploadQueueSetUp,
+            tearDown=uploadQueueTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
     'bugmessage.txt': LayeredDocFileSuite(
             '../doc/bugmessage.txt',
             setUp=noPrivSetUp, tearDown=tearDown,
@@ -555,12 +566,13 @@ special = {
             setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
             optionflags=default_optionflags, layer=LaunchpadFunctionalLayer
             ),
-    'answer-tracker-notifications-linked-bug.txt-uploader': LayeredDocFileSuite(
-            '../doc/answer-tracker-notifications-linked-bug.txt',
-            setUp=uploaderBugLinkedToQuestionSetUp,
-            tearDown=tearDown,
-            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
-            ),
+    'answer-tracker-notifications-linked-bug.txt-uploader':
+            LayeredDocFileSuite(
+                '../doc/answer-tracker-notifications-linked-bug.txt',
+                setUp=uploaderBugLinkedToQuestionSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
     'answer-tracker-notifications-linked-bug.txt-queued': LayeredDocFileSuite(
             '../doc/answer-tracker-notifications-linked-bug.txt',
             setUp=uploadQueueBugLinkedToQuestionSetUp,
