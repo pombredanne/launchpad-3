@@ -113,3 +113,27 @@ are once again what they were.
     >>> pofile.getStatistics()
     (0, 0, 3, 0)
 
+The Translations administrators also receive an email about the error.
+
+    >>> from canonical.launchpad.mail.stub import test_emails
+    >>> from_addr, to_addrs, body = test_emails.pop()
+    >>> len(test_emails)
+    0
+    >>> to_addrs
+    ['rosetta@launchpad.net']
+    >>> in_header = True
+    >>> for line in body.splitlines():
+    ...     if in_header:
+    ...         in_header = (line != '')
+    ...     else:
+    ...         print line
+    The POFile statistics verifier encountered errors while checking cached
+    statistics in the database:
+    <BLANKLINE>
+    Exceptions: 0
+    POFiles with incorrect statistics: 1
+    Total POFiles checked: ...
+    <BLANKLINE>
+    See the pofile-stats log for detailed information.
+
+
