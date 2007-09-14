@@ -64,7 +64,7 @@ class ITranslationImportQueueEntry(Interface):
         default=False)
 
     content = Attribute(
-        "An ILibraryFileAlias reference with the file content. Must be not"
+        "An ILibraryFileAlias reference with the file content. Must not be"
         " None.")
 
     format = Choice(
