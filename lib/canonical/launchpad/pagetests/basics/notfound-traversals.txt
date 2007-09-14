@@ -198,7 +198,7 @@ removing this, you must be completely sure that no supported Ubuntu release
 is still pointing to this old URL (see bug #138090).
 
 >>> check_redirect("/ubuntu/hoary/+source/evolution/+translate",
-...     host="launchpad.net")
+...     host="launchpad.dev", status=301)
 >>> check("/ubuntu/hoary/+source/evolution/+translate",
 ...       host='translations.launchpad.dev' )
 >>> check("/ubuntu/hoary/+source/evolution/+translations",
