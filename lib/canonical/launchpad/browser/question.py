@@ -111,9 +111,11 @@ class QuestionSetView(LaunchpadFormView):
         # are a bot. In that case we just assume they want to search
         # all projects.
         scope = self.widgets['scope'].getScope()
-        if scope is None:
+        if scope is None or scope == 'all':
             # Use 'All projects' scope.
             scope = self.context
+        else:
+            scope = self.widgets['scope'].getInputValue()
         self.next_url = "%s/+tickets?%s" % (
             canonical_url(scope), self.request['QUERY_STRING'])
 
