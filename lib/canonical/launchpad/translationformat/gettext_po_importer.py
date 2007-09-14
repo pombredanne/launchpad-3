@@ -32,10 +32,7 @@ class GettextPOImporter:
         """See `ITranslationFormatImporter`."""
         return TranslationFileFormat.PO
 
-    @property
-    def try_this_format_before(self):
-        """See `ITranslationFormatImporter`."""
-        return None
+    try_this_format_before = None
 
     @property
     def content_type(self):

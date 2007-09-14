@@ -34,24 +34,23 @@ class KdePOExporter(GettextPOExporter):
         # KdePOExporter is also able to export `TranslationFileFormat.PO`,
         # but there is not much practical use for that, so we are not listing
         # it as one of the supported formats for this exporter.
-        self.supported_formats = [ TranslationFileFormat.KDEPO ]
+        self.supported_formats = [TranslationFileFormat.KDEPO]
 
     def exportTranslationMessage(self, translation_message):
         """See `ITranslationFormatExporter`."""
         # Special handling of context and plural forms.
         if translation_message.context is not None:
             # Let's turn context messages into legacy KDE context.
-            translation_message.msgid = (u"_: " + translation_message.context +
-                                         "\n" + translation_message.msgid)
+            translation_message.msgid = u"_: %s\n%s" % (
+                translation_message.context, translation_message.msgid)
             translation_message.context = None
         elif translation_message.msgid_plural is not None:
             # Also, let's handle legacy KDE plural forms.
             translations = translation_message.translations
             translation_message._translations = [
                 "\n".join(translation_message.translations)]
-            translation_message.msgid = (
-                "_n: " + translation_message.msgid + "\n" +
-                translation_message.msgid_plural)
+            translation_message.msgid = u"_n: %s\n%s" % (
+                translation_message.msgid, translation_message.msgid_plural)
             translation_message.msgid_plural = None
 
         return GettextPOExporter.exportTranslationMessage(

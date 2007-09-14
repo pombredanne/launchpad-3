@@ -68,9 +68,9 @@ class ITranslationImportQueueEntry(Interface):
         " None.")
 
     format = Choice(
-        title=_("The file format of the import."),
-        values=TranslationFileFormat.items,
-        required=True)
+        title=_('The file format of the import.'),
+        vocabulary='TranslationFileFormat',
+        required=True, readonly=True)
 
     status = Choice(
         title=_("The status of the import."),

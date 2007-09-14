@@ -101,11 +101,23 @@ class KdePOImporterTestCase(unittest.TestCase):
                 "interface.")
 
     def testFormat(self):
-        """Check whether KdePOImporter say that handles KDEPO file format."""
+        """Check whether KdePOImporter can handle the KDEPO file format."""
         format = self.template_importer.format(test_kde_template)
         self.failUnless(
             format == TranslationFileFormat.KDEPO,
             'KdePOImporter format expected KDEPO but got %s' % format.name)
+
+    def testTryThisFormatBefore(self):
+        """Check if KdePOImporter has precedence over GettextPOImporter."""
+        # When importing a PO file, our import infrastructure needs to know
+        # that one importer (i.e. KdePOImporter) has precedence over the
+        # other one (i.e. GettextPOImporter).  That relationship is specified
+        # here.
+        format = self.template_importer.try_this_format_before
+        self.failUnless(
+            format == TranslationFileFormat.PO,
+            'KdePOImporter format has precedence for PO format but got %s' %
+            format.name)
 
     def testGettextPOFileFormat(self):
         """Check whether non-KDE PO files are recognized as regular PO files."""

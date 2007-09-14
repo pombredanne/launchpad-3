@@ -117,10 +117,10 @@ class ITranslationImporter(Interface):
 class ITranslationFormatImporter(Interface):
     """Translation file format importer."""
 
-    def format(contents):
+    def getFormat(file_contents):
         """The file format of the import.
 
-        :param contents: A unicode string with the contents of the file
+        :param file_contents: A unicode string with the contents of the file
             being imported.  A returned format may sometimes be different
             from the base format of the `ITranslationFormatImporter`, and
             that is determined based on the `contents`.
@@ -136,8 +136,7 @@ class ITranslationFormatImporter(Interface):
             one is to be done first.  When this format knows what it
             has precedence from, it should set it here.
             ''',
-        vocabulary='TranslationFileFormat',
-        required=True)
+        vocabulary='TranslationFileFormat')
 
     content_type = TextLine(
         title=u'Content type string for this file format.',

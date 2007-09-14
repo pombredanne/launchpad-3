@@ -44,15 +44,9 @@ class KdePOImporter(GettextPOImporter):
         else:
             return TranslationFileFormat.PO
 
-    @property
-    def try_this_format_before(self):
-        """See `ITranslationFormatImporter`."""
-        return TranslationFileFormat.PO
+    try_this_format_before = TranslationFileFormat.PO
 
-    @property
-    def content_type(self):
-        """See `ITranslationFormatImporter`."""
-        return 'application/x-po'
+    content_type = 'application/x-po'
 
     def parse(self, translation_import_queue_entry):
         """See `ITranslationFormatImporter`."""
@@ -71,7 +65,7 @@ class KdePOImporter(GettextPOImporter):
                 message.msgid = singular
                 message.msgid_plural = plural
                 msgstrs = message._translations
-                if len(msgstrs)>0:
+                if len(msgstrs) > 0:
                     message._translations = msgstrs[0].split('\n')
 
                 self.internal_format = TranslationFileFormat.KDEPO
