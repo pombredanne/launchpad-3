@@ -101,8 +101,6 @@ def get_external_bugtracker(bugtracker, version=None):
         return Trac(bugtracker.baseurl)
     elif bugtrackertype == BugTrackerType.ROUNDUP:
         return Roundup(bugtracker.baseurl)
-    elif bugtrackertype == BugTrackerType.SOURCEFORGE:
-        return SourceForge(bugtracker.baseurl)
     else:
         raise UnknownBugTrackerTypeError(bugtrackertype.name,
             bugtracker.name)
