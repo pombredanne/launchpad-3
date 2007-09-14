@@ -63,7 +63,7 @@ echo == Product Release Finder `date` ==
 python product-release-finder.py -q
 
 echo == Updating bug watches `date` ==
-LPCONFIG=production LP_DBUSER=checkwatches python checkwatches.py
+LPCONFIG=production LP_DBUSER=temp_checkwatches python checkwatches.py
 
 rm -f $LOCK
 

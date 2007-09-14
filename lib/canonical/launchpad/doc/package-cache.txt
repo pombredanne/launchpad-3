@@ -302,7 +302,7 @@ New values were stored:
   >>> warty.sourcecount
   5
   >>> warty.binarycount
-  5
+  6
 
 A similar mechanism is offered by IDistroArchSeries, but only for
 binaries (of course):
@@ -319,4 +319,4 @@ Invoke the counter updater on this architecture:
 New values were stored:
 
   >>> warty_i386.package_count
-  7
+  8

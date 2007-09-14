@@ -45,8 +45,8 @@ class IBuildQueue(Interface):
     files = Attribute(
         "Collection of files related to the ISourcePackageRelease "
         "releated to this job.")
-    component_name = Attribute(
-        "Component name where the ISourcePackageRelease releated to "
+    current_component = Attribute(
+        "Component where the ISourcePackageRelease releated to "
         "this job got published in.")
     urgency = Attribute(
         "Urgency of the ISourcePackageRelease releated to this job.")
@@ -62,6 +62,27 @@ class IBuildQueue(Interface):
 
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""
+
+    def score():
+        """Perform scoring based on heuristic values.
+
+        Creates a 'score' (priority) value based on:
+
+         * Component: main component gets higher values
+           (main, 1000, restricted, 750, universe, 250, multiverse, 0)
+
+         * Urgency: EMERGENCY sources gets higher values
+           (EMERGENCY, 20, HIGH, 15, MEDIUM, 10, LOW, 5)
+
+         * Queue time: old records gets a relative higher priority
+           (The rate against component is something like: a 'multiverse'
+           build will be as important as a 'main' after 40 hours in queue)
+
+        This method automatically updates IBuildQueue.lastscore value and
+        skips 'manually-scored' records.
+
+        This method use any logger available in the standard logging system.
+        """
 
     def destroySelf():
         """Delete this entry from the database."""

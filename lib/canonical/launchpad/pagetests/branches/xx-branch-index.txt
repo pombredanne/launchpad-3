@@ -167,65 +167,62 @@ vary from branch type to branch type.
 For hosted branches, the table has a link to the branch's project and the URL
 for the branch's canonical location.
 
-  >>> def get_branch_details_table():
-  ...     table = find_tag_by_id(browser.contents, 'branch-details-table')
-  ...     return table.tbody
+    >>> def get_branch_details_table():
+    ...     table = find_tag_by_id(browser.contents, 'branch-details-table')
+    ...     return table.tbody
 
-  >>> browser.open(
-  ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
-  >>> print extract_text(get_branch_details_table())
-  Project: GNOME Terminal
-  Hosted on Launchpad: http://bazaar.launchpad.dev/~name12/gnome-terminal/scanned
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
+    >>> print extract_text(get_branch_details_table())
+    Project: GNOME Terminal
+    Upload URL: Only Sample Person can upload to this branch.
+      If you are Sample Person please log in for upload directions.
 
 
 For mirrored branches, the table has a link to the branch's project, the
 location of the original branch, the mirror on Launchpad, information about
 when the branch was last mirrored and when it will be mirrored again.
 
-  >>> browser.open(
-  ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-  >>> print extract_text(get_branch_details_table())
-  Project: GNOME Terminal
-  Location: http://trekkies.example.com/gnome-terminal/klingon
-  Mirror: http://bazaar.launchpad.dev/~name12/gnome-terminal/klingon
-  Next mirror: As soon as possible
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> print extract_text(get_branch_details_table())
+    Project: GNOME Terminal
+    Location: http://trekkies.example.com/gnome-terminal/klingon
+    Next mirror: As soon as possible
 
 
 Branches that have never been mirrored don't have a 'Last mirrored' field.
 
-  >>> browser.open(
-  ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
-  >>> print extract_text(get_branch_details_table())
-  Project: GNOME Terminal
-  Location: http://example.com/gnome-terminal/main
-  Mirror: http://bazaar.launchpad.dev/~name12/gnome-terminal/main
-  Next mirror: As soon as possible
-
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
+    >>> print extract_text(get_branch_details_table())
+    Project: GNOME Terminal
+    Location: http://example.com/gnome-terminal/main
+    Next mirror: As soon as possible
 
 If mirror_request_time is NULL, then mirroring of the branch is disabled.
 
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.ftests import login, logout
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> from canonical.launchpad.interfaces import (
-  ...     BranchType, IBranchSet, IPersonSet)
-  >>> login('no-priv@canonical.com')
-  >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-  >>> branch = getUtility(IBranchSet).new(
-  ...     BranchType.MIRRORED, name='mirror-disabled', creator=no_priv,
-  ...     owner=no_priv, product=None, url='http://example.com/disabled',
-  ...     title='Disabled branch')
-  >>> branch.mirror_request_time = None
-  >>> flush_database_updates()
-  >>> logout()
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchType, IBranchSet, IPersonSet)
+    >>> login('no-priv@canonical.com')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> branch = getUtility(IBranchSet).new(
+    ...     BranchType.MIRRORED, name='mirror-disabled', creator=no_priv,
+    ...     owner=no_priv, product=None, url='http://example.com/disabled',
+    ...     title='Disabled branch')
+    >>> branch.mirror_request_time = None
+    >>> flush_database_updates()
+    >>> logout()
 
 
-  >>> browser.open(
-  ...     'http://code.launchpad.dev/~no-priv/+junk/mirror-disabled')
-  >>> print extract_text(get_branch_details_table())
-  Location: http://example.com/disabled
-  Mirror: http://bazaar.launchpad.dev/~no-priv/+junk/mirror-disabled
-  Next mirror: Disabled
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~no-priv/+junk/mirror-disabled')
+    >>> print extract_text(get_branch_details_table())
+    Location: http://example.com/disabled
+    Next mirror: Disabled
 
 
 == Structural object presentation ==
@@ -286,20 +283,37 @@ is able to see the branch.
     LinkNotFoundError
 
 
-== Hosted location ==
+== Download URL ==
 
-In the details table there is a link to the branch location on the supermirror.
+In the details table there is a link to the branch download URL.
 
 For public branches this shows links to the codehosting using http, whereas
 private branches show bzr+ssh as they are not available over anonymous
 http, and anyone who can see the branch is able to access it using bzr+ssh.
 
+The download URL is only shown for branches that actually have revisions.
+So we need to fake that here.
+
+    >>> login('foo.bar@canonical.com')
+    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    ...     '~landscape-developers/landscape/trunk')
+    >>> branch.revision_count = 42
+    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    ...     '~name12/gnome-terminal/scanned')
+    >>> branch.revision_count = 13
+    >>> flush_database_updates()
+    >>> logout()
+
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~landscape-developers/landscape/trunk')
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table'))
-    These URLs are intended for use with the Bazaar version control system.
+    Project: The Landscape Project
+    Download URL:
+      bzr+ssh://&lt;name&gt;@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
+    Example:
+      bzr branch bzr+ssh://name12@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
     ...
-    Hosted on Launchpad:
-    bzr+ssh://bazaar.launchpad.dev/~landscape-developers/landscape/trunk
 
 Public branches use http.
 
@@ -307,7 +321,9 @@ Public branches use http.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table'))
-    These URLs are intended for use with the Bazaar version control system.
+    Project: GNOME Terminal
+    Download URL:
+      http://bazaar.launchpad.dev/~name12/gnome-terminal/scanned
+    Example:
+      bzr branch http://bazaar.launchpad.dev/~name12/gnome-terminal/scanned
     ...
-    Hosted on Launchpad:
-    http://bazaar.launchpad.dev/~name12/gnome-terminal/scanned
