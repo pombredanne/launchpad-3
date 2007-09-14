@@ -74,7 +74,7 @@ And the same for KDE one.
   >>> translation = find_tag_by_id(
   ...     user_browser.contents, 'msgset_200_es_translation_0')
   >>> print translation.renderContents().strip()
-  danilo@canonical.com
+  danilo@canonical.com,,
 
 Also, suggestions should not appear.
 
