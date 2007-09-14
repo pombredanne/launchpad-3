@@ -3,10 +3,14 @@
 __metaclass__ = type
 
 import unittest
+from datetime import datetime
+
+import pytz
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import cursor
+from canonical.database.sqlbase import (
+    flush_database_caches, flush_database_updates, cursor)
 from canonical.launchpad.database import TeamMembership
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
@@ -41,6 +45,47 @@ class TestTeamMembershipSet(unittest.TestCase):
             membership,
             self.membershipset.getByPersonAndTeam(no_priv, ubuntu_team))
         self.assertEqual(membership.status, TeamMembershipStatus.ADMIN)
+
+    def test_handleMembershipsExpiringToday(self):
+        # Create a couple new teams, with one being a member of the other and
+        # make Sample Person an approved member of both teams.
+        foobar = self.personset.getByName('name16')
+        sample_person = self.personset.getByName('name12')
+        ubuntu_dev = self.personset.newTeam(
+            foobar, 'ubuntu-dev', 'Ubuntu Developers')
+        motu = self.personset.newTeam(foobar, 'motu', 'Ubuntu MOTU')
+        ubuntu_dev.addMember(motu, foobar, force_team_add=True)
+        ubuntu_dev.addMember(sample_person, foobar)
+        motu.addMember(sample_person, foobar)
+
+        # Now we need to cheat and set the expiration date of both memberships
+        # manually because otherwise we would only be allowed to set an
+        # expiration date in the future.
+        now = datetime.now(pytz.timezone('UTC'))
+        from zope.security.proxy import removeSecurityProxy
+        sample_person_on_motu = removeSecurityProxy(
+            self.membershipset.getByPersonAndTeam(sample_person, motu))
+        sample_person_on_motu.dateexpires = now
+        sample_person_on_ubuntu_dev = removeSecurityProxy(
+            self.membershipset.getByPersonAndTeam(sample_person, ubuntu_dev))
+        sample_person_on_ubuntu_dev.dateexpires = now
+        flush_database_updates()
+        self.assertEqual(
+            sample_person_on_ubuntu_dev.status, TeamMembershipStatus.APPROVED)
+        self.assertEqual(
+            sample_person_on_motu.status, TeamMembershipStatus.APPROVED)
+
+        self.membershipset.handleMembershipsExpiringToday(foobar)
+        flush_database_caches()
+
+        # Now Sample Person is not direct nor indirect member of ubuntu-dev
+        # or motu.
+        self.assertEqual(
+            sample_person_on_ubuntu_dev.status, TeamMembershipStatus.EXPIRED)
+        self.failIf(sample_person.inTeam(ubuntu_dev))
+        self.assertEqual(
+            sample_person_on_motu.status, TeamMembershipStatus.EXPIRED)
+        self.failIf(sample_person.inTeam(motu))
 
 
 class TestTeamMembership(unittest.TestCase):
