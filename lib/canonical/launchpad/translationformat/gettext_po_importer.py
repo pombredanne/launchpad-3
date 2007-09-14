@@ -28,26 +28,17 @@ class GettextPOImporter:
         self.is_published = False
         self.content = None
 
-    def format(self, content):
+    def getFormat(self, file_contents):
         """See `ITranslationFormatImporter`."""
         return TranslationFileFormat.PO
 
     try_this_format_before = None
 
-    @property
-    def content_type(self):
-        """See `ITranslationFormatImporter`."""
-        return 'application/x-po'
+    content_type = 'application/x-po'
 
-    @property
-    def file_extensions(self):
-        """See `ITranslationFormatImporter`."""
-        return ['.po', '.pot']
+    file_extensions = ['.po', '.pot']
 
-    @property
-    def uses_source_string_msgids(self):
-        """See `ITranslationFormatImporter`."""
-        return False
+    uses_source_string_msgids = False
 
     def parse(self, translation_import_queue_entry):
         """See `ITranslationFormatImporter`."""

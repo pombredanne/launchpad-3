@@ -89,8 +89,8 @@ class TranslationImporter:
                 for try_first_format in importers:
                     if (format ==
                         importers[try_first_format].try_this_format_before):
-                        return importers[try_first_format].format(content)
-                return importers[format].format(content)
+                        return importers[try_first_format].getFormat(content)
+                return importers[format].getFormat(content)
 
         return None
 

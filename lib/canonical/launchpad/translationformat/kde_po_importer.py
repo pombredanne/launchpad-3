@@ -27,7 +27,7 @@ class KdePOImporter(GettextPOImporter):
     """Support class for importing KDE .po files."""
     implements(ITranslationFormatImporter)
 
-    def format(self, content):
+    def getFormat(self, file_contents):
         """See `ITranslationFormatImporter`."""
         # XXX DaniloSegan 20070904: I first tried using POParser()
         # to check if the file is a legacy KDE PO file or not, but
@@ -36,10 +36,10 @@ class KdePOImporter(GettextPOImporter):
         # and with extremely big PO files, this will be too slow).  Thus,
         # a heuristic verified to be correct on all PO files from
         # Ubuntu language packs.
-        if (u'msgid "_n: ' in content or
-            u'msgid ""\n"_n: ' in content or
-            u'msgid "_: ' in content or
-            u'msgid ""\n"_: ' in content):
+        if (u'msgid "_n: ' in file_contents or
+            u'msgid ""\n"_n: ' in file_contents or
+            u'msgid "_: ' in file_contents or
+            u'msgid ""\n"_: ' in file_contents):
             return TranslationFileFormat.KDEPO
         else:
             return TranslationFileFormat.PO
