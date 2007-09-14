@@ -121,7 +121,7 @@ contact any external servers.
     ERROR   There's no debbugs db at /srv/bugs-mirror.debian.org/
     INFO    No watches to update on http://bugs.debian.org
     INFO    No watches to update on http://bugzilla.gnome.org/bugs
-    INFO    No watches to update on http://sourceforge.net/
+    INFO    ExternalBugtracker for BugTrackerType 'SOURCEFORGE' is not known.
     INFO    No watches to update on https://bugzilla.mozilla.org/
     INFO    Skipping updating Ubuntu Bugzilla watches.
     INFO    Time for this run: ... seconds.
