@@ -120,7 +120,7 @@ class LaunchpadServer(Server):
         branch_id, ignored, path = self._translate_path(virtual_path)
         self._dirty_branch_ids.add(branch_id)
 
-    def mkdir(self, virtual_path):
+    def make_branch_dir(self, virtual_path):
         """Make a new directory for the given virtual path.
 
         If the request is to make a user or a product directory, fail with
@@ -375,7 +375,7 @@ class LaunchpadTransport(Transport):
         try:
             return self._writing_call('mkdir', relpath, mode)
         except NoSuchFile:
-            return self.server.mkdir(self._abspath(relpath))
+            return self.server.make_branch_dir(self._abspath(relpath))
 
     def put_file(self, relpath, f, mode=None):
         return self._writing_call('put_file', relpath, f, mode)
