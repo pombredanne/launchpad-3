@@ -7,7 +7,8 @@ import unittest
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from canonical.launchpad.translationformat import TranslationImporter
+from canonical.launchpad.translationformat import (
+    importers, TranslationImporter)
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, IPOTemplateSet, ITranslationImporter)
 from canonical.lp.dbschema import TranslationFileFormat
@@ -91,26 +92,41 @@ class TranslationImporterTestCase(unittest.TestCase):
     def testGetTranslationFileFormatByFileExtension(self):
         """Checked whether file format precedence works correctly."""
 
-        po_format = (
-            self.translation_importer.getTranslationFileFormatByFileExtension(
-                ".po", u""))
+        # Even if the file extension is the same for both PO and KDEPO
+        # file formats, a PO file containing no KDE-style messages is
+        # recognized as regular PO file.
+        po_format = self.translation_importer.getTranslationFileFormat(
+            ".po", u"")
 
         self.failUnless(po_format==TranslationFileFormat.PO, (
             'Regular PO file is not recognized as such!'))
 
-        kde_po_format = (
-            self.translation_importer.getTranslationFileFormatByFileExtension(
-                ".po", u'msgid "_: kde context\nmessage"\nmsgstr ""'))
+        # And PO file with KDE-style messages is recognised as KDEPO file.
+        kde_po_format = self.translation_importer.getTranslationFileFormat(
+            ".po", u'msgid "_: kde context\nmessage"\nmsgstr ""')
 
         self.failUnless(kde_po_format==TranslationFileFormat.KDEPO, (
             'KDE PO file is not recognized as such!'))
 
-        xpi_format = (
-            self.translation_importer.getTranslationFileFormatByFileExtension(
-                ".xpi", u""))
+        xpi_format = self.translation_importer.getTranslationFileFormat(
+            ".xpi", u"")
 
-        self.failUnless(po_format==TranslationFileFormat.XPI, (
+        self.failUnless(xpi_format==TranslationFileFormat.XPI, (
             'Mozilla XPI file is not recognized as such!'))
+
+    def testNoConflictingPriorities(self):
+        """Check that no two importers for the same file extension have
+        exactly the same priority."""
+        all_extensions = self.translation_importer.supported_file_extensions
+        for file_extension in all_extensions:
+            priorities = []
+            for format, importer in importers.iteritems():
+                if file_extension in importer.file_extensions:
+                    self.failUnless(
+                        importer.priority not in priorities,
+                        "Duplicate priority %d for file extension %s." % (
+                            importer.priority, file_extension))
+                    priorities.append(importer.priority)
 
     def testFileExtensionsWithImporters(self):
         """Check whether we get the right list of file extensions handled."""

@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Bool, Choice, List, TextLine
+from zope.schema import Bool, Choice, Int, List, TextLine
 
 from canonical.launchpad.interfaces.translationcommonformat import (
     TranslationImportExportBaseException)
@@ -79,13 +79,13 @@ class ITranslationImporter(Interface):
         title=u'List of file extensions we have imports for.',
         required=True, readonly=True)
 
-    def getTranslationFileFormatByFileExtension(file_extension, contents):
+    def getTranslationFileFormat(file_extension, file_contents):
         """Return the translation file format for the given file extension.
 
         :param file_extension: File extension including the dot.
-        :param contents: File contents.
+        :param file_contents: File contents.
         :return: A `TranslationFileFormat` for the given file extension
-            or None if it's not a known extension.
+            and file contents or None if it's not supported format.
         """
 
     def getTranslationFormatImporter(file_format):
@@ -127,16 +127,18 @@ class ITranslationFormatImporter(Interface):
         :return: A `TranslationFileFormat` value.
         """
 
-    # Example of this: KdePOImporter is based off GettextPOImporter, and
-    # it knows that a .format(content) check should be done on that first.
-    try_this_format_before = Choice(
-        title=u'File format this importer should have higher priority from.',
+    priority = Int(
+        title=u'Priority among importers for the same file extension.',
         description=u'''
-            When two file formats match on the same file extensions,
-            one is to be done first.  When this format knows what it
-            has precedence from, it should set it here.
+            Priority an `ITranslationFormatImporter` has if there are
+            multiple importers for the same file extension.
+
+            Higher value indicates higher priority, i.e. that importer
+            is tried first.
             ''',
-        vocabulary='TranslationFileFormat')
+        required=True,
+        default=0
+        )
 
     content_type = TextLine(
         title=u'Content type string for this file format.',

@@ -44,7 +44,7 @@ class KdePOImporter(GettextPOImporter):
         else:
             return TranslationFileFormat.PO
 
-    try_this_format_before = TranslationFileFormat.PO
+    priority = 10
 
     content_type = 'application/x-po'
 

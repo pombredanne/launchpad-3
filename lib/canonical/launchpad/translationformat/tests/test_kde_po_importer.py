@@ -10,6 +10,8 @@ from zope.interface.verify import verifyObject
 
 from canonical.launchpad.translationformat.kde_po_importer import (
     KdePOImporter)
+from canonical.launchpad.translationformat.gettext_po_importer import (
+    GettextPOImporter)
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, ITranslationFormatImporter,
     ITranslationImportQueue)
@@ -107,17 +109,17 @@ class KdePOImporterTestCase(unittest.TestCase):
             format == TranslationFileFormat.KDEPO,
             'KdePOImporter format expected KDEPO but got %s' % format.name)
 
-    def testTryThisFormatBefore(self):
+    def testKDEPriorityIsHigherThanPOPriority(self):
         """Check if KdePOImporter has precedence over GettextPOImporter."""
-        # When importing a PO file, our import infrastructure needs to know
-        # that one importer (i.e. KdePOImporter) has precedence over the
-        # other one (i.e. GettextPOImporter).  That relationship is specified
-        # here.
-        format = self.template_importer.try_this_format_before
+        # For import queue to properly recognise KDEPO files which are
+        # otherwise just regular PO files, KdePOImporter has to have higher
+        # priority over GettextPOImporter
+        gettext_importer = GettextPOImporter()
+
         self.failUnless(
-            format == TranslationFileFormat.PO,
-            'KdePOImporter format has precedence for PO format but got %s' %
-            format.name)
+            self.template_importer.priority > gettext_importer.priority,
+            'KdePOImporter priority is not higher than priority of '
+            'GettextPOImporter')
 
     def testGettextPOFileFormat(self):
         """Check whether non-KDE PO files are recognized as regular PO files."""

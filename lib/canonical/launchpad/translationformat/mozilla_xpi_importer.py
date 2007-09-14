@@ -423,7 +423,7 @@ class MozillaXpiImporter:
         """See `ITranslationFormatImporter`."""
         return TranslationFileFormat.XPI
 
-    try_this_format_before = None
+    priority = 0
 
     # using "application/x-xpinstall" would trigger installation in
     # firefox.

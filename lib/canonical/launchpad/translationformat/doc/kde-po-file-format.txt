@@ -390,7 +390,7 @@ If we ask for a message without specifying context, we get no results:
     >>> print potmsgset
     None
 
-We can also import the translated file with message contexts:
+We can also import a translated file with message contexts:
 
     >>> kde_context_translation = r'''
     ... msgid ""

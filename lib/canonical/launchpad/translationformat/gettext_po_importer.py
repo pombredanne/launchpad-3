@@ -32,7 +32,7 @@ class GettextPOImporter:
         """See `ITranslationFormatImporter`."""
         return TranslationFileFormat.PO
 
-    try_this_format_before = None
+    priority = 0
 
     content_type = 'application/x-po'
 

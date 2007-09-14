@@ -561,9 +561,8 @@ class TranslationImportQueue:
         translation_importer = getUtility(ITranslationImporter)
         if format is None:
             # Get it based on the file extension and file content.
-            format = (
-                translation_importer.getTranslationFileFormatByFileExtension(
-                    ext, content))
+            format = translation_importer.getTranslationFileFormat(
+                ext, content)
         format_importer = translation_importer.getTranslationFormatImporter(
             format)
 

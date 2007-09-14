@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'TranslationImporter',
+    'importers'
     ]
 
 import gettextpo
@@ -82,15 +83,13 @@ class TranslationImporter:
 
         return sorted(set(file_extensions))
 
-    def getTranslationFileFormatByFileExtension(self, file_extension, content):
+    def getTranslationFileFormat(self, file_extension, file_contents):
         """See `ITranslationImporter`."""
-        for format in importers:
-            if file_extension in importers[format].file_extensions:
-                for try_first_format in importers:
-                    if (format ==
-                        importers[try_first_format].try_this_format_before):
-                        return importers[try_first_format].getFormat(content)
-                return importers[format].getFormat(content)
+        all_importers = importers.values()
+        all_importers.sort(cmp=lambda a,b:cmp(b.priority, a.priority))
+        for importer in all_importers:
+            if file_extension in importer.file_extensions:
+                return importer.getFormat(file_contents)
 
         return None
 
