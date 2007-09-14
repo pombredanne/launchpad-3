@@ -9,24 +9,60 @@ import socket
 import sys
 import urllib2
 
-import bzrlib.branch
-import bzrlib.errors
+from bzrlib.branch import Branch
+from bzrlib.bzrdir import BzrDir
+from bzrlib.errors import (
+    BzrError, NotBranchError, ParamikoNotPresent,
+    UnknownFormatError, UnsupportedFormatError)
 from bzrlib.revision import NULL_REVISION
 
 from canonical.config import config
+from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.uri import URI
 
 
-__all__ = ['BranchToMirror', 'BadUrlSsh', 'BadUrlLaunchpad']
+__all__ = [
+    'BadUrlSsh',
+    'BadUrlLaunchpad',
+    'BranchReferenceLoopError',
+    'BranchReferenceForbidden',
+    'BranchReferenceValueError',
+    'BranchToMirror',
+    ]
 
 
 class BadUrlSsh(Exception):
-    """Raised when trying to mirror a branch from sftp or bzr+ssh."""
+    """Tried to mirror a branch from sftp or bzr+ssh."""
 
 
 class BadUrlLaunchpad(Exception):
-    """Raised when trying to mirror a branch from lanchpad.net."""
+    """Tried to mirror a branch from launchpad.net."""
+
+class BranchReferenceForbidden(Exception):
+    """Trying to mirror a branch reference and the branch type does not allow
+    references.
+    """
+
+
+class BranchReferenceValueError(Exception):
+    """Encountered a branch reference with an unsafe value.
+
+    An unsafe value is a local URL, such as a file:// URL or an http:// URL in
+    canonical.com, that may cause disclosure of restricted data.
+    """
+
+    def __init__(self, url):
+        Exception.__init__(self, url)
+        self.url = url
+
+
+class BranchReferenceLoopError(Exception):
+    """Encountered a branch reference cycle.
+
+    A branch reference may point to another branch reference, and so on. A
+    branch reference cycle is an infinite loop of references.
+    """
 
 
 def identical_formats(branch_one, branch_two):
@@ -49,12 +85,16 @@ class BranchToMirror:
     """
 
     def __init__(self, src, dest, branch_status_client, branch_id,
-                 branch_unique_name):
+                 unique_name, branch_type):
         self.source = src
         self.dest = dest
         self.branch_status_client = branch_status_client
         self.branch_id = branch_id
-        self.branch_unique_name = branch_unique_name
+        self.unique_name = unique_name
+        # The branch_type argument should always be set to a BranchType enum in
+        # production use, but it is expected that tests that do not depend on
+        # its value will pass None.
+        self.branch_type = branch_type
         self._source_branch = None
         self._dest_branch = None
 
@@ -77,9 +117,74 @@ class BranchToMirror:
         if uri.scheme in ['sftp', 'bzr+ssh']:
             raise BadUrlSsh(self.source)
 
+    def _checkBranchReference(self):
+        """Check whether the source is an acceptable branch reference.
+
+        For HOSTED or IMPORTED branches, branch references are not allowed. For
+        MIRRORED branches, branch references are allowed if they do not
+        constitute a reference cycle and if they do not point to an unsafe
+        location.
+
+        :raise BranchReferenceForbidden: the source location contains a branch
+            reference, and branch references are not allowed for this branch
+            type.
+
+        :raise BranchReferenceLoopError: the source location contains a branch
+            reference that leads to a reference cycle.
+
+        :raise BranchReferenceValueError: the source location contains a branch
+            reference that ultimately points to an unsafe location.
+        """
+        traversed_references = []
+        source_location = self.source
+        while True:
+            reference_value = self._getBranchReference(source_location)
+            if reference_value is None:
+                break
+            if not self._canTraverseReferences():
+                raise BranchReferenceForbidden(reference_value)
+            traversed_references.append(source_location)
+            if reference_value in traversed_references:
+                raise BranchReferenceLoopError()
+            reference_value_uri = URI(reference_value)
+            if reference_value_uri.scheme == 'file':
+                raise BranchReferenceValueError(reference_value)
+            source_location = reference_value
+
+    def _canTraverseReferences(self):
+        """Whether we can traverse references when mirroring this branch type.
+
+        We do not traverse references for HOSTED branches because that may
+        cause us to connect to remote locations, which we do not allow because
+        we want hosted branches to be mirrored quickly.
+
+        We do not traverse references for IMPORTED branches because the
+        code-import system should never produce branch references.
+
+        We traverse branche references for MIRRORED branches because they
+        provide a useful redirection mechanism and we want to be consistent
+        with the bzr command line.
+        """
+        traverse_references_from_branch_type = {
+            BranchType.HOSTED: False,
+            BranchType.MIRRORED: True,
+            BranchType.IMPORTED: False,
+            }
+        assert self.branch_type in traverse_references_from_branch_type, (
+            'Unexpected branch type: %r' % (self.branch_type,))
+        return traverse_references_from_branch_type[self.branch_type]
+
+    def _getBranchReference(self, url):
+        """Get the branch-reference value at the specified url.
+
+        This method is useful to override in unit tests.
+        """
+        bzrdir = BzrDir.open(url)
+        return bzrdir.get_branch_reference()
+
     def _openSourceBranch(self):
         """Open the branch to pull from, useful to override in tests."""
-        self._source_branch = bzrlib.branch.Branch.open(self.source)
+        self._source_branch = Branch.open(self.source)
 
     def _mirrorToDestBranch(self):
         """Open the branch to pull to, creating a new one if necessary.
@@ -87,8 +192,8 @@ class BranchToMirror:
         Useful to override in tests.
         """
         try:
-            branch = bzrlib.bzrdir.BzrDir.open(self.dest).open_branch()
-        except bzrlib.errors.NotBranchError:
+            branch = BzrDir.open(self.dest).open_branch()
+        except NotBranchError:
             # Make a new branch in the same format as the source branch.
             branch = self._createDestBranch()
         else:
@@ -128,9 +233,23 @@ class BranchToMirror:
         return branch
 
     def _mirrorFailed(self, logger, error_msg):
-        """Log that the mirroring of this branch failed."""
+        """Record that the mirroring of this branch failed.
+
+        Update the branch status in the database and emit a log message.
+        """
         self.branch_status_client.mirrorFailed(self.branch_id, str(error_msg))
         logger.info('Recorded failure: %s', str(error_msg))
+
+    def _mirrorSuccessful(self, logger):
+        """Record that the mirroring of this branch was successful.
+
+        Update the branch status in the database and emit a log message.
+        """
+        last_rev = self._dest_branch.last_revision()
+        if last_rev is None:
+            last_rev = NULL_REVISION
+        self.branch_status_client.mirrorComplete(self.branch_id, last_rev)
+        logger.info('Successfully mirrored to rev %s', last_rev)
 
     def _record_oops(self, logger, message=None):
         """Record an oops for the current exception.
@@ -161,7 +280,7 @@ class BranchToMirror:
         else:
             scheme = 'http'
         hostname = config.launchpad.vhosts.code.hostname
-        return scheme + '://' + hostname + '/~' + self.branch_unique_name
+        return scheme + '://' + hostname + '/~' + self.unique_name
 
     def mirror(self, logger):
         """Open source and destination branches and pull source into
@@ -173,6 +292,7 @@ class BranchToMirror:
 
         try:
             self._checkSourceUrl()
+            self._checkBranchReference()
             self._openSourceBranch()
             self._mirrorToDestBranch()
         # add further encountered errors from the production runs here
@@ -184,7 +304,7 @@ class BranchToMirror:
                 # Maybe this will be caught in bzrlib one day, and then we'll
                 # be able to get rid of this.
                 # https://launchpad.net/products/bzr/+bug/42383
-                msg = 'Private branch; required authentication'
+                msg = "Authentication required."
             self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
@@ -193,17 +313,17 @@ class BranchToMirror:
             self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
-        except bzrlib.errors.UnsupportedFormatError, e:
+        except UnsupportedFormatError, e:
             msg = ("Launchpad does not support branches from before "
                    "bzr 0.7. Please upgrade the branch using bzr upgrade.")
             self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
-        except bzrlib.errors.UnknownFormatError, e:
+        except UnknownFormatError, e:
             self._record_oops(logger)
             self._mirrorFailed(logger, e)
 
-        except (bzrlib.errors.ParamikoNotPresent, BadUrlSsh), e:
+        except (ParamikoNotPresent, BadUrlSsh), e:
             msg = ("Launchpad cannot mirror branches from SFTP and SSH URLs."
                    " Please register a HTTP location for this branch.")
             self._record_oops(logger, msg)
@@ -214,13 +334,34 @@ class BranchToMirror:
             self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
-        except bzrlib.errors.NotBranchError, e:
-            self._record_oops(logger)
-            msg = ('Not a branch: sftp://bazaar.launchpad.net/~%s'
-                   % self.branch_unique_name)
+        except NotBranchError, e:
+            hosted_branch_error = NotBranchError(
+                "sftp://bazaar.launchpad.net/~%s" % self.unique_name)
+            message_by_type = {
+                BranchType.HOSTED: str(hosted_branch_error),
+                BranchType.IMPORTED: "Not a branch.",
+                }
+            msg = message_by_type.get(self.branch_type, str(e))
+            self._record_oops(logger, msg)
             self._mirrorFailed(logger, msg)
 
-        except bzrlib.errors.BzrError, e:
+        except BranchReferenceForbidden, e:
+            msg = ("Branch references are not allowed for branches of type %s."
+                   % (self.branch_type.title,))
+            self._record_oops(logger, msg)
+            self._mirrorFailed(logger, msg)
+
+        except BranchReferenceValueError, e:
+            msg = "Bad branch reference value: %s" % (e.url,)
+            self._record_oops(logger, msg)
+            self._mirrorFailed(logger, msg)
+
+        except BranchReferenceLoopError, e:
+            msg = "Circular branch reference."
+            self._record_oops(logger, msg)
+            self._mirrorFailed(logger, msg)
+
+        except BzrError, e:
             self._record_oops(logger)
             self._mirrorFailed(logger, e)
 
@@ -234,11 +375,7 @@ class BranchToMirror:
             raise
 
         else:
-            last_rev = self._dest_branch.last_revision()
-            if last_rev is None:
-                last_rev = NULL_REVISION
-            self.branch_status_client.mirrorComplete(self.branch_id, last_rev)
-            logger.info('Successfully mirrored to rev %s', last_rev)
+            self._mirrorSuccessful(logger)
 
     def __eq__(self, other):
         return self.source == other.source and self.dest == other.dest
