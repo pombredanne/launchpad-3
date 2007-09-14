@@ -96,7 +96,7 @@ class TranslationImporterTestCase(unittest.TestCase):
         # file formats, a PO file containing no KDE-style messages is
         # recognized as regular PO file.
         po_format = self.translation_importer.getTranslationFileFormat(
-            ".po", u"")
+            ".po", u'msgid "message"\nmsgstr ""')
 
         self.failUnless(po_format==TranslationFileFormat.PO, (
             'Regular PO file is not recognized as such!'))

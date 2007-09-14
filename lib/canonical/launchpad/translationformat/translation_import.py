@@ -86,7 +86,7 @@ class TranslationImporter:
     def getTranslationFileFormat(self, file_extension, file_contents):
         """See `ITranslationImporter`."""
         all_importers = importers.values()
-        all_importers.sort(cmp=lambda a,b:cmp(b.priority, a.priority))
+        all_importers.sort(key=attrgetter('priority'))
         for importer in all_importers:
             if file_extension in importer.file_extensions:
                 return importer.getFormat(file_contents)
