@@ -90,27 +90,34 @@ class TestProcessDeathRow(TestCase):
     def setupPPA(self):
         """Create pending removal publications in cprov PPA.
 
-        Firstly, transform the cprov PPA in a ubuntutest PPA, since ubuntu
-        publish configuration is broken.
-        Also create the respective content in disk, so it can be removed and
+        Firstly, transform the cprov & sabdfl PPAs in a ubuntutest PPA,
+        since ubuntu publish configuration is broken in the sampledata.
+
+        Also create one respective file in disk, so it can be removed and
         verified.
         """
+        ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+
         cprov = getUtility(IPersonSet).getByName('cprov')
-        naked_archive = removeSecurityProxy(cprov.archive)
-        naked_archive.distribution = getUtility(
-            IDistributionSet)['ubuntutest']
+        removeSecurityProxy(cprov.archive).distribution = ubuntutest
         ppa_pubrecs = cprov.archive.getPublishedSources('iceweasel')
         self.ppa_pubrec_ids = self.markPublishingForRemoval(ppa_pubrecs)
 
+        sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+        removeSecurityProxy(sabdfl.archive).distribution = ubuntutest
+        ppa_pubrecs = sabdfl.archive.getPublishedSources('iceweasel')
+        self.ppa_pubrec_ids.extend(self.markPublishingForRemoval(ppa_pubrecs))
+
+        # Fill one of the files in cprov PPA just to ensure that deathrow
+        # will be able to remove it. The other files can remain missing
+        # in order to test if deathrow can cope with not-found files.
         self.ppa_test_folder = os.path.join(
             config.personalpackagearchive.root, "cprov")
         package_folder = os.path.join(
             self.ppa_test_folder, "ubuntutest/pool/main/i/iceweasel")
         os.makedirs(package_folder)
-
         self.ppa_package_path = os.path.join(
             package_folder, "iceweasel-1.0.dsc")
-
         self.writeContent(self.ppa_package_path)
 
     def tearDownPPA(self):

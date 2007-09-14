@@ -22,17 +22,18 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.interfaces import (
     NotInPool, ISecureSourcePackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory)
-from canonical.lp.dbschema import PackagePublishingStatus
+from canonical.lp.dbschema import PackagePublishingStatus, ArchivePurpose
 
 
-def getDeathRow(archive, log, pool_root_override=None):
+def getDeathRow(archive, log, pool_root_override):
     """Return a Deathrow object for the archive supplied.
 
     :param archive: Use the publisher config for this archive to derive the
                     DeathRow object.
     :param log: Use this logger for script debug logging.
     :param pool_root_override: Use this pool root for the archive instead of
-                               its publisher configured value.
+         the one provided by the publishing-configuration, it will be only
+         used for PRIMARY archives.
     """
     log.debug("Grab Lucille config.")
     try:
@@ -43,7 +44,8 @@ def getDeathRow(archive, log, pool_root_override=None):
 
     pubconf = removeSecurityProxy(pubconf)
 
-    if pool_root_override is not None:
+    if (pool_root_override is not None and
+        archive.purpose == ArchivePurpose.PRIMARY):
         pool_root = pool_root_override
     else:
         pool_root = pubconf.poolroot

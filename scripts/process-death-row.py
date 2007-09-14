@@ -11,7 +11,6 @@ from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import initZopeless
-from canonical.lp.dbschema import ArchivePurpose
 
 from canonical.archivepublisher.deathrow import getDeathRow
 
@@ -50,12 +49,7 @@ def main():
         archives = distribution.getAllPPAs()
 
     for archive in archives:
-
-        if archive.purpose == ArchivePurpose.PRIMARY:
-            death_row = getDeathRow(archive, log, options.pool_root)
-        else:
-            death_row = getDeathRow(archive, log)
-
+        death_row = getDeathRow(archive, log, options.pool_root)
         try:
             # Unpublish death row
             log.debug("Unpublishing death row for %s." % archive.title)
