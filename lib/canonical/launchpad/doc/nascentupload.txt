@@ -770,25 +770,3 @@ for further checks:
   >>> bar_failed.changes.signingkey.fingerprint == uploader_key.fingerprint
   True
 
-
-== DEB packages using BZIP ==
-
-Deb packages can compress their contents in a bzip tar file. But
-in these case, the control file should state that the package
-Pre-depends on a newer version of dpkg. NascentUploadFile enforces
-that constraint.
-
-  >>> binary_sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distroseries='hoary')
-  >>> binary_sync_policy.can_upload_binaries = True
-  >>> binary_sync_policy.can_upload_mixed = True
-
-  >>> foo_failed = NascentUpload(
-  ...     datadir('suite/foo_1.0-1_mixed/foo_1.0-1_i386.changes'),
-  ...     binary_sync_policy, mock_logger_quiet)
-  >>> foo_failed.process()
-
-  >>> print foo_failed.rejection_message
-  foo_1.0-1_i386.deb uses bzip2 compression but pre-depends on an old version of dpkg: 1.10.20
-
-

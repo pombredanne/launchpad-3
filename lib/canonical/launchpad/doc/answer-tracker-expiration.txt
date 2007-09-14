@@ -175,7 +175,7 @@ Answer Tracker Janitor celebrity:
     >>> print expiration_message.new_status.title
     Expired
     >>> print expiration_message.owner.name
-    answer-tracker-janitor
+    janitor
 
     >>> print expiration_message.text_contents
     This question was expired because it remained in the
