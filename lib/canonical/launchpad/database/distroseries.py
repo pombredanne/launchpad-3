@@ -672,35 +672,29 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             PackagePublishingStatus.PUBLISHED,
             )
 
-        # Distribution archive candidates.
-        main_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
-            sqlvalues(self)]
-        main_clauses.append(
-            'Archive.id=SourcePackagePublishingHistory.archive')
-        main_clauses.append('Archive.purpose=%s' %
-            sqlvalues(ArchivePurpose.PRIMARY))
-        main_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
+        query = """
+            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.archive = Archive.id AND
+            SourcePackagePublishingHistory.status in %s
+         """ % sqlvalues(self, pend_build_statuses)
+
         if not self.isUnstable():
-            main_clauses.append(
-                'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
-        main_sources = SourcePackagePublishingHistory.select(
-            " AND ".join(main_clauses), clauseTables=['Archive'], orderBy="id")
+            # Stable distroreleases don't allow builds for the release
+            # pockets for the primary archives, but they do allow them for
+            # the PPA and PARTNER archives.
 
-        # PPA and partner repo candidates.
-        # These archives allow uploads of sources in the release pocket for
-        # a stable distroseries.
-        other_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
-            sqlvalues(self)]
-        other_clauses.append(
-            'Archive.id=SourcePackagePublishingHistory.archive')
-        other_clauses.append('Archive.purpose IN %s' %
-            sqlvalues([ArchivePurpose.PPA, ArchivePurpose.PARTNER]))
-        other_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
-        other_sources = SourcePackagePublishingHistory.select(
-            " AND ".join(other_clauses), clauseTables=['Archive'], orderBy="id")
+            # XXX: this should come from a single location where this
+            # is specified, not sprinkled around the code.
+            allow_release_builds = (ArchivePurpose.PPA, ArchivePurpose.PARTNER)
 
-        # Return all candidates.
-        return main_sources.union(other_sources)
+            query += ("""AND (Archive.purpose in %s OR
+                           (Archive.purpose NOT IN %s AND
+                            SourcePackagePublishingHistory.pocket != %s))""" %
+                      sqlvalues(allow_release_builds, allow_release_builds,
+                                PackagePublishingPocket.RELEASE))
+
+        return SourcePackagePublishingHistory.select(
+            query, clauseTables=['Archive'], orderBy="id")
 
     def getSourcePackagePublishing(self, status, pocket, component=None,
                                    archive=None):

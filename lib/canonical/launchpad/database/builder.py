@@ -225,6 +225,7 @@ class Builder(SQLBase):
         # Currently is_trusted is being overloaded to also mean "is not a
         # PPA".  If we ever start building on machines outside our data
         # centre (ie not trusted) the following logic breaks.
+        # https://bugs.launchpad.net/soyuz/+bug/139594
         if (build_queue_item.is_trusted and
             not build_queue_item.build.archive.allowUpdatesToReleasePocket()):
             build = build_queue_item.build
