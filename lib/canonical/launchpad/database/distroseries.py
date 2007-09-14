@@ -688,9 +688,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             allow_release_builds = (ArchivePurpose.PPA, ArchivePurpose.PARTNER)
 
             query += ("""AND (Archive.purpose in %s OR
-                           (Archive.purpose NOT IN %s AND
-                            SourcePackagePublishingHistory.pocket != %s))""" %
-                      sqlvalues(allow_release_builds, allow_release_builds,
+                            SourcePackagePublishingHistory.pocket != %s)""" %
+                      sqlvalues(allow_release_builds,
                                 PackagePublishingPocket.RELEASE))
 
         return SourcePackagePublishingHistory.select(
