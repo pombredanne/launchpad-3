@@ -559,7 +559,7 @@ class QuestionSet:
                     AND Question.datelastquery < 
                         (current_timestamp - interval '%s days')
                     AND Question.assignee IS NULL
-                    AND BugTask.status IS NULL)
+                    AND BugTask.id IS NULL)
             """ % sqlvalues(
                 BugTaskStatus.INVALID,
                 QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
