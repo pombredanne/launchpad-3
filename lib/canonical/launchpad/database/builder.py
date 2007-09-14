@@ -220,6 +220,11 @@ class Builder(SQLBase):
         # (e.g. security) during different parts of the distribution series
         # lifecycle. These do not apply to PPA builds (which are untrusted)
         # nor any archive that allows release pocket updates.
+
+        # XXX julian 2007-09-14
+        # Currently is_trusted is being overloaded to also mean "is not a
+        # PPA".  If we ever start building on machines outside our data
+        # centre (ie not trusted) the following logic breaks.
         if (build_queue_item.is_trusted and
             not build_queue_item.build.archive.allowUpdatesToReleasePocket()):
             build = build_queue_item.build
