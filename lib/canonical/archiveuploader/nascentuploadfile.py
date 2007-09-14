@@ -612,35 +612,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
             yield UploadError(
                 "%s: second chunk is %s, expected control.tar.gz" % (
                 self.filename, control_tar))
-        if data_tar == "data.tar.bz2":
-            # Packages using bzip2 must Pre-Depend on dpkg >= 1.10.24
-            control_pre_depends = self.control.get('Pre-Depends', '')
-            for parsed_dep in apt_pkg.ParseDepends(control_pre_depends):
-                # apt_pkg is weird and returns a list containing lists
-                # containing a single tuple.
-                assert len(parsed_dep) == 1, (
-                    "apt_pkg does not seem to like this dependency line: %r"
-                    % parsed_dep)
-                dep, version, constraint = parsed_dep[0]
-                if dep != "dpkg":
-                    continue
-                if ((constraint == ">=" and
-                     apt_pkg.VersionCompare(version, "1.10.24") < 0) or
-                    (constraint == ">>" and
-                     apt_pkg.VersionCompare(version, "1.10.23") < 0)):
-                    yield UploadError(
-                        "%s uses bzip2 compression but pre-depends "
-                        "on an old version of dpkg: %s"
-                        % (self.filename, version))
-                break
-            else:
-                yield UploadError(
-                    "%s uses bzip2 compression but doesn't Pre-Depend "
-                    "on dpkg (>= 1.10.24)" % self.filename)
-        elif data_tar == "data.tar.gz":
-            # No tests are needed for tarballs, yay
-            pass
-        else:
+        if data_tar not in ("data.tar.gz", "data.tar.bz2"):
             yield UploadError(
                 "%s: third chunk is %s, expected data.tar.gz or "
                 "data.tar.bz2" % (self.filename, data_tar))

@@ -58,12 +58,19 @@ class Language(SQLBase):
 
     @property
     def displayname(self):
-        """See ILanguage."""
+        """See `ILanguage`."""
         return '%s (%s)' % (self.englishname, self.code)
 
     @property
     def alt_suggestion_language(self):
-        """See ILanguage."""
+        """See `ILanguage`.
+
+        Non-visible languages and English are not translatable, so they
+        are excluded. Brazilian Portuguese has diverged from Portuguese
+        to such a degree that it should be treated as a parent language.
+        Norwegian languages Nynorsk (nn) and Bokmaal (nb) are similar
+        and may provide suggestions for each other.
+        """
         if self.code in ['pt_BR',]:
             return None
         elif self.code == 'nn':
@@ -71,18 +78,22 @@ class Language(SQLBase):
         elif self.code == 'nb':
             return Language.byCode('nn')
         codes = self.code.split('_')
-        if len(codes) == 2:
-            return Language.byCode(codes[0])
+        if len(codes) == 2 and codes[0] != 'en':
+            language = Language.byCode(codes[0])
+            if language.visible == True:
+                return language
+            else:
+                return None
         return None
 
     @property
     def dashedcode(self):
-        """See ILanguage."""
+        """See `ILanguage`."""
         return self.code.replace('_', '-')
 
     @property
     def abbreviated_text_dir(self):
-        """See ILanguage."""
+        """See `ILanguage`."""
         if self.direction == TextDirection.LTR:
             return 'ltr'
         elif self.direction == TextDirection.RTL:
@@ -92,7 +103,7 @@ class Language(SQLBase):
 
     @property
     def translators(self):
-        """See ILanguage."""
+        """See `ILanguage`."""
         personset = getUtility(IPersonSet)
         return personset.getTranslatorsByLanguage(self)
 
@@ -107,11 +118,11 @@ class LanguageSet:
             orderBy='englishname'))
 
     def __iter__(self):
-        """See ILanguageSet."""
+        """See `ILanguageSet`."""
         return iter(Language.select(orderBy='englishname'))
 
     def __getitem__(self, code):
-        """See ILanguageSet."""
+        """See `ILanguageSet`."""
         language = self.getLanguageByCode(code)
 
         if language is None:
@@ -120,7 +131,7 @@ class LanguageSet:
         return language
 
     def getLanguageByCode(self, code):
-        """See ILanguageSet."""
+        """See `ILanguageSet`."""
         assert isinstance(code, basestring), (
             "%s is not a valid type for 'code'" % type(code))
         try:
@@ -129,11 +140,11 @@ class LanguageSet:
             return None
 
     def keys(self):
-        """See ILanguageSet."""
+        """See `ILanguageSet`."""
         return [language.code for language in Language.select()]
 
     def canonicalise_language_code(self, code):
-        """See ILanguageSet."""
+        """See `ILanguageSet`."""
 
         if '-' in code:
             language, country = code.split('-', 1)
@@ -143,7 +154,7 @@ class LanguageSet:
             return code
 
     def codes_to_languages(self, codes):
-        """See ILanguageSet."""
+        """See `ILanguageSet`."""
 
         languages = []
 
@@ -156,7 +167,7 @@ class LanguageSet:
         return languages
 
     def getLanguageAndVariantFromString(self, language_string):
-        """See ILanguageSet."""
+        """See `ILanguageSet`."""
         if language_string is None:
             return (None, None)
 
@@ -179,14 +190,14 @@ class LanguageSet:
     def createLanguage(self, code, englishname, nativename=None,
                        pluralforms=None, pluralexpression=None, visible=True,
                        direction=TextDirection.LTR):
-        """See ILanguageSet."""
+        """See `ILanguageSet`."""
         return Language(
             code=code, englishname=englishname, nativename=nativename,
             pluralforms=pluralforms, pluralexpression=pluralexpression,
             visible=visible, direction=direction)
 
     def search(self, text):
-        """See ILanguageSet."""
+        """See `ILanguageSet`."""
         if text:
             text.lower()
             results = Language.select(
