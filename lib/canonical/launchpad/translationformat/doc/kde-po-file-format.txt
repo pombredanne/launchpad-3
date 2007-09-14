@@ -118,9 +118,9 @@ Importing this file works, but the format is set to Gettext PO.
 
 === Import ===
 
-Plural forms are supported by using a specially formated msgid where
-English singular and plural are split with a newline, and entire
-message is preceded with '_n: '.
+Plural forms are supported by using a specially formatted msgid where
+English singular and plural are split with a newline, and the entire
+message is preceded with '_n: ' (space at the end of the string is important).
 
     >>> plural_forms_template = r'''
     ... msgid ""
@@ -130,10 +130,14 @@ message is preceded with '_n: '.
     ... "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
     ... "X-Launchpad-Export-Date: %s\n"
     ...
-    ... # This is not considered a plural forms message
+    ... # This is not considered a plural forms message because
+    ... # of a missing space in '_n:'.
     ... msgid "_n:bar\nbars"
     ... msgstr ""
     ...
+    ... # "c-format" flag enforces printf-specifiers checking, so we use that
+    ... # to make sure import doesn't fail on a differing number of specifiers
+    ... # in a msgid and in a msgstr.
     ... #, c-format
     ... msgid "_n: %%d foo\n%%d foos"
     ... msgstr ""
@@ -184,7 +188,7 @@ forms. They are simply newline-separated strings.
     ... "n%%10>=2 && n%%10<=4 && (n%%100<10 || n%%100>=20) ? 1 : 2);\n"
     ... "X-Launchpad-Export-Date: %s\n"
     ...
-    ... # This is not considered a plural forms message because of a missing 
+    ... # This is not considered a plural forms message because of a missing
     ... # space in '_n: '.
     ... msgid "_n:bar\nbars"
     ... msgstr "non-plural forms message"
@@ -224,7 +228,7 @@ plural messages:
 
 === Export ===
 
-Lets define a helper function for the exports.
+Let's define a helper function for the exports.
 
     >>> def export_with_format(translation_file, format):
     ...     from canonical.launchpad.interfaces import (
@@ -255,7 +259,7 @@ Template export turns it back into a KDE-style PO file:
     "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
     ...
     <BLANKLINE>
-    # This is not considered a plural forms message
+    # This is not considered a plural forms message.
     msgid ""
     "_n:bar\n"
     "bars"
@@ -282,7 +286,7 @@ But, we can also export it as a regular gettext PO file:
     "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
     ...
     <BLANKLINE>
-    # This is not considered a plural forms message
+    # This is not considered a plural forms message.
     msgid ""
     "_n:bar\n"
     "bars"
@@ -308,7 +312,7 @@ Exporting a translation is possible in a very similar way.
     "Plural-Forms: ...
     ...
     <BLANKLINE>
-    # This is not considered a plural forms message
+    # This is not considered a plural forms message.
     msgid ""
     "_n:bar\n"
     "bars"
@@ -374,7 +378,7 @@ If we ask for a message without specifying context, we get no results:
     >>> print potmsgset
     None
 
-We can also import translated file with message contexts:
+We can also import the translated file with message contexts:
 
     >>> kde_context_translation = r'''
     ... msgid ""
@@ -398,7 +402,7 @@ We can also import translated file with message contexts:
     KDE PO format
 
 
-We can get first translation by specifying 'Context' for the context:
+We can get the first translation by specifying 'Context' for the context:
 
     >>> pomsgset = firefox_serbian_pofile.getPOMsgSet(
     ...     key=u'Message', context=u'Context')
@@ -406,7 +410,7 @@ We can get first translation by specifying 'Context' for the context:
     [u'First translation']
 
 And if we ask for a message with context 'Different Context', we get the
-other message and it's translation:
+other message and its translation:
 
     >>> pomsgset = firefox_serbian_pofile.getPOMsgSet(
     ...     key=u'Message', context=u'Different Context')

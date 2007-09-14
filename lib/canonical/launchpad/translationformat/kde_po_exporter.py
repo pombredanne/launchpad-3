@@ -31,22 +31,21 @@ class KdePOExporter(GettextPOExporter):
     def __init__(self, context=None):
         # See GettextPOExporter.__init__ for explanation of `context`.
         self.format = TranslationFileFormat.KDEPO
-        # We can also export TranslationFileFormat.PO, but the need for this
-        # is very limited: only if we do a correct import, but don't mark this
-        # as KDEPO inside potemplate.source_file_format, what would be a bug
-        # in our code
+        # KdePOExporter is also able to export `TranslationFileFormat.PO`,
+        # but there is not much practical use for that, so we are not listing
+        # it as one of the supported formats for this exporter.
         self.supported_formats = [ TranslationFileFormat.KDEPO ]
 
     def exportTranslationMessage(self, translation_message):
         """See `ITranslationFormatExporter`."""
-        # Special handling of context and plural forms
+        # Special handling of context and plural forms.
         if translation_message.context is not None:
-            # Lets turn context messages into legacy KDE context
+            # Let's turn context messages into legacy KDE context.
             translation_message.msgid = (u"_: " + translation_message.context +
                                          "\n" + translation_message.msgid)
             translation_message.context = None
         elif translation_message.msgid_plural is not None:
-            # Also, lets handle legacy KDE plural forms
+            # Also, let's handle legacy KDE plural forms.
             translations = translation_message.translations
             translation_message._translations = [
                 "\n".join(translation_message.translations)]
