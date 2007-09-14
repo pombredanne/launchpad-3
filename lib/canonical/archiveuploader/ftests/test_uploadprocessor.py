@@ -579,10 +579,10 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
     def testUploadToPPA(self):
         """Upload to a PPA gets there.
 
-        Email announcement is sent and package is on queue ACCEPTED even if
-        the source is NEW (PPA Auto-Accept everything).
-        Also test IArchiveSet.getPendingAcceptancePPAs() and check it returns
-        the just-modified archive.
+        Email announcement is sent and package is on queue DONE even if
+        the source is NEW (PPA Auto-Approves everything).
+        Also test IDistribution.getPendingPublicationPPAs() and check if
+        it returns the just-modified archive.
         """
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
@@ -592,18 +592,40 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.assertEmail(contents)
 
         queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.ACCEPTED, name="bar",
+            status=PackageUploadStatus.DONE, name="bar",
             version="1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
-        pending_queue = queue_items[0]
-        self.assertEqual(pending_queue.archive, self.name16.archive)
+        [queue_item] = queue_items
+        self.assertEqual(queue_item.archive, self.name16.archive)
         self.assertEqual(
-            pending_queue.pocket, PackagePublishingPocket.RELEASE)
+            queue_item.pocket, PackagePublishingPocket.RELEASE)
 
-        pending_ppas = self.breezy.distribution.getPendingAcceptancePPAs()
+        pending_ppas = self.breezy.distribution.getPendingPublicationPPAs()
         self.assertEqual(pending_ppas.count(), 1)
         self.assertEqual(pending_ppas[0], self.name16.archive)
+
+        pub_sources = self.name16.archive.getPublishedSources(name='bar')
+        [pub_bar] = pub_sources
+        
+        self.assertEqual(pub_bar.sourcepackagerelease.version, u'1.0-1')
+        self.assertEqual(pub_bar.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(pub_bar.component.name, 'universe')
+
+        # Check the subsequent upload
+        upload_dir = self.queueUpload("bar_1.0-2", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "Subject: [PPA name16] Accepted bar 1.0-2 (source)"]
+        self.assertEmail(contents)
+
+        pub_sources = self.name16.archive.getPublishedSources(name='bar')
+        [pub_bar_2, pub_bar] = pub_sources
+        
+        self.assertEqual(pub_bar_2.sourcepackagerelease.version, u'1.0-2')
+        self.assertEqual(pub_bar_2.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(pub_bar_2.component.name, 'universe')
 
     def testUploadDoesNotEmailMaintainerOrChangedBy(self):
         """PPA uploads must not email the maintainer or changed-by person.
@@ -665,8 +687,17 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
 
          * Email notification is sent
          * The upload is auto-accepted in the overridden target distroseries.
-         * The modified PPA is found by getPendingAcceptancePPA() lookup.
+         * The modified PPA is found by getPendingPublicationPPA() lookup.
         """
+        hoary = self.ubuntu['hoary']
+
+        # Temporarily allow uploads to component 'universe' in ubuntu/hoary
+        # which only allow main & restricted in the sampledata.
+        from canonical.launchpad.interfaces import IComponentSet
+        from canonical.launchpad.database import ComponentSelection
+        universe = getUtility(IComponentSet)['universe']
+        ComponentSelection(distroseries=hoary, component=universe)
+
         upload_dir = self.queueUpload(
             "bar_1.0-1", "~name16/ubuntu/hoary")
         self.processUpload(self.uploadprocessor, upload_dir)
@@ -675,18 +706,17 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "Subject: [PPA name16] Accepted bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
-        hoary = self.ubuntu['hoary']
         queue_items = hoary.getQueueItems(
-            status=PackageUploadStatus.ACCEPTED, name="bar",
+            status=PackageUploadStatus.DONE, name="bar",
             version="1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
-        pending_queue = queue_items[0]
-        self.assertEqual(pending_queue.archive, self.name16.archive)
+        [queue_item] = queue_items
+        self.assertEqual(queue_item.archive, self.name16.archive)
         self.assertEqual(
-            pending_queue.pocket, PackagePublishingPocket.RELEASE)
+            queue_item.pocket, PackagePublishingPocket.RELEASE)
 
-        pending_ppas = self.ubuntu.getPendingAcceptancePPAs()
+        pending_ppas = self.ubuntu.getPendingPublicationPPAs()
         self.assertEqual(pending_ppas.count(), 1)
         self.assertEqual(pending_ppas[0], self.name16.archive)
 
@@ -706,18 +736,18 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.assertEmail(contents)
 
         queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.ACCEPTED, name="bar",
+            status=PackageUploadStatus.DONE, name="bar",
             version="1.0-1", exact_match=True, archive=ubuntu_team.archive)
         self.assertEqual(queue_items.count(), 1)
 
-        pending_ppas = self.ubuntu.getPendingAcceptancePPAs()
+        pending_ppas = self.ubuntu.getPendingPublicationPPAs()
         self.assertEqual(pending_ppas.count(), 1)
         self.assertEqual(pending_ppas[0], ubuntu_team.archive)
 
     def testNotMemberUploadToTeamPPA(self):
         """Upload to a team PPA is rejected when the uploader is not member.
 
-        Also test IArchiveSet.getPendingAcceptancePPAs(), no archives should
+        Also test IArchiveSet.getPendingPublicationPPAs(), no archives should
         be returned since nothing was accepted.
         """
         ubuntu_translators = getUtility(IPersonSet).getByName(
@@ -733,7 +763,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         contents = [""]
         self.assertEmail(contents)
 
-        pending_ppas = self.ubuntu.getPendingAcceptancePPAs()
+        pending_ppas = self.ubuntu.getPendingPublicationPPAs()
         self.assertEqual(pending_ppas.count(), 0)
 
     def testUploadToSomeoneElsePPA(self):

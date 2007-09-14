@@ -646,8 +646,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             queries.append("status=%s" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED))
 
-        archives = self.distribution.archiveIdList(archive)
-        queries.append("archive IN %s" % sqlvalues(archives))
+        if archive is not None:
+            queries.append("archive=%s" % sqlvalues(archive))
+        else:
+            archives = self.distribution.archiveIdList(archive)
+            queries.append("archive IN %s" % sqlvalues(archives))
 
         published = SourcePackagePublishingHistory.select(
             " AND ".join(queries), clauseTables = ['SourcePackageRelease'])

@@ -169,13 +169,7 @@ class NascentUpload:
             # Apply the overrides from the database. This needs to be done
             # before doing component verifications because the component
             # actually comes from overrides for packages that are not NEW.
-            # XXX cprov 2007-06-11: temporally disabling 'auto-overrides' for
-            # PPAs, because users can't perform post-publications overrides
-            # by themselves yet. It's better to assume that they will get
-            # the attributes right when packaging the source then to block
-            # them on immutable state.
-            if not self.is_ppa:
-                self.find_and_apply_overrides()
+            self.find_and_apply_overrides()
 
         signer_components = self.getAutoAcceptedComponents()
         if not self.is_new:
@@ -552,10 +546,10 @@ class NascentUpload:
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
 
         for pocket in lookup_pockets:
-            archive = self.policy.archive
-            if not self.is_ppa:
-                # We must check all the archives as the archive on the upload
-                # may have been overridden on previous uploads.
+
+            if self.is_ppa:
+                archive = self.policy.archive
+            else:
                 archive = None
             candidates = self.policy.distroseries.getPublishedReleases(
                 source_name, include_pending=True, pocket=pocket,
@@ -594,11 +588,12 @@ class NascentUpload:
 
         # See the comment below, in getSourceAncestry
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
-        archive = self.policy.archive
-        if not self.is_ppa:
-            # We must check all the archives as the archive on the upload
-            # may have been overridden on previous uploads.
+
+        if self.is_ppa:
+            archive = self.policy.archive
+        else:
             archive = None
+
         for pocket in lookup_pockets:
             candidates = dar.getReleasedPackages(
                 binary_name, include_pending=True, pocket=pocket,
@@ -707,7 +702,9 @@ class NascentUpload:
                     self.overrideSource(uploaded_file, ancestry)
                     uploaded_file.new = False
                 else:
-                    if not self.is_ppa:
+                    if self.is_ppa:
+                        uploaded_file.component_name = 'universe'
+                    else:
                         self.logger.debug(
                             "%s: (source) NEW" % (uploaded_file.package))
                         uploaded_file.new = True
@@ -738,7 +735,9 @@ class NascentUpload:
                     if ancestry is not None:
                         self.checkBinaryVersion(uploaded_file, ancestry)
                 else:
-                    if not self.is_ppa:
+                    if self.is_ppa:
+                        uploaded_file.component_name = 'universe'
+                    else:
                         self.logger.debug(
                             "%s: (binary) NEW" % (uploaded_file.package))
                         uploaded_file.new = True
@@ -909,12 +908,6 @@ class NascentUpload:
                     "Upload contains binaries of different sources.")
                 self.queue_root.addBuild(considered_build)
 
-        # PPA uploads are Auto-Accepted by default
-        if self.is_ppa:
-            self.logger.debug("Setting it to ACCEPTED")
-            self.queue_root.setAccepted()
-            return
-
         if not self.is_new:
             # if it is known (already overridden properly), move it to
             # ACCEPTED state automatically
@@ -930,6 +923,9 @@ class NascentUpload:
                     (self.queue_root.customfiles.count() == 0)):
                     self.logger.debug("Creating PENDING publishing record.")
                     self.queue_root.realiseUpload()
+                    # Do not even try to close bugs for PPA uploads
+                    if self.is_ppa:
+                        return
                     # Closing bugs.
                     changesfile_object = open(self.changes.filepath, 'r')
                     close_bugs_for_queue_item(

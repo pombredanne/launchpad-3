@@ -9,7 +9,6 @@ export LPCONFIG
 LPCURRENT=/srv/launchpad.net/codelines/current
 
 
-$LPCURRENT/scripts/process-accepted.py -v --ppa ubuntu
 $LPCURRENT/scripts/publish-distro.py -v --ppa -d ubuntu
 
 
