@@ -7,29 +7,25 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
-# XXX: thumper 2007-05-25:
-# This import should really be tidied up. Made into alphabetical
-# order ideally.
 from canonical.launchpad.interfaces import (
-    IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
-    IDistribution, IFAQ, IFAQTarget, ITeamMembership, IMilestone, IBug,
-    ITranslator, ITranslationGroup, ITranslationGroupSet, IProduct,
-    IProductSeries, IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet,
-    ISourcePackage, ILaunchpadCelebrities, IDistroSeries, IBugTracker,
-    IBugAttachment, IPoll, IPollSubset, IPollOption, IProductRelease,
-    IBranchMergeProposal, IQuestion, IQuestionTarget,
-    IShippingRequest, IShippingRequestSet, IRequestedCDs,
-    IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification, ITranslationImportQueueEntry,
-    ITranslationImportQueue, IDistributionMirror, IHasBug,
-    IBazaarApplication, IPackageUpload, IBuilderSet, IPackageUploadQueue,
-    IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
-    IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset,
-    IDistroSeriesLanguage, IBranch, IBranchSubscription, ICodeImport,
-    ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet, IEntitlement)
+    IBazaarApplication, IBranch, IBranchMergeProposal, IBranchSubscription,
+    IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
+    IBuilder, IBuilderSet, ICodeImport, ICodeImportMachine,
+    ICodeImportMachineSet, ICodeImportSet, IDistribution, IDistributionMirror,
+    IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
+    IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack, ILanguageSet,
+    ILaunchpadCelebrities, IMilestone, IPackageUpload, IPackageUploadQueue,
+    IPerson, IPOFile, IPoll, IPollSubset, IPollOption, IPOTemplate,
+    IPOTemplateName, IPOTemplateNameSet, IPOTemplateSubset, IProduct,
+    IProductRelease, IProductSeries, IQuestion, IQuestionTarget,
+    IRequestedCDs, IShipItApplication, IShippingRequest, IShippingRequestSet,
+    IShippingRun, ISourcePackage, ISpecification, ISpecificationSubscription,
+    ISprint, ISprintSpecification, IStandardShipItRequest,
+    IStandardShipItRequestSet, ITeam, ITeamMembership, ITranslationGroup,
+    ITranslationGroupSet, ITranslationImportQueue,
+    ITranslationImportQueueEntry, ITranslator)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
-
 from canonical.lp.dbschema import PackageUploadStatus
 
 
@@ -1123,3 +1119,8 @@ class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
             OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
             EditDistributionByDistroOwnersOrAdmins.checkAuthenticated(
                 self, user))
+
+
+class AdminLanguagePack(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.LanguagePacksAdmin'
+    usedfor = ILanguagePack

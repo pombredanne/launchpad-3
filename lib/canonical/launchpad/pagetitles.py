@@ -98,7 +98,7 @@ class ContextBugId(SubstitutionHelper):
 
 
 class ViewLabel:
-    """Helper to use thee view's label as the title."""
+    """Helper to use the view's label as the title."""
     def __call__(self, context, view):
         return view.label
 

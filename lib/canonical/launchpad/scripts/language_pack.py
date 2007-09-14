@@ -13,9 +13,9 @@ import os
 import sys
 import tempfile
 from shutil import copyfileobj
+
 from zope.component import getUtility
 
-from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues, cursor
 from canonical.launchpad.interfaces import (
     IDistributionSet, ILanguagePackSet, IVPOExportSet, LanguagePackType)
@@ -145,7 +145,7 @@ def export_language_pack(distribution_name, series_name, logger,
         force to use the UTF-8 encoding.
     :param output_file: File path where this export file should be stored,
         instead of using Librarian. If '-' is given, we use standard output.
-    :return: A flag indicating wheter the export worked or failed.
+    :return: The exported language pack or None.
     """
     distribution = getUtility(IDistributionSet)[distribution_name]
     distroseries = distribution.getSeries(series_name)
@@ -174,7 +174,7 @@ def export_language_pack(distribution_name, series_name, logger,
         # Bare except statements are used in order to prevent premature
         # termination of the script.
         logger.exception('Uncaught exception while exporting')
-        return False
+        return None
 
     if output_file is not None:
         # Save the tarball to a file.
@@ -212,12 +212,12 @@ def export_language_pack(distribution_name, series_name, logger,
                 contentType='application/x-gtar')
         except UploadFailed, e:
             logger.error('Uploading to the Librarian failed: %s', e)
-            return False
+            return None
         except:
             # Bare except statements are used in order to prevent premature
             # termination of the script.
             logger.exception('Uncaught exception while uploading to the Librarian')
-            return False
+            return None
 
         logger.debug('Upload complete, file alias: %d' % file_alias)
 
@@ -228,9 +228,9 @@ def export_language_pack(distribution_name, series_name, logger,
         else:
             lang_pack_type = LanguagePackType.FULL
 
-        language_pack_set.addLanguagePack(
+        language_pack = language_pack_set.addLanguagePack(
             distroseries, file_alias, lang_pack_type)
 
         logger.info('Registered the language pack.')
 
-        return True
+        return language_pack

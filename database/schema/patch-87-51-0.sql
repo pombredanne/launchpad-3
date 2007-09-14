@@ -45,7 +45,5 @@ ALTER TABLE Distribution
 CREATE INDEX distribution__language_pack_admin__idx
     ON Distribution(language_pack_admin);
 
-COMMENT ON COLUMN Distribution.language_pack_admin IS 'The Person or Team
-that handle language packs for the distro release.';
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 51, 0);

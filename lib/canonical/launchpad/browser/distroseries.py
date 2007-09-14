@@ -452,6 +452,7 @@ class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
 
 
 class DistroSeriesLanguagePackAdminView(LaunchpadEditFormView):
+    """Browser view to manage used language packs."""
     schema = IDistroSeries
 
     field_names = ['language_pack_base', 'language_pack_delta',
@@ -473,16 +474,17 @@ class DistroSeriesLanguagePackAdminView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
 
-        self.next_url = '/'.join(
-            [canonical_url(self.context), '+language-packs'])
+        self.next_url = '%s/+language-packs' % canonical_url(self.context)
 
 
 class DistroSeriesFullLanguagePackRequestView(LaunchpadEditFormView):
+    """Browser view to store whether next export should be a full one."""
     schema = IDistroSeries
 
     field_names = ['language_pack_full_export_requested']
 
     def initialize(self):
+        self.old_value = self.context.language_pack_full_export_requested
         LaunchpadEditFormView.initialize(self)
         self.label = 'Request a full language pack export of %s' % (
             self.context.title)
@@ -491,10 +493,21 @@ class DistroSeriesFullLanguagePackRequestView(LaunchpadEditFormView):
     @action("Request")
     def request_action(self, action, data):
         self.updateContextFromData(data)
-        self.request.response.addInfoNotification('''
+        if self.old_value != self.context.language_pack_full_export_requested:
+            # There are changes.
+            if self.context.language_pack_full_export_requested:
+                self.request.response.addInfoNotification('''
 Your request has been noted, next language pack export will include a full
 export.
 ''')
+            else:
+                self.request.response.addInfoNotification('''
+Your request has been noted, next language pack export will be an export
+relative to current language_pack_base.
+''')
+        else:
+            self.request.response.addInfoNotification(
+                "You didn't change anything.")
 
         self.next_url = '/'.join(
             [canonical_url(self.context), '+language-packs'])

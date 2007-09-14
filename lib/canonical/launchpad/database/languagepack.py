@@ -20,6 +20,27 @@ from canonical.launchpad.interfaces import (
     ILanguagePack, ILanguagePackSet, LanguagePackType)
 
 
+class LanguagePack(SQLBase):
+    implements(ILanguagePack)
+
+    _table = 'LanguagePack'
+
+    file = ForeignKey(
+        foreignKey='LibraryFileAlias', dbName='file', notNull=True)
+
+    date_exported = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+
+    distroseries = ForeignKey(
+        foreignKey='DistroSeries', dbName='distroseries', notNull=True)
+
+    type = EnumCol(
+        enum=LanguagePackType, notNull=True, default=LanguagePackType.FULL)
+
+    updates = ForeignKey(
+        foreignKey='LanguagePack', dbName='updates',
+        notNull=False, default=None)
+
+
 class LanguagePackSet:
     implements(ILanguagePackSet)
 
@@ -42,24 +63,3 @@ class LanguagePackSet:
         return LanguagePack(
             file=file_alias, date_exported=UTC_NOW, distroseries=distroseries,
             type=type, updates=updates)
-
-
-class LanguagePack(SQLBase):
-    implements(ILanguagePack)
-
-    _table = 'LanguagePack'
-
-    file = ForeignKey(
-        foreignKey='LibraryFileAlias', dbName='file', notNull=True)
-
-    date_exported = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-
-    distroseries = ForeignKey(
-        foreignKey='DistroSeries', dbName='distroseries', notNull=True)
-
-    type = EnumCol(
-        schema=LanguagePackType, notNull=True, default=LanguagePackType.FULL)
-
-    updates = ForeignKey(
-        foreignKey='LanguagePack', dbName='updates',
-        notNull=False, default=None)

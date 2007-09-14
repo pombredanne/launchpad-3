@@ -580,6 +580,7 @@ class DistributionBugContactEditView(SQLObjectEditView):
 
 
 class DistributionLanguagePackAdminView(LaunchpadEditFormView):
+    """Browser view to change the language pack administrator."""
 
     schema = IDistribution
     label = "Change the language pack administrator"

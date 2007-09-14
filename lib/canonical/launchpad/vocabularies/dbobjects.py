@@ -62,6 +62,7 @@ __all__ = [
 
 import cgi
 from operator import attrgetter
+
 from sqlobject import AND, CONTAINSSTRING, OR, SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
@@ -1430,47 +1431,26 @@ class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
 
 class FilteredLanguagePackVocabularyBase(SQLObjectVocabularyBase):
     """Base vocabulary class to retrieve language packs for a distroseries."""
-    displayname = 'Needs to be overridden'
     _table = LanguagePack
     _orderBy = '-date_exported'
-    _language_pack_type = None
 
     def toTerm(self, obj):
         return SimpleTerm(
-            obj, obj.id, '%s (%s)' % (
-                obj.date_exported.isoformat(), obj.type.title))
+            obj, obj.id, '%s' % obj.date_exported.strftime('%F %T %Z'))
+
+    def _baseQueryList(self):
+        """Return a list of sentences that defines the specific filtering.
+
+        That list will be linked with an ' AND '.
+        """
+        raise NotImplementedError
 
     def __iter__(self):
         if not IDistroSeries.providedBy(self.context):
             # This vocabulary is only useful from a DistroSeries context.
             return
 
-        query = []
-
-        type_delta_query = ('(type = %s AND updates = %s)' % sqlvalues(
-            LanguagePackType.DELTA, self.context.language_pack_base))
-        type_full_query = ('type = %s' % sqlvalues(LanguagePackType.FULL))
-
-        if self._language_pack_type is None:
-            # We are interested on any language pack type except the ones
-            # already used.
-            used_lang_packs = []
-            if self.context.language_pack_base is not None:
-                used_lang_packs.append(self.context.language_pack_base.id)
-            if self.context.language_pack_delta is not None:
-                used_lang_packs.append(self.context.language_pack_delta.id)
-            if used_lang_packs:
-                query.append('id NOT IN %s' % sqlvalues(used_lang_packs))
-            query.append('(%s OR %s)' % (type_delta_query, type_full_query))
-        elif self._language_pack_type == LanguagePackType.DELTA:
-            query.append(type_delta_query)
-        elif self._language_pack_type == LanguagePackType.FULL:
-            query.append(type_full_query)
-        else:
-            raise AssertionError(
-                'Unknown language pack type: %s' %
-                    self._language_pack_type.name)
-
+        query = self._baseQueryList()
         query.append('distroseries = %s' % sqlvalues(self.context))
         language_packs = self._table.select(
             ' AND '.join(query), orderBy=self._orderBy)
@@ -1482,14 +1462,43 @@ class FilteredLanguagePackVocabularyBase(SQLObjectVocabularyBase):
 class FilteredFullLanguagePackVocabulary(FilteredLanguagePackVocabularyBase):
     """Full export Language Pack for a distribution series."""
     displayname = 'Select a full export language pack'
-    _language_pack_type = LanguagePackType.FULL
+
+    def _baseQueryList(self):
+        """See `FilteredLanguagePackVocabularyBase`."""
+        return ['type = %s' % sqlvalues(LanguagePackType.FULL)]
 
 
 class FilteredDeltaLanguagePackVocabulary(FilteredLanguagePackVocabularyBase):
     """Delta export Language Pack for a distribution series."""
     displayname = 'Select a delta export language pack'
-    _language_pack_type = LanguagePackType.DELTA
+
+    def _baseQueryList(self):
+        """See `FilteredLanguagePackVocabularyBase`."""
+        return ['(type = %s AND updates = %s)' % sqlvalues(
+            LanguagePackType.DELTA, self.context.language_pack_base)]
 
 
 class FilteredLanguagePackVocabulary(FilteredLanguagePackVocabularyBase):
     displayname = 'Select a language pack'
+
+    def toTerm(self, obj):
+        return SimpleTerm(
+            obj, obj.id, '%s (%s)' % (
+                obj.date_exported.strftime('%F %T %Z'), obj.type.title))
+
+    def _baseQueryList(self):
+        """See `FilteredLanguagePackVocabularyBase`."""
+        # We are interested on any full language pack or language pack
+        # that is a delta of the current base lanuage pack type,
+        # except the ones already used.
+        used_lang_packs = []
+        if self.context.language_pack_base is not None:
+            used_lang_packs.append(self.context.language_pack_base.id)
+        if self.context.language_pack_delta is not None:
+            used_lang_packs.append(self.context.language_pack_delta.id)
+        query = []
+        if used_lang_packs:
+            query.append('id NOT IN %s' % sqlvalues(used_lang_packs))
+        query.append('(updates is NULL OR updates = %s)' % sqlvalues(
+            self.context.language_pack_base))
+        return query

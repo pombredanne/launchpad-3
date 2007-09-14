@@ -1,20 +1,20 @@
 = Language Pack storage =
 
-LanguagePack class represents a distribution series' Language pack exported.
+A LanguagePack represents an exported distribution series' language pack.
 
-It help us to track all exports and to know which full export is associated
-with a delta one.
+A LanuagePack is either a FULL or DELTA export.  If the LanguagePack is a
+DELTA, there is also a reference to the related FULL LanguagePack.
 
-A delta language pack is an export that has all translation resources that
-were updated since the export date for the associate full export.
+A DELTA language pack is an export that has all translation resources that
+were updated since the export date for the associate FULL export.
 
     >>> from cStringIO import StringIO
     >>> from zope.component import getUtility
     >>> from zope.interface import providedBy
-    >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, ILanguagePack, ILanguagePackSet,
     ...     LanguagePackType)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.librarian.interfaces import ILibrarianClient
 
 Let's upload a dummy file to librarian.
@@ -40,7 +40,5 @@ We add the language pack.
 
 And it implements and follow the ILanguagePack interface.
 
-    >>> ILanguagePack.providedBy(language_pack)
-    True
     >>> verifyObject(ILanguagePack, language_pack)
     True

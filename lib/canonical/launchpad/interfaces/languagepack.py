@@ -32,21 +32,6 @@ class LanguagePackType(DBEnumeratedType):
         Delta translation export based on a previous full export.""")
 
 
-class ILanguagePackSet(Interface):
-    """Language pack store set."""
-
-    def addLanguagePack(distroseries, file_alias, type):
-        """Add a new language pack to our records.
-
-        :param distroseries: The `IDistroSeries` associated from where this
-            language pack comes.
-        :param file_alias: An `ILibraryFileAlias` pointing to the librarian
-            entry storing the language pack we want to register.
-        :param type: The kind of `LanguagePackType` for this language pack.
-        :return: An `ILanguagePack` representing the given language pack.
-        """
-
-
 class ILanguagePack(Interface):
     """Language pack store."""
 
@@ -68,8 +53,23 @@ class ILanguagePack(Interface):
         title=_('Language pack type'), required=True,
         vocabulary=LanguagePackType,
         description=_("""
-            Type of language pack. There are two types available, 1: Full
-            export, 2: Update export based on `updates` export.
+            The language pack is either a "Full" export, or a "Delta" of changes
+            from the base language pack of the distribution series.
             """))
 
     updates = Attribute(_('The LanguagePack that this one updates.'))
+
+
+class ILanguagePackSet(Interface):
+    """Language pack store set."""
+
+    def addLanguagePack(distroseries, file_alias, type):
+        """Associate an uploaded file as a language pack for a distroseries.
+
+        :param distroseries: The `IDistroSeries` associated from where this
+            language pack was exported.
+        :param file_alias: An `ILibraryFileAlias` pointing to the librarian
+            entry storing the language pack we want to register.
+        :param type: The kind of `LanguagePackType` for this language pack.
+        :return: An `ILanguagePack` representing the given language pack.
+        """

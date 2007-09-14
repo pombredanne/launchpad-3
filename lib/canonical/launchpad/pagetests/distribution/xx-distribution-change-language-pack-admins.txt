@@ -1,10 +1,16 @@
+= Language pack administration =
 
 Each distribution has an associated person/team that is responsible for
-administer language packs, right now, they are only able to request a full
+administering language packs, right now, they are only able to request a full
 language pack export. This person/team can be changed by the distribution
 owner, on the +select-language-pack-admin page.
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://translations.launchpad.dev/ubuntu/')
+    >>> browser.getLink('Change language pack admins')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
     >>> browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/'
     ...     '+select-language-pack-admin')
@@ -12,14 +18,9 @@ owner, on the +select-language-pack-admin page.
     ...
     Unauthorized: ...
 
-    # XXX Guilherme Salgado 2006-06-16 bug=45226: 
-    # Workaround for https://launchpad.net/launchpad/+bug/45226
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-
 Mark is one of the distribution owners, so he's able to reach that page.
 
-    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> browser.open('http://translations.launchpad.dev/ubuntu/')
     >>> browser.getLink('Change language pack admins').click()
 

@@ -9,7 +9,7 @@
       </h1>
 
       <p id="description">
-        A language pack is an export of all translation files used on run time
+        A language pack is an export of all translation files used at run time
         by the applications in
         <tal:distribution replace="view/displayname" />.
         These language packs are the last ones generated or in use by
@@ -49,8 +49,8 @@
       </ul>
 
       <h2>Language pack being tested</h2>
-      <ul tal:condition="context/language_pack_proposed">
-        <li>
+      <dl tal:condition="context/language_pack_proposed">
+        <dt>
           <a tal:attributes="
                 href context/language_pack_proposed/file/http_url">
             <img alt="download icon" src="/@@/download" />
@@ -64,14 +64,14 @@
           <br />This one is bein tested to become the new
           <tal:type content="context/language_pack_proposed/type/name" />
           language pack.
-        </li>
-      </ul>
+        </dt>
+      </dl>
       <p tal:condition="not:context/language_pack_proposed">
         No pack is being tested right now.
       </p>
 
       <tal:has-unused condition="view/unused_language_packs">
-        <h2>Not used packs</h2>
+        <h2>Currently unused language packs</h2>
         <ul>
           <li tal:repeat="lang_pack view/unused_language_packs">
             <a tal:attributes="href lang_pack/file/http_url">
