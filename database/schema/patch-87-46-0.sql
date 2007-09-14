@@ -26,10 +26,8 @@ CREATE TABLE HWSubmission (
 
     contactable boolean NOT NULL,
 
-    live_cd boolean NOT NULL DEFAULT false,
-
-    submission_id text
-        CONSTRAINT hwsubmission__submission_id__key UNIQUE NOT NULL,
+    submission_key text
+        CONSTRAINT hwsubmission__submission_key__key UNIQUE NOT NULL,
 
     owner integer NOT NULL
         CONSTRAINT hwsubmission__owned__fk

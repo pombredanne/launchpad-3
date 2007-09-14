@@ -1930,6 +1930,7 @@ ALTER TABLE gpgkey ENABLE TRIGGER ALL;
 
 ALTER TABLE hwsubmission DISABLE TRIGGER ALL;
 
+INSERT INTO hwsubmission (id, date_created, date_submitted, format, status, private, contactable, submission_key, "owner", distroarchseries, raw_submission, system_fingerprint) VALUES (1, '2007-09-11 00:00:00', '2007-09-11 15:23:45.653316', 1, 1, false, false, 'test_submission_id_1', 12, NULL, 63, 1);
 
 
 ALTER TABLE hwsubmission ENABLE TRIGGER ALL;
@@ -1937,6 +1938,7 @@ ALTER TABLE hwsubmission ENABLE TRIGGER ALL;
 
 ALTER TABLE hwsystemfingerprint DISABLE TRIGGER ALL;
 
+INSERT INTO hwsystemfingerprint (id, fingerprint) VALUES (1, 'TONKA TUFFBOOK2600');
 
 
 ALTER TABLE hwsystemfingerprint ENABLE TRIGGER ALL;
@@ -2852,6 +2854,7 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (60, 60, 'es.po', 'application/x-po', NULL, '2007-01-03 17:26:27.288968');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (61, 61, 'language-pack-ar_1.0.dsc', 'application/dsc', NULL, '2007-02-15 14:26:27.288968');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (62, 62, 'iceweasel-1.0.dsc', 'application/dsc', NULL, '2007-05-14 23:21:11.121446');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (63, 63, 'submissiontest.xml', 'text/xml', NULL, '2007-09-11 15:23:45.653316');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -2917,6 +2920,7 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (60, '2007-01-03 17:26:27.288968', NULL, 11793, 'df3a6670671781d5e08d7795ca1ada776815d87f', false, 'e8120781cd606202fd259a4f0d4585bb');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (61, '2007-02-15 14:26:27.288968', NULL, 100, 'df3a6670671781d5e08d7795ca1ada776815d87f', false, 'e8120781cd606202fd259a4f0d4585bb');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (62, '2007-05-14 23:21:11.121446', NULL, 123, 'd06b970f258e57547ef1104fba3499eb4ab43ff6', false, '767e1635f55ff5e833410523decec438');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (63, '2007-09-11 15:23:45.653316', NULL, 2736, '368499e45ab7c61963f2935cea1188cee49d5d6a', false, '54c5fe47d4c19fa6444744247cf2a831');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;

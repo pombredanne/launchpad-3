@@ -23,7 +23,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
 class HWSubmissionKeyNotUnique(Exception):
-    """Prevent two or more submission with identical submission_id."""
+    """Prevent two or more submission with identical submission_key."""
 
 class HWSubmissionInvalidEmailAddress(Exception):
     """Reject submissions with invaild email addresses."""
@@ -76,9 +76,7 @@ class IHWSubmission(Interface):
         title=_(u'Private Submission'), required=True)
     contactable = Bool(
         title=_(u'Contactable'), required=True)
-    live_cd = Bool(
-        title=_(u'Data from Live CD'), required=True)
-    submission_id = ASCIILine(
+    submission_key = ASCIILine(
         title=_(u'Unique Submission ID'), required=True)
     owner = Attribute(
         _(u"The owner's IPerson"))
@@ -96,15 +94,14 @@ class IHWSubmissionSet(Interface):
     """The set of HWSubmissions."""
 
     def createSubmission(date_created, format, private, contactable,
-                         live_cd, submission_id, emailaddress,
-                         distroarchseries, raw_submission, filename,
-                         filesize, system):
+                         submission_key, emailaddress, distroarchseries,
+                         raw_submission, filename, filesize, system):
         """Store submitted raw hardware information in a Librarian file.
 
-        If a submission with an identical submission_id already exists,
+        If a submission with an identical submission_key already exists,
         an HWSubmissionKeyNotUnique exception is raised."""
 
-    def getBySubmissionID(submission_id, user=None):
+    def getBySubmissionID(submission_key, user=None):
         """Return the submission with the given submission ID, or None.
 
         If a submission is marked as private, it is only returned if

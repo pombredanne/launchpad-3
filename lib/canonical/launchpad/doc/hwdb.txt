@@ -22,9 +22,7 @@ together with the following data:
     false, the data may be used only for statistical purposes.
   * contactable: If True, the submitter agrees to be contacted by upstream
     developers and package maintainers for tests etc.
-  * live_cd: If True, the data was collected on a Ubuntu Live CD installation,
-    else it was collected on a regular installation.
-  * submission_id: A unique submission ID.
+  * submission_key: A unique submission ID.
   * emailaddress: The email address of the submitter.
   * owner: A reference to the Person table. This value is null, if the email 
     address does not belong to an entry in Person table.
@@ -97,8 +95,7 @@ HWSubmission table.
     ...     format=HWSubmissionFormat.VERSION_1,
     ...     private=False,
     ...     contactable=False,
-    ...     live_cd=False,
-    ...     submission_id=u'unique ID 1',
+    ...     submission_key=u'unique ID 1',
     ...     emailaddress=u'test@canonical.com',
     ...     distroarchseries=None,
     ...     raw_submission=StringIO(submission_data),
@@ -106,16 +103,15 @@ HWSubmission table.
     ...     filesize=len(submission_data),
     ...     system_fingerprint=u'Dell Inspiron 1234')
 
-submission_id must be unique. The attempt to create a HWSubmission entry
-with an already existing submission_id raises HWSubmissionError.
+submission_key must be unique. The attempt to create a HWSubmission entry
+with an already existing submission_key raises HWSubmissionError.
 
     >>> submission = hw_submission_set.createSubmission(
     ...     date_created=date_created,
     ...     format=HWSubmissionFormat.VERSION_1,
     ...     private=False,
     ...     contactable=False,
-    ...     live_cd=False,
-    ...     submission_id=u'unique ID 1',
+    ...     submission_key=u'unique ID 1',
     ...     emailaddress=u'test@canonical.com',
     ...     distroarchseries=None,
     ...     raw_submission=StringIO(submission_data),
@@ -145,8 +141,7 @@ a new record is created.
     ...     format=HWSubmissionFormat.VERSION_1,
     ...     private=False,
     ...     contactable=False,
-    ...     live_cd=False,
-    ...     submission_id=u'unique ID 2',
+    ...     submission_key=u'unique ID 2',
     ...     emailaddress=u'beeblebrox@example.com',
     ...     distroarchseries=None,
     ...     raw_submission=StringIO(submission_data),
@@ -170,8 +165,7 @@ an HWSubmissionError is raised.
     ...     format=HWSubmissionFormat.VERSION_1,
     ...     private=False,
     ...     contactable=False,
-    ...     live_cd=False,
-    ...     submission_id=u'unique ID 3',
+    ...     submission_key=u'unique ID 3',
     ...     emailaddress=u'beeblebrox',
     ...     distroarchseries=None,
     ...     raw_submission=StringIO(submission_data),
@@ -185,7 +179,7 @@ an HWSubmissionError is raised.
 The submitted data can be retrieved by IHWSubmissionSet.getBySubmissionID.
 
     >>> submission = hw_submission_set.getBySubmissionID(u'unique ID 1')
-    >>> submission.submission_id, submission.system_fingerprint.fingerprint
+    >>> submission.submission_key, submission.system_fingerprint.fingerprint
     (u'unique ID 1', u'Dell Inspiron 1234')
 
 If a submission is marked as private, it is only returned by 
@@ -197,8 +191,7 @@ owner of the submission...
     ...     format=HWSubmissionFormat.VERSION_1,
     ...     private=True,
     ...     contactable=False,
-    ...     live_cd=False,
-    ...     submission_id=u'unique ID 3',
+    ...     submission_key=u'unique ID 3',
     ...     emailaddress=u'test@canonical.com',
     ...     distroarchseries=None,
     ...     raw_submission=StringIO(submission_data),
@@ -225,17 +218,17 @@ owner of the submission...
 
 Only the owner and admins can view the submission details.
 
-    >>> submission.submission_id, submission.system_fingerprint.fingerprint
+    >>> submission.submission_key, submission.system_fingerprint.fingerprint
     Traceback (most recent call last):
     ...
-    Unauthorized: (...'submission_id', 'launchpad.View')
+    Unauthorized: (...'submission_key', 'launchpad.View')
 
     >>> login('test@canonical.com')
-    >>> submission.submission_id, submission.system_fingerprint.fingerprint
+    >>> submission.submission_key, submission.system_fingerprint.fingerprint
     (u'unique ID 3', u'Dell Inspiron 1234')
 
     >>> login('foo.bar@canonical.com')
-    >>> submission.submission_id, submission.system_fingerprint.fingerprint
+    >>> submission.submission_key, submission.system_fingerprint.fingerprint
     (u'unique ID 3', u'Dell Inspiron 1234')
 
 Passing another person than the owner or an admin as the parameter `user`
@@ -260,24 +253,24 @@ given fingerprint name. Private submissions are excluded, if the parameter
 
     >>> submissions = hw_submission_set.getByFingerprintName(
     ...     u'Dell Inspiron 1234')
-    >>> [(s.submission_id, s.system_fingerprint.fingerprint, s.private)
+    >>> [(s.submission_key, s.system_fingerprint.fingerprint, s.private)
     ...  for s in submissions]
     [(u'unique ID 1', u'Dell Inspiron 1234', False)]
     >>> submissions = hw_submission_set.getByFingerprintName(
     ...     u'Dell Inspiron 1234', no_priv)
-    >>> [(s.submission_id, s.system_fingerprint.fingerprint, s.private)
+    >>> [(s.submission_key, s.system_fingerprint.fingerprint, s.private)
     ...  for s in submissions]
     [(u'unique ID 1', u'Dell Inspiron 1234', False)]
     >>> login('test@canonical.com')
     >>> submissions = hw_submission_set.getByFingerprintName(
     ...     u'Dell Inspiron 1234', sample_person)
-    >>> [(s.submission_id, s.system_fingerprint.fingerprint, s.private)
+    >>> [(s.submission_key, s.system_fingerprint.fingerprint, s.private)
     ...  for s in submissions]
     [(u'unique ID 1', u'Dell Inspiron 1234', False),
      (u'unique ID 3', u'Dell Inspiron 1234', True)]
     >>> submissions = hw_submission_set.getByFingerprintName(
     ...     u'Dell Inspiron 1234', foobar)
-    >>> [(s.submission_id, s.system_fingerprint.fingerprint, s.private)
+    >>> [(s.submission_key, s.system_fingerprint.fingerprint, s.private)
     ...  for s in submissions]
     [(u'unique ID 1', u'Dell Inspiron 1234', False),
      (u'unique ID 3', u'Dell Inspiron 1234', True)]
@@ -293,26 +286,26 @@ only non-private submissions are returned if no parameter `user` is passed
 to the method, or if the passed parameter is neither the owner nor an admin.
 
     >>> submissions = hw_submission_set.getByOwner(sample_person)
-    >>> [(s.submission_id, s.system_fingerprint.fingerprint)
+    >>> [(s.submission_key, s.system_fingerprint.fingerprint)
     ...  for s in submissions]
     [(u'unique ID 1', u'Dell Inspiron 1234'),
      (u'test_submission_id_1', u'TONKA TUFFBOOK2600')]
     >>> submissions = hw_submission_set.getByOwner(sample_person,
     ...                                            user=no_priv)
-    >>> [(s.submission_id, s.system_fingerprint.fingerprint)
+    >>> [(s.submission_key, s.system_fingerprint.fingerprint)
     ...  for s in submissions]
     [(u'unique ID 1', u'Dell Inspiron 1234'),
      (u'test_submission_id_1', u'TONKA TUFFBOOK2600')]
     >>> submissions = hw_submission_set.getByOwner(sample_person,
     ...                                            user=sample_person)
-    >>> [(s.submission_id, s.system_fingerprint.fingerprint)
+    >>> [(s.submission_key, s.system_fingerprint.fingerprint)
     ...  for s in submissions]
     [(u'unique ID 1', u'Dell Inspiron 1234'),
      (u'unique ID 3', u'Dell Inspiron 1234'),
      (u'test_submission_id_1', u'TONKA TUFFBOOK2600')]
     >>> submissions = hw_submission_set.getByOwner(sample_person,
     ...                                            user=foobar)
-    >>> [(s.submission_id, s.system_fingerprint.fingerprint)
+    >>> [(s.submission_key, s.system_fingerprint.fingerprint)
     ...  for s in submissions]
     [(u'unique ID 1', u'Dell Inspiron 1234'),
      (u'unique ID 3', u'Dell Inspiron 1234'),

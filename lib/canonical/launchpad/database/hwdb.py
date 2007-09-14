@@ -36,8 +36,7 @@ class HWSubmission(SQLBase):
     status = EnumCol(enum=HWSubmissionProcessingStatus, notNull=True)
     private = BoolCol(notNull=True)
     contactable = BoolCol(notNull=True)
-    live_cd = BoolCol(notNull=True, default=False)
-    submission_id = StringCol(notNull=True)
+    submission_key = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person')
     distroarchrelease = ForeignKey(dbName='distroarchseries',
                                    foreignKey='Distroarchrelease',
@@ -56,13 +55,13 @@ class HWSubmissionSet:
     implements(IHWSubmissionSet)
 
     def createSubmission(self, date_created, format, private, contactable,
-                         live_cd, submission_id, emailaddress,
-                         distroarchseries, raw_submission, filename,
-                         filesize, system_fingerprint):
+                         submission_key, emailaddress, distroarchseries,
+                         raw_submission, filename, filesize,
+                         system_fingerprint):
         """See `IHWSubmissionSet`."""
         
         submission_exists = HWSubmission.selectOneBy(
-            submission_id=submission_id)
+            submission_key=submission_key)
         if submission_exists is not None:
             raise HWSubmissionKeyNotUnique(
                 'A submission with this ID already exists')
@@ -103,17 +102,16 @@ class HWSubmissionSet:
             status=HWSubmissionProcessingStatus.SUBMITTED,
             private=private,
             contactable=contactable,
-            live_cd=live_cd,
-            submission_id=submission_id,
+            submission_key=submission_key,
             owner=owner,
             distroarchrelease=distroarchseries,
             raw_submission=libraryfile,
             system_fingerprint=fingerprint)
 
-    def getBySubmissionID(self, submission_id, user=None):
+    def getBySubmissionID(self, submission_key, user=None):
         """See `IHWSubmissionSet`."""
         admins = getUtility(ILaunchpadCelebrities).admin
-        query = "submission_id=%s" % sqlvalues(submission_id)
+        query = "submission_key=%s" % sqlvalues(submission_key)
         if user is None:
             query = query + " AND not private"
         elif not user.inTeam(admins):
@@ -147,7 +145,7 @@ class HWSubmissionSet:
             prejoinClauseTables=['HWSystemFingerprint'],
             orderBy=['HWSystemFingerprint.fingerprint',
                      'date_submitted',
-                     'submission_id'])
+                     'submission_key'])
 
     def getByOwner(self, owner, user=None):
         """See `IHWSubmissionSet`."""
@@ -171,7 +169,7 @@ class HWSubmissionSet:
             prejoinClauseTables=['HWSystemFingerprint'],
             orderBy=['HWSystemFingerprint.fingerprint',
                      'date_submitted',
-                     'submission_id'])
+                     'submission_key'])
 
 class HWSystemFingerprint(SQLBase):
     """Identifiers of a computer system."""

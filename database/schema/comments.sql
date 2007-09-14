@@ -1568,8 +1568,7 @@ COMMENT ON COLUMN HWSubmission.format IS 'The format version of the submitted da
 COMMENT ON COLUMN HWSubmission.status IS 'The status of the submission. See HWSubmissionProcessingStatus for valid values.';
 COMMENT ON COLUMN HWSubmission.private IS 'If false, the submitter allows public access to the data. If true, the data may be used only for statistical purposes.';
 COMMENT ON COLUMN HWSubmission.contactable IS 'If True, the submitter agrees to be contacted by upstream developers and package maintainers for tests etc.';
-COMMENT ON COLUMN HWSubmission.live_cd IS 'If True, the data was collected on a Ubuntu Live CD installation, else it was collected on a regular installation.';
-COMMENT ON COLUMN HWSubmission.submission_id IS 'A unique submission ID.';
+COMMENT ON COLUMN HWSubmission.submission_key IS 'A unique submission ID.';
 COMMENT ON COLUMN HWSubmission.owner IS 'A reference to the Person table: The owner/submitter of the data.';
 COMMENT ON COLUMN HWSubmission.distroarchseries IS 'A reference to the distroarchseries of the submission. This value is null, if the submitted values for distribution, distroseries and architecture do not match an existing entry in the Distroarchseries table.';
 COMMENT ON COLUMN HWSubmission.raw_submission IS 'A reference to a row of LibraryFileAlias. The library file contains the raw submission data.';
