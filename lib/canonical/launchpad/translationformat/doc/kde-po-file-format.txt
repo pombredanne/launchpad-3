@@ -188,8 +188,8 @@ forms. They are simply newline-separated strings.
     ... "n%%10>=2 && n%%10<=4 && (n%%100<10 || n%%100>=20) ? 1 : 2);\n"
     ... "X-Launchpad-Export-Date: %s\n"
     ...
-    ... # This is not considered a plural forms message because of a missing
-    ... # space in '_n: '.
+    ... # This is not considered a plural forms message because
+    ... # of a missing space in '_n:'.
     ... msgid "_n:bar\nbars"
     ... msgstr "non-plural forms message"
     ...
@@ -259,12 +259,16 @@ Template export turns it back into a KDE-style PO file:
     "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
     ...
     <BLANKLINE>
-    # This is not considered a plural forms message.
+    # This is not considered a plural forms message because
+    # of a missing space in '_n:'.
     msgid ""
     "_n:bar\n"
     "bars"
     msgstr ""
     <BLANKLINE>
+    # "c-format" flag enforces printf-specifiers checking, so we use that
+    # to make sure import doesn't fail on a differing number of specifiers
+    # in a msgid and in a msgstr.
     #, c-format
     msgid ""
     "_n: %d foo\n"
@@ -286,12 +290,16 @@ But, we can also export it as a regular gettext PO file:
     "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
     ...
     <BLANKLINE>
-    # This is not considered a plural forms message.
+    # This is not considered a plural forms message because
+    # of a missing space in '_n:'.
     msgid ""
     "_n:bar\n"
     "bars"
     msgstr ""
     <BLANKLINE>
+    # "c-format" flag enforces printf-specifiers checking, so we use that
+    # to make sure import doesn't fail on a differing number of specifiers
+    # in a msgid and in a msgstr.
     #, c-format
     msgid "%d foo"
     msgid_plural "%d foos"
@@ -312,12 +320,16 @@ Exporting a translation is possible in a very similar way.
     "Plural-Forms: ...
     ...
     <BLANKLINE>
-    # This is not considered a plural forms message.
+    # This is not considered a plural forms message because
+    # of a missing space in '_n:'.
     msgid ""
     "_n:bar\n"
     "bars"
     msgstr "non-plural forms message"
     <BLANKLINE>
+    # "c-format" flag enforces printf-specifiers checking, so we use that
+    # to make sure import doesn't fail on a differing number of specifiers
+    # in a msgid and in a msgstr.
     #, c-format
     msgid ""
     "_n: %d foo\n"
