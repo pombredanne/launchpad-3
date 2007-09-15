@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'OpenIdMixin', 'KNOWN_TRUST_ROOTS',
+    'OpenIdMixin',
     ]
 
 import cgi
@@ -30,8 +30,9 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, ILoginTokenSet, IOpenIdApplication,
-    IOpenIdAuthorizationSet, IPersonSet, LoginTokenType, NotFoundError,
-    PersonCreationRationale, UnexpectedFormData)
+    IOpenIdAuthorizationSet, IOpenIDRPConfigSet, IPersonSet,
+    LoginTokenType, NotFoundError, PersonCreationRationale,
+    UnexpectedFormData)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
@@ -55,73 +56,6 @@ def null_log(message, level=0):
     pass
 oidutil.log = null_log
 
-
-rationale = PersonCreationRationale
-# Information about known trust roots
-# XXX: jamesh 2007-06-14
-# Include more information about the trust roots, such as an icon.  We
-# should really maintain this data elsewhere, but this should be fine
-# for phase 1 of the implementation.
-KNOWN_TRUST_ROOTS = {
-    'http://localhost.localdomain:8001/':
-        dict(title="OpenID Consumer Example",
-             logo=None,
-             sreg=['fullname'],
-             reason="This is a localhost server.  Make your own judgement."),
-    'http://pdl-dev.co.uk':
-        dict(title="PDL Demo OSCommerce shop",
-             logo="/+icing/canonical-logo.png",
-             sreg=['email', 'fullname', 'nickname',
-                   'x_address1', 'x_address2', 'x_organization',
-                   'x_city', 'x_province', 'country', 'postcode',
-                   'x_phone'],
-             reason=None),
-    'http://www.mmania.biz':
-        dict(title="The Ubuntu Store from Canonical",
-             logo="/+icing/canonical-logo.png",
-             sreg=['email', 'fullname', 'nickname',
-                   'x_address1', 'x_address2', 'x_organization',
-                   'x_city', 'x_province', 'country', 'postcode',
-                   'x_phone'],
-             reason=("For the Ubuntu Store, you need a Launchpad account "
-                     "so we can remember your order details and keep in "
-                     "touch with you about your orders."),
-             creation_rationale=rationale.OWNER_CREATED_UBUNTU_SHOP),
-    'https://shop.canonical.com':
-        dict(title="The Ubuntu Store from Canonical",
-             logo="/+icing/canonical-logo.png",
-             sreg=['email', 'fullname', 'nickname',
-                   'x_address1', 'x_address2', 'x_organization',
-                   'x_city', 'x_province', 'country', 'postcode',
-                   'x_phone'],
-             reason=("For the Ubuntu Store, you need a Launchpad account "
-                     "so we can remember your order details and keep in "
-                     "touch with you about your orders."),
-             creation_rationale=rationale.OWNER_CREATED_UBUNTU_SHOP),
-    'http://shop.canonical.com':
-        dict(title="The Ubuntu Store from Canonical",
-             logo="/+icing/canonical-logo.png",
-             sreg=['email', 'fullname', 'nickname',
-                   'x_address1', 'x_address2', 'x_organization',
-                   'x_city', 'x_province', 'country', 'postcode',
-                   'x_phone'],
-             reason=("For the Ubuntu Store, you need a Launchpad account "
-                     "so we can remember your order details and keep in "
-                     "touch with you about your orders."),
-             creation_rationale=rationale.OWNER_CREATED_UBUNTU_SHOP),
-    #'https://shipit.ubuntu.com/':
-    #    dict(title="Ubuntu Shipit",
-    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
-    #'https://shipit.kubuntu.org/':
-    #    dict(title="Kubuntu Shipit",
-    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
-    #'https://shipit.edubuntu.org/':
-    #    dict(title="Edubuntu Shipit",
-    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
-    #'https://wiki.ubuntu.com/':
-    #    dict(title="Ubuntu Wiki",
-    #         creation_rationale=rationale.OWNER_CREATED_UBUNTU_WIKI),
-    }
 
 SREG_FIELDS = [
     ('fullname', 'Full name'),
@@ -244,9 +178,13 @@ class OpenIdMixin:
             field_names.update(
                 self.openid_parameters['openid.sreg.optional'].split(','))
         # Now subset them based on what keys are allowed from the
-        # KNOWN_TRUST_ROOTS list:
-        rp_info = KNOWN_TRUST_ROOTS.get(self.openid_request.trust_root, {})
-        field_names.intersection_update(rp_info.get('sreg', []))
+        # RP config:
+        rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+            self.openid_request.trust_root)
+        if rpconfig is None:
+            field_names.clear()
+        else:
+            field_names.intersection_update(rpconfig.allowed_sreg)
         # Sort the list according to SREG_FIELDS
         return [name for (name, description) in SREG_FIELDS
                 if name in field_names]
@@ -486,7 +424,7 @@ class LoginServiceBaseView(OpenIdMixin, LaunchpadFormView):
         #self.trashRequestInSession('nonce' + self.nonce)
 
     @property
-    def rp_info(self):
+    def rpconfig(self):
         """Return a dictionary of information about the relying party.
 
         The dictionary contains 'title' and 'logo' entries.
@@ -496,11 +434,8 @@ class LoginServiceBaseView(OpenIdMixin, LaunchpadFormView):
         """
         assert self.openid_request is not None, (
             'Could not find the OpenID request')
-        rp_info = KNOWN_TRUST_ROOTS.get(self.openid_request.trust_root)
-        if rp_info is None:
-            return dict(title=self.openid_request.trust_root,
-                        logo=None, reason=None)
-        return rp_info
+        return getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+            self.openid_request.trust_root)
 
     def isSaneTrustRoot(self):
         """Return True if the RP's trust root looks sane."""

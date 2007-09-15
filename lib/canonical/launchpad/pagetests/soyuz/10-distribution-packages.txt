@@ -58,13 +58,22 @@ Now run a search for mozilla-firefox and check that it is found:
   '...mozilla-firefox...0.9...'
   >>> binaries=find_tag_by_id(browser.contents, 'binaries')
   >>> extract_text(binaries).strip()
-  u'mozilla-firefox'
+  u'mozilla-firefox\nmozilla-firefox\nmozilla-firefox-data'
 
 Follow the link to the binaries page and make sure it's the right binary.
 
   >>> browser.getLink(id='binlink').click()
   >>> browser.title
   'Binary package "mozilla-firefox" in ubuntu warty'
+
+The search page will also present commercial packages:
+
+  >>> browser.goBack()
+  >>> field = browser.getControl(name="text", index=1)
+  >>> field.value = 'commercialpackage'
+  >>> browser.getControl("Search").click()
+  >>> extract_text(find_main_content(browser.contents))
+  u'...Source Package "commercialpackage"...'
 
 Now try searching for text that we know to be in a change log entry, to
 prove that FTI works on change logs.  The text we're looking for is 

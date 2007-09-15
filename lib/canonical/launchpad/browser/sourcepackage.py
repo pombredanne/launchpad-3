@@ -8,26 +8,16 @@ __all__ = [
     'SourcePackageNavigation',
     'SourcePackageSOP',
     'SourcePackageFacets',
+    'SourcePackageTranslateRedirectView',
     'SourcePackageView',
     ]
 
-# Python standard library imports
-import cgi
-import re
 from apt_pkg import ParseSrcDepends
-
 from zope.component import getUtility
 from zope.app.form.interfaces import IInputWidget
 from zope.app import zapi
 
-from canonical.lp.dbschema import PackagePublishingPocket
-
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import (
-    IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -36,10 +26,15 @@ from canonical.launchpad.browser.packagerelationship import (
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from canonical.launchpad.browser.rosetta import TranslationsMixin
-
+from canonical.launchpad.interfaces import (
+    IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
     GetitemNavigation, stepto, redirection)
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
+from canonical.lp.dbschema import PackagePublishingPocket
 
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -138,7 +133,11 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'translations'
-    links = ['help', 'templates']
+    links = ['help', 'templates', 'imports']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
 
     def help(self):
         return Link('+translate', 'How you can help', icon='info')
@@ -246,3 +245,26 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
     def searchName(self):
         return False
 
+
+class SourcePackageTranslateRedirectView:
+    """Redirects to translations site for +translate page.
+
+    XXX CarlosPerelloMarin 2007-08-12: This redirect is only useful until all
+    supported Ubuntu distro series stop pointing to
+    https://launchpad.net/ubuntu/.../+translate URLs and instead, use the
+    translations.launchpad.net domain for the 'Translate this application'
+    menu entry available in most graphical applications. See bug #138090 for
+    more details.
+    """
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __call__(self):
+        """Redirect to the +translate page in the translations site."""
+        self.request.response.redirect(
+            '/'.join([
+                canonical_url(self.context, rootsite='translations'),
+                '+translate'
+                ]), status=301)

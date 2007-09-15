@@ -1,4 +1,5 @@
-<div class="portlet" tal:condition="view/teams_with_branches">
+<div class="portlet" id="portlet-team-branches"
+     tal:condition="view/teams_with_branches">
   <h2>Branches for</h2>
 
   <div class="portletBody portletContent">

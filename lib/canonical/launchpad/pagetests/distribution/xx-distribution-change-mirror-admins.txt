@@ -9,7 +9,8 @@ the distribution owner, on the +selectmirroradmins page.
     ...
     Unauthorized: ...
 
-    # XXX: Workaround for https://launchpad.net/launchpad/+bug/45226
+    # XXX Guilherme Salgado 2006-06-16 bug=45226: 
+    # Workaround for https://launchpad.net/launchpad/+bug/45226
     >>> from zope.testbrowser.testing import Browser
     >>> browser = Browser()
 

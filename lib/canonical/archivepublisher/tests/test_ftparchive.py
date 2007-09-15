@@ -145,11 +145,11 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         from canonical.archivepublisher.ftparchive import FTPArchiveHandler
         FTPArchiveHandler(self._logger, self._config, self._dp,
                    self._distribution, set())
-                  
+
     def testGetSourcesForOverrides(self):
         """Ensure Publisher.getSourcesForOverrides works.
-        
-        FTPArchiveHandler.getSourcesForOverride should be returning 
+
+        FTPArchiveHandler.getSourcesForOverride should be returning
         SourcePackagePublishingHistory rows that match the distrorelease,
         its main_archive, the supplied pocket and have a status of PUBLISHED.
         """
@@ -158,7 +158,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         spphs = fa.getSourcesForOverrides(
             ubuntuwarty, PackagePublishingPocket.RELEASE)
 
-        # For the above query, we are depending on the sample data to 
+        # For the above query, we are depending on the sample data to
         # contain seven rows of SourcePackagePublishghistory data.
         expectedSources = [
             ('evolution', '1.0'),
@@ -177,7 +177,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
 
     def testGetBinariesForOverrides(self):
         """Ensure Publisher.getBinariesForOverrides works.
-        
+
         FTPArchiveHandler.getBinariesForOverride should be returning
         BinaryPackagePublishingHistory rows that match the distrorelease,
         its main_archive, the supplied pocket and have a status of PUBLISHED.
@@ -263,7 +263,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         # check'. Although they should remain active in PQM to avoid possible
         # regressions.
         assert fa.runApt(apt_conf) == 0
-        # XXX barry 2007-05-18 bug=116048: 
+        # XXX barry 2007-05-18 bug=116048:
         # This is a hack to make this test pass on dapper and feisty.
         # Feisty's apt-ftparchive outputs SHA256 and MD5 hash
         # lines which don't appear in dapper's version.  We can't change the

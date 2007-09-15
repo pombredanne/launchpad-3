@@ -1,5 +1,4 @@
-
-<div class="portlet">
+<div class="portlet" id="portlet-info">
 
   <h2>Remote bug trackers</h2>
 

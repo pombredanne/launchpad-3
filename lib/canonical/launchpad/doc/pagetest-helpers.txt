@@ -420,3 +420,18 @@ informational messages and error messages, based on the CSS class.
   >>> get_feedback_messages(browser)
   [u'1 file has been deleted.', u'Red Alert!']
 
+The helper extracts the text of the messages, which makes a difference
+if the messages contain html elements.
+
+  >>> browser = FakeBrowser()
+  >>> browser.contents = '''
+  ... <html>
+  ...   <div class="informational message">1 file has been deleted.</div>
+  ...   <p>blah blah</p>
+  ...   <div class="error message">
+  ...     Red Alert!  There are <a href="+more-details">more details</a>.
+  ...   </div>
+  ... </html>'''
+
+  >>> get_feedback_messages(browser)
+  [u'1 file has been deleted.', u'Red Alert!  There are more details.']

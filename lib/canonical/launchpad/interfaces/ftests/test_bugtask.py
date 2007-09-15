@@ -16,7 +16,7 @@ def test_open_and_resolved_statuses(self):
 
         >>> from canonical.launchpad.interfaces import (
         ...     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
-        >>> from canonical.lp.dbschema import BugTaskStatus
+        >>> from canonical.launchpad.interfaces import BugTaskStatus
         >>> not_included_status = set(BugTaskStatus.items).difference(
         ...     RESOLVED_BUGTASK_STATUSES + UNRESOLVED_BUGTASK_STATUSES)
         >>> [status.name for status in not_included_status]

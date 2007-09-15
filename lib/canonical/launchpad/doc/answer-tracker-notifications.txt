@@ -31,9 +31,19 @@ sent:
     >>> len(notifications)
     1
 
+Note that the From address uses the submitter's name with the
+question's email address. Answer's uses real names to help the
+questioner and the answerers communicate. The Reply-To address
+is the question's address. When using the mail client's reply
+feature, the user should clearly see that he is replying to the
+question and not the user.
+[sic] Kiko and Danilo have a story worth telling.
+
     >>> add_notification = notifications[0]
     >>> add_notification['From']
     'Sample Person <question...@answers.launchpad.net>'
+    >>> add_notification['Reply-To']
+    'question...@answers.launchpad.net'
     >>> add_notification['To']
     'test@canonical.com'
     >>> add_notification['Subject']
@@ -238,8 +248,8 @@ A notification is also sent when a bug is unlinked from the question:
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
-        Removed link to bug: #13
-        http://.../bugs/13
+        Removed link to bug: #...
+        http://.../bugs/...
         "Installer fails on a Mac PPC"
     <BLANKLINE>
     --...

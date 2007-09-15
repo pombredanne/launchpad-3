@@ -13,7 +13,7 @@
           </a>
         </li>
         <li>
-          <a href="+new">
+          <a href="+new" id="addspec">
             <img
               alt="Register a blueprint"
               src="/+icing/but-lrg-registeraspec.gif"

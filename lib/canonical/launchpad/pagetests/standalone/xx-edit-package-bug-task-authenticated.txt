@@ -11,7 +11,7 @@ Any authenticated user can edit a source package bug task.
     ['New']
     >>> status_control.value = ["Confirmed"]
 
-    >>> browser.getControl(name="FORM_SUBMIT").click()
+    >>> browser.getControl(name="ubuntu_mozilla-firefox.actions.save").click()
 
     >>> browser.open(
     ...     "http://localhost:9000/ubuntu/+source/mozilla-firefox"
@@ -23,4 +23,4 @@ Any authenticated user can edit a source package bug task.
     ['Confirmed']
     >>> status_control.value = ["New"]
 
-    >>> browser.getControl(name="FORM_SUBMIT").click()
+    >>> browser.getControl(name="ubuntu_mozilla-firefox.actions.save").click()

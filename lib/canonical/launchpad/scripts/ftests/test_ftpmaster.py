@@ -14,6 +14,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
+from canonical.launchpad.database.component import ComponentSelection
 from canonical.launchpad.interfaces import (
     IDistributionSet, IComponentSet, ISectionSet)
 from canonical.launchpad.scripts.ftpmaster import (
@@ -60,6 +61,9 @@ class MockLogger:
     def error(self, txt):
         self.logs.append("ERROR: %s" % txt)
 
+    def warn(self, txt):
+        self.logs.append("WARN: %s" % txt)
+
 
 class TestArchiveOverrider(LaunchpadZopelessTestCase):
     layer = LaunchpadZopelessLayer
@@ -74,6 +78,15 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         self.hoary = self.ubuntu['hoary']
         self.component_main = getUtility(IComponentSet)['main']
         self.section_base = getUtility(ISectionSet)['base']
+
+        # Allow commercial in warty and hoary.
+        commercial_component = getUtility(IComponentSet)['commercial']
+        self.ubuntu_warty = self.ubuntu['warty']
+        self.ubuntu_hoary = self.ubuntu['hoary']
+        ComponentSelection(distroseries=self.ubuntu_warty,
+                           component=commercial_component)
+        ComponentSelection(distroseries=self.ubuntu_hoary,
+                           component=commercial_component)
 
     def test_initialize_success(self):
         """Test ArchiveOverrider initialization process.
@@ -239,6 +252,22 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Priority to: 'EXTRA'\n"
             "INFO: 'mozilla-firefox/main/base' source overridden")
 
+    def test_processSourceChange_with_changed_archive(self):
+        """Check processSourceChange method call with an archive change.
+
+        Changing the component to 'commercial' will result in the archive
+        changing on the publishing record.  This is disallowed.
+        """
+        # Apply the override.
+        changer = ArchiveOverrider(
+            self.log, distro_name='ubuntu', suite='warty',
+            component_name='commercial', section_name='base',
+            priority_name='extra')
+        changer.initialize()
+        self.assertRaises(
+            ArchiveOverriderError, changer.processSourceChange,
+            'mozilla-firefox')
+
     def test_processSourceChange_error(self):
         """processSourceChange warns the user about an unpublished source.
 
@@ -278,6 +307,21 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: 'pmount/universe/editors/IMPORTANT' binary "
                 "overridden in hoary/i386")
 
+    def test_processBinaryChange_with_changed_archive(self):
+        """Check processBinaryChange method call with an archive change.
+
+        Changing the component to 'commercial' will result in the archive
+        changing.  This is disallowed.
+        """
+        # Apply the override.
+        changer = ArchiveOverrider(
+            self.log, distro_name='ubuntu', suite='hoary',
+            component_name='commercial', section_name='base',
+            priority_name='extra')
+        changer.initialize()
+        self.assertRaises(
+            ArchiveOverriderError, changer.processBinaryChange, 'pmount')
+
     def test_processBinaryChange_error(self):
         """processBinaryChange warns the user about an unpublished binary.
 
@@ -303,9 +347,6 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         Inspect the log and to ensure we are passing correct arguments and
         picking the correct source.
         """
-        # XXX cprov 2006-04-24: this test needs to be extended to check the
-        # behaviour when there are published binaries (needs richer
-        # sampledata)
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
             component_name='main', section_name='base',
@@ -317,7 +358,13 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
+            "INFO: 'mozilla-firefox/main/base/IMPORTANT' "
+                "binary overridden in warty/i386\n"
             "INFO: 'mozilla-firefox/main/base/EXTRA' "
+                "binary overridden in warty/hppa\n"
+            "INFO: 'mozilla-firefox-data/main/base/EXTRA' "
+                "binary overridden in warty/hppa\n"
+            "INFO: 'mozilla-firefox-data/main/base/EXTRA' "
                 "binary overridden in warty/i386")
 
     def test_processChildrenChange_error(self):
@@ -337,6 +384,19 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
             "ERROR: 'pmount' source isn't published in warty")
+
+        changer = ArchiveOverrider(
+            self.log, distro_name='ubuntu', suite='hoary',
+            component_name='main', section_name='base',
+            priority_name='extra')
+        changer.initialize()
+        changer.processChildrenChange('pmount')
+        self.assertEqual(
+            self.log.read(),
+            "INFO: Override Component to: 'main'\n"
+            "INFO: Override Section to: 'base'\n"
+            "INFO: Override Priority to: 'EXTRA'\n"
+            "WARN: 'pmount' has no binaries published in hoary")
 
 
 class TestArchiveCruftChecker(LaunchpadZopelessTestCase):

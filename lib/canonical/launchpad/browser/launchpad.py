@@ -8,7 +8,6 @@ __all__ = [
     'LoginStatus',
     'MaintenanceMessage',
     'MenuBox',
-    'RosettaContextMenu',
     'MaloneContextMenu',
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
@@ -17,7 +16,6 @@ __all__ = [
     'OneZeroTemplateStatus',
     'IcingFolder',
     'StructuralHeaderPresentationView',
-    'StructuralFooterPresentationView',
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
     'ApplicationButtons',
@@ -26,7 +24,6 @@ __all__ = [
     ]
 
 import cgi
-from cookielib import domain_match
 import errno
 import urllib
 import os
@@ -45,12 +42,10 @@ from zope.app.publisher.browser.fileresource import setCacheControl
 from zope.app.datetimeutils import rfc1123_date
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
-from zope.security.proxy import isinstance as zope_isinstance
 
 from BeautifulSoup import BeautifulStoneSoup, Comment
 
 import canonical.launchpad.layers
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
@@ -72,6 +67,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot,
     ILaunchpadStatisticSet,
     ILoginTokenSet,
+    IMailingListApplication,
     IMaloneApplication,
     IMentoringOfferSet,
     IPersonSet,
@@ -96,6 +92,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
     LaunchpadFormView, Navigation, stepto, canonical_url, custom_widget)
 from canonical.launchpad.webapp.publisher import RedirectionView
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
@@ -143,7 +140,11 @@ class MaloneApplicationNavigation(Navigation):
     def traverse(self, name):
         # Make /bugs/$bug.id, /bugs/$bug.name /malone/$bug.name and
         # /malone/$bug.id Just Work
-        return getUtility(IBugSet).getByNameOrID(name)
+        bug = getUtility(IBugSet).getByNameOrID(name)
+        if not check_permission("launchpad.View", bug):
+            raise Unauthorized("Bug %s is private" % name)
+        return bug
+
 
 
 class MenuBox(LaunchpadView):
@@ -319,36 +320,6 @@ class MaloneContextMenu(ContextMenu):
         return Link('cve/', text, icon='cve')
 
 
-class RosettaContextMenu(ContextMenu):
-    # XXX mpt 2006-03-27: No longer visible on Translations front page.
-    usedfor = IRosettaApplication
-    links = ['about', 'preferences', 'import_queue', 'translation_groups']
-
-    def about(self):
-        text = 'About Launchpad Translations'
-        rosetta_application = getUtility(IRosettaApplication)
-        url = '/'.join([canonical_url(rosetta_application), '+about'])
-        return Link(url, text)
-
-    def preferences(self):
-        text = 'Translation preferences'
-        rosetta_application = getUtility(IRosettaApplication)
-        url = '/'.join([canonical_url(rosetta_application), 'prefs'])
-        return Link(url, text)
-
-    def import_queue(self):
-        text = 'Import queue'
-        import_queue = getUtility(ITranslationImportQueue)
-        url = canonical_url(import_queue)
-        return Link(url, text)
-
-    def translation_groups(self):
-        text = 'Translation groups'
-        translation_group_set = getUtility(ITranslationGroupSet)
-        url = canonical_url(translation_group_set)
-        return Link(url, text)
-
-
 class LoginStatus:
 
     def __init__(self, context, request):
@@ -443,7 +414,9 @@ class LaunchpadRootNavigation(Navigation):
         'codeofconduct': ICodeOfConductSet,
         'distros': IDistributionSet,
         'karmaaction': IKarmaActionSet,
+        '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
+        'mailinglists': IMailingListApplication,
         '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,
         'potemplatenames': IPOTemplateNameSet,
@@ -576,49 +549,6 @@ class SoftTimeoutView(LaunchpadView):
 
 class LaunchpadRootIndexView(LaunchpadView):
     """An view for the default view of the LaunchpadRoot."""
-
-    def _getCookieParams(self):
-        """Return a string containing the 'domain' and 'secure' parameters."""
-        params = '; Path=/'
-        # XXX: jamesh 2007-02-06:
-        # This code to select the cookie domain comes from webapp/session.py
-        # It should probably be factored out.
-        uri = URI(self.request.getURL())
-        if uri.scheme == 'https':
-            params += '; Secure'
-        for domain in config.launchpad.cookie_domains:
-            assert not domain.startswith('.'), \
-                   "domain should not start with '.'"
-            dotted_domain = '.' + domain
-            if (domain_match(uri.host, domain) or
-                domain_match(uri.host, dotted_domain)):
-                params += '; Domain=%s' % dotted_domain
-                break
-        return params
-
-    def getInhibitRedirectScript(self):
-        """Returns a Javascript function that inhibits redirection."""
-        return '''
-        function inhibit_beta_redirect() {
-            var expire = new Date()
-            expire.setTime(expire.getTime() + 2 * 60 * 60 * 1000)
-            document.cookie = ('inhibit_beta_redirect=1%s; Expires=' +
-                               expire.toGMTString())
-            alert('You will not be redirected to the beta site for 2 hours');
-            return false;
-        }''' % self._getCookieParams()
-
-    def getEnableRedirectScript(self):
-        """Returns a Javascript function that enables beta redireciton."""
-        return '''
-        function enable_beta_redirect() {
-            var expire = new Date()
-            expire.setTime(expire.getTime() + 1000)
-            document.cookie = ('inhibit_beta_redirect=0%s; Expires=' +
-                               expire.toGMTString())
-            alert('Redirection to the beta site has been enabled');
-            return false;
-        }''' % self._getCookieParams()
 
     def isRedirectInhibited(self):
         """Returns True if redirection has been inhibited."""
@@ -830,53 +760,6 @@ class StructuralHeaderPresentationView(LaunchpadView):
         return self.headerpresentation.getMainHeading()
 
 
-class StructuralFooterPresentationView(LaunchpadView):
-
-    # Object attributes used by the page template:
-    #   num_lists: 0, 1 or 2
-    #   children: []
-    #   has_more_children: True/False
-    #   alt_children: []
-    #   has_more_altchildren: True/False
-
-    def initialize(self):
-        self.structuralpresentation = IStructuralObjectPresentation(
-            self.context)
-        sop = self.structuralpresentation
-
-        max_alt_children_to_present = 4
-
-        # First, see if listAltChildren returns None.  If so, we have
-        # just children.  If not, we have both alt-children and children.
-        alt_children = sop.listAltChildren(max_alt_children_to_present + 1)
-        if alt_children is None:
-            max_children_to_present = 8
-
-            # Note that self.has_more_alt_children and self.alt_children is
-            # undefined when we have no alt_children.
-            # The page template needs to check num_lists is 2 before reading
-            # these attributes.
-        else:
-            max_children_to_present = 4
-
-            assert zope_isinstance(alt_children, list)
-            self.has_more_alt_children = len(alt_children) > max_alt_children_to_present
-            self.alt_children = children[:max_alt_children_to_present]
-
-        children = sop.listChildren(max_children_to_present + 1)
-        assert zope_isinstance(children, list)
-
-        self.has_more_children = len(children) > max_children_to_present
-        self.children = children[:max_children_to_present]
-
-        if alt_children is None:
-            if not children:
-                self.num_lists = 0
-            else:
-                self.num_lists = 1
-        else:
-            self.num_lists = 2
-
 class StructuralHeaderPresentation:
     """Base class for StructuralHeaderPresentation adapters."""
 
@@ -884,6 +767,9 @@ class StructuralHeaderPresentation:
 
     def __init__(self, context):
         self.context = context
+
+    def isPrivate(self):
+        return False
 
     def getIntroHeading(self):
         return None

@@ -1,0 +1,69 @@
+== Performance of +translate pages ==
+
+The +translate pages, where users can do their translations, involves some
+heavy database activity including complex caching and prefetching of
+translation suggestions.  It's hard to keep database performance for this page
+under control.
+
+  >>> from canonical.launchpad.webapp.adapter import get_request_statements
+  >>> from zope.app.tests import ztapi
+  >>> from zope.app.publication.interfaces import IEndRequestEvent
+
+  >>> class QueryCounter:
+  ...     """Count database statements performed in last request.
+  ...
+  ...     We can't get at this count after the browser has completed its
+  ...     request, because that will reset the tracking logic.  Instead, we
+  ...     subscribe to the Zope "request completed" event and grab our count
+  ...     when that event comes along.
+  ...     """
+  ...     _active = True
+  ...     count = None
+  ...
+  ...     def __init__(self):
+  ...         ztapi.subscribe((IEndRequestEvent, ), None, self)
+  ...
+  ...     def __call__(self, event):
+  ...         if self._active:
+  ...             self.count = len(get_request_statements())
+  ...
+  ...     def unregister(self):
+  ...         self._active = False
+
+  >>> query_counter = QueryCounter()
+
+=== Anonymous access ===
+
+When an unauthenticated (anonymous) visitor requests a translation page, the
+number of queries issued is relatively low.  Mileage may vary, but consider
+this test a tripwire for the number potentially getting out of hand.
+
+    >>> anon_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+    ...     '+pots/evolution-2.2/es/+translate')
+    >>> anon_browser.url
+    'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
+    >>> print anon_browser.contents
+    <...
+    >>> statement_count = query_counter.count
+    >>> 0 < statement_count < 100
+    True
+
+=== Reviewing and translating ===
+
+When an administrator logs in, the page shows not only translations and the
+option to make suggestions, but existing suggestions as well.  It takes more
+queries, but it still shouldn't run in the hundreds.
+
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+    ...     '+pots/evolution-2.2/es/+translate')
+    >>> admin_browser.url
+    'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
+
+    >>> statement_count < query_counter.count < 150
+    True
+
+    >>> # Cleanup.
+    >>> query_counter.unregister()
+

@@ -5,10 +5,10 @@ some people which have done work on the free software community but are not
 Launchpad users.
 
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.database.sqlbase import sqlvalues, flush_database_updates
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IPerson, IEmailAddressSet)
+    ...     IPersonSet, IPerson, IEmailAddressSet, IHasTranslationImports)
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> login(ANONYMOUS)
 
@@ -24,6 +24,17 @@ Any Person object (either a person or a team) implements IPerson.
     >>> ubuntu_team.isTeam()
     True
     >>> verifyObject(IPerson, ubuntu_team)
+    True
+
+and IHasTranslationImports:
+
+    >>> IHasTranslationImports.providedBy(foobar)
+    True
+    >>> verifyObject(IHasTranslationImports, foobar)
+    True
+    >>> IHasTranslationImports.providedBy(ubuntu_team)
+    True
+    >>> verifyObject(IHasTranslationImports, ubuntu_team)
     True
 
 == The IPersonSet utility ==

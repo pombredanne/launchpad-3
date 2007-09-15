@@ -35,7 +35,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
-from canonical.lp.dbschema import BuildStatus
+from canonical.lp.dbschema import (
+    ArchivePurpose, BuildStatus, PackagePublishingPocket)
 
 
 class TimeoutHTTPConnection(httplib.HTTPConnection):
@@ -197,6 +198,8 @@ class Builder(SQLBase):
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
+        from canonical.archivepublisher.publishing import suffixpocket
+
         logger.info("startBuild(%s, %s, %s, %s)", self.url,
                     build_queue_item.name, build_queue_item.version,
                     build_queue_item.build.pocket.title)
@@ -241,7 +244,7 @@ class Builder(SQLBase):
 
         # Build extra arguments
         args = {}
-        args["ogrecomponent"] = build_queue_item.component_name
+        args["ogrecomponent"] = build_queue_item.current_component.name
         # turn 'arch_indep' ON only if build is archindep or if
         # the specific architecture is the nominatedarchindep for
         # this distroseries (in case it requires any archindep source)
@@ -254,26 +257,45 @@ class Builder(SQLBase):
             build_queue_item.archseries.isNominatedArchIndep)
 
         # XXX cprov 2007-05-23: Ogre Model should not be modelled here ...
-        if not build_queue_item.is_trusted:
+        if build_queue_item.build.archive.purpose != ArchivePurpose.PRIMARY:
             ogre_map = {
                 'main': 'main',
                 'restricted': 'main restricted',
                 'universe': 'main restricted universe',
                 'multiverse': 'main restricted universe multiverse',
+                'commercial' : 'commercial',
                 }
-            ogre_components = ogre_map[build_queue_item.component_name]
-            # XXX cprov 2007-05-23: it should be suite name, but it
-            # is just fine for PPAs since they are only built in
-            # RELEASE pocket.
+            ogre_components = ogre_map[build_queue_item.current_component.name]
             dist_name = build_queue_item.archseries.distroseries.name
-            ppa_archive_url = build_queue_item.build.archive.archive_url
-            ppa_source_line = (
-                'deb %s/ubuntu %s %s'
-                % (ppa_archive_url, dist_name, ogre_components))
-            ubuntu_source_line = (
-                'deb http://archive.ubuntu.com/ubuntu %s %s'
-                % (dist_name, ogre_components))
-            args['archives'] = [ppa_source_line, ubuntu_source_line]
+            archive_url = build_queue_item.build.archive.archive_url
+
+            if build_queue_item.build.archive.purpose == ArchivePurpose.PPA:
+                ubuntu_source_line = (
+                    'deb http://archive.ubuntu.com/ubuntu %s %s'
+                    % (dist_name, ogre_components))
+            else:
+                ubuntu_components = ogre_components
+                if (build_queue_item.build.archive.purpose ==
+                        ArchivePurpose.COMMERCIAL):
+                    # XXX julian 2007-08-07 - this is a greasy hack.
+                    # See comment above about not modelling Ogre here.
+                    # Commercial is a very special case because the commercial
+                    # component is only in the commercial archive, so we have
+                    # to be careful with the sources.list archives.
+                    ubuntu_components = 'main restricted'
+                ubuntu_source_line = (
+                    'deb http://ftpmaster.internal/ubuntu %s %s'
+                    % (dist_name, ubuntu_components))
+                # Add the pocket to the distro to make the full suite name.
+                # PPA always builds in RELEASE so it does not need this code.
+                pocket = build_queue_item.build.pocket
+                if pocket != PackagePublishingPocket.RELEASE:
+                    dist_name += suffixpocket[pocket]
+
+            source_line = (
+                'deb %s %s %s'
+                % (archive_url, dist_name, ogre_components))
+            args['archives'] = [source_line, ubuntu_source_line]
         else:
             args['archives'] = []
 

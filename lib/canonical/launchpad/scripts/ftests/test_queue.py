@@ -10,18 +10,19 @@ from unittest import TestCase, TestLoader
 from sha import sha
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPackageUploadSet)
+    IArchiveSet, IDistributionSet, IPackageUploadSet)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
 from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket,
+    ArchivePurpose, PackagePublishingStatus, PackagePublishingPocket,
     PackageUploadStatus, DistroSeriesStatus)
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.librarian.utils import filechunks
@@ -44,8 +45,8 @@ class TestQueueBase(TestCase):
 
     def execute_command(self, argument, queue_name='new', no_mail=True,
                         distribution_name='ubuntu',announcelist=None,
-                        component_name=None, section_name=None, 
-                        priority_name=None, suite_name='breezy-autotest', 
+                        component_name=None, section_name=None,
+                        priority_name=None, suite_name='breezy-autotest',
                         quiet=True):
         """Helper method to execute a queue command.
 
@@ -200,11 +201,11 @@ class TestQueueTool(TestQueueBase):
             IDistributionSet)['ubuntu']['breezy-autotest']
         queue_action = self.execute_command('accept 1 pmount 3')
         self.assertEqual(3, queue_action.items_size)
-        self.assertQueueLength(1, breezy_autotest, 
+        self.assertQueueLength(1, breezy_autotest,
             PackageUploadStatus.ACCEPTED, 'mozilla-firefox')
-        self.assertQueueLength(1, breezy_autotest, 
+        self.assertQueueLength(1, breezy_autotest,
             PackageUploadStatus.ACCEPTED, 'pmount')
-        self.assertQueueLength(1, breezy_autotest, 
+        self.assertQueueLength(1, breezy_autotest,
             PackageUploadStatus.ACCEPTED, 'netapplet')
 
 
@@ -459,11 +460,11 @@ class TestQueueTool(TestQueueBase):
         # Test what it did.  Since all the queue items came out of the
         # NEW queue originally, the items processed should now be REJECTED.
         self.assertEqual(3, queue_action.items_size)
-        self.assertQueueLength(1, breezy_autotest, 
+        self.assertQueueLength(1, breezy_autotest,
             PackageUploadStatus.REJECTED, 'mozilla-firefox')
-        self.assertQueueLength(1, breezy_autotest, 
+        self.assertQueueLength(1, breezy_autotest,
             PackageUploadStatus.REJECTED, 'pmount')
-        self.assertQueueLength(1, breezy_autotest, 
+        self.assertQueueLength(1, breezy_autotest,
             PackageUploadStatus.REJECTED, 'netapplet')
 
     def testOverrideSource(self):
@@ -478,15 +479,15 @@ class TestQueueTool(TestQueueBase):
 
         # Basic operation overriding a single source 'alsa-utils' that
         # is currently main/base in the sample data.
-        queue_action = self.execute_command('override source 4', 
+        queue_action = self.execute_command('override source 4',
             component_name='restricted', section_name='web')
         self.assertEqual(1, queue_action.items_size)
         queue_item = breezy_autotest.getQueueItems(
             status=PackageUploadStatus.NEW, name="alsa-utils")[0]
         [source] = queue_item.sources
-        self.assertEqual('restricted', 
+        self.assertEqual('restricted',
             source.sourcepackagerelease.component.name)
-        self.assertEqual('web', 
+        self.assertEqual('web',
             source.sourcepackagerelease.section.name)
 
         # Override multiple sources at once and mix ID with name.
@@ -502,10 +503,59 @@ class TestQueueTool(TestQueueBase):
         for queue_item in queue_items:
             if queue_item.sources:
                 [source] = queue_item.sources
-                self.assertEqual('universe', 
+                self.assertEqual('universe',
                     source.sourcepackagerelease.component.name)
-                self.assertEqual('editors', 
+                self.assertEqual('editors',
                     source.sourcepackagerelease.section.name)
+
+    def testOverrideSourceWithArchiveChange(self):
+        """Check if the archive changes as necessary on a source override.
+
+        When overriding the component, the archive may change, so we check
+        that here.
+        """
+        # Set up.
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        breezy_autotest = ubuntu['breezy-autotest']
+
+        # Test that it changes to commercial when required.
+        queue_action = self.execute_command('override source alsa-utils',
+            component_name='commercial')
+        self.assertEqual(1, queue_action.items_size)
+        [queue_item] = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name="alsa-utils")
+        [source] = queue_item.sources
+        self.assertEqual(source.sourcepackagerelease.upload_archive.purpose,
+            ArchivePurpose.COMMERCIAL)
+
+        # Test that it changes back to primary when required.
+        queue_action = self.execute_command('override source alsa-utils',
+            component_name='main')
+        self.assertEqual(1, queue_action.items_size)
+        [queue_item] = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name="alsa-utils")
+        [source] = queue_item.sources
+        self.assertEqual(source.sourcepackagerelease.upload_archive.purpose,
+            ArchivePurpose.PRIMARY)
+
+    def testOverrideSourceWithNonexistentArchiveChange(self):
+        """Check that overriding to a non-existent archive fails properly.
+
+        When overriding the component, the archive may change to a
+        non-existent one so ensure if fails.
+        """
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        proxied_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            ubuntu, ArchivePurpose.COMMERCIAL)
+        comm_archive = removeSecurityProxy(proxied_archive)
+        comm_archive.purpose = ArchivePurpose.EMBARGOED
+        LaunchpadZopelessLayer.txn.commit()
+        self.assertRaises(CommandRunnerError,
+                          self.execute_command,
+                          'override source alsa-utils',
+                          component_name='commercial')
 
     def testOverrideBinary(self):
         """Check if overriding binaries works.
@@ -517,7 +567,7 @@ class TestQueueTool(TestQueueBase):
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
 
-        # Override a binary, 'pmount', from its sample data of 
+        # Override a binary, 'pmount', from its sample data of
         # main/base/IMPORTANT to restricted/web/extra.
         queue_action = self.execute_command('override binary pmount',
             component_name='restricted', section_name='web',
@@ -533,7 +583,7 @@ class TestQueueTool(TestQueueBase):
 
         # Override multiple binaries at once.
         queue_action = self.execute_command(
-            'override binary pmount mozilla-firefox', 
+            'override binary pmount mozilla-firefox',
             component_name='universe', section_name='editors',
             priority_name='optional')
         # Check results.
@@ -553,6 +603,19 @@ class TestQueueTool(TestQueueBase):
         self.assertRaises(
             CommandRunnerError, self.execute_command, 'override binary 1',
             component_name='multiverse')
+
+    def testOverrideBinaryWithArchiveChange(self):
+        """Check if archive changes are disallowed for binary overrides.
+
+        When overriding the component, the archive may change, so we check
+        that here and make sure it's disallowed.
+        """
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+        # Test that it changes to commercial when required.
+        self.assertRaises(
+            CommandRunnerError, self.execute_command, 'override binary pmount',
+            component_name='commercial')
 
 
 class TestQueueToolInJail(TestQueueBase):
@@ -639,7 +702,7 @@ class TestQueueToolInJail(TestQueueBase):
         f.write(CLOBBERED)
         f.close()
 
-        self.assertRaises( 
+        self.assertRaises(
             CommandRunnerError, self.execute_command, 'fetch 1')
 
         # make sure the file has not changed

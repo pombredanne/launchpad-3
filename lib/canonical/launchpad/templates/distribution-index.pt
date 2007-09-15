@@ -91,7 +91,7 @@
         <div tal:content="structure context/@@+portlet-latestbugs" />
         <div
           tal:condition="context/currentseries"
-          tal:content="structure context/currentseries/@@+latest-uploads"
+          tal:content="structure context/currentseries/@@+portlet-latestuploads"
         />
       </div>
       <div class="right">

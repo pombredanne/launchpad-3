@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-stats">
 
   <h2><span tal:replace="context/language/englishname">French</span>
       statistics in <span

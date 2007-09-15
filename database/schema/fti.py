@@ -27,6 +27,9 @@ A, B, C, D = 'ABCD' # tsearch2 ranking constants
 
 # This data structure defines all of our full text indexes.  Each tuple in the
 # top level list creates a 'fti' column in the specified table.
+# The letters letters A-D assign a weight to the corresponding column.
+# A is most important, and D is least important. This affects result ordering
+# when you are ordering by rank.
 ALL_FTI = [
     ('bug', [
             ('name', A),
@@ -207,7 +210,7 @@ def fti(con, table, columns, configuration=DEFAULT_CONFIG):
     execute(con, r"""UPDATE %s SET fti=NULL""" % table)
 
     # Create the fti index
-    execute(con, "CREATE INDEX %s ON %s USING gin(fti)" % (
+    execute(con, "CREATE INDEX %s ON %s USING gist(fti)" % (
         index, table
         ))
 

@@ -115,7 +115,15 @@ def build_mailman():
             cwd=mailman_bin)
         if retcode:
             print >> sys.stderr, 'Could not create site list'
-            return recode
+            return retcode
+
+    # Create a directory to hold the gzip'd tarballs for the directories of
+    # deactivated lists.
+    try:
+        os.mkdir(os.path.join(Mailman.mm_cfg.VAR_PREFIX, 'backups'))
+    except OSError, e:
+        if e.errno != errno.EEXIST:
+            raise
 
     return 0
 

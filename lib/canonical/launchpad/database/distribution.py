@@ -55,21 +55,21 @@ from canonical.launchpad.database.sourcepackagerelease import (
 from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing,
     SourcePackagePublishingHistory)
+from canonical.launchpad.database.translationimportqueue import (
+    HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    ArchivePurpose, BugTaskStatus, DistroSeriesStatus,
-    PackagePublishingStatus, PackageUploadStatus,
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
-    TranslationPermission)
+    ArchivePurpose, DistroSeriesStatus, PackagePublishingStatus,
+    PackageUploadStatus, SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort, TranslationPermission)
 
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IFAQTarget,
-    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
-    IQuestionTarget, ISourcePackageName, MirrorContent, NotFoundError,
-    QUESTION_STATUS_DEFAULT_SEARCH)
+    BugTaskStatus, IArchiveSet, IBuildSet, IDistribution, IDistributionSet,
+    IFAQTarget, IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
+    ILaunchpadCelebrities, IQuestionTarget, ISourcePackageName, MirrorContent,
+    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.archivepublisher.debversion import Version
 
@@ -77,7 +77,8 @@ from canonical.launchpad.validators.name import sanitize_name, valid_name
 
 
 class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                   HasSprintsMixin, KarmaContextMixin, QuestionTargetMixin):
+                   HasSprintsMixin, HasTranslationImportsMixin,
+                   KarmaContextMixin, QuestionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBuildRecords, IQuestionTarget,
@@ -144,7 +145,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @cachedproperty
     def main_archive(self):
-        """See IDistribution."""
+        """See `IDistribution`."""
         return Archive.selectOneBy(distribution=self,
                                    purpose=ArchivePurpose.PRIMARY)
 
@@ -155,6 +156,18 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Distribution = %s AND
             Purpose != %s""" % sqlvalues(self.id, ArchivePurpose.PPA)
             )
+
+    @cachedproperty
+    def all_distro_archive_ids(self):
+        """See `IDistribution`."""
+        return [archive.id for archive in self.all_distro_archives]
+
+    def archiveIdList(self, archive=None):
+        """See `IDistribution`."""
+        if archive is None:
+            return self.all_distro_archive_ids
+        else:
+            return [archive.id]
 
     @property
     def all_milestones(self):
@@ -547,7 +560,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getTargetTypes(self):
         """See `QuestionTargetMixin`.
-        
+
         Defines distribution as self and sourcepackagename as None.
         """
         return {'distribution': self,
@@ -555,7 +568,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def questionIsForTarget(self, question):
         """See `QuestionTargetMixin`.
-        
+
         Return True when the Question's distribution is self.
         """
         if question.distribution is not self:
@@ -581,7 +594,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return FAQSearch(
             search_text=search_text, owner=owner, sort=sort,
             distribution=self).getResults()
-    
+
     def ensureRelatedBounty(self, bounty):
         """See `IDistribution`."""
         for curr_bounty in self.bounties:
@@ -653,13 +666,14 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(self, self.main_archive,
+            """ % sqlvalues(self,
+                            self.all_distro_archive_ids,
                             PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
@@ -680,13 +694,14 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(self, self.main_archive,
+            """ % sqlvalues(self,
+                            self.all_distro_archive_ids,
                             PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
@@ -714,9 +729,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.status != %s
-            """ % sqlvalues(sourcepackagename, self, self.main_archive,
+            """ % sqlvalues(sourcepackagename, self,
+                            self.all_distro_archive_ids,
                             PackagePublishingStatus.REMOVED),
             orderBy='id',
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
@@ -816,7 +832,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # the current distroseries and then across the whole
         # distribution.
         #
-        # XXX kiko 2006-07-28: 
+        # XXX kiko 2006-07-28:
         # Note that the strategy of falling back to previous
         # distribution series might be revisited in the future; for
         # instance, when people file bugs, it might actually be bad for
@@ -831,12 +847,14 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 SourcePackagePublishingHistory.distrorelease =
                     DistroRelease.id AND
                 DistroRelease.distribution = %s AND
-                SourcePackagePublishingHistory.archive = %s AND
+                SourcePackagePublishingHistory.archive IN %s AND
                 SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id AND
                 SourcePackageRelease.sourcepackagename = %s AND
                 SourcePackagePublishingHistory.status = %s
-                ''' % sqlvalues(self, self.main_archive, sourcepackagename,
+                ''' % sqlvalues(self,
+                                self.all_distro_archive_ids,
+                                sourcepackagename,
                                 PackagePublishingStatus.PUBLISHED),
                 clauseTables=['SourcePackageRelease', 'DistroRelease'],
                 distinct=True,
@@ -910,7 +928,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return Archive.selectBy(
             purpose=ArchivePurpose.PPA, distribution=self, orderBy=['id'])
 
-    def searchPPAs(self, text=None):
+    def searchPPAs(self, text=None, show_inactive=False):
         """See `IDistribution`."""
         clauses = ["""
         Archive.purpose = %s AND
@@ -920,6 +938,15 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         clauseTables = ['Person']
         orderBy = ['Person.name']
+
+        if not show_inactive:
+            active_statuses = (PackagePublishingStatus.PUBLISHED,
+                               PackagePublishingStatus.PENDING)
+            clauses.append("""
+            Archive.id IN (
+                SELECT DISTINCT archive FROM SourcepackagePublishingHistory
+                WHERE status IN %s)
+            """ % sqlvalues(active_statuses))
 
         if text:
             clauses.append("""
@@ -973,6 +1000,26 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         return src_archives.union(bin_archives)
 
+    def getArchiveByComponent(self, component_name):
+        """See `IDistribution`."""
+        # XXX Julian 2007-08-16
+        # These component names should be Soyuz-wide constants.
+        componentMapToArchivePurpose = {
+            'main' : ArchivePurpose.PRIMARY,
+            'restricted' : ArchivePurpose.PRIMARY,
+            'universe' : ArchivePurpose.PRIMARY,
+            'multiverse' : ArchivePurpose.PRIMARY,
+            'commercial' : ArchivePurpose.COMMERCIAL,
+            }
+
+        try:
+            # Map known components.
+            return getUtility(IArchiveSet).getByDistroPurpose(self,
+                componentMapToArchivePurpose[component_name])
+        except KeyError:
+            # Otherwise we defer to the caller.
+            return None
+
 
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""
@@ -987,7 +1034,7 @@ class DistributionSet:
         displayed.
         """
         distroset = Distribution.select()
-        return iter(sorted(shortlist(distroset),
+        return iter(sorted(shortlist(distroset,100),
                         key=lambda distro: distro._sort_key))
 
     def __getitem__(self, name):

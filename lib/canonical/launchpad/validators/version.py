@@ -74,7 +74,7 @@ def valid_debian_version(version):
 
 def sane_version(version):
     '''A sane version number for use by ProductRelease and DistroSeries.
-    
+
     We may make it less strict if required, but it would be nice if we can
     enforce simple version strings because we use them in URLs
 

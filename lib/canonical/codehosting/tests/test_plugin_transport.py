@@ -5,25 +5,32 @@
 __metaclass__ = type
 
 import os
+import tempfile
 import unittest
 
 from bzrlib import errors
 from bzrlib.transport import get_transport, _get_protocol_handlers
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
-from bzrlib.tests import TestCase, TestCaseInTempDir
+from bzrlib.tests import TestCase
 
 from canonical.authserver.interfaces import READ_ONLY, WRITABLE
 from canonical.codehosting.tests.helpers import FakeLaunchpad
-from canonical.codehosting.transport import LaunchpadServer, makedirs
-from canonical.testing import BzrlibLayer
+from canonical.codehosting.transport import (
+    LaunchpadServer, makedirs, set_up_logging)
+from canonical.config import config
+
+from canonical.testing import BaseLayer
 
 
-class TestLaunchpadServer(TestCaseInTempDir):
+class TestLaunchpadServer(TestCase):
 
-    layer = BzrlibLayer
+    # bzrlib manipulates 'logging'. The test runner will generate spurious
+    # warnings if these manipulations are not cleaned up. BaseLayer does the
+    # cleanup we need.
+    layer = BaseLayer
 
     def setUp(self):
-        TestCaseInTempDir.setUp(self)
+        TestCase.setUp(self)
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         self.backing_transport = MemoryTransport()
@@ -135,7 +142,8 @@ class TestLaunchpadServer(TestCaseInTempDir):
 
 class TestLaunchpadTransport(TestCase):
 
-    layer = BzrlibLayer
+    # See comment on TestLaunchpadServer.
+    layer = BaseLayer
 
     def setUp(self):
         TestCase.setUp(self)
@@ -279,7 +287,8 @@ class TestLaunchpadTransport(TestCase):
 class TestLaunchpadTransportReadOnly(TestCase):
     """Tests for read-only operations on the LaunchpadTransport."""
 
-    layer = BzrlibLayer
+    # See comment on TestLaunchpadServer.
+    layer = BaseLayer
 
     def setUp(self):
         TestCase.setUp(self)
@@ -334,6 +343,27 @@ class TestLaunchpadTransportReadOnly(TestCase):
         self.assertEqual(
             'Goodbye World!',
             transport.get_bytes('/~name12/+junk/junk.dev/.bzr/README'))
+
+
+class TestLoggingSetup(TestCase):
+
+    def setUp(self):
+        TestCase.setUp(self)
+        self._real_debug_logfile = config.codehosting.debug_logfile
+
+    def tearDown(self):
+        config.codehosting.debug_logfile = self._real_debug_logfile
+        TestCase.tearDown(self)
+
+    def test_loggingSetUpAssertionFailsIfParentDirectoryIsNotADirectory(self):
+        # set_up_logging fails with an AssertionError if it cannot create the
+        # directory that the log file will go in.
+        file_handle, filename = tempfile.mkstemp()
+        config.codehosting.debug_logfile = os.path.join(filename, 'debug.log')
+        try:
+            self.assertRaises(AssertionError, set_up_logging)
+        finally:
+            os.unlink(filename)
 
 
 def test_suite():

@@ -330,7 +330,7 @@ class AnswerTrackerHandler:
         In the other status, the message is a comment without status change.
         """
         if question.status in [
-            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, 
+            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
 	    QuestionStatus.ANSWERED]:
             question.giveAnswer(message.owner, message)
         else:

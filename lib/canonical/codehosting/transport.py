@@ -4,10 +4,14 @@
 
 __metaclass__ = type
 __all__ = ['branch_id_to_path', 'LaunchpadServer', 'LaunchpadTransport',
-           'UntranslatablePath']
+           'set_up_logging', 'UntranslatablePath']
 
-from bzrlib.errors import BzrError, NoSuchFile, TransportNotPossible
-from bzrlib import urlutils
+import logging
+import os
+
+from bzrlib.errors import (
+    BzrError, InProcessTransport, NoSuchFile, TransportNotPossible)
+from bzrlib import trace, urlutils
 from bzrlib.transport import (
     get_transport,
     register_transport,
@@ -20,6 +24,7 @@ from canonical.authserver.interfaces import READ_ONLY
 
 from canonical.codehosting.bazaarfs import (
     ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR)
+from canonical.config import config
 
 
 def branch_id_to_path(branch_id):
@@ -71,6 +76,25 @@ def get_path_segments(path):
     return path.strip('/').split('/')
 
 
+def set_up_logging():
+    trace.disable_default_logging()
+    log = logging.getLogger('codehosting')
+    if config.codehosting.debug_logfile is not None:
+        parent_dir = os.path.dirname(config.codehosting.debug_logfile)
+        if not os.path.exists(parent_dir):
+            os.makedirs(parent_dir)
+        assert os.path.isdir(parent_dir), (
+            "%r should be a directory" % parent_dir)
+        handler = logging.FileHandler(config.codehosting.debug_logfile)
+        handler.setFormatter(
+            logging.Formatter(
+                '%(asctime)s %(levelname)-8s %(name)s\t%(message)s'))
+        handler.setLevel(logging.DEBUG)
+        log.addHandler(handler)
+    log.setLevel(logging.DEBUG)
+    return log
+
+
 class UntranslatablePath(BzrError):
 
     _fmt = ("Could not translate %(path)s onto backing transport for "
@@ -104,6 +128,8 @@ class LaunchpadServer(Server):
         self.mirror_transport = get_transport(
             'readonly+' + mirror_transport.base)
         self._is_set_up = False
+        self.logger = logging.getLogger(
+            'codehosting.lpserve.%s' % self.user_name)
 
     def dirty(self, virtual_path):
         """Mark the branch containing virtual_path as dirty."""
@@ -116,6 +142,14 @@ class LaunchpadServer(Server):
         #
         # Instead we should register our own smart request handlers to override
         # the builtin ones.
+
+        # XXX: JonathanLange 2007-09-05 bugs=139030: By translating paths here
+        # we are doing an extra, unnecessary database query per file
+        # operation. Instead, we should store the unique name of the branch in
+        # set and translate the paths during the calls to request mirror. This
+        # changes the code from one query per write operation to one query per
+        # changed branch.
+        self.logger.debug("Marking %r as dirty", virtual_path)
         branch_id, ignored, path = self._translate_path(virtual_path)
         self._dirty_branch_ids.add(branch_id)
 
@@ -127,12 +161,15 @@ class LaunchpadServer(Server):
         the branch in the database then create a matching directory on the
         backing transport.
         """
+        self.logger.info('mkdir(%r)', virtual_path)
         path_segments = get_path_segments(virtual_path)
         if len(path_segments) != 3:
-            raise NoSuchFile(virtual_path)
+            raise NoSuchFile(
+                'This method only for creating branches: %s' % (virtual_path,))
         branch_id = self._make_branch(*path_segments)
         if branch_id == '':
-            raise NoSuchFile(virtual_path)
+            raise NoSuchFile(
+                'Cannot create branch: %s' % (virtual_path,))
         makedirs(self.backing_transport, branch_id_to_path(branch_id))
 
     def _make_branch(self, user, product, branch):
@@ -148,6 +185,7 @@ class LaunchpadServer(Server):
             product.
         :return: The database ID of the new branch.
         """
+        self.logger.debug('_make_branch(%r, %r, %r)', user, product, branch)
         if not user.startswith('~'):
             raise TransportNotPossible(
                 'Path must start with user or team directory: %r' % (user,))
@@ -157,9 +195,7 @@ class LaunchpadServer(Server):
             if not user_dict:
                 raise NoSuchFile("%s doesn't exist" % (user,))
             user_id = user_dict['id']
-            if user_id == self.user_id:
-                product = '+junk'
-            else:
+            if user_id != self.user_id:
                 # XXX: JonathanLange 2007-06-04 bug=118736
                 # This should perhaps be 'PermissionDenied', not 'NoSuchFile'.
                 # However bzrlib doesn't translate PermissionDenied errors.
@@ -167,8 +203,14 @@ class LaunchpadServer(Server):
                 raise NoSuchFile(
                     "+junk is only allowed under user directories, not team "
                     "directories.")
-        return self.authserver.createBranch(
+        branch_id, permissions = self.authserver.getBranchInformation(
             self.user_id, user, product, branch)
+        if branch_id != '':
+            self.logger.debug('Branch (%r, %r, %r) already exists ')
+            return branch_id
+        else:
+            return self.authserver.createBranch(
+                self.user_id, user, product, branch)
 
     def _translate_path(self, virtual_path):
         """Translate a virtual path into an internal branch id, permissions and
@@ -208,15 +250,18 @@ class LaunchpadServer(Server):
 
         :return: The equivalent real path on the backing transport.
         """
+        self.logger.debug('translate_virtual_path(%r)', virtual_path)
         segments = get_path_segments(virtual_path)
         if (len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES):
-            raise NoSuchFile(path=segments[-1],
-                             extra=FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
-        
+            raise NoSuchFile(FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
+
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
         # a branch'.
         branch_id, permissions, path = self._translate_path(virtual_path)
+        self.logger.debug(
+            'Translated %r => %r', virtual_path,
+            (branch_id, permissions, path))
         if branch_id == '':
             raise UntranslatablePath(path=virtual_path, user=self.user_name)
         return '/'.join([branch_id_to_path(branch_id), path]), permissions
@@ -250,6 +295,7 @@ class LaunchpadServer(Server):
         if not self._is_set_up:
             return
         self._is_set_up = False
+        self.logger.info('Requesting mirror for: %r', self._dirty_branch_ids)
         for branch_id in self._dirty_branch_ids:
             self.authserver.requestMirror(branch_id)
         self._dirty_branch_ids = None
@@ -271,6 +317,11 @@ class LaunchpadTransport(Transport):
     def __init__(self, server, url):
         self.server = server
         Transport.__init__(self, url)
+
+    def external_url(self):
+        # There's no real external URL to this transport. It's heavily
+        # dependent on the process.
+        raise InProcessTransport(self)
 
     def _abspath(self, relpath):
         """Return the absolute path to `relpath` without the schema."""
@@ -294,6 +345,9 @@ class LaunchpadTransport(Transport):
             transport = self.server.mirror_transport
         else:
             transport = self.server.backing_transport
+        self.server.logger.info(
+            '%s(%r -> %r, args=%r, kwargs=%r)',
+            methodname, relpath, (path, permissions), args, kwargs)
         method = getattr(transport, methodname)
         return method(path, *args, **kwargs)
 
@@ -318,12 +372,14 @@ class LaunchpadTransport(Transport):
 
     # Transport methods
     def abspath(self, relpath):
+        self.server.logger.debug('abspath(%s)', relpath)
         return urlutils.join(self.server.scheme, relpath)
 
     def append_file(self, relpath, f, mode=None):
         return self._writing_call('append_file', relpath, f, mode)
 
     def clone(self, relpath):
+        self.server.logger.debug('clone(%s)', relpath)
         return LaunchpadTransport(
             self.server, urlutils.join(self.base, relpath))
 
@@ -340,11 +396,13 @@ class LaunchpadTransport(Transport):
         return self._call('has', relpath)
 
     def iter_files_recursive(self):
+        self.server.logger.debug('iter_files_recursive()')
         path, ignored = self._translate_virtual_path('.')
         backing_transport = self.server.backing_transport.clone(path)
         return backing_transport.iter_files_recursive()
 
     def listable(self):
+        self.server.logger.debug('listable()')
         return self.server.backing_transport.listable()
 
     def list_dir(self, relpath):

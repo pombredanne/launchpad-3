@@ -146,12 +146,12 @@ chosen.
     True
 
     >>> from canonical.launchpad.webapp.servers import (
-    ...     LaunchpadXMLRPCRequest, XMLRPCLaunchpadPublication
+    ...     PublicXMLRPCRequest, PublicXMLRPCPublication
     ...     )
     >>> requestfactory, publicationfactory = factory()
-    >>> publicationfactory is XMLRPCLaunchpadPublication
+    >>> publicationfactory is PublicXMLRPCPublication
     True
-    >>> requestfactory.requestfactory is LaunchpadXMLRPCRequest
+    >>> requestfactory.requestfactory is PublicXMLRPCRequest
     True
 
 If the given host name isn't one of the configured host names,

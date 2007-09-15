@@ -1,0 +1,36 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad"
+>
+  <body>
+
+<metal:leftportlets fill-slot="portlets">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <tal:branch-link define="branch context">
+    <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
+  </tal:branch-link>
+  <h1>Branch landing candidates</h1>
+
+    <tal:proposals repeat="mergeproposal view/landing_candidates">
+      <tal:landing-candidate
+          define="branch mergeproposal/source_branch;
+                  dependent_branch nothing;
+                  show_associations python:True;
+                  show_lifecycle python:True;
+                  ">
+        <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
+      </tal:landing-candidate>
+    </tal:proposals>
+
+</div>
+
+</body>
+</html>
+<!-- 1-0 done -->

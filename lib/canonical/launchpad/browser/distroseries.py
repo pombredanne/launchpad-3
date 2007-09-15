@@ -204,7 +204,7 @@ class DistroSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistroSeries
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'setgoals', 'listdeclined',]
+    links = ['listall', 'roadmap', 'table', 'setgoals', 'listdeclined', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -238,12 +238,21 @@ class DistroSeriesSpecificationsMenu(ApplicationMenu):
         summary = 'Show the sequence in which specs should be implemented'
         return Link('+roadmap', text, icon='info')
 
+    def new(self):
+        text = 'Register a blueprint'
+        summary = 'Register a new blueprint for %s' % self.context.title
+        return Link('+addspec', text, summary, icon='add')
+
 
 class DistroSeriesTranslationsMenu(ApplicationMenu):
 
     usedfor = IDistroSeries
     facet = 'translations'
-    links = ['admin']
+    links = ['admin', 'imports']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def admin(self):

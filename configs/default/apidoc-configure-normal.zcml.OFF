@@ -14,11 +14,11 @@
     <include package="zope.app.renderer" file="meta.zcml" />
     <include package="zope.app.renderer" />
 
-    <!-- XXX: Bug 39834. We also need the Z3 preference junk, whatever that is.
+    <!-- XXX: StuartBishop 2005-03-13 Bug 39834:
+    We also need the Z3 preference junk, whatever that is.
     Unfortunately, this depends on annotatable principals so will not
     currently work with Launchpad. We can still get some apidoc functionality,
     such as the ZCML browser, but the bulk of it is not functional.
-    - StuartBishop 20050313 
     -->
     <include package="zope.app.preference" file="meta.zcml" />
     <!--

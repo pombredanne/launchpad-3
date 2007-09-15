@@ -13,7 +13,7 @@ Anonymous users should not be able to subscribe someone else to a bug.
     ...
     Unauthorized: ...
 
-No Privileges wants to subscribe Daniel Silverston to the bug because he knows
+No Privileges wants to subscribe David Allouche to the bug because he knows
 that he's interested in that feature.
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
@@ -47,3 +47,24 @@ The subscribers portlet now contains the new subscriber's name.
     >>> subs = find_portlet(user_browser.contents, 'Subscribers')
     >>> extract_text(subs.ul)
     u'...David Allouche...'
+
+He subscribes the Landscape developers team.
+
+    >>> user_browser.getLink('Subscribe someone else').click()
+    >>> user_browser.getControl("Person").value = 'landscape-developers'
+    >>> user_browser.getControl("Add").click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1'
+
+He is notified that Landscape developers team has been subscribed.
+
+    >>> for tag in find_tags_by_class(user_browser.contents,
+    ...     'informational message'):
+    ...     extract_text(tag)
+    u'Landscape Developers team has been subscribed to this bug.'
+
+The subscribers portlet display the new subscribed team.
+
+    >>> subs = find_portlet(user_browser.contents, 'Subscribers')
+    >>> extract_text(subs.ul)
+    u'...Landscape Developers...'

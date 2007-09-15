@@ -3,12 +3,12 @@ POMsgSet View
 
 On this section, we are going to test the view class for an IPOMsgSet object.
 
-    >>> from zope.component import getView
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.database import POMsgSet
+    >>> from canonical.launchpad.interfaces import TranslationConstants
+    >>> from canonical.launchpad.layers import TranslationsLayer
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.webapp import canonical_url
-    >>> from canonical.launchpad.interfaces import TranslationConstants
 
 All the tests will be submitted as comming from Kurem, an editor for the POFile
 that we are going to edit.
@@ -25,9 +25,8 @@ without the plural form information.
     >>> pomsgset = POMsgSet.get(1)
     >>> pofile_tlh = pomsgset.pofile.potemplate.getDummyPOFile('tlh')
     >>> pomsgset_tlh = pofile_tlh.getPOMsgSet(u'evolution addressbook')
-    >>> SERVER_URL = '/'.join([canonical_url(pomsgset), '+translate'])
-    >>> request = LaunchpadTestRequest(SERVER_URL=SERVER_URL)
-    >>> pomsgset_page_view = getView(pomsgset_tlh, "+translate", request)
+    >>> pomsgset_page_view = create_view(
+    ...     pomsgset_tlh, "+translate", layer=TranslationsLayer)
     >>> pomsgset_page_view.initialize()
 
 Here we can see that it's lacking that information.
@@ -44,10 +43,13 @@ And the view class detects it correctly.
 Basic checks
 ------------
 
-Now, we will use a objects that we have in our database, instead of
+Now, we will use objects that we have in our database, instead of
 dummy ones.
 
-    >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
+    >>> server_url = '/'.join([canonical_url(pomsgset), '+translate'])
+    >>> pomsgset_page_view = create_view(
+    ...     pomsgset, "+translate", layer=TranslationsLayer,
+    ...     server_url=server_url)
     >>> pomsgset_page_view.initialize()
 
 We have the plural form information for this language.
@@ -229,17 +231,17 @@ But first, let's see current values.
 
 Now we do the submit.
 
-    >>> SERVER_URL = '/'.join([canonical_url(pomsgset), '+translate'])
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL=SERVER_URL,
-    ...     form={
-    ...         'alt': None,
-    ...         'msgset_1': None,
-    ...         'msgset_1_es_translation_0_new_checkbox': True,
-    ...         'msgset_1_es_translation_0_new': 'Foo',
-    ...         'submit_translations': 'Save &amp; Continue'})
-    >>> request.method = 'POST'
-    >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
+    >>> server_url = '/'.join([canonical_url(pomsgset), '+translate'])
+    >>> form = {
+    ...     'alt': None,
+    ...     'msgset_1': None,
+    ...     'msgset_1_es_translation_0_new_checkbox': True,
+    ...     'msgset_1_es_translation_0_new': 'Foo',
+    ...     'submit_translations': 'Save &amp; Continue'}
+    >>> pomsgset_page_view = create_view(
+    ...     pomsgset, "+translate", form=form, layer=TranslationsLayer,
+    ...     server_url=server_url)
+    >>> pomsgset_page_view.request.method = 'POST'
 
 And when we initialise the view class, we detect that we missed the timestamp
 that allow us to know whether we are working with latest submitted value or
@@ -252,18 +254,18 @@ someone updated the database while we were working on those translations.
 
 We do a new submit, but this time including a lock_timestamp field.
 
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL=SERVER_URL,
-    ...     form={
-    ...         'lock_timestamp': '2006-11-28T13:00:00+00:00',
-    ...         'alt': None,
-    ...         'msgset_1': None,
-    ...         'msgset_1_es_translation_0_radiobutton':
-    ...             'msgset_1_es_translation_0_new',
-    ...         'msgset_1_es_translation_0_new': 'Foo',
-    ...         'submit_translations': 'Save &amp; Continue'})
-    >>> request.method = 'POST'
-    >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
+    >>> form = {
+    ...     'lock_timestamp': '2006-11-28T13:00:00+00:00',
+    ...     'alt': None,
+    ...     'msgset_1': None,
+    ...     'msgset_1_es_translation_0_radiobutton':
+    ...         'msgset_1_es_translation_0_new',
+    ...     'msgset_1_es_translation_0_new': 'Foo',
+    ...     'submit_translations': 'Save &amp; Continue'}
+    >>> pomsgset_page_view = create_view(
+    ...     pomsgset, "+translate", form=form, layer=TranslationsLayer,
+    ...     server_url=server_url)
+    >>> pomsgset_page_view.request.method = 'POST'
     >>> pomsgset_page_view.initialize()
     >>> transaction.commit()
 
@@ -300,18 +302,19 @@ And current value
 
 We do the submission with that lock_timestamp.
 
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL=SERVER_URL,
-    ...     form={
-    ...         'lock_timestamp': old_timestamp_text,
-    ...         'alt': None,
-    ...         'msgset_1': None,
-    ...         'msgset_1_es_translation_0_radiobutton':
-    ...             'msgset_1_es_translation_0_new',
-    ...         'msgset_1_es_translation_0_new': 'Foos',
-    ...         'submit_translations': 'Save &amp; Continue'})
-    >>> request.method = 'POST'
-    >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
+    >>> server_url = '/'.join([canonical_url(pomsgset), '+translate'])
+    >>> form = {
+    ...     'lock_timestamp': old_timestamp_text,
+    ...     'alt': None,
+    ...     'msgset_1': None,
+    ...     'msgset_1_es_translation_0_radiobutton':
+    ...         'msgset_1_es_translation_0_new',
+    ...     'msgset_1_es_translation_0_new': 'Foos',
+    ...     'submit_translations': 'Save &amp; Continue'}
+    >>> pomsgset_page_view = create_view(
+    ...     pomsgset, "+translate", form=form, layer=TranslationsLayer,
+    ...     server_url=server_url)
+    >>> pomsgset_page_view.request.method = 'POST'
     >>> pomsgset_page_view.initialize()
     >>> for notification in pomsgset_page_view.request.notifications:
     ...     notification.message
@@ -338,17 +341,18 @@ Bogus translation submission
 What would happen if we get a submit for another msgset that isn't being
 considered?
 
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL=SERVER_URL,
-    ...     form={
-    ...         'lock_timestamp': '2006-11-28 13:00:00 UTC',
-    ...         'alt': None,
-    ...         'msgset_2': None,
-    ...         'msgset_2_es_translation_0_new': 'Foo',
-    ...         'msgset_2_es_translation_0_new_checkbox': True,
-    ...         'submit_translations': 'Save &amp; Continue'})
-    >>> request.method = 'POST'
-    >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
+    >>> server_url = '/'.join([canonical_url(pomsgset), '+translate'])
+    >>> form = {
+    ...     'lock_timestamp': '2006-11-28 13:00:00 UTC',
+    ...     'alt': None,
+    ...     'msgset_2': None,
+    ...     'msgset_2_es_translation_0_new': 'Foo',
+    ...     'msgset_2_es_translation_0_new_checkbox': True,
+    ...     'submit_translations': 'Save &amp; Continue'}
+    >>> pomsgset_page_view = create_view(
+    ...     pomsgset, "+translate", form=form, layer=TranslationsLayer,
+    ...     server_url=server_url)
+    >>> pomsgset_page_view.request.method = 'POST'
     >>> pomsgset_page_view.initialize()
 
 The list of translations parsed will be empty because the submission is

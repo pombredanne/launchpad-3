@@ -37,6 +37,8 @@ from canonical.launchpad.database.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
+from canonical.launchpad.database.translationimportqueue import (
+    HasTranslationImportsMixin)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distroseriessourcepackagerelease import (
@@ -49,7 +51,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
     def getTargetTypes(self):
         """See `QuestionTargetMixin`.
-        
+
         Defines distribution and sourcepackagename as this object's
         distribution and sourcepackagename.
         """
@@ -58,7 +60,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
     def questionIsForTarget(self, question):
         """See `QuestionTargetMixin`.
-        
+
         Return True when the question's distribution and sourcepackagename
         are this object's distribution and sourcepackagename.
         """
@@ -123,7 +125,8 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
             key=attrgetter('displayname'))
 
 
-class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
+class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
+                    HasTranslationImportsMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object implements the MagicSourcePackage specification. It is not a
@@ -163,9 +166,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
                    SourcePackageRelease.id AND
                    SourcePackageRelease.sourcepackagename = %s AND
                    SourcePackagePublishingHistory.distrorelease = %s AND
-                   SourcePackagePublishingHistory.archive = %s
-                """ % sqlvalues(self.sourcepackagename, self.distroseries,
-                                self.distroseries.main_archive))
+                   SourcePackagePublishingHistory.archive IN %s
+                """ % sqlvalues(
+                        self.sourcepackagename,
+                        self.distroseries,
+                        self.distribution.all_distro_archive_ids))
         if version:
             clauses.append(
                 "SourcePackageRelease.version = %s" % sqlvalues(version))
@@ -208,8 +213,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         if latest_package:
             return DistroSeriesSourcePackageRelease(
                     self.distroseries, latest_package.sourcepackagerelease)
-        else:
-            return None
+        return None
 
     def __getitem__(self, version):
         """See `ISourcePackage`."""
@@ -255,17 +259,6 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         return self.currentrelease.format
 
     @property
-    def manifest(self):
-        """For the moment, the manifest of a SourcePackage is defined as the
-        manifest of the .currentrelease of that SourcePackage in the
-        distroseries. In future, we might have a separate table for the
-        current working copy of the manifest for a source package.
-        """
-        if not self.currentrelease:
-            return None
-        return self.currentrelease.manifest
-
-    @property
     def releases(self):
         """See `ISourcePackage`."""
         order_const = "debversion_sort_key(SourcePackageRelease.version)"
@@ -289,13 +282,13 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.status != %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id
             ''' % sqlvalues(self.sourcepackagename,
                             self.distribution,
-                            self.distribution.main_archive,
+                            self.distribution.all_distro_archive_ids,
                             PackagePublishingStatus.REMOVED),
             clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'],
             selectAlso="%s" % (SQLConstant(order_const)),
@@ -485,13 +478,13 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         Build.sourcepackagerelease = SourcePackageRelease.id AND
         SourcePackageRelease.sourcepackagename = %s AND
         SourcePackagePublishingHistory.distrorelease = %s AND
-        SourcePackagePublishingHistory.archive = %s AND
+        SourcePackagePublishingHistory.archive IN %s AND
         SourcePackagePublishingHistory.status = %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
         SourcePackageRelease.id
         """ % sqlvalues(self.sourcepackagename,
                         self.distroseries,
-                        self.distroseries.main_archive,
+                        self.distribution.all_distro_archive_ids,
                         PackagePublishingStatus.PUBLISHED)]
 
         # XXX cprov 2006-09-25: It would be nice if we could encapsulate

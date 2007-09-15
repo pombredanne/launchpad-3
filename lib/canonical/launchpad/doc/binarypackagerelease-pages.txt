@@ -30,7 +30,7 @@ IPackageRelationshipSet. (see package-relationship.txt).
 
   >>> pmount_deps = pmount_view.depends()
 
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.launchpad.interfaces import IPackageRelationshipSet
 
   >>> verifyObject(IPackageRelationshipSet, pmount_deps)

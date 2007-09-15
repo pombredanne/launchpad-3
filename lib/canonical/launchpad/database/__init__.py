@@ -69,10 +69,8 @@ from canonical.launchpad.database.translationgroup import *
 from canonical.launchpad.database.translationimportqueue import *
 from canonical.launchpad.database.translator import *
 from canonical.launchpad.database.processor import *
-from canonical.launchpad.database.manifest import *
-from canonical.launchpad.database.manifestentry import *
-from canonical.launchpad.database.manifestancestry import *
 from canonical.launchpad.database.branch import *
+from canonical.launchpad.database.branchmergeproposal import *
 from canonical.launchpad.database.branchrevision import *
 from canonical.launchpad.database.branchsubscription import *
 from canonical.launchpad.database.branchvisibilitypolicy import *
@@ -117,7 +115,6 @@ from canonical.launchpad.database.questionmessage import *
 from canonical.launchpad.database.questionreopening import *
 from canonical.launchpad.database.questionsubscription import *
 from canonical.launchpad.database.poexportrequest import *
-from canonical.launchpad.database.developmentmanifest import *
 from canonical.launchpad.database.distrocomponentuploader import *
 from canonical.launchpad.database.revision import *
 from canonical.launchpad.database.gpgkey import *
