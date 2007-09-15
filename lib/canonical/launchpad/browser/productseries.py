@@ -161,11 +161,6 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         return Link('+rdf', text, icon='download')
 
     @enabled_with_permission('launchpad.Admin')
-    def add_potemplate(self):
-        text = 'Add translation template'
-        return Link('+addpotemplate', text, icon='add')
-
-    @enabled_with_permission('launchpad.Admin')
     def review(self):
         text = 'Review details'
         return Link('+review', text, icon='edit')
