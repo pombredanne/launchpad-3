@@ -41,10 +41,8 @@ Let's see the list of untranslated messsages that the pofile has with the
 first batch of entries:
 
   >>> user_browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
-  ...     'evolution-2.2/es/+translate?show=untranslated')
-  >>> user_browser.url
-  'http://.../evolution-2.2/es/+translate?show=untranslated'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/+translate?show=untranslated')
 
   >>> print_shown_messages(user_browser)
   133: '(no translation yet)'
@@ -61,8 +59,6 @@ first batch of entries:
 The set of messages that are untranslated in the second batch:
 
   >>> user_browser.getLink('Next').click()
-  >>> user_browser.url
-  'http://.../evolution-2.2/es/+translate?show=untranslated&start=10'
 
   >>> print_shown_messages(user_browser)
   149: '(no translation yet)'
@@ -89,11 +85,8 @@ they were last reviewed.
 Now, we are going to select the amount of entries that need to be reviewed.
 
   >>> user_browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
-  ...     'evolution-2.2/es/+translate?show=need_review')
-  >>> user_browser.url
-  'http://.../evolution-2.2/es/+translate?show=need_review'
-
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/+translate?show=need_review')
   >>> print_shown_messages(user_browser)
   132: 'tiene<samp> </samp>'
   146: '<code>%d</code> foo'
@@ -125,13 +118,9 @@ Another thing that filtering should do is to move to the start of the set of
 messages when the filtering rule changes but preserving batch size.
 
   >>> user_browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
-  ...     'evolution-2.2/es/+translate')
-  >>> user_browser.url
-  'http://.../evolution-2.2/es/+translate'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/+translate')
   >>> user_browser.getLink('Last').click()
-  >>> user_browser.url
-  'http://.../evolution-2.2/es/+translate?start=20'
   >>> user_browser.getControl('Show').value = ['untranslated']
   >>> user_browser.getControl('Filter').click()
   >>> user_browser.url
@@ -149,8 +138,8 @@ submitted for: it should be the same batch, shown with the same filter (see
 bug 112308).
 
   >>> user_browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
-  ...     'evolution-2.2/es/+translate?show=untranslated')
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/+translate?show=untranslated')
 
 The user submits a bad translation, one that lacks conversion specifications
 the original message has, and is shown an error.

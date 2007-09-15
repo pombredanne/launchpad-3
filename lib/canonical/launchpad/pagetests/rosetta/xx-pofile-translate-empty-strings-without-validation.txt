@@ -2,9 +2,8 @@ Checks that an empty translation is not checked with pygettextpo
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
-  ...     'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=12&batch=1')
-  >>> browser.url
-  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=12&batch=1'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/+translate?start=12&batch=1')
 
 The msgid for msgset_142 uses a format string ('%s') and that means that the
 translation should use it too. If the translation is empty, our validation
@@ -27,5 +26,6 @@ Submit the form.
 We should be redirected to the next page because the validation didn't get
 it as an error.
 
-  >>> browser.url
-  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?batch=1&start=13'
+  >>> print browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?batch=1&start=13
+
