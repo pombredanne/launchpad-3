@@ -677,6 +677,12 @@ class QuestionWorkflowView(LaunchpadFormView):
         self._addNotificationAndHandlePossibleSubscription(
             _('Thanks for your comment.'), data)
 
+    @property
+    def show_call_to_answer(self):
+        """Return whether the call to answer should be displayed."""
+        return (self.user != self.context.owner and
+                self.context.can_give_answer)
+
     def canAddAnswer(self, action):
         """Return whether the answer action should be displayed."""
         return (self.user is not None and
