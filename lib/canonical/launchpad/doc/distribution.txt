@@ -697,14 +697,14 @@ the distribution.  This list does not, therefore, include PPAs.
   >>> for archive in ubuntutest.all_distro_archives:
   ...     print archive.purpose.title
   Primary Archive
-  Commercial Archive
+  Partner Archive
 
 `IDistribution.getArchiveByComponent` retrieves an IArchive given a component
 name.  If the component is unknown, None is returned.
 
-  >>> commercial_archive = ubuntutest.getArchiveByComponent('commercial')
-  >>> commercial_archive.description
-  u'Commercial archive'
+  >>> partner_archive = ubuntutest.getArchiveByComponent('partner')
+  >>> partner_archive.description
+  u'Partner archive'
 
   >>> other_archive = ubuntutest.getArchiveByComponent('dodgycomponent')
   >>> print other_archive

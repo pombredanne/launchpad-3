@@ -15,8 +15,8 @@ Carlos is going to translate some messages.
 Carlos chooses to translate Evolution 2.2 messages in to Spanish.
 
     >>> browser.open(
-    ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
-    ...     '+pots/evolution-2.2/es/+translate')
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
+    ...     'evolution/+pots/evolution-2.2/es/+translate')
     >>> print browser.title
     Translating evolution-2.2 in Ubuntu Hoary package "evolution" into Spanish
 
@@ -125,8 +125,8 @@ If a user specifies more than one alternative language in the URL, he
 gets an UnexpectedFormData exception:
 
     >>> browser.open(
-    ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
-    ...     '+pots/evolution-2.2/es/+translate'
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
+    ...     'evolution/+pots/evolution-2.2/es/+translate'
     ...     '?field.alternative_language=ja&field.alternative_language=aj')
     Traceback (most recent call last):
     ...

@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """
 Test the examples included in the system documentation in
 lib/canonical/launchpad/doc.
@@ -10,7 +10,7 @@ import os
 
 import transaction
 
-from zope.component import getUtility
+from zope.component import getUtility, getView
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.testing.doctest import DocFileSuite
@@ -24,14 +24,33 @@ from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet, ILaunchBag,
     IPersonSet, TeamSubscriptionPolicy)
+from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
         LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
         FunctionalLayer)
 
+
 here = os.path.dirname(os.path.realpath(__file__))
 
 default_optionflags = REPORT_NDIFF | NORMALIZE_WHITESPACE | ELLIPSIS
+
+
+def create_view(context, name, form=None, layer=None, server_url=None):
+    """Return a view based on the given arguments.
+
+    :param context: The context for the view.
+    :param name: The web page the view should handle.
+    :param form: A dictionary with the form keys.
+    :param layer: The layer where the page we are interested in is located.
+    :param server_url: The URL from where this request was done.
+    :return: The view class for the given context and the name.
+    """
+    request = LaunchpadTestRequest(form=form, SERVER_URL=server_url)
+    if layer is not None:
+        setFirstLayer(request, layer)
+    return getView(context, name, request)
 
 
 def setGlobs(test):
@@ -42,6 +61,7 @@ def setGlobs(test):
     test.globs['getUtility'] = getUtility
     test.globs['transaction'] = transaction
     test.globs['flush_database_updates'] = flush_database_updates
+    test.globs['create_view'] = create_view
 
 
 def setUp(test):

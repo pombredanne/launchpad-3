@@ -68,7 +68,6 @@
     <include file="faqcollection.zcml" />
     <include file="files.zcml" />
     <include file="gpgkey.zcml" />
-    <include file="hastranslationimports.zcml" />
     <include file="ircid.zcml" />
     <include file="jabberid.zcml" />
     <include file="karma.zcml" />

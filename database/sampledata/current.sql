@@ -568,8 +568,8 @@ INSERT INTO archive (id, "owner", description, enabled, authorized_size, whitebo
 INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (9, 28, 'packages to help my friends.', true, 1234567, 'It is not my fault.', 1, 2);
 INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, NULL, NULL, 1, 2);
 INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, NULL, NULL, 1, 2);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (12, NULL, 'Commercial archive', true, NULL, NULL, 1, 4);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (13, NULL, 'Commercial archive', true, NULL, NULL, 8, 4);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (12, NULL, 'Partner archive', true, NULL, NULL, 1, 4);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (13, NULL, 'Partner archive', true, NULL, NULL, 8, 4);
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
@@ -1232,7 +1232,7 @@ INSERT INTO component (id, name, description) VALUES (1, 'main', NULL);
 INSERT INTO component (id, name, description) VALUES (2, 'restricted', NULL);
 INSERT INTO component (id, name, description) VALUES (3, 'universe', NULL);
 INSERT INTO component (id, name, description) VALUES (4, 'multiverse', NULL);
-INSERT INTO component (id, name, description) VALUES (5, 'commercial', 'This component contains commercial packages only, which are not in the main Ubuntu archive.');
+INSERT INTO component (id, name, description) VALUES (5, 'partner', 'This component contains partner packages only, which are not in the main Ubuntu archive.');
 
 
 ALTER TABLE component ENABLE TRIGGER ALL;
