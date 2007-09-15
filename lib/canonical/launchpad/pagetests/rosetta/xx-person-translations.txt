@@ -1,7 +1,8 @@
 Test that the person's translation history page displays the latest
 translations and translation groups related to the person in question.
 
-  >>> anon_browser.open("http://launchpad.dev/people/carlos/+translations")
+  >>> anon_browser.open(
+  ...     "http://translations.launchpad.dev/people/carlos/+translations")
   >>> print anon_browser.contents
   <!DOCTYPE...
   ...<h1>Applications and packages translated</h1>...

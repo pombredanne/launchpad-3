@@ -88,11 +88,6 @@
         <browser:page
             name="+listing-detailed"
             template="../templates/project-listing-detailed.pt" />
-        <browser:page
-            name="+translations"
-            facet="translations"
-            template="../templates/project-translations.pt"
-            />
        <browser:page
             name="+milestones"
             facet="overview"
@@ -138,6 +133,15 @@
         permission="zope.Public"
         name="+rdf"
         attribute="__call__"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProject"
+        permission="zope.Public"
+        name="+translations"
+        facet="translations"
+        template="../templates/project-translations.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
   <browser:pages
@@ -222,6 +226,7 @@
         permission="launchpad.Edit"
         label="Select a new translation group"
         template="../templates/project-translators.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:page

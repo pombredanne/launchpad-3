@@ -4,10 +4,8 @@ saying that the translations, and thus, the email address are only available
 if you log in.
 
   >>> browser.open(
-  ...     'http://launchpad.dev/alsa-utils/trunk/+pots/alsa-utils/es/'
-  ...     '+translate')
-  >>> print browser.url
-  http://launchpad.dev/alsa-utils/trunk/+pots/alsa-utils/es/+translate
+  ...     'http://translations.launchpad.dev/alsa-utils/trunk/+pots/'
+  ...     'alsa-utils/es/+translate')
 
 The GNOME standard string for credits is well handled.
 
@@ -47,10 +45,8 @@ Also, suggestions should not appear.
 But, if you are logged in, the system will show you the data.
 
   >>> user_browser.open(
-  ...     'http://launchpad.dev/alsa-utils/trunk/+pots/alsa-utils/es/'
-  ...     '+translate')
-  >>> print user_browser.url
-  http://launchpad.dev/alsa-utils/trunk/+pots/alsa-utils/es/+translate
+  ...     'http://translations.launchpad.dev/alsa-utils/trunk/+pots/'
+  ...     'alsa-utils/es/+translate')
 
 The GNOME standard string for credits is now available:
 

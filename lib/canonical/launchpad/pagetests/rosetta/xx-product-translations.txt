@@ -75,7 +75,8 @@ It omits the registrant-only links ...
 ... because you can't do those things.
 
     >>> unprivileged.open(
-    ...     'http://launchpad.dev/gnomebaker/trunk/+translations-upload')
+    ...     'http://translations.launchpad.dev/gnomebaker/trunk/'
+    ...     '+translations-upload')
     Traceback (most recent call last):
     ...
     HTTPError: HTTP Error 403: Forbidden
@@ -83,7 +84,7 @@ It omits the registrant-only links ...
 (In the packages case, you can look at the packages, but you can't link any.)
 
     >>> unprivileged.open(
-    ...     'http://launchpad.dev/gnomebaker/trunk/+addpackage')
+    ...     'http://translations.launchpad.dev/gnomebaker/trunk/+addpackage')
     Traceback (most recent call last):
     ...
     HTTPError: HTTP Error 403: Forbidden
