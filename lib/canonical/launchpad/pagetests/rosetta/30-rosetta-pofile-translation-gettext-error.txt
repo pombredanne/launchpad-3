@@ -5,10 +5,8 @@ First, we need to define a function to see that the message we are
 interested on doesn't have any translation.
 
   >>> user_browser.open(
-  ...     "http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/"
-  ...     "evolution-2.2/es/+translate?start=20")
-  >>> user_browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
+  ...     "http://translations.launchpad.dev/ubuntu/hoary/+source/"
+  ...     "evolution/+pots/evolution-2.2/es/+translate?start=20")
 
 We are going to change message #21, but first, we see that this messages
 has no translations at all.
@@ -47,8 +45,8 @@ submission and doesn't ignore it.
 We got an error, that means the url should be the same.
 We are still in the same URL, because the system detected an error.
 
-  >>> user_browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
+  >>> print user_browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20
 
 And we can see the error.
 
