@@ -7,7 +7,7 @@ Source: foocomm
 Binary: foocomm
 Architecture: source
 Version: 1.0-1
-Distribution: breezy
+Distribution: breezy-proposed
 Urgency: low
 Maintainer: Launchpad team <launchpad@lists.canonical.com>
 Changed-By: Foo Bar <foo.bar@canonical.com>
@@ -24,7 +24,7 @@ Files:
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.6 (GNU/Linux)
 
-iD8DBQFG2/K0jn63CGxkqMURAuxZAJ9zNpE/1cZ4UpEG7Ox+uhnkufhQ0wCeI40c
-JbyWpJKQF0IdqcOo0/CpuWo=
-=tM4f
+iD8DBQFG2/Q1jn63CGxkqMURAp7hAJ4g+K7r42iuVaXzhvtRDmjY0YmKugCfcwAa
+sdeZLAljSGXKWhq56l3rUI4=
+=vagQ
 -----END PGP SIGNATURE-----

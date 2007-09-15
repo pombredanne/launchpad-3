@@ -511,17 +511,17 @@ This BugTask is also a BugTask of the milestone of the mozilla project.
     2 1 Mozilla Firefox Firefox does not support SVG
 
 
-== Bugs with commercial packages ==
+== Bugs with partner packages ==
 
-Bugs may also be targeted to commercial packages.  First turn "cdrkit" into
-a commercial package:
+Bugs may also be targeted to partner packages.  First turn "cdrkit" into
+a partner package:
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.launchpad.interfaces import IComponentSet
     >>> proxied_cdrkit = ubuntu.getSourcePackage("cdrkit")
     >>> cdrkit = removeSecurityProxy(proxied_cdrkit)
-    >>> cdrkit.component = getUtility(IComponentSet)['commercial']
-    >>> cdrkit.archive = ubuntu.getArchiveByComponent('commercial')
+    >>> cdrkit.component = getUtility(IComponentSet)['partner']
+    >>> cdrkit.archive = ubuntu.getArchiveByComponent('partner')
     >>> transaction.commit()
 
 It starts off with no bugs:
