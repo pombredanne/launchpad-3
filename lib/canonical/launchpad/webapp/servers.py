@@ -231,19 +231,26 @@ class LaunchpadRequestPublicationFactory:
         # the former first.
         host = environment['HTTP_HOST']
         server_port = environment.get('SERVER_PORT')
-        port = -1
         if server_port is None and ':' in host:
             host, server_port = host.split(':', 1)
         try:
             port = int(server_port)
         except (ValueError, TypeError):
+            # This request is not coming in on a usable private port, so don't
+            # try to look up the server type.
             pass
-        for server in config.servers:
-            if server.address[1] == port and server.type == 'PrivateXMLRPC':
-                # This request came over the private XMLRPC port.
-                self._thread_local.host = (
-                    config.launchpad.vhosts.xmlrpc_private.hostname)
-                return True
+        else:
+            # See if there is a server configuration with a matching port,
+            # using the special PrivateXMLRPC server type name.  If so, set
+            # the thread's host name to the proper configuration value and
+            # return immediately.
+            for server in config.servers:
+                if (server.address[1] == port and
+                    server.type == 'PrivateXMLRPC'):
+                    # This request came over the private XMLRPC port.
+                    self._thread_local.host = (
+                        config.launchpad.vhosts.xmlrpc_private.hostname)
+                    return True
 
         host = environment['HTTP_HOST']
         if ":" in host:
