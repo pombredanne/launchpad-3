@@ -6,6 +6,7 @@ project page and that it has no translation group assigned.
   >>> print http(r"""
   ... GET /gnome/ HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Host: translations.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -24,6 +25,7 @@ permissions on a project.
   >>> print http(r"""
   ... GET /gnome/+changetranslators HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Host: translations.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -41,6 +43,7 @@ permissions.
   ... Content-Length: 740
   ... Content-Type: multipart/form-data; boundary=---------------------------5802497532009257481401449131
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Host: translations.launchpad.dev
   ... 
   ... -----------------------------5802497532009257481401449131
   ... Content-Disposition: form-data; name="field.translationgroup"
@@ -80,6 +83,7 @@ the relevant portlet.
   >>> print http(r"""
   ... GET /gnome HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Host: translations.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

@@ -87,9 +87,9 @@ class IQuestionSet(IQuestionCollection):
     def findExpiredQuestions(days_before_expiration):
         """Return the questions that are expired.
 
-        This should return all the questions in the Open or Needs information
-        state, without an assignee, that didn't receive any new comments in
-        the last <days_before_expiration> days.
+        Return all the questions in the Open or Needs information state,
+        without an assignee or bug links, that did not receive any new
+        comments in the last <days_before_expiration> days.
         """
 
     def getMostActiveProjects(limit=5):
