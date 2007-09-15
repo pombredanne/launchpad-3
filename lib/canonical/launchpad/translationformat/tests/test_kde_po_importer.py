@@ -104,7 +104,7 @@ class KdePOImporterTestCase(unittest.TestCase):
 
     def testFormat(self):
         """Check whether KdePOImporter can handle the KDEPO file format."""
-        format = self.template_importer.format(test_kde_template)
+        format = self.template_importer.getFormat(test_kde_template)
         self.failUnless(
             format == TranslationFileFormat.KDEPO,
             'KdePOImporter format expected KDEPO but got %s' % format.name)

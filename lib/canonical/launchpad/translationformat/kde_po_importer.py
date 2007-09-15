@@ -36,10 +36,10 @@ class KdePOImporter(GettextPOImporter):
         # and with extremely big PO files, this will be too slow).  Thus,
         # a heuristic verified to be correct on all PO files from
         # Ubuntu language packs.
-        if (u'msgid "_n: ' in file_contents or
-            u'msgid ""\n"_n: ' in file_contents or
-            u'msgid "_: ' in file_contents or
-            u'msgid ""\n"_: ' in file_contents):
+        if ('msgid "_n: ' in file_contents or
+            'msgid ""\n"_n: ' in file_contents or
+            'msgid "_: ' in file_contents or
+            'msgid ""\n"_: ' in file_contents):
             return TranslationFileFormat.KDEPO
         else:
             return TranslationFileFormat.PO
