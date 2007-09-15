@@ -216,11 +216,6 @@
       template="../templates/distribution-members.pt"
       />
     <browser:page
-      name="+translations"
-      facet="translations"
-      template="../templates/distribution-translations.pt"
-        />
-    <browser:page
       name="+builds"
       facet="overview"
       template="../templates/distribution-builds.pt"
@@ -402,6 +397,16 @@
     template="../templates/distribution-bugcontact.pt"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionView"
+    permission="zope.Public"
+    name="+translations"
+    facet="translations"
+    template="../templates/distribution-translations.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
   <browser:editform
     name="+changetranslators"
     for="canonical.launchpad.interfaces.IDistribution"
@@ -410,6 +415,7 @@
     fields="translationgroup translationpermission"
     permission="launchpad.Edit"
     template="../templates/distribution-translators.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
   <browser:page

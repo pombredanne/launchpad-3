@@ -152,24 +152,9 @@
       facet="overview"
       template="../templates/distroseries-index.pt" />
     <browser:page
-      name="+translations"
-      facet="translations"
-      template="../templates/distroseries-translations.pt" />
-    <browser:page
-      name="+language-packs"
-      facet="translations"
-      template="../templates/distroseries-language-packs.pt" />
-    <browser:page
-      name="+langchart"
-      template="../templates/distroseries-langchart.pt" />
-    <browser:page
       name="+packaging"
       facet="overview"
       template="../templates/distroseries-packaging.pt" />
-    <browser:page
-      name="+potlist"
-      facet="translations"
-      template="../templates/object-pots.pt" />
     <browser:page
       name="+builds"
       facet="overview"
@@ -256,6 +241,26 @@
     fields="displayname title summary description"
     template="../templates/distroseries-edit.pt"
     />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesView"
+    permission="zope.Public"
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer">
+    <browser:page
+      name="+translations"
+      template="../templates/distroseries-translations.pt" />
+    <browser:page
+      name="+langchart"
+      template="../templates/distroseries-langchart.pt" />
+    <browser:page
+      name="+language-packs"
+      template="../templates/distroseries-language-packs.pt" />
+    <browser:page
+      name="+potlist"
+      template="../templates/object-pots.pt" />
+  </browser:pages>
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistroSeries"
