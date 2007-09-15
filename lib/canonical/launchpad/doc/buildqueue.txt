@@ -83,10 +83,11 @@ of the build procedure (NOW - buildstart), it's mainly used in the UI.
  >>> bq.buildduration
  datetime.timedelta(...)
 
-Published component name, it looks over the publishing records and
-find the current publication of the source in question.
+Currently published component is provided via 'current_component'
+property, it looks over the publishing records and find the current
+publication of the source in question.
 
- >>> bq.component_name
+ >>> bq.current_component.name
  u'main'
 
 it is not necessary the same than the:
