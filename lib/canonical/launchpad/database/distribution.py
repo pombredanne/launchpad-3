@@ -1009,7 +1009,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             'restricted' : ArchivePurpose.PRIMARY,
             'universe' : ArchivePurpose.PRIMARY,
             'multiverse' : ArchivePurpose.PRIMARY,
-            'commercial' : ArchivePurpose.COMMERCIAL,
+            'partner' : ArchivePurpose.PARTNER,
             }
 
         try:
