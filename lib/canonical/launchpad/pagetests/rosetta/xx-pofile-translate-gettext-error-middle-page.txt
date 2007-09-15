@@ -4,10 +4,8 @@ messages for this POFile, we still detect the error and notify to our users.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
-  ...     'evolution-2.2/es/+translate?start=10&batch=5')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=10&batch=5'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/+translate?start=10&batch=5')
 
 Submit the form using a wrong format string. The msgid is using '%s' which
 means it will be an string, but we are going to use '%i' which means an
@@ -33,8 +31,8 @@ And submit the form.
 
 We remain at the same page:
 
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=10&batch=5'
+  >>> print browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=10&batch=5
 
 The valid translation is stored:
 
