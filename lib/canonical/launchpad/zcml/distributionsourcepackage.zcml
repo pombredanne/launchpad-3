@@ -8,7 +8,7 @@
   <content class="canonical.launchpad.database.DistributionSourcePackage">
     <allow
       attributes="distribution sourcepackagename name displayname title
-                  distro by_distroseriess subscribers currentrelease
+                  distro get_distroseries_packages subscribers currentrelease
                   releases publishing_history binary_package_names
                   current_publishing_records
                   bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
@@ -79,7 +79,11 @@
     <browser:page
       name="+index"
       facet="overview"
-      template="../templates/distributionsourcepackage-index.pt" />
+      template="../templates/distrosourcepackage-index.pt" />
+    <browser:page
+      name="+publishinghistory"
+      facet="overview"
+      template="../templates/distrosourcepackage-publishinghistory.pt" />
 
     <!-- DistributionSourcePackage Portlets -->
     <browser:page

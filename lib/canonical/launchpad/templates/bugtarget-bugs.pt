@@ -85,13 +85,25 @@
             <li tal:define="fixed_elsewhere view/getBugsFixedElsewhereInfo">
               <a tal:attributes="href fixed_elsewhere/url">
                 <strong tal:content="fixed_elsewhere/count">42</strong>
-                bugs fixed elsewhere
+                <tal:label
+                  tal:replace="fixed_elsewhere/label">bugs</tal:label>
+                fixed elsewhere
               </a>
             </li>
             <li tal:define="cve_bugs view/getOpenCVEBugsInfo">
               <a tal:attributes="href cve_bugs/url">
                 <strong tal:content="cve_bugs/count"></strong>
-                open CVE bugs
+                open CVE
+                <tal:label tal:replace="cve_bugs/label">bugs</tal:label>
+              </a>
+            </li>
+            <li tal:define="pending_bugwatches view/getPendingBugWatches"
+                tal:condition="view/isUpstreamProduct">
+              <a tal:attributes="href pending_bugwatches/url">
+                <strong tal:content="pending_bugwatches/count"></strong>
+                <tal:label
+                  tal:replace="pending_bugwatches/label">bugs</tal:label>
+                need forwarding upstream
               </a>
             </li>
             <li style="font-weight: bold;">

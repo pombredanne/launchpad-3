@@ -162,8 +162,8 @@ class TestBranchDeletion(TestCase):
                          "A branch with a landing candidate is not deletable.")
         self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
 
-    def test_landingTargetDisablesDeletion(self):
-        """A branch with a landing target cannot be deleted."""
+    def test_dependentBranchDisablesDeletion(self):
+        """A branch that is a dependent branch cannot be deleted."""
         source_branch = BranchSet().new(
             BranchType.HOSTED, 'landing-candidate', self.user, self.user,
             self.product, None)

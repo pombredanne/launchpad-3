@@ -5,10 +5,8 @@ First, we need to be sure that anonymous users are able to browse translations
 but are unable to actually change them.
 
   >>> browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/5')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate'
 
 We are in read only mode, so there shouldn't be any textareas:
 
@@ -25,6 +23,7 @@ Also, any anonymous POST submission should fail:
 
   >>> print http(r"""
   ... POST /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate HTTP/1.1
+  ... Host: translations.launchpad.dev
   ... """)
   HTTP/1.1 500 Internal Server Error
   ...
@@ -40,19 +39,15 @@ Now, we are going to test common parts of the navigation.
 The main page for a pomsgset object should redirect us to the translation form.
 
   >>> browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/1')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'
 
 When we are on the first message, we should be 100% sure that the 'First' and
 'Previous' links are hidden and 'Next' and 'Last' are the right ones.
 
   >>> browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/1/+translate')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'
 
   >>> browser.getLink('First')
   Traceback (most recent call last):
@@ -66,47 +61,41 @@ When we are on the first message, we should be 100% sure that the 'First' and
 
   >>> next = browser.getLink('Next')
   >>> print next.url
-  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate
   >>> print browser.getLink('Last').url
-  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
 
 And the link to the IPOFile view should be there too:
 
   >>> print browser.getLink('Return to multiple messages view').url
-  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=0
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=0
 
 when we choose the next entry, all links should appear.
 
   >>> next.click()
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate'
-
   >>> print browser.getLink('First').url
-  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate
   >>> print browser.getLink('Previous').url
-  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate
   >>> print browser.getLink('Next').url
-  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/3/+translate
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/3/+translate
   >>> last = browser.getLink('Last')
   >>> print last.url
-  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
 
 And the link to the IPOFile view should be there too:
 
   >>> print browser.getLink('Return to multiple messages view').url
-  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=1
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=1
 
 And the last one.
 
   >>> last.click()
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'
-
   >>> print browser.getLink('First').url
-  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate
   >>> prev = browser.getLink('Previous')
   >>> print prev.url
-  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate
 
   >>> browser.getLink('Next')
   Traceback (most recent call last):
@@ -121,30 +110,25 @@ And the last one.
 And the link to the IPOFile view should be there too:
 
   >>> print browser.getLink('Return to multiple messages view').url
-  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=21
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=21
 
 Let's test the ones at the end of the form.
 
   >>> prev.click()
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate'
-
   >>> print browser.getLink('First').url
-  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate
   >>> print browser.getLink('Previous').url
-  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/20/+translate
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/20/+translate
   >>> print browser.getLink('Next').url
-  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
   >>> print browser.getLink('Last').url
-  http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
 
 Now, we are going to check a message submission.
 
   >>> browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/13/+translate')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate'
 
 Check that the message #13 is without translation.
 
@@ -178,8 +162,8 @@ Let's submit an invalid value for this message #13.
   >>> browser.getControl(
   ...     name='msgset_142_es_translation_0_new').value = 'foo %i'
   >>> browser.getControl(name='submit_translations').click()
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate'
+  >>> print browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate
   >>> for tag in find_tags_by_class(browser.contents, 'error'):
   ...     print tag
   <div class="error message">There is an error in the translation you provided.
@@ -220,16 +204,14 @@ And now a good submit.
 
 We moved to the next message, that means this submission worked.
 
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
+  >>> print browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate
 
 Now, it has the submitted value.
 
   >>> browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/13/+translate')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate'
 
 Check that the message #13 has the new value we submitted.
 
@@ -257,10 +239,8 @@ In some other cases where translator and reviewer are different, they are
 both shown separately:
 
   >>> browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
-  ...     'man/es/1/+translate')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/man/es/1/+translate'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/man/es/1/+translate')
   >>> find_tag_by_id(browser.contents, 'translated_and_reviewed_by') is None
   True
   >>> find_tag_by_id(browser.contents, 'translated_by') is None
@@ -273,10 +253,8 @@ both shown separately:
 Now, we will check suggestions in this form.
 
   >>> browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/14/+translate')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
 
 Check that suggestions come in from other contexts:
 
@@ -303,13 +281,13 @@ Also check that the alternative language selection is working:
   >>> browser.getControl(name='field.alternative_language').value = ['ja']
   >>> browser.getControl(name='select_alternate_language').click()
   >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate?field.alternative_language=ja&field.alternative_language-empty-marker=1&select_alternate_language=Change'
+  'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate?field.alternative_language=ja&field.alternative_language-empty-marker=1&select_alternate_language=Change'
 
 If we specify more than one alternative language in the URL, we get an
 UnexpectedFormData exception:
 
   >>> browser.open(
-  ...  'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...  'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...  '+pots/evolution-2.2/es/14/+translate?field.alternative_language=ja&'
   ...  'field.alternative_language=aj')
   Traceback (most recent call last):
@@ -327,10 +305,8 @@ changes.
   >>> slow_submission.addHeader(
   ...     'Authorization', 'Basic carlos@canonical.com:test')
   >>> slow_submission.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/14/+translate')
-  >>> slow_submission.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
   >>> import transaction
   >>> transaction.commit()
 
@@ -340,10 +316,8 @@ Now, we get another instance that will be submitted before 'slow_submission'.
   >>> fast_submission.addHeader(
   ...     'Authorization', 'Basic carlos@canonical.com:test')
   >>> fast_submission.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/14/+translate')
-  >>> fast_submission.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
 
 Let's change the translation.
 
@@ -356,8 +330,8 @@ Let's change the translation.
 And submit it.
 
   >>> fast_submission.getControl(name='submit_translations').click()
-  >>> fast_submission.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/15/+translate'
+  >>> print fast_submission.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/15/+translate
 
 Now, we check that the translation we are going to add is not yet in the
 form, so we can check later that it's added as a suggestion:
@@ -376,8 +350,8 @@ Now, we update the translation in slow_submission.
 We submit it
 
   >>> slow_submission.getControl(name='submit_translations').click()
-  >>> slow_submission.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
+  >>> print slow_submission.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate
   >>> for tag in find_tags_by_class(slow_submission.contents, 'error'):
   ...     print tag
   <div class="error message">There is an error in the translation you provided. Please correct it before continuing.</div>
@@ -436,7 +410,8 @@ from a package), it only shows the translator, and not reviewer.
 Going to a translation page for a message with the context displays the
 context.
 
-    >>> browser.open('http://launchpad.dev/alsa-utils/trunk/+pots/'
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/alsa-utils/trunk/+pots/'
     ...     'alsa-utils/sr/+translate')
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, "msgset_198_context").parent)
@@ -453,8 +428,8 @@ We can change a translation for messages with context.
 And submit it.
 
   >>> browser.getControl(name='submit_translations').click()
-  >>> browser.url
-  'http://launchpad.dev/alsa-utils/trunk/+pots/alsa-utils/sr/+translate'
+  >>> print browser.url
+  http://translations.launchpad.dev/alsa-utils/trunk/+pots/alsa-utils/sr/+translate
 
 And the translation is now updated.
 

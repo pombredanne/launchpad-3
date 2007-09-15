@@ -84,7 +84,7 @@ from canonical.launchpad.database import (
 from canonical.launchpad.interfaces import (
     IBugTask, IDistribution, IDistributionSourcePackage,
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IFAQ, IFAQTarget,
-    IEmailAddressSet, ILaunchBag, IMilestoneSet, IPerson, IPersonSet,
+    IEmailAddressSet, ILanguage, ILaunchBag, IMilestoneSet, IPerson, IPersonSet,
     IPillarName, IProduct, IProject, ISourcePackage, ISpecification, ITeam,
     IUpstreamBugTask, EmailAddressStatus)
 
@@ -280,15 +280,25 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
     _table = Language
     _orderBy = 'englishname'
 
+    def __contains__(self, language):
+        """See `IVocabulary`."""
+        assert ILanguage.providedBy(language), (
+            "'in LanguageVocabulary' requires ILanguage as left operand, "
+            "got %s instead." % type(language))
+        return super(LanguageVocabulary, self).__contains__(language)
+
     def toTerm(self, obj):
+        """See `IVocabulary`."""
         return SimpleTerm(obj, obj.code, obj.displayname)
 
     def getTerm(self, obj):
+        """See `IVocabulary`."""
         if obj not in self:
             raise LookupError(obj)
         return SimpleTerm(obj, obj.code, obj.displayname)
 
     def getTermByToken(self, token):
+        """See `IVocabulary`."""
         try:
             found_language = Language.byCode(token)
         except SQLObjectNotFound:
@@ -299,20 +309,31 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
 class TranslatableLanguageVocabulary(LanguageVocabulary):
     """All the translatable languages known by Launchpad.
 
-    English is not a translatable language. It is excluded from the terms.
+    Messages cannot be translated into English or a non-visible language.
+    This vocabulary contains all the languages known to Launchpad,
+    excluding English and non-visible languages.
     """
-
     def __contains__(self, language):
-        """See `IVocabulary`."""
+        """See `IVocabulary`.
+
+        This vocabulary excludes English and languages that are not visible.
+        """
+        assert ILanguage.providedBy(language), (
+            "'in TranslatableLanguageVocabulary' requires ILanguage as "
+            "left operand, got %s instead." % type(language))
         if language.code == 'en':
             return False
-        return super(
+        return language.visible == True and super(
             TranslatableLanguageVocabulary, self).__contains__(language)
 
     def __iter__(self):
-        """See `IVocabulary`."""
+        """See `IVocabulary`.
+
+        Iterate languages that are visible and not English.
+        """
         languages = self._table.select(
-            "Language.code != 'en'", orderBy=self._orderBy)
+            "Language.code != 'en' AND Language.visible = True",
+            orderBy=self._orderBy)
         for language in languages:
             yield self.toTerm(language)
 
@@ -320,8 +341,11 @@ class TranslatableLanguageVocabulary(LanguageVocabulary):
         """See `IVocabulary`."""
         if token == 'en':
             raise LookupError(token)
-        return super(
-            TranslatableLanguageVocabulary, self).getTermByToken(token)
+        term = super(TranslatableLanguageVocabulary, self).getTermByToken(
+            token)
+        if not term.value.visible:
+            raise LookupError(token)
+        return term
 
 
 class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):

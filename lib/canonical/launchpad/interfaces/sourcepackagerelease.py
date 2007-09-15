@@ -29,6 +29,9 @@ class ISourcePackageRelease(Interface):
     component = Attribute("Source Package Component")
     format = Attribute("The Source Package Format")
     changelog = Attribute("Source Package Change Log")
+    change_summary = Attribute(
+        "The message on the latest change in this release. This is usually "
+        "a snippet from the changelog")
     builddepends = Attribute(
         "A comma-separated list of packages on which this package "
         "depends to build")

@@ -212,7 +212,7 @@ other things) the uploader for validating incoming uploads.
    python
    translations
 
-Breezy-autotest has got a commercial component, which is not reported:
+Breezy-autotest has got a partner component, which is not reported:
 
     >>> breezyautotest = distroseriesset.queryByName(ubuntu, "breezy-autotest")
     >>> for c in breezyautotest.components:
@@ -223,7 +223,7 @@ Breezy-autotest has got a commercial component, which is not reported:
     multiverse
 
 The upload_components property, however, reports all the available
-components since commercial is allowed for upload:
+components since partner is allowed for upload:
 
     >>> for c in breezyautotest.upload_components:
     ...     print c.name
@@ -231,7 +231,7 @@ components since commercial is allowed for upload:
     restricted
     universe
     multiverse
-    commercial
+    partner
 
 
 == DistroSeries can be initialised from their parents ==
@@ -306,11 +306,12 @@ Check the content IDRSPR binaries & builds attributes:
 'binaries' should be inherited from parent release.
 
    >>> bumpy_firefox_sp.currentrelease.binaries.count()
-   1
+   2
 
    >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
    ...     print bin.id, bin.title, bin.build.distroarchseries.title
    12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
+   27 mozilla-firefox-data-0.9 The Warty Warthog Release for i386 (x86)
 
 'builds' should be empty since it was built in parent (warty), not in this
 distroseries (bumby.
@@ -321,7 +322,7 @@ distroseries (bumby.
 the SPR returns all build records for it.
 
    >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
-   4
+   5
 
 == Translatable Packages and Packaging ==
 
@@ -882,7 +883,7 @@ publication in question:
 
    >>> warty_mozilla_pub_binaries = warty_pub_source.publishedBinaries()
    >>> warty_mozilla_pub_binaries.count()
-   1
+   4
    >>> warty_mozilla_pub_bin = warty_mozilla_pub_binaries[0]
 
    >>> from canonical.launchpad.interfaces import (
@@ -905,7 +906,7 @@ BinaryPackagePublishingHistory objects for the DistroSeries:
     >>> warty = ubuntu['warty']
     >>> bpphs = warty.getBinaryPackagePublishing()
     >>> bpphs.count()
-    7
+    10
     >>> 'mozilla-firefox' in set(
     ...     pkgpub.binarypackagerelease.binarypackagename.name
     ...     for pkgpub in bpphs)
@@ -931,7 +932,7 @@ We can restrict the results by component:
 
     >>> warty.getBinaryPackagePublishing(
     ...     component=component_main).count()
-    7
+    10
     >>> warty.getBinaryPackagePublishing(
     ...     component=component_multiverse).count()
     0
@@ -940,7 +941,7 @@ By pocket:
 
     >>> warty.getBinaryPackagePublishing(
     ...     pocket=PackagePublishingPocket.RELEASE).count()
-    7
+    10
     >>> warty.getBinaryPackagePublishing(
     ...     pocket=PackagePublishingPocket.BACKPORTS).count()
     0

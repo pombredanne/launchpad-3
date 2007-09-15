@@ -179,6 +179,28 @@ class Branch(SQLBase):
         """See `IBranch`."""
         return self.revision_count > 0 and not self.private
 
+    def _getNameDict(self, person):
+        """Return a simple dict with the person name or placeholder."""
+        if person is not None:
+            name = person.name
+        else:
+            name = "<name>"
+        return {'user': name}
+
+    def getBzrUploadURL(self, person=None):
+        """See `IBranch`."""
+        root = config.codehosting.smartserver_root % self._getNameDict(person)
+        return root + self.unique_name
+
+    def getBzrDownloadURL(self, person=None):
+        """See `IBranch`."""
+        if self.private:
+            root = config.codehosting.smartserver_root
+        else:
+            root = config.codehosting.supermirror_root
+        root = root % self._getNameDict(person)
+        return root + self.unique_name
+
     @property
     def related_bugs(self):
         """See `IBranch`."""
@@ -630,7 +652,7 @@ class BranchSet:
     def getByUrl(self, url, default=None):
         """See `IBranchSet`."""
         assert not url.endswith('/')
-        prefix = config.launchpad.supermirror_root
+        prefix = config.codehosting.supermirror_root
         if url.startswith(prefix):
             branch = self.getByUniqueName(url[len(prefix):])
         else:
@@ -930,6 +952,19 @@ class BranchSet:
 
         return Branch.select(
             self._generateBranchClause(query, visible_by_user))
+
+    def getBranchesForProject(self, project, lifecycle_statuses=None,
+                              visible_by_user=None):
+        """See `IBranchSet`."""
+        assert project is not None, "Must have a valid project."
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+
+        query = 'Branch.product = Product.id AND Product.project = %s %s' % (
+            project.id, lifecycle_clause)
+
+        return Branch.select(
+            self._generateBranchClause(query, visible_by_user),
+            clauseTables=['Product'])
 
     def getHostedBranchesForPerson(self, person):
         """See `IBranchSet`."""
