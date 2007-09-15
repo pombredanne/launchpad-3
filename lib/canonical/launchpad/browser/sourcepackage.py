@@ -245,6 +245,14 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
     def searchName(self):
         return False
 
+    def defaultBuildState(self):
+        """Default build state for sourcepackage builds.
+
+        This overrides the default that is set on BuildRecordsView."""
+        # None maps to "all states". The reason we display all states on
+        # this page is because it's unlikely that there will be so
+        # many builds that the listing will be overwhelming.
+        return None
 
 class SourcePackageTranslateRedirectView:
     """Redirects to translations site for +translate page.
