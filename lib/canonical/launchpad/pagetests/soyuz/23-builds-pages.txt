@@ -200,9 +200,9 @@ doesn't have any builds.
   '...No builds for Debian GNU/Linux...'
 
 
-== Commercial builds ==
+== Partner builds ==
 
-Builds of commercial packages show up on the builds page as any other package
+Builds of partner packages show up on the builds page as any other package
 from the primary archive.
 
   >>> browser.open(

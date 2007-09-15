@@ -255,7 +255,7 @@ primary archive.
   >>> arch_ids = [arch.id for arch in breezy.architectures]
   >>> [(build.archive.purpose.name, build.title) for build in
   ...    bs.getBuildsByArchIds(arch_ids, name='commercialpackage')]
-  [('COMMERCIAL', u'i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE')]
+  [('PARTNER', u'i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE')]
 
 
 We can find recent and pending builds for a given distroseries.

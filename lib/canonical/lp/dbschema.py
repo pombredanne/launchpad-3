@@ -2331,10 +2331,10 @@ class ArchivePurpose(DBSchema):
         This is the archive for embargoed packages.
         """)
 
-    COMMERCIAL = Item(4, """
-        Commercial Archive.
+    PARTNER = Item(4, """
+        Partner Archive.
 
-        This is the archive for commercial packages.
+        This is the archive for partner packages.
         """)
 
     OBSOLETE = Item(5, """
