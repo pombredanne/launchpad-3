@@ -2,6 +2,7 @@ Check that we can get a potlist for a source pacakge that has potemplates:
 
   >>> print http(r"""
   ... GET /ubuntu/hoary/+source/evolution/+potlist HTTP/1.1
+  ... Host: translations.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -16,6 +17,7 @@ Check that we can get a potlist for a product release:
 
   >>> print http(r"""
   ... GET /evolution/trunk/+potlist HTTP/1.1
+  ... Host: translations.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -29,6 +31,7 @@ Check that we can get a potlist for a distroseries:
 
   >>> print http(r"""
   ... GET /ubuntu/hoary/+potlist HTTP/1.1
+  ... Host: translations.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

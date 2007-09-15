@@ -953,6 +953,19 @@ class BranchSet:
         return Branch.select(
             self._generateBranchClause(query, visible_by_user))
 
+    def getBranchesForProject(self, project, lifecycle_statuses=None,
+                              visible_by_user=None):
+        """See `IBranchSet`."""
+        assert project is not None, "Must have a valid project."
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+
+        query = 'Branch.product = Product.id AND Product.project = %s %s' % (
+            project.id, lifecycle_clause)
+
+        return Branch.select(
+            self._generateBranchClause(query, visible_by_user),
+            clauseTables=['Product'])
+
     def getHostedBranchesForPerson(self, person):
         """See `IBranchSet`."""
         branches = Branch.select("""
