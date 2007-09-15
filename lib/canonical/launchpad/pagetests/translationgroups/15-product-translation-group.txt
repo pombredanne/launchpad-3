@@ -8,7 +8,7 @@ First make sure it has no translation group and permissions.
   <!...
   ...Network Applet
   ...Translation group:...Not assigned...
-  
+
   >>> 'Translations:' in browser.contents
   False
 
@@ -18,6 +18,7 @@ and permissions.
   >>> print http(r"""
   ... GET /netapplet/+changetranslators HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Host: translations.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -29,6 +30,7 @@ Now let's post to the form. We should be redirected to the product page.
 
   >>> print http(r"""
   ... POST /netapplet/+changetranslators HTTP/1.1
+  ... Host: translations.launchpad.dev
   ... Content-Length: 738
   ... Content-Type: multipart/form-data; boundary=---------------------------6923855761766169312285474874
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -69,6 +71,7 @@ you can't set translation group/permissions without using Translations.)
   >>> print http(r"""
   ... GET /netapplet HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Host: translations.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
