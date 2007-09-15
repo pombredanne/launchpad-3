@@ -507,13 +507,13 @@ There is only one 'active' PPA:
     >>> cprov.archive.getPublishedSources().count()
     3
     >>> sabdfl.archive.getPublishedSources().count()
-    0
+    1
     >>> no_priv.archive.getPublishedSources().count()
     0
   
     >>> result = ubuntu.searchPPAs()
     >>> [archive.owner.name for archive in result]
-    [u'cprov']
+    [u'cprov', u'sabdfl']
   
 PPAs can be reached passing a filter matching (substring) its
 description or the person string indexes:
