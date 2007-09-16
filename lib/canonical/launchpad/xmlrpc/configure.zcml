@@ -1,6 +1,13 @@
 <configure
-    xmlns="http://namespaces.zope.org/zope"
-    >
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  >
+
+  <securedutility
+      class="canonical.launchpad.xmlrpc.PrivateApplication"
+      provides="canonical.launchpad.interfaces.IPrivateApplication">
+      <allow interface="canonical.launchpad.interfaces.IPrivateApplication"/>
+  </securedutility>
 
   <class class="canonical.launchpad.xmlrpc.faults.BranchAlreadyRegistered">
     <require like_class="xmlrpclib.Fault" />
