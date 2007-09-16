@@ -648,7 +648,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         raise NotFoundError(filename)
 
-    def getBuildRecords(self, status=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None):
         """See `IHasBuildRecords`"""
         # Find out the distroarchseriess in question.
         arch_ids = []
@@ -658,7 +658,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # use facility provided by IBuildSet to retrieve the records
         return getUtility(IBuildSet).getBuildsByArchIds(
-            arch_ids, status, name, pocket)
+            arch_ids, build_state, name, pocket)
 
     def removeOldCacheItems(self, log):
         """See `IDistribution`."""
@@ -1011,7 +1011,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             'restricted' : ArchivePurpose.PRIMARY,
             'universe' : ArchivePurpose.PRIMARY,
             'multiverse' : ArchivePurpose.PRIMARY,
-            'commercial' : ArchivePurpose.COMMERCIAL,
+            'partner' : ArchivePurpose.PARTNER,
             }
 
         try:

@@ -331,7 +331,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         """Return the archive most appropriate for the component name.
 
         Where different components may imply a different archive (e.g.
-        commercial), this method will return the archive for that component.
+        partner), this method will return the archive for that component.
 
         If the component_name supplied is unknown, None is returned.
         """

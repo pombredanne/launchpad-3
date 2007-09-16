@@ -8,16 +8,17 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
+<<<<<<< TREE
     IBazaarApplication, IBranch, IBranchMergeProposal, IBranchSubscription,
     IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
     IBuilder, IBuilderSet, ICodeImport, ICodeImportMachine,
     ICodeImportMachineSet, ICodeImportSet, IDistribution, IDistributionMirror,
     IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
-    IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack, ILanguageSet,
-    ILaunchpadCelebrities, IMilestone, IPackageUpload, IPackageUploadQueue,
-    IPerson, IPOFile, IPoll, IPollSubset, IPollOption, IPOTemplate,
-    IPOTemplateName, IPOTemplateNameSet, IPOTemplateSubset, IProduct,
-    IProductRelease, IProductSeries, IQuestion, IQuestionTarget,
+    IHasBug, IHasDrivers, IHasOwner, IHWSubmission, ILanguage, ILanguagePack,
+    ILanguageSet, ILaunchpadCelebrities, IMilestone, IPackageUpload,
+    IPackageUploadQueue, IPerson, IPOFile, IPoll, IPollSubset, IPollOption,
+    IPOTemplate, IPOTemplateName, IPOTemplateNameSet, IPOTemplateSubset,
+    IProduct, IProductRelease, IProductSeries, IQuestion, IQuestionTarget,
     IRequestedCDs, IShipItApplication, IShippingRequest, IShippingRequestSet,
     IShippingRun, ISourcePackage, ISpecification, ISpecificationSubscription,
     ISprint, ISprintSpecification, IStandardShipItRequest,
@@ -1124,3 +1125,24 @@ class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
 class AdminLanguagePack(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.LanguagePacksAdmin'
     usedfor = ILanguagePack
+
+
+class ViewHWSubmission(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IHWSubmission
+
+    def checkAuthenticated(self, user):
+        """Can the user view the submission details?
+
+        Submissions that not marked private are publicly visible,
+        private submissions may only be accessed by their owner and by
+        admins.
+        """
+        if not self.obj.private:
+            return True
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user == self.obj.owner or user.inTeam(admins)
+
+    def checkUnauthenticated(self):
+        return not self.obj.private
