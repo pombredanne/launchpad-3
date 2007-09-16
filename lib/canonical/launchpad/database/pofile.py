@@ -1295,6 +1295,10 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
+    def getStatistics(self):
+        """See `IPOFile`."""
+        return (0, 0, 0, )
+
     def updateStatistics(self):
         """See `IPOFile`."""
         raise NotImplementedError
