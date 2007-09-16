@@ -1,0 +1,31 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <content class="canonical.launchpad.database.HWSubmission">
+        <require 
+            permission="launchpad.View" 
+            interface="canonical.launchpad.interfaces.IHWSubmission"/>
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.HWSubmissionSet"
+        provides="canonical.launchpad.interfaces.IHWSubmissionSet">
+        <allow interface="canonical.launchpad.interfaces.IHWSubmissionSet" />
+    </securedutility>
+
+    <content class="canonical.launchpad.database.HWSystemFingerprint">
+        <allow 
+            interface="canonical.launchpad.interfaces.IHWSystemFingerprint" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.HWSystemFingerprintSet"
+        provides="canonical.launchpad.interfaces.IHWSystemFingerprintSet">
+        <allow 
+            interface="canonical.launchpad.interfaces.IHWSystemFingerprintSet" />
+    </securedutility>
+
+</configure>

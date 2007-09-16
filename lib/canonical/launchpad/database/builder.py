@@ -362,9 +362,10 @@ class Builder(SQLBase):
         self.builderok = False
         self.failnotes = reason
 
-    def getBuildRecords(self, status=None, name=None):
+    def getBuildRecords(self, build_state=None, name=None):
         """See IHasBuildRecords."""
-        return getUtility(IBuildSet).getBuildsForBuilder(self.id, status, name)
+        return getUtility(IBuildSet).getBuildsForBuilder(
+            self.id, build_state, name)
 
     def slaveStatus(self):
         """See IBuilder."""

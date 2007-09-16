@@ -173,13 +173,14 @@ This method can return build records for sources matching the given
 Or return build records in a specific status:
 
   >>> from canonical.lp.dbschema import BuildStatus
-  >>> cprov_archive.getBuildRecords(status=BuildStatus.FULLYBUILT).count()
+  >>> cprov_archive.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
   3
 
-  >>> cprov_archive.getBuildRecords(status=BuildStatus.FAILEDTOBUILD).count()
+  >>> cprov_archive.getBuildRecords(
+  ...     build_state=BuildStatus.FAILEDTOBUILD).count()
   1
 
-  >>> cprov_archive.getBuildRecords(status=BuildStatus.NEEDSBUILD).count()
+  >>> cprov_archive.getBuildRecords(build_state=BuildStatus.NEEDSBUILD).count()
   0
 
 And finally build records target to a given pocket:
@@ -197,7 +198,7 @@ All the attributes can be combined in order to refine the result:
 
   >>> cprov_archive.getBuildRecords(
   ...     name='ice',
-  ...     status=BuildStatus.FULLYBUILT,
+  ...     build_state=BuildStatus.FULLYBUILT,
   ...     pocket=PackagePublishingPocket.RELEASE).count()
   1
 
