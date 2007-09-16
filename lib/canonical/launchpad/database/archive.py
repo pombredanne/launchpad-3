@@ -115,10 +115,10 @@ class Archive(SQLBase):
 
         return pubconf
 
-    def getBuildRecords(self, status=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         return getUtility(IBuildSet).getBuildsForArchive(
-            self, status, name, pocket)
+            self, build_state, name, pocket)
 
     def getPublishedSources(self, name=None):
         """See `IArchive`."""
