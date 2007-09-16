@@ -295,3 +295,4 @@ class TestSourceForge(SourceForge):
             os.path.dirname(__file__), 'testfiles',
             'sourceforge-sample-bug-%s.html' % bug_id)
         return open(file_path, 'r')
+
