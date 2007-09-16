@@ -1926,6 +1926,21 @@ INSERT INTO gpgkey (id, "owner", keyid, fingerprint, active, algorithm, keysize,
 
 ALTER TABLE gpgkey ENABLE TRIGGER ALL;
 
+ALTER TABLE hwsubmission DISABLE TRIGGER ALL;
+
+INSERT INTO hwsubmission (id, date_created, date_submitted, format, status, private, contactable, submission_key, "owner", distroarchseries, raw_submission, system_fingerprint) VALUES (1, '2007-09-11 00:00:00', '2007-09-11 15:23:45.653316', 1, 1, false, false, 'test_submission_id_1', 12, NULL, 63, 1);
+
+
+ALTER TABLE hwsubmission ENABLE TRIGGER ALL;
+
+
+ALTER TABLE hwsystemfingerprint DISABLE TRIGGER ALL;
+
+INSERT INTO hwsystemfingerprint (id, fingerprint) VALUES (1, 'TONKA TUFFBOOK2600');
+
+
+ALTER TABLE hwsystemfingerprint ENABLE TRIGGER ALL;
+
 
 ALTER TABLE ircid DISABLE TRIGGER ALL;
 

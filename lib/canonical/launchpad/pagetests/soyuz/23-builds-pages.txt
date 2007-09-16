@@ -74,6 +74,13 @@ For SourcePackage, it's only possible to filter by state.
   >>> print check_builds_options(browser.contents)
   State present, Name not present
 
+The source package default state is "all states":
+
+  >>> soup = find_main_content(browser.contents)
+  >>> [results] = soup.findAll(attrs={'selected': 'selected'})
+  >>> print extract_text(results)
+  All states
+
 Check the contents of the distro builds list page.
 
   >>> browser.open("http://launchpad.dev/ubuntu/+builds")
@@ -177,13 +184,13 @@ to raise the correct exception:
 Check if page still working for sourcepackages with no builds. (bug #62545)
 
   >>> browser.open(
-  ...    "http://launchpad.dev/ubuntu/hoary/+source/pmount/+builds")
+  ...    "http://launchpad.dev/ubuntu/hoary/+source/mozilla-firefox/+builds")
   >>> browser.getControl(name="build_state").value = ['all']
   >>> browser.getControl("Update").click()
 
   >>> print find_tag_by_id(browser.contents, 'empty-result')
    <div id="empty-result">
-           No builds for pmount in Test Distro Hoary.
+           No builds for mozilla-firefox in Test Distro Hoary.
    </div>
 
 

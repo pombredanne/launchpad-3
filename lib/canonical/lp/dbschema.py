@@ -2260,6 +2260,13 @@ class TranslationFileFormat(DBSchema):
         The .xpi format as used by programs from Mozilla foundation.
         """)
 
+    KDEPO = Item(4, """
+        KDE PO format
+
+        Legacy KDE PO format which embeds context and plural forms inside
+        messages itself instead of using gettext features.
+        """)
+
 
 class TranslationValidationStatus(DBSchema):
     """Translation Validation Status
