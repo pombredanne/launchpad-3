@@ -1,44 +1,10 @@
-The PO Export Queue is the functionality that allows us to export translation
-resources from the Rosetta portal.
+= Translation Export Queue =
 
-  >>> from canonical.launchpad.database import POTemplate
+The Translation Export Queue is the functionality that allows us to export
+translation resources from the Launchpad portal.
 
-= POFormatHandler =
 
-This class exports translatable resources as a .po file.
-
-  >>> from canonical.launchpad.scripts.po_export_queue import POFormatHandler
-
-We will need an IPOTemplate to test this class.
-
-  >>> potemplate = POTemplate.get(1)
-  >>> potemplate_exporter = POFormatHandler(potemplate)
-
-We get a valid URL to download it.
-
-  >>> potemplate_exporter.get_librarian_url()
-  'http://localhost:58000/.../evolution-2.2.pot'
-
-And the content is not empty.
-
-  >>> print potemplate_exporter.get_contents()
-  #, fuzzy
-  msgid ""
-  msgstr ""
-  "Project-Id-Version: PACKAGE VERSION\n"
-  "Report-Msgid-Bugs-To: \n"
-  "POT-Creation-Date: 2005-08-25 14:56+0200\n"
-  "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-  "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-  "Language-Team: LANGUAGE <LL@li.org>\n"
-  "MIME-Version: 1.0\n"
-  "Content-Type: text/plain; charset=CHARSET\n"
-  "Content-Transfer-Encoding: 8bit\n"
-  "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
-  <BLANKLINE>
-  ...
-
-= ExportResult =
+== ExportResult ==
 
 ExportResult class is used to control the list of exported files that succeed
 and the ones that failed with the error associated.
@@ -55,124 +21,37 @@ and the ones that failed with the error associated.
   ...     for line in lines:
   ...         print ">", line
 
-  >>> result = ExportResult('testing export')
+When there is an error, the system will notify it.
 
-If we have a succeed, we note it. For this case, we will assume that hr.po and
-es.po were exported without problems.
-
-  >>> result.addSuccess('hr.po')
-  >>> result.addSuccess('es.po')
-
-And when there is an error, we also notify it.
 To note error messages with the failure file, it should happen inside an
 exception handling so we can get the exception error:
+
+  >>> result = ExportResult('testing export')
+
+Record the error.
 
   >>> try:
   ...     raise AssertionError, "It's just an error for testing purposes"
   ... except AssertionError:
-  ...     result.addFailure('cy.po')
+  ...     result.addFailure()
 
-Now, we should add the url where the export request could be downloaded.
+In this case, there is an error, so there shouldn't be a URL to download
+anything, if we set it, the system will fail:
 
   >>> result.url = 'http://someplace.com/somefile.tar.gz'
 
-Once we classify all files, there is the option to send notification emails.
-The notification should notify the user the list of resources that worked or
-failed and the admins the ones that failed with the failure error.
-
+Once we are done, we should notify the user that everything failed, but
+given that we set a URL, the notification will detect the programming error.
 In this example, 'carlos' will be the one that did the request.
 
   >>> personset = getUtility(IPersonSet)
   >>> carlos = personset.getByName('carlos')
   >>> result.notify(carlos)
-
-  # We need to commit the transaction to get the emails in the queue.
-  >>> transaction.commit()
-
-We introduced entries with errors, so there should be two emails:
-
-  >>> len(test_emails) == 2
-  True
-
-  >>> while len(test_emails) > 0:
-  ...     from_addrs, to_addrs, body = test_emails.pop()
-  ...     if 'carlos@canonical.com' in to_addrs:
-  ...         carlos_addrs = to_addrs
-  ...         carlos_body = body
-  ...     else:
-  ...         admins_addrs = to_addrs
-  ...         admins_body = body
-
-One is for the user. There are erros and success exports so we should note
-that to the user:
-
-  >>> print carlos_addrs
-  ['carlos@canonical.com']
-  >>> print_mail_body(carlos_body)
-  > 
-  > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
-  >
-  > Rosetta has finished exporting your requested files.
-  > However, problems were encountered exporting the
-  > following files:
-  >
-  >  * cy.po
-  >
-  > The Rosetta team has been notified of this problem. Please
-  > reply to this email for further assistance.
-  >
-  > Of the 3 files you requested, Rosetta successfully exported
-  > 2, which can be downloaded from the following location:
-  >
-  >     http://someplace.com/somefile.tar.gz
-
-For the errors, it means we have a bug somewhere in Launchpad so the admins
-should get also a notification to be able to fix those bugs:
-
-  >>> print admins_addrs
-  ['launchpad-error-reports@lists.canonical.com']
-  >>> print_mail_body(admins_body)
-  > 
-  > Hello admins,
-  > 
-  > Rosetta encountered problems exporting some files requested by
-  > Carlos Perell=C3=B3 Mar=C3=ADn. This means we have a bug in
-  > Launchpad that needs to be fixed to be able to proceed with
-  > this export. You can see the list of failed files with the
-  > error we got:
-  > 
-  > cy.po:
-  > Traceback (most recent call last):
-  ...
-  > AssertionError: It's just an error for testing purposes
-  > 
-  > 
-  > 
-
-The notification changes when all files failed:
-
-  >>> result = ExportResult('testing export')
-
-Notify the error.
-
-  >>> try:
-  ...     raise AssertionError, "It's just an error for testing purposes"
-  ... except AssertionError:
-  ...     result.addFailure('cy.po')
-
-In this case, there are only errors, so there shouldn't be a URL to download
-anything, if we set it, the system will fail:
-
-  >>> result.url = 'http://someplace.com/somefile.tar.gz'
-
-Once we are done, we should notify the user that everything failed.
-
-  >>> result.notify(carlos)
   Traceback (most recent call last):
   ...
-  AssertionError: Can't have a URL without successes (or vice versa).
+  AssertionError: We cannot have a URL for the export and a failure.
 
-In this case, it should be None.
+In this case, it should be None, so the notify works.
 
   >>> result.url = None
   >>> result.notify(carlos)
@@ -205,6 +84,7 @@ One is for the user with the error notification.
   > Rosetta encountered problems exporting the files you
   > requested. The Rosetta team has been notified of this
   > problem. Please reply to this email for further assistance.
+  >
 
 And the other to the admins.
 
@@ -220,12 +100,9 @@ And the other to the admins.
   > this export. You can see the list of failed files with the
   > error we got:
   > 
-  > cy.po:
   > Traceback (most recent call last):
   ...
   > AssertionError: It's just an error for testing purposes
-  > 
-  > 
   > 
 
 Finally, there is the case when there are no errors at all. This is the usual
@@ -233,19 +110,13 @@ case.
 
   >>> result = ExportResult('testing export')
 
-If we have a succeed, we note it. For this case, we will assume that hr.po and
-es.po were exported without problems.
-
-  >>> result.addSuccess('hr.po')
-  >>> result.addSuccess('es.po')
-
 As noted before, result.url should be set to the URL where the user can
 download the requested files. If we don't set it, the export will fail:
 
   >>> result.notify(carlos)
   Traceback (most recent call last):
   ...
-  AssertionError: An export result must have an URL or failures (or both).
+  AssertionError: On success, an exported URL is expected.
 
 So let's add it:
 
@@ -277,60 +148,56 @@ In this case, there are no errors, so we should get just a single email
   >     http://someplace.com/somefile.tar.gz
 
 
-= VPOTExportSet =
+== process_queue() ==
 
-This class represet the set of rows that represent a set of POTemplate.
+This method handles entries from the queue of entries to be exported.
 
-  >>> from canonical.launchpad.interfaces import IVPOTExportSet
-  >>> from canonical.launchpad.database import POTemplate
+    >>> from canonical.launchpad.scripts.po_export_queue import process_queue
 
-Get the set of rows for the POTemplate.id == 1.
+First, fill the export queue with entries to be exported.
 
-  >>> vpot_exportset = getUtility(IVPOTExportSet)
-  >>> potemplate = POTemplate.get(1)
-  >>> vpot_rows = list(vpot_exportset.get_potemplate_rows(potemplate))
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.database import POTemplate
+    >>> from canonical.launchpad.interfaces import IPOExportRequestSet
+    >>> from canonical.lp.dbschema import TranslationFileFormat
+    >>> potemplate = POTemplate.get(1)
+    >>> export_request_set = getUtility(IPOExportRequestSet)
 
-The number of rows are 28.
+The queue is empty by default.
 
-  >>> len(vpot_rows)
-  28
+    >>> export_request_set.entry_count
+    0
 
+Once a new entry has been added, the queue has content.
 
-= VPOTExport =
+    >>> export_request_set.addRequest(
+    ...     carlos, potemplates=[potemplate], format=TranslationFileFormat.PO)
+    >>> export_request_set.entry_count
+    1
 
-This class represent a row that represents a part of a POTemplate.
+Once the queue is processed, the queue is empty again.
 
-Get the first row from the set.
+    >>> import logging
+    >>> process_queue(transaction, logging.getLogger())
 
-  >>> first = vpot_rows[0]
+    >>> export_request_set.entry_count
+    0
 
-And now, check that the attributes have the right values.
+And a confirmation email was sent to carlos, the importer.
 
-  >>> first.potemplate.title
-  u'Template "evolution-2.2" in Evolution trunk'
-  >>> first.sequence
-  0
-  >>> print first.header
-  Project-Id-Version: PACKAGE VERSION
-  Report-Msgid-Bugs-To:
-  POT-Creation-Date: 2005-08-25 14:56+0200
-  PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
-  Last-Translator: FULL NAME <EMAIL@ADDRESS>
-  Language-Team: LANGUAGE <LL@li.org>
-  MIME-Version: 1.0
-  Content-Type: text/plain; charset=CHARSET
-  Content-Transfer-Encoding: 8bit
-  Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;
-  <BLANKLINE>
-  >>> first.pluralform
-  0
-  >>> first.msgid
-  u'Found %i invalid file.'
-  >>> first.commenttext
-  u''
-  >>> first.sourcecomment
-  u''
-  >>> first.filereferences
-  u'encfs/encfsctl.cpp:346'
-  >>> first.flagscomment
-  u'c-format'
+    >>> len(test_emails)
+    1
+
+The confirmation email shows no errors at all.
+
+    >>> from_addrs, to_addrs, body = test_emails.pop()
+    >>> print to_addrs
+    ['carlos@canonical.com']
+    >>> print_mail_body(body)
+    > 
+    > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
+    > 
+    > The files you requested from Rosetta are ready for download
+    > from the following location:
+    > 
+    >     http://localhost:58000/.../po_evolution-2.2.pot

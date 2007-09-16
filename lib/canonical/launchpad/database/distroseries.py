@@ -140,12 +140,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def components(self):
         """See `IDistroSeries`."""
         # XXX julian 2007-06-25
-        # This is filtering out the commercial component for now, until
-        # the second stage of the commercial repo arrives in 1.1.8.
+        # This is filtering out the partner component for now, until
+        # the second stage of the partner repo arrives in 1.1.8.
         return Component.select("""
             ComponentSelection.distrorelease = %s AND
             Component.id = ComponentSelection.component AND
-            Component.name != 'commercial'
+            Component.name != 'partner'
             """ % self.id,
             clauseTables=["ComponentSelection"])
 
@@ -672,32 +672,28 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             PackagePublishingStatus.PUBLISHED,
             )
 
-        # Distribution archive candidates.
-        main_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
-            sqlvalues(self)]
-        main_clauses.append(
-            'Archive.id=SourcePackagePublishingHistory.archive')
-        main_clauses.append('Archive.purpose!=%s' % 
-            sqlvalues(ArchivePurpose.PPA))
-        main_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
+        query = """
+            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.archive = Archive.id AND
+            SourcePackagePublishingHistory.status in %s
+         """ % sqlvalues(self, pend_build_statuses)
+
         if not self.isUnstable():
-            main_clauses.append(
-                'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
-        main_sources = SourcePackagePublishingHistory.select(
-            " AND ".join(main_clauses), clauseTables=['Archive'], orderBy="id")
+            # Stable distroreleases don't allow builds for the release
+            # pockets for the primary archives, but they do allow them for
+            # the PPA and PARTNER archives.
 
-        # PPA candidates.
-        ppa_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
-            sqlvalues(self)]
-        ppa_clauses.append('Archive.id=SourcePackagePublishingHistory.archive')
-        ppa_clauses.append('Archive.purpose=%s' % 
-            sqlvalues(ArchivePurpose.PPA))
-        ppa_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
-        ppa_sources = SourcePackagePublishingHistory.select(
-            " AND ".join(ppa_clauses), clauseTables=['Archive'], orderBy="id")
+            # XXX: this should come from a single location where this
+            # is specified, not sprinkled around the code.
+            allow_release_builds = (ArchivePurpose.PPA, ArchivePurpose.PARTNER)
 
-        # Return all candidates.
-        return main_sources.union(ppa_sources)
+            query += ("""AND (Archive.purpose in %s OR
+                            SourcePackagePublishingHistory.pocket != %s)""" %
+                      sqlvalues(allow_release_builds,
+                                PackagePublishingPocket.RELEASE))
+
+        return SourcePackagePublishingHistory.select(
+            query, clauseTables=['Archive'], orderBy="id")
 
     def getSourcePackagePublishing(self, status, pocket, component=None,
                                    archive=None):
@@ -796,18 +792,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
                 for pubrecord in result]
 
-    def getBuildRecords(self, status=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         # find out the distroarchseries in question
         arch_ids = [arch.id for arch in self.architectures]
         # use facility provided by IBuildSet to retrieve the records
         return getUtility(IBuildSet).getBuildsByArchIds(
-            arch_ids, status, name, pocket)
+            arch_ids, build_state, name, pocket)
 
     def createUploadedSourcePackageRelease(
         self, sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator,
-        urgency, changelog, dsc, dscsigningkey, section, manifest,
+        urgency, changelog, dsc, dscsigningkey, section,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, dateuploaded=DEFAULT):
         """See IDistroSeries."""
@@ -817,7 +813,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             builddepends=builddepends, builddependsindep=builddependsindep,
             architecturehintlist=architecturehintlist, component=component,
             creator=creator, urgency=urgency, changelog=changelog, dsc=dsc,
-            dscsigningkey=dscsigningkey, section=section, manifest=manifest,
+            dscsigningkey=dscsigningkey, section=section,
             dsc_maintainer_rfc822=dsc_maintainer_rfc822, dsc_format=dsc_format,
             dsc_standards_version=dsc_standards_version, copyright=copyright,
             dsc_binaries=dsc_binaries, upload_archive=archive)
@@ -1268,14 +1264,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         We copy all PENDING and PUBLISHED records as PENDING into our own
         publishing records.
 
-        We copy only the RELEASE pocket in the PRIMARY and COMMERCIAL
+        We copy only the RELEASE pocket in the PRIMARY and PARTNER
         archives.
         """
         archive_set = getUtility(IArchiveSet)
         for archive in self.parentseries.distribution.all_distro_archives:
-            # We only want to copy PRIMARY and COMMERCIAL archives.
+            # We only want to copy PRIMARY and PARTNER archives.
             if archive.purpose not in (
-                    ArchivePurpose.PRIMARY, ArchivePurpose.COMMERCIAL):
+                    ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER):
                 continue
             target_archive = archive_set.ensure(
                 distribution=self.distribution, purpose=archive.purpose,
@@ -1307,14 +1303,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         We copy all PENDING and PUBLISHED records as PENDING into our own
         publishing records.
 
-        We copy only the RELEASE pocket in the PRIMARY and COMMERCIAL
+        We copy only the RELEASE pocket in the PRIMARY and PARTNER
         archives.
         """
         archive_set = getUtility(IArchiveSet)
         for archive in self.parentseries.distribution.all_distro_archives:
-            # We only want to copy PRIMARY and COMMERCIAL archives.
+            # We only want to copy PRIMARY and PARTNER archives.
             if archive.purpose not in (
-                    ArchivePurpose.PRIMARY, ArchivePurpose.COMMERCIAL):
+                    ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER):
                 continue
             target_archive = archive_set.ensure(
                 distribution=self.distribution, purpose=archive.purpose,
@@ -1322,7 +1318,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             cur.execute('''
                 INSERT INTO SecureSourcePackagePublishingHistory (
                     sourcepackagerelease, distrorelease, status, component,
-                    section, archive, datecreated, datepublished, pocket, 
+                    section, archive, datecreated, datepublished, pocket,
                     embargo)
                 SELECT spph.sourcepackagerelease, %s as distrorelease,
                        spph.status, spph.component, spph.section, %s as archive,
@@ -1870,8 +1866,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # Exclude RELEASE pocket if the distroseries was already released,
         # since it should not change for main archive.
-        # We allow RELEASE uploads for PPAs.
-        if not self.isUnstable() and archive.purpose != ArchivePurpose.PPA:
+        # We allow RELEASE publishing for PPAs.
+        # We also allow RELEASE publishing for partner.
+        if (not self.isUnstable() and
+            not archive.allowUpdatesToReleasePocket()):
             queries.append(
             'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
@@ -1906,8 +1904,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if is_careful:
             return True
 
-        # PPA allows everything (aka Hotel California).
-        if publication.archive.purpose == ArchivePurpose.PPA:
+        # PPA and PARTNER allow everything.
+        if publication.archive.allowUpdatesToReleasePocket():
             return True
 
         # FROZEN state also allow all pockets to be published.

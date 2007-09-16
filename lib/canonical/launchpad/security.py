@@ -26,7 +26,8 @@ from canonical.launchpad.interfaces import (
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
     IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset,
     IDistroSeriesLanguage, IBranch, IBranchSubscription, ICodeImport,
-    ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet, IEntitlement)
+    ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet, IEntitlement,
+    IHWSubmission)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
@@ -1085,3 +1086,24 @@ class ViewEntitlement(AuthorizationBase):
         return (user.inTeam(self.obj.person) or
                 user.inTeam(self.obj.registrant) or
                 user.inTeam(admins))
+
+class ViewHWSubmission(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IHWSubmission
+
+    def checkAuthenticated(self, user):
+        """Can the user view the submission details?
+
+        Submissions that not marked private are publicly visible,
+        private submissions may only be accessed by their owner and by
+        admins.
+        """
+        if not self.obj.private:
+            return True
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user == self.obj.owner or user.inTeam(admins)
+
+    def checkUnauthenticated(self):
+        return not self.obj.private
+    

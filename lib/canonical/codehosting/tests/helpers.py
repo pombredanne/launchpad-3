@@ -14,6 +14,20 @@ import signal
 import threading
 import unittest
 
+import transaction
+
+from bzrlib.tests import TestCaseWithTransport
+
+from zope.component import getUtility
+from zope.security.management import getSecurityPolicy, setSecurityPolicy
+from zope.security.simplepolicies import PermissiveSecurityPolicy
+
+from canonical.database.sqlbase import cursor
+from canonical.launchpad.interfaces import (
+    BranchType, IBranchSet, IPersonSet, IProductSet, PersonCreationRationale,
+    UnknownBranchTypeError)
+from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.testing import LaunchpadFunctionalLayer
 from canonical.tests.test_twisted import TwistedTestCase
 
 from twisted.internet import defer, threads
@@ -94,6 +108,89 @@ class ServerTestCase(TrialTestCase):
 
     def getTransport(self, relpath=None):
         return self.server.getTransport(relpath)
+
+
+class BranchTestCase(TestCaseWithTransport):
+    """Base class for tests that do a lot of things with branches."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+        self._integer = 0
+        self.cursor = cursor()
+        self.branch_set = getUtility(IBranchSet)
+
+    def emptyPullQueues(self):
+        transaction.begin()
+        self.cursor.execute("UPDATE Branch SET mirror_request_time = NULL")
+        transaction.commit()
+
+    def getUniqueInteger(self):
+        """Return an integer unique to this run of the test case."""
+        self._integer += 1
+        return self._integer
+
+    def getUniqueString(self, prefix=None):
+        """Return a string to this run of the test case.
+
+        :param prefix: Used as a prefix for the unique string. If unspecified,
+            defaults to the name of the test.
+        """
+        if prefix is None:
+            prefix = self.id().split('.')[-1]
+        return "%s%s" % (prefix, self.getUniqueInteger())
+
+    def getUniqueURL(self):
+        """Return a URL unique to this run of the test case."""
+        return 'http://%s.example.com/%s' % (
+            self.getUniqueString(), self.getUniqueString())
+
+    def makePerson(self):
+        """Create and return a new, arbitrary Person."""
+        email = self.getUniqueString('email')
+        name = self.getUniqueString('person-name')
+        return getUtility(IPersonSet).createPersonAndEmail(
+            email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
+
+    def makeProduct(self):
+        """Create and return a new, arbitrary Product."""
+        owner = self.makePerson()
+        return getUtility(IProductSet).createProduct(
+            owner, self.getUniqueString('product-name'),
+            self.getUniqueString('displayname'),
+            self.getUniqueString('title'),
+            self.getUniqueString('summary'),
+            self.getUniqueString('description'))
+
+    def makeBranch(self, branch_type=None):
+        """Create and return a new, arbitrary Branch of the given type."""
+        if branch_type is None:
+            branch_type = BranchType.HOSTED
+        owner = self.makePerson()
+        branch_name = self.getUniqueString('branch')
+        product = self.makeProduct()
+        if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
+            url = None
+        elif branch_type == BranchType.MIRRORED:
+            url = self.getUniqueURL()
+        else:
+            raise UnknownBranchTypeError(
+                'Unrecognized branch type: %r' % (branch_type,))
+        return self.branch_set.new(
+            branch_type, branch_name, owner, owner, product, url)
+
+    def relaxSecurityPolicy(self):
+        """Switch to using 'PermissiveSecurityPolicy'."""
+        old_policy = getSecurityPolicy()
+        setSecurityPolicy(PermissiveSecurityPolicy)
+        self.addCleanup(lambda: setSecurityPolicy(old_policy))
+
+    def restrictSecurityPolicy(self):
+        """Switch to using 'LaunchpadSecurityPolicy'."""
+        old_policy = getSecurityPolicy()
+        setSecurityPolicy(LaunchpadSecurityPolicy)
+        self.addCleanup(lambda: setSecurityPolicy(old_policy))
 
 
 def deferToThread(f):

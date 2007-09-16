@@ -61,12 +61,12 @@ class Archive(SQLBase):
         """See `IArchive`."""
         archive_postfixes = {
             ArchivePurpose.PRIMARY : '',
-            ArchivePurpose.COMMERCIAL : '-commercial',
+            ArchivePurpose.PARTNER : '-partner',
         }
 
         if self.purpose == ArchivePurpose.PPA:
             return urlappend(
-                config.personalpackagearchive.base_url, 
+                config.personalpackagearchive.base_url,
                 self.owner.name + '/' + self.distribution.name)
 
         try:
@@ -92,17 +92,17 @@ class Archive(SQLBase):
             pubconf.overrideroot = None
             pubconf.cacheroot = None
             pubconf.miscroot = None
-        elif self.purpose == ArchivePurpose.COMMERCIAL:
-            # Reset the list of components to commercial only.  This prevents
+        elif self.purpose == ArchivePurpose.PARTNER:
+            # Reset the list of components to partner only.  This prevents
             # any publisher runs from generating components not related to
-            # the commercial archive.
+            # the partner archive.
             for distroseries in pubconf._distroserieses.keys():
                 pubconf._distroserieses[
-                    distroseries]['components'] = ['commercial']
+                    distroseries]['components'] = ['partner']
 
             pubconf.distroroot = config.archivepublisher.root
             pubconf.archiveroot = os.path.join(pubconf.distroroot,
-                self.distribution.name + '-commercial')
+                self.distribution.name + '-partner')
             pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
             pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
             pubconf.overrideroot = None
@@ -115,10 +115,10 @@ class Archive(SQLBase):
 
         return pubconf
 
-    def getBuildRecords(self, status=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         return getUtility(IBuildSet).getBuildsForArchive(
-            self, status, name, pocket)
+            self, build_state, name, pocket)
 
     def getPublishedSources(self, name=None):
         """See `IArchive`."""
@@ -249,6 +249,22 @@ class Archive(SQLBase):
         # but that's over-estimated.
         cruft = (self.number_of_sources + self.number_of_binaries) * 1024
         return size + cruft
+
+    def allowUpdatesToReleasePocket(self):
+        """See `IArchive`."""
+        purposeToPermissionMap = {
+            ArchivePurpose.PARTNER : True,
+            ArchivePurpose.PPA : True,
+            ArchivePurpose.PRIMARY : False,
+        }
+
+        try:
+            permission = purposeToPermissionMap[self.purpose]
+        except KeyError:
+            # Future proofing for when new archive types are added.
+            permission = False
+
+        return permission
 
 
 class ArchiveSet:

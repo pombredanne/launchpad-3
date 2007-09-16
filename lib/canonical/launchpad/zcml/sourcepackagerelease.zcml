@@ -56,7 +56,7 @@
       template="../templates/sourcepackagerelease-changelog.pt"
     />
   </browser:pages>
-  
+
   <adapter
     for="canonical.launchpad.interfaces.ISourcePackageRelease"
     provides="canonical.launchpad.interfaces.IQuestionTarget"

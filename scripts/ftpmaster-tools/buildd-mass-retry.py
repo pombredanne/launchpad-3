@@ -116,7 +116,7 @@ def main():
 
         log.info("Processing builds in '%s'" % target_state.title)
         target_builds = build_provider.getBuildRecords(
-            status=target_state, pocket=pocket)
+            build_state=target_state, pocket=pocket)
 
         for build in target_builds:
 
