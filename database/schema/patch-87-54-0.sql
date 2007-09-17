@@ -9,7 +9,9 @@ ALTER TABLE SecureSourcePackagePublishingHistory
     FOREIGN KEY (removed_by) REFERENCES person(id);
 ALTER TABLE SecureSourcePackagePublishingHistory
     ADD COLUMN removal_comment text;
-
+CREATE INDEX securesourcepackagepublishinghistory__removed_by__idx
+    ON SecureSourcePackagePublishingHistory(removed_by)
+    WHERE removed_by IS NOT NULL;
 
 -- Adding removal tracking support for binary publications.
 ALTER TABLE SecureBinaryPackagePublishingHistory
@@ -19,6 +21,9 @@ ALTER TABLE SecureBinaryPackagePublishingHistory
     FOREIGN KEY (removed_by) REFERENCES person(id);
 ALTER TABLE SecureBinaryPackagePublishingHistory
     ADD COLUMN removal_comment text;
+CREATE INDEX securebinarypackagepublishinghistory__removed_by__idx 
+    ON SecureBinaryPackagePublishingHistory(removed_by)
+    WHERE removed_by IS NOT NULL;
 
 
 -- Revove-for-editing
@@ -127,7 +132,6 @@ CREATE VIEW publishedpackage AS
     WHERE
       securebinarypackagepublishinghistory.dateremoved is NULL;
 
-
 -- Updating old records to match the current state machine:
 -- 6: PENDINGREMOVAL
 -- 7: REMOVED
@@ -143,5 +147,4 @@ UPDATE SecureBinaryPackagePublishingHistory
     WHERE status IN (6, 7);
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
-
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 54, 0);
