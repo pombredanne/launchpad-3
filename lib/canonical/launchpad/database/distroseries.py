@@ -408,7 +408,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     cur.execute("""
         UPDATE %(pomsgset_holding_table)s AS holding
         SET new_id = pms.id
-        FROM %(pofile_holding_table)s pfh, POMsgSet pms
+        FROM POMsgSet pms
         WHERE
             holding.new_id IS NULL AND
             holding.potmsgset = pms.potmsgset AND
