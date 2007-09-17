@@ -318,7 +318,6 @@ class TestSFTPServerBranch(AvatarTestCase):
         avatar = LaunchpadAvatar(
             'alice', self.tmpdir, self.aliceUserDict, self.authserver)
         root = avatar.makeFileSystem().root
-        root.setListenerFactory(lambda branch_id: (lambda: None))
         userDir = root.child('~alice')
         deferred = defer.maybeDeferred(
             userDir.createDirectory, 'mozilla-firefox')

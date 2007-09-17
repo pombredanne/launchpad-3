@@ -67,9 +67,6 @@ class SFTPServerRoot(adhoc.AdhocDirectory, LoggingMixin):
         """
         return '/'
 
-    def setListenerFactory(self, factory):
-        self.listenerFactory = factory
-
 
 class SFTPServerUserDir(adhoc.AdhocDirectory, LoggingMixin):
     """For /~username
@@ -274,9 +271,9 @@ class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
 
         The listener is the '_flagAsDirty' callable, set by the constructor.
         """
-        def childWithListener(path, name, parent):
+        def makeLoggingFile(path, name, parent):
             return LoggingFile(path, self.logger, name, parent)
-        return childWithListener
+        return makeLoggingFile
 
     def childDirFactory(self):
         """Return a child directory which uses the same listener.
@@ -290,29 +287,22 @@ class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
         return childWithListener
 
     def createDirectory(self, name):
-        self.touch()
         self.logger.info('Creating directory %r in %r', name, self)
         return osfs.OSDirectory.createDirectory(self, name)
 
     def createFile(self, name, exclusive=True):
-        self.touch()
         self.logger.info('Creating file %r in %r', name, self)
         return osfs.OSDirectory.createFile(self, name, exclusive)
 
     def remove(self):
-        self.touch()
         self.logger.info('Removing %r', self)
         osfs.OSDirectory.remove(self)
 
     def rename(self, newName):
         if self.getAbsolutePath().endswith('held'):
             self.avatar._launchpad.requestMirror(1)
-        self.touch()
         self.logger.info('Renaming %r to %r', self, newName)
         osfs.OSDirectory.rename(self, newName)
-
-    def touch(self):
-        self._flagAsDirty()
 
 
 class LoggingFile(osfs.OSFile, LoggingMixin):
@@ -371,7 +361,7 @@ class SFTPServerBranch(WriteLoggingDirectory, LoggingMixin):
 
         self._listener = None
         WriteLoggingDirectory.__init__(
-            self, avatar, self._flagAsDirty,
+            self, avatar, lambda: None,
             os.path.join(avatar.homeDirsRoot, path), avatar.logger,
             branchName, parent)
         if not os.path.exists(self.realPath):
@@ -392,16 +382,3 @@ class SFTPServerBranch(WriteLoggingDirectory, LoggingMixin):
     def remove(self):
         raise PermissionError(
             "removing branch directory %r is not allowed." % self.name)
-
-    def _flagAsDirty(self):
-        if self._listener is None:
-            # Find the root object and create a listener. One parent up is the
-            # product, the next is the username and the third is the root of
-            # the SFTP server.
-
-            # XXX jml 2007-02-14: This is an awkward way of finding the root.
-            # Replace with something that is clearer and requires fewer
-            #  comments.
-            root = self.parent.parent.parent
-            self._listener = root.listenerFactory(self.branchID)
-        self._listener()

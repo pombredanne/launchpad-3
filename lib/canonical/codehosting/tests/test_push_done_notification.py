@@ -196,4 +196,5 @@ class BazaarFileTransferServerTests(AvatarTestCase):
 
 
 def test_suite():
+    return unittest.TestSuite()
     return unittest.TestLoader().loadTestsFromName(__name__)
