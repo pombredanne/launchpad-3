@@ -80,7 +80,7 @@ class QuestionJanitor:
 
 
     def _login(self):
-        """Setup an interaction as the Support Tracker Janitor."""
+        """Setup an interaction as the Launchpad Janitor."""
         auth_utility = getUtility(IPlacelessAuthUtility)
         janitor_email = self.janitor.preferredemail.email
         setupInteraction(
@@ -88,5 +88,5 @@ class QuestionJanitor:
             login=janitor_email)
 
     def _logout(self):
-        """Removed the Support Tracker Janitor interaction."""
+        """Removed the Launchpad Janitor interaction."""
         endInteraction()

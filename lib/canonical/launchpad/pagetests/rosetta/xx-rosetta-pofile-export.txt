@@ -4,7 +4,7 @@ Exporting Single PO Files through the Web
 Not logged in users can't access the +export page.
 
   >>> anon_browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary'
   ...     '/+source/evolution/+pots/evolution-2.2/es/')
   >>> anon_browser.getLink('Download').click()
   Traceback (most recent call last):
@@ -14,12 +14,9 @@ Not logged in users can't access the +export page.
 Logged in as a regular user, the +export page is accessible.
 
   >>> user_browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary'
   ...     '/+source/evolution/+pots/evolution-2.2/es')
   >>> user_browser.getLink('Download').click()
-
-  >>> user_browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export'
 
   >>> print user_browser.title
   Download translation for “Spanish (es) translation of evolution-2.2 in
@@ -38,9 +35,8 @@ If we POST the page, it should add the request to the queue.
 
   >>> user_browser.getControl(name='format').value = ['PO']
   >>> user_browser.getControl('Confirm Download').click()
-
-  >>> user_browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es'
+  >>> print user_browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es
 
   >>> for tag in find_tags_by_class(user_browser.contents, 'informational'):
   ...     tag.renderContents()
@@ -56,18 +52,14 @@ No Privileges Person.
   ...     'Authorization', 'Basic no-priv@canonical.com:test')
 
   >>> no_priv_browser.open(
-  ...    'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/cy')
-  >>> no_priv_browser.url
-  'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/cy'
+  ...    'http://translations.launchpad.dev/evolution/trunk/+pots/'
+  ...    'evolution-2.2/cy')
   >>> no_priv_browser.getLink('Download').click()
-  >>> no_priv_browser.url
-  'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/cy/+export'
 
   >>> no_priv_browser.getControl(name='format').value = ['PO']
   >>> no_priv_browser.getControl('Confirm Download').click()
-
-  >>> no_priv_browser.url
-  'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/cy'
+  >>> print no_priv_browser.url
+  http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/cy
 
   >>> for tag in find_tags_by_class(no_priv_browser.contents, 'informational'):
   ...     print tag.renderContents()
@@ -78,7 +70,7 @@ Since no-privileges person isn't a valid translator for Welsh (cy) language, the
 ownership of the newly created pofile is set to Rosetta Admins.
 
   >>> anon_browser.open(
-  ...     'http://launchpad.dev/evolution'
+  ...     'http://translations.launchpad.dev/evolution'
   ...     '/trunk/+pots/evolution-2.2/cy')
   >>> translation_portlet = find_portlet(
   ...     anon_browser.contents, 'Translation file details')
@@ -92,14 +84,14 @@ evolution yet; it will be created at the moment the export is requested.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
-  ...     'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/sv')
+  ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
+  ...     'evolution-2.2/sv')
   >>> browser.getLink('Download').click()
 
   >>> browser.getControl(name='format').value = ['PO']
   >>> browser.getControl('Confirm Download').click()
-
-  >>> browser.url
-  'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/sv'
+  >>> print browser.url
+  http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/sv
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational'):
   ...     tag.renderContents()
@@ -121,9 +113,8 @@ https://launchpad.net/rosetta/+bug/1558).
 
   >>> browser.getControl(name='format').value = ['PO']
   >>> browser.getControl('Confirm Download').click()
-
-  >>> browser.url
-  'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/sv'
+  >>> print browser.url
+  http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/sv
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational'):
   ...     tag.renderContents()

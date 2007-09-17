@@ -70,31 +70,31 @@ class TestPublisher(TestNativePublishingBase):
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(open(foo_path).read().strip(), 'Hello world')
 
-    def testPublishCommercial(self):
-        """Test that a commercial package is published to the right place."""
-        archive = self.ubuntutest.getArchiveByComponent('commercial')
+    def testPublishPartner(self):
+        """Test that a partner package is published to the right place."""
+        archive = self.ubuntutest.getArchiveByComponent('partner')
         config = removeSecurityProxy(archive.getPubConfig())
         config.setupArchiveDirs()
         disk_pool = DiskPool(config.poolroot, config.temproot, self.logger)
         publisher = Publisher(
             self.logger, config, disk_pool, archive)
         pub_source = self.getPubSource(archive=archive,
-            filecontent="I am commercial")
+            filecontent="I am partner")
 
         publisher.A_publish(False)
 
         # Did the file get published in the right place?
         self.assertEqual(config.poolroot,
-            "/var/tmp/archive/ubuntutest-commercial/pool")
+            "/var/tmp/archive/ubuntutest-partner/pool")
         foo_path = "%s/main/f/foo/foo.dsc" % config.poolroot
-        self.assertEqual(open(foo_path).read().strip(), "I am commercial")
+        self.assertEqual(open(foo_path).read().strip(), "I am partner")
 
         # Check that the index is in the right place.
         publisher.C_writeIndexes(False)
         self.assertEqual(config.distsroot,
-            "/var/tmp/archive/ubuntutest-commercial/dists")
+            "/var/tmp/archive/ubuntutest-partner/dists")
         index_path = os.path.join(
-            config.distsroot, 'breezy-autotest', 'commercial', 'source',
+            config.distsroot, 'breezy-autotest', 'partner', 'source',
             'Sources.gz')
         self.assertTrue(open(index_path))
 
@@ -104,19 +104,20 @@ class TestPublisher(TestNativePublishingBase):
             config.distsroot, 'breezy-autotest', 'Release')
         self.assertTrue(open(release_file))
 
-    def testCommercialReleasePocketPublishing(self):
-        """Test commercial package RELEASE pocket publishing.
+    def testPartnerReleasePocketPublishing(self):
+        """Test partner package RELEASE pocket publishing.
 
-        Publishing commercial packages to the RELEASE pocket in a stable
+        Publishing partner packages to the RELEASE pocket in a stable
         distroseries is always allowed, so check for that here.
         """
-        archive = self.ubuntutest.getArchiveByComponent('commercial')
+        archive = self.ubuntutest.getArchiveByComponent('partner')
+        self.ubuntutest['breezy-autotest'].status = DistroSeriesStatus.CURRENT
         config = removeSecurityProxy(archive.getPubConfig())
         config.setupArchiveDirs()
         disk_pool = DiskPool(config.poolroot, config.temproot, self.logger)
         publisher = Publisher(self.logger, config, disk_pool, archive)
         pub_source = self.getPubSource(
-            archive=archive, filecontent="I am commercial",
+            archive=archive, filecontent="I am partner",
             status=PackagePublishingStatus.PENDING)
 
         publisher.A_publish(force_publishing=False)
@@ -126,7 +127,14 @@ class TestPublisher(TestNativePublishingBase):
             [('breezy-autotest', 'RELEASE')], publisher.dirty_pockets)
         # The file was published:
         foo_path = "%s/main/f/foo/foo.dsc" % config.poolroot
-        self.assertEqual(open(foo_path).read().strip(), 'I am commercial')
+        self.assertEqual(open(foo_path).read().strip(), 'I am partner')
+
+        # Nothing to test from these two calls other than that they don't blow
+        # up as there is an assertion in the code to make sure it's not
+        # publishing out of a release pocket in a stable distroseries,
+        # excepting PPA and partner which are allowed to do that.
+        publisher.C_writeIndexes(is_careful=False)
+        publisher.D_writeReleaseFiles(is_careful=False)
 
     def testPublishingSpecificDistroSeries(self):
         """Test the publishing procedure with the suite argument.
@@ -312,16 +320,16 @@ class TestPublisher(TestNativePublishingBase):
             [('breezy-autotest', PackagePublishingPocket.RELEASE)],
             distro_publisher.allowed_suites)
 
-        # Check that the commercial archive is built in a different directory
+        # Check that the partner archive is built in a different directory
         # to the primary archive.
-        commercial_archive = getUtility(IArchiveSet).getByDistroPurpose(
-            self.ubuntutest, ArchivePurpose.COMMERCIAL)
+        partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntutest, ArchivePurpose.PARTNER)
         distro_publisher = getPublisher(
-            commercial_archive, allowed_suites, self.logger, distsroot)
-        self.assertEqual(commercial_archive, distro_publisher.archive)
-        self.assertEqual('/var/tmp/archive/ubuntutest-commercial/dists',
+            partner_archive, allowed_suites, self.logger, distsroot)
+        self.assertEqual(partner_archive, distro_publisher.archive)
+        self.assertEqual('/var/tmp/archive/ubuntutest-partner/dists',
             distro_publisher._config.distsroot)
-        self.assertEqual('/var/tmp/archive/ubuntutest-commercial/pool',
+        self.assertEqual('/var/tmp/archive/ubuntutest-partner/pool',
             distro_publisher._config.poolroot)
 
         # lets setup an Archive Publisher
@@ -674,13 +682,13 @@ class TestPublisher(TestNativePublishingBase):
             (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
              '8d106a6338              114 main/source/Release'))
 
-    def testReleaseFileForCommercial(self):
-        """Test Release file writing for Commercial archives.
+    def testReleaseFileForPartner(self):
+        """Test Release file writing for Partner archives.
 
         Signed Release files must reference an uncompressed Sources and
         Packages file.
         """
-        archive = self.ubuntutest.getArchiveByComponent('commercial')
+        archive = self.ubuntutest.getArchiveByComponent('partner')
         allowed_suites = []
         publisher = getPublisher(archive, allowed_suites, self.logger)
 
@@ -711,7 +719,7 @@ class TestPublisher(TestNativePublishingBase):
         world readable.  We'll test this in the partner archive as that
         uses NoMoreAF.
         """
-        archive = self.ubuntutest.getArchiveByComponent('commercial')
+        archive = self.ubuntutest.getArchiveByComponent('partner')
         allowed_suites = []
         publisher = getPublisher(archive, allowed_suites, self.logger)
         self.getPubSource(filecontent='Hello world', archive=archive)
@@ -721,10 +729,10 @@ class TestPublisher(TestNativePublishingBase):
         # Find a Sources.gz and Packages.gz that were just published
         # in the breezy-autotest distroseries.
         sourcesgz_file = os.path.join(
-            publisher._config.distsroot, 'breezy-autotest', 'commercial',
+            publisher._config.distsroot, 'breezy-autotest', 'partner',
             'source', 'Sources.gz')
         packagesgz_file = os.path.join(
-            publisher._config.distsroot, 'breezy-autotest', 'commercial',
+            publisher._config.distsroot, 'breezy-autotest', 'partner',
             'binary-i386', 'Packages.gz')
 
         # What permissions are set on those files?

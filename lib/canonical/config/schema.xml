@@ -92,6 +92,7 @@
     <sectiontype name="shipitkubuntu" extends="virtual_host" />
     <sectiontype name="shipitedubuntu" extends="virtual_host" />
     <sectiontype name="xmlrpc" extends="virtual_host" />
+    <sectiontype name="xmlrpc-private" extends="virtual_host" />
 
     <sectiontype name="virtual_hosts">
         <key name="use_https" datatype="boolean" required="yes">
@@ -111,6 +112,8 @@
         <section name="*" type="shipitkubuntu" attribute="shipitkubuntu" required="yes" />
         <section name="*" type="shipitedubuntu" attribute="shipitedubuntu" required="yes" />
         <section name="*" type="xmlrpc" attribute="xmlrpc" required="yes" />
+        <section name="*" type="xmlrpc-private" attribute="xmlrpc_private"
+                          required="yes" />
     </sectiontype>
 
     <sectiontype name="launchpad_errorreports">
@@ -933,6 +936,7 @@ k            </description>
         <key name="launch" datatype="boolean" required="no" default="no" />
         <key name="spew" datatype="boolean" required="no" default="no" />
         <key name="logfile" datatype="string" required="no" default="-" />
+        <key name="debug_logfile" datatype="string" required="no" />
         <key name="smartserver_root" datatype="canonical.config.urlbase"
             default="bzr+ssh://%(user)s@bazaar.launchpad.net/">
             <description>
