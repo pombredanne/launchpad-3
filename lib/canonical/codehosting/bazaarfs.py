@@ -322,17 +322,11 @@ class WriteLoggingFile(osfs.OSFile, LoggingMixin):
 
     def open(self, flags):
         self.logger.info('Opening %r with flags: %r', self, flags)
-        if os.O_TRUNC & flags:
-            self.touch()
-        osfs.OSFile.open(self, flags)
-
-    def touch(self):
-        self._flagAsDirty()
+        return osfs.OSFile.open(self, flags)
 
     def writeChunk(self, offset, data):
         self.logger.info('Writing to %r', self)
-        self.touch()
-        osfs.OSFile.writeChunk(self, offset, data)
+        return osfs.OSFile.writeChunk(self, offset, data)
 
 
 class NameRestrictedWriteLoggingDirectory(WriteLoggingDirectory):
