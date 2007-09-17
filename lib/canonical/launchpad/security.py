@@ -8,7 +8,6 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-<<<<<<< TREE
     IBazaarApplication, IBranch, IBranchMergeProposal, IBranchSubscription,
     IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
     IBuilder, IBuilderSet, ICodeImport, ICodeImportMachine,
