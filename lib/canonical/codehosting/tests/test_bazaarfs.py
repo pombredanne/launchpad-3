@@ -18,6 +18,7 @@ class FakeLaunchpad:
 
     def __init__(self, test):
         self.test = test
+        self._request_mirror_log = []
 
     def fetchProductID(self, productName):
         """Return a fake product ID.
@@ -43,6 +44,9 @@ class FakeLaunchpad:
         self.test.assertEqual('mozilla-firefox', productName)
         self.test.assertEqual('new-branch', branchName)
         return defer.succeed(0xabcdef12)
+
+    def requestMirror(self, branch_id):
+        self._request_mirror_log.append(branch_id)
 
 
 class TestTopLevelDir(AvatarTestCase):
@@ -310,8 +314,9 @@ class TestSFTPServerBranch(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        avatar = LaunchpadAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                 FakeLaunchpad(self))
+        self.authserver = FakeLaunchpad(self)
+        avatar = LaunchpadAvatar(
+            'alice', self.tmpdir, self.aliceUserDict, self.authserver)
         root = avatar.makeFileSystem().root
         root.setListenerFactory(lambda branch_id: (lambda: None))
         userDir = root.child('~alice')
@@ -367,6 +372,18 @@ class TestSFTPServerBranch(AvatarTestCase):
         """
         d = defer.maybeDeferred(self.server_branch.createFile, '.bzr')
         return self.assertFailure(d, PermissionError)
+
+    def testUnlockRequestsMirror(self):
+        """Unlocking a branch requests that branch be mirrored."""
+        bzr_dir = self.server_branch.createDirectory('.bzr')
+        branch_dir = bzr_dir.createDirectory('branch')
+        lock_dir = branch_dir.createDirectory('lock')
+        actual_lock = lock_dir.createDirectory('temporary')
+        # For some insane reason, we need to pass the absolute path to rename.
+        actual_lock.rename(os.path.join(lock_dir.getAbsolutePath(), 'held'))
+        actual_lock.rename(
+            os.path.join(lock_dir.getAbsolutePath(), 'temporary'))
+        self.assertEqual([1], self.authserver._request_mirror_log)
 
 
 def test_suite():
