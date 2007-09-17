@@ -251,8 +251,7 @@ class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
     been written to as part of a connection.
     """
 
-    def __init__(self, avatar, flagAsDirty, path, logger, name=None,
-                 parent=None):
+    def __init__(self, avatar, path, logger, name=None, parent=None):
         """
         Create a new WriteLoggingDirectory.
 
@@ -264,7 +263,6 @@ class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
         osfs.OSDirectory.__init__(self, path, name, parent)
         self.avatar = avatar
         self.logger = logger
-        self._flagAsDirty = flagAsDirty
 
     def childFileFactory(self):
         """Return a child file which uses the same listener.
@@ -282,8 +280,7 @@ class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
         """
         def childWithListener(path, name, parent):
             return WriteLoggingDirectory(
-                self.avatar, self._flagAsDirty, path, self.logger, name,
-                parent)
+                self.avatar, path, self.logger, name, parent)
         return childWithListener
 
     def createDirectory(self, name):
@@ -294,13 +291,16 @@ class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
         self.logger.info('Creating file %r in %r', name, self)
         return osfs.OSDirectory.createFile(self, name, exclusive)
 
+    def getBranchID(self):
+        return self.parent.getBranchID()
+
     def remove(self):
         self.logger.info('Removing %r', self)
         osfs.OSDirectory.remove(self)
 
     def rename(self, newName):
         if self.getAbsolutePath().endswith('held'):
-            self.avatar._launchpad.requestMirror(1)
+            self.avatar._launchpad.requestMirror(self.getBranchID())
         self.logger.info('Renaming %r to %r', self, newName)
         osfs.OSDirectory.rename(self, newName)
 
@@ -329,11 +329,11 @@ class NameRestrictedWriteLoggingDirectory(WriteLoggingDirectory):
     the names in `ALLOWED_DIRECTORIES`.
     """
 
-    def __init__(self, avatar, flagAsDirty, path, logger=None, name=None,
+    def __init__(self, avatar, path, logger=None, name=None,
                  parent=None):
         self._checkName(name)
         WriteLoggingDirectory.__init__(
-            self, avatar, flagAsDirty, path, logger, name, parent)
+            self, avatar, path, logger, name, parent)
 
     def _checkName(self, name):
         if name not in ALLOWED_DIRECTORIES:
@@ -361,23 +361,24 @@ class SFTPServerBranch(WriteLoggingDirectory, LoggingMixin):
 
         self._listener = None
         WriteLoggingDirectory.__init__(
-            self, avatar, lambda: None,
-            os.path.join(avatar.homeDirsRoot, path), avatar.logger,
-            branchName, parent)
+            self, avatar, os.path.join(avatar.homeDirsRoot, path),
+            avatar.logger, branchName, parent)
         if not os.path.exists(self.realPath):
             os.makedirs(self.realPath)
 
     def childDirFactory(self):
         def childWithListener(path, name, parent):
             return NameRestrictedWriteLoggingDirectory(
-                self.avatar, self._flagAsDirty, path, self.logger, name,
-                parent)
+                self.avatar, path, self.logger, name, parent)
         return childWithListener
 
     def createFile(self, name, exclusive=True):
         raise PermissionError(
             "Can only create Bazaar control directories directly beneath a "
             "branch directory.")
+
+    def getBranchID(self):
+        return self.branchID
 
     def remove(self):
         raise PermissionError(
