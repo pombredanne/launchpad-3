@@ -218,8 +218,16 @@ class Builder(SQLBase):
             raise CannotBuild
         # The main distribution has policies prevent uploads to some pockets
         # (e.g. security) during different parts of the distribution series
-        # lifecycle. These do not apply to PPA builds (which are untrusted).
-        if build_queue_item.is_trusted:
+        # lifecycle. These do not apply to PPA builds (which are untrusted)
+        # nor any archive that allows release pocket updates.
+
+        # XXX julian 2007-09-14
+        # Currently is_trusted is being overloaded to also mean "is not a
+        # PPA".  If we ever start building on machines outside our data
+        # centre (ie not trusted) the following logic breaks.
+        # https://bugs.launchpad.net/soyuz/+bug/139594
+        if (build_queue_item.is_trusted and
+            not build_queue_item.build.archive.allowUpdatesToReleasePocket()):
             build = build_queue_item.build
             # XXX Robert Collins 2007-05-26: not an explicit CannotBuild
             # exception yet because the callers have not been audited
@@ -263,7 +271,7 @@ class Builder(SQLBase):
                 'restricted': 'main restricted',
                 'universe': 'main restricted universe',
                 'multiverse': 'main restricted universe multiverse',
-                'commercial' : 'commercial',
+                'partner' : 'partner',
                 }
             ogre_components = ogre_map[build_queue_item.current_component.name]
             dist_name = build_queue_item.archseries.distroseries.name
@@ -276,11 +284,11 @@ class Builder(SQLBase):
             else:
                 ubuntu_components = ogre_components
                 if (build_queue_item.build.archive.purpose ==
-                        ArchivePurpose.COMMERCIAL):
+                        ArchivePurpose.PARTNER):
                     # XXX julian 2007-08-07 - this is a greasy hack.
                     # See comment above about not modelling Ogre here.
-                    # Commercial is a very special case because the commercial
-                    # component is only in the commercial archive, so we have
+                    # Partner is a very special case because the partner
+                    # component is only in the partner archive, so we have
                     # to be careful with the sources.list archives.
                     ubuntu_components = 'main restricted'
                 ubuntu_source_line = (
@@ -354,9 +362,10 @@ class Builder(SQLBase):
         self.builderok = False
         self.failnotes = reason
 
-    def getBuildRecords(self, status=None, name=None):
+    def getBuildRecords(self, build_state=None, name=None):
         """See IHasBuildRecords."""
-        return getUtility(IBuildSet).getBuildsForBuilder(self.id, status, name)
+        return getUtility(IBuildSet).getBuildsForBuilder(
+            self.id, build_state, name)
 
     def slaveStatus(self):
         """See IBuilder."""

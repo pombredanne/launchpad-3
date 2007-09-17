@@ -827,6 +827,24 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
+    def getBranchesForProject(
+        project, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
+        """Branches associated with project with appropriate lifecycle.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
+        """
+
     def getHostedBranchesForPerson(person):
         """Return the hosted branches that the given person can write to."""
 

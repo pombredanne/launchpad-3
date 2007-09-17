@@ -4,11 +4,14 @@
 
 __metaclass__ = type
 __all__ = ['branch_id_to_path', 'LaunchpadServer', 'LaunchpadTransport',
-           'UntranslatablePath']
+           'set_up_logging', 'UntranslatablePath']
+
+import logging
+import os
 
 from bzrlib.errors import (
     BzrError, InProcessTransport, NoSuchFile, TransportNotPossible)
-from bzrlib import urlutils
+from bzrlib import trace, urlutils
 from bzrlib.transport import (
     get_transport,
     register_transport,
@@ -21,6 +24,7 @@ from canonical.authserver.interfaces import READ_ONLY
 
 from canonical.codehosting.bazaarfs import (
     ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR)
+from canonical.config import config
 
 
 def branch_id_to_path(branch_id):
@@ -72,6 +76,25 @@ def get_path_segments(path):
     return path.strip('/').split('/')
 
 
+def set_up_logging():
+    trace.disable_default_logging()
+    log = logging.getLogger('codehosting')
+    if config.codehosting.debug_logfile is not None:
+        parent_dir = os.path.dirname(config.codehosting.debug_logfile)
+        if not os.path.exists(parent_dir):
+            os.makedirs(parent_dir)
+        assert os.path.isdir(parent_dir), (
+            "%r should be a directory" % parent_dir)
+        handler = logging.FileHandler(config.codehosting.debug_logfile)
+        handler.setFormatter(
+            logging.Formatter(
+                '%(asctime)s %(levelname)-8s %(name)s\t%(message)s'))
+        handler.setLevel(logging.DEBUG)
+        log.addHandler(handler)
+    log.setLevel(logging.DEBUG)
+    return log
+
+
 class UntranslatablePath(BzrError):
 
     _fmt = ("Could not translate %(path)s onto backing transport for "
@@ -105,10 +128,13 @@ class LaunchpadServer(Server):
         self.mirror_transport = get_transport(
             'readonly+' + mirror_transport.base)
         self._is_set_up = False
+        self.logger = logging.getLogger(
+            'codehosting.lpserve.%s' % self.user_name)
 
     def requestMirror(self, virtual_path):
         """Request that the branch that owns 'virtual_path' be mirrored."""
         branch_id, ignored, path = self._translate_path(virtual_path)
+        self.logger.info('Requesting mirror for: %r', branch_id)
         self.authserver.requestMirror(branch_id)
 
     def make_branch_dir(self, virtual_path):
@@ -119,6 +145,7 @@ class LaunchpadServer(Server):
         the branch in the database then create a matching directory on the
         backing transport.
         """
+        self.logger.info('mkdir(%r)', virtual_path)
         path_segments = get_path_segments(virtual_path)
         if len(path_segments) != 3:
             raise NoSuchFile(
@@ -142,6 +169,7 @@ class LaunchpadServer(Server):
             product.
         :return: The database ID of the new branch.
         """
+        self.logger.debug('_make_branch(%r, %r, %r)', user, product, branch)
         if not user.startswith('~'):
             raise TransportNotPossible(
                 'Path must start with user or team directory: %r' % (user,))
@@ -151,9 +179,7 @@ class LaunchpadServer(Server):
             if not user_dict:
                 raise NoSuchFile("%s doesn't exist" % (user,))
             user_id = user_dict['id']
-            if user_id == self.user_id:
-                product = '+junk'
-            else:
+            if user_id != self.user_id:
                 # XXX: JonathanLange 2007-06-04 bug=118736
                 # This should perhaps be 'PermissionDenied', not 'NoSuchFile'.
                 # However bzrlib doesn't translate PermissionDenied errors.
@@ -164,6 +190,7 @@ class LaunchpadServer(Server):
         branch_id, permissions = self.authserver.getBranchInformation(
             self.user_id, user, product, branch)
         if branch_id != '':
+            self.logger.debug('Branch (%r, %r, %r) already exists ')
             return branch_id
         else:
             return self.authserver.createBranch(
@@ -207,6 +234,7 @@ class LaunchpadServer(Server):
 
         :return: The equivalent real path on the backing transport.
         """
+        self.logger.debug('translate_virtual_path(%r)', virtual_path)
         segments = get_path_segments(virtual_path)
         if (len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES):
             raise NoSuchFile(FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
@@ -215,6 +243,9 @@ class LaunchpadServer(Server):
         # 'branch not found' and 'not enough information in path to figure out
         # a branch'.
         branch_id, permissions, path = self._translate_path(virtual_path)
+        self.logger.debug(
+            'Translated %r => %r', virtual_path,
+            (branch_id, permissions, path))
         if branch_id == '':
             raise UntranslatablePath(path=virtual_path, user=self.user_name)
         return '/'.join([branch_id_to_path(branch_id), path]), permissions
@@ -293,6 +324,9 @@ class LaunchpadTransport(Transport):
             transport = self.server.mirror_transport
         else:
             transport = self.server.backing_transport
+        self.server.logger.info(
+            '%s(%r -> %r, args=%r, kwargs=%r)',
+            methodname, relpath, (path, permissions), args, kwargs)
         method = getattr(transport, methodname)
         return method(path, *args, **kwargs)
 
@@ -311,12 +345,14 @@ class LaunchpadTransport(Transport):
 
     # Transport methods
     def abspath(self, relpath):
+        self.server.logger.debug('abspath(%s)', relpath)
         return urlutils.join(self.server.scheme, relpath)
 
     def append_file(self, relpath, f, mode=None):
         return self._call('append_file', relpath, f, mode)
 
     def clone(self, relpath):
+        self.server.logger.debug('clone(%s)', relpath)
         return LaunchpadTransport(
             self.server, urlutils.join(self.base, relpath))
 
@@ -333,11 +369,13 @@ class LaunchpadTransport(Transport):
         return self._call('has', relpath)
 
     def iter_files_recursive(self):
+        self.server.logger.debug('iter_files_recursive()')
         path, ignored = self._translate_virtual_path('.')
         backing_transport = self.server.backing_transport.clone(path)
         return backing_transport.iter_files_recursive()
 
     def listable(self):
+        self.server.logger.debug('listable()')
         return self.server.backing_transport.listable()
 
     def list_dir(self, relpath):
