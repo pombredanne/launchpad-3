@@ -181,5 +181,6 @@ The field "Email address:" musr contain a valid email address.
     >>> print browser.headers
     Status: 200 Ok
     ...
-    X-Launchpad-Hwdb-Submission-Emailaddress: Error - no email isn't a valid email address.
+    X-Launchpad-Hwdb-Submission-Emailaddress: Error - no email isn't a valid email address
     ...
+

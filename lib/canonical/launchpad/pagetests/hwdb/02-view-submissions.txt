@@ -12,6 +12,7 @@ database submissions by this person.
     >>> print extract_text(content_table)
     System        Date submitted  Download submitted data 
     Fujitsu CY26  ...             test.txt
+    TONKA TUFFBOOK2600 ...        hwsubmission1.xml
 
 Submissions that are marked as private are only displayed to the 
 submitter himself.
@@ -55,6 +56,7 @@ submitter himself.
     >>> print extract_text(content_table)
     System        Date submitted  Download submitted data 
     Fujitsu CY26  ...             test.txt
+    TONKA TUFFBOOK2600 ...        hwsubmission1.xml
 
 The owner of a submission sees a complete lists of his own submissions.
 He also gets an additional column in the listing, showing the "private"
@@ -67,6 +69,7 @@ status of each submission.
     System        Date submitted  Download submitted data  Private
     Fujitsu CY26  ...             test.txt                 no
     Fujitsu CY26  ...             test2.txt                yes
+    TONKA TUFFBOOK2600 ...        hwsubmission1.xml        no
 
 If a person has not submitted any hardware data, an according message is
 displayed.

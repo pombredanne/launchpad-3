@@ -19,17 +19,10 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBazaarApplication, IBugExternalRefSet,
     IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet, IDistroSeriesSet,
-<<<<<<< TREE
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMaloneApplication, IOpenIdApplication, IProductSet,
-    IRegistryApplication, IRosettaApplication, IShipItApplication,
-    ITranslationGroupSet)
-=======
-    ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
     IMailingListApplication, IMaloneApplication,
     IOpenIdApplication, IProductSet, IRegistryApplication,
     IRosettaApplication, IShipItApplication, ITranslationGroupSet)
->>>>>>> MERGE-SOURCE
 
 
 class RegistryApplication:
@@ -171,10 +164,7 @@ class RosettaApplication:
         """See IRosettaApplication."""
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.value('translator_count')
-<<<<<<< TREE
 
 
 class HWDBApplication:
     implements(IHWDBApplication)
-=======
->>>>>>> MERGE-SOURCE
