@@ -185,6 +185,7 @@ class Bug(SQLBase):
         orderBy='-datecreated')
     bug_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='bug', orderBy='id')
+    date_last_message = UtcDateTimeCol(default=None)
 
     @property
     def displayname(self):
@@ -455,6 +456,7 @@ class Bug(SQLBase):
     def linkMessage(self, message):
         """See `IBug`."""
         if message not in self.messages:
+            self.date_last_message = message.datecreated
             result = BugMessage(bug=self, message=message)
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, message.owner)

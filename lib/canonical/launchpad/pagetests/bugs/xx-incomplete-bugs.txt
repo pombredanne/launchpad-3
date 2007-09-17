@@ -47,6 +47,9 @@ We can supply new information by posting a new comment for the bug.
     ...     'More information here.')
     >>> user_browser.getControl('Save Changes', index=1).click()
 
+    >>> import transaction
+    >>> transaction.commit()
+
 Let's try again to find that bug using the advanced search form.
 
     >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')

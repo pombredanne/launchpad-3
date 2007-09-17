@@ -19,7 +19,7 @@
                            date_last_updated getDirectSubscribers
                            getIndirectSubscribers mentoring_offers
                            canMentor isMentor getNullBugTask
-                           is_complete"
+                           is_complete date_last_message"
                            />
         <require
             permission="launchpad.View"
@@ -47,7 +47,7 @@
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore
                             activitytimestamp activity initial_message private
-                            security_related tags"
+                            security_related tags date_last_message"
             />
         <require
             permission="launchpad.AnyPerson"
