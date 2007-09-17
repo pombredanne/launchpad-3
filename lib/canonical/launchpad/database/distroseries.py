@@ -39,7 +39,6 @@ from canonical.launchpad.interfaces import (
     IDistroSeriesSet, IHasBuildRecords, IHasQueueItems, ILibraryFileAliasSet,
     IPublishedPackageSet, IPublishing, ISourcePackage, ISourcePackageName,
     ISourcePackageNameSet, LanguagePackType, NotFoundError)
-    ISourcePackageNameSet, NotFoundError)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
