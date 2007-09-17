@@ -20,6 +20,7 @@ from canonical.config import config
 from canonical.lp import decorates
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.browser.branch import BranchBadges
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchLifecycleStatusFilter,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
@@ -29,7 +30,7 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
 
 
-class BranchListingItem:
+class BranchListingItem(BranchBadges):
     """A decorated branch.
 
     Some attributes that we want to display are too convoluted or expensive
@@ -39,7 +40,7 @@ class BranchListingItem:
     decorates(IBranch, 'branch')
 
     def __init__(self, branch, last_commit, now, bugbranches, role=None):
-        self.branch = branch
+        BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
         self.bugbranches = bugbranches
         self.role = role
@@ -56,6 +57,18 @@ class BranchListingItem:
         # Need to make an TZ unaware date in order to subtract it.
         unaware_date = self.branch.date_created.replace(tzinfo=None)
         return self._now - unaware_date
+
+    def isBugBadgeVisibleByUser(self, user):
+        # Only show the badge if the bugs are visible by the user.
+        for bug in self.branch.related_bugs:
+            # Stop on the first visible one.
+            if check_permission('launchpad.View', bug):
+                return True
+        return False
+
+    def isSpecBadgeVisibleByUser(self, user):
+        # When specs get privacy, this will need to be adjusted.
+        return self.branch.spec_links.count() > 0
 
 
 class BranchListingBatchNavigator(TableBatchNavigator):
@@ -87,6 +100,11 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             result.setdefault(
                 bugbranch.branch.id, []).append(bugbranch)
         return result
+
+    @cachedproperty
+    def branch_spec_links(self):
+        """Get all the specs associated with the current batch."""
+        
 
     def _createItem(self, branch):
         last_commit = self.last_commit[branch]

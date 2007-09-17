@@ -8,6 +8,7 @@ __all__ = [
     'BranchSOP',
     'PersonBranchAddView',
     'ProductBranchAddView',
+    'BranchBadges',
     'BranchContextMenu',
     'BranchDeletionView',
     'BranchEditView',
@@ -45,6 +46,8 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
     LaunchpadEditFormView, action, custom_widget)
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.badge import BadgeMethodDelegator
 from canonical.launchpad.webapp.uri import URI
 
 from canonical.widgets import SinglePopupWidget
@@ -63,6 +66,28 @@ class BranchSOP(StructuralObjectPresentation):
     def getMainHeading(self):
         """See `IStructuralHeaderPresentation`."""
         return self.context.owner.browsername
+
+
+class BranchBadges(BadgeMethodDelegator):
+    badges = "private", "bug", "spec"
+
+    def __init__(self, branch):
+        self.branch = branch
+
+    def isPrivateBadgeVisibleByUser(self, user):
+        return self.branch.private
+
+    def isBugBadgeVisibleByUser(self, user):
+        # Only show the badge if the bugs are visible by the user.
+        for bug in self.branch.related_bugs:
+            # Stop on the first visible one.
+            if check_permission('launchpad.View', bug):
+                return True
+        return False
+
+    def isSpecBadgeVisibleByUser(self, user):
+        # When specs get privacy, this will need to be adjusted.
+        return self.branch.spec_links.count() > 0
 
 
 class BranchNavigation(Navigation):

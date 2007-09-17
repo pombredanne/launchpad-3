@@ -1,0 +1,116 @@
+= Badges =
+
+Badges are nifty user interface elements that are used to indicate
+to the user that there are interesting features about the thing that
+the badges are attached to.
+
+Badges are shown in two main places:
+  * Object listings
+  * Main object pages
+
+In the listing views, badges are used to show links between objects,
+such as bug-branch links or bug-spec links, and object attribute values
+such as privacy mentoring availability.
+
+Listings use a icon sized images, and object listings use logo sized images.
+
+In order to maintain a level of standardisation across the badge
+uses in Launchpad, there is a central list of badges along with there
+alternate text and titles.
+
+    >>> from canonical.launchpad.webapp.badge import STANDARD_BADGES
+
+Iterating over this collection gives
+
+    >>> for name in sorted(STANDARD_BADGES.keys()):
+    ...     print name
+    blueprint
+    branch
+    bug
+    mentoring
+    private
+    warning
+
+
+== The Badge class ==
+
+The badge class has two methods of interest:
+  * icon - the HTML for the icon sized image
+  * logo - the HTML for the logo sized image
+
+A badge is constructed with the locations of the images, the default alternate
+text and the default title.
+
+    >>> from canonical.launchpad.webapp.badge import Badge
+    >>> bug = Badge(
+    ...     icon_image='/@@/bug', logo_image='/@@/bug-logo',
+    ...     alt='bug', title='Linked to a bug')
+
+Both `alt` and `title` default to the empty string.
+
+Calling the icon or logo method with no parameters will produce the default
+image HTML.
+
+    >>> print bug.icon()
+    <img alt="bug" width="14" height="14" src="/@@/bug" title="Linked to a bug"/>
+    >>> print bug.logo()
+    <img alt="bug" width="64" height="64" src="/@@/bug-logo" title="Linked to a bug"/>
+
+
+== IHasBadges ==
+
+Rendering of the icons and logos for a content object is handled by an
+adapter that uses the IHasBadges interface as a source.
+
+Under normal circumstances the badges for a given content object require
+the accessing or counting of attributes that almost always require database
+queries.  While this is fine for a single object, we do not want to have that
+occurring for listings of objects.  For example, if there were 5 possible badges
+for a branch 3 of those counted links to other tables, and we had a listing of
+75 bugs, then that is 225 database queries just for the badges.
+
+In order to allow efficient database queries for listings, the interface is
+split from the normal content interfaces.
+
+In order to control visibility of the badges to those that are entitled
+to see the underlying link, the user must be known.  For this reason
+the methods that control the visiblity of related objects whould not
+be in the content class itself.
+
+    >>> from zope.interface import Interface, Attribute
+    >>> class IFoo(Interface):
+    ...     bugs = Attribute('Some linked bugs')
+    ...     blueprints = Attribute('Some linked blueprints')
+
+    >>> from zope.interface import implements
+    >>> class Foo:
+    ...     implements(IFoo)
+    ...     @property
+    ...     def bugs(self):
+    ...         print "Foo.bugs"
+    ...         return ['a']
+    ...     @property
+    ...     def blueprints(self):
+    ...         print "Foo.blueprints"
+    ...         return []
+
+    >>> class FooBadges(BadgeMethodDelegator):
+    ...     badges = "bug", "blueprint"
+    ...     def __init__(self, context):
+    ...         self.context = context
+    ...     def bugBadgeVisibleByUser(self, user):
+    ...         return len(self.context.bugs) > 0
+    ...     def blueprintBadgeVisibleByUser(self, user):
+    ...         return len(self.context.blueprint) > 0
+
+    >>> from canonical.lp import decorates
+
+    >>> class DecoratedFoo(FooBadges):
+    ...     decorates(IFoo, 'foo')
+    ...     def __init__(self, foo):
+    ...         self.foo = foo
+    ...     def bugBadgeVisibleByUser(self, user):
+    ...         return True
+    ...     def blueprintBadgeVisibleByUser(self, user):
+    ...         return False
+

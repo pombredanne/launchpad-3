@@ -56,6 +56,7 @@ from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
 
@@ -638,6 +639,27 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
         source = icon_map[self._context.buildstate]
 
         return self.icon_template % (alt, title, source)
+
+
+class BadgeDisplayAPI:
+    """Adapter for IHasBadges to the images for the badges.
+
+    Used for context/badges:small and context/badges:large.
+    """
+
+    def __init__(self, context):
+        # Adapt the context.
+        self.context = IHasBadges(context)
+
+    def small(self):
+        user = getUtility(ILaunchBag).user
+        badges = self.context.badgesVisibleByUser(user)
+        return ''.join([badge.icon() for badge in badges])
+
+    def large(self):
+        user = getUtility(ILaunchBag).user
+        badges = self.context.badgesVisibleByUser(user)
+        return ''.join([badge.logo() for badge in badges])
 
 
 class PersonFormatterAPI(ObjectFormatterAPI):
