@@ -138,14 +138,11 @@ Some of the 20 required arguments are foreign keys or DB contants:
   >>> arg_creator = hoary.owner
   >>> arg_urgency = SourcePackageUrgency.LOW
 
-'manifest' is the only nullable FK:
-
-  >>> arg_manifest = None
-
 The other argurments are strings:
 
   >>> version = '0.0.99'
   >>> dsc = 'smashed dsc...'
+  >>> copyright = 'smashed debian/copyright ...'
   >>> changelog = 'contigous text....'
   >>> archhintlist = 'any'
   >>> builddepends = 'cdbs, debhelper (>= 4.1.0), libsysfs-dev, libhal-dev'
@@ -163,9 +160,9 @@ ISourcePackageRelease, it will automatically set the
   >>> new_spr = hoary.createUploadedSourcePackageRelease(
   ...     arg_name, version, arg_maintainer,
   ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
-  ...     arg_urgency, changelog, dsc, arg_key, arg_sect, arg_manifest,
+  ...     arg_urgency, changelog, dsc, arg_key, arg_sect,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-  ...     dsc_binaries, archive)
+  ...     dsc_binaries, archive, copyright=copyright)
 
   >>> new_spr.uploaddistroseries.name
   u'hoary'
@@ -173,6 +170,8 @@ ISourcePackageRelease, it will automatically set the
   u'0.0.99'
   >>> new_spr.upload_archive.id == hoary.main_archive.id
   True
+  >>> new_spr.copyright
+  u'smashed debian/copyright ...'
 
 Throw away the DB changes:
 
@@ -276,11 +275,6 @@ We need the commit to see the upload.
 
    >>> transaction.commit()
 
-Before the upload, the queue should be empty.
-
-   >>> translation_import_queue.getAllEntries(target='distros').count()
-   0
-
 Now we do the upload. It's necessary to retrive an ILibraryFileAlias
 correspondent to the alias (long) we already have.
 
@@ -290,6 +284,13 @@ correspondent to the alias (long) we already have.
    >>> spr_test = SourcePackageRelease.get(20)
    >>> spr_test.name
    u'pmount'
+
+Before the final upload, the queue should be empty.
+
+   >>> translation_import_queue.getAllEntries(
+   ...     target=spr_test.sourcepackage).count()
+   0
+
    >>> spr_test.attachTranslationFiles(file_alias, True)
 
 The commit is needed to see the new entries
@@ -298,7 +299,8 @@ The commit is needed to see the new entries
 
 And the queue should have a new entry.
 
-   >>> translation_import_queue.getAllEntries(target='distros').count()
+   >>> translation_import_queue.getAllEntries(
+   ...     target=spr_test.sourcepackage).count()
    1
 
 Now, we need to do the final import. It's done as a two steps procedure.

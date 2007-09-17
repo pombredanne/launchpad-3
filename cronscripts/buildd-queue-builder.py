@@ -32,19 +32,6 @@ class QueueBuilder(LaunchpadCronScript):
             dest="dryrun", metavar="DRY_RUN", default=False,
             help="Whether to treat this as a dry-run or not.")
 
-    def lock_or_quit(self):
-        """Redefine lock_or_quit to check cron.daily lockfile.
-
-        If it finds the cron.daily lockfile it should simply exit quietly.
-        We don't want to run queue-builder simultaneously with the cron.daily
-        because it might be a huge source of mistakes, but in the same way we
-        don't want to recieve email warnings (buildd-sequencer) for this event.
-        """
-        if os.path.exists(config.builddmaster.crondaily_lockfile):
-            sys.exit(0)
-
-        LaunchpadCronScript.lock_or_quit(self)
-
     def main(self):
         """Invoke rebuildQueue.
 
@@ -67,7 +54,7 @@ class QueueBuilder(LaunchpadCronScript):
 
         self.logger.info("Rebuilding Build Queue.")
 
-        # XXX cprov 20070321: In order to avoid the partial commits inside
+        # XXX cprov 2007-03-21: In order to avoid the partial commits inside
         # BuilddMaster to happen we pass a FakeZtm instance
         class _FakeZTM:
             """A fake transaction manager."""

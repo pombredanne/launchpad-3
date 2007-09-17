@@ -40,7 +40,7 @@ class DBTestCase(LaunchpadZopelessTestSetup, unittest.TestCase):
         alias = library.getAlias(aliasID)
         self.assertEqual('file1', alias.filename)
         self.assertEqual('text/unknown', alias.mimetype)
-        
+
 
 def test_suite():
     suite = unittest.TestSuite()

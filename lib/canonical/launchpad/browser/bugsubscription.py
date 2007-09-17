@@ -18,9 +18,12 @@ class BugSubscriptionAddView(SQLObjectAddView):
 
     def create(self, person):
         subscription = self.context.bug.subscribe(person)
+        if person.isTeam():
+            message = '%(name)s team has been subscribed to this bug.'
+        else:
+            message = '%(name)s has been subscribed to this bug.'
         self.request.response.addInfoNotification(
-            '%(name)s has been subscribed to this bug.',
-            name=person.displayname)
+            message, name=person.displayname)
         return subscription
 
     def nextURL(self):

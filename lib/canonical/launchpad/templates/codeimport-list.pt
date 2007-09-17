@@ -22,26 +22,17 @@
 
   <tal:block tal:condition="codeimports">
     <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-upper" />
-    <table class="listing" id="code-import-listing" width="100%">
+    <table class="listing" id="code-import-listing">
       <thead>
         <tr>
           <th>
-            ID
+            Import
           </th>
           <th>
-            Date Created
+            Created
           </th>
           <th>
             Status
-          </th>
-          <th>
-            Product
-          </th>
-          <th>
-            Series
-          </th>
-          <th>
-            Branch
           </th>
         </tr>
       </thead>
@@ -49,8 +40,13 @@
         <tr tal:repeat="codeimport codeimports">
 
           <td>
-            <a href="name" tal:attributes="href codeimport/fmt:url" tal:content="codeimport/id">
-              id
+            <a href="code-import"
+               tal:attributes="href codeimport/fmt:url">
+              <span tal:replace="codeimport/product/name">
+                product-name
+              </span>/<span tal:replace="codeimport/branch/name">
+                branch-name
+              </span>
             </a>
           </td>
 
@@ -61,36 +57,6 @@
           <td tal:content="codeimport/review_status/title">
             status
           </td>
-
-          <td>
-            <a tal:content="codeimport/product/name"
-               tal:attributes="href codeimport/product/fmt:url">
-              product-name
-            </a>
-          </td>
-
-          <td>
-            <a tal:condition="codeimport/series"
-               tal:content="codeimport/series/name"
-               tal:attributes="href codeimport/series/fmt:url">
-              series-name
-            </a>
-          </td>
-
-          <td>
-            <tal:comment condition="nothing">
-              <!-- XXX MichaelHudson 2007-06-29: If we ever want to let
-              the general user see this page and when the empty
-              branches that get created along with an import are
-              hidden in some fashion, we'll want to add a
-              tal:condition to the contents of this cell.  -->
-            </tal:comment>
-            <a tal:content="codeimport/branch/name"
-               tal:attributes="href codeimport/branch/fmt:url">
-              branch-name
-            </a>
-          </td>
-
         </tr>
       </tbody>
     </table>

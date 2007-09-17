@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-subscribers">
   <h2>Subscribers</h2>
   <div class="portletBody"
        tal:define="from_dupes_subscribers context/getSubscribersFromDuplicates;

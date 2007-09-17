@@ -110,7 +110,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.lp.dbschema import BugTaskStatus, SpecificationFilter
+from canonical.lp.dbschema import SpecificationFilter
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
@@ -124,11 +124,11 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    BugTaskSearchParams, IBranchSet, ITeamMembership,
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
-    LoginTokenType, PersonCreationRationale, QuestionParticipation,
-    SSHKeyType, TeamMembershipStatus, TeamMembershipRenewalPolicy,
-    TeamSubscriptionPolicy)
+    BugTaskStatus, BugTaskSearchParams, IBranchSet, ITeamMembership,
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, LoginTokenType, SSHKeyType,
+    EmailAddressStatus, TeamMembershipStatus, TeamSubscriptionPolicy,
+    PersonCreationRationale, TeamMembershipRenewalPolicy,
+    QuestionParticipation)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -609,33 +609,45 @@ class PersonBugsMenu(ApplicationMenu):
              'subscribedbugs', 'relatedbugs', 'softwarebugs', 'mentoring']
 
     def relatedbugs(self):
-        text = 'List related bugs'
-        return Link('', text, icon='bugs')
+        text = 'List all related bugs'
+        summary = ('Lists all bug reports which %s reported, is assigned to, '
+                   'or is subscribed to.' % self.context.displayname)
+        return Link('', text, summary=summary)
 
     def assignedbugs(self):
         text = 'List assigned bugs'
-        return Link('+assignedbugs', text, icon='bugs')
+        summary = 'Lists bugs assigned to %s.' % self.context.displayname
+        return Link('+assignedbugs', text, summary=summary)
 
     def softwarebugs(self):
-        text = 'Package reports'
-        return Link('+packagebugs', text, icon='bugs')
+        text = 'Show package report'
+        summary = 'A summary report for packages where %s is a bug contact.' % \
+            self.context.displayname
+        return Link('+packagebugs', text, summary=summary)
 
     def reportedbugs(self):
         text = 'List reported bugs'
-        return Link('+reportedbugs', text, icon='bugs')
+        summary = 'Lists bugs reported by %s.' % self.context.displayname
+        return Link('+reportedbugs', text, summary=summary)
 
     def subscribedbugs(self):
         text = 'List subscribed bugs'
-        return Link('+subscribedbugs', text, icon='bugs')
+        summary = 'Lists bug reports %s is subscribed to.' % \
+            self.context.displayname
+        return Link('+subscribedbugs', text, summary=summary)
 
     def mentoring(self):
         text = 'Mentoring offered'
+        summary = 'Lists bugs for which %s has offered to mentor someone.' % \
+            self.context.displayname
         enabled = self.context.mentoring_offers
-        return Link('+mentoring', text, enabled=enabled, icon='info')
+        return Link('+mentoring', text, enabled=enabled, summary=summary)
 
     def commentedbugs(self):
         text = 'List commented bugs'
-        return Link('+commentedbugs', text, icon='bugs')
+        summary = 'Lists bug reports on which %s has commented.' % \
+            self.context.displayname
+        return Link('+commentedbugs', text, summary=summary)
 
 
 class PersonSpecsMenu(ApplicationMenu):
@@ -694,6 +706,17 @@ class PersonSpecsMenu(ApplicationMenu):
         return Link('+roadmap', text, summary, icon='info')
 
 
+class PersonTranslationsMenu(ApplicationMenu):
+
+    usedfor = IPerson
+    facet = 'translations'
+    links = ['imports']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
+
+
 class TeamSpecsMenu(PersonSpecsMenu):
 
     usedfor = ITeam
@@ -743,7 +766,7 @@ class CommonMenuLinks:
     @enabled_with_permission('launchpad.Edit')
     def activate_ppa(self):
         target = "+activate-ppa"
-        text = 'Activate PPA'
+        text = 'Activate Personal Package Archive'
         summary = ('Acknowledge terms of service for Launchpad Personal '
                    'Package Archive.')
         enable_link = (self.context.archive is None)
@@ -751,7 +774,7 @@ class CommonMenuLinks:
 
     def show_ppa(self):
         target = '+archive'
-        text = 'Show PPA'
+        text = 'Show Personal Package Archive'
         summary = 'Browse Personal Package Archive packages.'
         enable_link = (self.context.archive is not None)
         return Link(target, text, summary, icon='info', enabled=enable_link)
@@ -957,7 +980,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+editlanguages'
         text = 'Set preferred languages'
         return Link(target, text, icon='edit')
-        
+
     def joinleave(self):
         team = self.context
         enabled = True
@@ -1188,9 +1211,8 @@ class RedirectToEditLanguagesView(LaunchpadView):
 
     This view should always be registered with a launchpad.AnyPerson
     permission, to make sure the user is logged in. It exists so that
-    we can keep the /rosetta/prefs link working and also provide a link
-    for non logged in users that will require them to login and them send
-    them straight to the page they want to go.
+    we provide a link for non logged in users that will require them to login
+    and them send them straight to the page they want to go.
     """
 
     def initialize(self):
@@ -1276,7 +1298,8 @@ class PersonSpecFeedbackView(HasSpecificationsView):
 class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs reported by someone."""
 
-    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
 
     def search(self):
         # Specify both owner and bug_reporter to try to prevent the same
@@ -1476,7 +1499,8 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 class PersonRelatedBugsView(BugTaskSearchListingView):
     """All bugs related to someone."""
 
-    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
 
     def search(self):
         """Return the open bugs related to a person."""
@@ -1524,7 +1548,8 @@ class PersonRelatedBugsView(BugTaskSearchListingView):
 class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs assigned to someone."""
 
-    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
 
     def search(self):
         """Return the open bugs assigned to a person."""
@@ -1560,7 +1585,8 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
 class PersonCommentedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs commented on by a Person."""
 
-    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
 
     def search(self):
         """Return the open bugs commented on by a person."""
@@ -1588,7 +1614,8 @@ class PersonCommentedBugTaskSearchListingView(BugTaskSearchListingView):
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs someone is subscribed to."""
 
-    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
 
     def search(self):
         return BugTaskSearchListingView.search(
@@ -1976,7 +2003,7 @@ class PersonEditWikiNamesView(LaunchpadView):
         context.ubuntuwiki.wikiname = ubuntuwikiname
 
         for w in context.otherwikis:
-            # XXX: GuilhermeSalgado 25/08/2005:
+            # XXX: GuilhermeSalgado 2005-08-25:
             # We're exposing WikiName IDs here because that's the only
             # unique column we have. If we don't do this we'll have to
             # generate the field names using the WikiName.wiki and
@@ -2044,7 +2071,7 @@ class PersonEditIRCNicknamesView(LaunchpadView):
 
         form = self.request.form
         for ircnick in self.context.ircnicknames:
-            # XXX: GuilhermeSalgado 25/08/2005:
+            # XXX: GuilhermeSalgado 2005-08-25:
             # We're exposing IrcID IDs here because that's the only
             # unique column we have, so we don't have anything else that we
             # can use to make field names that allow us to uniquely identify
@@ -2743,7 +2770,7 @@ class RequestPeopleMergeView(AddView):
                                   LoginTokenType.ACCOUNTMERGE)
 
         # XXX: SteveAlexander 2006-03-07: An experiment to see if this
-        #      improves problems with merge people tests.  
+        #      improves problems with merge people tests.
         import canonical.database.sqlbase
         canonical.database.sqlbase.flush_database_updates()
         token.sendMergeRequestEmail()

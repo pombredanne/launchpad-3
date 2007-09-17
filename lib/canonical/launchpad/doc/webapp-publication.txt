@@ -28,7 +28,7 @@ All Launchpad requests provides the ILaunchpadBrowserApplicationRequest
 interface. That interface is an extension of the zope standard
 IBrowserApplicationRequest.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     ILaunchpadBrowserApplicationRequest)
 

@@ -56,6 +56,15 @@
     />
 
   <browser:page
+    name="+addspec"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.NewSpecificationFromDistroSeriesView"
+    facet="specifications"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+  />
+
+  <browser:page
       for="canonical.launchpad.interfaces.IDistroSeries"
       permission="zope.Public"
       class="canonical.launchpad.browser.DistroSeriesDynMenu"
@@ -138,20 +147,9 @@
       facet="overview"
       template="../templates/distroseries-index.pt" />
     <browser:page
-      name="+translations"
-      facet="translations"
-      template="../templates/distroseries-translations.pt" />
-    <browser:page
-      name="+langchart"
-      template="../templates/distroseries-langchart.pt" />
-    <browser:page
       name="+packaging"
       facet="overview"
       template="../templates/distroseries-packaging.pt" />
-    <browser:page
-      name="+potlist"
-      facet="translations"
-      template="../templates/object-pots.pt" />
     <browser:page
       name="+builds"
       facet="overview"
@@ -189,8 +187,8 @@
       template="../templates/object-milestones.pt"
       />
     <browser:page
-      name="+latest-uploads"
-      template="../templates/distroseries-latest-uploads.pt"
+      name="+portlet-latestuploads"
+      template="../templates/distroseries-portlet-latestuploads.pt"
       />
   </browser:pages>
 
@@ -239,6 +237,23 @@
     template="../templates/distroseries-edit.pt"
     />
 
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesView"
+    permission="zope.Public"
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer">
+    <browser:page
+      name="+translations"
+      template="../templates/distroseries-translations.pt" />
+    <browser:page
+      name="+langchart"
+      template="../templates/distroseries-langchart.pt" />
+    <browser:page
+      name="+potlist"
+      template="../templates/object-pots.pt" />
+  </browser:pages>
+
   <browser:page
     for="canonical.launchpad.interfaces.IDistroSeries"
     permission="launchpad.TranslationsAdmin"
@@ -246,6 +261,16 @@
     name="+admin"
     facet="translations"
     template="../templates/distroseries-translationsadmin.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 

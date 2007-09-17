@@ -2,15 +2,11 @@
 
 """Hardware database related table classes."""
 
-__all__ = ['HWDBSubmission',
-           'HWDBSubmissionSet',
-           'HWDBSystemFingerprint',
-           'HWDBSystemFingerprintSet'
+__all__ = ['HWSubmission',
+           'HWSubmissionSet',
+           'HWSystemFingerprint',
+           'HWSystemFingerprintSet'
           ]
-
-from datetime import datetime
-
-import pytz
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -22,53 +18,65 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import (
-    HWDBSubmissionError, HWDBSubmissionFormat, HWDBSubmissionStatus,
-    IHWDBSubmission, IHWDBSubmissionSet, IHWDBSystemFingerprint,
-    IHWDBSystemFingerprintSet, ILibraryFileAliasSet, IPersonSet)
+    HWSubmissionFormat, HWSubmissionInvalidEmailAddress,
+    HWSubmissionKeyNotUnique, HWSubmissionProcessingStatus, IHWSubmission,
+    IHWSubmissionSet, IHWSystemFingerprint, IHWSystemFingerprintSet,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet,
+    PersonCreationRationale)
 
-class HWDBSubmission(SQLBase):
-    """Raw submission data"""
+class HWSubmission(SQLBase):
+    """See `IHWSubmission`."""
 
-    implements(IHWDBSubmission)
-    _table = 'HWDBSubmission'
+    implements(IHWSubmission)
+    _table = 'HWSubmission'
     
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_submitted = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    format = EnumCol(enum=HWDBSubmissionFormat, notNull=True)
-    status = EnumCol(enum=HWDBSubmissionStatus, notNull=True)
+    format = EnumCol(enum=HWSubmissionFormat, notNull=True)
+    status = EnumCol(enum=HWSubmissionProcessingStatus, notNull=True)
     private = BoolCol(notNull=True)
     contactable = BoolCol(notNull=True)
-    livecd = BoolCol(notNull=True, default=False)
-    submission_id = StringCol(notNull=True)
+    submission_key = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person')
-    emailaddress = StringCol(notNull=True)
-    distroarchrelease = ForeignKey(dbName='distroarchrelease',
-                                   foreignKey='DistroArchSeries')
+    distroarchrelease = ForeignKey(dbName='distroarchseries',
+                                   foreignKey='Distroarchrelease',
+                                   notNull=True)
     raw_submission = ForeignKey(dbName='raw_submission',
-                                foreignKey='LibraryFileAlias')
-    system = ForeignKey(dbName='system', foreignKey='HWDBSystemFingerprint')
+                                foreignKey='LibraryFileAlias',
+                                notNull=True)
+    system_fingerprint = ForeignKey(dbName='system_fingerprint',
+                                    foreignKey='HWSystemFingerprint',
+                                    notNull=True)
 
 
-class HWDBSubmissionSet:
-    """See `IHWDBSubmissionSet`."""
+class HWSubmissionSet:
+    """See `IHWSubmissionSet`."""
 
-    implements(IHWDBSubmissionSet)
+    implements(IHWSubmissionSet)
 
     def createSubmission(self, date_created, format, private, contactable,
-                         livecd, submission_id, emailaddress,
-                         distroarchseries, raw_submission, filename,
-                         filesize, system):
-        """See `IHWDBSubmissionSet`."""
+                         submission_key, emailaddress, distroarchseries,
+                         raw_submission, filename, filesize,
+                         system_fingerprint):
+        """See `IHWSubmissionSet`."""
         
-        submission_exists = HWDBSubmission.select(
-            'submission_id=%s' % sqlvalues(submission_id)).count() > 0
-        if submission_exists:
-            raise HWDBSubmissionError(
+        submission_exists = HWSubmission.selectOneBy(
+            submission_key=submission_key)
+        if submission_exists is not None:
+            raise HWSubmissionKeyNotUnique(
                 'A submission with this ID already exists')
         
-        owner = getUtility(IPersonSet).getByEmail(emailaddress)
-        
-        fingerprint = HWDBSystemFingerprint.selectOneBy(fingerprint=system)
+        personset = getUtility(IPersonSet)
+        owner = personset.getByEmail(emailaddress)
+        if owner is None:
+            owner, email = personset.createPersonAndEmail(
+                emailaddress,
+                PersonCreationRationale.OWNER_SUBMITTED_HARDWARE_TEST)
+            if owner is None:
+                raise HWSubmissionInvalidEmailAddress, 'invalid email address'
+
+        fingerprint = HWSystemFingerprint.selectOneBy(
+            fingerprint=system_fingerprint)
         if fingerprint is None:
             fingerprint = HWDBSystemFingerprint(fingerprint=system)
 
@@ -77,120 +85,110 @@ class HWDBSubmissionSet:
             name=filename,
             size=filesize,
             file=raw_submission,
-            # We expect data in XML format, and simply assume here that we
-            # received such data.  It will turn out later, when the data
-            # is parsed, if this assumption is correct.
+            # We expect submissions only from the HWDB client, which should
+            # know that it is supposed to send XML data. Other programs
+            # might submit other data (or at least claim to be sending some
+            # other content type), but the content type as sent by the
+            # client can be checked in the browser class which manages the
+            # submissions. A real check, if we have indeed an XML file,
+            # cannot be done without parsing, and this will be done later,
+            # in a cron job.
             contentType='text/xml',
             expires=None)
 
-        return HWDBSubmission(
+        return HWSubmission(
             date_created=date_created,
-            date_submitted=datetime.now(pytz.timezone('UTC')),
             format=format,
-            status=HWDBSubmissionStatus.SUBMITTED,
+            status=HWSubmissionProcessingStatus.SUBMITTED,
             private=private,
             contactable=contactable,
-            livecd=livecd,
-            submission_id=submission_id,
+            submission_key=submission_key,
             owner=owner,
-            emailaddress=emailaddress,
             distroarchrelease=distroarchseries,
             raw_submission=libraryfile,
-            system=fingerprint)
+            system_fingerprint=fingerprint)
 
-    def getBySubmissionID(self, submission_id, user=None):
-        """See `IHWDBSubmissionSet`."""
+    def getBySubmissionID(self, submission_key, user=None):
+        """See `IHWSubmissionSet`."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        query = "submission_key=%s" % sqlvalues(submission_key)
         if user is None:
-            query = "submission_id=%s AND not private"
-            query = query % sqlvalues(submission_id)
+            query = query + " AND not private"
+        elif not user.inTeam(admins):
+            query = query + " AND (not private OR owner=%i)" % user.id
         else:
-            query = "submission_id=%s AND (not private OR owner=%s)"
-            query = query % sqlvalues(submission_id, user)
-        return HWDBSubmission.selectOne(query)
+            # the user is an admin and may see every submission, hence
+            # no need to add any restriction.
+            pass
+        return HWSubmission.selectOne(query)
 
     def getByFingerprintName(self, name, user=None):
-        """See `IHWDBSubmissionSet`."""
-        fp = HWDBSystemFingerprintSet().getByName(name)
+        """See `IHWSubmissionSet`."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        fp = HWSystemFingerprintSet().getByName(name)
+        query = """
+            system_fingerprint=%s
+            AND HWSystemFingerprint.id = HWSubmission.system_fingerprint
+            """ % sqlvalues(fp)
         if user is None:
-            # Sorting is done by system name first, i.e., by a column
-            # of the "foreign" table HWDBSystemFingerprint. Unfortunately,
-            # the straightforward way to add the parameters
-            # "orderBy=['HWDBSystemFingerprint.fingerprint']" and
-            # "prejoins=['system']" to the select() call does not work,
-            # because SQLObject creates the the SQL expression
-            # "LEFT OUTER JOIN HWDBSystemFingerprint AS _prejoin0", which
-            # means that the orderBy expression would be
-            # "_prejoin0.fingerprint", which does not look not very obvious,
-            # and depends on implementation details. Hence the table
-            # HWDBSystemFingerprint is explicitly joined a second time, and
-            # the sorting done on the column of this "second join".
-            query = """
-                system=%s
-                AND not private
-                AND HWDBSystemFingerprint.id = HWDBSubmission.system
-                """ % sqlvalues(fp)
+            query = query + " AND not private"
+        elif not user.inTeam(admins):
+            query = query + " AND (NOT private OR owner=%i)" % user.id
         else:
-            query = """
-                system=%s
-                AND (not private OR owner=%s)
-                AND HWDBSystemFingerprint.id = HWDBSubmission.system
-                """ % sqlvalues(fp, user)
-        return HWDBSubmission.select(
+            # the user is an admin and may see every submission, hence
+            # no need to add any restriction.
+            pass
+            
+        return HWSubmission.select(
             query,
-            prejoins=['system'],
-            clauseTables=['HWDBSystemFingerprint'],
-            prejoinClauseTables=['HWDBSystemFingerprint'],
-            orderBy=['HWDBSystemFingerprint.fingerprint',
+            clauseTables=['HWSystemFingerprint'],
+            prejoinClauseTables=['HWSystemFingerprint'],
+            orderBy=['HWSystemFingerprint.fingerprint',
                      'date_submitted',
-                     'submission_id'])
+                     'submission_key'])
 
     def getByOwner(self, owner, user=None):
-        """See `IHWDBSubmissionSet`."""
+        """See `IHWSubmissionSet`."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        query = """
+            owner=%i
+            AND HWSystemFingerprint.id = HWSubmission.system_fingerprint
+            """ % owner.id
         if user is None:
-            query = """
-                owner=%s
-                AND not private
-                AND HWDBSystemFingerprint.id = HWDBSubmission.system
-                """ % sqlvalues(owner)
+            query = query + " AND NOT private"
+        elif not user.inTeam(admins):
+            query = query + " AND (NOT private OR owner=%s)" % user.id
         else:
-            query = """
-                owner=%s
-                AND (not private OR owner=%s)
-                AND HWDBSystemFingerprint.id = HWDBSubmission.system
-                """ % sqlvalues(owner, user)
+            # the user is an admin and may see every submission, hence
+            # no need to add any restriction.
+            pass
 
-        return HWDBSubmission.select(
+        return HWSubmission.select(
             query,
-            clauseTables=['HWDBSystemFingerprint'],
-            prejoinClauseTables=['HWDBSystemFingerprint'],
-            orderBy=['HWDBSystemFingerprint.fingerprint',
+            clauseTables=['HWSystemFingerprint'],
+            prejoinClauseTables=['HWSystemFingerprint'],
+            orderBy=['HWSystemFingerprint.fingerprint',
                      'date_submitted',
-                     'submission_id'])
+                     'submission_key'])
 
-    def submissionIdExists(self, submission_id):
-        """See `IHWDBSubmissionSet`."""
-        rows = HWDBSubmission.selectBy(submission_id=submission_id)
-        return rows.count() > 0
-
-
-class HWDBSystemFingerprint(SQLBase):
+class HWSystemFingerprint(SQLBase):
     """Identifiers of a computer system."""
 
-    implements(IHWDBSystemFingerprint)
-    _table = 'HWDBSystemFingerprint'
+    implements(IHWSystemFingerprint)
+    _table = 'HWSystemFingerprint'
 
     fingerprint = StringCol(notNull=True)
 
 
-class HWDBSystemFingerprintSet:
+class HWSystemFingerprintSet:
     """A set of identifiers of a computer system."""
 
-    implements(IHWDBSystemFingerprintSet)
+    implements(IHWSystemFingerprintSet)
 
     def getByName(self, fingerprint):
-        """See `IHWDBSystemFingerprintSet`."""
-        return HWDBSystemFingerprint.selectOneBy(fingerprint=fingerprint)
+        """See `IHWSystemFingerprintSet`."""
+        return HWSystemFingerprint.selectOneBy(fingerprint=fingerprint)
 
     def createFingerprint(self, fingerprint):
-        """See `IHWDBSystemFingerprintSet`."""
-        return HWDBSystemFingerprint(fingerprint=fingerprint)
+        """See `IHWSystemFingerprintSet`."""
+        return HWSystemFingerprint(fingerprint=fingerprint)

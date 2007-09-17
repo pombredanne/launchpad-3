@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-builds">
 
   <h2>Builds of <span tal:replace="context/title">apache2 2.0.54 (source) in
   Ubuntu</span></h2>

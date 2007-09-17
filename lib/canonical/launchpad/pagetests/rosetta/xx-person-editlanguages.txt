@@ -4,21 +4,17 @@ Carlos is a translator who translates things into Spanish with Rosetta.
 He is on Rosetta About page and wants to change his preferred languages.
 
     >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/translations/+about')
-    >>> browser.url
-    'http://launchpad.dev/translations/+about'
+    >>> browser.open('http://translations.launchpad.dev/translations/+about')
 
 So, he looks for the 'Your preferred languages' portlet for the
 'Select Languages...' link, and clicks on that which will take him to
 his +editlanguages page.
 
-    >>> portlet = find_portlet(browser.contents, 'Your preferred languages')
+    >>> portlet = find_portlet(browser.contents, 'Your languages')
     >>> print extract_text(portlet.find('ul'))
     Catalan
     Spanish
     >>> browser.getLink('Select Languages...').click()
-    >>> browser.url
-    'http://launchpad.dev/~carlos/+editlanguages'
     >>> print extract_text(find_main_content(browser.contents).find('h1'))
     Your language preferences
 
@@ -58,8 +54,8 @@ displays his translatable languages.
     # because the HTTP_REFFERER is localhost.
     #>>> browser.url
     #'http://launchpad.dev/translations/+about'
-    >>> browser.open('http://launchpad.dev/translations/+about')
-    >>> portlet = find_portlet(browser.contents, 'Your preferred languages')
+    >>> browser.open('http://translations.launchpad.dev/translations/+about')
+    >>> portlet = find_portlet(browser.contents, 'Your languages')
     >>> print extract_text(portlet.find('ul'))
     Catalan
     Welsh
@@ -78,8 +74,9 @@ Serbia (194.247.192.33), to test country detection.  Proxies add
     >>> browser.addHeader('X-Forwarded-For', '194.247.192.33')
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.addHeader('Accept-Language', 'pt_br, Espa\xf1ol')
-    >>> browser.open('http://launchpad.dev/~name12/+editlanguages')
-    >>> portlet = find_tag_by_id(browser.contents, 'browser-languages')
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/~name12/+editlanguages')
+    >>> portlet = find_tag_by_id(browser.contents, 'portlet-browser-languages')
     >>> print extract_text(portlet)
     Your browser languages
     Portuguese (Brazil)
@@ -111,20 +108,6 @@ direct non-logged in users to edit their preferred languages.
     >>> anon_browser.getControl(name='loginpage_submit_login').click()
     >>> anon_browser.url
     'http://launchpad.dev/~no-priv/+editlanguages'
-
-For backwards compatibility we keep do a redirect from the old
-/rosetta/prefs page to the new one. Note that this is a permanent
-redirect, since the old page has been deprecated.
-
-    # XXX Guilherme Salgado 2006-11-22 bugs=72849: 
-    # Should use an absolute URL on the Location header here.
-    >>> print http(r"""
-    ... GET /translations/prefs HTTP/1.1
-    ... Host: launchpad.dev
-    ... """)
-    HTTP/1.1 301 Moved Permanently
-    ...
-    Location: /+editmylanguages
 
 
 == Adding languages to teams ==

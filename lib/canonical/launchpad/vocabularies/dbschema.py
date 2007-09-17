@@ -17,20 +17,16 @@ __all__ = [
     'BugBranchStatusVocabulary',
     'BugNominationStatusVocabulary',
     'BugTaskImportanceVocabulary',
-    'BugTaskStatusVocabulary',
     'BugTrackerTypeVocabulary',
     'CodeImportReviewStatusVocabulary',
     'CveStatusVocabulary',
     'DistroSeriesStatusVocabulary',
-    'EntitlementStateVocabulary',
-    'EntitlementTypeVocabulary',
     'InfestationStatusVocabulary',
     'PackagePublishingPocketVocabulary',
     'PackagingTypeVocabulary',
     'PollAlgorithmVocabulary',
     'PollSecrecyVocabulary',
     'RemoteBugTaskImportanceVocabulary',
-    'RemoteBugTaskStatusVocabulary',
     'RevisionControlSystemsVocabulary',
     'SpecificationImplementationStatusVocabulary',
     'SpecificationPriorityVocabulary',
@@ -46,6 +42,8 @@ __all__ = [
 from canonical.lp import dbschema
 
 from canonical.launchpad.webapp.vocabulary import vocab_factory
+from canonical.launchpad.interfaces import (
+    QuestionAction, QuestionPriority, QuestionSort, QuestionStatus)
 
 
 # DB Schema Vocabularies
@@ -56,8 +54,6 @@ BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
 BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
-BugTaskStatusVocabulary = vocab_factory(
-    dbschema.BugTaskStatus, noshow=[dbschema.BugTaskStatus.UNKNOWN])
 BugTaskImportanceVocabulary = vocab_factory(
     dbschema.BugTaskImportance, noshow=[dbschema.BugTaskImportance.UNKNOWN])
 BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
@@ -68,15 +64,12 @@ CodeImportReviewStatusVocabulary = vocab_factory(
     dbschema.CodeImportReviewStatus)
 CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
 DistroSeriesStatusVocabulary = vocab_factory(dbschema.DistroSeriesStatus)
-EntitlementStateVocabulary = vocab_factory(dbschema.EntitlementState)
-EntitlementTypeVocabulary = vocab_factory(dbschema.EntitlementType)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 PackagePublishingPocketVocabulary = vocab_factory(
     dbschema.PackagePublishingPocket)
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
 PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
-RemoteBugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 RevisionControlSystemsVocabulary = vocab_factory(
     dbschema.RevisionControlSystems)

@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import (
     IProductSeries, IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet,
     ISourcePackage, ILaunchpadCelebrities, IDistroSeries, IBugTracker,
     IBugAttachment, IPoll, IPollSubset, IPollOption, IProductRelease,
-    IQuestion, IQuestionTarget,
+    IBranchMergeProposal, IQuestion, IQuestionTarget,
     IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
     IShippingRun, ISpecification, ITranslationImportQueueEntry,
@@ -26,7 +26,8 @@ from canonical.launchpad.interfaces import (
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
     IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset,
     IDistroSeriesLanguage, IBranch, IBranchSubscription, ICodeImport,
-    ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet, IEntitlement)
+    ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet, IEntitlement,
+    IHWSubmission)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
@@ -1046,6 +1047,26 @@ class BranchSubscriptionEdit(AuthorizationBase):
         return user.inTeam(self.obj.person) or user.inTeam(admins)
 
 
+class BranchMergeProposalEdit(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IBranchMergeProposal
+
+    def checkAuthenticated(self, user):
+        """Is the user able to edit the branch merge request?
+
+        The user is able to edit if they are:
+          * the registrant of the merge proposal
+          * the owner of the source_branch
+          * the owner of the target_branch
+          * an administrator
+        """
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.registrant) or
+                user.inTeam(self.obj.source_branch.owner) or
+                user.inTeam(self.obj.target_branch.owner) or
+                user.inTeam(admins))
+
+
 class ViewEntitlement(AuthorizationBase):
     """Permissions to view IEntitlement objects.
 
@@ -1065,3 +1086,24 @@ class ViewEntitlement(AuthorizationBase):
         return (user.inTeam(self.obj.person) or
                 user.inTeam(self.obj.registrant) or
                 user.inTeam(admins))
+
+class ViewHWSubmission(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IHWSubmission
+
+    def checkAuthenticated(self, user):
+        """Can the user view the submission details?
+
+        Submissions that not marked private are publicly visible,
+        private submissions may only be accessed by their owner and by
+        admins.
+        """
+        if not self.obj.private:
+            return True
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user == self.obj.owner or user.inTeam(admins)
+
+    def checkUnauthenticated(self):
+        return not self.obj.private
+    

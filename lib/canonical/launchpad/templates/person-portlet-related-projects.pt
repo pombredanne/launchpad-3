@@ -1,7 +1,5 @@
-<div 
-  tal:condition="view/firstFiveRelatedProjects"
-  class="portlet"
-  id="related-projects">
+<div class="portlet" id="portlet-related-projects"
+     tal:condition="view/firstFiveRelatedProjects">
 
   <h2>Related projects</h2>
   <table tal:define="pillarnames view/firstFiveRelatedProjects">

@@ -58,8 +58,16 @@ And now the Launchpad page for that person will clearly say (s)he does not use
 Launchpad.
 
     >>> browser.open('http://launchpad.dev/~name12-deactivatedaccount')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'not-lp-user'))
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'not-lp-user-or-team'))
     Sample Person does not use Launchpad.
+
+Although teams have NOACCOUNT as their account_status, they are teams and so
+it makes no sense to say they don't use Launchpad.
+
+    >>> browser.open('http://launchpad.dev/~ubuntu-team')
+    >>> print find_tag_by_id(browser.contents, 'not-lp-user-or-team')
+    None
 
 The action of deactivating an account is something that can only be done by
 the user himself --not even Launchpad admins can do that on behalf of other

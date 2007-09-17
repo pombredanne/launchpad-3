@@ -5,9 +5,9 @@
                     xml:lang view/lang|default_language|default;
                     dir view/dir|string:ltr"
     tal:define="
-        icingrev string:117;
         rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-        icingroot string:${rooturl}+icing/rev${icingrev};
+        revno modules/canonical.launchpad.versioninfo/revno;
+        icingroot string:${rooturl}+icing/rev${revno};
         site_message modules/canonical.config/config/launchpad/site_message;
         devmode modules/canonical.config/config/devmode;
         is_demo modules/canonical.config/config/launchpad/is_demo">
@@ -24,12 +24,20 @@
       media="screen, print"
       tal:condition="devmode"
       tal:content="string:@import url(${icingroot}/style.css);"/>
+    <style
+      type="text/css"
+      tal:condition="view/isPrivate | CONTEXTS/lp:immediate_object_is_private"
+      id="privatestyle"
+    >#nonheader {background: url(/@@/private-bg) top left repeat-x;}</style>
     <style tal:condition="is_demo" type="text/css"
-    >html, body {background: #ddd url(/@@/demo) !important;}</style>
+    >html, body {background-image: url(/@@/demo) !important;}</style>
     <style tal:condition="site_message" type="text/css"
     >#help {top: 47px !important;}</style>
     <!--[if IE 7]>
-      <style type="text/css">#portlets {left: 20px;}</style>
+      <style type="text/css">
+        #container {margin-top: 48px;}
+        #portlets {left: 20px;}
+      </style>
     <![endif]-->
 
     <tal:comment condition="nothing">
@@ -53,13 +61,15 @@
     <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/lpmenu.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
+    <script type="text/javascript"
+        tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
     <script type="text/javascript">
       function onLoadFunction() {
         lpmenu.initialize(['menuroot'], '/', 'menupreload',
                            [], '1.3em', 16, true);
         sortables_init();
         initHelpPanel();
-        initPortlets();
+        PortletManager.initialize(cookie_scope);
       }
       registerLaunchpadFunction(onLoadFunction);
     </script>
@@ -87,6 +97,9 @@
         </tr>
       </table>
     </div>
+
+    <div id="nonheader">
+
     <div id="nonhelp">
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <table
@@ -220,13 +233,6 @@
                               use-macro="context/@@+main-template-macros/notifications" />
                           </tal:notifications>
                           <metal:block define-slot="main" />
-                          <tal:no_children replace="nothing">
-                          <div
-                            tal:define="structuralfooterobject CONTEXTS/lp:structuralfooterobject" 
-                            tal:condition="structuralfooterobject"
-                            tal:replace="structure structuralfooterobject/@@+structural-footer"
-                            />
-                          </tal:no_children>
                         </div>
                         <div
                           id="portlets" xml:lang="en" lang="en" dir="ltr"
@@ -281,8 +287,7 @@
         <div id="copyright">
             Copyright&nbsp;2004-2007&nbsp;<a
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
-          <tal:block
-              define="revno modules/canonical.launchpad.versioninfo/revno">
+          <tal:block>
               | build
               <tal:block condition="revno" replace="revno" />
               <tal:block condition="not: revno">unknown</tal:block>
@@ -343,6 +348,8 @@
         <li class="item"><a href="/people">People</a></li>
         <li class="item"><a href="/sprints">Meetings</a></li>
     </div>
+
+    </div><!--id="nonheader"-->
   </body>
 </html>
 <tal:requestlog

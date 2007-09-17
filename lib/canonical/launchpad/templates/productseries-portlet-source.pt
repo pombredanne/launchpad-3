@@ -1,17 +1,18 @@
-<div class="portlet">
+<div class="portlet" id="portlet-source">
   <h2>Revision control details</h2>
 
   <div class="portletBody">
     <div class="portletContent">
-      <div tal:condition="not:context/rcstype">
-        <tal:block define="branch context/series_branch" condition="branch">
+      <div tal:condition="not:context/rcstype"
+           tal:define="branch context/series_branch">
+        <tal:block condition="branch/required:launchpad.View">
           <b>Bazaar Branch:</b><br />
           <img alt="" src="/@@/branch" />
           <a tal:attributes="href branch/fmt:url" tal:content="branch/displayname">
             branch name
           </a>
         </tal:block>
-        <i tal:condition="not:context/series_branch">None given</i>
+        <i tal:condition="not:branch/required:launchpad.View">None given</i>
       </div>
       <tal:block condition="context/rcstype">
         <tal:block condition="context/rcstype/enumvalue:CVS">

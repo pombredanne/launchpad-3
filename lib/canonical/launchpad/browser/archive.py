@@ -63,7 +63,7 @@ class ArchiveOverviewMenu(ApplicationMenu):
 
     usedfor = IArchive
     facet = 'overview'
-    links = ['admin', 'edit', 'builds']
+    links = ['admin', 'edit', 'builds', 'view_tos']
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -78,6 +78,10 @@ class ArchiveOverviewMenu(ApplicationMenu):
     def builds(self):
         text = 'View build records'
         return Link('+builds', text, icon='info')
+
+    def view_tos(self):
+        text = 'View Terms of Service'
+        return Link('+view-tos', text, icon='info')
 
 
 class ArchiveView(LaunchpadView):
@@ -124,8 +128,8 @@ class ArchiveActivateView(LaunchpadFormView):
     @action(_("Activate"), name="activate")
     def action_save(self, action, data):
         """Activate PPA and moves to its page."""
-        ppa = getUtility(IArchiveSet).new(
-            owner=self.context, purpose=ArchivePurpose.PPA,
+        ppa = getUtility(IArchiveSet).ensure(
+            owner=self.context, distribution=None, purpose=ArchivePurpose.PPA,
             description=data['description'])
         self.next_url = canonical_url(ppa)
 

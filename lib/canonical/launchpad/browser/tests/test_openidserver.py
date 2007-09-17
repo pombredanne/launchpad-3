@@ -12,12 +12,11 @@ from zope.component import getUtility
 from zope.testing import doctest
 
 from canonical.functional import FunctionalDocFileSuite
-from canonical.launchpad.browser.openidserver import (
-    KNOWN_TRUST_ROOTS, OpenIdMixin)
+from canonical.launchpad.browser.openidserver import OpenIdMixin
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests.test_system_documentation import (
     default_optionflags, setUp, tearDown)
-from canonical.launchpad.interfaces import IPersonSet
+from canonical.launchpad.interfaces import IPersonSet, IOpenIDRPConfigSet
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -28,17 +27,14 @@ class SimpleRegistrationTestCase(unittest.TestCase):
     def setUp(self):
         login(ANONYMOUS)
 
-    def tearDown(self):
-        if 'fake-trust-root' in KNOWN_TRUST_ROOTS:
-            del KNOWN_TRUST_ROOTS['fake-trust-root']
-
     def test_sreg_field_names(self):
         # Test that sreg_field_names returns an appropriate value
         # according to both the OpenID request and the policy defined
-        # in KNOWN_TRUST_ROOTS.
-        KNOWN_TRUST_ROOTS['fake-trust-root'] = dict(
-            title='Fake Trust Root',
-            sreg=['email', 'fullname', 'postcode'])
+        # for the RP.
+        getUtility(IOpenIDRPConfigSet).new(
+            trust_root='fake-trust-root', displayname='Fake Trust Root',
+            description='Description',
+            allowed_sreg=['email', 'fullname', 'postcode'])
         class FieldNameTest(OpenIdMixin):
             openid_parameters = {
                 'openid.sreg.required': 'email,country,nickname',

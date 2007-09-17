@@ -12,7 +12,7 @@ can be installers, executables, documentation, or README files.
 A ProductSeries can have multiple releases.  Firefox 1.5 (a ProductSeries)
 has ProductReleases 1.5.0.1 and 1.5.0.2
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IProductSeries, IProductSet, NotFoundError, IProjectSet)
     >>> from canonical.database.sqlbase import flush_database_updates

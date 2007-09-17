@@ -39,13 +39,12 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus,
-    SpecificationFilter, SpecificationDefinitionStatus,
+    BugTaskImportance, SpecificationFilter, SpecificationDefinitionStatus,
     SpecificationImplementationStatus, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, BugTaskSearchParams, EmailAddressStatus, IBugTaskSet,
-    ICalendarOwner, IDistribution, IDistributionSet, IEmailAddress,
+    AccountStatus, BugTaskSearchParams, BugTaskStatus, EmailAddressStatus,
+    IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet, IEmailAddress,
     IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo, IHasMugshot, IIrcID,
     IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILoginTokenSet, IPasswordEncryptor, IPerson,
@@ -81,6 +80,8 @@ from canonical.launchpad.database.specificationfeedback import (
     SpecificationFeedback)
 from canonical.launchpad.database.specificationsubscription import (
     SpecificationSubscription)
+from canonical.launchpad.database.translationimportqueue import (
+    HasTranslationImportsMixin)
 from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamMembershipSet, TeamParticipation)
 from canonical.launchpad.database.question import QuestionPersonSearch
@@ -97,7 +98,7 @@ class ValidPersonOrTeamCache(SQLBase):
     # Look Ma, no columns! (apart from id)
 
 
-class Person(SQLBase, HasSpecificationsMixin):
+class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     """A Person."""
 
     implements(IPerson, ICalendarOwner, IHasIcon, IHasLogo, IHasMugshot)
@@ -177,8 +178,8 @@ class Person(SQLBase, HasSpecificationsMixin):
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
         orderBy='id')
-    # XXX: matsubara 2006-03-06 bug=33935: 
-    # Is this really needed? There's no attribute 'claimant' in the Bounty 
+    # XXX: matsubara 2006-03-06 bug=33935:
+    # Is this really needed? There's no attribute 'claimant' in the Bounty
     # database class or interface, but the column exists in the database.
     claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
         orderBy='id')
@@ -813,7 +814,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             SELECT name
             FROM project, teamparticipation
             WHERE teamparticipation.person = %(person)s
-                AND (driver = teamparticipation.team 
+                AND (driver = teamparticipation.team
                      OR owner = teamparticipation.team)
 
             UNION
@@ -936,9 +937,12 @@ class Person(SQLBase, HasSpecificationsMixin):
                     sourcepackagename=None):
         """See `IPerson`."""
         # Teams don't get Karma. Inactive accounts don't get Karma.
+        # The system user and janitor, does not get karma.
         # No warning, as we don't want to place the burden on callsites
         # to check this.
-        if not self.is_valid_person:
+        if (not self.is_valid_person
+            or self.id is getUtility(
+                ILaunchpadCelebrities).janitor.id):
             return None
 
         if product is not None:
@@ -1340,7 +1344,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             - Removing the user from all teams he's a member of;
             - Changing all his email addresses' status to NEW;
             - Revoking Code of Conduct signatures of that user;
-            - Reassigning bugs/specs assigned to him; 
+            - Reassigning bugs/specs assigned to him;
             - Changing the ownership of products/projects/teams owned by him.
         """
         assert self.is_valid_person, (
@@ -1830,7 +1834,7 @@ class PersonSet:
 
     def getByOpenIdIdentifier(self, openid_identifier):
         """Returns a Person with the given openid_identifier, or None.
-       
+
         None is returned if the person is not enabled for OpenID usage
         (see Person.is_openid_enabled).
         """
@@ -2094,7 +2098,7 @@ class PersonSet:
         # Update GPGKey. It won't conflict, but our sanity checks don't
         # know that
         cur.execute(
-            'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d' 
+            'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
             % vars())
         skip.append(('gpgkey','owner'))
 

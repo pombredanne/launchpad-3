@@ -1,4 +1,4 @@
-<div class="portlet" tal:condition="context/questions">
+<div class="portlet" id="portlet-questions" tal:condition="context/questions">
 
   <h2>Related questions</h2>
 

@@ -81,7 +81,6 @@ class IBuild(Interface):
                                    depends, recommends, suggests,
                                    conflicts, replaces, provides,
                                    essential, installedsize,
-                                   copyright, licence,
                                    architecturespecific):
         """Create a binary package release with the provided args, attached
         to this specific build.

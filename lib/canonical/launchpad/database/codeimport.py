@@ -9,7 +9,7 @@ __all__ = [
     'CodeImportSet',
     ]
 
-from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
+from sqlobject import ForeignKey, IntervalCol, StringCol, SQLObjectNotFound
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -36,6 +36,9 @@ class CodeImport(SQLBase):
                         notNull=True)
     registrant = ForeignKey(dbName='registrant', foreignKey='Person',
                             notNull=True)
+    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    assignee = ForeignKey(dbName='assignee', foreignKey='Person',
+                          notNull=False, default=None)
 
     @property
     def product(self):
@@ -60,6 +63,7 @@ class CodeImport(SQLBase):
     svn_branch_url = StringCol(default=None)
 
     date_last_successful = UtcDateTimeCol(default=None)
+    update_interval = IntervalCol(default=None)
 
 
 class CodeImportSet:
@@ -81,7 +85,8 @@ class CodeImportSet:
             raise AssertionError(
                 "Don't know how to sanity check source details for unknown "
                 "rcs_type %s"%rcs_type)
-        return CodeImport(registrant=registrant, branch=branch,
+        return CodeImport(
+            registrant=registrant, owner=registrant, branch=branch,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
 
@@ -110,7 +115,8 @@ class CodeImportSet:
                 SELECT last_value from codeimport_id_seq)));"""
             % sqlvalues(id))
         assert len(cur.fetchall()) == 1
-        return CodeImport(id=id, registrant=registrant, branch=branch,
+        return CodeImport(
+            id=id, registrant=registrant, owner=registrant, branch=branch,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
 

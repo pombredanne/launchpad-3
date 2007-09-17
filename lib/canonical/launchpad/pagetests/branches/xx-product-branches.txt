@@ -1,4 +1,4 @@
-= Branches Overview =
+= Product Branches Overview =
 
 Products link their branch listing page.
 
