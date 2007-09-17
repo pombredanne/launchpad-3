@@ -106,19 +106,10 @@ class LaunchpadServer(Server):
             'readonly+' + mirror_transport.base)
         self._is_set_up = False
 
-    def dirty(self, virtual_path):
-        """Mark the branch containing virtual_path as dirty."""
-        # XXX: JonathanLange 2007-06-18 bugs=120949:
-        # Note that we only mark branches as
-        # dirty if they end up calling VFS (i.e. Transport) methods. If a
-        # client does a writing smart operation that doesn't use VFS, we won't
-        # catch it. (e.g. Branch.set_last_revision). This problem will become
-        # more severe in Bazaar 0.18 and later.
-        #
-        # Instead we should register our own smart request handlers to override
-        # the builtin ones.
+    def requestMirror(self, virtual_path):
+        """Request that the branch that owns 'virtual_path' be mirrored."""
         branch_id, ignored, path = self._translate_path(virtual_path)
-        self._dirty_branch_ids.add(branch_id)
+        self.authserver.requestMirror(branch_id)
 
     def make_branch_dir(self, virtual_path):
         """Make a new directory for the given virtual path.
@@ -248,7 +239,6 @@ class LaunchpadServer(Server):
     def setUp(self):
         """See Server.setUp."""
         self.scheme = 'lp-%d:///' % id(self)
-        self._dirty_branch_ids = set()
         register_transport(self.scheme, self._factory)
         self._is_set_up = True
 
@@ -257,9 +247,6 @@ class LaunchpadServer(Server):
         if not self._is_set_up:
             return
         self._is_set_up = False
-        for branch_id in self._dirty_branch_ids:
-            self.authserver.requestMirror(branch_id)
-        self._dirty_branch_ids = None
         unregister_transport(self.scheme, self._factory)
 
 
@@ -378,8 +365,8 @@ class LaunchpadTransport(Transport):
         path, permissions = self._translate_virtual_path(rel_to)
         if permissions == READ_ONLY:
             raise TransportNotPossible('readonly transport')
-        if rel_to.endswith('held'):
-            self.server.dirty(self._abspath(rel_to))
+        if rel_from.endswith('held'):
+            self.server.requestMirror(self._abspath(rel_from))
         return self._call('rename', rel_from, path)
 
     def rmdir(self, relpath):

@@ -111,32 +111,6 @@ class TestLaunchpadServer(TestCase):
         self.addCleanup(self.server.tearDown)
         self.assertEqual('lp-%d:///' % id(self.server), self.server.get_url())
 
-    def test_nothing_dirty_by_default(self):
-        # If a server is set up then torn down without any operations, then no
-        # branches should be marked as dirty.
-        self.server.setUp()
-        self.server.tearDown()
-        self.assertEqual([], self.server.authserver._request_mirror_log)
-
-    def test_mark_as_dirty(self):
-        # If a given file is flagged as modified then the branch owning that
-        # file should be flagged as dirty.
-        self.server.setUp()
-        self.server.dirty('/~testuser/firefox/baz/.bzr')
-        self.server.tearDown()
-        self.assertEqual([1], self.server.authserver._request_mirror_log)
-
-    def test_tearDown_clears_dirty_flags(self):
-        # A branch is marked as dirty only for as long as the server is set up.
-        # Once tearDown requests mirrors for all the dirty branches, the
-        # branches are considered clean again, and thus not mirrored.
-        self.server.setUp()
-        self.server.dirty('/~testuser/firefox/baz/.bzr')
-        self.server.tearDown()
-        self.server.setUp()
-        self.server.tearDown()
-        self.assertEqual([1], self.server.authserver._request_mirror_log)
-
 
 class TestLaunchpadTransport(TestCase):
 
@@ -293,19 +267,11 @@ class TestLaunchpadTransport(TestCase):
         transport.rename('held', 'temporary')
         transport.rmdir('temporary')
 
-    def test_lock_marks_as_dirty(self):
-        # Locking a branch marks it as dirty.
+    def test_unlock_requests_mirror(self):
+        # Unlocking a branch requests a mirror.
         self.lockBranch('~testuser/firefox/baz')
-        try:
-            self.assertEqual(set([1]), self.server._dirty_branch_ids)
-        finally:
-            self.unlockBranch('~testuser/firefox/baz')
-
-#     def test_unlock_requests_mirror(self):
-#         # Unlocking a branch requests a mirror.
-#         self.lockBranch('~testuser/firefox/baz')
-#         self.unlockBranch('~testuser/firefox/baz')
-#         self.assertEqual([1], self.server.authserver._request_mirror_log)
+        self.unlockBranch('~testuser/firefox/baz')
+        self.assertEqual([1], self.server.authserver._request_mirror_log)
 
 
 class TestLaunchpadTransportReadOnly(TestCase):
