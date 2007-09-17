@@ -82,12 +82,25 @@ class SourcePackageRelease(SQLBase):
     dsc_binaries = StringCol(dbName='dsc_binaries')
 
     # MultipleJoins
-    builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',
-                             orderBy=['-datecreated'])
     files = SQLMultipleJoin('SourcePackageReleaseFile',
         joinColumn='sourcepackagerelease', orderBy="libraryfile")
     publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
+
+    @property
+    def builds(self):
+        """See `ISourcePackageRelease`."""
+        # Excluding PPA builds may seem like a strange thing to do but
+        # when copy-package works for copying packages across archives,
+        # a build may well have a different archive to the corresponding
+        # sourcepackagerelease.
+        return Build.select("""
+            sourcepackagerelease = %s AND
+            archive.id = build.archive AND
+            archive.purpose != %s
+            """ % sqlvalues(self.id, ArchivePurpose.PPA),
+            orderBy='-datecreated',
+            clauseTables=['Archive'])
 
     @property
     def age(self):
