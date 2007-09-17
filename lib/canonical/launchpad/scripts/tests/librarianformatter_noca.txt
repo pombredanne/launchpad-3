@@ -1,3 +1,5 @@
+>>> import logging
+>>> from cStringIO import StringIO
 
 The LibrarianFormatter works just like a normal logger.Formatter if there
 is no Librarian available or active

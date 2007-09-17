@@ -4,18 +4,9 @@
 
 __metaclass__ = type
 
-import sys
-import time
 import unittest
-import logging
-from urllib2 import urlopen
-from StringIO import StringIO
 
 from zope.testing import doctest
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
-from canonical.launchpad.ftests import login, ANONYMOUS
-from canonical.librarian.ftests.harness import LibrarianTestSetup
-from canonical.functional import FunctionalTestSetup
 from canonical.testing import reset_logging
 
 import os.path
