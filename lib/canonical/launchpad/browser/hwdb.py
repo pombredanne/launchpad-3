@@ -49,29 +49,48 @@ class HWDBUploadView(LaunchpadFormView):
 
         submitted_data = data['submission_data']
         filesize = len(data['submission_data'])
-        file_ = self.request.form[self.widgets['submission_data'].name]
-        file_.seek(0)
-        filename = file_.filename.replace('/', '-')
+        submission_file = self.request.form[
+            self.widgets['submission_data'].name]
+        submission_file.seek(0)
+        # convert a filename with "path elements" to a regular filename
+        filename = submission_file.filename.replace('/', '-')
 
         hwdb_submissionset = getUtility(IHWDBSubmissionSet)
-        hwdb_submissionset.createSubmission(
-            date_created=data['date_created'],
-            format=data['format'],
-            private=data['private'],
-            contactable=data['contactable'],
-            livecd=data['livecd'],
-            submission_id=data['submission_id'],
-            emailaddress=data['emailaddress'],
-            distroarchseries=distroarchseries,
-            raw_submission=file_,
-            filename=filename,
-            filesize=filesize,
-            system=data['system'])
-        self.request.response.addHeader('X-lphwdb', 'OK data stored')
+        try:
+            hwdb_submissionset.createSubmission(
+                date_created=data['date_created'],
+                format=data['format'],
+                private=data['private'],
+                contactable=data['contactable'],
+                livecd=data['livecd'],
+                submission_id=data['submission_id'],
+                emailaddress=data['emailaddress'],
+                distroarchseries=distroarchseries,
+                raw_submission=submission_file,
+                filename=filename,
+                filesize=filesize,
+                system=data['system'])
+        except HWDBSubmissionError:
+            self.addCustomHeader(
+                'Emailaddress',
+                "Error - %s isn't a valid email address" % data['emailaddress'])
+            self.request.response.addErrorNotification(
+                "Error: %(address)s email address is invalid",
+                address = data['emailaddress'])
+            return
+
+            
+        self.addCustomHeader('', 'OK data stored')
         self.request.response.addNotification(
             "Thank you for your submission.")
 
     def render(self):
+        """See ILaunchpadFormView."""
+        if self.errors:
+            self.setHeadersForHWDBClient()
+        return LaunchpadFormView.render(self)
+
+    def setHeadersForHWDBClient(self):
         """Add headers that help the HWDB client detect a successful upload.
 
         An upload is normally not made by a regular web browser, but by the
@@ -79,16 +98,21 @@ class HWDBUploadView(LaunchpadFormView):
         successful as well as an failed request, add some HTTP headers
         to the response.
         """
-        if self.errors:
-            response = self.request.response
-            for field in self.form_fields:
-                field_name = field.__name__
-                error = self.getWidgetError(field_name)
-                if error:
-                    response.setHeader(
-                    u'X-lphwdb-%s' % field_name, u'Error - %s' % error)
-        res = LaunchpadFormView.render(self)
-        return res
+        response = self.request.response
+        for field in self.form_fields:
+            field_name = field.__name__
+            error = self.getWidgetError(field_name)
+            if error:
+                self.addCustomHeader(field_name, u'Error - %s' % error)
+
+    def addCustomHeader(self, field_name, value):
+        if field_name:
+            self.request.response.setHeader(
+                u'X-Launchpad-HWDB-Submission-%s' % field_name, value)
+        else:
+            self.request.response.setHeader(
+                u'X-Launchpad-HWDB-Submission', value)
+        
 
 class HWDBPersonSubmissionsView(LaunchpadView):
     """View class for preseting HWDB submissions by a person."""
@@ -120,7 +144,7 @@ class HWDBFingerprintSetView(LaunchpadView):
     implements(IBrowserPublisher)
 
     template = ViewPageTemplateFile(
-        '../templates/hwdb-submissions-fingerprint.pt')
+        '../templates/hwdb-fingerprint-submissions.pt')
     
     def __init__(self, context,  request, system_name):
         LaunchpadView.__init__(self, context, request)

@@ -55,7 +55,7 @@
         for="canonical.launchpad.interfaces.IPerson"
         permission="zope.Public"
         class="canonical.launchpad.browser.HWDBPersonSubmissionsView"
-        template="../templates/hwdb-submissions-person.pt"
+        template="../templates/person-hwdb-submissions.pt"
         name="+hwdb-submissions"
         />
 

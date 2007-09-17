@@ -4,7 +4,7 @@ The raw submission data is listed by submitter and by system fingerprint.
 
 == Submissions listed by person ==
 
-The pages http:://launchpad.dev/~(name)/+hwdb-submissions lists the hardware
+The pages http://launchpad.dev/~(name)/+hwdb-submissions lists the hardware
 database submissions by this person.
 
     >>> anon_browser.open('http://launchpad.dev/~name12/+hwdb-submissions')
@@ -13,8 +13,8 @@ database submissions by this person.
     System        Date submitted  Download submitted data 
     Fujitsu CY26  ...             test.txt
 
-Submissions that are marked as private are only displayed for the 
-submitter.
+Submissions that are marked as private are only displayed to the 
+submitter himself.
 
     >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
     >>> from StringIO import StringIO
@@ -74,7 +74,7 @@ displayed.
     >>> anon_browser.open('http://launchpad.dev/~name16/+hwdb-submissions')
     >>> print extract_text(find_main_content(anon_browser.contents))
     Submissions to the Hardware Database
-    There are no submissions.
+    Foo Bar has posted no submissions.
 
 == Submissions listed by fingerprint ==
 
@@ -125,4 +125,4 @@ A page for an unknown fingerprint displays an according message.
     ...     'http://launchpad.dev/hwdb/+hwdb-fingerprint/unknownfingerprint')
     >>> print extract_text(find_main_content(anon_browser.contents))
     Submissions for system: unknownfingerprint
-    There are no submissions.
+    There are no submissions for this system.

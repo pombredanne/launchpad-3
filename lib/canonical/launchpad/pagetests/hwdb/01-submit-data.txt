@@ -48,8 +48,8 @@ data has successfully been uploaded.
     Content-Length: ...
     Content-Type: text/html;charset=utf-8
     Set-Cookie: launchpad_tests=...
-    X-Powered-By: Zope (www.zope.org), Python (www.python.org)
-    X-lphwdb: OK data stored
+    X-Launchpad-Hwdb-Submission: OK data stored
+    ...
 
 Human users get a message too.
 
@@ -78,37 +78,37 @@ error.
     --- missing field Date Created:
     Status: 200 Ok
     ...
-    X-Lphwdb-Date_created: Error - Required input is missing.
+    X-Launchpad-Hwdb-Submission-Date_created: Error - Required input is missing.
     ...
     --- missing field Distribution Release:
     Status: 200 Ok
     ...
-    X-Lphwdb-Distrorelease: Error - Required input is missing.
+    X-Launchpad-Hwdb-Submission-Distrorelease: Error - Required input is missing.
     ...
     --- missing field Distribution:
     Status: 200 Ok
     ...
-    X-Lphwdb-Distribution: Error - Required input is missing.
+    X-Launchpad-Hwdb-Submission-Distribution: Error - Required input is missing.
     ...
     --- missing field Email address:
     Status: 200 Ok
     ...
-    X-Lphwdb-Emailaddress: Error - Required input is missing.
+    X-Launchpad-Hwdb-Submission-Emailaddress: Error - Required input is missing.
     ...
     --- missing field Processor Architecture:
     Status: 200 Ok
     ...
-    X-Lphwdb-Architecture: Error - Required input is missing.
+    X-Launchpad-Hwdb-Submission-Architecture: Error - Required input is missing.
     ...
     --- missing field System name:
     Status: 200 Ok
     ...
-    X-Lphwdb-System: Error - Required input is missing.
+    X-Launchpad-Hwdb-Submission-System: Error - Required input is missing.
     ...
     --- missing field Unique Submission ID:
     Status: 200 Ok
     ...
-    X-Lphwdb-Submission_id: Error - Required input is missing.
+    X-Launchpad-Hwdb-Submission-Submission_id: Error - Required input is missing.
     ...
 
 The file with the test data must also be provided.
@@ -120,7 +120,7 @@ The file with the test data must also be provided.
     >>> print browser.headers
     Status: 200 Ok
     ...
-    X-Lphwdb-Submission_data: Error - Required input is missing.
+    X-Launchpad-Hwdb-Submission-Submission_data: Error - Required input is missing.
     ...
  
 If a submission uses an already existing submission ID, the submission 
@@ -136,7 +136,7 @@ is rejected and an explaining header is added to the response.
     >>> print browser.headers
     Status: 200 Ok
     ...
-    X-Lphwdb-Submission_id: Error - Submission ID already exists.
+    X-Launchpad-Hwdb-Submission-Submission_id: Error - Submission ID already exists.
     ...
 
 The field "Date Created" must contain a valid timestamp.
@@ -151,7 +151,7 @@ The field "Date Created" must contain a valid timestamp.
     >>> print browser.headers
     Status: 200 Ok
     ...
-    X-Lphwdb-Date_created: Error - Invalid datetime data
+    X-Launchpad-Hwdb-Submission-Date_created: Error - Invalid datetime data
     ...
 
 The field "Submission ID" may contain only ASCII characters.
@@ -166,7 +166,7 @@ The field "Submission ID" may contain only ASCII characters.
     >>> print browser.headers
     Status: 200 Ok
     ...
-    X-Lphwdb-Submission_id: Error - Invalid textual data
+    X-Launchpad-Hwdb-Submission-Submission_id: Error - Invalid textual data
     ...
 
 The field "Email address:" musr contain a valid email address.
@@ -181,5 +181,5 @@ The field "Email address:" musr contain a valid email address.
     >>> print browser.headers
     Status: 200 Ok
     ...
-    X-Lphwdb-Emailaddress: Error - no email isn't a valid email address.
+    X-Launchpad-Hwdb-Submission-Emailaddress: Error - no email isn't a valid email address.
     ...
