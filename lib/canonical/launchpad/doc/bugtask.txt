@@ -1070,8 +1070,8 @@ The ubuntu_bugtask is never returned; it is a conjoined slave to the
 ubuntu_hoary_bugtask. Slave bugtasks cannot be directly expired because
 only the master bugtask can change the status.
 
-    # No bugtask is older than 351 days.
-    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(351)
+    # No bugtask is older than 352 days.
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(352)
     >>> len(expirable_bugtasks)
     0
 
