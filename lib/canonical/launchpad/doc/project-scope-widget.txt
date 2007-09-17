@@ -199,3 +199,33 @@ Setting the scope to None, will default to the 'All projects' option.
              id="field.scope.option.all" name="field.scope"
              type="radio" value="all" />
     ...
+
+== getScope() and partial queries ==
+
+In some cases, forms with a ProjectScopeWidget are requested by bots
+which incorrectly build the query string without without the `scope`
+parameter. A method, `getScope` is provided, which returns the value
+of the scope option, or `None` if no scope was selected.
+
+    >>> form = {'field.scope': 'project',
+    ...         'field.scope.target': 'mozilla'}
+    >>> widget = ProjectScopeWidget(
+    ...     scope_field, scope_field.vocabulary,
+    ...     LaunchpadTestRequest(form=form))
+    >>> print widget.getScope()
+    project
+
+    >>> form = {'field.scope': 'all',
+    ...         'field.scope.target': ''}
+    >>> widget = ProjectScopeWidget(
+    ...     scope_field, scope_field.vocabulary,
+    ...     LaunchpadTestRequest(form=form))
+    >>> print widget.getScope()
+    all
+
+    >>> form = {'field.scope.target': ''}
+    >>> widget = ProjectScopeWidget(
+    ...     scope_field, scope_field.vocabulary,
+    ...     LaunchpadTestRequest(form=form))
+    >>> print widget.getScope()
+    None

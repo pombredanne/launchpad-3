@@ -211,7 +211,7 @@ class Publisher(object):
                                    (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        self.archive.purpose != ArchivePurpose.PPA):
+                        not self.archive.allowUpdatesToReleasePocket):
                         # We're not doing a full run and the
                         # distroseries is now 'stable': if we try to
                         # write a release file for it, we're doing
@@ -239,7 +239,7 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        self.archive.purpose != ArchivePurpose.PPA):
+                        not self.archive.allowUpdatesToReleasePocket):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
                             "Oops, indexing stable distroseries.")
@@ -269,7 +269,7 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        self.archive.purpose != ArchivePurpose.PPA):
+                        not self.archive.allowUpdatesToReleasePocket):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
                             "Oops, indexing stable distroseries.")
@@ -461,8 +461,8 @@ class Publisher(object):
         # Only the primary archive has uncompressed and bz2 archives.
         if self.archive.purpose == ArchivePurpose.PRIMARY:
             index_suffixes = ('', '.gz', '.bz2')
-        elif self.archive.purpose == ArchivePurpose.COMMERCIAL:
-            # The commercial archive needs uncompressed files for
+        elif self.archive.purpose == ArchivePurpose.PARTNER:
+            # The partner archive needs uncompressed files for
             # compatibility with signed Release files.
             index_suffixes = ('', '.gz')
         else:
