@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 import os
+import tempfile
 import unittest
 
 from bzrlib import errors
@@ -14,7 +15,9 @@ from bzrlib.tests import TestCase
 
 from canonical.authserver.interfaces import READ_ONLY, WRITABLE
 from canonical.codehosting.tests.helpers import FakeLaunchpad
-from canonical.codehosting.transport import LaunchpadServer, makedirs
+from canonical.codehosting.transport import (
+    LaunchpadServer, makedirs, set_up_logging)
+from canonical.config import config
 
 from canonical.testing import BaseLayer
 
@@ -340,6 +343,27 @@ class TestLaunchpadTransportReadOnly(TestCase):
         self.assertEqual(
             'Goodbye World!',
             transport.get_bytes('/~name12/+junk/junk.dev/.bzr/README'))
+
+
+class TestLoggingSetup(TestCase):
+
+    def setUp(self):
+        TestCase.setUp(self)
+        self._real_debug_logfile = config.codehosting.debug_logfile
+
+    def tearDown(self):
+        config.codehosting.debug_logfile = self._real_debug_logfile
+        TestCase.tearDown(self)
+
+    def test_loggingSetUpAssertionFailsIfParentDirectoryIsNotADirectory(self):
+        # set_up_logging fails with an AssertionError if it cannot create the
+        # directory that the log file will go in.
+        file_handle, filename = tempfile.mkstemp()
+        config.codehosting.debug_logfile = os.path.join(filename, 'debug.log')
+        try:
+            self.assertRaises(AssertionError, set_up_logging)
+        finally:
+            os.unlink(filename)
 
 
 def test_suite():

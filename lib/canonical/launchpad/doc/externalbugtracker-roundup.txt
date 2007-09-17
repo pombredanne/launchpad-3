@@ -44,7 +44,7 @@ If the status isn't something that our Roundup ExternalBugTracker can
 understand, Unknown will be returned and a warning logged.
 
     >>> roundup.convertRemoteStatus('eggs').title
-    WARNING:...:Unknown status 'eggs'
+    WARNING:...:Unknown remote status 'eggs'.
     'Unknown'
 
 UNKNOWN_REMOTE_STATUS maps to Unknown without generating a warning. This
