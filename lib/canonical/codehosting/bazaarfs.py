@@ -273,8 +273,7 @@ class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
         The listener is the '_flagAsDirty' callable, set by the constructor.
         """
         def childWithListener(path, name, parent):
-            return WriteLoggingFile(
-                self._flagAsDirty, path, self.logger, name, parent)
+            return LoggingFile(path, self.logger, name, parent)
         return childWithListener
 
     def childDirFactory(self):
@@ -311,12 +310,11 @@ class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
         self._flagAsDirty()
 
 
-class WriteLoggingFile(osfs.OSFile, LoggingMixin):
+class LoggingFile(osfs.OSFile, LoggingMixin):
     """osfs.OSFile that keeps track of whether it has been written to.
     """
 
-    def __init__(self, listener, path, logger, name=None, parent=None):
-        self._flagAsDirty = listener
+    def __init__(self, path, logger, name=None, parent=None):
         self.logger = logger
         osfs.OSFile.__init__(self, path, name, parent)
 
