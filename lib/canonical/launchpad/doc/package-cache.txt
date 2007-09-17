@@ -104,7 +104,7 @@ cache when it's updated.
   >>> foobar_rel = foobar_in_ubuntu.releases[0]
   >>> foobar_pub = foobar_rel.publishing_history[0]
   >>> foobar_pub.status.name
-  'REMOVED'
+  'SUPERSEDED'
 
   >>> len(ubuntu.searchSourcePackages('foobar'))
   1
@@ -203,7 +203,7 @@ cache when it's updated.
   >>> foobar_bin_rel = foobar_in_ubuntu.releases[0]
   >>> foobar_bin_pub = foobar_rel.publishing_history[0]
   >>> foobar_bin_pub.status.name
-  'REMOVED'
+  'SUPERSEDED'
 
   >>> len(warty.searchPackages('foobar'))
   1
