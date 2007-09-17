@@ -382,7 +382,9 @@ class TestSFTPServerBranch(AvatarTestCase):
         actual_lock.rename(os.path.join(lock_dir.getAbsolutePath(), 'held'))
         actual_lock.rename(
             os.path.join(lock_dir.getAbsolutePath(), 'temporary'))
-        self.assertEqual([1], self.authserver._request_mirror_log)
+        self.assertEqual(
+            [self.server_branch.branchID],
+            self.authserver._request_mirror_log)
 
 
 def test_suite():
