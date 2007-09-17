@@ -17,14 +17,14 @@ __all__ = ['notes']
 class DBNote2:
     """Dictionary-style class which autovivifys real dicts based on
     ids used to index it."""
-    
+
     def __init__(self):
         self.notes = {}
 
     def __getitem__(self, id):
         self.notes.setdefault(id,{})
         return self.notes[id]
-    
+
 
 
 class DBNote:
@@ -35,7 +35,7 @@ class DBNote:
     without worrying about the fact that across transactions they might change
     their instance locations and thusly not be the same for keying in a dict.
     """
-    
+
     def __init__(self):
         self.notes = {}
 

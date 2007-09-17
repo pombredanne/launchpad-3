@@ -138,10 +138,6 @@ Some of the 20 required arguments are foreign keys or DB contants:
   >>> arg_creator = hoary.owner
   >>> arg_urgency = SourcePackageUrgency.LOW
 
-'manifest' is the only nullable FK:
-
-  >>> arg_manifest = None
-
 The other argurments are strings:
 
   >>> version = '0.0.99'
@@ -164,7 +160,7 @@ ISourcePackageRelease, it will automatically set the
   >>> new_spr = hoary.createUploadedSourcePackageRelease(
   ...     arg_name, version, arg_maintainer,
   ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
-  ...     arg_urgency, changelog, dsc, arg_key, arg_sect, arg_manifest,
+  ...     arg_urgency, changelog, dsc, arg_key, arg_sect,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
   ...     dsc_binaries, archive, copyright=copyright)
 

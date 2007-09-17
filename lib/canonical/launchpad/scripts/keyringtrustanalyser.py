@@ -35,7 +35,7 @@ def addOtherKeyring(filename):
 
 def getValidUids(minvalid=gpgme.VALIDITY_MARGINAL):
     """Returns an iterator yielding (fingerprint, email) pairs.
-    
+
     Only UIDs assigned a validity of at least 'minvalid' are returned.
     """
     gpg = getUtility(IGPGHandler)
@@ -48,7 +48,7 @@ def getValidUids(minvalid=gpgme.VALIDITY_MARGINAL):
 
 def findEmailClusters(minvalid=gpgme.VALIDITY_MARGINAL):
     """Returns an iterator yielding sets of related email addresses.
-    
+
     Two email addresses are considered to be related if they appear as
     valid user IDs on a PGP key in the keyring.
     """

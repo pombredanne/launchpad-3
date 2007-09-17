@@ -72,17 +72,17 @@ def test_cookie_scope():
 def test_dbschemaapi():
     """
     >>> from canonical.launchpad.webapp.tales import DBSchemaAPI
-    >>> from canonical.lp.dbschema import ManifestEntryType
+    >>> from canonical.launchpad.interfaces.branch import BranchType
 
     The syntax to get the title is: number/lp:DBSchemaClass
 
-    >>> (str(DBSchemaAPI(4).traverse('ManifestEntryType', []))
-    ...  == ManifestEntryType.TAR.title)
+    >>> (str(DBSchemaAPI(1).traverse('BranchType', []))
+    ...  == BranchType.HOSTED.title)
     True
 
     Using an inappropriate number should give a KeyError.
 
-    >>> DBSchemaAPI(99).traverse('ManifestEntryType', [])
+    >>> DBSchemaAPI(99).traverse('BranchType', [])
     Traceback (most recent call last):
     ...
     KeyError: 99
@@ -93,16 +93,6 @@ def test_dbschemaapi():
     Traceback (most recent call last):
     ...
     TraversalError: 'NotADBSchema'
-
-    We should also test names that are in the dbschema module, but are
-    not DBSchemas.
-
-    >>> import canonical.lp.dbschema
-    >>> from canonical.lp.dbschema import Item
-    >>> DBSchemaAPI(1).traverse('Item', [])
-    Traceback (most recent call last):
-    ...
-    TraversalError: 'Item'
 
     """
 
@@ -159,7 +149,7 @@ def test_add_word_breaks():
       ab/cdefghijklmn<wbr></wbr>op
 
     The string can contain HTML entities, which do not get split:
-    
+
       >>> print add_word_breaks('abcdef&anentity;hijklmnop')
       abcdef&anentity;<wbr></wbr>hijklmnop
     """

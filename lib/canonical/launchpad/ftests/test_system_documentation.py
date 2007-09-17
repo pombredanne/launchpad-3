@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """
 Test the examples included in the system documentation in
 lib/canonical/launchpad/doc.
@@ -10,12 +10,12 @@ import os
 
 import transaction
 
-from zope.component import getUtility
+from zope.component import getUtility, getView
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.testing.doctest import DocFileSuite
 
-from canonical.authserver.ftests.harness import AuthserverTacTestSetup
+from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.config import config
 from canonical.database.sqlbase import (
     flush_database_updates, READ_COMMITTED_ISOLATION)
@@ -24,14 +24,33 @@ from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet, ILaunchBag,
     IPersonSet, TeamSubscriptionPolicy)
+from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
         LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
         FunctionalLayer)
 
+
 here = os.path.dirname(os.path.realpath(__file__))
 
 default_optionflags = REPORT_NDIFF | NORMALIZE_WHITESPACE | ELLIPSIS
+
+
+def create_view(context, name, form=None, layer=None, server_url=None):
+    """Return a view based on the given arguments.
+
+    :param context: The context for the view.
+    :param name: The web page the view should handle.
+    :param form: A dictionary with the form keys.
+    :param layer: The layer where the page we are interested in is located.
+    :param server_url: The URL from where this request was done.
+    :return: The view class for the given context and the name.
+    """
+    request = LaunchpadTestRequest(form=form, SERVER_URL=server_url)
+    if layer is not None:
+        setFirstLayer(request, layer)
+    return getView(context, name, request)
 
 
 def setGlobs(test):
@@ -42,6 +61,7 @@ def setGlobs(test):
     test.globs['getUtility'] = getUtility
     test.globs['transaction'] = transaction
     test.globs['flush_database_updates'] = flush_database_updates
+    test.globs['create_view'] = create_view
 
 
 def setUp(test):
@@ -169,7 +189,6 @@ def _createUbuntuBugTaskLinkedToQuestion():
     bug = ubuntu.createBug(params)
     ubuntu_question.linkBug(bug)
     [ubuntu_bugtask] = bug.bugtasks
-    bugtask_id = ubuntu_bugtask.id
     login(ANONYMOUS)
     return ubuntu_bugtask.id
 
@@ -367,11 +386,7 @@ special = {
             optionflags=default_optionflags, setUp=setGlobs
             ),
 
-    # And these tests want minimal environments too.
-    'poparser.txt': DocFileSuite(
-            '../doc/poparser.txt', optionflags=default_optionflags
-            ),
-
+    # And this test want minimal environment too.
     'package-relationship.txt': DocFileSuite(
             '../doc/package-relationship.txt',
             optionflags=default_optionflags
@@ -380,17 +395,6 @@ special = {
     # POExport stuff is Zopeless and connects as a different database user.
     # poexport-distroseries-(date-)tarball.txt is excluded, since they add
     # data to the database as well.
-    'poexport.txt': LayeredDocFileSuite(
-            '../doc/poexport.txt',
-            setUp=poExportSetUp, tearDown=poExportTearDown,
-            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
-            stdout_logging=False
-            ),
-    'poexport-template-tarball.txt': LayeredDocFileSuite(
-            '../doc/poexport-template-tarball.txt',
-            setUp=poExportSetUp, tearDown=poExportTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
     'poexport-queue.txt': FunctionalDocFileSuite(
             '../doc/poexport-queue.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
@@ -422,6 +426,12 @@ special = {
             setUp=builddmasterSetUp,
             layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
             stdout_logging_level=logging.WARNING
+            ),
+    'buildd-scoring.txt': LayeredDocFileSuite(
+            '../doc/buildd-scoring.txt',
+            setUp=builddmasterSetUp,
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
+            stdout_logging_level=logging.DEBUG
             ),
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
@@ -521,6 +531,12 @@ special = {
             tearDown=uploadQueueTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
+    'bugtask-expiration.txt': LayeredDocFileSuite(
+            '../doc/bugtask-expiration.txt',
+            setUp=uploadQueueSetUp,
+            tearDown=uploadQueueTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
     'bugmessage.txt': LayeredDocFileSuite(
             '../doc/bugmessage.txt',
             setUp=noPrivSetUp, tearDown=tearDown,
@@ -550,12 +566,13 @@ special = {
             setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
             optionflags=default_optionflags, layer=LaunchpadFunctionalLayer
             ),
-    'answer-tracker-notifications-linked-bug.txt-uploader': LayeredDocFileSuite(
-            '../doc/answer-tracker-notifications-linked-bug.txt',
-            setUp=uploaderBugLinkedToQuestionSetUp,
-            tearDown=tearDown,
-            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
-            ),
+    'answer-tracker-notifications-linked-bug.txt-uploader':
+            LayeredDocFileSuite(
+                '../doc/answer-tracker-notifications-linked-bug.txt',
+                setUp=uploaderBugLinkedToQuestionSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
     'answer-tracker-notifications-linked-bug.txt-queued': LayeredDocFileSuite(
             '../doc/answer-tracker-notifications-linked-bug.txt',
             setUp=uploadQueueBugLinkedToQuestionSetUp,

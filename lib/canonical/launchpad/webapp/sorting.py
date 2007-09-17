@@ -20,7 +20,7 @@ def expand_numbers(unicode_text, fill_digits=4):
     u'00.12.01'
     >>> expand_numbers(u'branch-2-3.12')
     u'branch-0002-0003.0012'
-    
+
     """
     assert(isinstance(unicode_text, unicode))
     def substitude_filled_numbers(match):
@@ -48,7 +48,7 @@ def _reversed_number_comparator(lhs_text, rhs_text):
     -1
     >>> _reversed_number_comparator(u'bzr-0.13', u'bzr-0.08')
     -1
-    
+
     """
     assert isinstance(lhs_text, unicode)
     assert isinstance(rhs_text, unicode)
@@ -94,7 +94,7 @@ def sorted_version_numbers(sequence, key=_identity):
     bzr-0.10
     bzr-0.9
     foo
-    
+
     """
     expanded_key = lambda x: expand_numbers(key(x))
     return sorted(sequence, key=expanded_key,
@@ -140,7 +140,7 @@ def sorted_dotted_numbers(sequence, key=_identity):
     bzr-0.10
     bzr-0.11
     foo
-    
+
     """
     expanded_key = lambda x: expand_numbers(key(x))
     return sorted(sequence, key=expanded_key)

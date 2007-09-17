@@ -151,7 +151,7 @@ class LaunchpadOpenIdStore(PostgreSQLStore):
 
     def _callInTransaction(self, func, *args, **kwargs):
         """Open a fresh cursor and call the given method.
-        
+
         No transactional semantics in Launchpad because Z3 is already
         fully transactional so there is no need to reinvent the wheel.
         """

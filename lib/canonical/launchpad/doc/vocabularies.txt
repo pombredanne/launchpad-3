@@ -531,18 +531,21 @@ both a source and binary package of that name.
 
     >>> package_name_terms = package_name_vocabulary.searchForTerms("mozilla-firefox")
     >>> package_name_terms.count()
-    1
+    2
     >>> [(term.token, term.title) for term in package_name_terms]
-    [('mozilla-firefox', u'iceweasel huh ?')]
+    [('mozilla-firefox', u'iceweasel huh ?'),
+     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
 
 Searching for "mozilla" should return the binary package name above, and
 the source package named "mozilla".
 
     >>> package_name_terms = package_name_vocabulary.searchForTerms("mozilla")
     >>> package_name_terms.count()
-    2
+    3
     >>> [(term.token, term.title) for term in package_name_terms]
-    [('mozilla', 'Not uploaded'), ('mozilla-firefox', u'iceweasel huh ?')]
+    [('mozilla', 'Not uploaded'),
+     ('mozilla-firefox', u'iceweasel huh ?'),
+     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
 
 The search does a case-insensitive, substring match.
 
@@ -560,13 +563,14 @@ All the binary packages in Launchpad.
 
     >>> bpn_vocabulary = vocabulary_registry.get(None, 'BinaryPackageName')
     >>> len(bpn_vocabulary)
-    7
+    8
 
     >>> bpn_terms = bpn_vocabulary.searchForTerms("mozilla")
     >>> len(bpn_terms)
-    1
+    2
     >>> [(term.token, term.title) for term in bpn_terms]
-    [('mozilla-firefox', u'iceweasel huh ?')]
+    [('mozilla-firefox', u'iceweasel huh ?'),
+     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
 
 
 === SourcePackageNameVocabulary ===
@@ -581,7 +585,8 @@ All the source packages in Launchpad.
     >>> len(spn_terms)
     2
     >>> [(term.token, term.title) for term in spn_terms]
-    [('mozilla', 'Not yet built'), ('mozilla-firefox', u'Source of: mozilla-firefox')]
+    [('mozilla', 'Not yet built'),
+     ('mozilla-firefox', u'Source of: mozilla-firefox, mozilla-firefox-data')]
 
     >>> spn_terms = spn_vocabulary.searchForTerms("pmount")
     >>> len(spn_terms)
@@ -620,6 +625,17 @@ All the languages known by Launchpad.
     >>> print term.token, term.value.displayname, term.title
     pt_BR Portuguese (Brazil) (pt_BR) Portuguese (Brazil) (pt_BR)
 
+A language token/code may not be used with 'in' tests.
+
+    >>> u'es' in language_vocabulary
+    Traceback (most recent call last):
+    ...
+    AssertionError: 'in LanguageVocabulary' requires ILanguage
+    as left operand, got <type 'unicode'> instead.
+
+A LookupError is raised when a term is requested by token that does
+not exist.
+
     >>> language_vocabulary.getTermByToken('foo')
     Traceback (most recent call last):
     ...
@@ -629,11 +645,10 @@ All the languages known by Launchpad.
 === TranslatableLanguageVocabulary ===
 
 All the translatable languages known by Launchpad. English is not
-a translatable language.
+a translatable language, nor are Languages that are not visible.
 
-The languages in this vocabulary are the same as LanguageVocabulary,
-save for the absence of English. The vocabulary will behave identical
-to LanguageVocabulary in tests when the language is not English.
+The vocabulary will behave identically to LanguageVocabulary in tests
+when the language is not English and is visible.
 
     >>> translatable_language_vocabulary = vocabulary_registry.get(
     ...     None, 'TranslatableLanguage')
@@ -656,33 +671,86 @@ to LanguageVocabulary in tests when the language is not English.
     >>> print term.token, term.value.displayname, term.title
     pt_BR Portuguese (Brazil) (pt_BR) Portuguese (Brazil) (pt_BR)
 
+    >>> es in translatable_language_vocabulary
+    True
+
+A language token/code may not be used with 'in' tests.
+
+    >>> u'es' in translatable_language_vocabulary
+    Traceback (most recent call last):
+    ...
+    AssertionError: 'in TranslatableLanguageVocabulary' requires
+    ILanguage as left operand, got <type 'unicode'> instead.
+
+A LookupError is raised when a term is requested by token that does
+not exist.
+
     >>> translatable_language_vocabulary.getTermByToken('foo')
     Traceback (most recent call last):
     ...
     LookupError:...
 
-English is not in TranslatableLanguageVocabulary. The vocabulary will
-return a LookupError when it is passed the English.
+English and non-visible languages are not in the
+TranslatableLanguageVocabulary. English is the only visible language
+excluded from the vocabulary.
 
     >>> translatable_languages = set(
-    ...     t.token for t in translatable_language_vocabulary)
-    >>> languages = set(l.token for l in language_vocabulary)
-    >>> difference = list(languages - translatable_languages)
+    ...     t.value for t in translatable_language_vocabulary)
+    >>> all_languages = set(l.value for l in language_vocabulary)
+    >>> difference = list(all_languages - translatable_languages)
     >>> len(difference)
-    1
-    >>> difference
-    ['en']
+    89
+
+    >>> hidden_languages = [lang for lang in difference if not lang.visible]
+    >>> len(hidden_languages)
+    88
+
+    >>> [lang.displayname for lang in difference if lang.visible]
+    [u'English (en)']
+
+The vocabulary will raise a LookupError if asked to return English.
 
     >>> english = language_set['en']
+    >>> english in difference
+    True
+    >>> english in hidden_languages
+    False
+    >>> english.visible
+    True
+
     >>> english in translatable_language_vocabulary
     False
 
     >>> translatable_language_vocabulary.getTerm(english)
     Traceback (most recent call last):
     ...
-    LookupError:...    
-    
+    LookupError:...
+
     >>> translatable_language_vocabulary.getTermByToken('en')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+The vocabulary will raise a LookupError if asked to return a
+non-visible language. Chinese (zh) is one such language.
+
+    >>> chinese = language_set['zh']
+    >>> chinese in difference
+    True
+    >>> chinese in hidden_languages
+    True
+    >>> chinese.visible
+    False
+
+    >>> chinese in translatable_language_vocabulary
+    False
+
+    >>> translatable_language_vocabulary.getTerm(chinese)
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+    >>> translatable_language_vocabulary.getTermByToken('zh')
     Traceback (most recent call last):
     ...
     LookupError:...
@@ -1331,7 +1399,7 @@ Inactive projects and project groups are not available.
 The FAQ vocabulary contains all the FAQs available in a particular
 collection. It provides the IHugeVocabulary interface.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 
     >>> vocabulary = vocabulary_registry.get(firefox, 'FAQ')
@@ -1469,8 +1537,8 @@ of spec_b.
     >>> [spec.name for spec in spec_b.dependencies]
     [u'spec-c']
 
-No circular dependencies - the vocabulary excludes specifications that 
-are a dependency of the context spec. 
+No circular dependencies - the vocabulary excludes specifications that
+are a dependency of the context spec.
 
     >>> spec_a in spec_b.all_blocked
     True
@@ -1483,7 +1551,7 @@ are a dependency of the context spec.
 
 This vocabulary provides the IHugeVocabulary interface.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
     >>> verifyObject(IHugeVocabulary, vocab)
     True

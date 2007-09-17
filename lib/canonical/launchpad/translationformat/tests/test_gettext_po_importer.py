@@ -9,7 +9,7 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
 from canonical.launchpad.translationformat.gettext_po_importer import (
-    GettextPoImporter)
+    GettextPOImporter)
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, ITranslationFormatImporter,
     ITranslationImportQueue)
@@ -39,7 +39,7 @@ msgstr "blah"
 '''
 
 
-class GettextPoImporterTestCase(unittest.TestCase):
+class GettextPOImporterTestCase(unittest.TestCase):
     """Class test for gettext's .po file imports"""
     layer = LaunchpadZopelessLayer
 
@@ -64,44 +64,28 @@ class GettextPoImporterTestCase(unittest.TestCase):
             productseries=productseries)
 
         transaction.commit()
-        self.template_importer = GettextPoImporter()
-        self.template_importer.parse(template_entry)
-        self.translation_importer = GettextPoImporter()
-        self.translation_importer.parse(translation_entry)
+        self.template_importer = GettextPOImporter()
+        self.template_file = self.template_importer.parse(template_entry)
+        self.translation_importer = GettextPOImporter()
+        self.translation_file = self.translation_importer.parse(
+            translation_entry)
 
     def testInterface(self):
         """Check whether the object follows the interface."""
         self.failUnless(
             verifyObject(ITranslationFormatImporter, self.template_importer),
-            "GettextPoImporter doesn't conform to ITranslationFormatImporter"
+            "GettextPOImporter doesn't conform to ITranslationFormatImporter"
                 "interface.")
 
     def testFormat(self):
-        """Check whether GettextPoImporter say that handles PO file format."""
+        """Check whether GettextPOImporter say that handles PO file format."""
+        format = self.template_importer.getFormat(test_template)
         self.failUnless(
-            self.template_importer.format == TranslationFileFormat.PO,
-            'GettextPoImporter format expected PO but got %s' % (
-                self.template_importer.format.name))
-
-    def testGetLastTranslator(self):
-        """Tests whether we extract last translator information correctly."""
-        # When it's the default one in Gettext (FULL NAME <EMAIL@ADDRESS>),
-        # used in templates, we get a tuple with None values.
-        name, email = self.template_importer.getLastTranslator()
-        self.failUnless(name is None,
-            "Didn't detect default Last Translator name")
-        self.failUnless(email is None,
-            "Didn't detect default Last Translator email")
-
-        # Let's try with the translation file, it has valid Last Translator
-        # information.
-        name, email = self.translation_importer.getLastTranslator()
-        self.assertEqual(name, 'Carlos Perello Marin')
-        self.assertEqual(email, 'carlos@canonical.com')
-
+            format == TranslationFileFormat.PO,
+            'GettextPOImporter format expected PO but got %s' % format.name)
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(GettextPoImporterTestCase))
+    suite.addTest(unittest.makeSuite(GettextPOImporterTestCase))
     return suite
 

@@ -5,7 +5,7 @@ Launchpad users have been assigned.  The business model for these
 assignments is not important, but it could be through a commercial
 arrangement or through a grant that applies to everyone.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     EntitlementQuota, EntitlementState, EntitlementType,
     ...     IEntitlement, IEntitlementSet, IPersonSet)

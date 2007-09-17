@@ -134,8 +134,11 @@ class UploadFileSystem:
                 raise OSError("Directory already exists:", path)
             raise OSError("OOPS, can't create:", path)
         else:
-            # XXX: cprov 2006-10-20: check leaf !?!?!
-            os.makedirs(full_path)
+            old_mask = os.umask(0)
+            try:
+                os.makedirs(full_path, 0775)
+            finally:
+                os.umask(old_mask)
 
     def remove(self, path):
         """Remove a file."""
@@ -194,7 +197,11 @@ class UploadFileSystem:
             dirname = os.path.dirname(full_path)
             if dirname:
                 if not os.path.exists(dirname):
-                    os.makedirs(dirname)
+                    old_mask = os.umask(0)
+                    try:
+                        os.makedirs(dirname, 0775)
+                    finally:
+                        os.umask(old_mask)
 
         if start and start < 0:
             raise ValueError("Negative start argument:", start)

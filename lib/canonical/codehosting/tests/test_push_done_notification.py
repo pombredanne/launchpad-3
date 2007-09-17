@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = []
 
 
+import logging
 import os
 import shutil
 import tempfile
@@ -54,7 +55,7 @@ class TestPushDoneNotification(AvatarTestCase):
             '/~%s/%s' % (avatar.avatarId, productID))
         d = defer.maybeDeferred(productDir.createDirectory, branchName)
         return d
-    
+
     def test_no_writes(self):
         # 'connect' and disconnect
         self.server.connectionLost(None)
@@ -103,8 +104,8 @@ class WriteLoggingDirectory(unittest.TestCase):
         testName = self.id().split('.')[-1]
         self.dirty = False
         self.tempDir = tempfile.mkdtemp(prefix=testName)
-        self.directory = bazaarfs.WriteLoggingDirectory(self.flagAsDirty,
-                                                        self.tempDir)
+        self.directory = bazaarfs.WriteLoggingDirectory(
+            self.flagAsDirty, self.tempDir, logging.getLogger())
 
     def tearDown(self):
         shutil.rmtree(self.tempDir)
@@ -176,8 +177,8 @@ class WriteLoggingFile(unittest.TestCase):
         testName = self.id().split('.')[-1]
         self.dirty = False
         self.tempDir = tempfile.mkdtemp(prefix=testName)
-        self.directory = bazaarfs.WriteLoggingDirectory(self.flagAsDirty,
-                                                        self.tempDir)
+        self.directory = bazaarfs.WriteLoggingDirectory(
+            self.flagAsDirty, self.tempDir, logging.getLogger())
         self.file = self.directory.createFile('foo')
         self.dirty = False
 

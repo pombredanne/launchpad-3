@@ -41,7 +41,8 @@ Useful properties:
 
 List of current 'pmount in Ubuntu' as ISourcePackage:
 
-    >>> [(sp.name, sp.distroseries.name) for sp in dsp.by_distroseriess]
+    >>> [(sp.name, sp.distroseries.name)
+    ...     for sp in dsp.get_distroseries_packages()]
     [(u'pmount', u'hoary')]
 
 Publishing history of 'pmount in Ubuntu':

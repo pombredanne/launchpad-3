@@ -57,7 +57,7 @@ def parse_changelog(changelines):
     for line in changelines:
         #print line[:-1]
         if state == 0:
-            if (line.startswith(" ") or line.startswith("\t") or 
+            if (line.startswith(" ") or line.startswith("\t") or
                 not line.rstrip()):
                 #print "State0 skip"
                 continue

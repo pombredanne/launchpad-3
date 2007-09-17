@@ -104,7 +104,7 @@ status is returned.
 >>> check("/mozilla")
 >>> check("/mozilla/firefox")
 >>> check("/mozilla/+branches")
->>> check("/mozilla/+translations")
+>>> check("/mozilla/+translations", host='translations.launchpad.dev')
 
 >>> check_redirect("/products", status=301)
 >>> check("/projects")
@@ -118,7 +118,7 @@ status is returned.
 >>> check("/firefox/1.0/+edit", auth=True)
 >>> check("/firefox/1.0/+specs")
 >>> check("/firefox/1.0/+addrelease", auth=True)
->>> check("/firefox/1.0/+translations")
+>>> check("/firefox/1.0/+translations", host='translations.launchpad.dev')
 >>> check("/firefox/1.0/+imports", host='translations.launchpad.dev')
 >>> check("/firefox/1.0/1.0.0")
 >>> check("/firefox/1.0/1.0.0/+edit", auth=True)
@@ -129,7 +129,7 @@ status is returned.
 >>> check("/firefox/1.0/+rdf")
 >>> check("/firefox/+bugs")
 >>> check("/firefox/+cve")
->>> check("/firefox/+translations")
+>>> check("/firefox/+translations", host='translations.launchpad.dev')
 >>> check_redirect("/projects/firefox", status=301)
 
 >>> check_not_found("/firefox/+milestone")
@@ -144,11 +144,12 @@ status is returned.
 >>> check("/ubuntu/+specs")
 >>> check("/ubuntu/+cve")
 >>> check("/ubuntu/+roadmap")
->>> check("/ubuntu/+translations")
+>>> check("/ubuntu/+translations", host='translations.launchpad.dev')
 >>> check("/ubuntu/+edit", auth=True)
 >>> check("/ubuntu/+reassign", auth=True)
 >>> check("/ubuntu/+selectmemberteam", auth=True)
->>> check("/ubuntu/+changetranslators", auth=True)
+>>> check("/ubuntu/+changetranslators", host='translations.launchpad.dev',
+...       auth=True)
 >>> check("/ubuntu/hoary/+addmilestone", auth=True)
 >>> check("/ubuntu/+linkbounty", auth=True)
 >>> check("/ubuntu/+addbounty", auth=True)
@@ -159,7 +160,7 @@ status is returned.
 >>> check_redirect("/ubuntu/+source/evolution/+editbugcontact")
 
 >>> check("/ubuntu/hoary/+cve")
->>> check("/ubuntu/hoary/+translations")
+>>> check("/ubuntu/hoary/+translations", host='translations.launchpad.dev')
 >>> check("/ubuntu/hoary/+imports", host='translations.launchpad.dev')
 >>> check("/ubuntu/hoary/+source/pmount")
 >>> check("/ubuntu/hoary/+source/pmount/+imports",
@@ -183,19 +184,31 @@ Test the DARBPR page for a REMOVED package:
 >>> check("/ubuntu/hoary/+source/evolution/+bugs")
 >>> check("/ubuntu/+source/evolution/+bugs")
 >>> check("/ubuntu/+source/evolution/+portlet-bugfilters")
->>> check_not_found("/ubuntu/+source/evolution/+translations")
+>>> check_not_found("/ubuntu/+source/evolution/+translations",
+...                 host='translations.launchpad.dev')
 
 >>> check("/ubuntu/hoary/+source/evolution/+changelog")
 >>> check("/ubuntu/hoary/+source/evolution/+packaging")
 >>> check("/ubuntu/hoary/+source/evolution/+edit-packaging", auth=True)
 >>> check("/ubuntu/hoary/+source/evolution/+gethelp")
->>> check("/ubuntu/hoary/+source/evolution/+translate")
->>> check("/ubuntu/hoary/+source/evolution/+translations")
->>> check_redirect("/ubuntu/hoary/+source/mozilla-firefox/+pots")
+
+The +translate page in the main host is obsolete so it's now a redirect to the
+translations site. This way, we don't break existing links to it. Before
+removing this, you must be completely sure that no supported Ubuntu release
+is still pointing to this old URL (see bug #138090).
+
+>>> check_redirect("/ubuntu/hoary/+source/evolution/+translate",
+...     host="launchpad.dev", status=301)
+>>> check("/ubuntu/hoary/+source/evolution/+translate",
+...       host='translations.launchpad.dev' )
+>>> check("/ubuntu/hoary/+source/evolution/+translations",
+...       host='translations.launchpad.dev')
+>>> check_redirect("/ubuntu/hoary/+source/mozilla-firefox/+pots",
+...                host='translations.launchpad.dev')
 >>> check("/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export",
-...       auth=True)
+...       host='translations.launchpad.dev', auth=True)
 >>> check("/ubuntu/hoary/+source/pmount/+pots/pmount/apa/+translate",
-...       auth=True)
+...       host='translations.launchpad.dev', auth=True)
 >>> check_not_found("/ubuntu/hoary/+source/evolution/+buildlog")
 >>> check_not_found(
 ...     '/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/xxxx')
@@ -212,7 +225,6 @@ Test the DARBPR page for a REMOVED package:
 >>> check("/ubuntu/hoary/+edit", auth=True)
 >>> check("/ubuntu/hoary/+specs")
 >>> check("/ubuntu/hoary/+reassign", auth=True)
->>> check("/ubuntu/hoary/+translations")
 >>> check("/ubuntu/hoary/+packaging")
 >>> check("/ubuntu/hoary/+bugs")
 
@@ -223,7 +235,7 @@ Test the DARBPR page for a REMOVED package:
 >>> check_redirect("/bugs/assigned")
 >>> check_not_found("/bugs/bugs/assigned")
 >>> check_not_found("/bugs/bugs")
->>> check_redirect("/bugs/bugs/1")
+>>> check_not_found("/bugs/bugs/1")
 >>> check_redirect("/bugs/1")
 >>> check("/bugs/bugtrackers")
 >>> check("/bugs/cve/1999-8979")
@@ -371,7 +383,7 @@ This is for a team:
 >>> check("/~name18/+specs")
 >>> check_not_found("/~name18/+calendar")
 >>> check("/~name18/+bounties")
->>> check("/~name18/+translations")
+>>> check("/~name18/+translations", host='translations.launchpad.dev')
 >>> check("/~name18/+imports", host='translations.launchpad.dev')
 >>> check("/~name18/+teamlist")
 >>> check("/~name18/+polls")
@@ -432,8 +444,6 @@ sabdfl owns many packages, so he's a better test for some pages:
 
 >>> check("/@@")
 >>> check("//@@")
->>> check("/translations/@@")
->>> check("//translations/@@")
 >>> check_redirect("/translations/groups/", status=301)
 >>> check_redirect("/translations/imports/", status=301)
 

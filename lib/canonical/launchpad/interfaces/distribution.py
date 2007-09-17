@@ -189,15 +189,11 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         title=_('Distribution Main Archive.'), readonly=True, schema=IArchive
         )
 
-    def all_distro_archives():
-        """Return all non-PPA archives."""
+    all_distro_archives = Attribute(
+        "A sequence of the distribution's non-PPA IArchives.")
 
-    def all_distro_archive_ids():
-        """Return the IDs of all the non-PPA archives.
-
-        This method is useful for calls to sqlvalues since it doesn't work
-        with a SelectResults object.
-        """
+    all_distro_archive_ids = Attribute(
+        "A list containing the IDs of all the non-PPA archives.")
 
     def archiveIdList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
@@ -323,14 +319,14 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     def getPendingAcceptancePPAs():
         """Return only pending acceptance PPAs in this distribution."""
 
-    def getPendingPublicationPPAs(distribution=None):
+    def getPendingPublicationPPAs():
         """Return only pending publication PPAs in this distribution."""
 
     def getArchiveByComponent(component_name):
         """Return the archive most appropriate for the component name.
 
         Where different components may imply a different archive (e.g.
-        commercial), this method will return the archive for that component.
+        partner), this method will return the archive for that component.
 
         If the component_name supplied is unknown, None is returned.
         """

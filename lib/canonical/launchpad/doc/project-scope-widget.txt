@@ -7,7 +7,7 @@ is actually determined by the field's vocabulary. In this example,
 we will use the Project vocabulary which allows any project to be
 selected.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.schema import Choice
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.widgets.project import ProjectScopeWidget

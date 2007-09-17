@@ -33,6 +33,7 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
+from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
@@ -40,7 +41,7 @@ from canonical.launchpad.browser.potemplate import (
     POTemplateFacets, POTemplateSOP)
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
-    ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
+    IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
     IPOSubmissionSet, TranslationConflict)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Link, LaunchpadView, canonical_url)
@@ -593,30 +594,36 @@ class BaseTranslationView(LaunchpadView):
         """Initialize the alternative language widget and check form data."""
         initial_values = {}
         second_lang_code = self.request.form.get("field.alternative_language")
-
         fallback_language = self.pofile.language.alt_suggestion_language
-        if (second_lang_code is None
-            and fallback_language is not None 
-            and fallback_language.code != 'en'):
-            # If there's a standard alternative language and no user-specified
-            # language was provided, preselect it (so long as it is not
-            # English).
-            second_lang_code = fallback_language.code
+        if isinstance(second_lang_code, list):
+            # self._redirect() was generating duplicate params in the URL.
+            # We may be able to remove this guard.
+            raise UnexpectedFormData(
+                "You specified more than one alternative language; "
+                "only one is currently supported.")
 
         if second_lang_code:
-            if isinstance(second_lang_code, list):
-                raise UnexpectedFormData(
-                    "You specified more than one alternative language; "
-                    "only one is currently supported.")
             try:
-                alternative_language = getUtility(ILanguageSet)[
-                    second_lang_code]
-            except NotFoundError:
-                # Oops, a bogus code was provided! 
-                # XXX: kiki 2006-09-28: Should this be UnexpectedFormData too?
+                translatable_vocabulary = getVocabularyRegistry().get(
+                    None, 'TranslatableLanguage')
+                language_term = (
+                    translatable_vocabulary.getTermByToken(second_lang_code))
+                initial_values['alternative_language'] = language_term.value
+            except LookupError:
+                # Oops, a bogus code was provided in the request.
+                # This is UnexpectedFormData caused by a hacked URL, or an
+                # old URL. The alternative_language field used to use
+                # LanguageVocabulary that contained untranslatable languages.
                 second_lang_code = None
-            else:
-                initial_values['alternative_language'] = alternative_language
+        elif second_lang_code is None and fallback_language is not None:
+            # If there's a standard alternative language and no
+            # user-specified language was provided, preselect it.
+            initial_values['alternative_language'] =  fallback_language
+            second_lang_code = fallback_language.code
+        else:
+            # The second_lang_code is None and there is no fallback_language.
+            # This is probably a parent language or an English variant.
+            pass
 
         self.alternative_language_widget = CustomWidgetFactory(
             CustomDropdownWidget)
@@ -931,7 +938,7 @@ class POMsgSetView(LaunchpadView):
             pomsgset.pofile.canEditTranslations(self.user))
         self.form_is_writeable = form_is_writeable
 
-        # Set up alternative language variables. 
+        # Set up alternative language variables.
         # XXX: kiko 2006-09-27:
         # This could be made much simpler if we built suggestions externally
         # in the parent view, as suggested in initialize() below.
