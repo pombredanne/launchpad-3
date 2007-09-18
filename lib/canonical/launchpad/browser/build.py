@@ -198,7 +198,8 @@ class BuildRecordsView(LaunchpadView):
         self._setupMappedStates(state_tag)
 
         # request context build records according the selected state
-        builds = self.context.getBuildRecords(self.state, name=self.text)
+        builds = self.context.getBuildRecords(
+            build_state=self.state, name=self.text)
         self.batchnav = BatchNavigator(builds, self.request)
         # We perform this extra step because we don't what to issue one
         # extra query to retrieve the BuildQueue for each Build (batch item)

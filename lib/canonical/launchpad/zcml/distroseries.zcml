@@ -14,13 +14,18 @@
         permission="launchpad.TranslationsAdmin"
         set_attributes="hide_all_translations defer_translation_imports"
         />
+    <require
+        permission="launchpad.LanguagePacksAdmin"
+        set_attributes="language_pack_base language_pack_delta
+                        language_pack_proposed
+                        language_pack_full_export_requested"
+        />
     <!-- NB: check with SABDFL before modifying these, there is potential to
          make a huge mess if these get changed and Soyuz has to republish
          shedloads of data. -->
     <require
         permission="launchpad.Edit"
-        set_attributes="displayname title summary description
-                        datelastlangpack driver"
+        set_attributes="displayname title summary description driver"
         />
     <!-- NB: check with SABDFL before modifying these, there is potential to
          make a huge mess if these get changed and Soyuz has to republish
@@ -250,6 +255,9 @@
       name="+langchart"
       template="../templates/distroseries-langchart.pt" />
     <browser:page
+      name="+language-packs"
+      template="../templates/distroseries-language-packs.pt" />
+    <browser:page
       name="+potlist"
       template="../templates/object-pots.pt" />
   </browser:pages>
@@ -330,6 +338,26 @@
     for="canonical.launchpad.interfaces.IDistroSeries"
     class="canonical.launchpad.browser.AskAQuestionButtonView"
     permission="zope.Public"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesLanguagePackAdminView"
+    permission="launchpad.TranslationsAdmin"
+    template="../templates/distroseries-language-packs-editing.pt"
+    name="+admin-language-packs"
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesFullLanguagePackRequestView"
+    permission="launchpad.LanguagePacksAdmin"
+    template="../templates/distroseries-language-packs-editing.pt"
+    name="+full-language-pack-request"
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
 </configure>
