@@ -14,8 +14,9 @@ from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IHWDBApplication, IHWDBSubmissionForm,
-    IHWDBSubmissionSet, IHWDBSystemFingerprintSet, NotFoundError)
+    HWSubmissionInvalidEmailAddress, IDistributionSet, IHWDBApplication,
+    IHWSubmissionForm, IHWSubmissionSet, IHWSystemFingerprintSet, 
+    NotFoundError)
 from canonical.launchpad.webapp import (
     action, LaunchpadView, LaunchpadFormView, Navigation, stepthrough)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -24,11 +25,11 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 class HWDBUploadView(LaunchpadFormView):
     """View class for hardware database submissions."""
 
-    schema = IHWDBSubmissionForm
+    schema = IHWSubmissionForm
 
     @action(u'Upload', name='upload')
     def upload_action(self, action, data):
-        """Create a record in the HWDBSubmission table."""
+        """Create a record in the HWSubmission table."""
         distributionset = getUtility(IDistributionSet)
         distribution = distributionset.getByName(data['distribution'])
         if distribution is not None:
@@ -42,7 +43,7 @@ class HWDBUploadView(LaunchpadFormView):
         else:
             distroarchseries = None
 
-        fingerprintset = getUtility(IHWDBSystemFingerprintSet)
+        fingerprintset = getUtility(IHWSystemFingerprintSet)
         fingerprint = fingerprintset.getByName(data['system'])
         if fingerprint is None:
             fingerprint = fingerprintset.createFingerprint(data['system'])
@@ -55,22 +56,21 @@ class HWDBUploadView(LaunchpadFormView):
         # convert a filename with "path elements" to a regular filename
         filename = submission_file.filename.replace('/', '-')
 
-        hwdb_submissionset = getUtility(IHWDBSubmissionSet)
+        hw_submissionset = getUtility(IHWSubmissionSet)
         try:
-            hwdb_submissionset.createSubmission(
+            hw_submissionset.createSubmission(
                 date_created=data['date_created'],
                 format=data['format'],
                 private=data['private'],
                 contactable=data['contactable'],
-                livecd=data['livecd'],
-                submission_id=data['submission_id'],
+                submission_key=data['submission_id'],
                 emailaddress=data['emailaddress'],
                 distroarchseries=distroarchseries,
                 raw_submission=submission_file,
                 filename=filename,
                 filesize=filesize,
-                system=data['system'])
-        except HWDBSubmissionError:
+                system_fingerprint=data['system'])
+        except HWSubmissionInvalidEmailAddress:
             self.addCustomHeader(
                 'Emailaddress',
                 "Error - %s isn't a valid email address" % data['emailaddress'])
@@ -79,7 +79,6 @@ class HWDBUploadView(LaunchpadFormView):
                 address = data['emailaddress'])
             return
 
-            
         self.addCustomHeader('', 'OK data stored')
         self.request.response.addNotification(
             "Thank you for your submission.")
@@ -119,8 +118,8 @@ class HWDBPersonSubmissionsView(LaunchpadView):
 
     def getAllBatched(self):
         """Return the list of HWDB submissions made by this person."""
-        hwdb_submissionset = getUtility(IHWDBSubmissionSet)
-        submissions = hwdb_submissionset.getByOwner(self.context, self.user)
+        hw_submissionset = getUtility(IHWSubmissionSet)
+        submissions = hw_submissionset.getByOwner(self.context, self.user)
         return BatchNavigator(submissions, self.request)
 
     def userIsOwner(self):
@@ -152,7 +151,7 @@ class HWDBFingerprintSetView(LaunchpadView):
 
     def getAllBatched(self):
         """A BatchNavigator instance with the submissions."""
-        submissions = getUtility(IHWDBSubmissionSet).getByFingerprintName(
+        submissions = getUtility(IHWSubmissionSet).getByFingerprintName(
             self.system_name, self.user)
         return BatchNavigator(submissions, self.request)
 

@@ -50,16 +50,16 @@ The POST data consists of the following fields:
 
 The request created an entry in the HWDBSubmissions table.
 
-    >>> from canonical.launchpad.interfaces import IHWDBSubmissionSet
-    >>> submission_set = getUtility(IHWDBSubmissionSet)
+    >>> from canonical.launchpad.interfaces import IHWSubmissionSet
+    >>> submission_set = getUtility(IHWSubmissionSet)
     >>> submission = submission_set.getBySubmissionID(u'unique ID 1')
     >>> submission.date_created, submission.format.name
     (datetime.datetime(2007, 8, 1, 0, 0, tzinfo=<UTC>), 'VERSION_1')
-    >>> submission.private, submission.contactable, submission.livecd
-    (False, False, False)
-    >>> submission.submission_id, submission.emailaddress
-    (u'unique ID 1', u'test@canonical.com')
-    >>> submission.system.fingerprint
+    >>> submission.private, submission.contactable
+    (False, False)
+    >>> submission.submission_key
+    u'unique ID 1'
+    >>> submission.system_fingerprint.fingerprint
     u'HP 6543'
 
 The submitted data is stored in raw_submission.
@@ -152,16 +152,6 @@ The field `submission_id` may contain only ASCII data.
     >>> submit_view.initialize()
     >>> [error.doc() for error in submit_view.errors]
     [u'Invalid textual data']
-
-The field `emailaddress` must contain a valid email address.
-
-    >>> invalid_form = form.copy()
-    >>> invalid_form['field.emailaddress'] = u'me AT localhost'
-    >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
-    >>> submit_view = getView(app, 'submit-hardware-data', request)
-    >>> submit_view.initialize()
-    >>> [error.doc() for error in submit_view.errors]
-    [u"me AT localhost isn't a valid email address."]
 
 All fields are required.
 

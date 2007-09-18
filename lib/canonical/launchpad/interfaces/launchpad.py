@@ -61,6 +61,7 @@ __all__ = [
     'IPasswordChangeApp',
     'IPasswordEncryptor',
     'IPasswordResets',
+    'IPrivateApplication',
     'IReadZODBAnnotation',
     'IRegistryApplication',
     'IRosettaApplication',
@@ -192,6 +193,12 @@ class IBazaarApplication(ILaunchpadApplication):
 
 class IOpenIdApplication(ILaunchpadApplication):
     """Launchpad Login Service application root."""
+
+
+class IPrivateApplication(ILaunchpadApplication):
+    """Launchpad private XML-RPC application root."""
+
+    mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
 
 class IAuthApplication(Interface):

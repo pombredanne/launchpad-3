@@ -38,8 +38,8 @@ class HWSubmission(SQLBase):
     contactable = BoolCol(notNull=True)
     submission_key = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person')
-    distroarchrelease = ForeignKey(dbName='distroarchseries',
-                                   foreignKey='Distroarchrelease',
+    distroarchrelease = ForeignKey(dbName='DistroArchSeries',
+                                   foreignKey='DistroArchSeries',
                                    notNull=True)
     raw_submission = ForeignKey(dbName='raw_submission',
                                 foreignKey='LibraryFileAlias',
@@ -78,7 +78,7 @@ class HWSubmissionSet:
         fingerprint = HWSystemFingerprint.selectOneBy(
             fingerprint=system_fingerprint)
         if fingerprint is None:
-            fingerprint = HWDBSystemFingerprint(fingerprint=system)
+            fingerprint = HWSystemFingerprint(fingerprint=system_fingerprint)
 
         libraryfileset = getUtility(ILibraryFileAliasSet)
         libraryfile = libraryfileset.create(
@@ -170,6 +170,12 @@ class HWSubmissionSet:
             orderBy=['HWSystemFingerprint.fingerprint',
                      'date_submitted',
                      'submission_key'])
+
+    def submissionIdExists(self, submission_key):
+            """See `IHWSubmissionSet`."""
+            rows = HWSubmission.selectBy(submission_key=submission_key)
+            return rows.count() > 0
+
 
 class HWSystemFingerprint(SQLBase):
     """Identifiers of a computer system."""

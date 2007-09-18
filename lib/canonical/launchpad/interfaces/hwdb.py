@@ -10,17 +10,29 @@ __all__ = [
     'HWSubmissionKeyNotUnique',
     'HWSubmissionProcessingStatus',
     'IHWSubmission',
+    'IHWSubmissionForm',
     'IHWSubmissionSet',
     'IHWSystemFingerprint',
     'IHWSystemFingerprintSet'
     ]
 
+from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import ASCIILine, Bool, Choice, Datetime, Object
+from zope.schema import (
+    ASCIILine, Bool, Bytes, Choice, Datetime, Object, TextLine)
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.validators import LaunchpadValidationError
+
+def validate_new_submission_id(submission_id):
+    """Check, if submission_id already exists in HWDBSubmission."""
+    submission_set = getUtility(IHWSubmissionSet)
+    if submission_set.submissionIdExists(submission_id):
+        raise LaunchpadValidationError(
+            'Submission ID already exists.')
+    return True
 
 class HWSubmissionKeyNotUnique(Exception):
     """Prevent two or more submission with identical submission_key."""
@@ -97,7 +109,7 @@ class IHWSubmissionForm(Interface):
         title=_(u'Date Created'), required=True)
     format = Choice(
         title=_(u'Format Version'), required=True,
-        vocabulary=HWDBSubmissionFormat)
+        vocabulary=HWSubmissionFormat)
     private = Bool(
         title=_(u'Private Submission'), required=True)
     contactable = Bool(
@@ -108,8 +120,7 @@ class IHWSubmissionForm(Interface):
         title=_(u'Unique Submission ID'), required=True,
         constraint=validate_new_submission_id)
     emailaddress = TextLine(
-        title=_(u'Email address'), required=True,
-        constraint=validate_email)
+            title=_(u'Email address'), required=True)
     distribution = TextLine(
         title=_(u'Distribution'), required=True)
     distrorelease = TextLine(
@@ -154,7 +165,7 @@ class IHWSubmissionSet(Interface):
         user == HWSubmission.owner, or if user is an admin.
         """
 
-    def submissionIdExists(submission_id):
+    def submissionIdExists(submission_key):
         """Return True, if a record with ths ID exists, else return False."""
 
 class IHWSystemFingerprint(Interface):

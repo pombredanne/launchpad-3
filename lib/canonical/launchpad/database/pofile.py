@@ -644,6 +644,14 @@ class POFile(SQLBase, POFileMixIn):
         for msgset in self.currentMessageSets():
             msgset.sequence = 0
 
+    def getStatistics(self):
+        """See `IPOFile`."""
+        return (
+            self.currentcount,
+            self.updatescount,
+            self.rosettacount,
+            self.unreviewed_count)
+
     def updateStatistics(self, tested=False):
         """See `IPOFile`."""
         # make sure all the data is in the db
@@ -719,7 +727,7 @@ class POFile(SQLBase, POFileMixIn):
         self.updatescount = updates
         self.rosettacount = rosetta
         self.unreviewed_count = unreviewed
-        return (current, updates, rosetta, unreviewed)
+        return self.getStatistics()
 
     def createMessageSetFromMessageSet(self, potmsgset):
         """See `IPOFile`."""
@@ -1287,6 +1295,10 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
+    def getStatistics(self):
+        """See `IPOFile`."""
+        return (0, 0, 0, )
+
     def updateStatistics(self):
         """See `IPOFile`."""
         raise NotImplementedError
@@ -1372,6 +1384,11 @@ class POFileSet:
                 POTemplate.sourcepackagename = %s''' % sqlvalues(
                     path, distroseries.id, sourcepackagename.id),
                 clauseTables=['POTemplate'])
+
+    def getBatch(self, starting_id, batch_size):
+        """See `IPOFileSet`."""
+        return POFile.select(
+            "id >= %s" % quote(starting_id), orderBy="id", limit=batch_size)
 
 
 class POFileTranslator(SQLBase):

@@ -38,7 +38,7 @@ class BugWatchUpdater(object):
             login='bugwatch@bugs.launchpad.net')
 
     def _logout(self):
-        """Removed the Launchpad Janitor interaction."""
+        """Tear down the Bug Watch Updater Interaction."""
         endInteraction()
 
     def updateBugTrackers(self):

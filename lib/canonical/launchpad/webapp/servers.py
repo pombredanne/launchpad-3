@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 """Definition of the internet servers that Launchpad uses."""
 
 __metaclass__ = type
@@ -22,11 +23,11 @@ from zope.server.http.commonaccesslogger import CommonAccessLogger
 from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
-        IShipItApplication, IOpenIdApplication)
-
+    IShipItApplication, IOpenIdApplication, IPrivateApplication)
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
@@ -123,7 +124,7 @@ class ApplicationServerSettingRequestFactory:
 
     Due to the factory-fanatical design of this part of Zope3, we need
     to have a kind of proxying factory here so that we can create an
-    approporiate request and call its setApplicationServer method before it
+    appropriate request and call its setApplicationServer method before it
     is used.
     """
 
@@ -191,6 +192,8 @@ class LaunchpadRequestPublicationFactory:
             ShipItPublication))
         vhrps.append(VHRP('xmlrpc',
                           PublicXMLRPCRequest, PublicXMLRPCPublication))
+        vhrps.append(VHRP('xmlrpc_private',
+                          PrivateXMLRPCRequest, PrivateXMLRPCPublication))
         # Done with using the short form of VirtualHostRequestPublication, so
         # clean up, as we won't need to use it again later.
         del VHRP
@@ -218,6 +221,36 @@ class LaunchpadRequestPublicationFactory:
         if 'HTTP_HOST' not in environment:
             self._thread_local.host = self.USE_DEFAULTS
             return True
+
+        # We look at the wsgi environment to get the port this request is
+        # coming in over.  If it's our private port (as determined by matching
+        # the PrivateXMLRPC server type), then we route calls to the private
+        # xmlrpc host.  The port number can be in one of two places; either
+        # it's on the SERVER_PORT environment variable or, as is the case with
+        # the test suite, it's on the HTTP_HOST variable after a colon.  Check
+        # the former first.
+        host = environment['HTTP_HOST']
+        server_port = environment.get('SERVER_PORT')
+        if server_port is None and ':' in host:
+            host, server_port = host.split(':', 1)
+        try:
+            port = int(server_port)
+        except (ValueError, TypeError):
+            # This request is not coming in on a usable private port, so don't
+            # try to look up the server type.
+            pass
+        else:
+            # See if there is a server configuration with a matching port,
+            # using the special PrivateXMLRPC server type name.  If so, set
+            # the thread's host name to the proper configuration value and
+            # return immediately.
+            for server in config.servers:
+                if (server.address[1] == port and
+                    server.type == 'PrivateXMLRPC'):
+                    # This request came over the private XMLRPC port.
+                    self._thread_local.host = (
+                        config.launchpad.vhosts.xmlrpc_private.hostname)
+                    return True
 
         host = environment['HTTP_HOST']
         if ":" in host:
@@ -654,6 +687,12 @@ debughttp = wsgi.ServerType(
     True,
     requestFactory=DebugLayerRequestFactory)
 
+privatexmlrpc = wsgi.ServerType(
+    WSGIHTTPServer,
+    WSGIPublisherApplication,
+    LaunchpadAccessLogger,
+    8080,
+    True)
 
 # ---- mainsite
 
@@ -754,6 +793,28 @@ class PublicXMLRPCResponse(XMLRPCResponse):
                             xmlrpclib.Fault(-1, request.oopsid),
                             None)
         XMLRPCResponse.handleException(self, exc_info)
+
+
+class PrivateXMLRPCPublication(PublicXMLRPCPublication):
+    """The publication used for private XML-RPC requests."""
+
+    root_object_interface = IPrivateApplication
+
+    def traverseName(self, request, ob, name):
+        """Traverse to an end point or let normal traversal do its thing."""
+        assert isinstance(request, PrivateXMLRPCRequest), (
+            'Not a private XML-RPC request')
+        missing = object()
+        end_point = getattr(ob, name, missing)
+        if end_point is missing:
+            return super(PrivateXMLRPCPublication, self).traverseName(
+                request, ob, name)
+        return end_point
+
+
+class PrivateXMLRPCRequest(PublicXMLRPCRequest):
+    """Request type for doing private XML-RPC in Launchpad."""
+    # For now, the same as public requests.
 
 
 # ---- openid
