@@ -20,20 +20,6 @@ from canonical.librarian.interfaces import UploadFailed, DownloadFailed
 
 __all__ = ['FileUploadClient', 'FileDownloadClient', 'LibrarianClient']
 
-# XXX flacoste 2007/09/18 This is a workaround for bug #140068.
-def with_extra_timeout(fn):
-    """Decorator that sets the socket timeout to 5.0 seconds."""
-    def change_socket_timeout(*args, **kwargs):
-        try:
-            old_timeout = socket.getdefaulttimeout()
-            socket.setdefaulttimeout(5.0)
-            return fn(*args, **kwargs)
-        finally:
-            socket.setdefaulttimeout(old_timeout)
-    change_socket_timeout.__name__ = fn.__name__
-    change_socket_timeout.__doc__ = fn.__doc__
-    return change_socket_timeout
-
 
 class FileUploadClient:
     """Simple blocking client for uploading to the librarian."""
@@ -76,7 +62,6 @@ class FileUploadClient:
     def _sendHeader(self, name, value):
         self._sendLine('%s: %s' % (name, value))
 
-    @with_extra_timeout
     def addFile(self, name, size, file, contentType, expires=None,
                 debugID=None):
         """Add a file to the librarian.
@@ -178,7 +163,6 @@ class FileUploadClient:
         databaseName = cur.fetchone()[0]
         return databaseName
 
-    @with_extra_timeout
     def remoteAddFile(self, name, size, file, contentType, expires=None):
         """See canonical.librarian.interfaces.ILibrarianUploadClient"""
         if file is None:
@@ -320,7 +304,6 @@ class FileDownloadClient:
             base = config.librarian.buildd_download_url
         return urljoin(base, path)
 
-    @with_extra_timeout
     def getFileByAlias(self, aliasID):
         """Returns a fd to read the file from
 
