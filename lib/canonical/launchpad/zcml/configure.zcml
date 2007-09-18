@@ -73,6 +73,7 @@
     <include file="jabberid.zcml" />
     <include file="karma.zcml" />
     <include file="language.zcml" />
+    <include file="languagepack.zcml" />
     <include file="launchpad.zcml" />
     <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />
