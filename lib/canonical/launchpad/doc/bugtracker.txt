@@ -118,7 +118,7 @@ contact any external servers.
 
     >>> print err
     INFO    creating lockfile
-    ERROR   There's no debbugs db at /srv/bugs-mirror.debian.org/
+    ERROR   There's no debbugs db at /srv/bugs-mirror.debian.org/.
     INFO    No watches to update on http://bugs.debian.org
     INFO    No watches to update on http://bugzilla.gnome.org/bugs
     INFO    ExternalBugtracker for BugTrackerType 'SOURCEFORGE' is not known.
