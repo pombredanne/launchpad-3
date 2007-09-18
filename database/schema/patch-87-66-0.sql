@@ -13,4 +13,4 @@ SET date_last_message = (
   WHERE message.id = bugmessage.message
   AND bugmessage.bug = bug.id);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 66, 0);
