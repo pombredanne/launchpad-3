@@ -34,8 +34,6 @@ several teams.
     >>> team_two = new_team('team-two')
     >>> team_three = new_team('team-three')
     >>> team_four = new_team('team-four')
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
 
 Define a helper function that sorts mailing lists alphabetically based on
 their team's name.
@@ -73,6 +71,7 @@ created right away.
     >>> list_one = list_set.new(team_one)
     >>> verifyObject(IMailingList, list_one)
     True
+    >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> list_one
     <MailingList for team "team-one"; status=REGISTERED at 0x...>

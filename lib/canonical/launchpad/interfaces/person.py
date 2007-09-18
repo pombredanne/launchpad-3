@@ -14,6 +14,7 @@ __all__ = [
     'IPersonSet',
     'IPerson',
     'IRequestPeopleMerge',
+    'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
     'ITeam',
@@ -1364,6 +1365,12 @@ class ITeamCreation(ITeam):
             "the team creation, a new message will be sent to this address "
             "with instructions on how to finish its registration."),
         constraint=validate_new_team_email)
+
+
+class ITeamContactAddressForm(Interface):
+
+    contact_address = TextLine(
+        title=_("Contact Email Address"), required=False, readonly=False)
 
 
 class JoinNotAllowed(Exception):

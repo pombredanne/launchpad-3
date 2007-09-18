@@ -1192,9 +1192,9 @@ standardshipitrequest_edit = 'Edit standard option'
 
 team_addmember = ContextBrowsername('Add members to %s')
 
-team_edit = 'Edit team information'
+team_contactaddress = ContextDisplayName('%s contact address')
 
-team_editemail = ContextDisplayName('%s contact e-mail address')
+team_edit = 'Edit team information'
 
 team_editproposed = ContextBrowsername('Proposed members of %s')
 

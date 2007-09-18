@@ -105,6 +105,10 @@ class MailingList(SQLBase):
         else:
             raise AssertionError('Not a valid state transition')
         self.status = target_state
+        if self.status == MailingListStatus.ACTIVE:
+            # TODO: Delete the existing contact address and set this mailing
+            # list's address as the new one for the team.
+            pass
 
     def deactivate(self):
         """See `IMailingList`."""

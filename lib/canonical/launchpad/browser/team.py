@@ -6,8 +6,8 @@ __all__ = [
     'ProposedTeamMembersEditView',
     'TeamAddView',
     'TeamBrandingView',
+    'TeamContactAddressView',
     'TeamEditView',
-    'TeamEmailView',
     'TeamMemberAddView',
     ]
 
@@ -15,20 +15,27 @@ from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
+from zope.formlib import form
+from zope.schema import Choice
 
 from canonical.database.sqlbase import flush_database_updates
+from canonical.lazr import EnumeratedType, Item
 from canonical.widgets import (
     HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
 
+from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
     LaunchpadFormView)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
-    IEmailAddressSet, ILaunchBag, ILoginTokenSet, IPersonSet,
-    ITeamCreation, ITeamMember, ITeam, LoginTokenType, TeamMembershipStatus)
+    IEmailAddressSet, ILaunchBag, ILoginTokenSet, IMailingListSet, IPersonSet,
+    ITeamContactAddressForm, ITeamCreation, ITeamMember, ITeam,
+    LoginTokenType, MailingListStatus, TeamMembershipStatus,
+    UnexpectedFormData)
+from canonical.launchpad.interfaces.validation import validate_new_team_email
 
 
 class HasRenewalPolicyMixin:
@@ -85,98 +92,172 @@ def generateTokenAndValidationEmail(email, team):
     token.sendTeamEmailAddressValidationEmail(user)
 
 
-class TeamEmailView:
-    """A View to edit a team's contact email address."""
+class TeamContactMethod(EnumeratedType):
+    """The method used by Launchpad to contact a given team."""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.team = self.context
-        self.wrongemail = None
-        self.errormessage = ""
-        self.feedback = ""
+    NONE = Item("""
+        None; Launchpad will contact team members directly
 
-    def processForm(self):
-        """Process the form, if it was submitted."""
-        # Any self-posting form that updates the database and want to display
-        # these updated values have to flush all db updates. This is why we
-        # call flush_database_updates() here.
+        Notifications directed to this team will be sent to each of its
+        members.
+        """)
 
-        request = self.request
-        if request.method != "POST":
-            # Nothing to do
-            return
+    HOSTED_LIST = Item("""
+        Launchpad hosted team mailing list (i.e. ubuntumembers@teams.launchpad.net)
 
-        emailset = getUtility(IEmailAddressSet)
+        Notifications directed to this team are sent to its Launchpad-hosted
+        mailing list.
+        """)
 
-        if request.form.get('ADD_EMAIL') or request.form.get('CHANGE_EMAIL'):
-            emailaddress = request.form.get('newcontactemail', "")
-            emailaddress = emailaddress.lower().strip()
-            if not valid_email(emailaddress):
-                self.errormessage = (
-                    "The email address you're trying to add doesn't seem to "
-                    "be valid. Please make sure it's correct and try again.")
-                # We want to display the invalid address so the user can just
-                # fix what's wrong and send again.
-                self.wrongemail = emailaddress
+    EXTERNAL_ADDRESS = Item("""
+        External contact email
+
+        Notifications directed to this team are sent to the contact address
+        specified.
+        """)
+
+
+class TeamContactAddressView(LaunchpadFormView):
+
+    schema = ITeamContactAddressForm
+    label = "Contact address"
+    custom_widget(
+        'contact_method', LaunchpadRadioWidget, orientation='vertical')
+
+    def setUpFields(self):
+        super(TeamContactAddressView, self).setUpFields()
+        # XXX: Yeah, this is a hack but it'll go away as soon as we deploy the
+        # mailman stuff on production.  -- Guilherme Salgado 2007-09-18
+        if not config.mailman.expose_hosted_mailing_lists:
+            TeamContactMethod.items.items.remove(TeamContactMethod.HOSTED_LIST)
+        contact_method = form.Fields(
+            Choice(__name__='contact_method',
+                   title=_("How do people contact these team's members?"),
+                   required=True, vocabulary=TeamContactMethod),
+            custom_widget=self.custom_widgets['contact_method'],
+            render_context=self.render_context)
+        self.form_fields += contact_method
+
+    def validate(self, data):
+        # Only validate the email address if the user wants to use an external
+        # address and the given email address is not already in use by this
+        # team.
+        if data['contact_method'] == TeamContactMethod.EXTERNAL_ADDRESS:
+            email = data['contact_address']
+            if not email:
+                self.setFieldError(
+                    'contact_address',
+                    'Enter the contact address you want to use for this team.')
                 return
+            email = getUtility(IEmailAddressSet).getByEmail(
+                data['contact_address'])
+            if email is None or email.person != self.context:
+                try:
+                    validate_new_team_email(data['contact_address'])
+                except LaunchpadValidationError, error:
+                    self.setFieldError('contact_address', str(error))
 
-            email = emailset.getByEmail(emailaddress)
-            if email is not None:
-                if email.person.id != self.team.id:
-                    self.errormessage = (
-                        "The email address you're trying to add is already "
-                        "registered in Launchpad for %s."
-                        % email.person.browsername)
-                else:
-                    self.errormessage = (
-                        "This is the current contact email address of this "
-                        "team. There's no need to add it again.")
-                return
+    def initialize(self):
+        super(TeamContactAddressView, self).initialize()
+        context = self.context
+        list_set = getUtility(IMailingListSet)
+        mailing_list = list_set.get(self.context.name)
+        if mailing_list is not None:
+            if mailing_list.status in [MailingListStatus.APPROVED,
+                                       MailingListStatus.CONSTRUCTING]:
+                self.request.response.addInfoNotification(
+                    "This team's mailing list has been approved and is being "
+                    "constructed; it will be available shortly.")
+            elif mailing_list.status == MailingListStatus.REGISTERED:
+                self.request.response.addInfoNotification(
+                    "This team's mailing list has not been approved yet. "
+                    "Once it's approved it'll be used as this team's contact "
+                    "address.")
+            elif mailing_list.status == MailingListStatus.DECLINED:
+                self.request.response.addInfoNotification(
+                    "This team's mailing list has not been approved; please "
+                    "use an external contact address instead.")
 
-            self._sendEmailValidationRequest(emailaddress)
-            flush_database_updates()
-            return
-        elif request.form.get('REMOVE_EMAIL'):
-            if self.team.preferredemail is None:
-                self.errormessage = "This team has no contact email address."
+    @property
+    def initial_values(self):
+        context = self.context
+        if context.preferredemail is not None:
+            mailing_list = getUtility(IMailingListSet).get(context.name)
+            if (mailing_list is not None and
+                mailing_list.status == MailingListStatus.ACTIVE):
+                method = TeamContactMethod.HOSTED_LIST
+            else:
+                method = TeamContactMethod.EXTERNAL_ADDRESS
+            return dict(contact_address=context.preferredemail.email,
+                        contact_method=method)
+        else:
+            return dict(contact_method=TeamContactMethod.NONE)
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        context = self.context
+        list_set = getUtility(IMailingListSet)
+        contact_method = data['contact_method']
+        if contact_method == TeamContactMethod.NONE:
+            if context.preferredemail is not None:
+                context.preferredemail.destroySelf()
+            mailing_list = list_set.get(context.name)
+            if (mailing_list is not None and
+                mailing_list.status == MailingListStatus.ACTIVE):
+                mailing_list.deactivate()
+        elif contact_method == TeamContactMethod.HOSTED_LIST:
+            mailing_list = list_set.get(context.name)
+            if mailing_list is None:
+                list_set.new(context)
+                self.request.response.addInfoNotification(
+                    "Mailing list requested and now queued for approval.")
+            elif mailing_list.status == MailingListStatus.REGISTERED:
+                self.request.response.addInfoNotification(
+                    "Mailing list requested but not yet approved.")
+            elif mailing_list.status in [MailingListStatus.APPROVED,
+                                         MailingListStatus.CONSTRUCTING]:
+                self.request.response.addInfoNotification(
+                    "Mailing list is being created; it will be available "
+                    "shortly.")
+            elif mailing_list.status == MailingListStatus.ACTIVE:
+                self.request.response.addInfoNotification(
+                    "This team already has a Launchpad mailing list.")
+            elif mailing_list.status == MailingListStatus.INACTIVE:
+                # XXX: Can I set the status to REGISTERED manually here?
+                # Or maybe when it's inactive I can even change it back to
+                # approved?
+
+                # mailing_list.status = MailingListStatus.REGISTERED
+                # self.request.response.addInfoNotification(msg)
+                pass
+            else:
+                # This is unlikely to happen, but since it's cheap we do it
+                # anyway.
+                self.request.response.addWarningNotification(
+                    "This team's mailing list is undergoing some "
+                    "maintenance; please wait a few minutes and try again.")
+                # Return here so that we don't go to the next url.
                 return
-            self.team.preferredemail.destroySelf()
-            self.feedback = (
-                "The contact email address of this team has been removed. "
-                "From now on, all notifications directed to this team will "
-                "be sent to all team members.")
-            flush_database_updates()
-            return
-        elif (request.form.get('REMOVE_UNVALIDATED') or
-              request.form.get('VALIDATE')):
-            email = self.request.form.get("UNVALIDATED_SELECTED")
+        elif contact_method == TeamContactMethod.EXTERNAL_ADDRESS:
+            contact_address = data['contact_address']
+            email = getUtility(IEmailAddressSet).getByEmail(contact_address)
             if email is None:
-                self.feedback = ("You must select the email address you want "
-                                 "to remove/confirm.")
-                return
+                generateTokenAndValidationEmail(contact_address, context)
+                self.request.response.addInfoNotification(
+                    "A confirmation message has been sent to '%s'. Follow "
+                    "the instructions in that message to confirm the new "
+                    "contact address for this team. (If the message "
+                    "doesn't arrive in a few minutes, your mail provider "
+                    "might use 'greylisting', which could delay the "
+                    "message for up to an hour or two.)" % contact_address)
+            else:
+                assert email.person == context, (
+                    "This email belongs to somebody else.")
+        else:
+            raise UnexpectedFormData(
+                "Unknown contact_method: %s" % contact_method)
 
-            if request.form.get('REMOVE_UNVALIDATED'):
-                getUtility(ILoginTokenSet).deleteByEmailRequesterAndType(
-                    email, self.context, LoginTokenType.VALIDATETEAMEMAIL)
-                self.feedback = (
-                    "The email address '%s' has been removed." % email)
-            elif request.form.get('VALIDATE'):
-                self._sendEmailValidationRequest(email)
-
-            flush_database_updates()
-            return
-
-    def _sendEmailValidationRequest(self, email):
-        """Send a validation message to <email> and update self.feedback."""
-        generateTokenAndValidationEmail(email, self.team)
-        self.feedback = (
-            "A confirmation message has been sent to '%s'. Follow the "
-            "instructions in that message to confirm the new "
-            "contact address for this team. "
-            "(If the message doesn't arrive in a few minutes, your mail "
-            "provider might use 'greylisting', which could delay the message "
-            "for up to an hour or two.)" % email)
+        self.next_url = canonical_url(self.context)
 
 
 class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):

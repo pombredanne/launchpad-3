@@ -1,0 +1,40 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <metal:widgets fill-slot="widgets">
+      <div tal:define="contact_method nocall:view/widgets/contact_method">
+        <div>
+          <input tal:replace="structure contact_method" />
+          <tal:email-widget 
+            define="contact_address nocall:view/widgets/contact_address;
+                    field_name contact_address/context/__name__;
+                    error python:view.getWidgetError(field_name);
+                    error_class python:error and 'error' or None;">
+            <span tal:attributes="class error_class">
+              <input tal:replace="structure contact_address" />
+              <div class="message" tal:condition="error"
+                 tal:content="structure error">Error message</div>
+            </span>
+          </tal:email-widget>
+        </div>
+      </div>
+      <br />
+    </metal:widgets>
+  </div>
+
+</div> 
+</body>
+</html>
