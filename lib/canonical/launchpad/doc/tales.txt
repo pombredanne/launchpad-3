@@ -310,7 +310,8 @@ the quoted section from the paragraph.
     </span>
     Remark line.</p>
 
-Multiple quoted paragraphs are a single single continous folded span.
+Multiple quoted paragraphs are treated as a single continuous folded
+span.
 
     >>> quoted_paragraphs = ('Attribution line\n'
     ...                       '> First line in the first paragraph.\n'
