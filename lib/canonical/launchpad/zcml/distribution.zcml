@@ -19,6 +19,10 @@
                       mirror_admin homepage_content icon logo
                       mugshot"
       />
+    <require
+      permission="launchpad.TranslationsAdmin"
+      set_attributes="language_pack_admin"
+      />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getSupportedLanguages
@@ -421,6 +425,16 @@
     facet="translations"
     permission="zope.Public"
     template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    name="+select-language-pack-admin"
+    class="canonical.launchpad.browser.DistributionLanguagePackAdminView"
+    facet="translations"
+    permission="launchpad.TranslationsAdmin"
+    template="../templates/distribution-language-pack-admin.pt"
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
