@@ -18,6 +18,20 @@
       track translations, bugs or specifications for it.
     </div>
 
+    <div style="padding-left: 10em" metal:fill-slot="extra_top">
+        <input type="radio" name="license_category" value="non-osi" 
+               id="non-osi" />
+        <label for="non-osi">Non-OSI-Approved License</label><br/>
+
+        <input type="radio" name="license_category" value="unknown" 
+               id="unknown" />
+        <label for="unknown">Unknown License</label><br/>
+
+        <input type="radio" name="license_category" value="osi" 
+               id="osi" />
+        <label for="osi">OSI-Approved License</label><br/>
+    </div>
+
   </div>
 
 </div>
