@@ -1,4 +1,4 @@
-<div class="portlet"> 
+<div class="portlet" id="portlet-languages">
     <h2>Your languages</h2>
 
     <div class="portletBody">

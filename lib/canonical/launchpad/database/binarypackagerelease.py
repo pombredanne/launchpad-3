@@ -19,8 +19,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp import dbschema
 
-from canonical.launchpad.database.publishing import (
-    SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.database.files import BinaryPackageFile
 from canonical.launchpad.helpers import shortlist
 
@@ -51,8 +49,6 @@ class BinaryPackageRelease(SQLBase):
     provides = StringCol(dbName='provides')
     essential = BoolCol(dbName='essential', default=False)
     installedsize = IntCol(dbName='installedsize')
-    copyright = StringCol(dbName='copyright')
-    licence = StringCol(dbName='licence')
     architecturespecific = BoolCol(dbName='architecturespecific',
                                    notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
@@ -62,17 +58,17 @@ class BinaryPackageRelease(SQLBase):
 
     @property
     def title(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return '%s-%s' % (self.binarypackagename.name, self.version)
 
     @property
     def name(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.binarypackagename.name
 
     @property
     def distributionsourcepackagerelease(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         # import here to avoid circular import problems
         from canonical.launchpad.database.distributionsourcepackagerelease \
             import DistributionSourcePackageRelease
@@ -82,8 +78,16 @@ class BinaryPackageRelease(SQLBase):
 
     @property
     def sourcepackagename(self):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         return self.build.sourcepackagerelease.sourcepackagename.name
+
+    @property
+    def is_new(self):
+        """See `IBinaryPackageRelease`."""
+        distroarchseries = self.build.distroarchseries
+        distroarchseries_binary_package = distroarchseries.getBinaryPackage(
+            self.name)
+        return distroarchseries_binary_package.currentrelease is None
 
     def lastversions(self):
         """Return the SUPERSEDED BinaryPackageReleases in a DistroSeries.
@@ -97,10 +101,10 @@ class BinaryPackageRelease(SQLBase):
         # to determine what it actually wants to fetch. For now, I'm just
         # modifying this to be archive-aware, which will keep the current
         # crackful behaviour.
-        
+
         # Daniel Debonzi: To get the lastest versions of a BinaryPackage
         # Im suposing that one BinaryPackage is build for only one
-        # DistroSeries (Each DistroSeries compile all its Packages). 
+        # DistroSeries (Each DistroSeries compile all its Packages).
         # (BinaryPackage.build.distroarchseries = \
         # PackagePublishing.distroarchseries
         # where PackagePublishing.binarypackage = BinaryPackage.id)
@@ -116,18 +120,19 @@ class BinaryPackageRelease(SQLBase):
             BinaryPackageName.id AND
         BinaryPackageName.id = %s AND
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
-        BinaryPackagePublishingHistory.archive = %s AND
+        BinaryPackagePublishingHistory.archive IN %s AND
         BinaryPackagePublishingHistory.status = %s
-        """ % sqlvalues(self.binarypackagename,
-                        self.build.distroarchseries,
-                        self.build.distroarchseries.main_archive,
-                        dbschema.PackagePublishingStatus.SUPERSEDED)
+        """ % sqlvalues(
+            self.binarypackagename,
+            self.build.distroarchseries,
+            self.build.distribution.all_distro_archive_ids,
+            dbschema.PackagePublishingStatus.SUPERSEDED)
 
         return shortlist(BinaryPackageRelease.select(
             query, clauseTables=clauseTables, distinct=True))
 
     def addFile(self, file):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         determined_filetype = None
         if file.filename.endswith(".deb"):
             determined_filetype = dbschema.BinaryPackageFileType.DEB
@@ -140,27 +145,8 @@ class BinaryPackageRelease(SQLBase):
                                  filetype=determined_filetype,
                                  libraryfile=file)
 
-    def publish(self, priority, status, pocket, embargo,
-                distroarchseries=None):
-        """See IBinaryPackageRelease."""
-        # XXX: completely untested code
-        if not distroarchseries:
-            distroarchseries = self.build.distroarchseries
-
-        return SecureBinaryPackagePublishingHistory(
-            binarypackagerelease=self,
-            distroarchseries=distroarchseries,
-            component=self.build.sourcepackagerelease.component,
-            section=self.build.sourcepackagerelease.section,
-            priority=priority,
-            status=status,
-            pocket=pocket,
-            embargo=embargo,
-            archive=distroarchseries.main_archive
-            )
-
     def override(self, component=None, section=None, priority=None):
-        """See IBinaryPackageRelease."""
+        """See `IBinaryPackageRelease`."""
         if component is not None:
             self.component = component
         if section is not None:
@@ -232,12 +218,14 @@ class BinaryPackageReleaseSet:
            BinaryPackageRelease.id AND
         BinaryPackagePublishingHistory.distroarchrelease =
            DistroArchRelease.id AND
-        BinaryPackagePublishingHistory.archive = %s AND
+        BinaryPackagePublishingHistory.archive IN %s AND
         DistroArchRelease.distrorelease = %s AND
         BinaryPackageRelease.binarypackagename =
            BinaryPackageName.id AND
         BinaryPackagePublishingHistory.status != %s
-        """ % sqlvalues(distroseries.main_archive, distroseries,
+        """ % sqlvalues([archive.id for archive in
+                            distroseries.distribution.all_distro_archives],
+                        distroseries,
                         dbschema.PackagePublishingStatus.REMOVED)
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',

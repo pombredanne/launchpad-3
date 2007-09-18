@@ -5,24 +5,55 @@
 __metaclass__ = type
 
 __all__ = [
-    'BuildNavigation',
     'BuildFacets',
+    'BuildNavigation',
     'BuildOverviewMenu',
-    'BuildView',
     'BuildRecordsView',
+    'BuildUrl',
+    'BuildView',
     ]
 
 from zope.component import getUtility
-
-from canonical.lp.dbschema import BuildStatus
+from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    IHasBuildRecords, IBuild, IBuildQueueSet, UnexpectedFormData)
-
+    IBuild, IBuildQueueSet, IHasBuildRecords, UnexpectedFormData)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, GetitemNavigation, ApplicationMenu,
-    LaunchpadView, enabled_with_permission)
+    enabled_with_permission, ApplicationMenu, GetitemNavigation,
+    Link, LaunchpadView, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.lp.dbschema import BuildStatus
+
+
+class BuildUrl:
+    """Dynamic URL declaration for IBuild.
+
+    When dealing with distribution builds ('trusted') we want to present them
+    under IDistributionSourcePackageRelease url:
+
+       /ubuntu/+source/foo/1.0/+build/1234
+
+    On the other hand, PPA builds ('untrusted') will be presented under the PPA
+    page:
+
+       /~cprov/+archive/+build/1235
+    """
+    implements(ICanonicalUrlData)
+    rootsite = None
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def inside(self):
+        if self.context.is_trusted:
+            return self.context.distributionsourcepackagerelease
+        return self.context.archive
+
+    @property
+    def path(self):
+        return u"+build/%d" % self.context.id
 
 
 class BuildNavigation(GetitemNavigation):
@@ -41,7 +72,7 @@ class BuildOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = ['retry', 'rescore']
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Edit')
     def retry(self):
         """Only enabled for build records that are active."""
         text = 'Retry build'
@@ -167,7 +198,8 @@ class BuildRecordsView(LaunchpadView):
         self._setupMappedStates(state_tag)
 
         # request context build records according the selected state
-        builds = self.context.getBuildRecords(self.state, name=self.text)
+        builds = self.context.getBuildRecords(
+            build_state=self.state, name=self.text)
         self.batchnav = BatchNavigator(builds, self.request)
         # We perform this extra step because we don't what to issue one
         # extra query to retrieve the BuildQueue for each Build (batch item)

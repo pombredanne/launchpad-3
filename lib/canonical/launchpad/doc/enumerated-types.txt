@@ -23,7 +23,7 @@ The `enum` values of EnumeratedTypes are instances of Item.
 
 Enumerated types support IVocabularyTokenized.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.schema.interfaces import (
     ...     ITitledTokenizedTerm, IVocabularyTokenized)
     >>> verifyObject(IVocabularyTokenized, Fruit)
@@ -329,3 +329,22 @@ Each Item in an EnumeratedType has a reference back to the EnumeratedType.
     Apple
     Pear
     Orange
+
+
+== Item.sortkey ==
+
+The sortkey attribute of the Items are defined by the sort_order that is
+defined for the enumerated type.  The value is often used as a hidden value
+in columns in order to ensure appropriate sorting.
+
+    >>> for item in Fruit.items:
+    ...     print item.title, item.sortkey
+    Apple  0
+    Pear   1
+    Orange 2
+
+    >>> for item in BranchType.items:
+    ...     print item.title, item.sortkey
+    Hosted   0
+    Mirrored 1
+    Imported 2

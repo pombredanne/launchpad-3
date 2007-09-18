@@ -317,18 +317,34 @@ class BaseMetaEnum(type):
         return dict(items)
 
     @classmethod
-    def _enforceSortOrderCompleteness(cls, classname, classdict, items):
-        """ Override item's default sort order if sort_order is defined."""
+    def _enforceSortOrder(cls, classname, classdict, items):
+        """ Override item's default sort order if sort_order is defined.
+
+        :return: A list of items ordered appropriately.
+        """
+        items = dict(items)
         if 'sort_order' in classdict:
             sort_order = classdict['sort_order']
-            item_names = sorted([key for key, value in items])
+            item_names = sorted(items.keys())
             if item_names != sorted(sort_order):
                 raise TypeError(
                     'sort_order for %s must contain all and '
                     'only Item instances  %s.%s' % (
                     cls.enum_name, classdict['__module__'], classname))
-            for sort_id, item_name in enumerate(sort_order):
-                classdict[item_name].sortkey = sort_id
+        else:
+            # Sort the items by the automatically generated
+            # sortkey.
+            sort_order = [
+                item.name for item in sorted(
+                items.values(), key=operator.attrgetter('sortkey'))]
+            classdict['sort_order'] = tuple(sort_order)
+        # Assign new sortkey values from zero.
+        sorted_items = []
+        for sort_id, item_name in enumerate(sort_order):
+            item = classdict[item_name]
+            item.sortkey = sort_id
+            sorted_items.append(item)
+        return sorted_items
 
     def __new__(cls, classname, bases, classdict):
         """Called when defining a new class."""
@@ -343,18 +359,11 @@ class BaseMetaEnum(type):
         cls._enforceItemClassAndName(items, classname, classdict['__module__'])
 
         mapping = cls._generateItemMapping(items)
-        cls._enforceSortOrderCompleteness(classname, classdict, items)
+        sorted_items = cls._enforceSortOrder(classname, classdict, items)
 
-        sorted_items = sorted([item for name, item in items],
-                              key=operator.attrgetter('sortkey'))
         classdict['items'] = EnumItems(sorted_items, mapping)
         classdict['name'] = classname
         classdict['description'] = classdict.get('__doc__', None)
-
-        # If sort_order wasn't defined, define it based on the ordering.
-        if 'sort_order' not in classdict:
-            classdict['sort_order'] = tuple(
-                [item.name for item in sorted_items])
 
         global enumerated_type_registry
         if classname in enumerated_type_registry:

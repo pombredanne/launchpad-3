@@ -10,7 +10,7 @@
 #
 # arch-tag: 657212c5-95f4-422a-ada4-544bf2827ab5
 
-# XXX: REWRITE THE WHOLE SCRIPT USING SQLOBJECT
+# XXX: daniels 2004-12-14: REWRITE THE WHOLE SCRIPT USING SQLOBJECT
 
 from xml.sax import saxutils, make_parser, ContentHandler
 from optparse import OptionParser
@@ -263,8 +263,8 @@ def insert_language(cnx, data, plural_forms):
                 '''rosetta_trans.close()
         elif 'nativename' in data:
             # We update all language names
-            # XXX: We should check if it has changed and only update it in
-            # that case.
+            # XXX daniels 2004-12-14: We should check if it has changed and
+            # only update it in that case.
             cr.execute(
                     """UPDATE Language SET nativename='%s'
                         WHERE code='%s'""" %(

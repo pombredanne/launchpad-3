@@ -91,8 +91,9 @@ Karl Tilbury has made no contributions lately, so we'll deactivate his
 membership for now.
 
     # We want to test concurrency here, so keep two browsers around:
-    # XXX: As per bug 68655, it would be nice to be able to clone the browser
-    # and not do the manual copy.
+    # XXX: Guilherme Salgado 2007-02-28 bug=68655:
+    # It would be nice to be able to clone the browser and not do
+    # the manual copy.
     >>> from zope.testbrowser.testing import Browser
     >>> browser2 = Browser()
     >>> browser2.addHeader("Authorization", "Basic test@canonical.com:test")

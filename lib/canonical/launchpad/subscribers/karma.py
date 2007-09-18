@@ -3,9 +3,9 @@
 """ karma.py -- handles all karma assignments done in the launchpad
 application."""
 
-from canonical.launchpad.interfaces import IDistribution, IProduct
+from canonical.launchpad.interfaces import (
+    BugTaskStatus, IDistribution, IProduct, QuestionAction)
 from canonical.launchpad.mailnotification import get_bug_delta
-from canonical.lp.dbschema import BugTaskStatus, QuestionAction
 
 
 def bug_created(bug, event):
@@ -191,7 +191,8 @@ def question_bug_added(questionbug, event):
     question = questionbug.question
     _assignKarmaUsingQuestionContext(event.user, question, 'questionlinkedtobug')
 
-# XXX flacoste 20070713 This should go away once bug #125849 is fixed.
+# XXX flacoste 2007-07-13 bug=125849:
+# This should go away once bug #125849 is fixed.
 def get_karma_context_parameters(context):
     """Return the proper karma context parameters based on the object."""
     params = dict(product=None, distribution=None)

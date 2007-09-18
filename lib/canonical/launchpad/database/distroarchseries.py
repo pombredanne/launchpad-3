@@ -32,7 +32,7 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus)
+    ArchivePurpose, PackagePublishingPocket, PackagePublishingStatus)
 
 class DistroArchSeries(SQLBase):
     implements(IDistroArchSeries, IHasBuildRecords, IPublishing)
@@ -59,7 +59,7 @@ class DistroArchSeries(SQLBase):
     @property
     def default_processor(self):
         """See IDistroArchSeries"""
-        # XXX cprov 20050831
+        # XXX cprov 2005-08-31:
         # I could possibly be better designed, let's think about it in
         # the future. Pick the first processor we found for this
         # distroarchseries.processorfamily. The data model should
@@ -88,12 +88,12 @@ class DistroArchSeries(SQLBase):
         """See IDistroArchSeries """
         query = """
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.status = %s AND
             BinaryPackagePublishingHistory.pocket = %s
             """ % sqlvalues(
                     self,
-                    self.main_archive,
+                    self.distroseries.distribution.all_distro_archive_ids,
                     PackagePublishingStatus.PUBLISHED,
                     PackagePublishingPocket.RELEASE
                  )
@@ -145,9 +145,10 @@ class DistroArchSeries(SQLBase):
 
     def searchBinaryPackages(self, text):
         """See IDistroArchSeries."""
+        archives = self.distroseries.distribution.archiveIdList()
         bprs = BinaryPackageRelease.select("""
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackagePublishingHistory.status != %s AND
@@ -156,7 +157,7 @@ class DistroArchSeries(SQLBase):
             (BinaryPackageRelease.fti @@ ftq(%s) OR
              BinaryPackageName.name ILIKE '%%' || %s || '%%')
             """ % (quote(self),
-                   quote(self.main_archive),
+                   quote(archives),
                    quote(PackagePublishingStatus.REMOVED),
                    quote(text),
                    quote_like(text)),
@@ -185,11 +186,11 @@ class DistroArchSeries(SQLBase):
         return DistroArchSeriesBinaryPackage(
             self, name)
 
-    def getBuildRecords(self, status=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         # use facility provided by IBuildSet to retrieve the records
         return getUtility(IBuildSet).getBuildsByArchIds(
-            [self.id], status, name, pocket)
+            [self.id], build_state, name, pocket)
 
     def getReleasedPackages(self, binary_name, pocket=None,
                             include_pending=False, exclude_pocket=None,
@@ -220,9 +221,8 @@ class DistroArchSeries(SQLBase):
             queries.append("status=%s" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED))
 
-        if archive is None:
-            archive = self.main_archive
-        queries.append("archive=%s" % sqlvalues(archive))
+        archives = self.distroseries.distribution.archiveIdList(archive)
+        queries.append("archive IN %s" % sqlvalues(archives))
 
         published = BinaryPackagePublishingHistory.select(
             " AND ".join(queries),
@@ -253,10 +253,10 @@ class DistroArchSeries(SQLBase):
         # restrict to a specific pocket.
         queries.append('pocket = %s' % sqlvalues(pocket))
 
-        # exclude RELEASE pocket if the distroseries was already released,
-        # since it should not change.
+        # Exclude RELEASE pocket if the distroseries was already released,
+        # since it should not change, unless the archive allows it.
         if (not self.distroseries.isUnstable() and
-            self.main_archive == archive):
+            not archive.allowUpdatesToReleasePocket()):
             queries.append(
             'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 

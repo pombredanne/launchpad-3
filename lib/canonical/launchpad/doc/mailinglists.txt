@@ -4,7 +4,7 @@ Teams may have at most one team mailing list.  Creating a team mailing list
 requires several steps, starting with registration of the list by the owner of
 an existing team.  This is done through an IMailingListSet utility.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IMailingList, IMailingListSet)
     >>> from canonical.launchpad.database import MailingListSet
@@ -368,10 +368,23 @@ After changing the welcome message, the list's status should be MODIFIED.
     >>> sorted_lists(list_set.modified_lists)
     [<MailingList for team "team-one"; status=MODIFIED at ...>]
 
-Eventually, Mailman will get around to acting on this modification, and then
-it will set the status back to ACTIVE (or FAILED if the update failed for some
-reason).
+Eventually, Mailman will get around to acting on this modification.  When it
+does so, the list's state transitions first to UPDATING so as to avoid
+multiple modifications.  Transitioning to the ACTIVE state while still
+MODIFIED is not allowed.
 
+    >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Not a valid state transition
+
+What really happens is that the list's state is first transitioned to
+UPDATING, and then to ACTIVE or FAILED.
+
+    >>> list_one.startUpdating()
+    >>> flush_database_updates()
+    >>> list_one.status.name
+    'UPDATING'
     >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
     >>> flush_database_updates()
     >>> list_one.status.name

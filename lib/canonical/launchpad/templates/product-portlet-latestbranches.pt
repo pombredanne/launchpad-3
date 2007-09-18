@@ -1,5 +1,9 @@
-<div class="portlet" tal:condition="view/getLatestBranches">
-  <h2>Latest code</h2>
+<div
+  tal:condition="view/getLatestBranches"
+  class="portlet"
+  id="portlet-latest-branches"
+>
+  <h2>Latest branches</h2>
   <div class="portletBody portletContent">
     <ul class="branch">
 
@@ -7,7 +11,7 @@
       <a tal:attributes="href branch/fmt:url"
          tal:content="branch/name"
       >branch name</a
-      ><img src="/@@/locked" alt="private branch"
+      ><img src="/@@/private" alt=" (private)"
             tal:condition="branch/private"/>:
       <span tal:condition="branch/author"
             tal:replace="branch/author/name"

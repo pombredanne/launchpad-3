@@ -29,7 +29,7 @@ class DistroArchSeriesNavigation(GetitemNavigation):
         return self.context.architecturetag
 
 class DistroArchSeriesFacets(StandardLaunchpadFacets):
-    # XXX 20061004 mpt: a DistroArchSeries is not a structural
+    # XXX mpt 2006-10-04: a DistroArchSeries is not a structural
     # object: it should inherit all navigation from its distro release.
 
     usedfor = IDistroArchSeries
@@ -85,8 +85,8 @@ class DistroArchSeriesBinariesView:
 
 
     def binaryPackagesBatchNavigator(self):
-        # XXX: this is currently disabled in the template
-        #   -- kiko, 2006-03-17
+        # XXX: kiko 2006-03-17: This is currently disabled in the template.
+
         if self.text:
             binary_packages = self.context.searchBinaryPackages(self.text)
         else:

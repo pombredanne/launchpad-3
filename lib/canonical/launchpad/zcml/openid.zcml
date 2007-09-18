@@ -90,13 +90,33 @@
         class="canonical.launchpad.browser.openidserver.ProtocolErrorView"
         />
 
-    <!-- http://openid.launchpad.dev/$Person.name identity URLs
-       XXX: May be dropped - in discussion. StuartBishop 20070613 
+    <!-- XXX: StuartBishop 2007-06-13: May be dropped - in discussion.
+      http://openid.launchpad.dev/$Person.name identity URLs
     -->
     <content
         class="canonical.launchpad.browser.openidserver.OpenIdIdentityView">
       <allow attributes="browserDefault __call__" />
     </content>
+
+    <!-- IOpenIDRPConfig -->
+    <content
+        class="canonical.launchpad.database.OpenIDRPConfig">
+      <allow interface="canonical.launchpad.interfaces.IOpenIDRPConfig" />
+      <require
+          permission="launchpad.Admin"
+          attributes="destroySelf"
+          set_schema="canonical.launchpad.interfaces.IOpenIDRPConfig" />
+    </content>
+
+    <!-- IOpenIDRPConfigSet -->
+
+    <securedutility
+        class="canonical.launchpad.database.OpenIDRPConfigSet"
+        provides="canonical.launchpad.interfaces.IOpenIDRPConfigSet">
+      <allow
+          interface="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
+          />
+    </securedutility>
 
 </configure>
 

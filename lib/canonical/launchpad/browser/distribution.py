@@ -11,6 +11,7 @@ __all__ = [
     'DistributionFacets',
     'DistributionSpecificationsMenu',
     'DistributionView',
+    'DistributionPPASearchView',
     'DistributionAllPackagesView',
     'DistributionBrandingView',
     'DistributionEditView',
@@ -25,6 +26,7 @@ __all__ = [
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
     'DistributionLaunchpadUsageEditView',
+    'DistributionLanguagePackAdminView',
     'DistributionSetFacets',
     'DistributionSetNavigation',
     'DistributionSetContextMenu',
@@ -41,8 +43,8 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IDistributionMirrorSet, IDistributionSet, IDistribution,
-    ILaunchBag, IPublishedPackageSet, MirrorContent, NotFoundError)
+    IDistributionMirrorSet, IDistributionSet, IDistribution, ILaunchBag,
+    IPublishedPackageSet, MirrorContent, NotFoundError)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -368,11 +370,20 @@ class DistributionTranslationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'translations'
-    links = ['edit']
+    links = ['edit', 'imports', 'language_pack_admin']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
 
     def edit(self):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
+
+    @enabled_with_permission('launchpad.TranslationsAdmin')
+    def language_pack_admin(self):
+        text = 'Change language pack admins'
+        return Link('+select-language-pack-admin', text, icon='edit')
 
 
 class DistributionView(BuildRecordsView):
@@ -438,9 +449,24 @@ class DistributionView(BuildRecordsView):
         return sorted(serieses, key=operator.attrgetter('version'),
                       reverse=True)
 
-    def getAllPPAs(self):
-        """Return alls Personal Package Archive available."""
-        return getUtility(IArchiveSet).getAllPPAs()
+
+class DistributionPPASearchView(LaunchpadView):
+    """Search PPAs belonging to the Distribution in question."""
+
+    def initialize(self):
+        self.name_filter = self.request.get('name_filter')
+        self.show_inactive = self.request.get('show_inactive')
+
+        # Preserve self.show_inactive state because it's used in the
+        # template and build a boolean field to be passed for
+        # searchPPAs.
+        show_inactive = (self.show_inactive == 'on')
+
+        ppas = self.context.searchPPAs(
+            text=self.name_filter, show_inactive=show_inactive)
+
+        self.batchnav = BatchNavigator(ppas, self.request)
+        self.search_results = self.batchnav.currentBatch()
 
 
 class DistributionAllPackagesView(LaunchpadView):
@@ -553,6 +579,18 @@ class DistributionBugContactEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(distribution))
 
 
+class DistributionLanguagePackAdminView(LaunchpadEditFormView):
+    """Browser view to change the language pack administrator."""
+
+    schema = IDistribution
+    label = "Change the language pack administrator"
+    field_names = ['language_pack_admin']
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+
 class DistributionCountryArchiveMirrorsView(LaunchpadView):
     """A text/plain page that lists the mirrors in the country of the request.
 
@@ -647,11 +685,11 @@ class DistributionMirrorsAdminView(DistributionMirrorsView):
         """Raise an Unauthorized exception if the user is not a member of this
         distribution's mirror_admin team.
         """
-        # XXX: We don't want these pages to be public but we can't protect
+        # XXX: Guilherme Salgado 2006-06-16:
+        # We don't want these pages to be public but we can't protect
         # them with launchpad.Edit because that would mean only people with
         # that permission on a Distribution would be able to see them. That's
         # why we have to do the permission check here.
-        # -- Guilherme Salgado, 2006-06-16
         if not (self.user and self.user.inTeam(self.context.mirror_admin)):
             raise Unauthorized('Forbidden')
 

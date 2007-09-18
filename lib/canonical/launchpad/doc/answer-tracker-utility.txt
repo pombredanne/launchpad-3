@@ -3,7 +3,7 @@
 There is an IQuestionSet utility that can be use to retrieve and search
 for question whatever the target they were created in.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import IQuestionSet
     >>> question_set = getUtility(IQuestionSet)
     >>> verifyObject(IQuestionSet, question_set)
@@ -61,7 +61,7 @@ By default, expired and invalid questions are not searched for. The
 status parameter can be used to select the questions in the status
 you are interested in.
 
-    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> from canonical.launchpad.interfaces import QuestionStatus
     >>> for question in question_set.searchQuestions(
     ...     status=QuestionStatus.INVALID):
     ...     print question.title, question.status.title, (
@@ -113,7 +113,7 @@ When using the search_text criteria, the default is to sort the results
 by relevancy. One can use the sort parameter to change that. It takes
 one of the constant defined in the QuestionSort enumeration.
 
-    >>> from canonical.lp.dbschema import QuestionSort
+    >>> from canonical.launchpad.interfaces import QuestionSort
     >>> for question in question_set.searchQuestions(
     ...         search_text='firefox', sort=QuestionSort.OLDEST_FIRST):
     ...     print question.id, repr(question.title), (

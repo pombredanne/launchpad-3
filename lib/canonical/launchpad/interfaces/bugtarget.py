@@ -18,8 +18,7 @@ class IBugTarget(Interface):
     Examples include an IDistribution, an IDistroSeries and an
     IProduct.
     """
-    # XXX, Brad Bollenbach, 2006-08-02: This attribute name smells. See
-    # https://launchpad.net/bugs/54974.
+    # XXX Brad Bollenbach 2006-08-02 bug=54974: This attribute name smells.
     bugtargetdisplayname = Attribute("A display name for this bug target")
     bugtargetname = Attribute("The target as shown in mail notifications.")
 

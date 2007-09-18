@@ -47,7 +47,7 @@ def what_changed(sqlobject_modified_event):
         val_before = getattr(before, fieldname, None)
         val_after = getattr(after, fieldname, None)
 
-        #XXX: This shouldn't be necessary -- Bjorn Tillenius, 2005-06-09
+        #XXX Bjorn Tillenius 2005-06-09: This shouldn't be necessary.
         # peel off the zope stuff
         if isProxy(val_before):
             val_before = removeSecurityProxy(val_before)

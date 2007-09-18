@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'FAQSort',
     'IFAQCollection',
     'ISearchFAQsForm',
     ]
@@ -14,6 +15,33 @@ from zope.interface import Interface
 from zope.schema import TextLine
 
 from canonical.launchpad import _
+from canonical.lazr.enum import EnumeratedType, Item
+
+
+class FAQSort(EnumeratedType):
+    """An enumeration of the valid FAQ search sort order.
+
+    This enumeration is part of the IFAQCollection.searchFAQs() API. The
+    titles are formatted for nice display in browser code.
+    """
+
+    RELEVANCY = Item("""
+    by relevancy
+
+    Sort by relevancy of the FAQ toward the search text.
+    """)
+
+    NEWEST_FIRST = Item("""
+    newest first
+
+    Sort FAQs from newest to oldest.
+    """)
+
+    OLDEST_FIRST = Item("""
+    oldest first
+
+    Sort FAQs from oldset to newest.
+    """)
 
 
 class IFAQCollection(Interface):

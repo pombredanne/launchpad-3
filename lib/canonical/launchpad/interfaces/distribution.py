@@ -21,8 +21,9 @@ from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces import (
-    IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
-    ISpecificationTarget, IHasSecurityContact, PillarNameField)
+    IBugTarget, IHasAppointedDriver, IHasDrivers, IHasOwner,
+    IHasSecurityContact, ISpecificationTarget, PillarNameField)
+from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
@@ -37,11 +38,9 @@ class DistributionNameField(PillarNameField):
     def _content_iface(self):
         return IDistribution
 
-
-class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-                    ISpecificationTarget, IHasSecurityContact,
-                    IKarmaContext, IHasMentoringOffers, IHasSprints,
-                    IHasTranslationGroup):
+class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
+    IHasMentoringOffers, IHasMilestones, IHasOwner, IHasSecurityContact,
+    IHasSprints, IHasTranslationGroup, IKarmaContext, ISpecificationTarget):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -142,12 +141,6 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     serieses = Attribute("DistroSeries'es inside this Distribution")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
-    milestones = Attribute(_(
-        "The visible milestones associated with this distribution, "
-        "ordered by date expected."))
-    all_milestones = Attribute(_(
-        "All milestones associated with this distribution, ordered "
-        "by date expected."))
     source_package_caches = Attribute("The set of all source package "
         "info caches for this distribution.")
     is_read_only = Attribute(
@@ -164,17 +157,14 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     uploaders = Attribute(_(
         "DistroComponentUploader records associated with this distribution."))
     official_answers = Bool(
-        title=_('Uses Answers Officially'), required=True, 
-        description=_("Check this box to indicate that this distribution "
-            "officially uses Launchpad for community support."))
+        title=_('People can ask questions in Launchpad Answers'),
+        required=True)
     official_malone = Bool(
-        title=_('Uses Bugs Officially'), required=True, 
-        description=_("Check this box to indicate that this distribution "
-            "officially uses Launchpad for bug tracking."))
+        title=_('Bugs in this distribution are tracked in Launchpad'),
+        required=True)
     official_rosetta = Bool(
-        title=_('Uses Translations Officially'), required=True, 
-        description=_("Check this box to indicate that this distribution "
-            "officially uses Launchpad for translation."))
+        title=_('Translations for this distribution are done in Launchpad'),
+        required=True)
 
     # properties
     currentseries = Attribute(
@@ -195,12 +185,28 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         required=False,
         vocabulary='FilteredDistroSeriesVocabulary')
 
+    language_pack_admin = Choice(
+        title=_("Language Pack Administrator"),
+        description=_("The distribution language pack administrator."),
+        required=False, vocabulary='ValidPersonOrTeam')
+
     main_archive = Object(
         title=_('Distribution Main Archive.'), readonly=True, schema=IArchive
         )
 
-    def all_distro_archives():
-        """Return all non-PPA archives."""
+    all_distro_archives = Attribute(
+        "A sequence of the distribution's non-PPA IArchives.")
+
+    all_distro_archive_ids = Attribute(
+        "A list containing the IDs of all the non-PPA archives.")
+
+    def archiveIdList(archive=None):
+        """Return a list of archive IDs suitable for sqlvalues() or quote().
+
+        If the archive param is supplied, just its ID will be returned in
+        a list of one item.  If it is not supplied, return a list of
+        all the IDs for all the archives for the distribution.
+        """
 
     def __getitem__(name):
         """Returns a DistroSeries that matches name, or raises and
@@ -228,11 +234,6 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
         At least one of http_base_url or ftp_base_url must be provided in
         order to create a mirror.
-        """
-
-    def getMilestone(name):
-        """Return a milestone with the given name for this distribution, or
-        None.
         """
 
     def getSourcePackage(name):
@@ -304,6 +305,35 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         publishing status of these binary / source packages. Raises
         NotFoundError if it fails to find any package published with
         that name in the distribution.
+        """
+
+    def getAllPPAs():
+        """Return all PPAs for this distribution."""
+
+    def searchPPAs(text=None, show_inactive=False):
+        """Return all PPAs matching the given text in this distribution.
+
+        'text', when passed, will restrict results to Archives with matching
+        description (using substring) or matching Archive.owner (using
+        available person fti/ftq).
+
+        'show_inactive', when False, will restrict results to Archive with
+        at least one source publication in PENDING or PUBLISHED status.
+        """
+
+    def getPendingAcceptancePPAs():
+        """Return only pending acceptance PPAs in this distribution."""
+
+    def getPendingPublicationPPAs():
+        """Return only pending publication PPAs in this distribution."""
+
+    def getArchiveByComponent(component_name):
+        """Return the archive most appropriate for the component name.
+
+        Where different components may imply a different archive (e.g.
+        partner), this method will return the archive for that component.
+
+        If the component_name supplied is unknown, None is returned.
         """
 
 

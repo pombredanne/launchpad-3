@@ -1,11 +1,13 @@
 Here is the tale of languages. We will see how to create, find and
 edit them.
 
-Launchpad has a main page.
+Launchpad Translations has a main page.
 
-From there, we can find the link to add new languages
+  >>> admin_browser.open('http://translations.launchpad.dev/')
 
-  >>> admin_browser.open('http://translations.launchpad.dev/+languages')
+There we can find a link to browse and manage languages.
+
+  >>> admin_browser.getLink('18 languages').click()
   >>> print admin_browser.url
   http://translations.launchpad.dev/+languages
 
@@ -173,6 +175,14 @@ An admin, though, will see the link and will be able to edit it.
   on
   >>> print admin_browser.getControl('Text direction').value
   ['Left to Right']
+  >>> spokenin_control = admin_browser.getControl(name='field.countries')
+  >>> print [country for country in spokenin_control.displayValue]
+  ['\xa0Argentina', '\xa0Bolivia', '\xa0Chile', '\xa0Colombia',
+   '\xa0Costa Rica', '\xa0Dominican Republic', '\xa0Ecuador',
+   '\xa0El Salvador', '\xa0Guatemala', '\xa0Honduras', '\xa0Mexico',
+   '\xa0Nicaragua', '\xa0Panama', '\xa0Paraguay', '\xa0Peru',
+   '\xa0Puerto Rico', '\xa0Spain', '\xa0United States', '\xa0Uruguay',
+   '\xa0Venezuela']
 
 Changing values and submitting the form will allow the admin to change values.
 
@@ -193,6 +203,9 @@ Changing values to correct content works:
 
   >>> admin_browser.getControl('ISO 639').value = 'bars'
   >>> admin_browser.getControl('English name').value = 'Changed field'
+  >>> spokenin_control = admin_browser.getControl(name='field.countries')
+  >>> spokenin_control.getControl('Argentina').selected = False
+  >>> spokenin_control.getControl('France').selected = True
   >>> admin_browser.getControl('Admin Language').click()
   >>> print admin_browser.url
   http://translations.launchpad.dev/+languages/bars
@@ -206,6 +219,13 @@ And we can validate it:
   bars
   >>> print admin_browser.getControl('English name').value
   Changed field
+  >>> spokenin_control = admin_browser.getControl(name='field.countries')
+  >>> print [country for country in spokenin_control.displayValue]
+  ['\xa0Bolivia', '\xa0Chile', '\xa0Colombia', '\xa0Costa Rica',
+   '\xa0Dominican Republic', '\xa0Ecuador', '\xa0El Salvador', '\xa0France',
+   '\xa0Guatemala', '\xa0Honduras', '\xa0Mexico', '\xa0Nicaragua',
+   '\xa0Panama', '\xa0Paraguay', '\xa0Peru', '\xa0Puerto Rico', '\xa0Spain',
+   '\xa0United States', '\xa0Uruguay', '\xa0Venezuela']
 
 That was a renaming action, which means that language code 'es' doesn't
 exist anymore.

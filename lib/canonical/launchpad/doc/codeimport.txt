@@ -20,7 +20,7 @@ CodeImports are created and found using the ICodeImportSet interface,
 which is registered as a utility.
 
     >>> from canonical.launchpad.interfaces import ICodeImport, ICodeImportSet
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
     >>> code_import_set = getUtility(ICodeImportSet)
@@ -216,11 +216,13 @@ site:
     >>> print canonical_url(code_import_set)
     http://code.launchpad.dev/+code-imports
 
-Each code import can be found at '<url of ICodeImportSet>/<id of
-import>':
+The code imports themselves are viewed under the branch's URL,
+however.
 
-    >>> print canonical_url(code_import_set.get(1))
-    http://code.launchpad.dev/+code-imports/1
+    >>> print canonical_url(svn_import.branch)
+    http://code.launchpad.dev/~vcs-imports/firefox/trunk-svn
+    >>> print canonical_url(svn_import)
+    http://code.launchpad.dev/~vcs-imports/firefox/trunk-svn/+code-import
 
 
 == Security ==

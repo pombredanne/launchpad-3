@@ -1,0 +1,7 @@
+Just make sure this page contains the right links:
+
+    >>> user_browser.open("http://launchpad.dev/projects/")
+    >>> user_browser.getLink("Show all teams").url
+    'http://launchpad.dev/people/+teamlist'
+    >>> user_browser.getLink("Show all projects").url
+    'http://launchpad.dev/projects/+all'

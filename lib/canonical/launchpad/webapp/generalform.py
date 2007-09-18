@@ -219,11 +219,11 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
         transaction.abort()
 
     def __call__(self):
-        #XXX: BrowserView doesn't define __call__(), but somehow
+        #XXX: Bjorn Tillenius, 2006-02-22: 
+        #     BrowserView doesn't define __call__(), but somehow
         #     NoRenderingOnRedirect.__call__() won't be called unless
         #     we define this method and call it explicitly. It's
         #     probably due to some ZCML magic which should be removed.
-        #     -- Bjorn Tillenius, 2006-02-22
 
         # We call initialize explicitly here (it's normally called by
         # GeneralFormView.__call__), because of the hack Bjorn

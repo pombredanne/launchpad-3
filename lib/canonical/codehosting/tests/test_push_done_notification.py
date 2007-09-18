@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = []
 
 
+import logging
 import os
 import shutil
 import tempfile
@@ -54,7 +55,7 @@ class TestPushDoneNotification(AvatarTestCase):
             '/~%s/%s' % (avatar.avatarId, productID))
         d = defer.maybeDeferred(productDir.createDirectory, branchName)
         return d
-    
+
     def test_no_writes(self):
         # 'connect' and disconnect
         self.server.connectionLost(None)
@@ -103,8 +104,8 @@ class WriteLoggingDirectory(unittest.TestCase):
         testName = self.id().split('.')[-1]
         self.dirty = False
         self.tempDir = tempfile.mkdtemp(prefix=testName)
-        self.directory = bazaarfs.WriteLoggingDirectory(self.flagAsDirty,
-                                                        self.tempDir)
+        self.directory = bazaarfs.WriteLoggingDirectory(
+            self.flagAsDirty, self.tempDir, logging.getLogger())
 
     def tearDown(self):
         shutil.rmtree(self.tempDir)
@@ -115,7 +116,7 @@ class WriteLoggingDirectory(unittest.TestCase):
     def test_listener(self):
         # Children of a WriteLoggingDirectory should maintain a reference
         # to the top-level WriteLoggingDirectory.
-        # XXX - whitebox test (jml, 2007-02-15)
+        # XXX jml 2007-02-15: Whitebox test
         self.assertEqual(self.flagAsDirty, self.directory._flagAsDirty)
         self.assertEqual(self.flagAsDirty,
                          self.directory.createDirectory('foo')._flagAsDirty)
@@ -176,8 +177,8 @@ class WriteLoggingFile(unittest.TestCase):
         testName = self.id().split('.')[-1]
         self.dirty = False
         self.tempDir = tempfile.mkdtemp(prefix=testName)
-        self.directory = bazaarfs.WriteLoggingDirectory(self.flagAsDirty,
-                                                        self.tempDir)
+        self.directory = bazaarfs.WriteLoggingDirectory(
+            self.flagAsDirty, self.tempDir, logging.getLogger())
         self.file = self.directory.createFile('foo')
         self.dirty = False
 
@@ -189,7 +190,7 @@ class WriteLoggingFile(unittest.TestCase):
 
     def test_file_has_listener(self):
         # The created file should refer to the listener of its parent directory.
-        # XXX - whitebox test (jml, 2007-02-15)
+        # XXX jml 2007-02-15: Whitebox test.
         self.assertEqual(self.flagAsDirty, self.file._flagAsDirty)
 
     def test_writeChunk(self):

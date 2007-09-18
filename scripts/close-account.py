@@ -13,8 +13,8 @@ import sys
 
 from canonical.database.sqlbase import connect
 from canonical.launchpad.scripts import db_options, logger_options, logger
-from canonical.launchpad.interfaces import PersonCreationRationale
-from canonical.lp.dbschema import QuestionStatus
+from canonical.launchpad.interfaces import (
+    PersonCreationRationale, QuestionStatus)
 
 def close_account(con, log, username):
     """Close a person's account.
@@ -64,8 +64,8 @@ def close_account(con, log, username):
         """, vars())
 
     # Trash their calendar.
-    # XXX: Can't do this until we make the CalendarSubsciption
-    # ON DELETE CASCADE -- StuartBishop 20070131
+    # XXX StuartBishop 2007-01-31:
+    # Can't do this until we make the CalendarSubsciption ON DELETE CASCADE.
     # table_notification('Calendar')
     # if calendar_id is not None:
     #     cur.execute("""

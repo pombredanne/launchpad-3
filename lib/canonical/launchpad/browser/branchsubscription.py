@@ -75,15 +75,22 @@ class BranchSubscriptionAddView(_BranchSubscriptionView):
 
     @action("Subscribe")
     def subscribe(self, action, data):
-        notification_level = data['notification_level']
-        max_diff_lines = self.optional_max_diff_lines(
-            notification_level, data['max_diff_lines'])
+        # To catch the stale post problem, check that the user is not
+        # subscribed before continuing.
+        if self.context.hasSubscription(self.user):
+            self.request.response.addNotification(
+                'You are already subscribed to this branch.')
+        else:
+            notification_level = data['notification_level']
+            max_diff_lines = self.optional_max_diff_lines(
+                notification_level, data['max_diff_lines'])
 
-        self.context.subscribe(self.user, notification_level, max_diff_lines)
+            self.context.subscribe(
+                self.user, notification_level, max_diff_lines)
 
-        self.add_notification_message(
-            'You have subscribed to this branch with: ',
-            notification_level, max_diff_lines)
+            self.add_notification_message(
+                'You have subscribed to this branch with: ',
+                notification_level, max_diff_lines)
 
 
 class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
@@ -100,22 +107,32 @@ class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
 
     @action("Unsubscribe")
     def unsubscribe(self, action, data):
-        self.context.unsubscribe(self.user)
-        self.request.response.addNotification(
-            "You have unsubscribed from this branch.")
+        # Be proactive in the checking to catch the stale post problem.
+        if self.context.hasSubscription(self.user):
+            self.context.unsubscribe(self.user)
+            self.request.response.addNotification(
+                "You have unsubscribed from this branch.")
+        else:
+            self.request.response.addNotification(
+                'You are not subscribed to this branch.')
 
     @action("Change")
     def change_details(self, action, data):
-        subscription = self.context.getSubscription(self.user)
-        subscription.notification_level = data['notification_level']
-        subscription.max_diff_lines = self.optional_max_diff_lines(
-            subscription.notification_level,
-            data['max_diff_lines'])
+        # Be proactive in the checking to catch the stale post problem.
+        if self.context.hasSubscription(self.user):
+            subscription = self.context.getSubscription(self.user)
+            subscription.notification_level = data['notification_level']
+            subscription.max_diff_lines = self.optional_max_diff_lines(
+                subscription.notification_level,
+                data['max_diff_lines'])
 
-        self.add_notification_message(
-            'Subscription updated to: ',
-            subscription.notification_level,
-            subscription.max_diff_lines)
+            self.add_notification_message(
+                'Subscription updated to: ',
+                subscription.notification_level,
+                subscription.max_diff_lines)
+        else:
+            self.request.response.addNotification(
+                'You are not subscribed to this branch.')
 
 
 class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
@@ -146,9 +163,9 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
         subscription = self.context.getSubscription(person)
         self.next_url = canonical_url(self.context)
         if subscription is None:
-            # XXX thumper 2007-06-14
+            # XXX thumper 2007-06-14 bug=117980:
             # Restrictive policy is being enforced in the view
-            # rather than the model.  See lpbug #117980.
+            # rather than the model.
             admins = getUtility(ILaunchpadCelebrities).admin
             if (person.isTeam() and not self.user.inTeam(person)
                 and not self.user.inTeam(admins)):

@@ -27,11 +27,10 @@ class BugImportScript(LaunchpadScript):
                                help='Cache for bug ID mapping',
                                type='string', dest='cache_filename',
                                default='bug-map.pickle')
-        # XXX: 20070411 jamesh
+        # XXX: jamesh 2007-04-11 bugs=86352
         # Not verifying users created by a bug import can result in
         # problems with mail notification, so should not be used for
         # imports.
-        #     https://bugs.launchpad.net/bugs/86352
         self.parser.add_option('--dont-verify-users', dest='verify_users',
                                help="Don't verify newly created users",
                                action='store_false', default=True)

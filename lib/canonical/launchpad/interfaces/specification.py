@@ -5,8 +5,12 @@
 __metaclass__ = type
 
 __all__ = [
+    'INewSpecification',
+    'INewSpecificationSeriesGoal',
+    'INewSpecificationSprint',
+    'INewSpecificationTarget',
+    'INewSpecificationProjectTarget',
     'ISpecification',
-    'INewSpecificationForm',
     'ISpecificationSet',
     'ISpecificationDelta',
     ]
@@ -21,9 +25,10 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (ContentNameField, Summary,
     Title)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces import IHasOwner, IProject
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
+from canonical.launchpad.interfaces.project import IProject
 from canonical.launchpad.interfaces.sprint import ISprint
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -92,14 +97,8 @@ class SpecURLField(TextLine):
             raise LaunchpadValidationError(self.errormessage % specurl)
 
 
-class ISpecification(IHasOwner, ICanBeMentored):
-    """A Specification."""
-
-    # XXX: TomBerger 2007-06-20, 'id' is required for
-    #      SQLObject to be able to assign a security-proxied
-    #      specification to an attribute of another SQL object
-    #      referencing it.
-    id = Int(title=_("Database ID"), required=True, readonly=True)
+class INewSpecification(Interface):
+    """A schema for a new specification."""
 
     name = SpecNameField(
         title=_('Name'), required=True, readonly=False,
@@ -126,9 +125,6 @@ class ISpecification(IHasOwner, ICanBeMentored):
         default=SpecificationDefinitionStatus.NEW, description=_(
             "The current status of the process to define the "
             "feature and get approval for the implementation plan."))
-    priority = Choice(
-        title=_('Priority'), vocabulary='SpecificationPriority',
-        default=SpecificationPriority.UNDEFINED, required=True)
     assignee = Choice(title=_('Assignee'), required=False,
         description=_("The person responsible for implementing the feature."),
         vocabulary='ValidPersonOrTeam')
@@ -140,6 +136,65 @@ class ISpecification(IHasOwner, ICanBeMentored):
             "The person responsible for approving the specification, "
             "and for reviewing the code when it's ready to be landed."),
         vocabulary='ValidPersonOrTeam')
+
+
+class INewSpecificationProjectTarget(Interface):
+    """A mixin schema for a new specification.
+
+    Requires the user to specify a product from a given project.
+    """
+    target = Choice(title=_("For"),
+                    description=_("The project for which this "
+                                  "proposal is being made."),
+                    required=True, vocabulary='ProjectProducts')
+
+
+class INewSpecificationSeriesGoal(Interface):
+    """A mixin schema for a new specification.
+
+    Allows the user to propose the specification as a series goal.
+    """
+    goal = Bool(title=_('Propose for series goal'),
+                description=_("Check this to indicate that you wish to "
+                              "propose this blueprint as a series goal."),
+                required=True, default=False)
+
+
+class INewSpecificationSprint(Interface):
+    """A mixin schema for a new specification.
+
+    Allows the user to propose the specification for discussion at a sprint.
+    """
+    sprint = Choice(title=_("Propose for sprint"),
+                    description=_("The sprint to which agenda this "
+                                  "blueprint is being suggested."),
+                    required=False, vocabulary='FutureSprint')
+
+
+class INewSpecificationTarget(Interface):
+    """A mixin schema for a new specification.
+
+    Requires the user to specify a distribution or a product as a target.
+    """
+    target = Choice(title=_("For"),
+                    description=_("The project for which this proposal is "
+                                  "being made."),
+                    required=True, vocabulary='DistributionOrProduct')
+
+
+class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
+    ICanBeMentored):
+    """A Specification."""
+
+    # TomBerger 2007-06-20: 'id' is required for
+    #      SQLObject to be able to assign a security-proxied
+    #      specification to an attribute of another SQL object
+    #      referencing it.
+    id = Int(title=_("Database ID"), required=True, readonly=True)
+
+    priority = Choice(
+        title=_('Priority'), vocabulary='SpecificationPriority',
+        default=SpecificationPriority.UNDEFINED, required=True)
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
     owner = Choice(title=_('Owner'), required=True, readonly=True,
@@ -149,12 +204,6 @@ class ISpecification(IHasOwner, ICanBeMentored):
         vocabulary='Product')
     distribution = Choice(title=_('Distribution'), required=False,
         vocabulary='Distribution')
-
-    target = Choice(
-        title=_("For"),
-        description=_("The project for which this proposal is being made."),
-        required=True,
-        vocabulary='DistributionOrProduct')
 
     # series
     productseries = Choice(title=_('Series Goal'), required=False,
@@ -366,22 +415,6 @@ class ISpecification(IHasOwner, ICanBeMentored):
 
     def linkBranch(branch, summary=None):
         """Link the given branch to this specification."""
-
-
-class INewSpecificationForm(ISpecification):
-    """ A schema for registering new blueprints"""
-    sprint = Choice(
-        title=_("Propose for sprint"),
-        description=_("the sprint to which agenda this blueprint is "
-                      "being suggested."),
-        required=False,
-        vocabulary='FutureSprint')
-    
-    project_target = Choice(
-        title=_("For"),
-        description=_("The project for which this proposal is being made."),
-        required=True,
-        vocabulary='ProjectProducts')
 
 
 # Interfaces for containers

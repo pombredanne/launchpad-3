@@ -37,8 +37,6 @@ class IBinaryPackageRelease(Interface):
     provides = Text(required=False)
     essential = Bool(required=False)
     installedsize = Int(required=False)
-    copyright = Text(required=False)
-    licence = Text(required=False)
     architecturespecific = Bool(required=True)
     datecreated = Datetime(required=True, readonly=True)
 
@@ -49,10 +47,15 @@ class IBinaryPackageRelease(Interface):
     sourcepackagename = Attribute(
         "The name of the source package from where this binary was built.")
 
-    # properties
-    distributionsourcepackagerelease = Attribute("The sourcepackage "
-        "release in this distribution from which this binary was "
-        "built.")
+    # Properties.
+    distributionsourcepackagerelease = Attribute(
+        "The sourcepackage release in this distribution from which this "
+        "binary was built.")
+
+    is_new = Bool(
+        title=_("New Binary."),
+        description=_("True if there binary version was never published for "
+                      "the architeture it was built for. False otherwise."))
 
     def lastversions():
         """Return the SUPERSEDED BinaryPackages in a DistroSeries
@@ -61,13 +64,6 @@ class IBinaryPackageRelease(Interface):
     def addFile(file):
         """Create a BinaryPackageFile record referencing this build
         and attach the provided library file alias (file).
-        """
-
-    def publish(priority, status, pocket, embargo, distroarchseries=None):
-        """Publish this BinaryPackageRelease according the given parameters.
-
-        The optional distroarchseries argument defaults to the one choosen
-        originally for the build record (helps on derivative procedures).
         """
 
     def override(component=None, section=None, priority=None):
@@ -79,7 +75,7 @@ class IBinaryPackageRelease(Interface):
 
 class IBinaryPackageReleaseSet(Interface):
     """A set of binary packages"""
-    
+
     def findByNameInDistroSeries(distroseries, pattern,
                                   archtag=None, fti=False):
         """Returns a set of binarypackagereleases that matchs pattern

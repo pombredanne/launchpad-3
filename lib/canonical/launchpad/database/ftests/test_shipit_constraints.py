@@ -7,7 +7,7 @@ import unittest
 import psycopg
 
 from canonical.database.sqlbase import quote
-from canonical.lp.dbschema import ShippingRequestStatus
+from canonical.launchpad.interfaces import ShippingRequestStatus
 from canonical.launchpad.ftests.harness import (
     LaunchpadFunctionalTestCase, LaunchpadTestSetup)
 

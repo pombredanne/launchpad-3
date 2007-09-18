@@ -1,4 +1,4 @@
-  <div class="portlet">
+  <div class="portlet" id="portlet-people">
     <h2>People</h2>
 
     <div class="portletBody portletContent">

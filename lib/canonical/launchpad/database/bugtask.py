@@ -1,16 +1,19 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+"""Classes that implement IBugTask and its related interfaces."""
 
 __metaclass__ = type
+
 __all__ = [
     'BugTaskDelta',
     'BugTaskToBugAdapter',
     'BugTaskMixin',
-    'NullBugTask',
     'BugTask',
     'BugTaskSet',
+    'NullBugTask',
     'bugtask_sort_key',
     'get_bug_privacy_filter',
     'search_value_to_where_condition']
+
 
 import datetime
 
@@ -24,11 +27,15 @@ from zope.component import getUtility
 from zope.interface import implements, alsoProvides
 from zope.security.proxy import isinstance as zope_isinstance
 
+from canonical.config import config
+
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
+
+from canonical.lazr.enum import DBItem
 
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.database.pillar import pillar_sort_key
@@ -36,7 +43,7 @@ from canonical.launchpad.interfaces import (
     BugTaskSearchParams,
     ConjoinedBugTaskEditError,
     IBugTask,
-    IBugTaskDelta, 
+    IBugTaskDelta,
     IBugTaskSet,
     IDistributionSourcePackage,
     IDistroBugTask,
@@ -53,14 +60,15 @@ from canonical.launchpad.interfaces import (
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     BUG_CONTACT_BUGTASK_STATUSES,
+    BugTaskStatus,
+    BugTaskStatusSearch,
     )
 from canonical.launchpad.helpers import shortlist
-# XXX: see bug 49029 -- kiko, 2006-06-14
+# XXX: kiko 2006-06-14 bug=49029
 
 from canonical.lp.dbschema import (
     BugNominationStatus,
     BugTaskImportance,
-    BugTaskStatus,
     PackagePublishingStatus,
     )
 
@@ -73,6 +81,7 @@ debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,
                       'serious':   BugTaskImportance.HIGH,
                       'grave':     BugTaskImportance.HIGH,
                       'critical':  BugTaskImportance.CRITICAL}
+
 
 def bugtask_sort_key(bugtask):
     """A sort key for a set of bugtasks. We want:
@@ -117,7 +126,7 @@ def bugtask_sort_key(bugtask):
 
 
 class BugTaskDelta:
-    """See canonical.launchpad.interfaces.IBugTaskDelta."""
+    """See `IBugTaskDelta`."""
     implements(IBugTaskDelta)
     def __init__(self, bugtask, product=None, sourcepackagename=None,
                  status=None, importance=None, assignee=None,
@@ -132,41 +141,29 @@ class BugTaskDelta:
         self.statusexplanation = statusexplanation
         self.bugwatch = bugwatch
 
-    @property
-    def targetname(self):
-        return self.bugtask.bugtargetname
-
-    @property
-    def bugtargetdisplayname(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        return self.targetnamecache
-
 
 class BugTaskMixin:
     """Mix-in class for some property methods of IBugTask implementations."""
 
     @property
-    def title(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        if INullBugTask.providedBy(self):
-            return 'Bug #%s is not in %s: "%s"' % (
-                self.bug.id, self.bugtargetdisplayname, self.bug.title)
-        else:
-            return 'Bug #%s in %s: "%s"' % (
-                self.bug.id, self.bugtargetdisplayname, self.bug.title)
+    def bug_subscribers(self):
+        """See `IBugTask`."""
+        indirect_subscribers = self.bug.getIndirectSubscribers()
+        return self.bug.getDirectSubscribers() + indirect_subscribers
 
     @property
     def bugtargetdisplayname(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
+        """See `IBugTask`."""
         return self.target.bugtargetdisplayname
 
     @property
     def bugtargetname(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
+        """See `IBugTask`."""
         return self.target.bugtargetname
 
     @property
     def target(self):
+        """See `IBugTask`."""
         # We explicitly reference attributes here (rather than, say,
         # IDistroBugTask.providedBy(self)), because we can't assume this
         # task has yet been marked with the correct interface.
@@ -187,11 +184,11 @@ class BugTaskMixin:
             else:
                 return self.distroseries
         else:
-            raise AssertionError("Unable to determine bugtask target")
+            raise AssertionError("Unable to determine bugtask target.")
 
     @property
     def related_tasks(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
+        """See `IBugTask`."""
         other_tasks = [
             task for task in self.bug.bugtasks if task != self]
 
@@ -199,7 +196,7 @@ class BugTaskMixin:
 
     @property
     def pillar(self):
-        """See IBugTask."""
+        """See `IBugTask`."""
         if self.product is not None:
             return self.product
         elif self.productseries is not None:
@@ -211,7 +208,7 @@ class BugTaskMixin:
 
     @property
     def other_affected_pillars(self):
-        """See IBugTask."""
+        """See `IBugTask`."""
         result = set()
         this_pillar = self.pillar
         for task in self.bug.bugtasks:
@@ -222,31 +219,31 @@ class BugTaskMixin:
 
     @property
     def mentoring_offers(self):
-        """See IHasMentoringOffers."""
+        """See `IHasMentoringOffers`."""
         # mentoring is on IBug as a whole, not on a specific task, so we
         # pass through to the bug
         return self.bug.mentoring_offers
 
     def canMentor(self, user):
-        """See ICanBeMentored."""
+        """See `ICanBeMentored`."""
         # mentoring is on IBug as a whole, not on a specific task, so we
         # pass through to the bug
         return self.bug.canMentor(user)
 
     def isMentor(self, user):
-        """See ICanBeMentored."""
+        """See `ICanBeMentored`."""
         # mentoring is on IBug as a whole, not on a specific task, so we
         # pass through to the bug
         return self.bug.isMentor(user)
 
     def offerMentoring(self, user, team):
-        """See ICanBeMentored."""
+        """See `ICanBeMentored`."""
         # mentoring is on IBug as a whole, not on a specific task, so we
         # pass through to the bug
         return self.bug.offerMentoring(user, team)
 
     def retractMentoring(self, user):
-        """See ICanBeMentored."""
+        """See `ICanBeMentored`."""
         # mentoring is on IBug as a whole, not on a specific task, so we
         # pass through to the bug
         return self.bug.retractMentoring(user)
@@ -266,6 +263,7 @@ class NullBugTask(BugTaskMixin):
     def __init__(self, bug, product=None, productseries=None,
                  sourcepackagename=None, distribution=None,
                  distroseries=None):
+        """Initialize a NullBugTask."""
         self.bug = bug
         self.product = product
         self.productseries = productseries
@@ -284,7 +282,7 @@ class NullBugTask(BugTaskMixin):
         elif self.productseries:
             alsoProvides(self, IProductSeriesBugTask)
         else:
-            raise AssertionError('Unknown NullBugTask: %r' % self)
+            raise AssertionError('Unknown NullBugTask: %r.' % self)
 
         # Set a bunch of attributes to None, because it doesn't make
         # sense for these attributes to have a value when there is no
@@ -293,8 +291,6 @@ class NullBugTask(BugTaskMixin):
         # for it, and I don't think there's any point on designing for
         # that until we've encountered one.)
         self.id = None
-        self.datecreated = None
-        self.date_assigned = None
         self.age = None
         self.milestone = None
         self.status = None
@@ -306,13 +302,18 @@ class NullBugTask(BugTaskMixin):
         self.conjoined_master = None
         self.conjoined_slave = None
 
+        self.datecreated = None
+        self.date_assigned = None
+        self.date_confirmed = None
+        self.date_last_updated = None
+        self.date_inprogress = None
+        self.date_closed = None
+
     @property
-    def targetname(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        # For a INullBugTask, there is no targetname in the database, of
-        # course, so we fallback on calculating the targetname in
-        # Python.
-        return self.target.bugtargetname
+    def title(self):
+        """See `IBugTask`."""
+        return 'Bug #%s is not in %s: "%s"' % (
+            self.bug.id, self.bugtargetdisplayname, self.bug.title)
 
 
 def BugTaskToBugAdapter(bugtask):
@@ -321,6 +322,7 @@ def BugTaskToBugAdapter(bugtask):
 
 
 class BugTask(SQLBase, BugTaskMixin):
+    """See `IBugTask`."""
     implements(IBugTask)
     _table = "BugTask"
     _defaultOrder = ['distribution', 'product', 'productseries',
@@ -328,7 +330,7 @@ class BugTask(SQLBase, BugTaskMixin):
     _CONJOINED_ATTRIBUTES = (
         "status", "importance", "assignee", "milestone",
         "date_assigned", "date_confirmed", "date_inprogress",
-        "date_closed")
+        "date_closed", "date_incomplete")
     _NON_CONJOINED_STATUSES = (BugTaskStatus.WONTFIX,)
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
@@ -369,21 +371,33 @@ class BugTask(SQLBase, BugTaskMixin):
     date_confirmed = UtcDateTimeCol(notNull=False, default=None)
     date_inprogress = UtcDateTimeCol(notNull=False, default=None)
     date_closed = UtcDateTimeCol(notNull=False, default=None)
+    date_incomplete = UtcDateTimeCol(notNull=False, default=None)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
-    # The targetnamecache is a value that is only supposed to be set when a
-    # bugtask is created/modified or by the update-bugtask-targetnamecaches
-    # cronscript. For this reason it's not exposed in the interface, and
-    # client code should always use the targetname read-only property.
+    # The targetnamecache is a value that is only supposed to be set
+    # when a bugtask is created/modified or by the
+    # update-bugtask-targetnamecaches cronscript. For this reason it's
+    # not exposed in the interface, and client code should always use
+    # the bugtargetname and bugtargetdisplayname properties.
+    #
+    # This field is actually incorrectly named, since it currently
+    # stores the bugtargetdisplayname.
     targetnamecache = StringCol(
         dbName='targetnamecache', notNull=False, default=None)
 
     @property
-    def bug_subscribers(self):
-        return self.bug.getDirectSubscribers() + self.bug.getIndirectSubscribers()
+    def title(self):
+        """See `IBugTask`."""
+        return 'Bug #%s in %s: "%s"' % (
+            self.bug.id, self.bugtargetdisplayname, self.bug.title)
+
+    @property
+    def bugtargetdisplayname(self):
+        """See `IBugTask`."""
+        return self.targetnamecache
 
     @property
     def age(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
+        """See `IBugTask`."""
         UTC = pytz.timezone('UTC')
         now = datetime.datetime.now(UTC)
 
@@ -399,21 +413,46 @@ class BugTask(SQLBase, BugTaskMixin):
 
     @property
     def is_complete(self):
-        """See IBugTask. Note that this should be kept in sync with the
-        completeness_clause above."""
+        """See `IBugTask`.
+
+        Note that this should be kept in sync with the completeness_clause
+        above.
+        """
         return self.status in RESOLVED_BUGTASK_STATUSES
 
     def subscribe(self, person):
-        """See IBugTask."""
+        """See `IBugTask`."""
         return self.bug.subscribe(person)
 
     def isSubscribed(self, person):
-        """See IBugTask."""
+        """See `IBugTask`."""
         return self.bug.isSubscribed(person)
+
+    def _syncSourcePackages(self, prev_sourcepackagename):
+        """Synchronize changes to source packages with other distrotasks.
+
+        If one distroseriestask's source package is changed, all the
+        other distroseriestasks with the same distribution and source
+        package has to be changed, as well as the corresponding
+        distrotask.
+        """
+        if self.distroseries is not None:
+            distribution = self.distroseries.distribution
+        else:
+            distribution = self.distribution
+        if distribution is not None:
+            for bugtask in self.related_tasks:
+                if bugtask.distroseries:
+                    related_distribution = bugtask.distroseries.distribution
+                else:
+                    related_distribution = bugtask.distribution
+                if (related_distribution == distribution and
+                    bugtask.sourcepackagename == prev_sourcepackagename):
+                    bugtask.sourcepackagename = self.sourcepackagename
 
     @property
     def conjoined_master(self):
-        """See IBugTask."""
+        """See `IBugTask`."""
         conjoined_master = None
         if (IDistroBugTask.providedBy(self) and
             self.distribution.currentseries is not None):
@@ -439,14 +478,13 @@ class BugTask(SQLBase, BugTaskMixin):
 
     @property
     def conjoined_slave(self):
-        """See IBugTask."""
+        """See `IBugTask`."""
         conjoined_slave = None
         if IDistroSeriesBugTask.providedBy(self):
             distribution = self.distroseries.distribution
             if self.distroseries != distribution.currentseries:
                 # Only current series tasks are conjoined.
                 return None
-            sourcepackagename = self.sourcepackagename
             for bt in shortlist(self.bug.bugtasks):
                 if (bt.distribution == distribution and
                     bt.sourcepackagename == self.sourcepackagename):
@@ -466,67 +504,61 @@ class BugTask(SQLBase, BugTaskMixin):
             self.status in self._NON_CONJOINED_STATUSES):
             conjoined_slave = None
         return conjoined_slave
-    # XXX: Conjoined bugtask synching methods. We override these methods
+
+    # XXX: Bjorn Tillenius 2006-10-31:
+    # Conjoined bugtask synching methods. We override these methods
     # individually, to avoid cycle problems if we were to override
     # _SO_setValue instead. This indicates either a bug or design issue
-    # in SQLObject. -- Bjorn Tillenius, 2006-10-31
+    # in SQLObject.
     # Each attribute listed in _CONJOINED_ATTRIBUTES should have a
     # _set_foo method below.
     def _set_status(self, value):
+        """Set status, and update conjoined BugTask."""
         if value not in self._NON_CONJOINED_STATUSES:
             self._setValueAndUpdateConjoinedBugTask("status", value)
         else:
             self._SO_set_status(value)
 
     def _set_assignee(self, value):
+        """Set assignee, and update conjoined BugTask."""
         self._setValueAndUpdateConjoinedBugTask("assignee", value)
 
     def _set_importance(self, value):
+        """Set importance, and update conjoined BugTask."""
         self._setValueAndUpdateConjoinedBugTask("importance", value)
 
     def _set_milestone(self, value):
+        """Set milestone, and update conjoined BugTask."""
         self._setValueAndUpdateConjoinedBugTask("milestone", value)
 
     def _set_sourcepackagename(self, value):
+        """Set sourcepackagename, and update conjoined BugTask."""
         old_sourcepackagename = self.sourcepackagename
         self._setValueAndUpdateConjoinedBugTask("sourcepackagename", value)
         self._syncSourcePackages(old_sourcepackagename)
 
-    def _syncSourcePackages(self, prev_sourcepackagename):
-        """Synchronize changes to source packages with other distrotasks.
-
-        If one distroseriestask's source package is changed, all the
-        other distroseriestasks with the same distribution and source
-        package has to be changed, as well as the corresponding
-        distrotask.
-        """
-        if self.distroseries is not None:
-            distribution = self.distroseries.distribution
-        else:
-            distribution = self.distribution
-        if distribution is not None:
-            for bugtask in self.related_tasks:
-                if bugtask.distroseries:
-                    related_distribution = bugtask.distroseries.distribution
-                else:
-                    related_distribution = bugtask.distribution
-                if (related_distribution == distribution and
-                    bugtask.sourcepackagename == prev_sourcepackagename):
-                    bugtask.sourcepackagename = self.sourcepackagename
-
     def _set_date_assigned(self, value):
+        """Set date_assigned, and update conjoined BugTask."""
         self._setValueAndUpdateConjoinedBugTask("date_assigned", value)
 
     def _set_date_confirmed(self, value):
+        """Set date_confirmed, and update conjoined BugTask."""
         self._setValueAndUpdateConjoinedBugTask("date_confirmed", value)
 
     def _set_date_inprogress(self, value):
+        """Set date_inprogress, and update conjoined BugTask."""
         self._setValueAndUpdateConjoinedBugTask("date_inprogress", value)
 
     def _set_date_closed(self, value):
+        """Set date_closed, and update conjoined BugTask."""
         self._setValueAndUpdateConjoinedBugTask("date_closed", value)
 
+    def _set_date_incomplete(self, value):
+        """Set date_incomplete, and update conjoined BugTask."""
+        self._setValueAndUpdateConjoinedBugTask("date_incomplete", value)
+
     def _setValueAndUpdateConjoinedBugTask(self, colname, value):
+        """Set a value, and update conjoined BugTask."""
         if self._isConjoinedBugTask():
             raise ConjoinedBugTaskEditError(
                 "This task cannot be edited directly, it should be"
@@ -545,6 +577,7 @@ class BugTask(SQLBase, BugTaskMixin):
         attrsetter(value)
 
     def _isConjoinedBugTask(self):
+        """Return True when conjoined_master is not None, otherwise False."""
         return self.conjoined_master is not None
 
     def _syncFromConjoinedSlave(self):
@@ -572,9 +605,9 @@ class BugTask(SQLBase, BugTaskMixin):
         # instantiating an object; prejoining doesn't help because this
         # happens when the bug task is being instantiated -- too early
         # in cases where we prejoin other things in.
-        # XXX: we should use a specific SQLObject API here to avoid the
+        # XXX: kiko 2006-03-21:
+        # we should use a specific SQLObject API here to avoid the
         # privacy violation.
-        #   -- kiko, 2006-03-21
         if self.productID is not None:
             alsoProvides(self, IUpstreamBugTask)
         elif self.productseriesID is not None:
@@ -585,11 +618,11 @@ class BugTask(SQLBase, BugTaskMixin):
             # If nothing else, this is a distro task.
             alsoProvides(self, IDistroBugTask)
         else:
-            raise AssertionError, "Task %d is floating" % self.id
+            raise AssertionError, "Task %d is floating." % self.id
 
     @property
     def target_uses_malone(self):
-        """See IBugTask"""
+        """See `IBugTask`"""
         if IUpstreamBugTask.providedBy(self):
             root_target = self.product
         elif IProductSeriesBugTask.providedBy(self):
@@ -599,10 +632,11 @@ class BugTask(SQLBase, BugTaskMixin):
         elif IDistroBugTask.providedBy(self):
             root_target = self.distribution
         else:
-            raise AssertionError, "Task %d is floating" % self.id
+            raise AssertionError, "Task %d is floating." % self.id
         return bool(root_target.official_malone)
 
     def _SO_setValue(self, name, value, fromPython, toPython):
+        """Set a SQLObject value and update the targetnamecache."""
         SQLBase._SO_setValue(self, name, value, fromPython, toPython)
 
         # The bug target may have just changed, so update the
@@ -611,6 +645,7 @@ class BugTask(SQLBase, BugTaskMixin):
             self.updateTargetNameCache()
 
     def set(self, **kw):
+        """Update multiple attributes and update the targetnamecache."""
         # We need to overwrite this method to make sure the targetnamecache
         # column is updated when multiple attributes of a bugtask are
         # modified. We can't rely on event subscribers for doing this because
@@ -623,24 +658,26 @@ class BugTask(SQLBase, BugTaskMixin):
             self, **{'targetnamecache': self.target.bugtargetdisplayname})
 
     def setImportanceFromDebbugs(self, severity):
-        """See canonical.launchpad.interfaces.IBugTask."""
+        """See `IBugTask`."""
         try:
             self.importance = debbugsseveritymap[severity]
         except KeyError:
-            raise ValueError('Unknown debbugs severity "%s"' % severity)
+            raise ValueError('Unknown debbugs severity "%s".' % severity)
         return self.importance
 
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
+        celebrities = getUtility(ILaunchpadCelebrities)
         if (user.inTeam(self.pillar.bugcontact) or
             user.inTeam(self.pillar.owner) or
-            user == getUtility(ILaunchpadCelebrities).bug_watch_updater):
+            user.id == celebrities.bug_watch_updater.id or
+            user.id == celebrities.bug_importer.id):
             return True
         else:
             return new_status not in BUG_CONTACT_BUGTASK_STATUSES
 
     def transitionToStatus(self, new_status, user):
-        """See canonical.launchpad.interfaces.IBugTask."""
+        """See `IBugTask`."""
         if not new_status:
             # This is mainly to facilitate tests which, unlike the
             # normal status form, don't always submit a status when
@@ -649,7 +686,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if not self.canTransitionToStatus(new_status, user):
             raise AssertionError(
-                "Only Bug Contacts may change status to %s" % (
+                "Only Bug Contacts may change status to %s." % (
                     new_status.title,))
 
         if self.status == new_status:
@@ -667,6 +704,7 @@ class BugTask(SQLBase, BugTaskMixin):
             self.date_confirmed = None
             self.date_inprogress = None
             self.date_closed = None
+            self.date_incomplete = None
 
             return
 
@@ -675,8 +713,8 @@ class BugTask(SQLBase, BugTaskMixin):
 
         # Record the date of the particular kinds of transitions into
         # certain states.
-        if ((old_status.value < BugTaskStatus.CONFIRMED.value) and
-            (new_status.value >= BugTaskStatus.CONFIRMED.value)):
+        if ((old_status < BugTaskStatus.CONFIRMED) and
+            (new_status >= BugTaskStatus.CONFIRMED)):
             # Even if the bug task skips the Confirmed status
             # (e.g. goes directly to Fix Committed), we'll record a
             # confirmed date at the same time anyway, otherwise we get
@@ -684,11 +722,19 @@ class BugTask(SQLBase, BugTaskMixin):
             # reports.
             self.date_confirmed = now
 
-        if ((old_status.value < BugTaskStatus.INPROGRESS.value) and
-            (new_status.value >= BugTaskStatus.INPROGRESS.value)):
+        if ((old_status < BugTaskStatus.INPROGRESS) and
+            (new_status >= BugTaskStatus.INPROGRESS)):
             # Same idea with In Progress as the comment above about
             # Confirmed.
             self.date_inprogress = now
+
+        # Bugs can jump in and out of 'incomplete' status
+        # and for just as long as they're marked incomplete
+        # we keep a date_incomplete recorded for them.
+        if new_status == BugTaskStatus.INCOMPLETE:
+            self.date_incomplete = now
+        else:
+            self.date_incomplete = None
 
         if ((old_status in UNRESOLVED_BUGTASK_STATUSES) and
             (new_status in RESOLVED_BUGTASK_STATUSES)):
@@ -709,7 +755,7 @@ class BugTask(SQLBase, BugTaskMixin):
             self.date_inprogress = None
 
     def transitionToAssignee(self, assignee):
-        """See canonical.launchpad.interfaces.IBugTask."""
+        """See `IBugTask`."""
         if assignee == self.assignee:
             # No change to the assignee, so nothing to do.
             return
@@ -728,13 +774,13 @@ class BugTask(SQLBase, BugTaskMixin):
         self.assignee = assignee
 
     def updateTargetNameCache(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
+        """See `IBugTask`."""
         targetname = self.target.bugtargetdisplayname
         if self.targetnamecache != targetname:
             self.targetnamecache = targetname
 
     def asEmailHeaderValue(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
+        """See `IBugTask`."""
         # Calculate an appropriate display value for the assignee.
         if self.assignee:
             if self.assignee.preferredemail:
@@ -744,8 +790,8 @@ class BugTask(SQLBase, BugTaskMixin):
                 # "degrade" to the assignee.name. This might happen for teams
                 # that don't have associated emails or when a bugtask was
                 # imported from an external source and had its assignee set
-                # automatically, even though the assignee may not even know they
-                # have an account in Launchpad. :)
+                # automatically, even though the assignee may not even know
+                # they have an account in Launchpad. :)
                 assignee_value = self.assignee.name
         else:
             assignee_value = 'None'
@@ -766,7 +812,8 @@ class BugTask(SQLBase, BugTaskMixin):
             currentrelease = self.target.currentrelease
         if IDistributionSourcePackage.providedBy(self.target):
             if self.target.currentrelease:
-                currentrelease = self.target.currentrelease.sourcepackagerelease
+                target = self.target
+                currentrelease = target.currentrelease.sourcepackagerelease
 
         if currentrelease:
             component = currentrelease.component.name
@@ -795,7 +842,7 @@ class BugTask(SQLBase, BugTaskMixin):
                  'sourcepackagename': sourcepackagename_value,
                  'componentname': component})
         else:
-            raise AssertionError('Unknown BugTask context: %r' % self)
+            raise AssertionError('Unknown BugTask context: %r.' % self)
 
         # We only want to have a milestone field in the header if there's
         # a milestone set for the bug.
@@ -812,7 +859,7 @@ class BugTask(SQLBase, BugTaskMixin):
         return header_value
 
     def getDelta(self, old_task):
-        """See IBugTask."""
+        """See `IBugTask`."""
         changes = {}
         if ((IUpstreamBugTask.providedBy(old_task) and
              IUpstreamBugTask.providedBy(self)) or
@@ -827,13 +874,14 @@ class BugTask(SQLBase, BugTaskMixin):
               (IDistroSeriesBugTask.providedBy(old_task) and
                IDistroSeriesBugTask.providedBy(self))):
             if old_task.sourcepackagename != self.sourcepackagename:
+                old = old_task
                 changes["sourcepackagename"] = {}
-                changes["sourcepackagename"]["old"] = old_task.sourcepackagename
                 changes["sourcepackagename"]["new"] = self.sourcepackagename
+                changes["sourcepackagename"]["old"] = old.sourcepackagename
         else:
             raise TypeError(
                 "Can't calculate delta on bug tasks of incompatible types: "
-                "[%s, %s]" % (repr(old_task), repr(self)))
+                "[%s, %s]." % (repr(old_task), repr(self)))
 
         # calculate the differences in the fields that both types of tasks
         # have in common
@@ -907,7 +955,7 @@ def get_bug_privacy_filter(user):
 
 
 class BugTaskSet:
-
+    """See `IBugTaskSet`."""
     implements(IBugTaskSet)
 
     _ORDERBY_COLUMN = {
@@ -941,17 +989,17 @@ class BugTaskSet:
     title = "A set of bug tasks"
 
     def get(self, task_id):
-        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        """See `IBugTaskSet`."""
         try:
             bugtask = BugTask.get(task_id)
         except SQLObjectNotFound:
-            raise NotFoundError("BugTask with ID %s does not exist" %
+            raise NotFoundError("BugTask with ID %s does not exist." %
                                 str(task_id))
         return bugtask
 
     def findSimilar(self, user, summary, product=None, distribution=None,
                     sourcepackagename=None):
-        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        """See `IBugTaskSet`."""
         # Avoid circular imports.
         from canonical.launchpad.database.bug import Bug
         search_params = BugTaskSearchParams(user)
@@ -979,6 +1027,48 @@ class BugTaskSet:
             summary, Bug, ' AND '.join(constraint_clauses), ['BugTask'])
         return self.search(search_params)
 
+    def _buildStatusClause(self, status):
+        """Return the SQL query fragment for search by status.
+
+        Called from `buildQuery` or recursively."""
+        if zope_isinstance(status, any):
+            return '(' + ' OR '.join(
+                self._buildStatusClause(dbitem)
+                for dbitem
+                in status.query_values) + ')'
+        elif zope_isinstance(status, not_equals):
+            return '(NOT %s)' % self._buildStatusClause(status.value)
+        elif zope_isinstance(status, DBItem):
+            with_response = (
+                status == BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
+            without_response = (
+                status == BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
+            if with_response or without_response:
+                status_clause = (
+                    '(BugTask.status = %s ' %
+                    sqlvalues(BugTaskStatus.INCOMPLETE))
+                status_clause += 'AND BugTask.date_incomplete '
+                if with_response:
+                    status_clause += '<='
+                elif without_response:
+                    status_clause += '>'
+                else:
+                    assert with_response != without_response
+                status_clause += """ (
+                    SELECT Message.datecreated
+                    FROM BugMessage, Message
+                    WHERE Message.id = BugMessage.message
+                    AND BugMessage.bug = Bug.id
+                    ORDER BY Message.datecreated DESC
+                    LIMIT 1))
+                    """
+                return status_clause
+            else:
+                return '(BugTask.status = %s)' % sqlvalues(status)
+        else:
+            raise AssertionError(
+                'Unrecognized status value: %s' % repr(status))
+
     def buildQuery(self, params):
         """Build and return an SQL query with the given parameters.
 
@@ -988,12 +1078,11 @@ class BugTaskSet:
 
         extra_clauses = ['Bug.id = BugTask.bug']
         clauseTables = ['BugTask', 'Bug']
-
+        
         # These arguments can be processed in a loop without any other
         # special handling.
         standard_args = {
             'bug': params.bug,
-            'status': params.status,
             'importance': params.importance,
             'product': params.product,
             'distribution': params.distribution,
@@ -1003,26 +1092,30 @@ class BugTaskSet:
             'sourcepackagename': params.sourcepackagename,
             'owner': params.owner,
         }
+
         # Loop through the standard, "normal" arguments and build the
         # appropriate SQL WHERE clause. Note that arg_value will be one
         # of:
         #
-        # * a searchbuilder.any object, representing a set of acceptable filter
-        #   values
+        # * a searchbuilder.any object, representing a set of acceptable
+        #   filter values
         # * a searchbuilder.NULL object
         # * an sqlobject
         # * a dbschema item
         # * None (meaning no filter criteria specified for that arg_name)
         #
-        # XXX: is this a good candidate for becoming infrastructure in
+        # XXX: kiko 2006-03-16:
+        # Is this a good candidate for becoming infrastructure in
         # canonical.database.sqlbase?
-        #   -- kiko, 2006-03-16
         for arg_name, arg_value in standard_args.items():
             if arg_value is None:
                 continue
             where_cond = search_value_to_where_condition(arg_value)
             if where_cond is not None:
                 extra_clauses.append("BugTask.%s %s" % (arg_name, where_cond))
+
+        if params.status is not None:
+            extra_clauses.append(self._buildStatusClause(params.status))
 
         if params.milestone:
             if IProjectMilestone.providedBy(params.milestone):
@@ -1032,7 +1125,8 @@ class BugTaskSet:
                         WHERE Milestone.product = Product.id
                             AND Product.project = %s
                             AND Milestone.name = %s)
-                """ % sqlvalues(params.milestone.target, params.milestone.name)
+                """ % sqlvalues(params.milestone.target,
+                                params.milestone.name)
 
                 # A bug may have bugtasks in more than one series, and these
                 # bugtasks may have the same milestone value. To avoid
@@ -1041,7 +1135,7 @@ class BugTaskSet:
                 # product.
                 extra_clauses.append("BugTask.product IS NOT null")
             else:
-                where_cond = search_value_to_where_condition(arg_value)
+                where_cond = search_value_to_where_condition(params.milestone)
             extra_clauses.append("BugTask.milestone %s" % where_cond)
 
         if params.project:
@@ -1058,6 +1152,10 @@ class BugTaskSet:
 
         if params.omit_dupes:
             extra_clauses.append("Bug.duplicateof is NULL")
+
+        if params.omit_targeted:
+            extra_clauses.append("BugTask.distrorelease is NULL AND "
+                                 "BugTask.productseries is NULL")
 
         if params.has_cve:
             extra_clauses.append("BugTask.bug IN "
@@ -1096,7 +1194,7 @@ class BugTaskSet:
                 distroseries = params.distroseries
             assert distroseries, (
                 "Search by component requires a context with a distribution "
-                "or distroseries")
+                "or distroseries.")
 
             if zope_isinstance(params.component, any):
                 component_ids = sqlvalues(*params.component.query_values)
@@ -1109,11 +1207,13 @@ class BugTaskSet:
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
             SourcePackagePublishingHistory.distrorelease = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.component IN %s AND
             SourcePackagePublishingHistory.status = %s
-            """ % sqlvalues(distroseries, distroseries.main_archive,
-                            component_ids, PackagePublishingStatus.PUBLISHED)])
+            """ % sqlvalues(distroseries,
+                            distroseries.distribution.all_distro_archive_ids,
+                            component_ids,
+                            PackagePublishingStatus.PUBLISHED)])
 
         upstream_clause = self._buildUpstreamClause(params)
         if upstream_clause:
@@ -1177,7 +1277,7 @@ class BugTaskSet:
                 mappings['target_column'] = 'productseries'
             else:
                 raise AssertionError(
-                    'Unknown nomination target: %r' % params.nominated_for)
+                    'Unknown nomination target: %r.' % params.nominated_for)
             nominated_for_clause = """
                 BugNomination.bug = BugTask.bug AND
                 BugNomination.%(target_column)s = %(target)s AND
@@ -1196,28 +1296,49 @@ class BugTaskSet:
         return query, clauseTables, orderby_arg
 
     def _buildUpstreamClause(self, params):
+        """Return an clause for returning upstream data if the data exists.
+
+        This method will handles BugTasks that do not have upstream BugTasks
+        as well as thoses that do.
+        """
         upstream_clauses = []
         if params.pending_bugwatch_elsewhere:
-            # Include only bugtasks that have other bugtasks on targets
-            # not using Malone, which are not Invalid, and have no bug
-            # watch.
-            pending_bugwatch_elsewhere_clause = """
-                EXISTS (
-                    SELECT TRUE FROM BugTask AS RelatedBugTask
-                    LEFT OUTER JOIN Distribution AS OtherDistribution
-                        ON RelatedBugTask.distribution = OtherDistribution.id
-                    LEFT OUTER JOIN Product AS OtherProduct
-                        ON RelatedBugTask.product = OtherProduct.id
-                    WHERE RelatedBugTask.bug = BugTask.bug
-                        AND RelatedBugTask.id != BugTask.id
-                        AND RelatedBugTask.bugwatch IS NULL
-                        AND (
-                            OtherDistribution.official_malone IS FALSE
-                            OR OtherProduct.official_malone IS FALSE
-                            )
-                        AND RelatedBugTask.status != %s
-                    )
-                """ % sqlvalues(BugTaskStatus.INVALID)
+            if params.product:
+                # Include only bugtasks that do no have bug watches that
+                # belong to a product that does not use Malone.
+                pending_bugwatch_elsewhere_clause = """
+                    EXISTS (
+                        SELECT TRUE 
+                        FROM BugTask AS RelatedBugTask
+                            LEFT OUTER JOIN Product AS OtherProduct
+                                ON RelatedBugTask.product = OtherProduct.id
+                        WHERE RelatedBugTask.bug = BugTask.bug
+                            AND RelatedBugTask.id = BugTask.id
+                            AND RelatedBugTask.bugwatch IS NULL
+                            AND OtherProduct.official_malone IS FALSE
+                            AND RelatedBugTask.status != %s)
+                    """ % sqlvalues(BugTaskStatus.INVALID)
+            else:
+                # Include only bugtasks that have other bugtasks on targets
+                # not using Malone, which are not Invalid, and have no bug
+                # watch.
+                pending_bugwatch_elsewhere_clause = """
+                    EXISTS (
+                        SELECT TRUE 
+                        FROM BugTask AS RelatedBugTask
+                            LEFT OUTER JOIN Distribution AS OtherDistribution
+                                ON RelatedBugTask.distribution = 
+                                    OtherDistribution.id
+                            LEFT OUTER JOIN Product AS OtherProduct
+                                ON RelatedBugTask.product = OtherProduct.id
+                        WHERE RelatedBugTask.bug = BugTask.bug
+                            AND RelatedBugTask.id != BugTask.id
+                            AND RelatedBugTask.bugwatch IS NULL
+                            AND (
+                                OtherDistribution.official_malone IS FALSE
+                                OR OtherProduct.official_malone IS FALSE)
+                            AND RelatedBugTask.status != %s)
+                    """ % sqlvalues(BugTaskStatus.INVALID)
 
             upstream_clauses.append(pending_bugwatch_elsewhere_clause)
 
@@ -1276,7 +1397,7 @@ class BugTaskSet:
     def _buildSearchTextClause(self, params):
         """Build the clause for searchtext."""
         assert params.fast_searchtext is None, (
-            'cannot use fast_searchtext at the same time as searchtext')
+            'Cannot use fast_searchtext at the same time as searchtext.')
 
         searchtext_quoted = quote(params.searchtext)
         searchtext_like_quoted = quote_like(params.searchtext)
@@ -1288,7 +1409,7 @@ class BugTaskSet:
                 SQLConstant("-rank(Bug.fti, ftq(%s))" % searchtext_quoted),
                 SQLConstant(
                     "-rank(BugTask.fti, ftq(%s))" % searchtext_quoted)]
-        
+
         comment_clause = """BugTask.id IN (
             SELECT BugTask.id
             FROM BugTask, BugMessage,Message, MessageChunk
@@ -1296,20 +1417,24 @@ class BugTaskSet:
                 AND BugMessage.message = Message.id
                 AND Message.id = MessageChunk.message
                 AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
-        return """
-            ((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s) OR (%s))
-            OR (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))
-            """ % (
-                searchtext_quoted, searchtext_quoted, comment_clause,
-                searchtext_like_quoted)
+        text_search_clauses = [
+            "Bug.fti @@ ftq(%s)" % searchtext_quoted,
+            "BugTask.fti @@ ftq(%s)" % searchtext_quoted,
+            "BugTask.targetnamecache ILIKE '%%' || %s || '%%'" % (
+                searchtext_like_quoted)]
+        # Due to performance problems, whether to search in comments is
+        # controlled by a config option.
+        if config.malone.search_comments:
+            text_search_clauses.append(comment_clause)
+        return "(%s)" % " OR ".join(text_search_clauses)
 
     def _buildFastSearchTextClause(self, params):
         """Build the clause to use for the fast_searchtext criteria."""
         assert params.searchtext is None, (
-            'cannot use searchtext at the same time as fast_searchtext')
+            'Cannot use searchtext at the same time as fast_searchtext.')
 
         fast_searchtext_quoted = quote(params.fast_searchtext)
-        
+
         if params.orderby is None:
             # Unordered search results aren't useful, so sort by relevance
             # instead.
@@ -1320,7 +1445,7 @@ class BugTaskSet:
         return "Bug.fti @@ ftq(%s)" % fast_searchtext_quoted
 
     def search(self, params, *args):
-        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        """See `IBugTaskSet`."""
         query, clauseTables, orderby = self.buildQuery(params)
         bugtasks = BugTask.select(
             query, clauseTables=clauseTables, orderBy=orderby)
@@ -1334,10 +1459,10 @@ class BugTaskSet:
         bugtasks.prejoinClauseTables(['Bug'])
         return bugtasks
 
-    # XXX: This method exists only because sqlobject doesn't provide a better
+    # XXX: salgado 2007-03-19:
+    # This method exists only because sqlobject doesn't provide a better
     # way for sorting the results of a set operation by external table values.
     # It'll be removed, together with sqlobject, when we switch to storm.
-    # -- Guilherme Salgado, 2007-03-19
     def _getJoinsForSortingSearchResults(self):
         """Return a list of join tuples suitable as the joins argument of
         sqlobject's set operation methods.
@@ -1370,7 +1495,7 @@ class BugTaskSet:
                    status=IBugTask['status'].default,
                    importance=IBugTask['importance'].default,
                    assignee=None, milestone=None):
-        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        """See `IBugTaskSet`."""
         if not status:
             status = IBugTask['status'].default
         if not importance:
@@ -1387,7 +1512,7 @@ class BugTaskSet:
                 bug.subscribe(distribution.security_contact)
 
         assert (product or productseries or distribution or distroseries), (
-            'Got no bugtask target')
+            'Got no bugtask target.')
 
         non_target_create_params = dict(
             bug=bug,
@@ -1421,9 +1546,53 @@ class BugTaskSet:
 
         return bugtask
 
+    def findExpirableBugTasks(self, min_days_old):
+        """See `IBugTaskSet`.
+        
+        This implementation returns the master of the master-slave conjoined
+        pairs of bugtasks. Slave conjoined bugtasks are not included in the
+        list because they can only be expired by calling the master bugtask's
+        transitionToStatus() method.
+        """
+        all_bugtasks = BugTask.select("""
+            BugTask.id IN (
+                SELECT BugTask.id
+                FROM BugTask
+                LEFT OUTER JOIN Distribution
+                    ON distribution = Distribution.id
+                    AND Distribution.official_malone IS TRUE
+                LEFT OUTER JOIN DistroRelease
+                    ON distrorelease = Distrorelease.id
+                    AND DistroRelease.distribution IN (
+                        SELECT id FROM Distribution
+                        WHERE official_malone IS TRUE)
+                LEFT OUTER JOIN Product
+                    ON product = Product.id
+                    AND Product.official_malone IS TRUE
+                LEFT OUTER JOIN ProductSeries
+                    ON productseries = ProductSeries.id
+                    AND ProductSeries.product IN (
+                        SELECT id FROM Product WHERE official_malone IS TRUE)
+                WHERE
+                    (Distribution.id IS NOT NULL
+                     OR DistroRelease.id IS NOT NULL
+                     OR Product.id IS NOT NULL
+                     OR ProductSeries.id IS NOT NULL)
+                    AND BugTask.status = %s
+                    AND BugTask.assignee IS NULL
+                    AND BugTask.bugwatch IS NULL
+                    AND BugTask.date_incomplete < current_timestamp
+                        - interval '%s days'
+            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old))
+        bugtasks = []
+        for bugtask in all_bugtasks:
+            if bugtask.conjoined_master is None:
+                bugtasks.append(bugtask)
+        return bugtasks
+
     def maintainedBugTasks(self, person, minimportance=None,
                            showclosed=False, orderBy=None, user=None):
-        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        """See `IBugTaskSet`."""
         filters = ['BugTask.bug = Bug.id',
                    'BugTask.product = Product.id',
                    'Product.owner = TeamParticipation.team',
@@ -1448,13 +1617,15 @@ class BugTaskSet:
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
 
     def getOrderByColumnDBName(self, col_name):
-        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        """See `IBugTaskSet`."""
         return self._ORDERBY_COLUMN[col_name]
 
     def _processOrderBy(self, params):
-        # Process the orderby parameter supplied to search(), ensuring
-        # the sort order will be stable, and converting the string
-        # supplied to actual column names.
+        """Process the orderby parameter supplied to search().
+
+        This method ensures the sort order will be stable, and converting
+        the string supplied to actual column names.
+        """
         orderby = params.orderby
         if orderby is None:
             orderby = []
@@ -1510,7 +1681,6 @@ class BugTaskSet:
         return orderby_arg
 
     def dangerousGetAllTasks(self):
-        """DO NOT USE THIS METHOD. For details, see IBugTaskSet"""
+        """DO NOT USE THIS METHOD. For details, see `IBugTaskSet`"""
         return BugTask.select()
-
 

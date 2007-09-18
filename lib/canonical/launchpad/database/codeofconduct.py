@@ -35,9 +35,9 @@ class CodeOfConductConf:
 
     implements(ICodeOfConductConf)
 
-    ## XXX: cprov 20050217
+    ## XXX: cprov 2005-02-17
     ## Integrate this class with LaunchpadCentral configuration
-    ## in the future
+    ## in the future.
 
     path = 'lib/canonical/launchpad/codesofconduct/'
     prefix = 'Ubuntu Code of Conduct - '
@@ -68,8 +68,8 @@ class CodeOfConduct:
     def title(self):
         """Return preformatted title (config_prefix + version)."""
 
-        ## XXX: cprov 20050218
-        ## Missed doctest, problems initing ZopeComponentLookupError
+        ## XXX: cprov 2005-02-18
+        ## Missed doctest, problems initing ZopeComponentLookupError.
 
         # Recover the prefix for CoC from a Component
         prefix = getUtility(ICodeOfConductConf).prefix
@@ -142,8 +142,8 @@ class CodeOfConductSet:
 
     @property
     def current_code_of_conduct(self):
-        # XXX: What a hack, but this whole file needs cleaning up.
-        #    -- kiko, 2006-08-01
+        # XXX kiko 2006-08-01:
+        # What a hack, but this whole file needs cleaning up.
         currentrelease = getUtility(ICodeOfConductConf).currentrelease
         for code in self:
             if currentrelease == code.version:
@@ -222,11 +222,11 @@ class SignedCodeOfConductSet:
 
     def verifyAndStore(self, user, signedcode):
         """See ISignedCodeOfConductSet."""
-        # XXX cprov 20050224
-        # Are we missing the version field in SignedCoC table ?
-        # how to figure out which CoC version is signed ?
+        # XXX cprov 2005-02-24:
+        # Are we missing the version field in SignedCoC table?
+        # how to figure out which CoC version is signed?
 
-        # XXX: cprov 20050227
+        # XXX: cprov 2005-02-27:
         # To be implemented:
         # * Valid Person (probably always true via permission lp.AnyPerson),
         # * Valid GPGKey (valid and active),
@@ -268,7 +268,7 @@ class SignedCodeOfConductSet:
             return ('You (%s) do not seem to be the owner of this OpenPGP key '
                     '(<code>%s</code>).'
                     % (user.displayname, gpg.owner.displayname))
-        
+
         if not gpg.active:
             return ('The OpenPGP key used (<code>%s</code>) has been '
                     'deactivated. '
@@ -286,7 +286,7 @@ class SignedCodeOfConductSet:
                     'Make sure that you signed the correct text (white '
                     'space differences are acceptable).')
 
-        # Store the signature 
+        # Store the signature
         signed = SignedCodeOfConduct(owner=user, signingkey=gpg,
                                      signedcode=signedcode, active=True)
 
@@ -300,7 +300,7 @@ class SignedCodeOfConductSet:
         """See ISignedCodeOfConductSet."""
         clauseTables = ['Person']
 
-        # XXX: cprov 20050227
+        # XXX: cprov 2005-02-27:
         # FTI presents problems when query by incomplete names
         # and I'm not sure if the best solution here is to use
         # trivial ILIKE query. Oppinion required on Review.
@@ -308,7 +308,7 @@ class SignedCodeOfConductSet:
         # glue Person and SignedCoC table
         query = 'SignedCodeOfConduct.owner = Person.id'
 
-        # XXX cprov 20050302
+        # XXX cprov 2005-03-02:
         # I'm not sure if the it is correct way to query ALL
         # entries. If it is it should be part of FTI queries,
         # isn't it ?
@@ -330,8 +330,8 @@ class SignedCodeOfConductSet:
 
     def searchByUser(self, user_id, active=True):
         """See ISignedCodeOfConductSet."""
-        # XXX: what is this user_id nonsense? Use objects!
-        #   -- kiko, 2006-08-14
+        # XXX kiko 2006-08-14:
+        # What is this user_id nonsense? Use objects!
         return SignedCodeOfConduct.selectBy(ownerID=user_id,
                                             active=active)
 

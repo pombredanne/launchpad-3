@@ -5,10 +5,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'IHasMilestones',
     'IMilestone',
     'IMilestoneSet',
     'IProjectMilestone',
-    'IProjectMilestoneSet'
     ]
 
 from zope.interface import Interface, Attribute
@@ -26,7 +26,7 @@ class MilestoneNameField(ContentNameField):
     @property
     def _content_iface(self):
         return IMilestone
-    
+
     def _getByName(self, name):
         if IMilestone.providedBy(self.context):
             milestone = self.context.target.getMilestone(name)
@@ -100,7 +100,7 @@ class IMilestoneSet(Interface):
     def getByNameAndProduct(name, product, default=None):
         """Get a milestone by its name and product.
 
-        If no milestone is found, default will be returned. 
+        If no milestone is found, default will be returned.
         """
 
     def getByNameAndDistribution(name, distribution, default=None):
@@ -112,15 +112,18 @@ class IMilestoneSet(Interface):
 
 class IProjectMilestone(IMilestone):
     """A marker interface for milestones related to a project"""
-    is_project_milestone = Attribute(
-        "A marker attribute to be used in page templates")
 
 
-class IProjectMilestoneSet(Interface):
+class IHasMilestones(Interface):
+    """An interface for classes providing milestones."""
 
-    def getMilestonesForProject(
-        project, only_visible=True, milestone_name=None):
-        """Get a list of all milestones related to the project `project`
+    milestones = Attribute(_(
+        "The visible milestones associated with this object, "
+        "ordered by date expected."))
 
-        If `only_visible` is True, only visible milestones are returned.
-        """
+    all_milestones = Attribute(_(
+        "All milestones associated with this object, ordered by "
+        "date expected."))
+
+    def getMilestone(name):
+        """Return a milestone with the given name for this object, or None."""

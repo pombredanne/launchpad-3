@@ -105,17 +105,6 @@ the new product form for the project group.
     >>> admin_browser.title
     'Register a project in Launchpad'
 
-== Overview Fallback ==
-
-When a project is accessed through a facet not usually available on
-the project, the overview page is also displayed:
-
-    >>> browser.open('http://code.launchpad.dev/mozilla')
-    >>> browser.title
-    'The Mozilla Project in Launchpad'
-    >>> browser.url
-    'http://code.launchpad.dev/mozilla'
-
 == Products of a project ==
 
 The home page of a project contains a list of all products which are part of that project.
@@ -147,8 +136,8 @@ Inactive products are not included in that list, though.
 
 It is possible to access the project's product through the project URL.
 
-XXX flacoste 2007/02/14 Explain where this is used and why it is
-needed.
+# XXX flacoste 2007-02-14:
+# Explain where this is used and why it is needed.
 
   >>> browser.open('http://launchpad.dev/mozilla/firefox')
   >>> browser.title

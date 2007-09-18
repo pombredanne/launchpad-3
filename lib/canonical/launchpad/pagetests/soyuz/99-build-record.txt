@@ -1,7 +1,6 @@
+= Build Record UI =
 
 Presenting Build Record details:
-
-  >>> from zope.testbrowser.testing import Browser
 
   >>> anon_browser.open("http://localhost/+builds/+build/17")
   >>> anon_browser.contents
@@ -39,8 +38,10 @@ Let's log in and the link should appear:
 
 We'll also set up a second browser pointing at this page, for later.
 
+  >>> from zope.testbrowser.testing import Browser
   >>> admin_browser_2 = Browser()
-  >>> admin_browser_2.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+  >>> admin_browser_2.addHeader(
+  ...    "Authorization", "Basic foo.bar@canonical.com:test")
   >>> admin_browser_2.open("http://localhost/+builds/+build/17")
   >>> admin_browser_2.getLink("Retry build").click()
 
@@ -53,11 +54,6 @@ Performing "Retry Build" with the first browser
 Now it's active again, the retry button and the link to the retry page
 are gone.
 
-  >>> admin_browser.getControl("Retry Build")
-  Traceback (most recent call last):
-  ...
-  LookupError: label 'Retry Build'
-
   >>> admin_browser.getLink("Retry build")
   Traceback (most recent call last):
   ...
@@ -68,8 +64,7 @@ Clicking this should give a warning.
 
   >>> admin_browser_2.getControl("Retry Build").click()
   >>> admin_browser_2.contents
-  '...i386 build of pmount 0.1-1 in ubuntu breezy-autotest...
-  ...Build can not be retried...'
+  '...Build can not be retried...'
 
 Build rescoring feature (fixed bug #44227, we create build records
 when retrying a build, so there is not life-cycle for a pending build
@@ -117,50 +112,54 @@ Build record inserted by gina that has an unknown build record.
   ...Builder...not available...
   ...Build log...not available...'
 
+
+== Buildd Admins ==
+
 Check if buildd-celebrity is working as expected, try to access protected
 pages as cprov (launchpad-buildd-admins member). Not using the better login
 method here, as don't know the password.
 
-  >>> browser = Browser()
-  >>> browser.handleErrors = False
-  >>> browser.addHeader('Authorization',
-  ...                   'Basic celso.providelo@canonical.com:cprov')
+  >>> cprov_browser = Browser()
+  >>> cprov_browser.handleErrors = False
+  >>> cprov_browser.addHeader(
+  ...    'Authorization', 'Basic celso.providelo@canonical.com:cprov')
 
-  >>> browser.open("http://localhost/+builds/+build/12")
-  >>> browser.getLink("Retry build").click()
-  >>> browser.getControl("Retry Build").click()
-  >>> browser.contents
+  >>> cprov_browser.open("http://localhost/+builds/+build/12")
+  >>> cprov_browser.getLink("Retry build").click()
+  >>> cprov_browser.getControl("Retry Build").click()
+  >>> cprov_browser.contents
   '...Build record active...'
 
 Allow Re-score:
 
-  >>> browser.getLink("Rescore build").click()
-  >>> browser.getControl(name="SCORE").value = '100'
-  >>> browser.getControl("Update").click()
-  >>> browser.contents
+  >>> cprov_browser.getLink("Rescore build").click()
+  >>> cprov_browser.getControl(name="SCORE").value = '100'
+  >>> cprov_browser.getControl("Update").click()
+  >>> cprov_browser.contents
   '...Build Record rescored to 100...'
 
-Allow new builder:
 
-  >>> browser.open("http://localhost/+builds/+new")
+=== Dealing with Builders ===
 
-Allow administration of a builder:
+Only buildd-celebrities are allowed to add/modify builders
 
-  >>> browser.open("http://localhost/+builds/bob/+admin")
+Adding new builder:
 
+  >>> cprov_browser.open("http://localhost/+builds/+new")
+
+Administration of a builder:
+
+  >>> cprov_browser.open("http://localhost/+builds/bob/+admin")
 
 Adding new builder still denied for non-members (Edgar, no membership):
 
-  >>> browser = Browser()
-  >>> browser.handleErrors = False
-  >>> browser.addHeader(
-  ...     "Authorization",
-  ...     "Basic ZWRnYXJAbW9udGVwYXJhZGlzby5ocjplZGdhcg==")
-  >>> browser.open("http://localhost:9000/+builds/+new")
+  >>> one_browser = Browser()
+  >>> one_browser.addHeader(
+  ...    "Authorization", "Basic one-membership@test.com:test")
+  >>> one_browser.open("http://localhost/+builds/+new")
   Traceback (most recent call last):
   ...
-  Unauthorized: ...
-
+  HTTPError: HTTP Error 403: Forbidden
 
 Adding a new builder is also denied for anonymous:
 
@@ -169,3 +168,95 @@ Adding a new builder is also denied for anonymous:
   Traceback (most recent call last):
   ...
   Unauthorized: ...
+
+
+== PPA Builds ==
+
+While keeping the same permission scheme we have for ubuntu builds,
+i.e. that admins and lp-buildd-admins can modify them, PPA builds
+also grant those rights to the PPA owner.
+
+'anonymous' and 'normal users' (i.e. authenticated users not related to
+the archive) are not allowed to modify the build record.
+
+  >>> anon_browser.open("http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
+  >>> anon_browser.getLink('Retry build')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+  >>> one_browser.open("http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
+  >>> one_browser.getLink('Retry build')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+  >>> one_browser.open(
+  ...     "http://localhost/ubuntu/+source/cdrkit/1.0/+build/24/+retry")
+  Traceback (most recent call last):
+  ...
+  HTTPError: HTTP Error 403: Forbidden
+
+  >>> anon_browser.open(
+  ...     "http://localhost/ubuntu/+source/cdrkit/1.0/+build/24/+retry")
+  Traceback (most recent call last):
+  ...
+  Unauthorized: ..., 'browserDefault', 'launchpad.Edit')
+
+Ensure 'admins' and 'lp-buildd-admins' (foo.bar is a member of
+lp-buildd-admins) have access for retrying PPA build.
+
+  >>> admin_browser.open("http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
+  >>> print_action_links(admin_browser.contents)
+  Retry build: http://localhost/~no-priv/+archive/+build/24/+retry
+
+  >>> user_browser.open("http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
+  >>> print_action_links(user_browser.contents)
+  Retry build: http://localhost/~no-priv/+archive/+build/24/+retry
+
+PPA owner can 'retry' a build.
+
+  >>> no_priv_browser = Browser()
+  >>> no_priv_browser.addHeader(
+  ...    "Authorization", "Basic no-priv@canonical.com:test")
+
+  >>> no_priv_browser.open(
+  ...     "http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
+  >>> no_priv_browser.getLink('Retry build').click()
+  >>> no_priv_browser.getControl("Retry Build").click()
+  >>> no_priv_browser.contents
+  '...Build record active...'
+
+PPA owner may not re-score the build record. They could heavily mess
+with the PPA build ordering by having the ability to assign *any*
+enormous score value.
+
+  >>> no_priv_browser.getLink("Rescore build").click()
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+
+'admins' and 'lp-build-admins' are the only entities able to
+re-scoring PPA jobs:
+
+  >>> admin_browser.open("http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
+  >>> admin_browser.getLink('Rescore build').click()
+  >>> admin_browser.getControl(name="SCORE").value
+  '0'
+  >>> admin_browser.getControl(name="SCORE").value = '100'
+  >>> admin_browser.getControl("Update").click()
+  >>> admin_browser.contents
+  '...Rescore i386 build of cdrkit 1.0 in ubuntu warty...
+  ...Build Record rescored to 100...'
+
+
+  >>> cprov_browser.open("http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
+  >>> cprov_browser.getLink('Rescore build').click()
+  >>> cprov_browser.getControl(name="SCORE").value
+  '100'
+  >>> cprov_browser.getControl(name="SCORE").value = '200'
+  >>> cprov_browser.getControl("Update").click()
+  >>> cprov_browser.contents
+  '...Rescore i386 build of cdrkit 1.0 in ubuntu warty...
+  ...Build Record rescored to 200...'

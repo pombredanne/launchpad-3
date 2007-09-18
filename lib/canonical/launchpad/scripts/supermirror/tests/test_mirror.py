@@ -1,5 +1,4 @@
 import logging
-from StringIO import StringIO
 import unittest
 
 from canonical.launchpad.scripts.supermirror import mirror
@@ -46,7 +45,7 @@ class TestMirrorCommand(unittest.TestCase):
         self.assertEquals(call_log[5], ("unlock",))
 
     def startMirror(self):
-        self.assertEqual(0, mirror(self.logger, managerClass=MockJobManager))
+        self.assertEqual(0, mirror(self.logger, MockJobManager()))
 
 
 class TestMockJobManager(unittest.TestCase):

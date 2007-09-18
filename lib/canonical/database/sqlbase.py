@@ -294,7 +294,8 @@ class ZopelessTransactionManager(object):
             return
         self.alreadyInited = True
 
-        # XXX: Importing a module-global and assigning it as an instance
+        # XXX: spiv 2004-10-25:
+        #      Importing a module-global and assigning it as an instance
         #      attribute smells funny.  Why not just use transaction.manager
         #      instead of self.manager?
         from transaction import manager
@@ -313,7 +314,7 @@ class ZopelessTransactionManager(object):
 
     def set_isolation_level(self, level):
         """Set the transaction isolation level.
-        
+
         Level can be one of AUTOCOMMIT_ISOLATION, READ_COMMITTED_ISOLATION
         or SERIALIZABLE_ISOLATION. As changing the isolation level must be
         done before any other queries are issued in the current transaction,
@@ -388,10 +389,10 @@ class ZopelessTransactionManager(object):
 
 def clear_current_connection_cache():
     """Clear SQLObject's object cache for the current connection."""
-    # XXX: There is a different hack for (I think?) similar reasons in
+    # XXX: Andrew Bennetts 2005-02-01:
+    #      There is a different hack for (I think?) similar reasons in
     #      canonical.launchpad.webapp.publication.  This should probably
     #      share code with that one.
-    #        - Andrew Bennetts, 2005-02-01
 
     # Don't break if _connection is a FakeZopelessConnectionDescriptor
     if getattr(SQLBase._connection, 'cache', None) is not None:
@@ -466,8 +467,8 @@ def quote(x):
 def quote_like(x):
     r"""Quote a variable ready for inclusion in a SQL statement's LIKE clause
 
-    TODO: Including the single quotes was a stupid decision.
-    -- StuartBishop 2004/11/24
+    XXX: StuartBishop 2004-11-24:
+    Including the single quotes was a stupid decision.
 
     To correctly generate a SELECT using a LIKE comparision, we need
     to make use of the SQL string concatination operator '||' and the
@@ -586,10 +587,8 @@ def flush_database_updates():
         assert Beer.select("name LIKE 'Vic%'").count() == 0  # This will pass
 
     """
-    # XXX: turn that comment into a doctest
-    #        - Andrew Bennetts, 2005-02-16
-    # https://launchpad.ubuntu.com/malone/bugs/452
-    #        - Brad Bollenbach, 2005-04-20
+    # XXX: Andrew Bennetts 2005-02-16 bug=452:
+    # Turn that bug into a doctest
     for object in list(SQLBase._connection._dm.objects):
         object.syncUpdate()
 
@@ -625,8 +624,8 @@ def flush_database_caches():
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid
 # passing the transaction manager all through your code.
-# XXX: Make these use and work with Zope 3's transaction machinery instead!
-#        - Andrew Bennetts, 2005-02-11
+# XXX Andrew Bennetts 2005-02-11:
+# Make these use and work with Zope 3's transaction machinery instead!
 
 def begin():
     """Begins a transaction."""
@@ -666,9 +665,9 @@ def cursor():
 
 
 class FakeZopelessTransactionManager:
-    # XXX: There really should be a formal interface that both this and
+    # XXX Andrew Bennetts 2005-07-12:
+    # There really should be a formal interface that both this and
     # ZopelessTransactionManager implement.
-    #   -- Andrew Bennetts, 2005-07-12
 
     def __init__(self, implicitBegin=False, isolation=DEFAULT_ISOLATION):
         assert ZopelessTransactionManager._installed is None
@@ -690,9 +689,9 @@ class FakeZopelessTransactionManager:
         FakeZopelessConnectionDescriptor.uninstall()
         ZopelessTransactionManager._installed = None
 
-    # XXX: Ideally I'd be able to re-use some of the ZopelessTransactionManager
+    # XXX Andrew Bennetts 2005-07-12:
+    #      Ideally I'd be able to re-use some of the ZopelessTransactionManager
     #      implementation of begin, commit and abort.
-    #   -- Andrew Bennetts, 2005-07-12
     def begin(self):
         if not self.implicitBegin:
             self.desc._activate()

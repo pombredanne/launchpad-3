@@ -8,6 +8,7 @@
   <content class="canonical.launchpad.database.Distribution">
     <allow interface="canonical.launchpad.interfaces.IDistribution"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <require
       permission="launchpad.Edit"
       set_attributes="displayname title summary description
@@ -17,6 +18,10 @@
                       security_contact upload_admin upload_sender
                       mirror_admin homepage_content icon logo
                       mugshot"
+      />
+    <require
+      permission="launchpad.TranslationsAdmin"
+      set_attributes="language_pack_admin"
       />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
@@ -48,6 +53,15 @@
       DistributionSetContextMenu
       "
     />
+
+  <browser:page
+    name="+addspec"
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.NewSpecificationFromDistributionView"
+    facet="specifications"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+  />
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistribution"
@@ -202,11 +216,6 @@
       template="../templates/distribution-members.pt"
       />
     <browser:page
-      name="+translations"
-      facet="translations"
-      template="../templates/distribution-translations.pt"
-        />
-    <browser:page
       name="+builds"
       facet="overview"
       template="../templates/distribution-builds.pt"
@@ -214,12 +223,17 @@
     <browser:page
       name="+builds-list"
       template="../templates/builds-list.pt"
-      />
-    <browser:page
-      name="+ppas"
-      template="../templates/ppa-list.pt"
-      />
+     />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionPPASearchView"
+    name="+ppas"
+    permission="zope.Public"
+    facet="overview"
+    template="../templates/distribution-ppa-list.pt"
+    />
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistribution"
@@ -383,6 +397,16 @@
     template="../templates/distribution-bugcontact.pt"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionView"
+    permission="zope.Public"
+    name="+translations"
+    facet="translations"
+    template="../templates/distribution-translations.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
   <browser:editform
     name="+changetranslators"
     for="canonical.launchpad.interfaces.IDistribution"
@@ -391,6 +415,27 @@
     fields="translationgroup translationpermission"
     permission="launchpad.Edit"
     template="../templates/distribution-translators.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    name="+select-language-pack-admin"
+    class="canonical.launchpad.browser.DistributionLanguagePackAdminView"
+    facet="translations"
+    permission="launchpad.TranslationsAdmin"
+    template="../templates/distribution-language-pack-admin.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
   <browser:addform

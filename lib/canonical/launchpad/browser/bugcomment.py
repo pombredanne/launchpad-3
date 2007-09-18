@@ -59,7 +59,12 @@ class BugComment:
         self.bugattachments = []
 
     def setupText(self, truncate=False):
-        """Set the text for display and truncate it if necessary."""
+        """Set the text for display and truncate it if necessary.
+
+        Note that this method must be called before either isIdenticalTo() or
+        isEmpty() are called, since to do otherwise would mean that they could
+        return false positives and negatives respectively.
+        """
         comment_limit = config.malone.max_comment_size
 
         bits = [unicode(chunk.content) for chunk in self.chunks if chunk.content]
@@ -78,6 +83,9 @@ class BugComment:
             self.was_truncated = False
 
     def isIdenticalTo(self, other):
+        """Compare this BugComment to another and return True if they are
+        identical.
+        """
         if self.owner != other.owner:
             return False
         if self.text_for_display != other.text_for_display:
@@ -89,6 +97,11 @@ class BugComment:
             # there's really no possible identity in that case.
             return False
         return True
+
+    def isEmpty(self):
+        """Return True if text_for_display is empty."""
+        return (len(self.text_for_display) == 0 and
+            len(self.bugattachments) == 0)
 
 
 class BugCommentView(LaunchpadView):

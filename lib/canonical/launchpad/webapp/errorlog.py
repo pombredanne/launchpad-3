@@ -91,8 +91,10 @@ def _is_sensitive(request, name):
     if name == 'HTTP_COOKIE':
         return True
 
-    # Allow remaining UPPERCASE names and remaining form variables
-    if name == upper_name or name in request.form:
+    # Allow remaining UPPERCASE names and remaining form variables.  Note that
+    # XMLRPC requests won't have a form attribute.
+    form = getattr(request, 'form', [])
+    if name == upper_name or name in form:
         return False
 
     # Block everything else
@@ -293,12 +295,13 @@ class ErrorReportingUtility:
             req_vars = []
 
             if request:
-                # XXX: Temporary fix, which Steve should undo. URL is
-                #      just too HTTPRequest-specific.
+                # XXX jamesh 2005-11-22: Temporary fix, which Steve should
+                #      undo. URL is just too HTTPRequest-specific.
                 if hasattr(request, 'URL'):
                     url = request.URL
                 try:
-                    # XXX: UnauthenticatedPrincipal does not have getLogin()
+                    # XXX jamesh 2005-11-22: UnauthenticatedPrincipal
+                    # does not have getLogin()
                     if hasattr(request.principal, 'getLogin'):
                         login = request.principal.getLogin()
                     else:
@@ -309,14 +312,15 @@ class ErrorReportingUtility:
                                                 request.principal.title,
                                                 request.principal.description
                                                 ))))
+                # XXX jamesh 2005-11-22:
                 # When there's an unauthorized access, request.principal is
-                # not set, so we get an AttributeError
-                # XXX is this right? Surely request.principal should be set!
-                # XXX Answer: Catching AttributeError is correct for the
-                #             simple reason that UnauthenticatedUser (which
-                #             I always use during coding), has no 'getLogin()'
-                #             method. However, for some reason this except
-                #             does **NOT** catch these errors.
+                # not set, so we get an AttributeError.
+                # Is this right? Surely request.principal should be set!
+                # Answer: Catching AttributeError is correct for the
+                #         simple reason that UnauthenticatedUser (which
+                #         I always use during coding), has no 'getLogin()'
+                #         method. However, for some reason this except
+                #         does **NOT** catch these errors.
                 except AttributeError:
                     pass
 

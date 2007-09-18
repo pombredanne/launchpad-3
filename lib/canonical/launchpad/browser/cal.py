@@ -1,6 +1,6 @@
 # Copyright 2005 Canonical Ltd
 
-# XXX 20060914 mpt: All Calendar pages should return HTTP 410 Gone.
+# XXX mpt 2006-09-14: All Calendar pages should return HTTP 410 Gone.
 
 __metaclass__ = type
 
@@ -304,7 +304,7 @@ class CalendarView:
     range)
     """
     __used_for__ = ICalendar
-    
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -356,7 +356,7 @@ class CalendarAppMenu(ApplicationMenu):
         else:
             user_timezone = getUtility(ILaunchBag).timezone
             self.date = datetime.now(user_timezone)
-    
+
     def day(self):
         target =  canonical_url(CalendarDay(self.context, self.date))
         text = 'Day'
@@ -415,7 +415,7 @@ class CalendarViewBase:
         if self.subscriptions is not None:
             return self.subscriptions.getColour(event.calendar)
         else:
-            # XXX - James Henstridge 2005-07-11
+            # XXX James Henstridge 2005-07-11:
             # This is replicating a constant from database/cal.py
             # This won't be necessary once CalendarAggregation is
             # implemented.
@@ -466,10 +466,10 @@ class DayInfo:
 class CalendarDayView(CalendarViewBase):
     __used_for__ = ICalendarDay
 
-    # XXX - The layout logic in this view is adapted from the Schooltool
+    # XXX James Henstridge 2005-06-28:
+    # The layout logic in this view is adapted from the Schooltool
     # day view code in DailyCalendarView (src/schooltool/browser/cal.py)
     # Ideally the common layout code should be in the schoolbell/ module.
-    #  -- James Henstridge (2005-06-28)
 
     starthour = 8
     endhour = 19
@@ -779,9 +779,9 @@ class CalendarSubscriptionsView:
         subscriptions.  This is used to build the list of calendars
         for the user to subscribe or unsubscribe from.
         """
-        # XXXX should make sure that calendars for person and teams they
+        # XXX jamesh 2005-01-25:
+        # Should make sure that calendars for person and teams they
         # are a member of are always in the subscription list.
-        #  - jamesh 2005-01-25
         for cal in self._subscriptions:
             yield { 'calendar': cal,
                     'subscribed': True,
@@ -821,7 +821,7 @@ class CalendarSubscribeView:
     def setUpUserSubscriptions(self):
         user = getUtility(ILaunchBag).user
         self._subscriptions = ICalendarSubscriptionSubset(user)
-        
+
     def isSubscribed(self):
         return self.context in self._subscriptions
 

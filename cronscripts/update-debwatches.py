@@ -103,7 +103,8 @@ class DebWatchUpdater(LaunchpadCronScript):
                 # we need a new task to link the bug to the debian package
                 self.logger.info('Linking %d and debian %s/%s' % (
                     malone_bug.id, srcpkgname.name, binpkgname.name))
-                # XXX: this code is completely untested and broken XXX
+                # XXX: kiko 2007-02-03:
+                # This code is completely untested and broken.
                 bugtask = malone_bug.addTask(
                     owner=malone_bug.owner, distribution=debian,
                     sourcepackagename=srcpkgname)

@@ -297,7 +297,8 @@ files in the respective PPA location.
   >>> name16 = getUtility(IPersonSet).getByName("name16")
   >>> beta_testers.addMember(name16, admin)
 
-  >>> foobar_archive = getUtility(IArchiveSet).new(purpose=ArchivePurpose.PPA,
+  >>> foobar_archive = getUtility(IArchiveSet).new(
+  ...     distribution=ubuntutest, purpose=ArchivePurpose.PPA,
   ...     owner=name16)
 
   >>> insecure_policy.archive = foobar_archive
@@ -322,7 +323,7 @@ files in the respective PPA location.
   DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
   DEBUG: Sent a mail:
   ...
-  DEBUG: signer of the above package.
+  DEBUG: PPA package.
 
   >>> transaction.commit()
 

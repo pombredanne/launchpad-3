@@ -7,15 +7,16 @@ import pytz
 from unittest import TestCase, TestLoader
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests.harness import (
-    LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
 from canonical.launchpad.database.productseries import (
     DatePublishedSyncError, ProductSeries, NoImportBranchError)
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import IProductSet
+from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
 from canonical.lp.dbschema import RevisionControlSystems
 
 
@@ -25,6 +26,30 @@ class ImportdTestCase(TestCase):
 
     def setUp(self):
         LaunchpadZopelessLayer.switchDbUser(config.importd.dbuser)
+
+
+class TestDeleteImport(TestCase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def testClearLastPublishedSync(self):
+        """ProductSeries.deleteImport must clear datepublishedsync."""
+        # We need to be a members of vcs-imports or admin to use deleteImport.
+        login('david.allouche@canonical.com')
+
+        # evolution/trunk is a commonly used series in unit tests of the code
+        # import system.
+        series = getUtility(IProductSet)['evolution'].getSeries('trunk')
+        self.failIf(series.importstatus is None)
+
+        # Ideally, we woud implement a realistic scenario to set this
+        # attribute, but it would be too complicated for the purpose of this
+        # simple test.
+        removeSecurityProxy(series).datepublishedsync = UTC_NOW
+
+        series.deleteImport()
+        self.failUnless(series.datepublishedsync is None,
+            'series.datepublishesync is %r' % (series.datepublishedsync))
 
 
 class TestImportUpdated(ImportdTestCase):
@@ -69,18 +94,18 @@ class TestImportUpdated(ImportdTestCase):
     # the branch is out of date. Since this fails on the pessimistic side, this
     # is acceptable -- DavidAllouche 2006-12-12.
 
-    # XXX: This race condition can be avoided if the branch puller only runs
-    # for vcs-imports branches when importd_branch.last_mirrored <
-    # datelastsynced.  -- DavidAllouche 2006-12-21
+    # XXX DavidAllouche 2006-12-21: This race condition can be avoided if
+    # the branch puller only runs for vcs-imports branches when
+    # importd_branch.last_mirrored < datelastsynced.
 
-    # XXX: The race can be resolved if we record revision ids along with the
-    # datelastsynced and datepublishedsync timestamps. That will be easier to
-    # do when the status reporting is done from the importd slaves.
-    # -- DavidAllouche 2006-12-21.
+    # XXX DavidAllouche 2006-12-21: The race can be resolved if we record
+    # revision ids along with the datelastsynced and datepublishedsync
+    # timestamps. That will be easier to do when the status reporting is done
+    # from the importd slaves.
 
     def testLastMirroredIsNone(self):
-        # If import_branch.last_mirrored is None, importUpdated just sets
-        # datelastsynced to UTC_NOW.
+        # If import_branch.last_mirrored is None, importUpdated sets
+        # datelastsynced and import_branch.mirror_request_time to UTC_NOW.
         series = self.series()
         series.import_branch.last_mirrored = None
         series.datelastsynced = None
@@ -88,6 +113,8 @@ class TestImportUpdated(ImportdTestCase):
         # use str() to work around sqlobject lazy evaluation
         self.assertEqual(str(series.datepublishedsync), str(None))
         self.assertEqual(str(series.datelastsynced), str(UTC_NOW))
+        self.assertEqual(
+            str(series.import_branch.mirror_request_time), str(UTC_NOW))
 
     def testLastSyncedIsNone(self):
         # Make sure that importUpdated() still work when encountering the
@@ -113,14 +140,15 @@ class TestImportUpdated(ImportdTestCase):
         # published sync should be already recorded in datepublishedsync.
         # Then importUpdated just updates datelastsynced.
 
-        # XXX: If datepublishedsync is None, this means:
+        # XXX DavidAllouche 2006-12-13: 
+        # If datepublishedsync is None, this means:
         # * last_mirrored was None the last time importUpdated was called
         # * the last mirror started before the last call to importUpdated
         #
         # This means the race condition occured on the initial import. In this
         # case we do not really know what has been mirrored, and the import
         # should be treated as not-mirrored. So this case does not need to be
-        # treated specially. -- DavidAllouche 2006-12-13
+        # treated specially.
         series = self.series()
         UTC = pytz.timezone('UTC')
         datepublishedsync = datetime.datetime(2000, 1, 1, tzinfo=UTC)

@@ -4,7 +4,7 @@ This test covers the use case when a package includes translations and is
 uploaded into the system.
 
   >>> from canonical.launchpad.database import (
-  ...     ProcessorFamily, Component, GPGKey, Section, Manifest,
+  ...     ProcessorFamily, Component, GPGKey, Section,
   ...     SecureSourcePackagePublishingHistory)
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet)
@@ -48,7 +48,7 @@ queue:
   ...     pmount_sourcepackagename, "0.9.7-2ubuntu2", dapper.owner,
   ...     None, None, 'i386', Component.get(1), dapper.owner,
   ...     SourcePackageUrgency.LOW, None, None, GPGKey.get(1), Section.get(1),
-  ...     Manifest.get(1), None, None, None, None, dapper.main_archive)
+  ...     None, None, None, None, dapper.main_archive, 'copyright ?!')
 
   >>> publishing_history = SecureSourcePackagePublishingHistory(
   ...     distroseries=dapper.id,
@@ -115,7 +115,7 @@ queue:
   # Check the import queue content, it should be empty.
   >>> from canonical.launchpad.interfaces import ITranslationImportQueue
   >>> translation_import_queue = getUtility(ITranslationImportQueue)
-  >>> translation_import_queue.getAllEntries(target='distros').count()
+  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
   0
 
   # We need to commit the transaction to be able to use the librarian files.
@@ -130,7 +130,7 @@ An upload to the RELEASE pocket will add items to the import queue:
   >>> queue_item.customfiles[0].publish()
 
   # There are exactly the 10 entries imported by pmount.
-  >>> translation_import_queue.getAllEntries(target='distros').count()
+  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
   10
 
   # Let's abort the transaction so we can check the same upload in a different
@@ -139,7 +139,7 @@ An upload to the RELEASE pocket will add items to the import queue:
 
   # The import queue content should be empty now that the transaction is
   # reverted.
-  >>> translation_import_queue.getAllEntries(target='distros').count()
+  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
   0
 
 An upload to the BACKPORTS pocket will not add items to the import queue:
@@ -151,7 +151,7 @@ An upload to the BACKPORTS pocket will not add items to the import queue:
   >>> queue_item.customfiles[0].publish()
 
   # And this time, we see that there are no entries imported in the queue.
-  >>> translation_import_queue.getAllEntries(target='distros').count()
+  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
   0
 
   # Let's abort the transaction so we can check the same upload in a different
@@ -167,7 +167,7 @@ But an upload to the UPDATE pocket will add items to the import queue:
   >>> queue_item.customfiles[0].publish()
 
   # And we get 10 new entries imported.
-  >>> translation_import_queue.getAllEntries(target='distros').count()
+  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
   10
 
   # Let's abort the transaction so we can check the same upload in a different
@@ -177,8 +177,8 @@ But an upload to the UPDATE pocket will add items to the import queue:
 
 == Translations from PPA build ==
 
-For now we simply ignore translations for other archive than the
-Distribution main_archive (PPAs).
+For now we simply ignore translations for archives other than the
+Distribution archives (i.e. PPAs).
 
   >>> from canonical.launchpad.interfaces import (
   ...    IPersonSet, IArchiveSet)
@@ -198,7 +198,7 @@ Distribution main_archive (PPAs).
 
 
   # And this time, we see that there are no entries imported in the queue.
-  >>> translation_import_queue.getAllEntries(target='distros').count()
+  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
   0
 
 

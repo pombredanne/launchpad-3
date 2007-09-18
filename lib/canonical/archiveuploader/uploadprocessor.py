@@ -57,7 +57,7 @@ from canonical.archiveuploader.nascentupload import (
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, IArchiveSet, NotFoundError)
+    IDistributionSet, IPersonSet, NotFoundError)
 from canonical.lp.dbschema import ArchivePurpose
 
 from contrib.glock import GlobalLock
@@ -80,6 +80,9 @@ class UploadStatusEnum:
 
 class UploadPathError(Exception):
     """This exception happened when parsing the upload path."""
+
+class PPAUploadPathError(Exception):
+    """Exception when parsing a PPA upload path."""
 
 class UploadProcessor:
     """Responsible for processing uploads. See module docstring."""
@@ -241,6 +244,16 @@ class UploadProcessor:
             suite_name = None
             archive = distribution.main_archive
             error = str(e)
+        except PPAUploadPathError, e:
+            # Again, pick some defaults but leave a hint for the rejection
+            # emailer that it was a PPA failure.
+            distribution = getUtility(IDistributionSet)['ubuntu']
+            suite_name = None
+            archive = distribution.main_archive
+            # This is fine because the transaction will be aborted when
+            # the rejection happens.
+            archive.purpose = ArchivePurpose.PPA
+            error = str(e)
 
         self.log.debug("Finding fresh policy")
         self.options.distro = distribution.name
@@ -293,7 +306,7 @@ class UploadProcessor:
                 self.log.exception("Unhandled exception processing upload")
                 upload.reject("Unhandled exception processing upload: %s" % e)
 
-            # XXX julian 2007-05-25
+            # XXX julian 2007-05-25 bug=29744:
             # When bug #29744 is fixed (zopeless mails should only be sent
             # when transaction is committed) this will cause any emails sent
             # sent by do_reject to be lost.
@@ -311,6 +324,11 @@ class UploadProcessor:
                     self.log.info("Rejection during accept. "
                                   "Aborting partial accept.")
                     self.ztm.abort()
+
+            if upload.is_rejected:
+                self.log.warn("Upload was rejected:")
+                for msg in upload.rejections:
+                    self.log.warn("\t%s" % msg)
 
             if self.options.dryrun:
                 self.log.info("Dry run, aborting transaction.")
@@ -401,28 +419,36 @@ class UploadProcessor:
         # PPA upload (~<person>/<distro>/[distroseries])
         elif len(parts) <= 3:
             if not first_path.startswith('~'):
-                raise UploadPathError(
+                raise PPAUploadPathError(
                     "PPA upload path must start with '~'.")
 
             # Skip over ~
             person_name = first_path[1:]
             person = getUtility(IPersonSet).getByName(person_name)
             if person is None:
-                raise UploadPathError(
+                raise PPAUploadPathError(
                     "Could not find person '%s'" % person_name)
 
             distribution_name = parts[1]
             distribution = getUtility(IDistributionSet).getByName(
                 distribution_name)
             if distribution is None:
-                raise UploadPathError(
+                raise PPAUploadPathError(
                     "Could not find distribution '%s'" % distribution_name)
 
-            archive = getUtility(IArchiveSet).ensure(owner=person, 
-                distribution=distribution, purpose=ArchivePurpose.PPA)
+            archive = person.archive
             if archive is None:
-                raise UploadPathError(
+                raise PPAUploadPathError(
                     "Could not find PPA for '%s'" % person_name)
+
+            if not archive.enabled:
+                raise PPAUploadPathError(
+                    "%s is disabled" % archive.title)
+
+            if archive.distribution != distribution:
+                raise PPAUploadPathError(
+                    "%s only supports uploads to '%s'"
+                    % (archive.title, archive.distribution.name))
 
             if len(parts) > 2:
                 suite_name = parts[2]
@@ -431,7 +457,7 @@ class UploadProcessor:
                 try:
                     suite = distribution.getDistroSeriesAndPocket(suite_name)
                 except NotFoundError:
-                    raise UploadPathError(
+                    raise PPAUploadPathError(
                         "Could not find suite '%s'" % suite_name)
         else:
             raise UploadPathError(

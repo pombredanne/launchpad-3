@@ -23,7 +23,7 @@ from twisted.web import xmlrpc
 devnull = open("/dev/null", "r")
 
 
-# XXX 20050628 cprov
+# XXX cprov 2005-06-28:
 # RunCapture can be replaced with a call to
 #
 #   twisted.internet.utils.getProcessOutputAndValue
@@ -65,14 +65,14 @@ class RunCapture(protocol.ProcessProtocol):
         # already died.
         if self.killCall and self.killCall.active():
             self.killCall.cancel()
-            
-        # notify the slave, it'll perform the required actions     
+
+        # notify the slave, it'll perform the required actions
         self.notify(statusobject.value.exitCode)
 
 
 class BuildManager(object):
     """Build Daemon slave build manager abstract parent"""
-    
+
     def __init__(self, slave, buildid):
         object.__init__(self)
         self._buildid = buildid
@@ -81,14 +81,14 @@ class BuildManager(object):
         self._cleanpath = slave._config.get("allmanagers", "cleanpath")
         self._mountpath = slave._config.get("allmanagers", "mountpath")
         self._umountpath = slave._config.get("allmanagers", "umountpath")
-        
+
     def runSubProcess(self, command, args):
         """Run a sub process capturing the results in the log."""
         self._subprocess = RunCapture(self._slave, self.iterate)
         self._slave.log("RUN: %s %r\n" % (command,args))
         childfds = {0: devnull.fileno(), 1: "r", 2: "r"}
         reactor.spawnProcess(
-            self._subprocess, command, args, env=os.environ, 
+            self._subprocess, command, args, env=os.environ,
             path=os.environ["HOME"], childFDs=childfds)
 
     def _unpackChroot(self, chroottarfile):
@@ -105,7 +105,7 @@ class BuildManager(object):
         """Mount things in the chroot, e.g. proc."""
         self.runSubProcess( self._mountpath,
                             ["mount-chroot", self._buildid])
-        
+
     def doUnmounting(self):
         """Unmount the chroot."""
         self.runSubProcess( self._umountpath,
@@ -140,7 +140,7 @@ class BuildManager(object):
         # 10 s ~ 40 s, and returns None as exit_code, instead of the normal
         # interger. See further info on DebianBuildermanager.iterate in
         # debian.py
-        # XXX cprov 20050902:
+        # XXX cprov 2005-09-02:
         # we may want to follow the canonical.tachandler kill process style,
         # which sends SIGTERM to the process wait a given timeout and if was
         # not killed sends a SIGKILL. IMO it only would be worth if we found
@@ -149,7 +149,7 @@ class BuildManager(object):
         # alternativelly to simply send SIGTERM, we can pend a request to
         # send SIGKILL to the process if nothing happened in 10 seconds
         # see base class process
-        self._subprocess.killCall = reactor.callLater(10, self.kill) 
+        self._subprocess.killCall = reactor.callLater(10, self.kill)
 
     def kill(self):
         """Send SIGKILL to child process
@@ -159,7 +159,7 @@ class BuildManager(object):
         try:
             self._subprocess.transport.signalProcess('KILL')
         except process.ProcessExitedAlready:
-            self._slave.log("ABORTING: Process Exited Already\n")            
+            self._slave.log("ABORTING: Process Exited Already\n")
 
 class BuilderStatus:
     """Status values for the builder."""
@@ -169,10 +169,10 @@ class BuilderStatus:
     WAITING = "BuilderStatus.WAITING"
     ABORTING = "BuilderStatus.ABORTING"
     ABORTED = "BuilderStatus.ABORTED"
-    
+
     UNKNOWNSUM = "BuilderStatus.UNKNOWNSUM"
     UNKNOWNBUILDER = "BuilderStatus.UNKNOWNBUILDER"
-    
+
 
 class BuildStatus:
     """Status values for builds themselves."""
@@ -199,10 +199,10 @@ class BuildDSlave(object):
         self.waitingfiles = {}
         self.builddependencies = ""
         self._log = None
-        
+
         if not os.path.isdir(self._cachepath):
             raise ValueError("FileCache path is not a dir")
-        
+
     def getArch(self):
         """Return the Architecture tag for the slave."""
         return self._config.get("slave","architecturetag")
@@ -267,9 +267,9 @@ class BuildDSlave(object):
 
     def abort(self):
         """Abort the current build."""
-        # XXX: dsilvers: 2005/01/21: Current abort mechanism doesn't wait
+        # XXX: dsilvers: 2005-01-21: Current abort mechanism doesn't wait
         # for abort to complete. This is potentially an issue in a heavy
-        # load situation
+        # load situation.
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when asked to abort")
         self.manager.abort()
@@ -383,7 +383,7 @@ class BuildDSlave(object):
                              "complete")
         self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.OK
-        
+
 
 class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
     """XMLRPC build daemon slave management interface"""
@@ -396,7 +396,7 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         # the reduced and optimised XMLRPC interface.
         self.protocolversion = '1.0'
         self.slave = BuildDSlave(config)
-        self._builders = {}    
+        self._builders = {}
         print "Initialised"
 
     def registerBuilder(self, builderclass, buildertag):
@@ -433,10 +433,10 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         """
         # keep the result code sane
         return ('', )
-    
+
     def status_BUILDING(self):
         """Handler for xmlrpc_status BUILDING.
-        
+
         Returns the build id and up to one kilobyte of log tail
         """
         tail = self.slave.getLogTail()
@@ -444,7 +444,7 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
 
     def status_WAITING(self):
         """Handler for xmlrpc_status WAITING.
-        
+
         Returns the build id and the set of files waiting to be returned
         unless the builder failed in which case we return the buildstatus
         and the build id but no file set.

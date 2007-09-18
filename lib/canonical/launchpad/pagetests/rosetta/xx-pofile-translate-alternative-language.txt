@@ -1,28 +1,32 @@
 = PO file alternative language selection =
 
-We can see that the alternative language selection is working:
+The translation view will make translation suggestions for a message
+if someone translated the same message in another package. The user
+may choose an alternate language for the suggestions by selecting
+a language from the 'Make suggestions from' control.
 
-Let's identify us first.
+Carlos is going to translate some messages.
 
-    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
 
-And open the translation form:
+
+== The 'Make suggestions from' control ==
+
+Carlos chooses to translate Evolution 2.2 messages in to Spanish.
 
     >>> browser.open(
-    ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
-    ...     '+pots/evolution-2.2/es/+translate')
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
+    ...     'evolution/+pots/evolution-2.2/es/+translate')
     >>> print browser.title
     Translating evolution-2.2 in Ubuntu Hoary package "evolution" into Spanish
 
-The 'Make suggestions from' control lists the translatable languages.
-Japanese is a translatable language, English is included because many
-English dialects may want to use the source English.
+Carlos sees the 'Make suggestions from' control. It lists the
+translatable languages. He chooses Japanese as the source for the
+suggested translations.
 
     >>> browser.getControl(
     ...     name='field.alternative_language').displayOptions[:4]
     ['(no value)', 'Abkhazian (ab)', 'Achinese (ace)', 'Acoli (ach)']
-    >>> browser.getControl('English (en)', index=0).selected
-    False
 
     >>> browser.getControl(name='field.alternative_language').value
     ['']
@@ -35,43 +39,129 @@ English dialects may want to use the source English.
     >>> browser.getControl(name='field.alternative_language', index=0).value
     ['ja']
 
-This page also allows the user to filter the translatable strings to
-show only the strings he is interested in.
+English is not among the items in the 'Make suggestions from' list.
+The English templates are hidden in the UI because it is not a
+translatable language; the source messages are stored in English.
+
+    >>> browser.getControl('English (en)', index=0).selected
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'English (en)'
+
+
+== Filtering messages ==
+
+The translation page also allows the user to filter the translatable
+strings to show only the strings he is interested in.
 
     >>> browser.getControl('Show').displayOptions
-    ['all', 'untranslated', 'need review', 'translated', 
+    ['all', 'untranslated', 'need review', 'translated',
      'with new suggestions', 'changed in Launchpad']
 
-Let's do a translation submit with an alternative language selected
-to see whether the final url is correct. We don't need to change any
-translation, just a submitting is enough. We can also set the filter
-to display only the untranslated strings.
+Carlos sets the filter to display only the untranslated strings.
 
     >>> browser.getControl('untranslated').selected = True
     >>> browser.getControl('Filter').click()
     >>> browser.url
     '...+translate?field.alternative_language=ja...show=untranslated'
 
-The navigation indicates are seeing only the first page of results.
+Carlos can see that he is viewing the first page of results in the
+navigation bar between the translation controls and the messages.
 
     >>> navigation = find_tags_by_class(browser.contents, 'results')[0].td
     >>> print extract_text(navigation)
     1 ... 10  of 13 results ...
 
-We can see the next page of results using the 'Save & Continue' button.
+Carlos uses the 'Save & Continue' button to see the next page of
+messages.
 
     >>> browser.getControl('Save & Continue').click()
     >>> navigation = find_tags_by_class(browser.contents, 'results')[0].td
     >>> print extract_text(navigation)
     11 ... 13  of 13 results ...
 
-If we specify more than one alternative language in the URL, we get an
-UnexpectedFormData exception:
+
+== Language variants and alternative language ==
+
+The language for the suggestions will be selected automatically when it
+is not submitted by the user. If the language variant is not available
+(like de_AT), the unqualified language is selected (de). This cannot
+happen for English--when en_GB is not available, we do not fallback to
+en.
+
+Carlos chooses to start a translation of alsa-utils in Austrian German,
+and the 'Make suggestions from' is preset to German.
 
     >>> browser.open(
-    ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
-    ...     '+pots/evolution-2.2/es/+translate'
+    ...     'http://translations.launchpad.dev/alsa-utils/trunk/'
+    ...     '+pots/alsa-utils/de_AT/+translate')
+    >>> content = find_main_content(browser.contents)
+    >>> content.h1
+    <h1>...Translating into German (Austria)...</h1>
+
+    >>> browser.getControl(
+    ...     name='field.alternative_language', index=0).displayValue
+    ['German (de)']
+
+Carlos chooses to start a new en_GB translation of alsa-utils. The form
+is displayed for him to edit, but the 'Make suggestions from' control
+is unset.
+
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/alsa-utils/trunk/'
+    ...     '+pots/alsa-utils/en_GB/+translate')
+    >>> content = find_main_content(browser.contents)
+    >>> content.h1
+    <h1>...Translating into English (United Kingdom)...</h1>
+
+    >>> browser.getControl(
+    ...     name='field.alternative_language').displayValue
+    ['(no value)']
+
+
+== There is only one alternative language at a time ==
+
+If a user specifies more than one alternative language in the URL, he
+gets an UnexpectedFormData exception:
+
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
+    ...     'evolution/+pots/evolution-2.2/es/+translate'
     ...     '?field.alternative_language=ja&field.alternative_language=aj')
     Traceback (most recent call last):
     ...
     UnexpectedFormData: You specified...
+
+
+== Requests for a non-translatable alternative language ==
+
+There are older URLs that contain non-translatable languages such as
+English, or a non-visible language. Two example requests in OOPSes
+were for: en_GB/+translate?field.alternative_language=en and
+za/+translate?field.alternative_language=zh. In these cases, the
+alternative language is ignored and the the 'Make suggestions from'
+control is unset.
+
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/alsa-utils/trunk/'
+    ...     '+pots/alsa-utils/en_GB/+translate'
+    ...     '?field.alternative_language=en')
+    >>> content = find_main_content(browser.contents)
+    >>> content.h1
+    <h1>...Translating into English (United Kingdom)...</h1>
+
+    >>> browser.getControl(
+    ...     name='field.alternative_language').displayValue
+    ['(no value)']
+
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/alsa-utils/trunk/'
+    ...     '+pots/alsa-utils/za/+translate'
+    ...     '?field.alternative_language=zh')
+    >>> content = find_main_content(browser.contents)
+    >>> content.h1
+    <h1>... Translating into Chuang; Zhuang...</h1>
+
+    >>> browser.getControl(
+    ...     name='field.alternative_language').displayValue
+    ['(no value)']

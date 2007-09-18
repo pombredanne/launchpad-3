@@ -126,15 +126,15 @@ def extract_tags(rdf, tag, max_occurrences=None):
     - use 0 for unlimited.
 
     """
-    
+
     soup = BeautifulStoneSoup(rdf)
     items = soup(tag)
     if max_occurrences is not None:
         items = items[:max_occurrences]
     result = []
     # Convert each item into a string, including nested tags
-    # XXX morgs 20050201: Check if this actually needs to be
-    #                     recursively nested?
+    # XXX morgs 2005-02-01: Check if this actually needs to be
+    # recursively nested?
     for item in items:
         item_str = ''
         for i in item.contents:
@@ -142,7 +142,7 @@ def extract_tags(rdf, tag, max_occurrences=None):
                 item_str += str(i)
         result.append(str(item_str))
     return result
-    
+
 
 def get_html(url):
     """Fetch HTML text of a web page from the given URL"""

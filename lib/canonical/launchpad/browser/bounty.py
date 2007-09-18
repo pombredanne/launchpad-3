@@ -75,8 +75,8 @@ def get_subscription_for_person(person, bounty):
     """Return the subscription the person has on the bounty, or None if there
     is not such subscription.
     """
-    # XXX: refactor to method on IBounty.
-    #      SteveAlexander, 2005-09-23
+    # XXX: SteveAlexander 2005-09-23:
+    # Refactor to method on IBounty.
     for subscription in bounty.subscriptions:
         if subscription.person.id == person.id:
             return subscription
@@ -146,8 +146,8 @@ class BountyAddView(AddView):
         if not owner:
             raise Unauthorized(
                 "Must have an authenticated user in order to create a bounty")
-        # XXX Mark Shuttleworth need the fancy-person selector to select a
-        # reviewer
+        # XXX Mark Shuttleworth 2004-11-09:
+        # Need the fancy-person selector to select a reviewer.
         reviewer = owner
         bounty = getUtility(IBountySet).new(
             name=data['name'],

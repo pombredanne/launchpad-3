@@ -286,7 +286,8 @@ class IConnectionObserver:
 def escape(s):
     # Encode a string with backslashes.  For example, a string
     # containing characters 0 and 1 will be rendered as \x00\x01.
-    # XXX This implementation might be a brittle trick. :-(
+    # XXX daniels 2004-12-14:
+    # This implementation might be a brittle trick. :-(
     return repr('"\'' + str(s))[4:-1]
 
 

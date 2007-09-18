@@ -131,7 +131,7 @@ class TacTestSetup:
         """
         raise NotImplementedError
 
-    # XXX cprov 20050708
+    # XXX cprov 2005-07-08:
     # We don't really need those information as property,
     # they can be implmented as simple attributes since they
     # store static information. Sort it out soon.

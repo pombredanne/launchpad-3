@@ -7,7 +7,7 @@ which represents the Buildd Slave entity.
 
 Need auxiliar methods from zope toolchain:
 
- >>> from zope.interface.verify import verifyObject
+ >>> from canonical.launchpad.webapp.testing import verifyObject
  >>> from zope.component import getUtility
 
 Importing Builder content class and its interface:

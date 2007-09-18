@@ -29,9 +29,9 @@ This is done by a script called shipit-process-requests, which simply calls
 the processRequests() method of ShippingRequestSet, passing the status of the
 requests we want to process and the new status of these requests.
 
-    >>> from canonical.launchpad.interfaces import IShippingRequestSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IShippingRequestSet, ShippingRequestStatus)
     >>> from canonical.launchpad.database import ShippingRequest
-    >>> from canonical.lp.dbschema import ShippingRequestStatus
     >>> from canonical.database.sqlbase import (
     ...     flush_database_updates, flush_database_caches)
     >>> from zope.component import getUtility

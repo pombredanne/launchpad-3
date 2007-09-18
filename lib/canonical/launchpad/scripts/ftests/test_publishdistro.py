@@ -5,18 +5,20 @@
 __metaclass__ = type
 
 import os
+import shutil
 import subprocess
 import sys
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IPersonSet)
+    IArchiveSet, IDistributionSet, IPersonSet)
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingStatus, PackagePublishingPocket)
+    ArchivePurpose, PackagePublishingStatus)
 
 class TestPublishDistro(TestNativePublishingBase):
     """Test the publish-distro.py script works properly."""
@@ -82,6 +84,52 @@ class TestPublishDistro(TestNativePublishingBase):
         baz_path = "%s/main/b/baz/baz.dsc" % self.pool_dir
         self.assertEqual('baz', open(baz_path).read().strip())
 
+    def publishToArchiveWithOverriddenDistsroot(self, archive):
+        """Publish a test package to the specified archive.
+
+        Publishes a test package but overrides the distsroot.
+        :return: A tuple of the path to the overridden distsroot and the
+                 configured distsroot, in that order.
+        """
+        self.getPubSource(filecontent="flangetrousers", archive=archive)
+        self.layer.txn.commit()
+        pubconf = removeSecurityProxy(archive.getPubConfig())
+        tmp_path = "/tmp/tmpdistroot"
+        if os.path.exists(tmp_path):
+            shutil.rmtree(tmp_path)
+        os.mkdir(tmp_path)
+        rc, out, err = self.runPublishDistro(['-R', tmp_path])
+        return tmp_path, pubconf.distsroot
+
+    def testDistsrootOverridePrimaryArchive(self):
+        """Test the -R option to publish-distro.
+
+        Make sure that -R works with the primary archive.
+        """
+        main_archive = getUtility(IDistributionSet)['ubuntutest'].main_archive
+        tmp_path, distsroot = self.publishToArchiveWithOverriddenDistsroot(
+            main_archive)
+        distroseries = 'breezy-autotest'
+        self.assertExists(os.path.join(tmp_path, distroseries, 'Release'))
+        self.assertNotExists(
+            os.path.join("%s" % distsroot, distroseries, 'Release'))
+        shutil.rmtree(tmp_path)
+
+    def testDistsrootNotOverridePartnerArchive(self):
+        """Test the -R option to publish-distro.
+
+        Make sure the -R option does not affect the partner archive.
+        """
+        ubuntu = getUtility(IDistributionSet)['ubuntutest']
+        partner_archive = ubuntu.getArchiveByComponent('partner')
+        tmp_path, distsroot = self.publishToArchiveWithOverriddenDistsroot(
+            partner_archive)
+        distroseries = 'breezy-autotest'
+        self.assertNotExists(os.path.join(tmp_path, distroseries, 'Release'))
+        self.assertExists(
+            os.path.join("%s" % distsroot, distroseries, 'Release'))
+        shutil.rmtree(tmp_path)
+
     def testForPPA(self):
         """Try to run publish-distro in PPA mode.
 
@@ -93,10 +141,18 @@ class TestPublishDistro(TestNativePublishingBase):
         pub_source2 = self.getPubSource(
             sourcename='baz', filecontent='baz', archive=cprov.archive)
 
+        ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         name16 = getUtility(IPersonSet).getByName('name16')
-        getUtility(IArchiveSet).new(purpose=ArchivePurpose.PPA, owner=name16)
+        getUtility(IArchiveSet).new(purpose=ArchivePurpose.PPA, owner=name16,
+            distribution=ubuntutest)
         pub_source3 = self.getPubSource(
             sourcename='bar', filecontent='bar', archive=name16.archive)
+
+        # Override PPAs distributions
+        naked_archive = removeSecurityProxy(cprov.archive)
+        naked_archive.distribution = self.ubuntutest
+        naked_archive = removeSecurityProxy(name16.archive)
+        naked_archive.distribution = self.ubuntutest
 
         self.layer.txn.commit()
 

@@ -31,6 +31,7 @@ class MockLogger:
                 self.lines.append(err_msg)
 
     info = debug
+    warn = debug
     error = debug
 
     def exception(self, s):

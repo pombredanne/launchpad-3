@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """This module is used by the Launchpad webapp to determine titles for pages.
 
@@ -40,8 +40,7 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IMaloneApplication, INullBugTask, IPerson,
-    IStructuralObjectPresentation)
+    ILaunchBag, IMaloneApplication, IPerson, IStructuralObjectPresentation)
 from canonical.launchpad.webapp import smartquote
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
@@ -98,7 +97,25 @@ class ContextBugId(SubstitutionHelper):
         return self.text % context.bug.id
 
 
+class ViewLabel:
+    """Helper to use the view's label as the title."""
+    def __call__(self, context, view):
+        return view.label
+
+
 # Functions and strings used as the titles of pages.
+
+archive_admin = ContextTitle('Administer %s')
+
+archive_activate = 'Activate Personal Package Archive'
+
+archive_view_tos = 'Personal Package Archive Terms of Service'
+
+archive_builds = ContextTitle('Builds for %s')
+
+archive_edit = ContextTitle('Edit %s')
+
+archive_index = ContextTitle('%s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
@@ -126,6 +143,8 @@ bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 branch_associations = ContextDisplayName(smartquote(
     '"%s" branch associations'))
 
+branch_delete = ContextDisplayName(smartquote('Delete branch "%s"'))
+
 branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
 
 branch_edit_subscription = ContextDisplayName(smartquote(
@@ -137,6 +156,19 @@ def branch_index(context, view):
             context.displayname, context.author.title)
     else:
         return smartquote('"%s" branch in Launchpad') % (context.displayname)
+
+branch_link_to_bug = ContextDisplayName(smartquote(
+    'Link branch "%s" to a bug report'))
+
+def branch_listing_cross_product(context, view):
+    return view.page_title
+
+branch_landing_candidates = ContextDisplayName(smartquote(
+    'Landing candidates for "%s"'))
+
+branchmergeproposal_edit = 'Edit branch merge proposal'
+
+branch_register_merge_proposal = 'Register branch merge proposal'
 
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
@@ -178,8 +210,7 @@ def bug_extref_edit(context, view):
 
 bug_mark_as_duplicate = ContextBugId('Bug #%d - Mark as duplicate')
 
-def bug_nominate_for_series(context, view):
-    return view.label
+bug_nominate_for_series = ViewLabel()
 
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
 
@@ -240,15 +271,22 @@ bugtarget_filebug_search = bugtarget_filebug_advanced
 
 bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
-bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_choose_affected_product = LaunchbagBugID(
+    'Bug #%d - Record as affecting another project')
+
+# This page is used for both projects/distros so we have to say 'software'
+# rather than distro or project here.
+bugtask_confirm_bugtracker_creation = LaunchbagBugID(
+    'Bug #%d - Record as affecting another software')
 
 bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()
 
-bugtask_requestfix = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_requestfix = LaunchbagBugID(
+    'Bug #%d - Record as affecting another distribution/package')
 
-bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Confirm project')
 
 bugtask_view = BugTaskPageTitle()
 
@@ -360,6 +398,9 @@ distribution_cvereport = ContextTitle('CVE reports for %s')
 
 distribution_edit = ContextTitle('Edit %s')
 
+distribution_language_pack_admin = ContextTitle(
+    'Change the language pack administrator for %s')
+
 distribution_members = ContextTitle('%s distribution members')
 
 distribution_memberteam = ContextTitle(
@@ -384,9 +425,13 @@ distribution_builds = ContextTitle('%s builds')
 
 distribution_uploadadmin = ContextTitle('Change Upload Manager for %s')
 
+distribution_ppa_list = ContextTitle('%s Personal Package Archives')
+
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
-distributionsourcepackage_index = ContextTitle('%s')
+distrosourcepackage_index = ContextTitle('%s')
+
+distrosourcepackage_publishinghistory = ContextTitle('Publishing history of %s')
 
 distributionsourcepackage_manage_bugcontacts = ContextTitle('Bug contacts for %s')
 
@@ -415,6 +460,11 @@ distroseries_edit = ContextTitle('Edit details of %s')
 
 def distroseries_index(context, view):
     return '%s %s in Launchpad' % (context.distribution.title, context.version)
+
+distroseries_language_packs = ViewLabel()
+
+def distroseries_language_packs_editing(context, view):
+    return view.page_title
 
 distroseries_packaging = ContextDisplayName('Mapping packages to upstream '
     'for %s')
@@ -475,6 +525,8 @@ def hasspecifications_specs(context, view):
 
 hassprints_sprints = ContextTitle("Events related to %s")
 
+hastranslationimports_index = 'Translation import queue'
+
 karmaaction_index = 'Karma actions'
 
 karmaaction_edit = 'Edit karma action'
@@ -511,9 +563,9 @@ template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 
 # launchpad_js is standard javascript
 
-# XXX: The general form is a fallback form; I'm not sure why it is
+# XXX: kiko 2005-09-29:
+# The general form is a fallback form; I'm not sure why it is
 # needed, nor why it needs a pagetitle, but I can't debug this today.
-#   -- kiko, 2005-09-29
 launchpad_generalform = "Launchpad - General Form (Should Not Be Displayed)"
 
 launchpad_legal = 'Launchpad legalese'
@@ -543,7 +595,12 @@ launchpadstatisticset_index = 'Launchpad statistics'
 loginservice_email_sent = 'Launchpad Login Service - Email sent'
 
 def loginservice_authorize(context, view):
-    return 'Authenticate to %s' % view.rp_info['title']
+    rpconfig = view.rpconfig
+    if rpconfig is None:
+        displayname = view.openid_request.trust_root
+    else:
+        displayname = rpconfig.displayname
+    return 'Authenticate to %s' % displayname
 
 loginservice_login = 'Launchpad Login Service'
 
@@ -691,6 +748,8 @@ person_changepassword = 'Change your password'
 
 person_claim = 'Claim account'
 
+person_deactivate_account = 'Deactivate your Launchpad account'
+
 person_codesofconduct = ContextDisplayName(smartquote("%s's code of conduct signatures"))
 
 person_edit = ContextDisplayName(smartquote("%s's details"))
@@ -803,8 +862,6 @@ potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
 
 potemplatenames_index = 'Template names in Launchpad'
 
-ppa_list = ContextTitle('%s Personal Package Archives')
-
 product_add = 'Register a project in Launchpad'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
@@ -850,6 +907,8 @@ productrelease_index = ContextDisplayName('%s in Launchpad')
 
 products_index = 'Projects registered in Launchpad'
 
+productseries_export = ContextTitle('Download translations for "%s"')
+
 productseries_index = ContextTitle('Overview of %s')
 
 productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
@@ -864,7 +923,8 @@ project_add = 'Register a project group with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
 
-project_branches = ContextTitle('Bazaar branches for %s')
+project_branches = ContextTitle(
+    smartquote("%s's Bazaar branches registered in Launchpad"))
 
 project_bugs = ContextTitle('Bugs in %s')
 

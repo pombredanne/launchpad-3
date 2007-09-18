@@ -14,10 +14,11 @@ __all__ = [
     'DSCUploadedFile',
     ]
 
-import os
-import errno
-import shutil
 import apt_pkg
+import errno
+import glob
+import os
+import shutil
 import subprocess
 import tempfile
 
@@ -141,6 +142,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
     # Note that files is actually only set inside verify().
     files = None
+    # Copyrigth is only set inside unpackAndCheckSource().
+    copyright = None
 
     def __init__(self, filepath, digest, size, component_and_section, priority,
                  package, version, changes, policy, logger):
@@ -399,11 +402,38 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 "[dpkg-source output: %s]"
                 % (self.filename, result, dpkg_output))
 
+        # Copy debian/copyright file content. It will be stored in the
+        # SourcePackageRelease records.
+
+        # Check if 'dpkg-source' created only one directory.
+        temp_directories = [dirname for dirname in os.listdir(tmpdir)
+                            if os.path.isdir(dirname)]
+        if len(temp_directories) > 1:
+            yield UploadError(
+                'Unpacked source contains more than one directory: %r'
+                % temp_directories)
+
+        # XXX cprov 20070713: We should access only the expected directory
+        # name (<sourcename>-<no_epoch(no_revision(version))>).
+
+        # Instead of trying to predict the unpacked source directory name,
+        # we simply use glob to retrive everything like:
+        # 'tempdir/*/debian/copyright'
+        globpath = os.path.join(tmpdir, "*", "debian/copyright")
+        for fullpath in glob.glob(globpath):
+            if not os.path.exists(fullpath):
+                continue
+            self.logger.debug("Copying copyright contents.")
+            self.copyright = open(fullpath).read().strip()
+
+        if self.copyright is None:
+            yield UploadWarning("No copyright file found.")
+
         self.logger.debug("Cleaning up source tree.")
         try:
             shutil.rmtree(tmpdir)
         except OSError, error:
-            # XXX: dsilvers: 20060315: We currently lack a test for this.
+            # XXX: dsilvers 2006-03-15: We currently lack a test for this.
             if errno.errorcode[error.errno] != 'EACCES':
                 yield UploadError("%s: couldn't remove tmp dir %s: code %s" % (
                                   self.filename, tmpdir, error.errno))
@@ -421,12 +451,23 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     def storeInDatabase(self):
         """Store DSC information as a SourcePackageRelease record.
 
-        It reencodes all fields extracted from DSC because old packages
-        contain latin-1 text and that sucks.
+        It reencodes all fields extracted from DSC, the simulated_changelog
+        and the copyright, because old packages contain latin-1 text and
+        that sucks.
         """
+        # Organize all the parameters requiring encoding transformation.
+        pending = self._dict.copy()
+        pending['simulated_changelog'] = self.changes.simulated_changelog
+        pending['copyright'] = self.copyright
+
+        # We have no way of knowing what encoding the original copyright
+        # file is in, unfortunately, and there is no standard, so guess.
         encoded = {}
-        for key, value in self._dict.items():
-            encoded[key] = guess_encoding(value)
+        for key, value in pending.items():
+            if value is not None:
+                encoded[key] = guess_encoding(value)
+            else:
+                encoded[key] = None
 
         source_name = getUtility(
             ISourcePackageNameSet).getOrCreateByName(self.source)
@@ -442,15 +483,15 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             urgency=self.changes.converted_urgency,
             dsc=encoded['filecontents'],
             dscsigningkey=self.signingkey,
-            manifest=None,
             dsc_maintainer_rfc822=encoded['maintainer'],
             dsc_format=encoded['format'],
             dsc_binaries=encoded['binary'],
-            dsc_standards_version=encoded.get('standards-version', None),
+            dsc_standards_version=encoded.get('standards-version'),
             component=self.component,
-            changelog=guess_encoding(self.changes.simulated_changelog),
+            changelog=encoded.get('simulated_changelog'),
             section=self.section,
             archive=self.policy.archive,
+            copyright=encoded.get('copyright'),
             # dateuploaded by default is UTC:now in the database
             )
 

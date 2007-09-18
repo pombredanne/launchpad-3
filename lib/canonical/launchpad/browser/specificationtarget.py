@@ -34,7 +34,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url
-from zope.component import queryMultiAdapter        
+from zope.component import queryMultiAdapter
 
 class HasSpecificationsView(LaunchpadView):
     """Base class for several context-specific views that involve lists of
@@ -71,7 +71,7 @@ class HasSpecificationsView(LaunchpadView):
     is_sprint = False
     has_drivers = False
 
-    # XXX: this method is in need of simplication. (JSK)
+    # XXX jsk 2007-07-12: This method is in need of simplication.
     def initialize(self):
         mapping = {'name': self.context.displayname}
         if self.is_person:
@@ -326,8 +326,8 @@ class HasSpecificationsView(LaunchpadView):
         specs currently in the queue for this target. Save the plan in
         self._plan, and put any dangling specs in self._dangling.
         """
-        # XXX sabdfl 2006-04-07 this is incomplete and will not build a
-        # proper comprehensive roadmap
+        # XXX sabdfl 2006-04-07: This is incomplete and will not build a
+        # proper comprehensive roadmap.
         plan = []
         filter = [
             SpecificationFilter.INCOMPLETE,

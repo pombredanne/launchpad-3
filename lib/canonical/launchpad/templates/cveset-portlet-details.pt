@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-details">
   <h2>About the CVE system</h2>
   <div class="portletBody portletContent">
     Launchpad includes full support for

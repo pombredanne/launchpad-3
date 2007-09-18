@@ -54,7 +54,8 @@ from canonical.launchpad.interfaces import (
     CreateBugParams, IAnswersFrontPageSearchForm, IBug, IFAQ, IFAQTarget,
     ILanguageSet, ILaunchpadStatisticSet, IProject, IQuestion,
     IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionLinkFAQForm,
-    IQuestionSet, IQuestionTarget, NotFoundError, UnexpectedFormData)
+    IQuestionSet, IQuestionTarget, QuestionAction, QuestionStatus,
+    QuestionSort, NotFoundError, UnexpectedFormData)
 
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
@@ -62,7 +63,6 @@ from canonical.launchpad.webapp import (
     custom_widget, redirection, safe_action, smartquote)
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
 from canonical.widgets import LaunchpadRadioWidget
 from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
@@ -106,10 +106,16 @@ class QuestionSetView(LaunchpadFormView):
     @action('Find Answers', name="search")
     def search_action(self, action, data):
         """Redirect to the proper search page based on the scope widget."""
-        scope = data['scope']
-        if scope is None:
+        # For the scope to be absent from the form, the user must
+        # build the query string themselves - most likely because they
+        # are a bot. In that case we just assume they want to search
+        # all projects.
+        scope = self.widgets['scope'].getScope()
+        if scope is None or scope == 'all':
             # Use 'All projects' scope.
             scope = self.context
+        else:
+            scope = self.widgets['scope'].getInputValue()
         self.next_url = "%s/+tickets?%s" % (
             canonical_url(scope), self.request['QUERY_STRING'])
 
@@ -145,7 +151,7 @@ class QuestionSetView(LaunchpadFormView):
     @property
     def latest_questions_solved(self):
         """Return the 10 latest questions solved."""
-        # XXX flacoste 2006/11/28 We should probably define a new
+        # XXX flacoste 2006-11-28: We should probably define a new
         # QuestionSort value allowing us to sort on dateanswered descending.
         return self.context.searchQuestions(
             status=QuestionStatus.SOLVED, sort=QuestionSort.NEWEST_FIRST)[:5]
@@ -362,7 +368,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     # The similar items will be held in the following properties.
     similar_questions = None
     similar_faqs = None
-    
+
     def setUpFields(self):
         """Set up the form_fields from the schema and custom_widgets."""
         # Add our language field with a vocabulary specialized for
@@ -415,7 +421,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
                 self.form_fields.select('description'), self.prefix,
                  self.context, self.request, data=self.initial_values,
                  ignore_request=False)
-        
+
         faqs = IFAQTarget(self.question_target).findSimilarFAQs(data['title'])
         self.similar_faqs = list(faqs[:self._MAX_SIMILAR_FAQS])
 
@@ -437,7 +443,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
             return self.search_template()
         return self.continue_action.success(data)
 
-    # XXX flacoste 2006/07/26 We use the method here instead of
+    # XXX flacoste 2006-07-26: We use the method here instead of
     # using the method name 'handleAddError' because of Zope issue 573
     # which is fixed in 3.3.0b1 and 3.2.1
     @action(_('Add'), failure=handleAddError)
@@ -451,7 +457,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
         question = self.question_target.newQuestion(
             self.user, data['title'], data['description'], data['language'])
 
-        # XXX flacoste 2006/07/25 This should be moved to newQuestion().
+        # XXX flacoste 2006-07-25: This should be moved to newQuestion().
         notify(SQLObjectCreatedEvent(question))
 
         self.request.response.redirect(canonical_url(question))
@@ -676,6 +682,12 @@ class QuestionWorkflowView(LaunchpadFormView):
         self.context.addComment(self.user, data['message'])
         self._addNotificationAndHandlePossibleSubscription(
             _('Thanks for your comment.'), data)
+
+    @property
+    def show_call_to_answer(self):
+        """Return whether the call to answer should be displayed."""
+        return (self.user != self.context.owner and
+                self.context.can_give_answer)
 
     def canAddAnswer(self, action):
         """Return whether the answer action should be displayed."""
@@ -998,7 +1010,7 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
     searchDisplayWidth = 30
 
     searchButtonLabel = _('Search')
-    
+
     @property
     def search_field_name(self):
         """Return the name to use for the search field."""

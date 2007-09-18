@@ -57,9 +57,9 @@ class BuilderGroup:
         self.logger.debug("Finding XMLRPC clients for the builders")
 
         for builder in self.builders:
-            # XXX RBC 20070523: builders that are not 'ok' are not worth
-            # rechecking here for some currently undocumented reason.
-            # See further information on bug #31546 and #30633
+            # XXX RBC 2007-05-23 bug 31546, 30633: builders that are not 'ok'
+            # are not worth rechecking here for some currently undocumented
+            # reason.
             if builder.builderok:
                 self.updateBuilderStatus(builder, arch)
 
@@ -78,15 +78,15 @@ class BuilderGroup:
             builder.checkSlaveAlive()
             builder.checkCanBuildForDistroArchSeries(arch)
         # Catch only known exceptions.
-        # XXX cprov 20070615: ValueError & TypeError catching is disturbing
-        # in this context. We should spend sometime sanitizing the exceptions
-        # raised in the Builder API since we already started the main
-        # refactoring of this area. See bug #120571.
+        # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
+        # disturbing in this context. We should spend sometime sanitizing the
+        # exceptions raised in the Builder API since we already started the
+        # main refactoring of this area.
         except (ValueError, TypeError, xmlrpclib.Fault,
                 socket.error, BuildDaemonError), reason:
-            # XXX cprov 20070615: repr() is required for socket.error, however
-            # it's not producing anything 'readable' on Builder.failurenotes.
-            # it need attention at some point.
+            # XXX cprov 2007-06-15: repr() is required for socket.error,
+            # however it's not producing anything 'readable' on
+            # Builder.failurenotes. it need attention at some point.
             builder.failbuilder(repr(reason))
             self.logger.debug("Builder on %s marked as failed due to: %r",
                               builder.url, reason, exc_info=True)
@@ -160,7 +160,7 @@ class BuilderGroup:
         Set builderok as False, store the reason in failnotes and update
         the list of working builders (self.okslaves).
         """
-        # XXX cprov 20070417: ideally we should be able to notify the
+        # XXX cprov 2007-04-17: ideally we should be able to notify the
         # the buildd-admins about FAILED builders. One alternative is to
         # make the buildd_cronscript (slave-scanner, in this case) to exit
         # with error, for those cases buildd-sequencer automatically sends
@@ -185,7 +185,7 @@ class BuilderGroup:
             (builder_status, build_id, build_status, logtail, filemap,
              dependencies) = queueItem.builder.slaveStatus()
         except (xmlrpclib.Fault, socket.error), info:
-            # XXX cprov 20050629
+            # XXX cprov 2005-06-29:
             # Hmm, a problem with the xmlrpc interface,
             # disable the builder ?? or simple notice the failure
             # with a timestamp.
@@ -224,7 +224,7 @@ class BuilderGroup:
 
         method = builder_status_handlers[builder_status]
         try:
-            # XXX cprov 20070525: We need this code for WAITING status
+            # XXX cprov 2007-05-25: We need this code for WAITING status
             # handler only until we are able to also move it to
             # BuildQueue content class and avoid to pass 'queueItem'.
             if builder_status == 'BuilderStatus.WAITING':
@@ -255,7 +255,7 @@ class BuilderGroup:
         """
         librarian = getUtility(ILibrarianClient)
 
-        # XXX: dsilvers: 20050302: Confirm the builder has the right build?
+        # XXX: dsilvers 2005-03-02: Confirm the builder has the right build?
         assert build_status.startswith('BuildStatus.'), (
             'Malformed status string: %s' % build_status)
 
@@ -277,9 +277,9 @@ class BuilderGroup:
         queueItem.build.buildlog = self.getLogFromSlave(queueItem)
         queueItem.build.builder = queueItem.builder
         queueItem.build.dependencies = dependencies
-        # XXX cprov 2060615: Currently buildduration includes the scanner
-        # latency, it should really be asking the slave for the duration
-        # spent building locally. See bug #120584
+        # XXX cprov 20060615 bug=120584: Currently buildduration includes
+        # the scanner latency, it should really be asking the slave for
+        # the duration spent building locally.
         queueItem.build.datebuilt = UTC_NOW
         # We need dynamic datetime.now() instance to be able to perform
         # the time operations for duration.
@@ -295,11 +295,13 @@ class BuilderGroup:
         directory, store build information and push them through the
         uploader.
         """
+        # XXX cprov 2007-07-11 bug=129487: untested code path.
+
         self.logger.debug("Processing successful build %s" % buildid)
         # Explode before collect a binary that is denied in this
         # distroseries/pocket
         build = queueItem.build
-        if build.archive == build.distroseries.main_archive:
+        if not build.archive.allowUpdatesToReleasePocket():
             assert build.distroseries.canUploadToPocket(build.pocket), (
                 "%s (%s) can not be built for pocket %s: illegal status"
                 % (build.title, build.id,
@@ -363,7 +365,7 @@ class BuilderGroup:
         # Nothing should be written to the stdout/stderr.
         upload_stdout, upload_stderr = uploader_process.communicate()
 
-        # XXX cprov 20070417: we do not check uploader_result_code
+        # XXX cprov 2007-04-17: we do not check uploader_result_code
         # anywhere. We need to find out what will be best strategy
         # when it failed HARD (there is a huge effort in process-upload
         # to not return error, it only happen when the code is broken).
@@ -390,7 +392,7 @@ class BuilderGroup:
 
         original_slave = queueItem.builder.slave
 
-        # XXX Robert Collins, Celso Providelo 20070526:
+        # XXX Robert Collins, Celso Providelo 2007-05-26:
         # 'Refreshing' objects  procedure  is forced on us by using a
         # different process to do the upload, but as that process runs
         # in the same unix account, it is simply double handling and we
@@ -398,7 +400,7 @@ class BuilderGroup:
         flush_database_updates()
         clear_current_connection_cache()
 
-        # XXX cprov 20070615: Re-issuing removeSecurityProxy is forced on
+        # XXX cprov 2007-06-15: Re-issuing removeSecurityProxy is forced on
         # us by sqlobject refreshing the builder object during the
         # transaction cache clearing. Once we sort the previous problem
         # this step should probably not be required anymore.
@@ -534,7 +536,7 @@ class BuilderGroup:
                             % (buildid, queueItem.builder.name))
         queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
-        # XXX cprov 20060530: Currently this information is not
+        # XXX cprov 2006-05-30: Currently this information is not
         # properly presented in the Web UI. We will discuss it in
         # the next Paris Summit, infinity has some ideas about how
         # to use this content. For now we just ensure it's stored.

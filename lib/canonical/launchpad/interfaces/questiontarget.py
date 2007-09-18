@@ -18,7 +18,8 @@ from zope.schema import Choice, List, Set, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.questioncollection import (
     ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.lp.dbschema import QuestionSort
+from canonical.launchpad.interfaces.questionenums import (
+    QuestionSort, QuestionStatus)
 
 
 class IQuestionTarget(ISearchableByQuestionOwner):
@@ -91,7 +92,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         :language: an ILanguage or None. When language is none, all
                    answer contacts are returned.
 
-        Return an INotificationRecipientSet of the answer contacts and the 
+        Return an INotificationRecipientSet of the answer contacts and the
         reason they are recipients of an email. The answer contacts are
         selected by their language and the fact that they are answer contacts
         for the QuestionTarget.
@@ -121,6 +122,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
             "inherited from other context.)"),
         value_type=Choice(vocabulary="ValidPersonOrTeam"))
 
+
 # These schemas are only used by browser/questiontarget.py and should really
 # live there. See Bug #66950.
 class ISearchQuestionsForm(Interface):
@@ -129,11 +131,11 @@ class ISearchQuestionsForm(Interface):
     search_text = TextLine(title=_('Search text'), required=False)
 
     sort = Choice(title=_('Sort order'), required=True,
-                  vocabulary='QuestionSort',
+                  vocabulary=QuestionSort,
                   default=QuestionSort.RELEVANCY)
 
     status = Set(title=_('Status'), required=False,
-                 value_type=Choice(vocabulary='QuestionStatus'),
+                 value_type=Choice(vocabulary=QuestionStatus),
                  default=sets.Set(QUESTION_STATUS_DEFAULT_SEARCH))
 
 

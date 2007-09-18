@@ -4,9 +4,9 @@
 
 
 # Bugzilla schema:
-#  http://lxr.mozilla.org/mozilla/source/webtools/bugzilla/Bugzilla/DB/Schema.pm
+# http://lxr.mozilla.org/mozilla/source/webtools/bugzilla/Bugzilla/DB/Schema.pm
 
-# XXX: 20051018 jamesh
+# XXX: jamesh 2005-10-18
 # Currently unhandled bug info:
 #  * Operating system and platform
 #  * version (not really used in Ubuntu bugzilla though)
@@ -28,13 +28,13 @@ import pytz
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, IBugSet, IBugTaskSet,
-    IBugExternalRefSet, IBugAttachmentSet, IMessageSet,
-    ILibraryFileAliasSet, ICveSet, IBugWatchSet, PersonCreationRationale,
-    ILaunchpadCelebrities, NotFoundError, CreateBugParams)
+    BugTaskStatus, IPersonSet, IEmailAddressSet, IBugSet, IBugTaskSet,
+    IBugExternalRefSet, IBugAttachmentSet, IMessageSet, ILibraryFileAliasSet,
+    ICveSet, IBugWatchSet, PersonCreationRationale, ILaunchpadCelebrities,
+    NotFoundError, CreateBugParams)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType)
+    BugTaskImportance, BugAttachmentType)
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugzilla')
 
@@ -126,7 +126,7 @@ class BugzillaBackend:
                             '  FROM longdescs '
                             '  WHERE bug_id = %d '
                             '  ORDER BY bug_when' % bug_id)
-        # XXX: 2005-12-07 jamesh
+        # XXX: jamesh 2005-12-07:
         # Due to a bug in Debzilla, Ubuntu bugzilla bug 248 has > 7800
         # duplicate comments,consisting of someone's signature.
         # For the import, just ignore those comments.
@@ -238,7 +238,7 @@ class Bug:
         to the bug task's status explanation.
         """
         bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
-        
+
         if self.bug_status == 'ASSIGNED':
             bugtask.transitionToStatus(
                 BugTaskStatus.CONFIRMED, bug_importer)
@@ -328,7 +328,7 @@ class Bugzilla:
             assert emailaddr is not None
             if person.preferredemail != emailaddr:
                 person.validateAndEnsurePreferredEmail(emailaddr)
-                
+
             self.person_mapping[bugzilla_id] = person.id
 
         return person
@@ -351,7 +351,7 @@ class Bugzilla:
                 pkgname = 'linux-source-2.6.15'
         else:
             pkgname = bug.component.encode('ASCII')
-        
+
         try:
             srcpkg, binpkg = self.ubuntu.guessPackageNames(pkgname)
         except NotFoundError, e:
@@ -412,10 +412,10 @@ class Bugzilla:
             logger.warning('could not find upstream product for '
                            'source package "%s"', srcpkgname.name)
             return None
-        
+
     _bug_re = re.compile('bug\s*#?\s*(?P<id>\d+)', re.IGNORECASE)
     def replaceBugRef(self, match):
-        # XXX: 20051024 jamesh
+        # XXX: jamesh 2005-10-24:
         # this is where bug number rewriting would be plugged in
         bug_id = int(match.group('id'))
         url = '%s/%d' % (canonical_url(self.bugtracker), bug_id)
@@ -429,7 +429,7 @@ class Bugzilla:
         a bug watch), it is skipped.
         """
         logger.info('Handling Bugzilla bug %d', bug_id)
-        
+
         # is there a bug watch on the bug?
         lp_bug = self.bugset.queryByRemoteBug(self.bugtracker, bug_id)
 

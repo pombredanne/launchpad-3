@@ -4,7 +4,15 @@
 
 __metaclass__ = type
 
+from datetime import datetime, timedelta
 from unittest import TestCase, TestLoader
+
+import pytz
+
+import transaction
+
+from canonical.codehosting.tests.helpers import BranchTestCase
+from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
@@ -62,8 +70,9 @@ class TestBranchSet(TestCase):
         original_branches = list(
             self.branch_set.getLatestBranchesForProduct(self.product, 5))
         branch = original_branches[0]
-        # XXX: JonathanLange 2007-07-06, WHITEBOXING. The anonymous user cannot
-        # change branch details, so we remove the security proxy and change it.
+        # XXX: JonathanLange 2007-07-06: WHITEBOXING. The anonymous user
+        # cannot change branch details, so we remove the security proxy and
+        # change it.
         branch = removeSecurityProxy(branch)
         branch.lifecycle_status = BranchLifecycleStatus.ABANDONED
         syncUpdate(branch)
@@ -84,10 +93,168 @@ class TestBranchSet(TestCase):
             expected_branches = branch_set.getBranchesForOwners(
                 list(branch_owner.teams_participated_in) + [branch_owner])
             expected_branches = [
-                branch for branch in expected_branches if branch.url is None]
+                branch for branch in expected_branches
+                if branch.branch_type == BranchType.HOSTED]
             self.assertEqual(expected_branches, branches)
         finally:
             logout()
+
+
+class TestMirroring(BranchTestCase):
+    """Tests for mirroring methods of a branch."""
+
+    def setUp(self):
+        BranchTestCase.setUp(self)
+        login(ANONYMOUS)
+        self.emptyPullQueues()
+
+    def tearDown(self):
+        logout()
+        BranchTestCase.tearDown(self)
+
+    def assertBetween(self, lower_bound, variable, upper_bound):
+        """Assert that 'variable' is strictly between two boundaries."""
+        self.assertTrue(
+            lower_bound < variable < upper_bound,
+            "%r < %r < %r" % (lower_bound, variable, upper_bound))
+
+    def getNow(self):
+        """Return a datetime representing 'now' in UTC."""
+        return datetime.now(pytz.timezone('UTC'))
+
+    def test_requestMirror(self):
+        """requestMirror sets the mirror request time to 'now'."""
+        branch = self.makeBranch()
+        branch.requestMirror()
+        self.assertEqual(UTC_NOW, branch.mirror_request_time)
+
+    def test_requestMirrorDuringPull(self):
+        """Branches can have mirrors requested while they are being mirrored.
+        If so, they should not be removed from the pull queue when the mirror
+        is complete.
+        """
+        # We run these in separate transactions so as to have the times set to
+        # different values. This is closer to what happens in production.
+        branch = self.makeBranch()
+        branch.startMirroring()
+        transaction.commit()
+        branch.requestMirror()
+        removeSecurityProxy(branch).sync()
+        self.assertNotEqual(
+            branch.last_mirror_attempt, branch.mirror_request_time)
+        mirror_request_time = branch.mirror_request_time
+        branch.mirrorComplete('rev1')
+        self.assertEqual(mirror_request_time, branch.mirror_request_time)
+
+    def test_mirrorCompleteRemovesFromPullQueue(self):
+        """Completing the mirror removes the branch from the pull queue."""
+        branch = self.makeBranch()
+        branch.requestMirror()
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
+        self.assertEqual(
+            [], list(self.branch_set.getPullQueue(branch.branch_type)))
+
+    def test_mirroringResetsMirrorRequestForHostedBranches(self):
+        """Mirroring hosted branches resets their mirror request times."""
+        branch = self.makeBranch(BranchType.HOSTED)
+        branch.requestMirror()
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
+        self.assertEqual(None, branch.mirror_request_time)
+
+    def test_mirroringResetsMirrorRequestForImportedBranches(self):
+        """Mirroring hosted branches resets their mirror request times."""
+        branch = self.makeBranch(BranchType.IMPORTED)
+        branch.requestMirror()
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
+        self.assertEqual(None, branch.mirror_request_time)
+
+    def test_mirroringResetsMirrorRequestForMirroredBranches(self):
+        """Mirroring 'mirrored' branches sets their mirror request time to six
+        hours in the future.
+        """
+        before_request = self.getNow()
+        branch = self.makeBranch(BranchType.MIRRORED)
+        branch.requestMirror()
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
+        after_request = self.getNow()
+        self.assertBetween(
+            before_request, branch.mirror_request_time - timedelta(hours=6),
+            after_request)
+
+    def test_mirrorFailureResetsMirrorRequestForHostedBranches(self):
+        before_request = self.getNow()
+        branch = self.makeBranch(BranchType.HOSTED)
+        branch.requestMirror()
+        branch.mirrorFailed('No particular reason')
+        after_request = self.getNow()
+        self.assertBetween(
+            before_request, branch.mirror_request_time - timedelta(hours=6),
+            after_request)
+
+    def test_mirrorFailureResetsMirrorRequestForImportedBranches(self):
+        before_request = self.getNow()
+        branch = self.makeBranch(BranchType.IMPORTED)
+        branch.requestMirror()
+        branch.mirrorFailed('No particular reason')
+        after_request = self.getNow()
+        self.assertBetween(
+            before_request, branch.mirror_request_time - timedelta(hours=6),
+            after_request)
+
+    def test_mirrorFailureResetsMirrorRequestForMirroredBranches(self):
+        before_request = self.getNow()
+        branch = self.makeBranch(BranchType.MIRRORED)
+        branch.requestMirror()
+        branch.mirrorFailed('No particular reason')
+        after_request = self.getNow()
+        self.assertBetween(
+            before_request, branch.mirror_request_time - timedelta(hours=6),
+            after_request)
+
+    def test_pullQueueEmpty(self):
+        """Branches with no mirror_request_time are not in the pull queue."""
+        for branch_type in BranchType.items:
+            self.assertEqual(
+                [], list(self.branch_set.getPullQueue(branch_type)))
+
+    def test_pastMirrorRequestTimeInQueue(self):
+        """Branches with mirror_request_time in the past are mirrored."""
+        transaction.begin()
+        branch = self.makeBranch()
+        branch.requestMirror()
+        branch_id = branch.id
+        transaction.commit()
+        self.assertEqual(
+            [branch_id],
+            [branch.id
+             for branch in self.branch_set.getPullQueue(branch.branch_type)])
+
+    def test_futureMirrorRequestTimeInQueue(self):
+        """Branches with mirror_request_time in the future are not mirrored."""
+        transaction.begin()
+        branch = removeSecurityProxy(self.makeBranch())
+        tomorrow = self.getNow() + timedelta(1)
+        branch.mirror_request_time = tomorrow
+        branch.syncUpdate()
+        transaction.commit()
+        self.assertEqual(
+            [], list(self.branch_set.getPullQueue(branch.branch_type)))
+
+    def test_pullQueueOrder(self):
+        """Pull queue has the oldest mirror request times first."""
+        branches = []
+        for i in range(3):
+            branch = removeSecurityProxy(self.makeBranch(BranchType.HOSTED))
+            branch.mirror_request_time = self.getNow() - timedelta(hours=i+1)
+            branch.sync()
+            branches.append(branch)
+        self.assertEqual(
+            list(reversed(branches)),
+            list(self.branch_set.getPullQueue(BranchType.HOSTED)))
 
 
 class BranchVisibilityPolicyTestCase(TestCase):
@@ -702,8 +869,8 @@ class JunkBranches(BranchVisibilityPolicyTestCase):
         as public branches.
         """
         self.assertPublic(self.albert, self.albert)
-        # XXX: thumper 2007-06-22
-        # bug 120501 is about whether or not users are able to create junk
+        # XXX: thumper 2007-06-22 bug=120501
+        # Bug 120501 is about whether or not users are able to create junk
         # branches in the team namespace.
         self.assertPublic(self.albert, self.xray)
         self.assertPublic(self.albert, self.yankee)

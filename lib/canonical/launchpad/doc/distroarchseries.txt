@@ -1,6 +1,6 @@
 Distro Arch Release
 ^^^^^^^^^^^^^^^^^^^
-   >>> from zope.interface.verify import verifyObject
+   >>> from canonical.launchpad.webapp.testing import verifyObject
 
    >>> from canonical.launchpad.interfaces import (
    ...    IDistroArchSeriesBinaryPackageRelease,
@@ -14,8 +14,8 @@ Distro Arch Release
 
    >>> hoary_i386 = DistroArchSeries.get(6)
 
-XXX: This needs many more tests to be effective.
-     bug 3257
+# XXX: daniels 2005-10-17 bug=3257:
+#      This needs many more tests to be effective.
 
 
 Distro Arch Releases can tell you about their published releases.
@@ -64,8 +64,8 @@ not fti-matchable, such as "linux-2.6.12", and substrings:
    >>> len(results)
    1
 
-   XXX cprov 20060321: Broken implementation, missing lastversions
-   attribute.
+   # XXX cprov 2006-03-21: Broken implementation, missing lastversions
+   # attribute.
    verifyObject(IDistroArchSeriesBinaryPackageRelease, pmount)
    True
 
@@ -91,8 +91,8 @@ Most recent published history row:
 
    >>> bpph = pmount_hoary_i386.current_published
 
-   XXX cprov 20060322: the object doesn't pass verifyObject()
-   due the lack of distroarchseriesbinarypackagerelease attribute.
+   # XXX cprov 2006-03-22: The object doesn't pass verifyObject()
+   # due the lack of distroarchseriesbinarypackagerelease attribute.
 
    >>> IBinaryPackagePublishingHistory.providedBy(bpph)
    True

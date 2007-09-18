@@ -1,8 +1,9 @@
 <div id="structuralobjectheading">
   <div tal:replace="structure context/fmt:heading_icon|nothing" />
   <tal:comment condition="nothing">
-    XXX: This is a hack because we don't have a heading_icon for pages like
-    /people, /distros, /products, etc.
+    <!-- XXX: Guilherme Salgado 2007-03-08:
+    This is a hack because we don't have a heading_icon for pages like
+    /people, /distros, /products, etc. -->
   </tal:comment>
   <img tal:replace="structure context/image:logo"
        alt="" src="/@@/nyet-logo" />

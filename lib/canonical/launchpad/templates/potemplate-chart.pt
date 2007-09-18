@@ -45,8 +45,9 @@
         </td>
         <td>
           <tal:comment condition="nothing">
-              XXX CarlosPerelloMarin 20070212: This code is exactly the same
-              as in distroserieslanguage-index.pt
+             <!-- XXX CarlosPerelloMarin 2007-02-12:
+                  This code is exactly the same
+                  as in distroserieslanguage-index.pt -->
           </tal:comment>
           <tal:block condition="pf/last_touched_pomsgset">
             <a tal:attributes="

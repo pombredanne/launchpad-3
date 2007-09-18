@@ -1,24 +1,109 @@
 <configure
-    xmlns="http://namespaces.zope.org/zope"
-    xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
-    xmlns:i18n="http://namespaces.zope.org/i18n"
-    i18n_domain="launchpad">
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:lp="http://launchpad.canonical.com"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
 
-    <!-- Archive -->
-    <content class="canonical.launchpad.database.Archive">
-       <allow interface="canonical.launchpad.interfaces.IArchive"/>
-    </content>
+  <!-- Archive -->
+  <content class="canonical.launchpad.database.Archive">
+    <allow interface="canonical.launchpad.interfaces.IArchive"/>
+    <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+    <require
+      permission="launchpad.Edit"
+      set_attributes="description whiteboard"
+      />
+    <require
+      permission="launchpad.Admin"
+      set_attributes="distribution purpose enabled authorized_size"
+      />
+  </content>
 
-    <!-- ArchiveSet -->
-    <content class="canonical.launchpad.database.ArchiveSet">
-        <allow interface="canonical.launchpad.interfaces.IArchiveSet"/>
-    </content>
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IArchive"
+    name="+index"
+    />
 
-    <securedutility
-        class="canonical.launchpad.database.ArchiveSet"
-        provides="canonical.launchpad.interfaces.IArchiveSet">
-        <allow interface="canonical.launchpad.interfaces.IArchiveSet" />
-    </securedutility>
+  <browser:menus
+    module="canonical.launchpad.browser.archive"
+    classes="ArchiveFacets ArchiveOverviewMenu"
+    />
+
+  <browser:navigation
+    module="canonical.launchpad.browser"
+    classes="ArchiveNavigation"
+    />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.IArchive"
+    path_expression="string:+archive"
+    attribute_to_parent="owner"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.ArchiveView">
+    <browser:page
+      template="../templates/archive-index.pt"
+      facet="overview"
+      name="+index"
+      />
+    <browser:page
+      template="../templates/archive-ppa-row.pt"
+      facet="overview"
+      name="+ppa-row"
+      />
+    <browser:page
+      template="../templates/archive-view-tos.pt"
+      facet="overview"
+      name="+view-tos"
+      />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.ArchiveBuildsView">
+    <browser:page
+      name="+builds"
+      facet="overview"
+      template="../templates/archive-builds.pt"
+      />
+    <browser:page
+      name="+builds-list"
+      template="../templates/builds-list.pt"
+      />
+  </browser:pages>
+
+  <browser:page
+    name="+edit"
+    facet="overview"
+    for="canonical.launchpad.interfaces.IArchive"
+    class="canonical.launchpad.browser.ArchiveEditView"
+    permission="launchpad.Edit"
+    template="../templates/archive-edit.pt"
+    />
+
+  <browser:page
+    name="+admin"
+    facet="overview"
+    for="canonical.launchpad.interfaces.IArchive"
+    class="canonical.launchpad.browser.ArchiveAdminView"
+    permission="launchpad.Admin"
+    template="../templates/archive-admin.pt"
+    />
+
+
+  <!-- ArchiveSet -->
+  <content class="canonical.launchpad.database.ArchiveSet">
+    <allow interface="canonical.launchpad.interfaces.IArchiveSet"/>
+  </content>
+
+  <securedutility
+    class="canonical.launchpad.database.ArchiveSet"
+    provides="canonical.launchpad.interfaces.IArchiveSet">
+    <allow interface="canonical.launchpad.interfaces.IArchiveSet" />
+  </securedutility>
 
 </configure>

@@ -32,7 +32,7 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
     RedirectAwareProberProtocol, probe_archive_mirror, probe_cdimage_mirror,
     should_skip_host, PER_HOST_REQUESTS, MIN_REQUEST_TIMEOUT_RATIO,
     MIN_REQUESTS_TO_CONSIDER_RATIO, _build_request_for_cdimage_file_list,
-    restore_http_proxy)
+    restore_http_proxy, MultiLock, OVERALL_REQUESTS, RequestManager)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 
@@ -283,7 +283,7 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
         self.failUnless(should_skip_host(self.host))
 
     def test_connect_is_called_if_not_many_timeouts(self):
-        # If the ratio is not too small we consider it's safe to keep 
+        # If the ratio is not too small we consider it's safe to keep
         # issuing connections on that host.
         requests = MIN_REQUESTS_TO_CONSIDER_RATIO
         timeouts = (
@@ -363,6 +363,85 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TwistedTestCase):
         d = self._createProberAndProbe(
             u'http://%s:%s/timeout' % (host, self.port))
         return self.assertFailure(d, ConnectionSkipped)
+
+
+class TestMultiLock(TestCase):
+
+    def setUp(self):
+        self.lock_one = defer.DeferredLock()
+        self.lock_two = defer.DeferredLock()
+        self.multi_lock = MultiLock(self.lock_one, self.lock_two)
+        self.count = 0
+
+    def callback(self):
+        self.count += 1
+
+    def test_run_does_not_wait_when_there_is_no_need_to(self):
+        """Multilock.run will run any given task if it's not locked and
+        there's no task currently running.
+        """
+        self.multi_lock.run(self.callback)
+        self.assertEquals(self.count, 1, "self.callback should have run.")
+
+        self.multi_lock.run(self.callback)
+        self.assertEquals(
+            self.count, 2, "self.callback should have run twice.")
+
+    def test_run_waits_for_first_lock(self):
+        """MultiLock.run acquires the first lock before running a function."""
+        # Keep lock_one busy.
+        deferred = defer.Deferred()
+        self.lock_one.run(lambda: deferred)
+
+        # Run self.callback when self.multi_lock is acquired.
+        self.multi_lock.run(self.callback)
+        self.assertEquals(
+            self.count, 0, "self.callback should not have run yet.")
+
+        # Release lock_one.
+        deferred.callback(None)
+
+        # multi_lock will now have been able to acquire both semaphores, and
+        # so it will have run its task.
+        self.assertEquals(self.count, 1, "self.callback should have run.")
+
+    def test_run_waits_for_second_lock(self):
+        """MultiLock.run acquires the second lock before running a function."""
+        # Keep lock_two busy.
+        deferred = defer.Deferred()
+        self.lock_two.run(lambda: deferred)
+
+        # Run self.callback when self.multi_lock is acquired.
+        self.multi_lock.run(self.callback)
+        self.assertEquals(
+            self.count, 0, "self.callback should not have run yet.")
+
+        # Release lock_two.
+        deferred.callback(None)
+
+        # multi_lock will now have been able to acquire both semaphores, and
+        # so it will have run its task.
+        self.assertEquals(self.count, 1, "self.callback should have run.")
+
+    def test_run_waits_for_current_task(self):
+        """MultiLock.run waits the end of the current task before running the
+        next.
+        """
+        # Keep multi_lock busy.
+        deferred = defer.Deferred()
+        self.multi_lock.run(lambda: deferred)
+
+        # Run self.callback when self.multi_lock is acquired.
+        self.multi_lock.run(self.callback)
+        self.assertEquals(
+            self.count, 0, "self.callback should not have run yet.")
+
+        # Release lock_one.
+        deferred.callback(None)
+
+        # multi_lock will now have been able to acquire both semaphores, and
+        # so it will have run its task.
+        self.assertEquals(self.count, 1, "self.callback should have run.")
 
 
 class TestRedirectAwareProberFactoryAndProtocol(TestCase):
@@ -573,6 +652,11 @@ class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
 
     def setUp(self):
         self.logger = None
+        # RequestManager uses a mutable class attribute (host_locks) to ensure
+        # all of its instances share the same locks. We don't want our tests
+        # to interfere with each other, though, so we'll clean
+        # RequestManager.host_locks here.
+        RequestManager.host_locks.clear()
 
     def test_MirrorCDImageSeries_records_are_deleted_before_probing(self):
         mirror = DistributionMirror.byName('releases-mirror2')
@@ -607,46 +691,45 @@ class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
         The given probe_function must be either probe_cdimage_mirror or
         probe_archive_mirror.
         """
-        host_semaphores = {}
+        request_manager = RequestManager()
         mirror1_host = URI(mirror1.base_url).host
         mirror2_host = URI(mirror2.base_url).host
         mirror3_host = URI(mirror3.base_url).host
 
-        probe_function(
-            mirror1, StringIO(), [], logging, host_semaphores=host_semaphores)
+        probe_function(mirror1, StringIO(), [], logging)
         # Since we have a single mirror to probe we need to have a single
-        # Deferred with a limit of 1, to ensure we don't issue simultaneous
-        # connections on that mirror.
-        self.assertEquals(len(host_semaphores), 1)
-        self.assertEquals(
-            host_semaphores[mirror1_host].limit, PER_HOST_REQUESTS)
+        # DeferredSemaphore with a limit of PER_HOST_REQUESTS, to ensure we
+        # don't issue too many simultaneous connections on that host.
+        self.assertEquals(len(request_manager.host_locks), 1)
+        multi_lock = request_manager.host_locks[mirror1_host]
+        self.assertEquals(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
+        # Note that our multi_lock contains another semaphore to control the
+        # overall number of requests.
+        self.assertEquals(multi_lock.overall_lock.limit, OVERALL_REQUESTS)
 
-        probe_function(
-            mirror2, StringIO(), [], logging, host_semaphores=host_semaphores)
+        probe_function(mirror2, StringIO(), [], logging)
         # Now we have two mirrors to probe, but they have the same hostname,
         # so we'll still have a single semaphore in host_semaphores.
         self.assertEquals(mirror2_host, mirror1_host)
-        self.assertEquals(len(host_semaphores), 1)
-        self.assertEquals(
-            host_semaphores[mirror1_host].limit, PER_HOST_REQUESTS)
+        self.assertEquals(len(request_manager.host_locks), 1)
+        multi_lock = request_manager.host_locks[mirror2_host]
+        self.assertEquals(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
 
-        probe_function(
-            mirror3, StringIO(), [], logging, host_semaphores=host_semaphores)
+        probe_function(mirror3, StringIO(), [], logging)
         # This third mirror is on a separate host, so we'll have a second
         # semaphore added to host_semaphores.
         self.failUnless(mirror3_host != mirror1_host)
-        self.assertEquals(len(host_semaphores), 2)
-        self.assertEquals(
-            host_semaphores[mirror3_host].limit, PER_HOST_REQUESTS)
+        self.assertEquals(len(request_manager.host_locks), 2)
+        multi_lock = request_manager.host_locks[mirror3_host]
+        self.assertEquals(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
 
         # When using an http_proxy, even though we'll actually connect to the
         # proxy, we'll use the mirror's host as the key to find the semaphore
         # that should be used
         orig_proxy = os.getenv('http_proxy')
         os.environ['http_proxy'] = 'http://squid.internal:3128/'
-        probe_function(
-            mirror3, StringIO(), [], logging, host_semaphores=host_semaphores)
-        self.assertEquals(len(host_semaphores), 2)
+        probe_function(mirror3, StringIO(), [], logging)
+        self.assertEquals(len(request_manager.host_locks), 2)
         restore_http_proxy(orig_proxy)
 
 

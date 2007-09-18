@@ -12,9 +12,12 @@
     <content class="canonical.launchpad.database.PackageUpload">
       <implements
           interface="canonical.launchpad.interfaces.IPackageUpload" />
+      <allow 
+          attributes="status"
+          />
       <require
           permission="launchpad.View"
-          attributes="id status distroseries pocket changesfile
+          attributes="id distroseries pocket changesfile
                       signing_key archive sources builds customfiles
                       datecreated sourcepackagerelease
                       containsSource containsBuild
@@ -30,6 +33,19 @@
           set_attributes="status distroseries pocket changesfile archive"
           />
     </content>
+
+    <browser:pages
+      for="canonical.launchpad.interfaces.IPackageUpload"
+      permission="zope.Public">
+      <browser:page
+        name="+filelist"
+        template="../templates/packageupload-filelist.pt"
+        />
+      <browser:page
+        name="+iconlist"
+        template="../templates/packageupload-iconlist.pt"
+        />
+    </browser:pages>
 
     <content class="canonical.launchpad.database.PackageUploadSource">
         <allow interface="canonical.launchpad.interfaces.IPackageUploadSource" />

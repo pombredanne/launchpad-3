@@ -106,19 +106,10 @@ redirection for 2 hours:
     >>> print find_tags_by_class(beta_browser.contents,
     ...                          'informational message')[0]
     <div class="informational message">
-    <script type="text/javascript">
-      function inhibit_beta_redirect() {
-          var expire = new Date()
-          expire.setTime(expire.getTime() + 2 * 60 * 60 * 1000)
-          document.cookie = ('inhibit_beta_redirect=1; Path=/; Domain=.launchpad.dev; Expires=' +
-                             expire.toGMTString())
-          alert('You will not be redirected to the beta site for 2 hours');
-          return false;
-      }</script>
     <p>As a member of the Launchpad Beta Testers team, you will be
     redirected to the beta site when viewing Launchpad pages other
     than the front page.</p>
-    <p><button onclick="inhibit_beta_redirect()">Disable redirection
+    <p><button onclick="setBetaRedirect(false)">Disable redirection
     for 2 hours</button></p>
     </div>
 
@@ -135,19 +126,10 @@ default is to redirect if no cookie exists):
     >>> print find_tags_by_class(beta_browser.contents,
     ...                          'informational message')[0]
     <div class="informational message">
-    <script type="text/javascript">
-      function enable_beta_redirect() {
-          var expire = new Date()
-          expire.setTime(expire.getTime() + 1000)
-          document.cookie = ('inhibit_beta_redirect=0; Path=/; Domain=.launchpad.dev; Expires=' +
-                             expire.toGMTString())
-          alert('Redirection to the beta site has been enabled');
-          return false;
-      }</script>
     <p>As a member of the Launchpad Beta Testers team, you would
     normally be redirected to the beta site when viewing Launchpad
     pages.  However, you currently have this disabled.</p>
-    <p><button onclick="enable_beta_redirect()">Enable beta site
+    <p><button onclick="setBetaRedirect(true)">Enable beta site
     redirection</button></p>
     </div>
 

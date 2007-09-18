@@ -164,7 +164,7 @@ It takes a value from the FAQSort enumerated type. For example, the
 FAQSort.NEWEST_FIRST can be used to sort the results of a text
 search by date of creation (most recent first):
 
-    >>> from canonical.lp.dbschema import FAQSort
+    >>> from canonical.launchpad.interfaces import FAQSort
     >>> for faq in collection.searchFAQs(
     ...         search_text='install', sort=FAQSort.NEWEST_FIRST):
     ...     print faq.title

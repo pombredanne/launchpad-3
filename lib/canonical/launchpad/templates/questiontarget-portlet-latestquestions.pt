@@ -1,4 +1,5 @@
-<div class="portlet" tal:condition="view/getLatestQuestions">
+<div class="portlet" id="portlet-latest-questions"
+     tal:condition="view/getLatestQuestions">
   <h2>Latest questions</h2>
   <div class="portletBody portletContent">
 

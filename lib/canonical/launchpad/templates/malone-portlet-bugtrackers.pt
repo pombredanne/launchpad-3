@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-bugtrackers">
   <h2>Top bug trackers</h2>
   <div class="portletBody portletContent">
     The top bug trackers in Launchpad (by remote bug watches):

@@ -105,9 +105,10 @@ class CodeImportSet:
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
 
-    # XXX: newWithId is only needed for code-import-sync-script. This method
+    # XXX: DavidAllouche 2007-07-05:
+    # newWithId is only needed for code-import-sync-script. This method
     # should be removed after the transition to the new code import system is
-    # complete. -- DavidAllouche 2007-07-05
+    # complete.
 
     def newWithId(self, id, registrant, branch, rcs_type, svn_branch_url=None,
             cvs_root=None, cvs_module=None):

@@ -115,7 +115,7 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     def chooseLink(self):
         return """(<a href="%s">Choose&hellip;</a>)
 
-            <iframe style="display: none" 
+            <iframe style="display: none"
                     id="popup_iframe_%s"
                     name="popup_iframe_%s"></iframe>
         """ % (self.popupHref(), self.name, self.name)
@@ -129,10 +129,10 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
             ''''%s','300','420')'''
             ) % (self.context.vocabularyName, self.name, self.name, self.name)
         if self.onKeyPress:
-            # XXX: I suspect onkeypress() here is non-standard, but it
-            # works for me, and enough researching for tonight. It may
-            # be better to use dispatchEvent or a compatibility function
-            # -- kiko, 2005-09-27
+            # XXX kiko 2005-09-27: I suspect onkeypress() here is
+            # non-standard, but it works for me, and enough researching for
+            # tonight. It may be better to use dispatchEvent or a
+            # compatibility function
             template += ("; document.getElementById('%s').onkeypress()" %
                          self.name)
         return template

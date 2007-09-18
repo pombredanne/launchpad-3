@@ -5,25 +5,32 @@
 __metaclass__ = type
 
 import os
+import tempfile
 import unittest
 
 from bzrlib import errors
 from bzrlib.transport import get_transport, _get_protocol_handlers
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
-from bzrlib.tests import TestCase, TestCaseInTempDir
+from bzrlib.tests import TestCase
 
 from canonical.authserver.interfaces import READ_ONLY, WRITABLE
 from canonical.codehosting.tests.helpers import FakeLaunchpad
-from canonical.codehosting.transport import LaunchpadServer, makedirs
-from canonical.testing import BzrlibLayer
+from canonical.codehosting.transport import (
+    LaunchpadServer, makedirs, set_up_logging)
+from canonical.config import config
+
+from canonical.testing import BaseLayer
 
 
-class TestLaunchpadServer(TestCaseInTempDir):
+class TestLaunchpadServer(TestCase):
 
-    layer = BzrlibLayer
+    # bzrlib manipulates 'logging'. The test runner will generate spurious
+    # warnings if these manipulations are not cleaned up. BaseLayer does the
+    # cleanup we need.
+    layer = BaseLayer
 
     def setUp(self):
-        TestCaseInTempDir.setUp(self)
+        TestCase.setUp(self)
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         self.backing_transport = MemoryTransport()
@@ -135,7 +142,8 @@ class TestLaunchpadServer(TestCaseInTempDir):
 
 class TestLaunchpadTransport(TestCase):
 
-    layer = BzrlibLayer
+    # See comment on TestLaunchpadServer.
+    layer = BaseLayer
 
     def setUp(self):
         TestCase.setUp(self)
@@ -149,9 +157,9 @@ class TestLaunchpadTransport(TestCase):
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
         self.backing_transport.mkdir_multi(
-            ['00', '00/00', '00/00/00', '00/00/00/01'])
+            ['00', '00/00', '00/00/00', '00/00/00/01', '00/00/00/01/.bzr'])
         self.backing_transport.put_bytes(
-            '00/00/00/01/hello.txt', 'Hello World!')
+            '00/00/00/01/.bzr/hello.txt', 'Hello World!')
 
     def test_get_transport(self):
         # When the server is set up, getting a transport for the server URL
@@ -166,16 +174,17 @@ class TestLaunchpadTransport(TestCase):
         transport = get_transport(self.server.get_url())
         self.assertEqual(
             'Hello World!',
-            transport.get_bytes('~testuser/firefox/baz/hello.txt'))
+            transport.get_bytes('~testuser/firefox/baz/.bzr/hello.txt'))
 
     def test_put_mapped_file(self):
         # Putting a file from a public branch URL stores the file in the mapped
         # URL on the base transport.
         transport = get_transport(self.server.get_url())
-        transport.put_bytes('~testuser/firefox/baz/goodbye.txt', "Goodbye")
+        transport.put_bytes(
+            '~testuser/firefox/baz/.bzr/goodbye.txt', "Goodbye")
         self.assertEqual(
             "Goodbye",
-            self.backing_transport.get_bytes('00/00/00/01/goodbye.txt'))
+            self.backing_transport.get_bytes('00/00/00/01/.bzr/goodbye.txt'))
 
     def test_cloning_updates_base(self):
         # A transport can be constructed using a path relative to another
@@ -206,7 +215,7 @@ class TestLaunchpadTransport(TestCase):
         transport = get_transport(self.server.get_url())
         transport = transport.clone('~testuser')
         self.assertEqual(
-            'Hello World!', transport.get_bytes('firefox/baz/hello.txt'))
+            'Hello World!', transport.get_bytes('firefox/baz/.bzr/hello.txt'))
 
     def test_abspath(self):
         # abspath for a relative path is the same as the base URL for a clone
@@ -237,12 +246,12 @@ class TestLaunchpadTransport(TestCase):
         # target are virtual paths.
         transport = get_transport(self.server.get_url())
         transport.rename(
-            '~testuser/firefox/baz/hello.txt',
-            '~testuser/firefox/baz/goodbye.txt')
+            '~testuser/firefox/baz/.bzr/hello.txt',
+            '~testuser/firefox/baz/.bzr/goodbye.txt')
         self.assertEqual(
-            ['goodbye.txt'], transport.list_dir('~testuser/firefox/baz'))
+            ['goodbye.txt'], transport.list_dir('~testuser/firefox/baz/.bzr'))
         self.assertEqual(['goodbye.txt'],
-                         self.backing_transport.list_dir('00/00/00/01'))
+                         self.backing_transport.list_dir('00/00/00/01/.bzr'))
 
     def test_iter_files_recursive(self):
         # iter_files_recursive doesn't take a relative path but still needs to
@@ -266,19 +275,20 @@ class TestLaunchpadTransport(TestCase):
 
     def test_make_directory_under_branch_marks_as_dirty(self):
         transport = get_transport(self.server.get_url())
-        transport.mkdir('~testuser/firefox/baz/.bzr')
+        transport.mkdir('~testuser/firefox/baz/.bzr/some-directory')
         self.assertEqual(set([1]), self.server._dirty_branch_ids)
 
     def test_read_operation_doesnt_mark_as_dirty(self):
         transport = get_transport(self.server.get_url())
-        transport.has('~testuser/firefox/baz/hello.txt')
+        transport.has('~testuser/firefox/baz/.bzr/hello.txt')
         self.assertEqual(set([]), self.server._dirty_branch_ids)
 
 
 class TestLaunchpadTransportReadOnly(TestCase):
     """Tests for read-only operations on the LaunchpadTransport."""
 
-    layer = BzrlibLayer
+    # See comment on TestLaunchpadServer.
+    layer = BaseLayer
 
     def setUp(self):
         TestCase.setUp(self)
@@ -296,12 +306,13 @@ class TestLaunchpadTransportReadOnly(TestCase):
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
         self.transport = get_transport(self.server.get_url())
-        path = self.server.translate_virtual_path('/~testuser/firefox/baz')[0]
+        path = self.server.translate_virtual_path(
+            '/~testuser/firefox/baz/.bzr')[0]
         makedirs(self.backing_transport, path)
         self.backing_transport.put_bytes(
             os.path.join(path, 'hello.txt'), 'Hello World!')
         path = self.server.translate_virtual_path(
-            '/~name12/+junk/junk.dev/')[0]
+            '/~name12/+junk/junk.dev/.bzr')[0]
         makedirs(self.backing_transport, path)
         t = self.backing_transport.clone(path)
         t.put_bytes('README', 'Hello World!')
@@ -321,8 +332,8 @@ class TestLaunchpadTransportReadOnly(TestCase):
         transport = get_transport(self.server.get_url())
         self.assertRaises(
             errors.TransportNotPossible,
-            self.transport.rename, '/~testuser/firefox/baz/hello.txt',
-            '/~name12/+junk/junk.dev/goodbye.txt')
+            self.transport.rename, '/~testuser/firefox/baz/.bzr/hello.txt',
+            '/~name12/+junk/junk.dev/.bzr/goodbye.txt')
 
     def test_readonly_refers_to_mirror(self):
         # Read-only operations should get their data from the mirror, not the
@@ -331,7 +342,28 @@ class TestLaunchpadTransportReadOnly(TestCase):
         transport = get_transport(self.server.get_url())
         self.assertEqual(
             'Goodbye World!',
-            transport.get_bytes('/~name12/+junk/junk.dev/README'))
+            transport.get_bytes('/~name12/+junk/junk.dev/.bzr/README'))
+
+
+class TestLoggingSetup(TestCase):
+
+    def setUp(self):
+        TestCase.setUp(self)
+        self._real_debug_logfile = config.codehosting.debug_logfile
+
+    def tearDown(self):
+        config.codehosting.debug_logfile = self._real_debug_logfile
+        TestCase.tearDown(self)
+
+    def test_loggingSetUpAssertionFailsIfParentDirectoryIsNotADirectory(self):
+        # set_up_logging fails with an AssertionError if it cannot create the
+        # directory that the log file will go in.
+        file_handle, filename = tempfile.mkstemp()
+        config.codehosting.debug_logfile = os.path.join(filename, 'debug.log')
+        try:
+            self.assertRaises(AssertionError, set_up_logging)
+        finally:
+            os.unlink(filename)
 
 
 def test_suite():

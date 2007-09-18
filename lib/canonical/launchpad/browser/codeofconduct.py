@@ -194,7 +194,7 @@ class SignedCodeOfConductAckView(AddView):
         for key, value in data.items():
             kw[str(key)] = value
 
-        # XXX cprov 20050323
+        # XXX cprov 2005-03-23:
         # rename unused key:value
         kw['user'] = kw['owner']
         del kw['owner']
@@ -240,7 +240,7 @@ class SignedCodeOfConductAdminView:
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         self.results = sCoC_util.searchByDisplayname(name,
                                                      searchfor=searchfor)
-            
+
         return True
 
 
@@ -280,7 +280,7 @@ class SignedCodeOfConductActiveView(EditView):
             # now redirect to view the SignedCoC
             self.request.response.redirect(self.request.URL[-1])
 
-        # XXX: cprov 20050226
+        # XXX: cprov 2005-02-26:
         # How to proceed with no admincomment ?
 
 class SignedCodeOfConductDeactiveView(EditView):
@@ -321,13 +321,6 @@ class SignedCodeOfConductDeactiveView(EditView):
             self.request.response.redirect(self.request.URL[-1])
 
 
-        # XXX: cprov 20050226
+        # XXX: cprov 2005-02-26:
         # How to proceed with no admincomment ?
-
-
-
-
-
-
-
 

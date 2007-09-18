@@ -481,7 +481,7 @@ class SVNStrategy(CSCVSStrategy):
             path=self.getSVNDirPath(self.aJob,self.dir)
             try:
                 if os.access(path, os.F_OK):
-                    # XXX: David Allouche 2006-01-31. See bug 82483. A bug in
+                    # XXX: David Allouche 2006-01-31 bug=82483: A bug in
                     # pysvn prevents us from ignoring svn:externals. We work
                     # around it by shelling out to svn. When cscvs no longer
                     # uses pysvn, we will use the cscvs API again.
@@ -493,9 +493,10 @@ class SVNStrategy(CSCVSStrategy):
                     self.logger.debug("getting from SVN: %s %s",
                         repository, self.aJob.module)
                     client=pysvn.Client()
-                    # XXX: this should use the cscvs API, but it is currently
+                    # XXX: David Allouche 2007-01-29:
+                    # This should use the cscvs API, but it is currently
                     # hardcoded to only work with repositories on the
-                    # filesystem. -- David Allouche 2007-01-29
+                    # filesystem.
                     client.checkout(repository, path, ignore_externals=True)
             except Exception: # don't leave partial checkouts around
                 if os.access(path, os.F_OK):
@@ -534,4 +535,7 @@ class SVNStrategy(CSCVSStrategy):
         while-list. Eventually, that will check for a flag set by the operator
         in the Launchpad web UI.
         """
+        if not self.job.autotest:
+            # Only perform the sanity check on autotest.
+            return True
         return self.job.repository in self._svn_url_whitelist

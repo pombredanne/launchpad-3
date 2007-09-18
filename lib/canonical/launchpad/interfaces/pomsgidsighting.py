@@ -17,7 +17,7 @@ class IPOMsgIDSighting(Interface):
 
     datelastseen = Attribute("Last time we saw the msgid.")
 
-    inlastrevision = Attribute("""True if this sighting is currently in last 
+    inlastrevision = Attribute("""True if this sighting is currently in last
         imported template or POFile, otherwise false.""")
 
     pluralform = Attribute("0 if it's singular and 1 if it's plural")

@@ -1,12 +1,12 @@
 <!-- THIS IS AN EXAMPLE ONLY -->
-<!-- XXX Steve Alexander 08/10/04 Please update for RosettaSkins! -->
+<!-- XXX Steve Alexander 2004-10-08: Please update for RosettaSkins! -->
 
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
-    
+
     <!-- This is class Example -->
     <!-- CONTENT CLASSES -->
     <content class="canonical.launchpad.database.Example">
@@ -23,7 +23,7 @@
     <!-- VOCABULARIES -->
 
     <!--TRAVERSALS-->
-    
+
     <!--BROWSER DEFAULTVIEWS-->
     <browser:defaultView
         for="canonical.launchpad.interfaces.IExample"

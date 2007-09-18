@@ -51,11 +51,6 @@
     />
 
   <vocabulary
-    name="BugTaskStatus"
-    factory="canonical.launchpad.vocabularies.BugTaskStatusVocabulary"
-    />
-
-  <vocabulary
     name="BugTaskImportance"
     factory="canonical.launchpad.vocabularies.BugTaskImportanceVocabulary"
     />
@@ -114,10 +109,17 @@
     name="DistroSeriesStatus"
     factory="canonical.launchpad.vocabularies.DistroSeriesStatusVocabulary"
     />
+
   <vocabulary
     name="FAQ"
     factory="canonical.launchpad.vocabularies.FAQVocabulary"
     />
+
+  <vocabulary
+    name="FilteredDeltaLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredDeltaLanguagePackVocabulary"
+    />
+
    <vocabulary
     name="FilteredDistroArchSeries"
     factory="canonical.launchpad.vocabularies.FilteredDistroArchSeriesVocabulary"
@@ -126,6 +128,16 @@
   <vocabulary
     name="FilteredDistroSeries"
     factory="canonical.launchpad.vocabularies.FilteredDistroSeriesVocabulary"
+    />
+
+  <vocabulary
+    name="FilteredFullLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredFullLanguagePackVocabulary"
+    />
+
+  <vocabulary
+    name="FilteredLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredLanguagePackVocabulary"
     />
 
   <vocabulary
@@ -151,6 +163,11 @@
   <vocabulary
     name="Language"
     factory="canonical.launchpad.vocabularies.LanguageVocabulary"
+    />
+
+  <vocabulary
+    name="TranslatableLanguage"
+    factory="canonical.launchpad.vocabularies.TranslatableLanguageVocabulary"
     />
 
   <vocabulary
@@ -244,11 +261,6 @@
     />
 
   <vocabulary
-    name="RemoteBugTaskStatus"
-    factory="canonical.launchpad.vocabularies.RemoteBugTaskStatusVocabulary"
-    />
-
-  <vocabulary
     name="RemoteBugTaskImportance"
     factory="canonical.launchpad.vocabularies.RemoteBugTaskImportanceVocabulary"
     />
@@ -256,11 +268,6 @@
   <vocabulary
     name="RevisionControlSystems"
     factory="canonical.launchpad.vocabularies.RevisionControlSystemsVocabulary"
-    />
-
-  <vocabulary
-    name="ShipItFlavour"
-    factory="canonical.launchpad.vocabularies.ShipItFlavourVocabulary"
     />
 
   <vocabulary
@@ -311,26 +318,6 @@
   <vocabulary
     name="TextDirection"
     factory="canonical.launchpad.vocabularies.TextDirectionVocabulary"
-    />
-
-  <vocabulary
-    name="QuestionAction"
-    factory="canonical.launchpad.vocabularies.QuestionActionVocabulary"
-    />
-
-  <vocabulary
-    name="QuestionPriority"
-    factory="canonical.launchpad.vocabularies.QuestionPriorityVocabulary"
-    />
-
-  <vocabulary
-    name="QuestionSort"
-    factory="canonical.launchpad.vocabularies.QuestionSortVocabulary"
-    />
-
-  <vocabulary
-    name="QuestionStatus"
-    factory="canonical.launchpad.vocabularies.QuestionStatusVocabulary"
     />
 
   <vocabulary

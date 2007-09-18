@@ -19,9 +19,10 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.faq import IFAQ
+from canonical.launchpad.interfaces.questionenums import (
+    QuestionPriority, QuestionStatus)
 from canonical.launchpad.interfaces.questionmessage import IQuestionMessage
 from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
-from canonical.lp.dbschema import QuestionStatus, QuestionPriority
 
 
 class InvalidQuestionStateError(Exception):
@@ -47,12 +48,12 @@ class IQuestion(IHasOwner):
         u"you\N{right single quotation mark}re trying to achieve, what steps "
         "you take, what happens, and what you think should happen instead."))
     status = Choice(
-        title=_('Status'), vocabulary='QuestionStatus',
+        title=_('Status'), vocabulary=QuestionStatus,
         default=QuestionStatus.OPEN, readonly=True)
     priority = Choice(
-        title=_('Priority'), vocabulary='QuestionPriority',
+        title=_('Priority'), vocabulary=QuestionPriority,
         default=QuestionPriority.NORMAL)
-    # XXX flacoste 2006/10/28 It should be more precise to define a new
+    # XXX flacoste 2006-10-28: It should be more precise to define a new
     # vocabulary that excludes the English variants.
     language = Choice(
         title=_('Language'), vocabulary='Language',
@@ -91,7 +92,7 @@ class IQuestion(IHasOwner):
         description=_("The date on which we last communicated "
         "with the customer. The combination of datelastquery and "
         "datelastresponse tells us in whose court the ball is."))
-    dateanswered = Datetime(title=_("Date Answered"), required=False,
+    date_solved = Datetime(title=_("Date Answered"), required=False,
         description=_(
             "The date on which the question owner confirmed that the "
             "question is Solved."))
@@ -229,7 +230,7 @@ class IQuestion(IHasOwner):
         with action CONFIRM. The question status is changed to SOLVED, the
         answerer attribute is updated to contain the question owner, the
         answer attribute will be updated to point at the new message, the
-        datelastresponse and dateanswered attributes are updated to the
+        datelastresponse and date_solved attributes are updated to the
         message creation date.
 
         This workflow method should only be called when the question status is
@@ -251,7 +252,7 @@ class IQuestion(IHasOwner):
 
         Exactly like giveAnswer() but also link the IFAQ faq object to this
         question.
-        
+
         Return the created IQuestionMessage.
 
         This method should fire an ISQLObjectCreatedEvent for the created
@@ -275,7 +276,7 @@ class IQuestion(IHasOwner):
         Add an IQuestionMessage with action CONFIRM. The question status is
         changed to SOLVED. If the answer parameter is not None, it is recorded
         in the answer attribute and the answerer attribute is set to that
-        message's owner. The datelastresponse and dateanswered attributes are
+        message's owner. The datelastresponse and date_solved attributes are
         updated to the message creation date.
 
         This workflow method should only be called on behalf of the question
@@ -307,7 +308,7 @@ class IQuestion(IHasOwner):
         Add an IQuestionMessage with action REJECT. The question status is
         changed to INVALID. The created message is set as the question answer
         and its owner as the question answerer. The datelastresponse and
-        dateanswered are updated to the message creation.
+        date_solved are updated to the message creation.
 
         Only answer contacts for the question target, the target owner or a
         member of the admin team can reject a request. All questions can be
@@ -359,7 +360,7 @@ class IQuestion(IHasOwner):
         Add an IQuestionMessage with action REOPEN. This changes the question
         status to OPEN and update the datelastquery attribute to the new
         message creation date. When the question was in the SOLVED state, this
-        method should reset the dateanswered, answerer and answer attributes.
+        method should reset the date_solved, answerer and answer attributes.
 
         This workflow method should only be called on behalf of the question
         owner, when the question status is in one of ANSWERED, EXPIRED or
@@ -411,7 +412,7 @@ class IQuestion(IHasOwner):
 
     def getDirectSubscribers():
         """Return the set of persons who are subscribed to this question.
-        
+
         :return: An `INotificationRecipientSet` containing the persons to
             notify along the rationale for doing so.
         """
@@ -422,7 +423,7 @@ class IQuestion(IHasOwner):
 
         That includes  the answer contacts for the question's target as well
         as the question's assignee.
-        
+
         :return: An `INotificationRecipientSet` containing the persons to
             notify along the rationale for doing so.
         """
@@ -448,7 +449,7 @@ class IQuestionChangeStatusForm(Interface):
 
     status = Choice(
         title=_('Status'), description=_('Select the new question status.'),
-        vocabulary='QuestionStatus', required=True)
+        vocabulary=QuestionStatus, required=True)
 
     message = Text(
         title=_('Message'),
