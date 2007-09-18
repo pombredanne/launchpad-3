@@ -647,7 +647,7 @@ class ProductSet:
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       reviewed=False, mugshot=None, logo=None,
-                      icon=None):
+                      icon=None, license=None):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         product = Product(
             owner=owner, name=name, displayname=displayname,
@@ -657,7 +657,7 @@ class ProductSet:
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang, reviewed=reviewed,
-            icon=icon, logo=logo, mugshot=mugshot)
+            icon=icon, logo=logo, mugshot=mugshot, license=license)
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '

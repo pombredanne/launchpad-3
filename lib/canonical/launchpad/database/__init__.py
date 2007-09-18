@@ -40,7 +40,6 @@ from canonical.launchpad.database.pomsgset import *
 from canonical.launchpad.database.potranslation import *
 from canonical.launchpad.database.posubmission import *
 from canonical.launchpad.database.librarian import *
-from canonical.launchpad.database.license import *
 from canonical.launchpad.database.launchpadstatistic import *
 from canonical.launchpad.database.infestation import *
 from canonical.launchpad.database.sourcepackage import *
