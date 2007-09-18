@@ -1058,12 +1058,18 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
     @action('Find blueprints', name="search")
     def search_action(self, action, data):
         """Redirect to the proper search page based on the scope widget."""
-        scope = data['scope']
-        search_text = data['search_text']
-        if scope is None:
+        # For the scope to be absent from the form, the user must
+        # build the query string themselves - most likely because they
+        # are a bot. In that case we just assume they want to search
+        # all projects.
+        scope = self.widgets['scope'].getScope()
+        if scope is None or scope == 'all':
+            # Use 'All projects' scope.
             url = '/'
         else:
-            url = canonical_url(scope)
+            url = canonical_url(
+                self.widgets['scope'].getInputValue())
+        search_text = data['search_text']
         if search_text is not None:
             url += '?searchtext=' + search_text
         self.next_url = url

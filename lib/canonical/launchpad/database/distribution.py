@@ -142,6 +142,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+    language_pack_admin = ForeignKey(dbName='language_pack_admin',
+        foreignKey='Person', notNull=False, default=None)
 
     @cachedproperty
     def main_archive(self):
