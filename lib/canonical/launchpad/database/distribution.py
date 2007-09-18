@@ -61,17 +61,15 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    ArchivePurpose, BugTaskStatus, DistroSeriesStatus,
-    PackagePublishingStatus, PackageUploadStatus,
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
-    TranslationPermission)
+    ArchivePurpose, DistroSeriesStatus, PackagePublishingStatus,
+    PackageUploadStatus, SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort, TranslationPermission)
 
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IFAQTarget,
-    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
-    IQuestionTarget, ISourcePackageName, MirrorContent, NotFoundError,
-    QUESTION_STATUS_DEFAULT_SEARCH)
+    BugTaskStatus, IArchiveSet, IBuildSet, IDistribution, IDistributionSet,
+    IFAQTarget, IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
+    ILaunchpadCelebrities, IQuestionTarget, ISourcePackageName, MirrorContent,
+    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.archivepublisher.debversion import Version
 
@@ -144,6 +142,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+    language_pack_admin = ForeignKey(dbName='language_pack_admin',
+        foreignKey='Person', notNull=False, default=None)
 
     @cachedproperty
     def main_archive(self):
@@ -648,7 +648,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         raise NotFoundError(filename)
 
-    def getBuildRecords(self, status=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None):
         """See `IHasBuildRecords`"""
         # Find out the distroarchseriess in question.
         arch_ids = []
@@ -658,7 +658,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # use facility provided by IBuildSet to retrieve the records
         return getUtility(IBuildSet).getBuildsByArchIds(
-            arch_ids, status, name, pocket)
+            arch_ids, build_state, name, pocket)
 
     def removeOldCacheItems(self, log):
         """See `IDistribution`."""
@@ -1011,7 +1011,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             'restricted' : ArchivePurpose.PRIMARY,
             'universe' : ArchivePurpose.PRIMARY,
             'multiverse' : ArchivePurpose.PRIMARY,
-            'commercial' : ArchivePurpose.COMMERCIAL,
+            'partner' : ArchivePurpose.PARTNER,
             }
 
         try:

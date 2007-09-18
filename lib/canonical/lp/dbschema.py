@@ -27,7 +27,6 @@ __all__ = (
 'BranchReviewStatus',
 'BugBranchStatus',
 'BugNominationStatus',
-'BugTaskStatus',
 'BugAttachmentType',
 'BugTrackerType',
 'BugExternalReferenceType',
@@ -41,9 +40,7 @@ __all__ = (
 'DistroSeriesStatus',
 'ImportTestStatus',
 'ImportStatus',
-'MailingListAutoSubscribePolicy',
-'ManifestEntryType',
-'ManifestEntryHint',
+'License',
 'MirrorContent',
 'MirrorPulseType',
 'MirrorSpeed',
@@ -207,6 +204,7 @@ class BugTrackerType(DBSchema):
         Mantis is a web-based bug tracking system written in PHP.
         """)
 
+
 class CveStatus(DBSchema):
     """The Status of this item in the CVE Database
 
@@ -268,101 +266,6 @@ class ProjectStatus(DBSchema):
         This project has been reviewed, and has been disabled. Typically
         this is because the contents appear to be bogus. Such a project
         should not show up in searches etc.""")
-
-
-class ManifestEntryType(DBSchema):
-    """A Sourcerer Manifest.
-
-    This is a list of branches that are brought together to make up a source
-    package. Each branch can be included in the package in a number of
-    different ways, and the Manifest Entry Type tells sourcerer how to bring
-    that branch into the package.
-    """
-
-    DIR = Item(1, """
-        A Directory
-
-        This is a special case of Manifest Entry Type, and tells
-        sourcerer simply to create an empty directory with the given name.
-        """)
-
-    COPY = Item(2, """
-        Copied Source code
-
-        This branch will simply be copied into the source package at
-        a specified location. Typically this is used where a source
-        package includes chunks of code such as libraries or reference
-        implementation code, and builds it locally for static linking
-        rather than depending on a system-installed shared library.
-        """)
-
-    FILE = Item(3, """
-        Binary file
-
-        This is another special case of Manifest Entry Type that tells
-        sourcerer to create a branch containing just the file given.
-        """)
-
-    TAR = Item(4, """
-        A Tar File
-
-        This branch will be tarred up and installed in the source
-        package as a tar file. Typically, the package build system
-        will know how to untar that code and use it during the build.
-        """)
-
-    ZIP = Item(5, """
-        A Zip File
-
-        This branch will be zipped up and installed in the source
-        package as a zip file. Typically, the package build system
-        will know how to unzip that code and use it during the build.
-        """)
-
-    PATCH = Item(6, """
-        Patch File
-
-        This branch will be brought into the source file as a patch
-        against another branch. Usually, the patch is stored in the
-        "patches" directory, then applied at build time by the source
-        package build scripts.
-        """)
-
-
-class ManifestEntryHint(DBSchema):
-    """Hint as to purpose of a ManifestEntry.
-
-    Manifests, used by both HCT and Sourcerer, are made up of a collection
-    of Manifest Entries.  Each entry refers to a particular component of
-    the source package built by the manifest, usually each having a different
-    branch or changeset.  A Manifest Entry Hint can be assigned to suggest
-    what the purpose of the entry is.
-    """
-
-    ORIGINAL_SOURCE = Item(1, """
-        Original Source
-
-        This is the original source code of the source package, and in the
-        absence of any Patch Base, the parent of any new patch branches
-        created.
-        """)
-
-    PATCH_BASE = Item(2, """
-        Patch Base
-
-        This is an entry intended to serve as the base for any new patches
-        created and added to the source package.  It is often a patch itself,
-        or a virtual branch.  If not present, the Original Source is used
-        instead.
-        """)
-
-    PACKAGING = Item(3, """
-        Packaging
-
-        This is the packaging meta-data for the source package, usually
-        the entry that becomes the debian/ directory in the case of Debian
-        source packages or the spec file in the case of RPMs.
-        """)
 
 
 class PackagingType(DBSchema):
@@ -1917,84 +1820,6 @@ class BugNominationStatus(DBSchema):
         """)
 
 
-class BugTaskStatus(DBSchema):
-    """Bug Task Status
-
-    The various possible states for a bugfix in a specific place.
-    """
-
-    NEW = Item(10, """
-        New
-
-        This is a new bug and has not yet been confirmed by the maintainer of
-        this product or source package.
-        """)
-
-    INCOMPLETE = Item(15, """
-        Incomplete
-
-        More info is required before making further progress on this bug, likely
-        from the reporter. E.g. the exact error message the user saw, the URL
-        the user was visiting when the bug occurred, etc.
-        """)
-
-    INVALID = Item(17, """
-        Invalid
-
-        This is not a bug. It could be a support request, spam, or a misunderstanding.
-        """)
-
-    WONTFIX = Item(18, """
-        Won't Fix
-
-        This will not be fixed. For example, this might be a bug but it's not considered worth
-        fixing, or it might not be fixed in this release.
-        """)
-
-    CONFIRMED = Item(20, """
-        Confirmed
-
-        This bug has been reviewed, verified, and confirmed as something needing
-        fixing. Anyone can set this status.
-        """)
-
-    TRIAGED = Item(21, """
-        Triaged
-
-        This bug has been reviewed, verified, and confirmed as
-        something needing fixing. The user must be a bug contact to
-        set this status, so it carries more weight than merely
-        Confirmed.
-        """)
-
-    INPROGRESS = Item(22, """
-        In Progress
-
-        The person assigned to fix this bug is currently working on fixing it.
-        """)
-
-    FIXCOMMITTED = Item(25, """
-        Fix Committed
-
-        This bug has been fixed in version control, but the fix has
-        not yet made it into a released version of the affected
-        software.
-        """)
-
-    FIXRELEASED = Item(30, """
-        Fix Released
-
-        The fix for this bug is available in a released version of the
-        affected software.
-        """)
-
-    UNKNOWN = Item(999, """
-        Unknown
-
-        The status of this bug task is unknown.
-        """)
-
-
 class BugTaskImportance(DBSchema):
     """Bug Task Importance
 
@@ -2229,41 +2054,6 @@ class RosettaImportStatus(DBSchema):
         """)
 
 
-class MailingListAutoSubscribePolicy(DBSchema):
-    """A person's auto-subscription policy.
-
-    When a person joins a team, or is joined to a team, their
-    auto-subscription policy describes how and whether they will be
-    automatically subscribed to any team mailing list that the team may have.
-
-    This does not describe what happens when a team that already has members
-    gets a new team mailing list.  In that case, its members are never
-    automatically subscribed to the mailing list.
-    """
-
-    NEVER = Item(0, """
-        Never subscribe automatically
-
-        The user must explicitly subscribe to a team mailing list for any team
-        that she joins.
-        """)
-
-    ON_REGISTRATION = Item(1, """
-        Subscribe on self-registration
-
-        The user is automatically joined to any team mailng list for a team
-        that she joins explicitly.  She is never joined to any team mailing
-        list for a team that someone else joins her to.
-        """)
-
-    ALWAYS = Item(2, """
-        Always subscribe automatically
-
-        The user is automatically subscribed to any team mailing list when she
-        is added to the team, regardless of who joins her to the team.
-        """)
-
-
 class BuildStatus(DBSchema):
     """Build status type
 
@@ -2472,6 +2262,13 @@ class TranslationFileFormat(DBSchema):
         The .xpi format as used by programs from Mozilla foundation.
         """)
 
+    KDEPO = Item(4, """
+        KDE PO format
+
+        Legacy KDE PO format which embeds context and plural forms inside
+        messages itself instead of using gettext features.
+        """)
+
 
 class TranslationValidationStatus(DBSchema):
     """Translation Validation Status
@@ -2543,10 +2340,10 @@ class ArchivePurpose(DBSchema):
         This is the archive for embargoed packages.
         """)
 
-    COMMERCIAL = Item(4, """
-        Commercial Archive.
+    PARTNER = Item(4, """
+        Partner Archive.
 
-        This is the archive for commercial packages.
+        This is the archive for partner packages.
         """)
 
     OBSOLETE = Item(5, """
@@ -2554,3 +2351,187 @@ class ArchivePurpose(DBSchema):
 
         This is the archive for obsolete packages.
         """)
+
+class License(DBSchema):
+    """This schema contains OSI approved licenses."""
+
+    ACADEMIC_FREE_LICENSE = Item(1,
+        "Academic Free License")
+
+    ADAPTIVE_PUBLIC_LICENSE = Item(2,
+        "Adaptive Public License")
+
+    APACHE_SOFTWARE_LICENSE = Item(3,
+        "Apache Software License")
+
+    APACHE_LICENSE_2_0 = Item(4,
+        "Apache License, 2.0")
+
+    APPLE_PUBLIC_SOURCE_LICENSE = Item(5,
+        "Apple Public Source License")
+
+    ARTISTIC_LICENSE = Item(6,
+        "Artistic license")
+
+    ARTISTIC_LICENSE_2_0 = Item(7,
+        "Artistic license 2.0")
+
+    ATTRIBUTION_ASSURANCE_LICENSES = Item(8,
+        "Attribution Assurance Licenses")
+
+    NEW_BSD_LICENSE = Item(9,
+        "New BSD license")
+
+    COMPUTER_ASSOCIATES_TRUSTED_OPEN_SOURCE_LICENSE_1_1 = Item(10,
+        "Computer Associates Trusted Open Source License 1.1")
+
+    COMMON_DEVELOPMENT_AND_DISTRIBUTION_LICENSE = Item(11,
+        "Common Development and Distribution License")
+
+    COMMON_PUBLIC_ATTRIBUTION_LICENSE_1_0 = Item(12,
+        "Common Public Attribution License 1.0 (CPAL)")
+
+    COMMON_PUBLIC_LICENSE_1_0 = Item(13,
+        "Common Public License 1.0")
+
+    CUA_OFFICE_PUBLIC_LICENSE_VERSION_1_0 = Item(14,
+        "CUA Office Public License Version 1.0")
+
+    EU_DATAGRID_SOFTWARE_LICENSE = Item(15,
+        "EU DataGrid Software License")
+
+    ECLIPSE_PUBLIC_LICENSE = Item(16,
+        "Eclipse Public License")
+
+    EDUCATIONAL_COMMUNITY_LICENSE_VERSION_2_0 = Item(17,
+        "Educational Community License, Version 2.0")
+
+    EIFFEL_FORUM_LICENSE = Item(18,
+        "Eiffel Forum License")
+
+    EIFFEL_FORUM_LICENSE_V2_0 = Item(19,
+        "Eiffel Forum License V2.0")
+
+    ENTESSA_PUBLIC_LICENSE = Item(20,
+        "Entessa Public License")
+
+    FAIR_LICENSE = Item(21,
+        "Fair License")
+
+    FRAMEWORX_LICENSE = Item(22,
+        "Frameworx License")
+
+    GPL = Item(23,
+        "GNU General Public License (GPL)")
+
+    LGPL = Item(24,
+        'GNU Library or "Lesser" General Public License (LGPL)')
+
+    HISTORICAL_PERMISSION_NOTICE_AND_DISCLAIMER = Item(25,
+        "Historical Permission Notice and Disclaimer")
+
+    IBM_PUBLIC_LICENSE = Item(26,
+        "IBM Public License")
+
+    INTEL_OPEN_SOURCE_LICENSE = Item(27,
+        "Intel Open Source License")
+
+    JABBER_OPEN_SOURCE_LICENSE = Item(28,
+        "Jabber Open Source License")
+
+    LUCENT_PUBLIC_LICENSE = Item(29,
+        "Lucent Public License (Plan9)")
+
+    LUCENT_PUBLIC_LICENSE_VERSION_1_02 = Item(30,
+        "Lucent Public License Version 1.02")
+
+    MIT_LICENSE = Item(31,
+        "MIT license")
+
+    MITRE_COLLABORATIVE_VIRTUAL_WORKSPACE_LICENSE = Item(32,
+        "MITRE Collaborative Virtual Workspace License (CVW License)")
+
+    MOTOSOTO_LICENSE = Item(33,
+        "Motosoto License")
+
+    MOZILLA_PUBLIC_LICENSE_1_0 = Item(34,
+        "Mozilla Public License 1.0 (MPL)")
+
+    MOZILLA_PUBLIC_LICENSE_1_1 = Item(35,
+        "Mozilla Public License 1.1 (MPL)")
+
+    NASA_OPEN_SOURCE_AGREEMENT_1_3 = Item(36,
+        "NASA Open Source Agreement 1.3")
+
+    NAUMEN_PUBLIC_LICENSE = Item(37,
+        "Naumen Public License")
+
+    NETHACK_GENERAL_PUBLIC_LICENSE = Item(38,
+        "Nethack General Public License")
+
+    NOKIA_OPEN_SOURCE_LICENSE = Item(39,
+        "Nokia Open Source License")
+
+    OCLC_RESEARCH_PUBLIC_LICENSE_2_0 = Item(40,
+        "OCLC Research Public License 2.0")
+
+    OPEN_GROUP_TEST_SUITE_LICENSE = Item(41,
+        "Open Group Test Suite License")
+
+    OPEN_SOFTWARE_LICENSE = Item(42,
+        "Open Software License")
+
+    PHP_LICENSE = Item(43,
+        "PHP License")
+
+    CNRI_PYTHON_LICENSE = Item(44,
+        "Python license (CNRI Python License)")
+
+    PYTHON_SOFTWARE_FOUNDATION_LICENSE = Item(45,
+        "Python Software Foundation License")
+
+    QT_PUBLIC_LICENSE = Item(46,
+        "Qt Public License (QPL)")
+
+    REALNETWORKS_PUBLIC_SOURCE_LICENSE_1_0 = Item(47,
+        "RealNetworks Public Source License V1.0")
+
+    RECIPROCAL_PUBLIC_LICENSE = Item(48,
+        "Reciprocal Public License")
+
+    RICOH_SOURCE_CODE_PUBLIC_LICENSE = Item(49,
+        "Ricoh Source Code Public License")
+
+    SLEEPYCAT_LICENSE = Item(50,
+        "Sleepycat License")
+
+    SUN_INDUSTRY_STANDARDS_SOURCE_LICENSE = Item(51,
+        "Sun Industry Standards Source License (SISSL)")
+
+    SUN_PUBLIC_LICENSE = Item(52,
+        "Sun Public License")
+
+    SYBASE_OPEN_WATCOM_PUBLIC_LICENSE_1_0 = Item(53,
+        "Sybase Open Watcom Public License 1.0")
+
+    UNIVERSITY_OF_ILLINOIS_NCSA_OPEN_SOURCE_LICENSE = Item(54,
+        "University of Illinois/NCSA Open Source License")
+
+    VOVIDA_SOFTWARE_LICENSE_V_1_0 = Item(55,
+        "Vovida Software License v. 1.0")
+
+    W3C_LICENSE = Item(56,
+        "W3C License")
+
+    WXWINDOWS_LIBRARY_LICENSE = Item(57,
+        "wxWindows Library License")
+
+    X_NET_LICENSE = Item(58,
+        "X.Net License")
+
+    ZOPE_PUBLIC_LICENSE = Item(59,
+        "Zope Public License")
+
+    ZLIB_LIBPNG_LICENSE = Item(60,
+        "zlib/libpng license")
+

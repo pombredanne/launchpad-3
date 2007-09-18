@@ -4,7 +4,7 @@ public access:
   >>> from mechanize import LinkNotFoundError
   >>> from canonical.launchpad.helpers import backslashreplace
 
-  >>> anon_browser.open("http://localhost/+builds/+index")
+  >>> anon_browser.open("http://launchpad.dev/+builds/+index")
   >>> try:
   ...     anon_browser.getLink("Add builder")
   ... except LinkNotFoundError:
@@ -13,10 +13,9 @@ public access:
 
   >>> anon_browser.contents
   '...bob...
-  ...bob...
   ...386...
   ...Launchpad Buildd Admins...
-  ...NOT OK : None (AUTO)...'
+  ...Not available...'
 
 Check the overview-menu for authorized access (admins member)
 

@@ -48,7 +48,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadStatisticSet, IPersonSet, IProduct, IProductSet,
     IQuestionTarget, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.lp.dbschema import (
-    TranslationPermission, SpecificationSort, SpecificationFilter,
+    License, TranslationPermission, SpecificationSort, SpecificationFilter,
     SpecificationDefinitionStatus, SpecificationImplementationStatus)
 
 
@@ -129,7 +129,9 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         dbName='calendar', foreignKey='Calendar', default=None,
         forceDBName=True)
 
-    license = IntCol(dbName='license', notNull=False, default=None)
+    license = EnumCol(
+        dbName='license', notNull=False,
+        schema=License, default=None)
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
