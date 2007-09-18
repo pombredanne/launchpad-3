@@ -197,8 +197,15 @@ class LibrarianLayer(BaseLayer):
         Reset the storage unless this has been disabled.
         """
         try:
-            f = urlopen(config.librarian.download_url)
-            f.read()
+            try:
+                # XXX flacoste 2007/09/18 This is a workaround for bug
+                # #140068.
+                old_timeout = socket.getdefaulttimeout()
+                socket.setdefaulttimeout(5.0)
+                f = urlopen(config.librarian.download_url)
+                f.read()
+            finally:
+                socket.setdefaulttimeout(old_timeout)
         except Exception, e:
             raise LayerIsolationError(
                     "Librarian has been killed or has hung."
