@@ -183,6 +183,7 @@ slave has the requested file in cache.
   ...     def build(self, buildid, buildtype, chroot, filemap, args):
   ...         info = 'OkSlave BUILDING'
   ...         print info
+  ...         print "Archives: %s" % args['archives']
   ...         return ('BuildStatus.Building', info)
   ...     def fetchlogtail(self, size):
   ...         return 'BOGUS'
@@ -627,7 +628,7 @@ upload log information:
   ...
   X-Launchpad-Build-State: FAILEDTOUPLOAD
   ...
-   * Build Log: http://localhost:58000/67/buildlog_ubuntu-hoary-i386.mozilla-=
+   * Build Log: http://localhost:58000/.../buildlog_ubuntu-hoary-i386.mozilla-=
   firefox_0.9_BUILDING.txt.gz
   ...
   Upload log:
@@ -954,10 +955,35 @@ Override the builder's slave with one that will claim to be 'OK'
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
+  Archives: []
 
 Cleanup in preparation for the next test:
 
   >>> bqItem3.destroySelf()
+
+When a build is for an archive other than the PRIMARY archive, the
+builder will pass an 'archives' property that instructs the slave
+to set up the sources.list appropriately.
+
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> partner_archive = ubuntu.getArchiveByComponent('partner')
+  >>> removeSecurityProxy(a_build).archive = partner_archive
+  >>> local_transaction.commit()
+  >>> bqItem3 = a_build.createBuildQueueEntry()
+  >>> setupBuildQueue(bqItem3, a_builder)
+  >>> last_stub_mail_count = len(stub.test_emails)
+  >>> bqItem3.builder.setSlaveForTesting(OkSlave())
+  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+  ensurepresent called
+  ensurepresent called
+  OkSlave BUILDING
+  Archives: [u'deb http://launchpad.dev/ubuntu-partner hoary main', u'deb http://ftpmaster.internal/ubuntu hoary main restricted']
+
+Clean up before continuing:
+
+  >>> bqItem3.destroySelf()
+  >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
+  >>> local_transaction.commit()
 
 When there is no chroot it should not alter the buildstate:
 

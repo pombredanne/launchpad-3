@@ -26,14 +26,23 @@ checkid_setup request, sending the user to Launchpad:
     >>> browser.open(setup_url)
 
 When a new account is created we'll use the creation rationale specified for
-the trust_root given by the relying party. Since we don't have any trust root
-to which we can redirect to we'll need to manually change our list of known
-trust roots during this test.
+the trust_root given by the relying party.  We will set up an RP
+configuration that uses the UBUNTU_SHOP creation rationale:
 
-    >>> from canonical.launchpad.browser.openidserver import KNOWN_TRUST_ROOTS
-    >>> orig_trust_roots = dict(**KNOWN_TRUST_ROOTS)
-    >>> shop_url = 'https://shop.canonical.com'
-    >>> KNOWN_TRUST_ROOTS[trust_root] = KNOWN_TRUST_ROOTS[shop_url]
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...     IOpenIDRPConfigSet, PersonCreationRationale)
+
+    >>> login('foo.bar@canonical.com')
+    >>> rpconfig = getUtility(IOpenIDRPConfigSet).new(
+    ...     trust_root=trust_root,
+    ...     displayname='The Ubuntu Store from Canonical',
+    ...     description="For the Ubuntu Store, you need a Launchpad account "
+    ...                 "so  we can remember your order details and keep in "
+    ...                 "touch with you about your orders.",
+    ...     creation_rationale=PersonCreationRationale.OWNER_CREATED_UBUNTU_SHOP)
+    >>> logout()
 
 At this point, we are at the login page.  Lets try to create a new
 account for an email address that has already been registered:
@@ -129,8 +138,5 @@ And the creation rationale for the new account has been set.
 
 == Cleanup ==
 
-    >>> KNOWN_TRUST_ROOTS = orig_trust_roots
-    >>> from canonical.launchpad.browser import openidserver
-    >>> openidserver.KNOWN_TRUST_ROOTS = orig_trust_roots
     >>> uninstall_consumer()
 

@@ -1,6 +1,6 @@
 <html metal:use-macro="context/@@main_template/master" i18n:domain="launchpad">
   <body>
-    <metal:block fill-slot="auth" tal:define="rp_info view/rp_info">
+    <metal:block fill-slot="auth">
       <h2>Sign in as <span tal:replace="view/user/displayname" />?</h2>
 
       <form action="/+decide" method="post" accept-charset="UTF-8">
@@ -15,7 +15,8 @@
         <div>
             <p>
               These details will be sent to
-              <tal:title replace="rp_info/title" />:
+              <tal:title replace="view/rpconfig/displayname |
+                                  view/openid_request/trust_root" />:
             </p>
 
           <ul tal:define="fields view/sreg_fields">

@@ -82,6 +82,27 @@ somebody are subject to expiration.
     >>> old_open_question.target.addAnswerContact(salgado)
     True
 
+    # A question linked to an non-Invalid bug is not expirable.
+    >>> from canonical.launchpad.interfaces import BugTaskStatus, IBugSet
+    >>> fixed_bug = getUtility(IBugSet).get(9)
+    >>> bugtasks = fixed_bug.bugtasks
+    >>> bugtasks[1].transitionToStatus(BugTaskStatus.INVALID, no_priv)
+    >>> [bugtask.status.title for bugtask in bugtasks]
+    ['Unknown', 'Invalid']
+    >>> bug_link_question = questionset.get(11)
+    >>> bug_link_question.linkBug(fixed_bug)
+    <QuestionBug at ...>
+
+    # A question linked to an Invalid bug; it is expirable.
+    >>> invalid_bug = getUtility(IBugSet).get(10)
+    >>> bugtask = invalid_bug.bugtasks[0]
+    >>> bugtask.transitionToStatus(BugTaskStatus.INVALID, no_priv)
+    >>> bugtask.status.title
+    'Invalid'
+    >>> invalid_bug_question = questionset.get(12)
+    >>> invalid_bug_question.linkBug(invalid_bug)
+    <QuestionBug at ...>
+
     # Commit the current transaction because the script will run in
     # another transaction and thus it won't see the changes done on this
     # test unless we commit.
@@ -103,8 +124,8 @@ somebody are subject to expiration.
     INFO    creating lockfile
     INFO    Expiring OPEN and NEEDSINFO questions without activity for the
             last 15 days.
-    INFO    Found 6 questions to expire.
-    INFO    Expired 6 questions.
+    INFO    Found 5 questions to expire.
+    INFO    Expired 5 questions.
     INFO    Finished expiration run.
     <BLANKLINE>
     >>> print out
@@ -130,15 +151,22 @@ Neither the old one which was assigned to Foo Bar:
     >>> print old_assigned_open_question.status.title
     Open
 
+The old question with non-Invalid bug link is still Open status:
+
+    >>> print bug_link_question.status.title
+    Open
+
 But the other ones status was changed to 'Expired':
 
     >>> print old_needs_info_question.status.title
     Expired
     >>> print old_open_question.status.title
     Expired
+    >>> print invalid_bug_question.status.title
+    Expired
 
 The message explaining the reason for the expiration was posted by the
-Answer Tracker Janitor celebrity:
+Launchpad Janitor celebrity:
 
     >>> expiration_message = old_needs_info_question.messages[-1]
     >>> print expiration_message.action.name
@@ -146,7 +174,7 @@ Answer Tracker Janitor celebrity:
     >>> print expiration_message.new_status.title
     Expired
     >>> print expiration_message.owner.name
-    answer-tracker-janitor
+    janitor
 
     >>> print expiration_message.text_contents
     This question was expired because it remained in the

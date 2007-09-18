@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-series">
   <h2>
     <tal:name content="context/displayname">Firefox</tal:name>
     release series

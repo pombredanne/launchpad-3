@@ -136,7 +136,7 @@ class ILoginToken(Interface):
         required=False,
         )
     date_consumed = Datetime(
-        title=_('Date and time this was consumed'), 
+        title=_('Date and time this was consumed'),
         required=False, readonly=False
         )
 
@@ -174,12 +174,12 @@ class ILoginToken(Interface):
         """
 
     def sendPasswordResetEmail():
-        """Send an email message to the requester with a magic URL that allows 
+        """Send an email message to the requester with a magic URL that allows
         him to reset his password.
         """
 
     def sendNewUserEmail():
-        """Send an email message to the requester with a magic URL that allows 
+        """Send an email message to the requester with a magic URL that allows
         him to finish the Launchpad registration process.
         """
 
@@ -267,13 +267,13 @@ class ILoginTokenSet(Interface):
                         also be None in case of a new account
 
         email: the email address that this request will be sent to.
-        It should be previosly validated by valid_email() 
+        It should be previosly validated by valid_email()
 
         tokentype: the type of the request, according to LoginTokenType.
-        
+
         fingerprint: The OpenPGP key fingerprint used to retrieve key
         information from the key server if necessary. This can be None if
-        not required to process the 'request' in question.  
+        not required to process the 'request' in question.
         """
 
     def __getitem__(id):

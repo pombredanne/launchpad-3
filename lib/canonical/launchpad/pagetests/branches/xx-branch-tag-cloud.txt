@@ -1,0 +1,45 @@
+= Projects with active branches =
+
+The tag cloud of projects is one way in which the number and scope of available
+bazaar branches is shown to the user.
+
+    >>> anon_browser.open("http://code.launchpad.dev/")
+    >>> anon_browser.getLink('projects').click()
+    >>> print anon_browser.title
+    Projects with active branches
+
+The `Projects with active branches` page shows a link for each project that has
+branches associated with it.  The HTML class attribute is used to control how
+the link is shown.
+
+    >>> tags = find_tag_by_id(anon_browser.contents, 'project-tags')
+    >>> for anchor in tags.fetch('a'):
+    ...     print anchor.renderContents(), anchor['class']
+    evolution cloud-size-small cloud-shade-light
+    firefox cloud-size-medium cloud-shade-light
+    gnome-terminal cloud-size-medium cloud-shade-light
+    iso-codes cloud-size-small cloud-shade-light
+    landscape cloud-size-small cloud-shade-light
+    thunderbird cloud-size-small cloud-shade-light
+
+If the project is using bzr as its main branch repository then the class is
+different from the other projects.  This allows the CSS to show these projects
+in a different colour.
+
+Update the development series of firefox to specify a user's branch.
+
+    >>> admin_browser.open('http://launchpad.dev/firefox/trunk')
+    >>> admin_browser.getLink('Change details').click()
+    >>> admin_browser.getControl('Branch').value = '~name12/firefox/main'
+    >>> admin_browser.getControl('Change').click()
+
+The class for firefox in the project tag cloud will now show 'highlight' rather
+than shade.
+
+    >>> anon_browser.open("http://code.launchpad.dev/")
+    >>> anon_browser.getLink('projects').click()
+    >>> tags = find_tag_by_id(anon_browser.contents, 'project-tags')
+    >>> for anchor in tags.fetch('a'):
+    ...     if anchor.renderContents() == 'firefox':
+    ...         print anchor['class']
+    cloud-size-medium cloud-highlight-light

@@ -3,7 +3,7 @@
     metal:use-macro="context/@@main_template/master"
     i18n:domain="launchpad">
   <body>
-    <metal:block fill-slot="auth" tal:define="rp_info view/rp_info">
+    <metal:block fill-slot="auth">
       <form action="/+login-register" method="post" accept-charset="UTF-8">
         <tal:widget replace="structure view/widgets/nonce/hidden" />
 

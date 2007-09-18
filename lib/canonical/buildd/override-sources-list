@@ -26,5 +26,5 @@ echo "Overriding sources.list in build-$BUILDID"
 $SUDO rm -f sources.list.new
 (for archive; do
   echo "$archive"
-done; cat sources.list) | $SUDO tee sources.list.new >/dev/null
+done) | $SUDO tee sources.list.new >/dev/null
 $SUDO mv sources.list.new sources.list

@@ -11,7 +11,7 @@ __metaclass__ = type
 import os
 
 from twisted.vfs.backends import adhoc, osfs
-from twisted.vfs.ivfs import VFSError, NotFoundError, PermissionError
+from twisted.vfs.ivfs import NotFoundError, PermissionError
 
 
 # The directories allowed directly beneath a branch directory. These are the
@@ -21,7 +21,18 @@ FORBIDDEN_DIRECTORY_ERROR = (
     "Cannot create '%s'. Only Bazaar branches are allowed.")
 
 
-class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
+class LoggingMixin:
+    """Provides features used for logging information about VFS objects."""
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self.getAbsolutePath())
+
+    def getAbsolutePath(self):
+        """Return the absolute path to this object."""
+        return os.path.join(self.parent.getAbsolutePath(), self.name)
+
+
+class SFTPServerRoot(adhoc.AdhocDirectory, LoggingMixin):
     """For /
 
     Shows ~username and ~teamname directories for the user.
@@ -44,14 +55,23 @@ class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
                                             parent=self, junkAllowed=False))
 
     def createDirectory(self, childName):
+        self.avatar.logger.debug("Trying to create directory %r", childName)
         raise PermissionError(
             "Branches must be inside a person or team directory.")
+
+    def getAbsolutePath(self):
+        """Return the absolute path to this directory.
+
+        Because this is the root directory by definition, we return '/' rather
+        than using the default implementation.
+        """
+        return '/'
 
     def setListenerFactory(self, factory):
         self.listenerFactory = factory
 
 
-class SFTPServerUserDir(adhoc.AdhocDirectory):
+class SFTPServerUserDir(adhoc.AdhocDirectory, LoggingMixin):
     """For /~username
 
     Ensures subdirectories are a launchpad product name, or possibly '+junk' if
@@ -94,10 +114,14 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         self.junkAllowed = junkAllowed
 
     def rename(self, newName):
+        self.avatar.logger.debug(
+            "Trying to rename %r to %r", self, newName)
         raise PermissionError(
             "renaming user directory %r is not allowed." % self.name)
 
     def createFile(self, childName):
+        self.avatar.logger.debug(
+            "Trying to create file %r in %r", childName, self)
         raise PermissionError(
             "creating files in user directory %r is not allowed." % self.name)
 
@@ -108,6 +132,8 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         # still does the right thing despite this, but that's not guaranteed.
         assert childName != '+junk', "+junk already exists (if it's allowed)."
         # Check that childName is a product name registered in Launchpad.
+        self.avatar.logger.debug(
+            "Creating virtual product directory for %r in %r", childName, self)
         deferred = self.avatar.fetchProductID(childName)
         def cb(productID):
             if productID is None:
@@ -136,12 +162,17 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         # directory.
         return SFTPServerProductDirPlaceholder(childName, self)
 
+    def getAbsolutePath(self):
+        """Return the absolute path to this directory."""
+        return os.path.join(self.parent.getAbsolutePath(), '~' + self.name)
+
     def remove(self):
+        self.avatar.logger.debug("Trying to remove %r", self)
         raise PermissionError(
             "removing user directory %r is not allowed." % self.name)
 
 
-class SFTPServerProductDir(adhoc.AdhocDirectory):
+class SFTPServerProductDir(adhoc.AdhocDirectory, LoggingMixin):
     """For /~username/product
 
     Inside a product dir there can only be directories, which will be
@@ -169,9 +200,12 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
         # We should ensure that if createBranch fails for some reason
         # (e.g. invalid name),that we report a useful error to the client.
         if self.exists(childName):
-            # "mkdir failed" is the magic string that bzrlib will interpret to
-            # mean "already exists".
-            raise VFSError("mkdir failed")
+            self.avatar.logger.debug(
+                'Tried to create branch directory %r under %r. Already exists',
+                childName, self)
+            return self.child(childName)
+        self.avatar.logger.debug(
+            'Create branch directory %r under %r.', childName, self)
         deferred = self.avatar.createBranch(
             self.avatar.avatarId, self.userName, self.productName, childName)
         def cb(branchID):
@@ -183,7 +217,7 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
         return deferred.addCallback(cb)
 
 
-class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory):
+class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory, LoggingMixin):
     """A placeholder for non-existant /~username/product directories.
 
     This node type is intended as a placeholder for an
@@ -213,14 +247,14 @@ class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory):
         return deferred.addCallback(cb)
 
 
-class WriteLoggingDirectory(osfs.OSDirectory):
+class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
     """VFS directory that keeps track of whether it has been written to.
 
     Useful within, say, an SFTP server to see if a particular directory has
     been written to as part of a connection.
     """
 
-    def __init__(self, flagAsDirty, path, name=None, parent=None):
+    def __init__(self, flagAsDirty, path, logger, name=None, parent=None):
         """
         Create a new WriteLoggingDirectory.
 
@@ -230,6 +264,7 @@ class WriteLoggingDirectory(osfs.OSDirectory):
         For other parameters, see osfs.OSDirectory.
         """
         osfs.OSDirectory.__init__(self, path, name, parent)
+        self.logger = logger
         self._flagAsDirty = flagAsDirty
 
     def childFileFactory(self):
@@ -238,7 +273,8 @@ class WriteLoggingDirectory(osfs.OSDirectory):
         The listener is the '_flagAsDirty' callable, set by the constructor.
         """
         def childWithListener(path, name, parent):
-            return WriteLoggingFile(self._flagAsDirty, path, name, parent)
+            return WriteLoggingFile(
+                self._flagAsDirty, path, self.logger, name, parent)
         return childWithListener
 
     def childDirFactory(self):
@@ -247,38 +283,45 @@ class WriteLoggingDirectory(osfs.OSDirectory):
         The listener is the '_flagAsDirty' callable, set by the constructor.
         """
         def childWithListener(path, name, parent):
-            return WriteLoggingDirectory(self._flagAsDirty, path, name, parent)
+            return WriteLoggingDirectory(
+                self._flagAsDirty, path, self.logger, name, parent)
         return childWithListener
 
     def createDirectory(self, name):
         self.touch()
+        self.logger.info('Creating directory %r in %r', name, self)
         return osfs.OSDirectory.createDirectory(self, name)
 
     def createFile(self, name, exclusive=True):
         self.touch()
+        self.logger.info('Creating file %r in %r', name, self)
         return osfs.OSDirectory.createFile(self, name, exclusive)
 
     def remove(self):
         self.touch()
+        self.logger.info('Removing %r', self)
         osfs.OSDirectory.remove(self)
 
     def rename(self, newName):
         self.touch()
+        self.logger.info('Renaming %r to %r', self, newName)
         osfs.OSDirectory.rename(self, newName)
 
     def touch(self):
         self._flagAsDirty()
 
 
-class WriteLoggingFile(osfs.OSFile):
+class WriteLoggingFile(osfs.OSFile, LoggingMixin):
     """osfs.OSFile that keeps track of whether it has been written to.
     """
 
-    def __init__(self, listener, path, name=None, parent=None):
+    def __init__(self, listener, path, logger, name=None, parent=None):
         self._flagAsDirty = listener
+        self.logger = logger
         osfs.OSFile.__init__(self, path, name, parent)
 
     def open(self, flags):
+        self.logger.info('Opening %r with flags: %r', self, flags)
         if os.O_TRUNC & flags:
             self.touch()
         osfs.OSFile.open(self, flags)
@@ -287,6 +330,7 @@ class WriteLoggingFile(osfs.OSFile):
         self._flagAsDirty()
 
     def writeChunk(self, offset, data):
+        self.logger.info('Writing to %r', self)
         self.touch()
         osfs.OSFile.writeChunk(self, offset, data)
 
@@ -298,9 +342,11 @@ class NameRestrictedWriteLoggingDirectory(WriteLoggingDirectory):
     the names in `ALLOWED_DIRECTORIES`.
     """
 
-    def __init__(self, flagAsDirty, path, name=None, parent=None):
+    def __init__(self, flagAsDirty, path, logger=None, name=None,
+                 parent=None):
         self._checkName(name)
-        WriteLoggingDirectory.__init__(self, flagAsDirty, path, name, parent)
+        WriteLoggingDirectory.__init__(
+            self, flagAsDirty, path, logger, name, parent)
 
     def _checkName(self, name):
         if name not in ALLOWED_DIRECTORIES:
@@ -311,7 +357,7 @@ class NameRestrictedWriteLoggingDirectory(WriteLoggingDirectory):
         return WriteLoggingDirectory.rename(self, new_name)
 
 
-class SFTPServerBranch(WriteLoggingDirectory):
+class SFTPServerBranch(WriteLoggingDirectory, LoggingMixin):
     """For /~username/product/branch, and below.
 
     Direct children are restricted by name. See
@@ -327,23 +373,23 @@ class SFTPServerBranch(WriteLoggingDirectory):
         path = '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
 
         self._listener = None
-        WriteLoggingDirectory.__init__(self, self._flagAsDirty,
-                                       os.path.join(avatar.homeDirsRoot, path),
-                                       branchName, parent)
+        WriteLoggingDirectory.__init__(
+            self, self._flagAsDirty, os.path.join(avatar.homeDirsRoot, path),
+            avatar.logger, branchName, parent)
         if not os.path.exists(self.realPath):
             os.makedirs(self.realPath)
 
     def childDirFactory(self):
         def childWithListener(path, name, parent):
             return NameRestrictedWriteLoggingDirectory(
-                self._flagAsDirty, path, name, parent)
+                self._flagAsDirty, path, self.logger, name, parent)
         return childWithListener
 
     def createFile(self, name, exclusive=True):
         raise PermissionError(
             "Can only create Bazaar control directories directly beneath a "
             "branch directory.")
-    
+
     def remove(self):
         raise PermissionError(
             "removing branch directory %r is not allowed." % self.name)

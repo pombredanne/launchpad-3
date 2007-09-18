@@ -1,0 +1,249 @@
+= ExternalBugTracker: Trac =
+
+This covers the implementation of the ExternalBugTracker class for Trac
+bugwatches.
+
+
+== Basics ==
+
+The ExternalBugTracker descendant class which implements methods for updating
+bug watches on Trac bug trackers is externalbugtracker.Trac, which implements
+IExternalBugTracker.
+
+    >>> from canonical.launchpad.components.externalbugtracker import Trac
+    >>> from canonical.launchpad.interfaces.externalbugtracker import (
+    ...     IExternalBugtracker)
+    >>> from zope.interface.verify import verifyObject
+    >>> verifyObject(IExternalBugtracker, Trac('http://trac.foo.com'))
+    True
+
+
+== Status Conversion ==
+
+The basic Trac ticket statuses map to Launchpad bug statuses.
+Trac.convertRemoteStatus() handles the conversion.
+
+    >>> trac = Trac('http://foo.bar')
+    >>> trac.convertRemoteStatus('open').title
+    'New'
+    >>> trac.convertRemoteStatus('new').title
+    'New'
+    >>> trac.convertRemoteStatus('reopened').title
+    'New'
+    >>> trac.convertRemoteStatus('assigned').title
+    'Confirmed'
+    >>> trac.convertRemoteStatus('fixed').title
+    'Fix Released'
+    >>> trac.convertRemoteStatus('invalid').title
+    'Invalid'
+    >>> trac.convertRemoteStatus('wontfix').title
+    "Won't Fix"
+    >>> trac.convertRemoteStatus('duplicate').title
+    'Confirmed'
+    >>> trac.convertRemoteStatus('worksforme').title
+    'Invalid'
+
+If the status isn't one that our Trac ExternalBugTracker can understand,
+Unknown will be returned and a warning logged.
+
+    >>> trac.convertRemoteStatus('eggs').title
+    WARNING:...:Unknown remote status 'eggs'.
+    'Unknown'
+
+UNKNOWN_REMOTE_STATUS maps to Unknown without generating a
+warning. This handles the case where we've tried to probe for a bug
+but didn't succeed. For example, if the bug number was invalid.
+
+    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
+    >>> trac.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
+    'Unknown'
+
+
+== Initialization ==
+
+Calling initializeRemoteBugDB() on our Trac instance and passing it a set of
+remote bug IDs will fetch those bug IDs from the server and file them in a
+local variable for later use.
+
+We use a test-oriented implementation for the purposes of these tests, which 
+overrides ExternalBugTracker.urlopen() so that we don't have to rely on a
+working network connection.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import TestTrac
+    >>> trac = TestTrac('http://test.trac')
+    >>> trac.initializeRemoteBugDB([1])
+    >>> sorted(trac.bugs.keys())
+    [1]
+
+If we initialise with a different set of keys we overwrite the first set:
+
+    >>> trac.initializeRemoteBugDB([6,7,8,9,10,11,12])
+    >>> sorted(trac.bugs.keys())
+    [6, 7, 8, 9, 10, 11, 12]
+
+
+== Export Methods ==
+
+There are two means by which we can export Trac bug statuses: on a bug-by-bug
+basis and as a batch. When the number of bugs that need updating is less than
+a given bug tracker's batch_query_threshold the bugs will be fetched
+one-at-a-time:
+
+    >>> trac.batch_query_threshold
+    10
+
+    >>> trac.trace_calls = True
+    >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
+    CALLED urlopen('http://test.trac/ticket/6?format=csv')
+    CALLED urlopen('http://test.trac/ticket/7?format=csv')
+    CALLED urlopen('http://test.trac/ticket/8?format=csv')
+    CALLED urlopen('http://test.trac/ticket/9?format=csv')
+    CALLED urlopen('http://test.trac/ticket/10?format=csv')
+
+If there are more than batch_query_threshold bugs to update then they are
+fetched as a batch:
+
+    >>> trac.batch_query_threshold = 4
+    >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
+    CALLED urlopen('http://test.trac/query?id=6&id=7...&format=csv')
+
+The batch updating method will also be used in cases where the Trac instance
+doesn't support CSV exports of individual tickets:
+
+    >>> trac.batch_query_threshold = 10
+    >>> trac.supports_single_exports = False
+    >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
+    CALLED urlopen('http://test.trac/query?id=6&id=7...&format=csv')
+
+
+== Invalid Bug Statuses ==
+
+Some Trac instances don't specificy a status field in their CSV exports. To
+deal with this, our Trac instance will simply return UNKNOWN_REMOTE_STATUS
+when it encounters such an instance. We can demonstrate this with a simple
+invalid bug:
+
+    >>> invalid_bug = {'id': 1, 'description': 'This bug has no status'}
+    >>> trac.bugs = {invalid_bug['id']: invalid_bug}
+    >>> trac.getRemoteStatus(invalid_bug['id'])
+    WARNING:root:Trac ticket 1 defines no status.
+    'UNKNOWN'
+
+
+== Updating Bug Watches ==
+
+First, we create some bug watches to test with:
+
+    >>> from canonical.launchpad.database import BugTracker
+    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from canonical.lp.dbschema import BugTrackerType
+
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+
+    >>> example_bug_tracker = BugTracker(
+    ...     name="example-bugs",
+    ...     title="Example.com Trac",
+    ...     bugtrackertype=BugTrackerType.TRAC,
+    ...     baseurl="http://bugs.example.com",
+    ...     summary="Contains bugs for Example.com",
+    ...     contactdetails="foo.bar@example.com",
+    ...     owner=sample_person)
+
+    >>> login('test@canonical.com')
+
+    >>> example_bug = getUtility(IBugSet).get(10)
+    >>> example_bugwatch = example_bug.addWatch(
+    ...     example_bug_tracker, 1, sample_person)
+
+    >>> login('no-priv@canonical.com')
+
+Collect the Example.com watches:
+
+    >>> for bug_watch in example_bug_tracker.watches:
+    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    1: None
+
+And have a Trac instance process them:
+
+    >>> trac = TestTrac(example_bug_tracker.baseurl)
+    >>> trac.updateBugWatches(example_bug_tracker.watches)
+    >>> for bug_watch in example_bug_tracker.watches:
+    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    1: fixed
+
+We'll add some more watches now.
+
+    >>> from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
+
+    >>> bug_watch_set = getUtility(IBugWatchSet)
+    >>> bug_watches = dict(
+    ...     (int(bug_watch.remotebug), bug_watch)
+    ...     for bug_watch in example_bug_tracker.watches)
+
+    >>> for remote_bug, bug_watch in bug_watches.items():
+    ...     print "%s: %s" % (remote_bug, bug_watch.remotestatus)
+    1: fixed
+
+    >>> remote_bugs = [
+    ...     (143, 'fixed'),
+    ...     (144, 'assigned'),
+    ...     (145, 'duplicate'),
+    ...     (146, 'invalid'),
+    ...     (147, 'worksforme'),
+    ...     (148, 'wontfix'),
+    ...     (149, 'reopened'),
+    ...     (150, 'new'),
+    ...     (151, 'new'),
+    ...     (152, 'new'),
+    ...     (153, 'new'),
+    ... ]
+
+    >>> for remote_bug_id, remote_status in remote_bugs:
+    ...     bug_watch = bug_watch_set.createBugWatch(
+    ...         bug=example_bug, owner=sample_person,
+    ...         bugtracker=example_bug_tracker,
+    ...         remotebug=str(remote_bug_id))
+    ...     bug_watches[remote_bug_id] = bug_watch
+
+    >>> trac.trace_calls = True
+    >>> trac.updateBugWatches(example_bug_tracker.watches)
+    CALLED urlopen(u'http://bugs.example.com/query?id=...
+
+    >>> for remote_bug_id in sorted(bug_watches.keys()):
+    ...     remote_status = bug_watches[remote_bug_id].remotestatus
+    ...     print 'Remote bug %d: %s' % (remote_bug_id, remote_status)
+    Remote bug 1: fixed
+    Remote bug 143: fixed
+    Remote bug 144: assigned
+    Remote bug 145: duplicate
+    Remote bug 146: invalid
+    Remote bug 147: worksforme
+    Remote bug 148: wontfix
+    Remote bug 149: reopened
+    Remote bug 150: new
+    Remote bug 151: new
+    Remote bug 152: new
+    Remote bug 153: new
+
+updateBugWatches() updates the lastchecked attribute on the watches, so
+now no bug watches are in need of updating:
+
+    >>> flush_database_updates()
+    >>> example_bug_tracker.getBugWatchesNeedingUpdate(23).count()
+    0
+
+If the status isn't different, the lastchanged attribute doesn't get
+updated. If we set a bug watch's lastchanged timestamp manually and call
+update, lastchanged shouldn't be affected because the remote status of the bug
+watch hasn't altered:
+
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> bug_watch = example_bug_tracker.watches[0]
+    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> bug_watch.lastchanged = now - timedelta(weeks=2)
+    >>> old_last_changed = bug_watch.lastchanged
+    >>> trac.trace_calls = False
+    >>> trac.updateBugWatches(example_bug_tracker.watches)
+    >>> bug_watch.lastchanged == old_last_changed
+    True

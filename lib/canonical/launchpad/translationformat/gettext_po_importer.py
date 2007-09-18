@@ -3,53 +3,42 @@
 __metaclass__ = type
 
 __all__ = [
-    'GettextPoImporter'
+    'GettextPOImporter'
     ]
 
-from email.Utils import parseaddr
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import ITranslationFormatImporter
-from canonical.launchpad.translationformat.gettext_po_parser import POParser
+from canonical.launchpad.translationformat.gettext_po_parser import (
+    POParser, POHeader)
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lp.dbschema import TranslationFileFormat
 
 
-class GettextPoImporter:
+class GettextPOImporter:
     """Support class to import gettext .po files."""
     implements(ITranslationFormatImporter)
 
-    def __init__(self, logger=None):
-        self.logger = logger
+    def __init__(self, context=None):
         self.basepath = None
         self.productseries = None
         self.distroseries = None
         self.sourcepackagename = None
         self.is_published = False
         self.content = None
-        self.header = None
-        self.messages = []
 
-    @property
-    def format(self):
+    def getFormat(self, file_contents):
         """See `ITranslationFormatImporter`."""
         return TranslationFileFormat.PO
 
-    @property
-    def content_type(self):
-        """See `ITranslationFormatImporter`."""
-        return 'application/x-po'
+    priority = 0
 
-    @property
-    def file_extensions(self):
-        """See `ITranslationFormatImporter`."""
-        return ['.po', '.pot']
+    content_type = 'application/x-po'
 
-    @property
-    def has_alternative_msgid(self):
-        """See `ITranslationFormatImporter`."""
-        return False
+    file_extensions = ['.po', '.pot']
+
+    uses_source_string_msgids = False
 
     def parse(self, translation_import_queue_entry):
         """See `ITranslationFormatImporter`."""
@@ -65,30 +54,8 @@ class GettextPoImporter:
             translation_import_queue_entry.content.id)
 
         parser = POParser()
-        parser.write(self.content.read())
-        parser.finish()
+        return parser.parse(self.content.read())
 
-        self.header = parser.header
-        self.messages = parser.messages
-
-    def getLastTranslator(self):
+    def getHeaderFromString(self, header_string):
         """See `ITranslationFormatImporter`."""
-        if self.header is None:
-            # The file does not have a header field.
-            return None, None
-
-        # Get last translator information. If it's not found, we use the
-        # default value from Gettext.
-        last_translator = self.header.get(
-            'Last-Translator', 'FULL NAME <EMAIL@ADDRESS>')
-
-        name, email = parseaddr(last_translator)
-
-        if email == 'EMAIL@ADDRESS' or '@' not in email:
-            # Gettext (and Launchpad) sets by default the email address to
-            # EMAIL@ADDRESS unless it knows the real address, thus,
-            # we know this isn't a real account so we don't accept it as a
-            # valid one.
-            return None, None
-        else:
-            return name, email
+        return POHeader(header_string)

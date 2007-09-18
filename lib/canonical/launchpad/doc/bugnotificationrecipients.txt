@@ -17,7 +17,7 @@ action:
 The instance of BugNotificationRecipients we get back correctly
 implements INotificationRecipientSet:
 
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.launchpad.interfaces import INotificationRecipientSet
   >>> verifyObject(INotificationRecipientSet, recipients)
   True

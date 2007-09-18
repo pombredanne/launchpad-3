@@ -190,8 +190,12 @@ Check that x11proto-damage has its Build-Depends-Indep value correctly set:
     >>> n = SourcePackageName.selectOneBy(name="x11proto-damage")
     >>> x11p = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...                                         version="6.8.99.7-2")
+
     >>> print x11p.builddependsindep
     debhelper (>= 4.0.0)
+
+Check if the changelog message was stored correcly:
+
     >>> print x11p.changelog
     x11proto-damage (6.8.99.7-2) breezy; urgency=low
     <BLANKLINE>
@@ -199,9 +203,19 @@ Check that x11proto-damage has its Build-Depends-Indep value correctly set:
       * Add dependency on x11proto-fixes-dev.
     <BLANKLINE>
      -- Daniel Stone <daniel.stone@ubuntu.com>  Mon, 11 Jul 2005 19:11:11 +1000
+
     >>> from canonical.lp.dbschema import SourcePackageUrgency
     >>> x11p.urgency == SourcePackageUrgency.LOW
     True
+
+Same for the copyright:
+
+    >>> print x11p.copyright
+    $Id: COPYING,v 1.2 2003/11/05 05:39:58 keithp Exp $
+    <BLANKLINE>
+    Copyright ... 2003 Keith Packard
+    ...
+    PERFORMANCE OF THIS SOFTWARE.
 
 Check that the dsc on the libcap package is correct, and that we
 only imported one:
@@ -282,9 +296,11 @@ We check that the source package publishing override facility works:
 
     >>> for pub in SSPPH.selectBy(
     ...     sourcepackagereleaseID=db1.id, orderBy='distrorelease'):
-    ...     print pub.distroseries.name, pub.section.name
-    hoary libs
-    breezy oldlibs
+    ...     print "%s %s %s" % (
+    ...         pub.distroseries.name, pub.section.name,
+    ...         pub.archive.purpose.name)
+    hoary libs PRIMARY
+    breezy oldlibs PRIMARY
 
 We should have one entry for each package listed in Sources that was
 successfully processed.
@@ -352,13 +368,6 @@ priority was correctly munged to "extra":
     editors
     >>> print ed.summary
     The classic unix line editor.
-    >>> print ed.licence
-    This is Debian GNU's prepackaged version of the FSF's GNU ed
-    utility.  The classic unix line editor, ed is a line-oriented text
-    editor.  It is used to create, display, modify and otherwise
-    ...
-    except that this permission notice may be stated in a translation approved
-    by the Foundation.
 
 We now check if the Breezy publication record has the correct priority:
 
@@ -405,9 +414,11 @@ We check that the binary package publishing override facility works:
     ...         version="2.1.3-7")
     >>> for pub in SecureBinaryPackagePublishingHistory.selectBy(
     ...     binarypackagereleaseID=db1.id, orderBy='distroarchrelease'):
-    ...     print pub.distroarchseries.distroseries.name, pub.priority
-    hoary Required
-    breezy Optional
+    ...     print "%s %s %s" % (
+    ...         pub.distroarchseries.distroseries.name, pub.priority,
+    ...         pub.archive.purpose.name)
+    hoary Required PRIMARY
+    breezy Optional PRIMARY
 
 XXX: test package with invalid source version
 XXX: test package with maintainer with non-ascii name
@@ -576,6 +587,63 @@ that's what overrides actually do.
     ...                         orderBy=["-datecreated"])[0]
     >>> print ac_pub.component.name
     universe
+
+
+=== Partner archive import ===
+
+Importing the partner archive requires overriding the component to
+"partner", which also makes the archive on any publishing records the
+partner archive.
+
+First get a set of existing publishings for both source and binary:
+
+    >>> comm_archive = ubuntu.getArchiveByComponent('partner')
+    >>> hoary = ubuntu['hoary']
+    >>> hoary_i386 = hoary['i386']
+    >>> partner_source_set = set(
+    ...     SSPPH.select("distrorelease = %s" % sqlvalues(hoary)))
+
+    >>> partner_binary_set = set(
+    ...     SBPPH.select("distroarchrelease = %s" % sqlvalues(hoary_i386)))
+
+Now run gina to import packages and convert them to partner:
+
+    >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q', 'partner']
+    >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
+    >>> proc.wait()
+    0
+    >>> transaction.commit()
+
+There will now be a number of publishings in the partner archive:
+
+    >>> partner_source_set_after = set(
+    ...     SSPPH.select("distrorelease = %s" % sqlvalues(hoary)))
+
+    >>> partner_binary_set_after = set(
+    ...     SBPPH.select("distroarchrelease = %s" % sqlvalues(hoary_i386)))
+
+    >>> source_difference = partner_source_set_after - partner_source_set
+    >>> len(source_difference)
+    11
+
+    >>> binary_difference = partner_binary_set_after - partner_binary_set
+    >>> len(binary_difference)
+    24
+
+All the publishings will also have the 'partner' component and the
+partner archive:
+
+    >>> print set(sspph.component.name for sspph in source_difference)
+    set([u'partner'])
+
+    >>> print set(sbpph.component.name for sbpph in binary_difference)
+    set([u'partner'])
+
+    >>> print set(sspph.archive.purpose.name for sspph in source_difference)
+    set(['PARTNER'])
+
+    >>> print set(sbpph.archive.purpose.name for sbpph in binary_difference)
+    set(['PARTNER'])
 
 === Other tests ===
 

@@ -7,12 +7,42 @@ __metaclass__ = type
 __all__ = [
     'ICodeImportMachine',
     'ICodeImportMachineSet',
+    'CodeImportMachineState',
     ]
 
 from zope.interface import Interface
-from zope.schema import Datetime, Int, TextLine, Bool
+from zope.schema import Choice, Datetime, Int, TextLine
 
 from canonical.launchpad import _
+from canonical.lazr import DBEnumeratedType, DBItem
+
+
+class CodeImportMachineState(DBEnumeratedType):
+    """CodeImportMachine State
+
+    The operational state of the code-import-controller daemon on a given
+    machine.
+    """
+
+    OFFLINE = DBItem(10, """
+        Offline
+
+        The code-import-controller daemon is not running on this machine.
+        """)
+
+    ONLINE = DBItem(20, """
+        Online
+
+        The code-import-controller daemon is running on this machine and
+        accepting new jobs.
+        """)
+
+    QUIESCING = DBItem(30, """
+        Quiescing
+
+        The code-import-controller daemon is running on this machine, but has
+        been requested to shut down and will not accept any new job.
+        """)
 
 
 class ICodeImportMachine(Interface):
@@ -26,10 +56,14 @@ class ICodeImportMachine(Interface):
     hostname = TextLine(
         title=_('Host name'), required=True,
         description=_('The hostname of the machine.'))
-
-    online = Bool(
-        title=_('Online'), required=True,
-        description=_('Is the machine currently online?'))
+    state = Choice(
+        title=_('State'), required=True, vocabulary=CodeImportMachineState,
+        default=CodeImportMachineState.OFFLINE,
+        description=_("The state of the controller daemon on this machine."))
+    heartbeat = Datetime(
+        title=_("Heartbeat"),
+        description=_("When the controller deamon last recorded it was"
+                      " running."))
 
 
 class ICodeImportMachineSet(Interface):

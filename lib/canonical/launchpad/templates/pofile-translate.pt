@@ -146,6 +146,8 @@
         <tal:block condition="view/batchnav/currentBatch">
           <form method="POST" action="">
             <!-- the hidden elements -->
+            <input type="hidden" name="show" value=""
+                   tal:attributes="value view/show" />
             <input type="hidden" name="start" value=""
                    tal:attributes="value view/start" />
             <input type="hidden" name="batch" value=""

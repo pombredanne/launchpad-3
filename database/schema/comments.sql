@@ -27,6 +27,19 @@ COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the assoc
 COMMENT ON COLUMN Branch.mirror_request_time IS 'The time when a user requested that we mirror this branch (NULL if not requested). This will be set automatically by pushing to a hosted branch. Once mirrored, it will be set back to NULL.';
 COMMENT ON COLUMN Branch.private IS 'If the branch is private, then only the owner and subscribers of the branch can see it.';
 
+-- BranchMergeProposal
+
+COMMENT ON TABLE BranchMergeProposal IS 'Branch merge proposals record the intent of landing (or merging) one branch on another.';
+COMMENT ON COLUMN BranchMergeProposal.registrant IS 'The person that created the merge proposal.';
+COMMENT ON COLUMN BranchMergeProposal.source_branch IS 'The branch where the work is being written.  This branch contains the changes that the registrant wants to land.';
+COMMENT ON COLUMN BranchMergeProposal.target_branch IS 'The branch where the user wants the changes from the source branch to be merged into.';
+COMMENT ON COLUMN BranchMergeProposal.dependent_branch IS 'If the source branch was not branched off the target branch, then this is considered the dependent_branch.';
+COMMENT ON COLUMN BranchMergeProposal.date_created IS 'When the registrant created the merge proposal.';
+COMMENT ON COLUMN BranchMergeProposal.whiteboard IS 'Used to write other information about the branch, like test URLs.';
+COMMENT ON COLUMN BranchMergeProposal.merged_revno IS 'This is the revision number of the revision on the target branch that includes the merge from the source branch.';
+COMMENT ON COLUMN BranchMergeProposal.merge_reporter IS 'This is the user that marked the proposal as merged.';
+COMMENT ON COLUMN BranchMergeProposal.date_merged IS 'This is the date that merge occurred.';
+
 -- BranchSubscription
 
 COMMENT ON TABLE BranchSubscription IS 'An association between a person or team and a bazaar branch.';
@@ -169,19 +182,66 @@ COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone
 
 COMMENT ON TABLE CodeImport IS 'The persistent record of an import from a foreign version control system to Bazaar, from the initial request to the regularly updated import branch.';
 COMMENT ON COLUMN CodeImport.branch IS 'The Bazaar branch produced by the import system.  Always non-NULL: a placeholder branch is created when the import is created.  The import is associated to a Product and Series though the branch.';
-COMMENT ON COLUMN CodeImport.registrant IS 'The person who requested this import.';
+COMMENT ON COLUMN CodeImport.registrant IS 'The person who originally requested this import.';
+COMMENT ON COLUMN CodeImport.owner IS 'The person who is currently responsible for keeping the import details up to date, initially set to the registrant. This person can edit some of the details of the code import branch.';
 COMMENT ON COLUMN CodeImport.review_status IS 'Whether this code import request has been reviewed, and whether it was accepted.';
 COMMENT ON COLUMN CodeImport.rcs_type IS 'The revision control system used by the import source. The value is defined in dbschema.RevisionControlSystems.';
 COMMENT ON COLUMN CodeImport.svn_branch_url IS 'The URL of the Subversion branch for this import.';
 COMMENT ON COLUMN CodeImport.cvs_root IS 'The $CVSROOT details, probably of the form :pserver:user@host:/path.';
 COMMENT ON COLUMN CodeImport.cvs_module IS 'The module in cvs_root to import, often the name of the project.';
 COMMENT ON COLUMN CodeImport.date_last_successful IS 'When this code import last succeeded. NULL if this import has never succeeded.';
+COMMENT ON COLUMN CodeImport.assignee IS 'The person in charge of delivering this code import and interacting with the owner.';
+COMMENT ON COLUMN Codeimport.update_interval IS 'How often should this import be updated. If NULL, defaults to a system-wide value set by the Launchpad administrators.';
+--COMMENT ON COLUMN CodeImport.modified_by IS 'The user modifying the CodeImport.  This column is never actually set in the database -- it is only present to communicate to the trigger that creates the event, which will intercept and remove the value for this column.';
+
+-- CodeImportEvent
+
+COMMENT ON TABLE CodeImportEvent IS 'A record of events in the code import system.  Rows in this table are created by triggers on other code import tables.';
+COMMENT ON COLUMN CodeImportEvent.entry_type IS 'The type of event that is recorded by this entry. Legal values are defined by the CodeImportEventType enumeration.';
+COMMENT ON COLUMN CodeImportEvent.code_import IS 'The code import that was associated to this event, if any and if it has not been deleted.';
+COMMENT ON COLUMN CodeImportEvent.person IS 'The user who caused the event, if the event is not automatically generated.';
+COMMENT ON COLUMN CodeImportEvent.machine IS 'The code import machine that was concerned by this event, if any.';
+
+-- CodeImportEventData
+
+COMMENT ON TABLE CodeImportEventData IS 'Additional data associated to a particular code import event.';
+COMMENT ON COLUMN CodeImportEventData.event IS 'The event the data is associated to.';
+COMMENT ON COLUMN CodeImportEventData.data_type IS 'The type of additional data, from the CodeImportEventDataType enumeration.';
+COMMENT ON COLUMN CodeImportEventData.data_value IS 'The value of the additional data.  A string.';
+
+-- CodeImportJob
+
+COMMENT ON TABLE CodeImportJob IS 'A pending or active code import job.  There is always such a row for any active import, but it will not run until date_due is in the past.';
+COMMENT ON COLUMN CodeImportJob.code_import IS 'The code import that is being worked upon.';
+COMMENT ON COLUMN CodeImportJob.machine IS 'The machine job is currently scheduled to run on, or where the job is currently running.';
+COMMENT ON COLUMN CodeImportJob.date_due IS 'When the import should happen.';
+COMMENT ON COLUMN CodeImportJob.state IS 'One of PENDING (waiting until its due or a machine is online), SCHEDULED (assigned to a machine, but not yet running) or RUNNING (actually in the process of being imported now).';
+COMMENT ON COLUMN CodeImportJob.requesting_user IS 'The user who requested the import, if any. Set if and only if reason = REQUEST.';
+COMMENT ON COLUMN CodeImportJob.ordering IS 'A measure of how urgent the job is -- queue entries with lower "ordering" should be processed first, or in other works "ORDER BY ordering" returns the most import jobs first.';
+COMMENT ON COLUMN CodeImportJob.heartbeat IS 'While the job is running, this field should be updated frequently to indicate that the import job hasn''t crashed.';
+COMMENT ON COLUMN CodeImportJob.logtail IS 'The last few lines of output produced by the running job. It should be updated at the same time as the heartbeat.';
+COMMENT ON COLUMN CodeImportJob.date_started IS 'When the import began to be processed.';
+
+-- CodeImportResult
+
+COMMENT ON TABLE CodeImportResult IS 'A completed code import job.';
+COMMENT ON COLUMN CodeImportResult.code_import IS 'The code import for which the job was run.';
+COMMENT ON COLUMN CodeImportResult.machine IS 'The machine the job ran on.';
+COMMENT ON COLUMN CodeImportResult.log_file IS 'A partial log of the job for users to see. It is normally only recorded if the job failed in a step that interacts with the remote repository. If a job was successful, or failed in a houskeeping step, the log file would not contain information useful to the user.';
+COMMENT ON COLUMN CodeImportResult.log_excerpt IS 'The last few lines of the partial log, in case it is set.';
+COMMENT ON COLUMN CodeImportResult.status IS 'How the job ended. Success, some kind of failure, or some kind of interruption before completion.';
+COMMENT ON COLUMN CodeImportResult.date_started IS 'When the job started to run (date_created is when it finished).';
+--COMMENT ON COLUMN CodeImportResult.killing_user IS 'The user who killed the job.';
 
 -- CodeImportMachine
 
 COMMENT ON TABLE CodeImportMachine IS 'The record of a machine capable of performing jobs for the code import system.';
 COMMENT ON COLUMN CodeImportMachine.hostname IS 'The (unique) hostname of the machine.';
-COMMENT ON COLUMN CodeImportMachine.online IS 'Whether the machine is capable of performing jobs at this time.';
+COMMENT ON COLUMN CodeImportMachine.heartbeat IS 'When the code-import-controller daemon was last known to be running on this machine. If it is not updated for a long time the machine state will change to offline.';
+COMMENT ON COLUMN CodeImportMachine.state IS 'Whether the controller daemon on this machine is offline, online, or quiescing (running but not accepting new jobs).';
+--COMMENT ON COLUMN CodeImportMachine.quiescing_requested_by IS 'The user who put this machine in the quiescing state.';
+--COMMENT ON COLUMN CodeImportMachine.quiescing_message IS 'The reason for the quiescing request.';
+--COMMENT ON COLUMN CodeImportMachine.offline_reason IS 'The reason the machine was taken offline, from the CodeImportMachineOfflineReason enumeration.';
 
 -- CVE
 
@@ -198,11 +258,6 @@ COMMENT ON COLUMN CveReference.source IS 'The SOURCE of the CVE reference. This 
 COMMENT ON COLUMN CveReference.url IS 'The URL to this reference out there on the web, if it was present in the CVE database.';
 COMMENT ON COLUMN CveReference.content IS 'The content of the ref in the CVE database. This is sometimes a comment, sometimes a description, sometimes a bug number... it is not predictable.';
 
-
--- DevelopmentManifest
-COMMENT ON TABLE DevelopmentManifest IS 'A table that keeps track of the "intermediate commits" during the development of a source package. A developer using HCT will make regular commits (stored locally, as Bazaar revisions). On occasion, the developer will "publish" the current state of the package. This results in the Bazaar branches being made available on a public server, and a DevelopmentManifest being created. Other people will then see the existence of the Development Manifest and know that the person is currently working on a variation of the package. When the developer believes that the page is actually ready to build, they can "release" the package. This results in a SourcePackageRelease being assembled, based on the existing development manifest.';
-COMMENT ON COLUMN DevelopmentManifest.distrorelease IS 'The distribution release for which this source package is being developed. Note that the source package may very well be built and published in other releases as well - this information is purely a starting point indicator.';
-COMMENT ON COLUMN DevelopmentManifest.sourcepackagename IS 'Again, this is just an indicator of the place the developer is primarily targeting the work. This same package may actually be uploaded under a different name somewhere else eventually.';
 
 
 -- DistributionSourcePackageCache
@@ -453,6 +508,7 @@ COMMENT ON COLUMN ProjectRelationship.label IS 'The nature of the relationship. 
 COMMENT ON TABLE POTMsgSet IS 'POTMsgSet: This table is stores a collection of msgids without their translations and all kind of information associated to that set of messages that could be found in a potemplate file.';
 
 COMMENT ON COLUMN POTMsgSet.primemsgid IS 'The id of a pomgsid that identify this message set.';
+COMMENT ON COLUMN POTMsgSet.context IS 'Context uniquely defining a message when there are messages with same primemsgids.';
 COMMENT ON COLUMN POTMsgSet.alternative_msgid IS 'The alternative (non-English-based) id of a pomgsid that identifies this message set.';
 COMMENT ON COLUMN POTMsgSet."sequence" IS 'The position of this message set inside the potemplate.';
 COMMENT ON COLUMN POTMsgSet.potemplate IS 'The potemplate where this message set is stored.';
@@ -569,7 +625,7 @@ COMMENT ON COLUMN Question.datelastquery IS 'The date we last saw a comment from
 COMMENT ON COLUMN Question.datelastresponse IS 'The date we last saw a comment from somebody other than the requester.';
 COMMENT ON COLUMN Question.dateaccepted IS 'The date we "confirmed" or "accepted" this question. It is usually set to the date of the first response by someone other than the requester. This allows us to track the time between first request and first response.';
 COMMENT ON COLUMN Question.datedue IS 'The date this question is "due", if such a date can be established. Usually this will be set automatically on the basis of a support contract SLA commitment.';
-COMMENT ON COLUMN Question.dateanswered IS 'The date this question was last "answered", in the sense of receiving a comment from someone other than the requester that the requester considered sufficient to close the question.';
+COMMENT ON COLUMN Question.date_solved IS 'The date this question was last marked as solved by the requester (owner). The requester either found a solution, or accepted an answer from another user.';
 COMMENT ON COLUMN Question.dateclosed IS 'The date the requester marked this question CLOSED.';
 COMMENT ON COLUMN Question.language IS 'The language of the question''s title and description.';
 COMMENT ON COLUMN Question.whiteboard IS 'A general status whiteboard. This is a scratch space to which arbitrary data can be added (there is only one constant whiteboard with no history). It is displayed at the top of the question. So its a useful way for projects to add their own semantics or metadata to the Answer Tracker.';
@@ -624,17 +680,6 @@ COMMENT ON COLUMN DistroReleaseLanguage.rosettacount IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.unreviewed_count IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.contributorcount IS 'The total number of contributors to the translation of this distrorelease into this language.';
 
--- Manifest
-
-COMMENT ON TABLE Manifest IS 'A Manifest describes the branches that go into
-making up a source package or product release. This allows us to describe
-the source package or product release in a way that HCT can pull down the
-sources directly from The Bazaar and allow people to branch and edit
-immediately. Note that a Manifest does not have an owner, please ensure that
-ANYTHING that points TO a manifest, such as ProductRelease or
-SourcePackageRelease, has an owner, so that we do not end up with orphaned
-manifests.';
-
 -- Calendar
 
 COMMENT ON TABLE Calendar IS 'A Calendar attached to some other Launchpad object (currently People, Projects or Products)';
@@ -681,6 +726,8 @@ COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribut
 COMMENT ON COLUMN Distribution.official_answers IS 'Whether or not this product upstream uses Answers officialy.';
 
 COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroRelease that should get the translation effort focus.';
+COMMENT ON COLUMN Distribution.language_pack_admin IS 'The Person or Team that handle language packs for the distro release.';
+
 
 -- DistroRelease
 
@@ -689,13 +736,16 @@ information which lucille will use when processing uploads and
 generating archives for this distro release';
 COMMENT ON COLUMN DistroRelease.summary IS 'A brief summary of the distro release. This will be displayed in bold at the top of the distrorelease page, above the distrorelease description. It should include any high points that are particularly important to draw to the attention of users.';
 COMMENT ON COLUMN DistroRelease.description IS 'An extensive list of the features in this release of the distribution. This will be displayed on the main distro release page, below the summary.';
-COMMENT ON COLUMN DistroRelease.datelastlangpack IS 'The date we last generated a base language pack for this release. Language update packs for this release will only include translations added after that date.';
 COMMENT ON COLUMN DistroRelease.hide_all_translations IS 'Whether we should hid
 e all available translations for this distro release to non admin users.';
 COMMENT ON COLUMN DistroRelease.messagecount IS 'This is a cached value and may be a few hours out of sync with reality. It should, however, be in sync with the values in DistroReleaseLanguage, and should never be updated separately. The total number of translation messages in this distro release, as per IRosettaStats.';
 COMMENT ON COLUMN DistroRelease.nominatedarchindep IS 'This is the DistroArchRelease nominated to build architecture independent packages within this DistroRelase, it is mandatory for buildable distroreleases, i.e., Auto Build System will avoid to create build jobs for a DistroRelease with no nominatedarchindep, but the database model allow us to do it (for non-buildable DistroReleases). See further info in NominatedArchIndep specification.';
 COMMENT ON COLUMN DistroRelease.binarycount IS 'A cache of the number of distinct binary package names published in this distro release.';
 COMMENT ON COLUMN DistroRelease.sourcecount IS 'A cache of the number of distinct source package names published in this distro release.';
+COMMENT ON COLUMN DistroRelease.language_pack_base IS 'Current full export language pack for this distribution release.';
+COMMENT ON COLUMN DistroRelease.language_pack_delta IS 'Current language pack update based on language_pack_base information.';
+COMMENT ON COLUMN DistroRelease.language_pack_proposed IS 'Either a full or update language pack being tested to be used in language_pack_base or language_pack_delta.';
+COMMENT ON COLUMN DistroRelease.language_pack_full_export_requested IS 'Whether next language pack export should be a full export or an update.';
 
 -- PackageUpload
 COMMENT ON TABLE PackageUpload IS 'An upload. This table stores information pertaining to uploads to a given DistroRelease/Archive.';
@@ -755,7 +805,6 @@ COMMENT ON COLUMN SourcePackageRelease.builddependsindep IS 'DSC builddependsind
 COMMENT ON COLUMN SourcePackageRelease.architecturehintlist IS 'DSC arch line';
 COMMENT ON COLUMN SourcePackageRelease.dsc IS 'Original DSC text.';
 COMMENT ON COLUMN SourcePackageRelease.section IS 'This integer field references the Section which the source package claims to be in';
-COMMENT ON COLUMN SourcePackageRelease.manifest IS 'Reference to a manifest record.';
 COMMENT ON COLUMN SourcePackageRelease.maintainer IS 'Reference to the person noted as source package maintainer in the DSC.';
 COMMENT ON COLUMN SourcePackageRelease.sourcepackagename IS 'Reference to a SourcePackageName.';
 COMMENT ON COLUMN SourcePackageRelease.uploaddistrorelease IS 'DistroRelease to where the source was originally uploaded.';
@@ -764,6 +813,8 @@ COMMENT ON COLUMN SourcePackageRelease.dsc_maintainer_rfc822 IS 'The original ma
 COMMENT ON COLUMN SourcePackageRelease.dsc_standards_version IS 'DSC standards version (such as "3.6.2", "3.5.9", etc) used to build this source.';
 COMMENT ON COLUMN SourcePackageRelease.dsc_format IS 'DSC format version (such as "1.0").';
 COMMENT ON COLUMN SourcePackageRelease.dsc_binaries IS 'DSC binary line, claimed binary-names produce by this source.';
+COMMENT ON COLUMN SourcePackageRelease.copyright IS 'The copyright associated with this sourcepackage. Often in the case of debian packages and will be found after the installation in /usr/share/doc/<binarypackagename>/copyright';
+
 
 -- SecureBinaryPackagePublishingHistory
 COMMENT ON TABLE SecureBinaryPackagePublishingHistory IS 'PackagePublishingHistory: The history of a BinaryPackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
@@ -898,6 +949,7 @@ COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bo
 
 -- Messaging subsytem
 COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';
+COMMENT ON COLUMN BugMessage.bugwatch IS 'The external bug this bug comment was imported from.';
 COMMENT ON TABLE Message IS 'This table stores a single RFC822-style message. Messages can be threaded (using the parent field). These messages can then be referenced from elsewhere in the system, such as the BugMessage table, integrating messageboard facilities with the rest of The Launchpad.';
 COMMENT ON COLUMN Message.parent IS 'A "parent message". This allows for some level of threading in Messages.';
 COMMENT ON COLUMN Message.subject IS 'The title text of the message, or the subject if it was an email.';
@@ -1049,8 +1101,6 @@ COMMENT ON COLUMN BinaryPackageRelease.replaces IS 'The list of packages this bi
 COMMENT ON COLUMN BinaryPackageRelease.provides IS 'The list of virtual packages (or real packages under some circumstances) which this binarypackage provides.';
 COMMENT ON COLUMN BinaryPackageRelease.essential IS 'Whether or not this binarypackage is essential to the smooth operation of a base system';
 COMMENT ON COLUMN BinaryPackageRelease.installedsize IS 'What the installed size of the binarypackage is. This is represented as a number of kilobytes of storage.';
-COMMENT ON COLUMN BinaryPackageRelease.copyright IS 'The copyright associated with this binarypackage. Often in the case of debian packages this is found in /usr/share/doc/<binarypackagename>/copyright';
-COMMENT ON COLUMN BinaryPackageRelease.licence IS 'The licence that this binarypackage is under.';
 
 
 -- BinaryPackageFile
@@ -1341,6 +1391,7 @@ COMMENT ON TABLE ShippingRequest IS 'A shipping request made through ShipIt.';
 COMMENT ON COLUMN ShippingRequest.recipient IS 'The person who requested.';
 COMMENT ON COLUMN ShippingRequest.daterequested IS 'The date this request was made.';
 COMMENT ON COLUMN ShippingRequest.shockandawe IS 'The Shock and Awe program that generated this request, in case this is part of a SA program.';
+COMMENT ON COLUMN ShippingRequest.type IS 'The type of the request.';
 COMMENT ON COLUMN ShippingRequest.status IS 'The status of the request.';
 COMMENT ON COLUMN ShippingRequest.whoapproved IS 'The person who approved this.';
 COMMENT ON COLUMN ShippingRequest.whocancelled IS 'The person who cancelled this.';
@@ -1560,4 +1611,41 @@ COMMENT ON COLUMN Entitlement.whiteboard IS 'A place for administrator notes.';
 COMMENT ON COLUMN Entitlement.state IS 'The state (REQUESTED, ACTIVE, INACTIVE) of the entitlement.';
 COMMENT ON COLUMN Entitlement.is_dirty IS 'This entitlement has been modified and the state needst to be updated on the external system.';
 
+-- OpenIdRealmConfig
+COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';
+COMMENT ON COLUMN OpenIdRPConfig.trust_root IS 'The trust root for this RP';
+COMMENT ON COLUMN OpenIdRPConfig.displayname IS 'The human readable name for this RP';
+COMMENT ON COLUMN OpenIDRPConfig.description IS 'A description of the RP.  Should indicate why the RP wants the user to log in';
+COMMENT ON COLUMN OpenIdRPConfig.logo IS 'A reference to the logo for this RP';
+COMMENT ON COLUMN OpenIdRPConfig.allowed_sreg IS 'A comma separated list of fields that can be sent to the RP via openid.sreg.  The field names should not have the "openid.sreg." prefix';
+COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation rationale to use for users who create an account while logging in to this RP';
 
+
+-- ProductSubscription
+-- COMMENT ON TABLE ProductSubscription IS 'Defines the support contacts for a given product. The support contacts will be automatically subscribed to every support request filed on the product.';
+
+-- LanguagePack
+COMMENT ON TABLE LanguagePack IS 'Store exported language packs for DistroReleases.';
+COMMENT ON COLUMN LanguagePack.file IS 'Librarian file where the language pack is stored.';
+COMMENT ON COLUMN LanguagePack.date_exported IS 'When was exported the language pack.';
+COMMENT ON COLUMN LanguagePack.date_last_used IS 'When did we stop using the language pack. It\'s used to decide whether we can remove it completely from the system. When it\'s being used, its value is NULL';
+COMMENT ON COLUMN LanguagePack.distroseries IS 'The distribution series from where this language pack was exported.';
+COMMENT ON COLUMN LanguagePack.type IS 'Type of language pack. There are two types available, 1: Full export, 2: Update export based on language_pack_that_updates export.';
+COMMENT ON COLUMN LanguagePack.updates IS 'The LanguagePack that this one updates.';
+
+-- HWSubmission
+COMMENT ON TABLE HWSubmission IS 'Raw HWDB submission data';
+COMMENT ON COLUMN HWSubmission.date_created IS 'Date and time of the submission (generated by the client).';
+COMMENT ON COLUMN HWSubmission.date_submitted IS 'Date and time of the submission (generated by the server).';
+COMMENT ON COLUMN HWSubmission.format IS 'The format version of the submitted data, as given by the HWDB client. See HWSubmissionFormat for valid values.';
+COMMENT ON COLUMN HWSubmission.status IS 'The status of the submission. See HWSubmissionProcessingStatus for valid values.';
+COMMENT ON COLUMN HWSubmission.private IS 'If false, the submitter allows public access to the data. If true, the data may be used only for statistical purposes.';
+COMMENT ON COLUMN HWSubmission.contactable IS 'If True, the submitter agrees to be contacted by upstream developers and package maintainers for tests etc.';
+COMMENT ON COLUMN HWSubmission.submission_key IS 'A unique submission ID.';
+COMMENT ON COLUMN HWSubmission.owner IS 'A reference to the Person table: The owner/submitter of the data.';
+COMMENT ON COLUMN HWSubmission.distroarchseries IS 'A reference to the distroarchseries of the submission. This value is null, if the submitted values for distribution, distroseries and architecture do not match an existing entry in the Distroarchseries table.';
+COMMENT ON COLUMN HWSubmission.raw_submission IS 'A reference to a row of LibraryFileAlias. The library file contains the raw submission data.';
+COMMENT ON COLUMN HWSubmission.system_fingerprint IS 'A reference to an entry of the HWDBSystemFingerPrint table. This table stores the system name as returned by HAL (system.vendor, system.product)';
+
+COMMENT ON TABLE HWSystemFingerprint IS 'A distinct list of "fingerprints" (HAL system.name, system.vendor) from raw submission data';
+COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';

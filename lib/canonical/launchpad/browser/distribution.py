@@ -11,7 +11,7 @@ __all__ = [
     'DistributionFacets',
     'DistributionSpecificationsMenu',
     'DistributionView',
-    'DistributionPPAView',
+    'DistributionPPASearchView',
     'DistributionAllPackagesView',
     'DistributionBrandingView',
     'DistributionEditView',
@@ -26,6 +26,7 @@ __all__ = [
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
     'DistributionLaunchpadUsageEditView',
+    'DistributionLanguagePackAdminView',
     'DistributionSetFacets',
     'DistributionSetNavigation',
     'DistributionSetContextMenu',
@@ -369,11 +370,20 @@ class DistributionTranslationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'translations'
-    links = ['edit']
+    links = ['edit', 'imports', 'language_pack_admin']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
 
     def edit(self):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
+
+    @enabled_with_permission('launchpad.TranslationsAdmin')
+    def language_pack_admin(self):
+        text = 'Change language pack admins'
+        return Link('+select-language-pack-admin', text, icon='edit')
 
 
 class DistributionView(BuildRecordsView):
@@ -440,12 +450,21 @@ class DistributionView(BuildRecordsView):
                       reverse=True)
 
 
-class DistributionPPAView(LaunchpadView):
+class DistributionPPASearchView(LaunchpadView):
+    """Search PPAs belonging to the Distribution in question."""
 
     def initialize(self):
-        """Setup a batched `IArchive` list."""
-        self.name_filter = self.request.get('name_filter', None)
-        ppas = self.context.searchPPAs(text=self.name_filter)
+        self.name_filter = self.request.get('name_filter')
+        self.show_inactive = self.request.get('show_inactive')
+
+        # Preserve self.show_inactive state because it's used in the
+        # template and build a boolean field to be passed for
+        # searchPPAs.
+        show_inactive = (self.show_inactive == 'on')
+
+        ppas = self.context.searchPPAs(
+            text=self.name_filter, show_inactive=show_inactive)
+
         self.batchnav = BatchNavigator(ppas, self.request)
         self.search_results = self.batchnav.currentBatch()
 
@@ -558,6 +577,18 @@ class DistributionBugContactEditView(SQLObjectEditView):
                 "contact again whenever you want to.")
 
         self.request.response.redirect(canonical_url(distribution))
+
+
+class DistributionLanguagePackAdminView(LaunchpadEditFormView):
+    """Browser view to change the language pack administrator."""
+
+    schema = IDistribution
+    label = "Change the language pack administrator"
+    field_names = ['language_pack_admin']
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
 
 
 class DistributionCountryArchiveMirrorsView(LaunchpadView):

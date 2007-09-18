@@ -1,4 +1,3 @@
-<tal:tag condition="view/update"/>
 <html
     xmlns="http://www.w3.org/1999/xhtml"
     xml:lang="en"
@@ -21,7 +20,7 @@
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_editform/editform">
+  <div metal:use-macro="context/@@launchpad_form/form">
 
     <p metal:fill-slot="extra_info">
       The bug contact is a person or team that receives notification of all new

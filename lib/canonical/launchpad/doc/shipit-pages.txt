@@ -2,19 +2,8 @@ ShipIt Pages
 ============
 
     >>> from canonical.launchpad.database import ShippingRequest
+    >>> from canonical.launchpad.layers import ShipItUbuntuLayer
     >>> jordis_request = ShippingRequest.get(16)
-
-Let's define a helper function to make it easier to construct a view.
-
-    >>> from zope.component import getView
-    >>> from zope.publisher.browser import TestRequest
-    >>> from canonical.launchpad.layers import ShipItUbuntuLayer, setFirstLayer
-    >>> def create_view(context, name, form=None):
-    ...     request = TestRequest(form=form)
-    ...     request.notifications = []
-    ...     setFirstLayer(request, ShipItUbuntuLayer)
-    ...     view = getView(context, name, request)
-    ...     return view
 
 
 /shipit/myrequest
@@ -36,7 +25,8 @@ StandardShipItRequests.
     >>> login('test@canonical.com')
     >>> from canonical.launchpad.systemhomes import ShipItApplication
     >>> shipit = ShipItApplication()
-    >>> myrequest_view = create_view(shipit, 'myrequest')
+    >>> myrequest_view = create_view(
+    ...     shipit, 'myrequest', layer=ShipItUbuntuLayer)
     >>> html = myrequest_view.renderStandardrequestForm()
     >>> 'Request CDs' in html
     True
@@ -64,7 +54,8 @@ headers, or we'll start shipping wrong CDs to people. This order is specified
 by the ordered_flavours and ordered_architectures attributes of the view
 class.
 
-    >>> review_request_view = create_view(jordis_request, '+edit')
+    >>> review_request_view = create_view(
+    ...     jordis_request, '+edit', layer=ShipItUbuntuLayer)
     >>> [flavour.title for flavour in review_request_view.ordered_flavours]
     ['Ubuntu', 'Kubuntu', 'Edubuntu']
 
@@ -110,7 +101,8 @@ widgets.
      'edubuntu_quantityx86approved': 5, 'ubuntu_quantityamd64approved': 0}
 
     >>> pending_approval_request = ShippingRequest.get(12)
-    >>> review_request_view = create_view(pending_approval_request, '+edit')
+    >>> review_request_view = create_view(
+    ...     pending_approval_request, '+edit', layer=ShipItUbuntuLayer)
     >>> review_request_view.context.isApproved()
     False
 
