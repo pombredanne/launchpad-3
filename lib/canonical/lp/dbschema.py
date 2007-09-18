@@ -203,6 +203,7 @@ class BugTrackerType(DBSchema):
         Mantis is a web-based bug tracking system written in PHP.
         """)
 
+
 class CveStatus(DBSchema):
     """The Status of this item in the CVE Database
 
@@ -2258,6 +2259,13 @@ class TranslationFileFormat(DBSchema):
         Mozilla XPI format
 
         The .xpi format as used by programs from Mozilla foundation.
+        """)
+
+    KDEPO = Item(4, """
+        KDE PO format
+
+        Legacy KDE PO format which embeds context and plural forms inside
+        messages itself instead of using gettext features.
         """)
 
 
