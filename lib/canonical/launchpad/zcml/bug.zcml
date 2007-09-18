@@ -19,7 +19,7 @@
                            date_last_updated getDirectSubscribers
                            getIndirectSubscribers mentoring_offers
                            canMentor isMentor getNullBugTask
-                           is_complete date_last_message"
+                           is_complete"
                            />
         <require
             permission="launchpad.View"
@@ -34,7 +34,8 @@
                         hasBranch security_related tags getMessageChunks
                         isSubscribedToDupes getSubscribersFromDuplicates
                         getAlsoNotifiedSubscribers getBugWatch getBugTask
-                        canBeNominatedFor getNominationFor getNominations"
+                        canBeNominatedFor getNominationFor getNominations
+                        date_last_message"
             />
         <require
             permission="launchpad.Edit"
@@ -47,7 +48,7 @@
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore
                             activitytimestamp activity initial_message private
-                            security_related tags date_last_message"
+                            security_related tags"
             />
         <require
             permission="launchpad.AnyPerson"

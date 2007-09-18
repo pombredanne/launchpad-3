@@ -456,7 +456,7 @@ class Bug(SQLBase):
     def linkMessage(self, message):
         """See `IBug`."""
         if message not in self.messages:
-            self.date_last_message = message.datecreated
+            self.date_last_message = UTC_NOW
             result = BugMessage(bug=self, message=message)
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, message.owner)

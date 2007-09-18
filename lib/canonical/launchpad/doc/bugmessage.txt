@@ -112,6 +112,12 @@ For each bug, we cache the date of the last message linked to it using
 the sttribute `date_last_message` in order to optimize searches the need
 to compare this value for every bug in a large set.
 
-    >>> bug_one.date_last_message == max(
-    ...     msg.datecreated for msg in bug_one.messages)
-    True
+    >>> cmp(bug_one.date_last_message, max(
+    ...     msg.datecreated for msg in bug_one.messages))
+    0
+    >>> test_message = bug_one.newMessage(
+    ...     owner=sample_person,
+    ...     subject="test message subject",
+    ...     content="This is a test comment.")
+    >>> cmp(bug_one.date_last_message, test_message.datecreated)
+    0
