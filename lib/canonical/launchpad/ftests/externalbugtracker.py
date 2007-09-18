@@ -5,11 +5,10 @@
 __metaclass__ = type
 
 import os
+import re
 
-from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
-from canonical.launchpad.database import BugTracker
 from canonical.launchpad.components.externalbugtracker import (
-    Bugzilla, Mantis, Trac, Roundup)
+    Bugzilla, Mantis, Trac, Roundup, SourceForge)
 
 
 def read_test_file(name):
@@ -48,6 +47,27 @@ def print_bugwatches(bug_watches, convert_remote_status=None):
 
         print 'Remote bug %d: %s' % (remote_bug_id, status)
 
+def convert_python_status(status, resolution):
+    """Convert a human readable status and resolution into a Python
+    bugtracker status and resolution string.
+    """
+    status_map = {'open': 1, 'closed': 2, 'pending': 3}
+    resolution_map = {
+        'None': 'None',
+        'accepted': 1,
+        'duplicate': 2,
+        'fixed': 3,
+        'invalid': 4,
+        'later': 5,
+        'out-of-date': 6,
+        'postponed': 7,
+        'rejected': 8,
+        'remind': 9,
+        'wontfix': 10,
+        'worksforme': 11
+    }
+
+    return "%s:%s" % (status_map[status], resolution_map[resolution])
 
 class TestBugzilla(Bugzilla):
     """Bugzilla ExternalSystem for use in tests.
@@ -246,5 +266,33 @@ class TestRoundup(Roundup):
             print "CALLED urlopen(%r)" % (url,)
 
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
-        return open(file_path + '/' + 'roundup_example_ticket_export.csv', 'r')
+
+        if self.isPython():
+            return open(
+                file_path + '/' + 'python_example_ticket_export.csv', 'r')
+        else:
+            return open(
+                file_path + '/' + 'roundup_example_ticket_export.csv', 'r')
+
+
+class TestSourceForge(SourceForge):
+    """Test-oriented SourceForge ExternalBugTracker.
+
+    Overrides _getPage() so that access to SourceForge itself is not
+    required.
+    """
+
+    trace_calls = False
+
+    def _getPage(self, page):
+        if self.trace_calls:
+            print "CALLED _getPage(%r)" % (page,)
+
+        page_re = re.compile('support/tracker.php\?aid=([0-9]+)')
+        bug_id = page_re.match(page).groups()[0]
+
+        file_path = os.path.join(
+            os.path.dirname(__file__), 'testfiles',
+            'sourceforge-sample-bug-%s.html' % bug_id)
+        return open(file_path, 'r')
 

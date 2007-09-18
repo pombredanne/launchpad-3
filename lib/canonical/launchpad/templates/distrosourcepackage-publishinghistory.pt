@@ -1,0 +1,36 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Source package publishing history</h1>
+  <table class="listing">
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Status</th>
+        <th>Target</th>
+        <th>Pocket</th>
+        <th>Component</th>
+        <th>Section</th>
+        <th>Version</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tal:block repeat="publishing context/publishing_history"
+                 replace="structure publishing/@@+listing-detailed">
+      </tal:block>
+    </tbody>
+  </table>
+</div>
+</body>
+</html>
+

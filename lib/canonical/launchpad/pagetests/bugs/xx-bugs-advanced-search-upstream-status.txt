@@ -27,7 +27,7 @@ doesn't have a bug watch.
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [
-    ...     'Show bugs that need to be forwarded to an upstream bugtracker']
+    ...     'Show bugs that need to be forwarded to an upstream bug tracker']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder
@@ -64,7 +64,7 @@ are not included in the report.
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [
-    ...     'Show bugs that need to be forwarded to an upstream bugtracker']
+    ...     'Show bugs that need to be forwarded to an upstream bug tracker']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print anon_browser.contents
     <!DOCTYPE...
@@ -182,7 +182,7 @@ The user opens a bookmark for "upstream status doesn't matter"
       &mdash; Medium New
  
 The user opens a bookmark for "upstream status: Show only bugs that need 
-to be forwarded to an upstream bugtracker".
+to be forwarded to an upstream bug tracker".
 
     >>> bookmark_params['field.status_upstream'] = 'pending_bugwatch'
     >>> anon_browser.open(

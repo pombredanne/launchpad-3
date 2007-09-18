@@ -75,11 +75,13 @@ from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.gpg import *
 from canonical.launchpad.interfaces.gpghandler import *
+from canonical.launchpad.interfaces.hwdb import *
 from canonical.launchpad.interfaces.infestation import *
 from canonical.launchpad.interfaces.irc import *
 from canonical.launchpad.interfaces.jabber import *
 from canonical.launchpad.interfaces.karma import *
 from canonical.launchpad.interfaces.language import *
+from canonical.launchpad.interfaces.languagepack import *
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.launchpadstatistic import *
 from canonical.launchpad.interfaces.librarian import *
