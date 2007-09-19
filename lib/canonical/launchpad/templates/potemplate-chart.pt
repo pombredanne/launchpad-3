@@ -26,30 +26,30 @@
         </td>
         <td>
           <span class="sortkey" tal:content="pf/untranslatedCount">0</span>
-          <span
+          <tal:count
             tal:condition="pf/untranslatedCount"
-            tal:replace="pf/untranslatedCount">0</span>
-          <tal:block condition="not: pf/untranslatedCount">
+            tal:replace="pf/untranslatedCount">0</tal:count>
+          <tal:count condition="not: pf/untranslatedCount">
             &mdash;
-          </tal:block>
+          </tal:count>
         </td>
         <td>
           <span class="sortkey" tal:content="pf/unreviewedCount">0</span>
-          <span
+          <tal:count
             tal:condition="pf/unreviewedCount"
-            tal:replace="pf/unreviewedCount">0</span>
-          <tal:block condition="not: pf/unreviewedCount">
+            tal:replace="pf/unreviewedCount">0</tal:count>
+          <tal:count condition="not: pf/unreviewedCount">
             &mdash;
-          </tal:block>
+          </tal:count>
         </td>
         <td>
           <span class="sortkey" tal:content="pf/updatesCount">0</span>
-          <span
+          <tal:count
             tal:condition="pf/updatesCount"
-            tal:replace="pf/updatesCount">0</span>
-          <tal:block condition="not: pf/updatesCount">
+            tal:replace="pf/updatesCount">0</tal:count>
+          <tal:count condition="not: pf/updatesCount">
             &mdash;
-          </tal:block>
+          </tal:count>
         </td>
         <td>
           <span class="sortkey"

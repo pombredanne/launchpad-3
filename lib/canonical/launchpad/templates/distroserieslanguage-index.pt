@@ -68,45 +68,45 @@
               tal:content="entry/untranslatedCount">
               0
             </span>
-            <span
+            <tal:count
               tal:condition="entry/untranslatedCount"
               tal:replace="entry/untranslatedCount"
               >
               0
-            </span>
-            <tal:block condition="not: entry/untranslatedCount">
+            </tal:count>
+            <tal:count tal:condition="not: entry/untranslatedCount">
                 &mdash;
-            </tal:block>
+            </tal:count>
           </td>
           <td>
             <span class="sortkey"
               tal:content="entry/unreviewedCount">
               0
             </span>
-            <span
+            <tal:count
               tal:condition="entry/unreviewedCount"
               tal:replace="entry/unreviewedCount"
               >
               0
-            </span>
-            <tal:block condition="not: entry/unreviewedCount">
+            </tal:count>
+            <tal:count tal:condition="not: entry/unreviewedCount">
                 &mdash;
-            </tal:block>
+            </tal:count>
           </td>
           <td>
             <span class="sortkey"
               tal:content="entry/updatesCount">
               0
             </span>
-            <span
+            <tal:count
               tal:condition="entry/updatesCount"
               tal:replace="entry/updatesCount"
               >
               0
-            </span>
-            <tal:block condition="not: entry/updatesCount">
+            </tal:count>
+            <tal:count condition="not: entry/updatesCount">
                 &mdash;
-            </tal:block>
+            </tal:count>
           </td>
           <td tal:attributes="id string:${entry/potemplate/name}-time">
             <span class="sortkey"
