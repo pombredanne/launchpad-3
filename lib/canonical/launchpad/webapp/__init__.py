@@ -49,6 +49,7 @@ import re
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.url import urlappend, urlparse, urlsplit
+from canonical.launchpad.webapp import stores
 from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory
     )

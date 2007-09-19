@@ -10,11 +10,6 @@
 
     <sqlos:connectionName name="launchpad" />
 
-    <rdb:provideConnection
-        name="session"
-        component="canonical.launchpad.webapp.adapter.SessionDatabaseAdapter"
-        />
-
     <include file="sql.zcml" package="canonical.lp" />
 
 </configure>
