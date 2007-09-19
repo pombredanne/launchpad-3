@@ -44,15 +44,13 @@ Each entry in the changelog is linkified.
   >>> browser.getLink('1.0.8-1ubuntu1').url
   'http://launchpad.dev/ubuntu/warty/+source/alsa-utils/1.0.8-1ubuntu1'
 
-The LP: #<number> entries are also linkified if they point to a valid bug.
+The LP: #<number> entries are also linkified:
 
   >>> browser.getLink('LP: #10').url
-  'http://bugs.launchpad.dev/bugs/10'
+  'http://launchpad.dev/bugs/10'
 
   >>> browser.getLink('LP: #999').url
-  Traceback (most recent call last):
-  ...
-  LinkNotFoundError
+  'http://launchpad.dev/bugs/999'
 
   >>> browser.getLink('LP: #badid').url
   Traceback (most recent call last):
