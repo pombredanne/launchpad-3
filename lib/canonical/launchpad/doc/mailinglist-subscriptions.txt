@@ -192,3 +192,24 @@ different email address.
     Traceback (most recent call last):
     ...
     CannotSubscribe: David Allouche is already subscribed to list Team One
+
+
+== Inactive lists ==
+
+A list that is not active cannot be subscribed to.
+
+    >>> list_one.deactivate()
+    >>> flush_database_updates()
+    >>> list_one.transitionToStatus(MailingListStatus.INACTIVE)
+    >>> flush_database_updates()
+    >>> list_one.subscribe(carlos)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not active: Team One
+
+But you can still unsubscribe from an inactive list.
+
+    >>> list_one.unsubscribe(no_priv)
+    >>> flush_database_updates()
+    >>> sorted(list_one.addresses)
+    [u'david@canonical.com', u'salgado@ubuntu.com']
