@@ -3,7 +3,7 @@ SET client_min_messages=ERROR;
 ALTER TABLE bug
   ADD COLUMN date_last_message timestamp;
 
-CREATE UNIQUE INDEX bug__date__last__message
+CREATE INDEX bug__date__last__message
   ON bug (date_last_message);
 
 UPDATE bug
