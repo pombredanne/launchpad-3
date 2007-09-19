@@ -5,3 +5,5 @@ distribution series.
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/hoary')
     >>> user_browser.getLink('Help translate').click()
+    >>> print user_browser.title
+    Translations of The Hoary Hedgehog Release in Launchpad

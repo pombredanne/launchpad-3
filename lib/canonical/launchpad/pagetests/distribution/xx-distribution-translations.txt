@@ -8,6 +8,8 @@ We can reach it from the main distribution page:
 
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> browser.getLink('Help translate').click()
+    >>> print browser.title
+    Translating Ubuntu
 
 Check that there aren't disabled languages shown here:
 

@@ -33,6 +33,8 @@ is only available to users which have 'Admin' privileges on the project.
 Also, it has a link to help translate it.
 
     >>> admin_browser.getLink('Help translate').click()
+    >>> print admin_browser.title
+    Translatable projects for The Mozilla Project
 
 
 == Empty Project Groups ==

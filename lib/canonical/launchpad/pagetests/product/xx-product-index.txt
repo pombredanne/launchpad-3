@@ -6,3 +6,5 @@ Check that the product main page works.
 Also, it has a link to help translate it.
 
     >>> user_browser.getLink('Help translate').click()
+    >>> print user_browser.title
+    Translations of The Evolution Groupware Application in Launchpad
