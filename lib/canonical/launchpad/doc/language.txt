@@ -109,6 +109,20 @@ And Nynorsk and Bokmal have a special relationship:
     >>> print language.alt_suggestion_language.code
     nn
 
+English and non-visible languages are not translatable, so there
+are no suggestions.
+
+    >>> language = language_set.getLanguageByCode('en')
+    >>> language.alt_suggestion_language is None
+    True
+
+    >>> language = language_set.getLanguageByCode('zh')
+    >>> language.visible
+    False
+    >>> language.alt_suggestion_language is None
+    True
+
+
 == dashedcode ==
 
 Although we use underscores to separate language and country codes to

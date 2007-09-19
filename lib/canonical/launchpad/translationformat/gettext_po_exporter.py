@@ -440,7 +440,9 @@ class GettextPOExporter:
         # exporters are instantiated but it isn't used by this class.
         self.format = TranslationFileFormat.PO
         self.supported_source_formats = [
-            TranslationFileFormat.PO, TranslationFileFormat.XPI]
+            TranslationFileFormat.PO,
+            TranslationFileFormat.KDEPO,
+            TranslationFileFormat.XPI]
 
     def _getHeaderAsMessage(self, translation_file):
         """Return an `ITranslationMessage` with the header content."""
@@ -490,14 +492,14 @@ class GettextPOExporter:
                 translation_file.header.charset = 'UTF-8'
             header_translation_message = self._getHeaderAsMessage(
                 translation_file)
-            exported_header = export_translation_message(
+            exported_header = self.exportTranslationMessage(
                 header_translation_message)
             chunks = [exported_header.encode(translation_file.header.charset)]
             for message in translation_file.messages:
                 if (message.is_obsolete and
                     (ignore_obsolete or len(message.translations) == 0)):
                     continue
-                exported_message = export_translation_message(message)
+                exported_message = self.exportTranslationMessage(message)
                 try:
                     encoded_text = exported_message.encode(
                         translation_file.header.charset)
@@ -514,7 +516,7 @@ class GettextPOExporter:
                     # We need to update the header too.
                     header_translation_message = self._getHeaderAsMessage(
                         translation_file)
-                    exported_header = export_translation_message(
+                    exported_header = self.exportTranslationMessage(
                         header_translation_message)
                     chunks[0] = exported_header.encode(old_charset)
                     # Update already exported entries.

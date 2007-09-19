@@ -323,7 +323,7 @@ files in the respective PPA location.
   DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
   DEBUG: Sent a mail:
   ...
-  DEBUG: signer of the above package.
+  DEBUG: PPA package.
 
   >>> transaction.commit()
 
