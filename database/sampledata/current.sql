@@ -8897,6 +8897,9 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright) VALUES (25, 1, '1.0.9a-4ubuntu1', '2005-08-01 14:10:00', 1, NULL, 1, 'alsa-utils (1.0.9a-4ubuntu1) hoary; urgency=low
 
  * Placeholder
+ LP: #10
+ LP: #999
+ LP: #badid
 
      -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 16, 19, 3, 1, NULL, NULL, NULL, NULL, 1, NULL);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright) VALUES (26, 1, 'cr.g7-37', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 20, 3, 1, NULL, NULL, NULL, NULL, 1, NULL);
