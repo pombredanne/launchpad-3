@@ -178,3 +178,15 @@ All fields are required.
     {'architecture': 'Required field is missing'}
     {'system': 'Required field is missing'}
     {'submission_data': 'Required field is missing'}
+
+Teams can be owners of submissions.
+
+    >>> team_form = form.copy()
+    >>> team_form['field.emailaddress'] = 'support@ubuntu.com'
+    >>> team_form['field.submission_id'] = u'unique ID 68'
+    >>> request = LaunchpadTestRequest(method='POST', form=team_form)
+    >>> submit_view = getView(app, 'submit-hardware-data', request)
+    >>> submit_view.initialize()
+    >>> submission = submission_set.getBySubmissionID(u'unique ID 68')
+    >>> submission.owner.displayname
+    u'Ubuntu Team'
