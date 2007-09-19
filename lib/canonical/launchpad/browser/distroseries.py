@@ -503,7 +503,7 @@ export.
             else:
                 self.request.response.addInfoNotification('''
 Your request has been noted, next language pack export will be an export
-relative to current language_pack_base.
+relative to current base language pack.
 ''')
         else:
             self.request.response.addInfoNotification(

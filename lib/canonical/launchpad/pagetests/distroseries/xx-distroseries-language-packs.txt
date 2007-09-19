@@ -31,15 +31,12 @@ Initially, there is no package selected.
     ['(no value)']
 
 
-    >>> for index in range(len(base.displayOptions)):
-    ...     print '%s: %s' % (index, base.displayOptions[index])
-    0: (no value)
-    1: 2007-09-10 19:16:01 UTC
-    2: 2007-09-10 19:14:26 UTC
+    >>> base.displayOptions
+    ['(no value)', '2007-09-10 19:16:01 UTC', '2007-09-10 19:14:26 UTC']
 
 Let's select a base one:
 
-    >>> base.value = [base.options[1]]
+    >>> base.displayValue = ['2007-09-10 19:16:01 UTC']
     >>> admin_browser.getControl('Change').click()
     >>> print admin_browser.url
     http://translations.launchpad.dev/ubuntu/hoary/+language-packs
