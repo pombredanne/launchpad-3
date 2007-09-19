@@ -15,7 +15,6 @@ this_directory = os.path.dirname(__file__)
 
 def setUp(test):
     # Suck this modules environment into the test environment
-    test.globs.update(globals())
     reset_logging()
 
 def tearDown(test):
