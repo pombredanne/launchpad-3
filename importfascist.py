@@ -157,6 +157,8 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
 
     global naughty_imports
 
+    # Some callers of __import__() pass None for this argument, so
+    # handle that:
     if globals is None:
         import_into = None
     else:
