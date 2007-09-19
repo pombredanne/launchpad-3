@@ -6,12 +6,6 @@ Open the "Upstream Source Import" page for a series.
   >>> print browser.url
   http://launchpad.dev/firefox/trunk/+source
 
-  >>> print browser.contents
-  <...
-  ...<h1>Upstream source import</h1>...
-  ...
-
-
 Currently, no revision details are selected.  We can submit the form
 as is, which will leave us with no revision control system selected:
 
@@ -31,20 +25,19 @@ Now we'll go back to the edit source form and add some CVS details:
   >>> browser.getControl('Repository').value = (
   ...     ':pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot')
   >>> browser.getControl('Module').value = 'mozilla'
-  >>> browser.getControl(name='field.cvsbranch').value = 'main'
+  >>> browser.getControl(name='field.cvsbranch').value = 'MAIN'
   >>> browser.getControl('Update RCS Details').click()
   >>> print browser.url
   http://launchpad.dev/firefox/trunk
 
 We check if the info we just entered on the form is displayed correctly
 
-  >>> print find_main_content(browser.contents)
-  <...
-  <tr>
-  <th>Root:</th>
-  <td>:pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot</td>
-  </tr>
-  ...
+  >>> print extract_text(find_tag_by_id(browser.contents, 'cvs-root'))
+  :pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot
+  >>> print extract_text(find_tag_by_id(browser.contents, 'cvs-module'))
+  mozilla
+  >>> print extract_text(find_tag_by_id(browser.contents, 'cvs-branch'))
+  MAIN
 
 Test if the RCS details validator is working properly by adding the same
 CVS details to another ProductSeries. The error message must link to the
@@ -55,7 +48,7 @@ product series with the conflicting CVS details.
   >>> browser.getControl('Repository').value = (
   ...     ':pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot')
   >>> browser.getControl('Module').value = 'mozilla'
-  >>> browser.getControl(name='field.cvsbranch').value = 'main'
+  >>> browser.getControl(name='field.cvsbranch').value = 'MAIN'
   >>> browser.getControl('Update RCS Details').click()
   >>> for tag in find_tags_by_class(browser.contents, 'error'):
   ...     print tag.renderContents()
@@ -77,13 +70,8 @@ Now we test if we can edit again changing the RCS to Subversion:
   >>> print browser.url
   http://launchpad.dev/firefox/trunk
 
-  >>> print find_main_content(browser.contents)
-  <...
-  <tr>
-  <th>Subversion:</th>
-  <td>svn://svn.mozilla.org/firefox/trunk</td>
-  </tr>
-  ...
+  >>> print extract_text(find_tag_by_id(browser.contents, 'svn-url'))
+  svn://svn.mozilla.org/firefox/trunk
 
 
 After changing to over to Subversion, the CVS details are unset in the
