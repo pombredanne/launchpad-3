@@ -61,8 +61,8 @@ class TestPgSession(unittest.TestCase):
         client_id1 = 'Client Id #1'
         client_id2 = 'Client Id #2'
 
-        cursor = self.sdc.cursor
-        cursor.execute("DELETE FROM SessionData")
+        store = self.sdc.store
+        store.execute("DELETE FROM SessionData", noresult=True)
 
         # Create a session
         self.sdc[client_id1] = 'whatever'
@@ -74,20 +74,21 @@ class TestPgSession(unittest.TestCase):
         spd['key'] = 'value'
 
         # Do a quick sanity check
-        cursor.execute("SELECT client_id FROM SessionData ORDER BY client_id")
-        client_ids = [row[0] for row in cursor.fetchall()]
+        result = store.execute(
+            "SELECT client_id FROM SessionData ORDER BY client_id")
+        client_ids = [row[0] for row in result]
         self.failUnlessEqual(client_ids, [client_id1, client_id2])
-        cursor.execute("SELECT COUNT(*) FROM SessionPkgData")
-        self.failUnlessEqual(cursor.fetchone()[0], 1)
+        result = store.execute("SELECT COUNT(*) FROM SessionPkgData")
+        self.failUnlessEqual(result.get_one()[0], 1)
 
         # Push the session into the past. There is fuzzyness involved
         # in when the sweeping actually happens (to minimize concurrency
         # issues), so we just push it into the far past for testing.
-        cursor.execute("""
+        store.execute("""
             UPDATE SessionData
             SET last_accessed = last_accessed - '1 year'::interval
-            WHERE client_id = %(client_id1)s
-            """, vars())
+            WHERE client_id = ?
+            """, (client_id1,), noresult=True)
 
         # Make the SessionDataContainer think it hasn't swept in a while
         self.sdc._last_sweep = self.sdc._last_sweep - timedelta(days=365)
@@ -96,20 +97,20 @@ class TestPgSession(unittest.TestCase):
         self.sdc[client_id2][product_id]
 
         # So the client_id1 session should now have been removed.
-        cursor = self.sdc.cursor
-        cursor.execute("SELECT client_id FROM SessionData ORDER BY client_id")
-        client_ids = [row[0] for row in cursor.fetchall()]
+        result = store.execute(
+            "SELECT client_id FROM SessionData ORDER BY client_id")
+        client_ids = [row[0] for row in result]
         self.failUnlessEqual(client_ids, [client_id2])
 
         # __getitem__ does not cause a sweep though if  sweep has been
         # done recently, to minimize database queries.
-        cursor.execute("""
+        store.execute("""
             UPDATE SessionData
             SET last_accessed = last_accessed - '1 year'::interval
-            """)
+            """, noresult=True)
         self.sdc[client_id1] = 'whatever'
-        cursor.execute("SELECT COUNT(*) FROM SessionData")
-        self.failUnlessEqual(cursor.fetchone()[0], 2)
+        result = store.execute("SELECT COUNT(*) FROM SessionData")
+        self.failUnlessEqual(result.get_one()[0], 2)
 
     def test_storage(self):
         client_id1 = 'Client Id #1'

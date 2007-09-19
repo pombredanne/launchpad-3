@@ -14,6 +14,8 @@ from zope.component.exceptions import ComponentLookupError
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from sqlos.interfaces import IConnectionName
 
+from storm.zope.interfaces import IZStorm
+
 from canonical.testing import (
         BaseLayer, LibrarianLayer, FunctionalLayer, LaunchpadZopelessLayer,
         )
@@ -50,13 +52,11 @@ def _disconnect_sqlos():
         # configuration not yet loaded, no worries
         pass
 
-    try:
-        da = getUtility(IZopeDatabaseAdapter, 'session')
-        da.disconnect()
-        assert da._v_connection is None
-    except ComponentLookupError:
-        # configuration not yet loaded, no worries
-        pass
+    zstorm = getUtility(IZStorm)
+    if 'session' in zstorm._named:
+        store = zstorm.get('session')
+        zstorm.remove(store)
+        store.close()
 
     items = list(connCache.items())
     for key, connection in items:
@@ -88,9 +88,8 @@ def _reconnect_sqlos(dbuser=None, database_config_section='launchpad'):
             )
     assert r[0][0] > 0, 'SQLOS is not talking to the database'
 
-    da = getUtility(IZopeDatabaseAdapter, 'session')
-    da.connect()
-    assert da.isConnected(), 'Failed to reconnect'
+    store = getUtility(IZStorm).get('session')
+    assert store, 'Failed to reconnect'
 
 
 class LaunchpadTestSetup(PgTestSetup):
