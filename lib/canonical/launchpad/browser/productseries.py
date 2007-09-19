@@ -54,7 +54,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.dynmenu import DynMenu
 
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
 
 from canonical.launchpad import _
 
@@ -559,7 +559,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
     custom_widget('cvsroot', StrippedTextWidget, displayWidth=50)
     custom_widget('cvsmodule', StrippedTextWidget, displayWidth=20)
     custom_widget('cvsbranch', StrippedTextWidget, displayWidth=20)
-    custom_widget('svnrepository', StrippedTextWidget, displayWidth=50)
+    custom_widget('svnrepository', URIWidget, displayWidth=50)
 
     def setUpWidgets(self):
         LaunchpadEditFormView.setUpWidgets(self)

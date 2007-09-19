@@ -85,6 +85,21 @@ form:
   >>> browser.getControl(name='field.cvsbranch').value
   ''
 
+If the specified Subversion URL has a trailing slash, it is silently removed.
+
+  >>> browser.open('http://launchpad.dev/firefox/1.0/+source')
+  >>> browser.getControl('Subversion').click()
+  >>> browser.getControl(name='field.svnrepository').value = (
+  ...     'svn://svn.mozilla.org/firefox/branches/1.0/')
+  >>> browser.getControl('Update RCS Details').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox/1.0
+  >>> print extract_text(find_tag_by_id(browser.contents, 'svn-url'))
+  svn://svn.mozilla.org/firefox/branches/1.0
+  >>> browser.open('http://launchpad.dev/firefox/1.0/+source')
+  >>> print browser.getControl(name='field.svnrepository').value
+  svn://svn.mozilla.org/firefox/branches/1.0
+
 
 Test if the RCS details validator is working properly by adding the same
 svnrepository to another ProductSeries. The error message must link to the
