@@ -52,7 +52,7 @@ True
 INFO Some crap
 ERROR Oops!
 Traceback (most recent call last):
-  File "<doctest librarianformatter_noca.txt[8]>", line 2, in ?
+  File "<doctest librarianformatter_noca.txt[...]>", line 2, in ?
     raise RuntimeError('An Exception')
 RuntimeError: An Exception
 ERROR Error 42 occurred
@@ -61,7 +61,7 @@ ERROR Error 42 occurred
 INFO Some crap
 ERROR Oops!
 Traceback (most recent call last):
-  File "<doctest librarianformatter_noca.txt[8]>", line 2, in ?
+  File "<doctest librarianformatter_noca.txt[...]>", line 2, in ?
     raise RuntimeError('An Exception')
 RuntimeError: An Exception
 ERROR Error 42 occurred
