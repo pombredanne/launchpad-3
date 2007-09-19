@@ -1,5 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+"""View classes for POMsgSet classes."""
+
 __metaclass__ = type
 __all__ = [
     'BaseTranslationView',
@@ -31,6 +33,7 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
+from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
@@ -38,12 +41,13 @@ from canonical.launchpad.browser.potemplate import (
     POTemplateFacets, POTemplateSOP)
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
-    ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
+    IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
     IPOSubmissionSet, TranslationConflict)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Link, LaunchpadView, canonical_url)
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.batching import BatchNavigator
+
 
 #
 # Translation-related formatting functions
@@ -590,27 +594,36 @@ class BaseTranslationView(LaunchpadView):
         """Initialize the alternative language widget and check form data."""
         initial_values = {}
         second_lang_code = self.request.form.get("field.alternative_language")
-
         fallback_language = self.pofile.language.alt_suggestion_language
-        if second_lang_code is None and fallback_language is not None:
-            # If there's a standard alternative language and no user-specified
-            # language was provided, preselect it.
-            second_lang_code = fallback_language.code
+        if isinstance(second_lang_code, list):
+            # self._redirect() was generating duplicate params in the URL.
+            # We may be able to remove this guard.
+            raise UnexpectedFormData(
+                "You specified more than one alternative language; "
+                "only one is currently supported.")
 
         if second_lang_code:
-            if isinstance(second_lang_code, list):
-                raise UnexpectedFormData(
-                    "You specified more than one alternative language; "
-                    "only one is currently supported.")
             try:
-                alternative_language = getUtility(ILanguageSet)[
-                    second_lang_code]
-            except NotFoundError:
-                # Oops, a bogus code was provided! 
-                # XXX: kiki 2006-09-28: Should this be UnexpectedFormData too?
+                translatable_vocabulary = getVocabularyRegistry().get(
+                    None, 'TranslatableLanguage')
+                language_term = (
+                    translatable_vocabulary.getTermByToken(second_lang_code))
+                initial_values['alternative_language'] = language_term.value
+            except LookupError:
+                # Oops, a bogus code was provided in the request.
+                # This is UnexpectedFormData caused by a hacked URL, or an
+                # old URL. The alternative_language field used to use
+                # LanguageVocabulary that contained untranslatable languages.
                 second_lang_code = None
-            else:
-                initial_values['alternative_language'] = alternative_language
+        elif second_lang_code is None and fallback_language is not None:
+            # If there's a standard alternative language and no
+            # user-specified language was provided, preselect it.
+            initial_values['alternative_language'] =  fallback_language
+            second_lang_code = fallback_language.code
+        else:
+            # The second_lang_code is None and there is no fallback_language.
+            # This is probably a parent language or an English variant.
+            pass
 
         self.alternative_language_widget = CustomWidgetFactory(
             CustomDropdownWidget)
@@ -678,7 +691,8 @@ class BaseTranslationView(LaunchpadView):
         self.form_posted_needsreview[pomsgset] = (
             msgset_ID_LANGCODE_needsreview in form)
 
-        # Note the trailing underscore: we append the plural form number later.
+        # Note the trailing underscore: we append the plural form
+        # number later.
         msgset_ID_LANGCODE_translation_ = 'msgset_%d_%s_translation_' % (
             potmsgset_ID, language_code)
 
@@ -924,7 +938,7 @@ class POMsgSetView(LaunchpadView):
             pomsgset.pofile.canEditTranslations(self.user))
         self.form_is_writeable = form_is_writeable
 
-        # Set up alternative language variables. 
+        # Set up alternative language variables.
         # XXX: kiko 2006-09-27:
         # This could be made much simpler if we built suggestions externally
         # in the parent view, as suggested in initialize() below.
@@ -1127,8 +1141,9 @@ class POMsgSetView(LaunchpadView):
             alt_submissions = []
             title = None
         else:
-            alt_submissions = self.second_lang_potmsgset.getCurrentSubmissions(
-                self.sec_lang, index)
+            alt_submissions = (
+                self.second_lang_potmsgset.getCurrentSubmissions(
+                    self.sec_lang, index))
             title = self.sec_lang.englishname
         # What a relief -- no need to do pruning here for alternative
         # languages as they are highly unlikely to collide.
@@ -1148,22 +1163,22 @@ class POMsgSetView(LaunchpadView):
             self.user_is_official_translator, self.form_is_writeable)
 
     def getOfficialTranslation(self, index, published = False):
-         """Return active or published translation for pluralform 'index'."""
-         assert index in self.pluralform_indices, (
-             'There is no plural form #%d for %s language' % (
-                 index, self.context.pofile.language.displayname))
+        """Return active or published translation for pluralform 'index'."""
+        assert index in self.pluralform_indices, (
+            'There is no plural form #%d for %s language' % (
+                index, self.context.pofile.language.displayname))
 
-         if published:
-             translation = self.context.published_texts[index]
-         else:
-             translation = self.context.active_texts[index]
-         # We store newlines as '\n', '\r' or '\r\n', depending on the
-         # msgid but forms should have them as '\r\n' so we need to change
-         # them before showing them.
-         if translation is not None:
-             return convert_newlines_to_web_form(translation)
-         else:
-             return None
+        if published:
+            translation = self.context.published_texts[index]
+        else:
+            translation = self.context.active_texts[index]
+        # We store newlines as '\n', '\r' or '\r\n', depending on the
+        # msgid but forms should have them as '\r\n' so we need to change
+        # them before showing them.
+        if translation is not None:
+            return convert_newlines_to_web_form(translation)
+        else:
+            return None
 
     def getActiveTranslation(self, index):
         """Return the active translation for the pluralform 'index'."""

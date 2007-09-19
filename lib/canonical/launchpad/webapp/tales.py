@@ -56,6 +56,7 @@ from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
 
 
@@ -249,6 +250,7 @@ class IRequestAPI(Interface):
     """Launchpad lp:... API available for an IApplicationRequest."""
 
     person = Attribute("The IPerson for the request's principal.")
+    cookie_scope = Attribute("The scope parameters for cookies.")
 
 
 class RequestAPI:
@@ -260,9 +262,20 @@ class RequestAPI:
     def __init__(self, request):
         self.request = request
 
+    @property
     def person(self):
         return IPerson(self.request.principal, None)
-    person = property(person)
+
+    @property
+    def cookie_scope(self):
+        params = '; Path=/'
+        uri = URI(self.request.getURL())
+        if uri.scheme == 'https':
+            params += '; Secure'
+        domain = get_cookie_domain(uri.host)
+        if domain is not None:
+            params += '; Domain=%s' % domain
+        return params
 
 
 class DBSchemaAPI:
@@ -292,20 +305,22 @@ class NoneFormatter:
     implements(ITraversable)
 
     allowed_names = set([
-        'nl_to_br',
-        'nice_pre',
+        'approximatedate',
+        'approximateduration',
         'breadcrumbs',
         'break-long-words',
         'date',
-        'time',
         'datetime',
-        'approximatedate',
         'displaydate',
-        'rfc822utcdatetime',
+        'email-to-html',
         'exactduration',
-        'approximateduration',
+        'lower',
+        'nice_pre',
+        'nl_to_br',
         'pagetitle',
+        'rfc822utcdatetime',
         'text-to-html',
+        'time',
         'url',
         ])
 
@@ -499,7 +514,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         badges = ''
         if self._context.bug.private:
             badges += self.icon_template % (
-                "private", "Private","/@@/locked")
+                "private", "Private","/@@/private")
 
         if self._context.bug.mentoring_offers.count() > 0:
             badges += self.icon_template % (
@@ -655,6 +670,69 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         image_html = ObjectImageDisplayAPI(person).icon()
         return '<a href="%s">%s&nbsp;%s</a>' % (
             url, image_html, person.browsername)
+
+
+class BranchFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IBranch objects to a formatted string."""
+
+    implements(ITraversable)
+
+    allowed_names = set([
+        'url',
+        ])
+
+    def traverse(self, name, furtherPath):
+        if name == 'link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.link(extra_path)
+        elif name in self.allowed_names:
+            return getattr(self, name)()
+        else:
+            raise TraversalError, name
+
+    def link(self, extra_path):
+        """Return an HTML link to the branch page containing an icon
+        followed by the branch's unique name.
+        """
+        branch = self._context
+        url = canonical_url(branch)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        return ('<a href="%s" title="%s"><img src="/@@/branch" alt=""/>'
+                '&nbsp;%s</a>' % (url, branch.displayname, branch.unique_name))
+
+
+class BugTaskFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IBugTask objects to a formatted string."""
+
+    implements(ITraversable)
+
+    allowed_names = set([
+        'url',
+        ])
+
+    def traverse(self, name, furtherPath):
+        if name == 'link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.link(extra_path)
+        elif name in self.allowed_names:
+            return getattr(self, name)()
+        else:
+            raise TraversalError, name
+
+    def link(self, extra_path):
+        """Return an HTML link to the person's page containing an icon
+        followed by the person's name.
+        """
+        bugtask = self._context
+        url = canonical_url(bugtask)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        image_html = BugTaskImageDisplayAPI(bugtask).icon()
+        return '<a href="%s">%s&nbsp;Bug #%d: %s</a>' % (
+            url, image_html, bugtask.bug.id, bugtask.bug.title)
 
 
 class NumberFormatterAPI:
@@ -1373,33 +1451,68 @@ class FormattersAPI:
                     % cgi.escape(self._stringtoformat)
                     )
 
-    # Match lines that start with the ':', '|', and '>' symbols
-    # commonly used for quoting passages from another email.
-    # the dpkg version is used for exceptional cases where it
+    # Match lines that start with one or more quote symbols followed
+    # by a space. Quote symbols are commonly '|', or '>'; they are
+    # used for quoting passages from another email. Both '>> ' and
+    # '> > ' are valid quoting sequences.
+    # The dpkg version is used for exceptional cases where it
     # is better to not assume '|' is a start of a quoted passage.
-    _re_quoted = re.compile('^([:|]|&gt;|-----BEGIN PGP)')
-    _re_dpkg_quoted = re.compile('^([:]|&gt;|-----BEGIN PGP)')
+    _re_quoted = re.compile('^(([|] ?)+ |(&gt; ?)+ )')
+    _re_dpkg_quoted = re.compile('^(&gt; ?)+ ')
 
-    # Match blocks that start as signatures, quoted passages, or PGP.
-    _re_block_include = re.compile('^<p>(--<br />|([:|]|&gt)|-----BEGIN PGP)')
-    # Match a line starting with '>' (implying text email or quoting by hand).
-    _re_quoted_line = re.compile('^&gt;')
+    # Match blocks that start as signatures or PGP inclusions.
+    _re_include = re.compile('^<p>(--<br />|-----BEGIN PGP)')
 
     def email_to_html(self):
         """text_to_html and hide signatures and full-quoted emails.
 
-        This method wraps signatures and quoted passages with
-        <span class="foldable"></span> tags to identify them in presentation
-        layer. CSS and and JavaScript may use this markup to control the
-        content's display behavior.
+        This method wraps inclusions like signatures and PGP blocks in
+        <span class="foldable"></span> tags. Quoted passages are wrapped
+        <span class="foldable-quoted"></span> tags. The tags identify the
+        extra content in the message to the presentation layer. CSS and
+        JavaScript may use this markup to control the content's display
+        behaviour.
         """
         start_fold_markup = '<span class="foldable">'
+        start_fold_quoted_markup = '<span class="foldable-quoted">'
         end_fold_markup = '%s\n</span></p>'
         re_quoted = self._re_quoted
+        re_include = self._re_include
         output = []
         in_fold = False
         in_quoted = False
         in_false_paragraph = False
+
+        def is_quoted(line):
+            """Test that a line is a quote and not Python.
+
+            Note that passages may be wrongly be interpreted as Python
+            because they start with '>>> '. The function does not check
+            that next and previous lines of text consistently uses '>>> '
+            as Python would.
+            """
+            python_block = '&gt;&gt;&gt; '
+            return (not line.startswith(python_block)
+                and re_quoted.match(line) is not None)
+
+        def strip_leading_p_tag(line):
+            """Return the characters after the paragraph mark (<p>).
+
+            The caller must be certain the line starts with a paragraph mark.
+            """
+            assert line.startswith('<p>'), (
+                "The line must start with a paragraph mark (<p>).")
+            return line[3:]
+
+        def strip_trailing_p_tag(line):
+            """Return the characters before the line paragraph mark (</p>).
+
+            The caller must be certain the line ends with a paragraph mark.
+            """
+            assert line.endswith('</p>'), (
+                "The line must end with a paragraph mark (</p>).")
+            return line[:-4]
+
         for line in self.text_to_html().split('\n'):
             if 'Desired=<wbr></wbr>Unknown/' in line and not in_fold:
                 # When we see a evidence of dpkg output, we switch the
@@ -1409,43 +1522,55 @@ class FormattersAPI:
                 # output header, we change the rules regardless of if the
                 # lines that follow are legitimate.
                 re_quoted = self._re_dpkg_quoted
-            elif not in_fold and self._re_block_include.match(line) is not None:
-                # Start a foldable paragraph for a signature or quote.
+            elif not in_fold and re_include.match(line) is not None:
+                # This line is a paragraph with a signature or PGP inclusion.
+                # Start a foldable paragraph.
                 in_fold = True
-                line = '<p>%s%s' % (start_fold_markup, line[3:])
-            elif not in_fold and re_quoted.match(line) is not None:
-                # Start a foldable section for a quoted passage.
-                if self._re_quoted_line.match(line):
-                    in_quoted = True
+                line = '<p>%s%s' % (start_fold_markup, strip_leading_p_tag(line))
+            elif (not in_fold and line.startswith('<p>')
+                and is_quoted(strip_leading_p_tag(line))):
+                # The paragraph starts with quoted marks.
+                # Start a foldable quoted paragraph.
                 in_fold = True
-                output.append(start_fold_markup)
+                line = '<p>%s%s' % (
+                    start_fold_quoted_markup, strip_leading_p_tag(line))
+            elif not in_fold and is_quoted(line):
+                # This line in the paragraph is quoted.
+                # Start foldable quoted lines in a paragraph.
+                in_quoted = True
+                in_fold = True
+                output.append(start_fold_quoted_markup)
             else:
-                # The start of this line is not extraordinary.
+                # This line is continues the current state.
+                # This line is not a transition.
                 pass
 
             # We must test line starts and ends in separate blocks to
             # close the rare single line that is foldable.
-            if in_fold and line.endswith('</p>'):
-                if not in_false_paragraph:
-                    # End the foldable section.
-                    in_fold = False
-                    in_quoted = False
-                    line = end_fold_markup % line[0:-4]
-                else:
-                    # Restore the line break to join with the next paragraph.
-                    line = '%s<br />\n<br />' %  line[0:-4]
-            elif in_quoted and self._re_quoted_line.match(line) is None:
-                # End fold early because paragraph contains mixed quoted 
-                # and reply text.
+            if in_fold and line.endswith('</p>') and in_false_paragraph:
+                # The line ends with a false paragraph in a PGP signature.
+                # Restore the line break to join with the next paragraph.
+                line = '%s<br />\n<br />' %  strip_trailing_p_tag(line)
+            elif (in_quoted and self._re_quoted.match(line) is None):
+                # The line is not quoted like the previous line.
+                # End fold before we append this line.
                 in_fold = False
                 in_quoted = False
                 output.append("</span>\n")
+            elif in_fold and line.endswith('</p>'):
+                # The line is quoted or an inclusion, and ends the paragraph.
+                # End the fold before the close paragraph mark.
+                in_fold = False
+                in_quoted = False
+                line = end_fold_markup % strip_trailing_p_tag(line)
             elif in_false_paragraph and line.startswith('<p>'):
+                # This line continues a PGP signature, but starts a paragraph.
                 # Remove the paragraph to join with the previous paragraph.
                 in_false_paragraph = False
-                line = line[3:]
+                line = strip_leading_p_tag(line)
             else:
-                # The end of this line is not extraordinary.
+                # This line is continues the current state.
+                # This line is not a transition.
                 pass
 
             if in_fold and 'PGP SIGNATURE' in line:
@@ -1463,16 +1588,19 @@ class FormattersAPI:
     # expression strives to identify probable email addresses so that they
     # can be obfuscated when viewed by unauthenticated users. See
     # http://www.email-unlimited.com/stuff/email_address_validator.htm
-    _re_email = re.compile(
-        # localnames do not have [&?%!@<>,;:`|{}()#*^~ ] in practice
-        # (regardless of RFC 2821) because they conflict with other systems.
-        # See https://lists.ubuntu.com
-        #     /mailman/private/launchpad-reviews/2007-June/006081.html
-        r"([\b]|[\"']?)[-/=0-9A-Z_a-z]" # first character of localname
-        r"[.\"'-/=0-9A-Z_a-z+]*@" # possible . and + in localname
-        r"[a-zA-Z]" # first character of host or domain
-        r"(-?[a-zA-Z0-9])*" # possible - and numbers in host or domain
-        r"(\.[a-zA-Z](-?[a-zA-Z0-9])*)+\b") # dot starts one or more domains.
+
+    # localnames do not have [&?%!@<>,;:`|{}()#*^~ ] in practice
+    # (regardless of RFC 2821) because they conflict with other systems.
+    # See https://lists.ubuntu.com
+    #     /mailman/private/launchpad-reviews/2007-June/006081.html
+
+    # This verson of the re is more than 5x faster that the orginal
+    # version used in ftest/test_tales.testObfuscateEmail.
+    _re_email = re.compile(r"""
+        \b[a-zA-Z0-9._/="'+-]{1,64}@  # The localname.
+        [a-zA-Z][a-zA-Z0-9-]{1,63}    # The hostname.
+        \.[a-zA-Z0-9.-]{1,251}\b      # Dot starts one or more domains.
+        """, re.VERBOSE)
 
     def obfuscate_email(self):
         """Obfuscate an email address as '<email address hidden>'.
@@ -1492,6 +1620,10 @@ class FormattersAPI:
             r'<email address hidden>', self._stringtoformat)
         return text
 
+    def lower(self):
+        """Return the string in lowercase"""
+        return self._stringtoformat.lower()
+
     def shorten(self, maxlength):
         """Use like tal:content="context/foo/fmt:shorten/60"."""
         if len(self._stringtoformat) > maxlength:
@@ -1502,6 +1634,8 @@ class FormattersAPI:
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
             return self.nl_to_br()
+        elif name == 'lower':
+            return self.lower()
         elif name == 'break-long-words':
             return self.break_long_words()
         elif name == 'text-to-html':
@@ -1708,3 +1842,11 @@ class GotoStructuralObject:
             return None
         return headercontext
 
+    @property
+    def immediate_object_is_private(self):
+        try:
+            headercontext, adapter = nearest_context_with_adapter(
+                self.use_context, IStructuralHeaderPresentation)
+        except NoCanonicalUrl:
+            return False
+        return adapter.isPrivate()

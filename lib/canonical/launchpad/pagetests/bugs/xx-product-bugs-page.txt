@@ -54,3 +54,41 @@ supporting Javascript, the statistics are displayed as normal text:
     0 Triaged bugs
     0 In Progress bugs
     0 Fix Committed bugs
+
+== Tags and Filters ==
+
+There's also portlets for easy searching by tags and filters.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> tags_portlet = find_portlet(anon_browser.contents, 'Tags')
+    >>> for tag_link in tags_portlet('a'):
+    ...     print tag_link.renderContents()
+    doc
+    layout-test
+
+
+They are there to provide easy navigation for bugs with a certain
+tag...
+
+
+    >>> from canonical.launchpad.ftests.bug import print_bugtasks
+    >>> anon_browser.getLink('layout-test').click()
+    >>> print_bugtasks(anon_browser.contents)
+    4  Reflow problems with complex page layouts
+       Medium New
+
+
+... and for bugs with a certain status, importance, etc.
+
+    >>> anon_browser.goBack()
+    >>> filter_portlet = find_portlet(anon_browser.contents, 'Filters')
+    >>> for filter_link in filter_portlet('a'):
+    ...     print filter_link.renderContents()
+    Open
+    Critical
+    ...
+
+    >>> anon_browser.getLink('Critical').click()
+    >>> print_bugtasks(anon_browser.contents)
+    5 Firefox install instructions should be complete
+      Critical New

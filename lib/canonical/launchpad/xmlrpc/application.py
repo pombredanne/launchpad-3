@@ -1,16 +1,33 @@
-# Copyright 2006 Canonical Ltd., all rights reserved.
-"""XMLRPC API to the application roots."""
+# Copyright 2006-2007 Canonical Ltd., all rights reserved.
+
+"""XML-RPC API to the application roots."""
 
 __metaclass__ = type
-__all__ = ['ISelfTest', 'SelfTest', 'IRosettaSelfTest', 'RosettaSelfTest']
+
+__all__ = [
+    'IRosettaSelfTest',
+    'ISelfTest',
+    'PrivateApplication',
+    'RosettaSelfTest',
+    'SelfTest',
+    ]
 
 import xmlrpclib
 
 from zope.component import getUtility
 from zope.interface import Interface, implements
 
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import (
+    ILaunchBag, IMailingListApplication, IPrivateApplication)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
+
+
+class PrivateApplication:
+    implements(IPrivateApplication)
+
+    @property
+    def mailinglists(self):
+        return getUtility(IMailingListApplication)
 
 
 class ISelfTest(Interface):

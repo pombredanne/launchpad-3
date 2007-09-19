@@ -1,4 +1,5 @@
-<div class="portlet" tal:condition="context/specifications">
+<div class="portlet" id="portlet-blueprints"
+     tal:condition="context/specifications">
   <h2>Related blueprints</h2>
   <div class="portletBody">
     <table>

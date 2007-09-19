@@ -369,9 +369,9 @@ def _send_bug_details_to_new_bugcontacts(
     bug, previous_subscribers, current_subscribers):
     """Send an email containing full bug details to new bug subscribers.
 
-    This function is designed to handle situations where bugtasks get reassigned
-    to new products or sourcepackages, and the new bugcontacts need to be
-    notified of the bug.
+    This function is designed to handle situations where bugtasks get
+    reassigned to new products or sourcepackages, and the new bugcontacts
+    need to be notified of the bug.
     """
     prev_subs_set = set(previous_subscribers)
     cur_subs_set = set(current_subscribers)
@@ -384,20 +384,27 @@ def _send_bug_details_to_new_bugcontacts(
     if not to_addrs:
         return
 
-    # XXX: kiko 2007-03-20 bug=94321:
-    # We send this notification as if it was from the bug owner. I
-    # hope this isn't too confusing to people receiving this
-    # notification; it may be better to use a celebrity.
-    from_addr = get_bugmail_from_address(bug.owner, bug)
+    from_addr = format_address(
+        'Launchpad Bug Tracker',
+        "%s@%s" % (bug.id, config.launchpad.bugs_domain))
     # Now's a good a time as any for this email; don't use the original
     # reported date for the bug as it will just confuse mailer and
     # recipient.
     email_date = datetime.datetime.now()
 
-    subject, contents = generate_bug_add_email(bug, new_recipients=True)
+    # The new subscriber email is effectively the initial message regarding
+    # a new bug. The bug's initial message is used in the References
+    # header to establish the message's context in the email client.
+    references = [bug.initial_message.rfc822msgid]
+    recipients = bug.getBugNotificationRecipients()
+
     for to_addr in sorted(to_addrs):
-        msg = construct_bug_notification(bug, from_addr, to_addr,
-                                         contents, subject, email_date)
+        reason, rationale_header = recipients.getReason(to_addr)
+        subject, contents = generate_bug_add_email(
+            bug, new_recipients=True, reason=reason)
+        msg = construct_bug_notification(
+            bug, from_addr, to_addr, contents, subject, email_date,
+            rationale_header=rationale_header, references=references)
         sendmail(msg)
 
 
@@ -517,7 +524,7 @@ def notify_errors_list(message, file_alias_url):
         )
 
 
-def generate_bug_add_email(bug, new_recipients=False):
+def generate_bug_add_email(bug, new_recipients=False, reason=None):
     """Generate a new bug notification from the given IBug.
 
     If new_recipients is supplied we generate a notification explaining
@@ -543,7 +550,7 @@ def generate_bug_add_email(bug, new_recipients=False):
             # There's a person assigned to fix this task, so show that
             # information too.
             bug_info.append(
-                u"     Assignee: %s" % bugtask.assignee.displayname)
+                u"     Assignee: %s" % bugtask.assignee.unique_displayname)
         bug_info.append(u"         Status: %s\n" % bugtask.status.title)
 
     if bug.tags:
@@ -559,7 +566,8 @@ def generate_bug_add_email(bug, new_recipients=False):
         # We should really have a centralized way of adding this
         # footer, but right now we lack a INotificationRecipientSet
         # for this particular situation.
-        contents += "\n-- \n%(bug_title)s\n%(bug_url)s"
+        contents += (
+            "\n-- \n%(bug_title)s\n%(bug_url)s\n%(notification_rationale)s")
     else:
         contents = ("%(visibility)s bug reported:\n\n"
                     "%(description)s\n\n%(bug_info)s")
@@ -567,7 +575,8 @@ def generate_bug_add_email(bug, new_recipients=False):
     contents = contents % {
         'visibility' : visibility, 'bug_url' : canonical_url(bug),
         'bug_info': "\n".join(bug_info), 'bug_title': bug.title,
-        'description': mailwrapper.format(bug.description)}
+        'description': mailwrapper.format(bug.description),
+        'notification_rationale': reason}
 
     contents = contents.rstrip()
 
@@ -743,9 +752,11 @@ def get_bug_edit_notification_texts(bug_delta):
                 oldval_display = u"(unassigned)"
                 newval_display = u"(unassigned)"
                 if bugtask_delta.assignee.get('old'):
-                    oldval_display = bugtask_delta.assignee['old'].browsername
+                    oldval_display = (
+                        bugtask_delta.assignee['old'].unique_displayname)
                 if bugtask_delta.assignee.get('new'):
-                    newval_display = bugtask_delta.assignee['new'].browsername
+                    newval_display = (
+                        bugtask_delta.assignee['new'].unique_displayname)
 
                 changerow = (
                     u"%(label)13s: %(oldval)s => %(newval)s\n" % {
@@ -783,8 +794,8 @@ def get_bug_edit_notification_texts(bug_delta):
                 added_bugtask.importance.title)
             if added_bugtask.assignee:
                 assignee = added_bugtask.assignee
-                change_info += u"%13s: %s <%s>\n" % (
-                    u"Assignee", assignee.name, assignee.preferredemail.email)
+                change_info += u"%13s: %s\n" % (u"Assignee",
+                    assignee.unique_displayname)
             change_info += u"%13s: %s" % (
                 u"Status", added_bugtask.status.title)
             changes.append(change_info)
@@ -1238,6 +1249,8 @@ class QuestionNotification:
             '%s status=%s; assignee=%s; priority=%s; language=%s' % (
                 target, question.status.title, assignee,
                 question.priority.title, question.language.code))
+        headers['Reply-To'] = 'question%s@%s' % (
+            self.question.id, config.answertracker.email_domain)
 
         return headers
 
@@ -1422,7 +1435,7 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         """Add a References header."""
         headers = QuestionNotification.getHeaders(self)
         if self.new_message:
-            # XXX flacoste 2007-02-02 bug=83846: 
+            # XXX flacoste 2007-02-02 bug=83846:
             # The first message cannot contain a References
             # because we don't create a Message instance for the
             # question description, so we don't have a Message-ID.
@@ -1864,7 +1877,7 @@ def notify_specification_subscription_modified(specsub, event):
     else:
         specsub_type = 'Participation non-essential'
     mailwrapper = MailWrapper(width=72)
-    body = mailwrapper.format(        
+    body = mailwrapper.format(
         'Your subscription to the blueprint '
         '%(blueprint_name)s - %(blueprint_title)s '
         'has changed to [%(specsub_type)s].\n\n'

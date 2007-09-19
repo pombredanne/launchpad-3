@@ -4,21 +4,17 @@
 
   <div class="informational message" tal:condition="view/isBetaUser">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
-      <script type="text/javascript"
-              tal:content="view/getEnableRedirectScript"></script>
       <p>As a member of the Launchpad Beta Testers team, you would
       normally be redirected to the beta site when viewing Launchpad
       pages.  However, you currently have this disabled.</p>
-      <p><button onclick="enable_beta_redirect()">Enable beta site
+      <p><button onclick="setBetaRedirect(true)">Enable beta site
       redirection</button></p>
     </tal:redirect_inhibited>
     <tal:redirect_enabled condition="not:view/isRedirectInhibited">
-      <script type="text/javascript"
-              tal:content="view/getInhibitRedirectScript"></script>
       <p>As a member of the Launchpad Beta Testers team, you will be
       redirected to the beta site when viewing Launchpad pages other
       than the front page.</p>
-      <p><button onclick="inhibit_beta_redirect()">Disable redirection
+      <p><button onclick="setBetaRedirect(false)">Disable redirection
       for 2 hours</button></p>
     </tal:redirect_enabled>
   </div>
@@ -49,22 +45,20 @@
           <h2>What&#8217;s new</h2>
           <ul class="news">
             <li>
-              <a href="https://help.launchpad.net/FrequentlyAskedQuestions"
-                 >Frequently Asked Questions: create standard answers to FAQs
-                in the Answer Tracker</a>
+              <a href="https://help.launchpad.net/BazaarSSH"
+                 >Faster code branch uploads with bzr+ssh.</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/Mantis">Watch remote bugs
-                in Mantis bug trackers</a>
+              <a href="https://help.launchpad.net/KDEPlurals">
+                Translations now supports KDE's plural strings.</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/FileDownloadsOverview">File
-                downloads: make installers, documentation and other files
-                available from your project's overview page</a>
+              <a href="https://help.launchpad.net/AddingBugWatches">
+                Streamlined bug tracker registration when adding bugwatches.</a>
             </li>
             <li>
-             <a href="https://help.launchpad.net/BugStatuses">New clearer bug
-                status names</a>
+              <a href="https://help.launchpad.net/TranslationsFullExport">
+                Export all translations for a project to a single tarball.</a>
             </li>
           </ul>
         </div>

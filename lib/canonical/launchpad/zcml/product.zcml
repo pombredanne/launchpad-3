@@ -145,14 +145,46 @@
       />
   </browser:pages>
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    name="+download"
+    class="canonical.launchpad.browser.ProductDownloadFilesView"
+    permission="zope.Public"
+    facet="overview"
+    template="../templates/product-files.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IProduct"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.ProductView"
+    layer="canonical.launchpad.layers.TranslationsLayer" >
     <browser:page
-        for="canonical.launchpad.interfaces.IProduct"
-        name="+download"
-        class="canonical.launchpad.browser.ProductDownloadFilesView"
-        permission="zope.Public"
-        facet="overview"
-        template="../templates/product-files.pt"
-        />
+      name="+translations"
+      facet="translations"
+      template="../templates/product-translations.pt"
+      />
+    <browser:page
+      name="+portlet-translations"
+      facet="translations"
+      template="../templates/product-portlet-translations.pt"
+      />
+    <browser:page
+      name="+portlet-translatables"
+      facet="translations"
+      template="../templates/product-portlet-translatables.pt"
+      />
+  </browser:pages>
 
   <browser:pages
     for="canonical.launchpad.interfaces.IProduct"
@@ -162,11 +194,6 @@
       name="+index"
       facet="overview"
       template="../templates/product-index.pt"
-      />
-    <browser:page
-      name="+translations"
-      facet="translations"
-      template="../templates/product-translations.pt"
       />
     <browser:page
       name="+packages"
@@ -208,11 +235,6 @@
       template="../templates/product-portlet-series.pt"
       />
     <browser:page
-      name="+portlet-translations"
-      facet="translations"
-      template="../templates/product-portlet-translations.pt"
-      />
-    <browser:page
       name="+portlet-milestones"
       facet="overview"
       template="../templates/object-portlet-milestones.pt"
@@ -241,11 +263,6 @@
       name="+portlet-summary"
       facet="overview"
       template="../templates/object-portlet-summary.pt"
-      />
-    <browser:page
-      name="+portlet-translatables"
-      facet="translations"
-      template="../templates/product-portlet-translatables.pt"
       />
     <browser:page
       name="+portlet-aboutcve"
@@ -297,7 +314,8 @@
   <browser:pages
     for="canonical.launchpad.interfaces.IProduct"
     permission="launchpad.Admin"
-    class="canonical.launchpad.browser.ProductView" >
+    class="canonical.launchpad.browser.ProductView"
+    layer="canonical.launchpad.layers.TranslationsLayer" >
     <browser:page
       name="+potemplatenames"
       facet="translations"
@@ -358,15 +376,7 @@
     class="canonical.launchpad.browser.ProductChangeTranslatorsView"
     permission="launchpad.Edit"
     template="../templates/product-translators.pt"
-    />
-
-  <browser:page
-    name="+launchpad"
-    for="canonical.launchpad.interfaces.IProduct"
-    class="canonical.launchpad.browser.ProductLaunchpadUsageEditView"
-    facet="overview"
-    permission="launchpad.Edit"
-    template="../templates/object-launchpadusage.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
   <browser:addform

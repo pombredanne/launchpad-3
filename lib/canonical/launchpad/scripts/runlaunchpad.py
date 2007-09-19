@@ -128,7 +128,7 @@ class MailmanService(Service):
         def stop_mailman():
             # Ignore any errors
             code = subprocess.call(('./mailmanctl', 'stop'), cwd=mailman_bin)
-            if retcode:
+            if code:
                 print >> sys.stderr, 'mailmanctl did not stop cleanly:', code
                 # There's no point in calling sys.exit() since we're already
                 # exiting!

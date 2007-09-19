@@ -1,10 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 import os
-import re
-import errno
-import shutil
-import subprocess
 
 HERE = os.path.dirname(__file__)
 
@@ -40,6 +36,7 @@ def monkey_patch(mailman_path, config):
     launchpad_top = os.path.dirname(os.path.dirname(canonical.__file__))
     # Write the mm_cfg.py file, filling in the dynamic values now.
     host, port = config.mailman.smtp
+    owner_address, owner_password = config.mailman.build.site_list_owner
     config_path = os.path.join(mailman_path, 'Mailman', 'mm_cfg.py')
     config_file = open(config_path, 'w')
     try:
@@ -57,9 +54,31 @@ from canonical.launchpad.mailman.monkeypatches.defaults import *
 # Our dynamic overrides of all the static defaults.
 SMTPHOST = '%(smtp_host)s'
 SMTPPORT = %(smtp_port)d
+
+# The endpoint for Launchpad XMLRPC calls.
+XMLRPC_URL = '%(xmlrpc_url)s'
+XMLRPC_SLEEPTIME = %(xmlrpc_sleeptime)s
+
+DEFAULT_EMAIL_HOST = 'launchpad.dev'
+SITE_LIST_OWNER = '%(site_list_owner)s'
 """ % dict(launchpad_top=launchpad_top,
            smtp_host=host,
            smtp_port=port,
+           xmlrpc_url=config.mailman.xmlrpc_url,
+           xmlrpc_sleeptime=config.mailman.xmlrpc_runner_sleep,
+           site_list_owner=owner_address,
            )
     finally:
         config_file.close()
+    # Mailman's qrunner system requires runner modules to live in the
+    # Mailman.Queue package.  Set things up so that there's a hook module in
+    # there for the XMLRPCRunner.
+    runner_path = os.path.join(mailman_path,
+                               'Mailman', 'Queue', 'XMLRPCRunner.py')
+    runner_file = open(runner_path, 'w')
+    try:
+        print >> runner_file, (
+            'from canonical.launchpad.mailman.monkeypatches.xmlrpcrunner '
+            'import *')
+    finally:
+        runner_file.close()

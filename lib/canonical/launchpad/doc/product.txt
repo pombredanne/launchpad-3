@@ -5,9 +5,10 @@ The anchorpiece of the "upstream" world is the Product, which is a piece of
 software. It can be part of a Project or it can be standalone.
 
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IProductSet, IProduct, IPersonSet, NotFoundError)
+    ...     IHasTranslationImports, IProductSet, IProduct, IPersonSet,
+    ...     NotFoundError)
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.database.sqlbase import flush_database_updates
 
@@ -26,9 +27,19 @@ Verify that p (a Product object) correctly implements IProduct.
     >>> verifyObject(IProduct, p)
     True
 
+and IHasTranslationImports.
+
+    >>> verifyObject(IHasTranslationImports, p)
+    True
+
 Make sure that a product provides the IProduct interface.
 
     >>> IProduct.providedBy(p)
+    True
+
+and the IHasTranslationImports.
+
+    >>> IHasTranslationImports.providedBy(p)
     True
 
 Let's get a product from the sample data. We happen to know that product
@@ -43,7 +54,7 @@ Let's call that evo from now onwards just so the tests can be clearer.
 
 We'll also fetch the a52dec product from the database.
 
-    >>> a52dec = productset.get(12)
+    >>> a52dec = productset.getByName('a52dec')
 
 Since we have some POTemplates for evolution, we should have a primary
 translatable for that product:
@@ -52,6 +63,9 @@ translatable for that product:
     u'trunk'
 
 We can also see how many translatables it has:
+
+    >>> print [series.displayname for series in evo.translatable_series]
+    [u'trunk']
 
 But for a52dec, where we have no translatable series or Ubuntu package, the
 primary_translatable is nonexistent:
@@ -306,3 +320,103 @@ We can also find all the products that have branches.
     iso-codes
     landscape
     thunderbird
+
+Only products that have "active" branches are returned in the query.
+Branches that are either Merged or Abandoned are not considered active.
+
+By marking all of Thunderbird's branches as Abandoned, thunderbird will
+no longer appear in the result set.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchLifecycleStatus, IBranchSet)
+    >>> thunderbird_branches = getUtility(IBranchSet).getBranchesForProduct(
+    ...     product=productset.getByName('thunderbird'),
+    ...     lifecycle_statuses=None)
+    >>> for branch in thunderbird_branches:
+    ...     branch.lifecycle_status = BranchLifecycleStatus.ABANDONED
+    >>> flush_database_updates()
+
+    >>> for product in productset.getProductsWithBranches():
+    ...     print product.name
+    evolution
+    firefox
+    gnome-terminal
+    iso-codes
+    landscape
+
+The getProductsWithBranches method takes an optional parameter that limits
+the number of products returned.
+
+    >>> for product in productset.getProductsWithBranches(3):
+    ...     print product.name
+    evolution
+    firefox
+    gnome-terminal
+
+== Primary translatable ==
+
+Primary translatable series in a product should follow series where
+development is focused on.  To be able to do changes to facilitate
+testing this, we need to log in as a translations administrator.
+
+    >>> login('carlos@canonical.com')
+    >>> translations_admin = getUtility(IPersonSet).getByEmail(
+    ...     'carlos@canonical.com')
+
+We'll also create new templates, so we need IPOTemplateSet and
+POTemplateNameSet:
+
+    >>> from canonical.launchpad.interfaces import IPOTemplateSet
+    >>> potemplate_set = getUtility(IPOTemplateSet)
+    >>> from canonical.launchpad.database import POTemplateNameSet
+
+Firefox has two serieses, but no translatable series either:
+
+    >>> firefox = productset.getByName('firefox')
+    >>> for firefoxseries in firefox.serieses:
+    ...     print firefoxseries.displayname, firefoxseries.potemplates
+    1.0 []
+    trunk []
+    >>> print firefox.primary_translatable
+    None
+
+Development focus series for Firefox is trunk.
+
+    >>> firefox_trunk = firefox.development_focus
+    >>> print firefox_trunk.displayname
+    trunk
+
+But, there's also a 1.0 series for Firefox.
+
+    >>> firefox_10 = firefox.getSeries('1.0')
+
+We can create and associate a new potemplate with Firefox 1.0.
+
+    >>> firefox_potemplatename = POTemplateNameSet()['firefox']
+    >>> potemplatesubset = potemplate_set.getSubset(
+    ...     productseries=firefox_10)
+    >>> firefox_10_pot = potemplatesubset.new(firefox_potemplatename,
+    ...                                       'firefox.pot',
+    ...                                       translations_admin)
+
+The primary_translatable now points at firefox 1.0:
+
+    >>> print firefox.primary_translatable.displayname
+    1.0
+
+If we associate a potemplate with Firefox trunk, it will become the primary
+translatable because it's a series with development focus.
+
+    >>> potemplatesubset = potemplate_set.getSubset(
+    ...     productseries=firefox_trunk)
+    >>> firefox_trunk_pot = potemplatesubset.new(firefox_potemplatename,
+    ...                                          'firefox.pot',
+    ...                                          translations_admin)
+    >>> print firefox.primary_translatable.displayname
+    trunk
+
+If we change the development_focus, primary_translatable changes as well.
+
+    >>> firefox.development_focus = firefox_10
+    >>> print firefox.primary_translatable.displayname
+    1.0

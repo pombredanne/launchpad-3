@@ -121,6 +121,9 @@ class cmd_launchpad_server(Command):
         if authserver_url is None:
             authserver_url = config.codehosting.authserver
 
+        debug_log = transport.set_up_logging()
+        debug_log.debug('Running smart server for %s', user_id)
+
         upload_url = urlutils.local_path_to_url(upload_directory)
         mirror_url = urlutils.local_path_to_url(mirror_directory)
         authserver = xmlrpclib.ServerProxy(authserver_url)
@@ -141,8 +144,8 @@ class cmd_launchpad_server(Command):
 
         signal.signal(signal.SIGHUP, clean_up)
         try:
-            transport = get_transport(lp_server.get_url())
-            smart_server = self.get_smart_server(transport, port, inet)
+            lp_transport = get_transport(lp_server.get_url())
+            smart_server = self.get_smart_server(lp_transport, port, inet)
             self.run_server(smart_server)
         finally:
             signal.signal(signal.SIGHUP, signal.SIG_DFL)

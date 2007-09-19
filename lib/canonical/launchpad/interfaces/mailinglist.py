@@ -5,16 +5,24 @@
 __metaclass__ = type
 __all__ = [
     'IMailingList',
+    'IMailingListApplication',
     'IMailingListSet',
+    'IRequestedMailingListAPI',
+    'MailingListAutoSubscribePolicy',
     'MailingListStatus',
     ]
 
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Int, Object, Set, Text
+from zope.schema import Choice, Datetime, Object, Set, Text
 
 from canonical.launchpad import _
+from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.lazr.enum import DBEnumeratedType, DBItem
+
+
+class IMailingListApplication(ILaunchpadApplication):
+    """Mailing lists application root."""
 
 
 class MailingListStatus(DBEnumeratedType):
@@ -87,12 +95,53 @@ class MailingListStatus(DBEnumeratedType):
         to be communicated to Mailman.
         """)
 
-    DEACTIVATING = DBItem(9, """
+    UPDATING = DBItem(9, """
+        Updating
+
+        A modified mailing list is being updated by Mailman.
+        """)
+
+    DEACTIVATING = DBItem(10, """
         Deactivating
 
         The mailing list has been flagged for deactivation by the team owner.
         Mailman will be informed of this and will take the necessary actions
         to deactive the list.
+        """)
+
+
+class MailingListAutoSubscribePolicy(DBEnumeratedType):
+    """A person's auto-subscription policy.
+
+    When a person joins a team, or is joined to a team, their
+    auto-subscription policy describes how and whether they will be
+    automatically subscribed to any team mailing list that the team may have.
+
+    This does not describe what happens when a team that already has members
+    gets a new team mailing list.  In that case, its members are never
+    automatically subscribed to the mailing list.
+    """
+
+    NEVER = DBItem(0, """
+        Never subscribe automatically
+
+        The user must explicitly subscribe to a team mailing list for any team
+        that she joins.
+        """)
+
+    ON_REGISTRATION = DBItem(1, """
+        Subscribe on self-registration
+
+        The user is automatically joined to any team mailng list for a team
+        that she joins explicitly.  She is never joined to any team mailing
+        list for a team that someone else joins her to.
+        """)
+
+    ALWAYS = DBItem(2, """
+        Always subscribe automatically
+
+        The user is automatically subscribed to any team mailing list when she
+        is added to the team, regardless of who joins her to the team.
         """)
 
 
@@ -182,6 +231,16 @@ class IMailingList(Interface):
             mailing list is not `MailingListStatus.APPROVED`.
         """
 
+    def startUpdating():
+        """Set the status to the `MailingListStatus.UPDATING` state.
+
+        This state change happens when Mailman pulls the list of modified
+        mailing lists and begins updating them.
+
+        :raises AssertionError: When prior to updating, the status if the
+            mailing list is not `MailingListStatus.MODIFIED`.
+        """
+
     def transitionToStatus(target_state):
         """Transition the list's state after a remote action has taken place.
 
@@ -258,3 +317,49 @@ class IMailingListSet(Interface):
             'All mailing lists with status `MailingListStatus.DEACTIVATING`.'),
         value_type=Object(schema=IMailingList),
         readonly=True)
+
+
+class IRequestedMailingListAPI(Interface):
+    """XMLRPC API that Mailman polls for mailing list actions."""
+
+    def getPendingActions():
+        """Return all pending mailing list actions.
+
+        In addition, any mailing list for which there are actions pending will
+        have their states transitioned to the next node in the workflow.  For
+        example, an APPROVED mailing list will be transitioned to
+        CONSTRUCTING, and a MODIFIED mailing list will be transitioned to
+        UPDATING.
+
+        :return: A dictionary with keys being the action names and values
+            being a sequence of values describing the details of each action.
+
+        Actions are strings, with the following valid values:
+
+        * 'create'     -- create the named team mailing list
+        * 'deactivate' -- deactivate the named team mailing list
+        * 'modify'     -- modify an existing team mailing list
+
+        For the 'deactivate' action, the value items are just the team name
+        for the list being deactivated.  For the 'create' and 'modify'
+        actions, the value items are 2-tuples where the first item is the team
+        name and the second item is a dictionary of the list attributes to
+        modify, for example 'welcome_message'.
+
+        There will be at most one action per team.
+        """
+
+    def reportStatus(statuses):
+        """Report the status of mailing list actions.
+
+        When Mailman processes the actions requested in getPendingActions(),
+        it will report the status of those actions back to Launchpad.
+
+        In addition, any mailing list for which a status is being reported
+        will have its state transitioned to the next node in the workflow.
+        For example, a CONSTRUCTING or UPDATING mailing list will be
+        transitioned to ACTIVE or FAILED depending on the status.
+
+        :param statuses: A dictionary mapping team names to result strings.
+            The result strings may be either 'success' or 'failure'.
+        """

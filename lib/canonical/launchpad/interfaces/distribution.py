@@ -14,9 +14,6 @@ from zope.schema import (
 from zope.interface import (
     Interface, Attribute)
 
-from canonical.launchpad.interfaces.milestone import IMilestone
-
-
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Title, Summary, Description)
@@ -160,17 +157,14 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     uploaders = Attribute(_(
         "DistroComponentUploader records associated with this distribution."))
     official_answers = Bool(
-        title=_('Uses Answers Officially'), required=True, 
-        description=_("Check this box to indicate that this distribution "
-            "officially uses Launchpad for community support."))
+        title=_('People can ask questions in Launchpad Answers'),
+        required=True)
     official_malone = Bool(
-        title=_('Uses Bugs Officially'), required=True, 
-        description=_("Check this box to indicate that this distribution "
-            "officially uses Launchpad for bug tracking."))
+        title=_('Bugs in this distribution are tracked in Launchpad'),
+        required=True)
     official_rosetta = Bool(
-        title=_('Uses Translations Officially'), required=True, 
-        description=_("Check this box to indicate that this distribution "
-            "officially uses Launchpad for translation."))
+        title=_('Translations for this distribution are done in Launchpad'),
+        required=True)
 
     # properties
     currentseries = Attribute(
@@ -191,12 +185,28 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         required=False,
         vocabulary='FilteredDistroSeriesVocabulary')
 
+    language_pack_admin = Choice(
+        title=_("Language Pack Administrator"),
+        description=_("The distribution language pack administrator."),
+        required=False, vocabulary='ValidPersonOrTeam')
+
     main_archive = Object(
         title=_('Distribution Main Archive.'), readonly=True, schema=IArchive
         )
 
-    def all_distro_archives():
-        """Return all non-PPA archives."""
+    all_distro_archives = Attribute(
+        "A sequence of the distribution's non-PPA IArchives.")
+
+    all_distro_archive_ids = Attribute(
+        "A list containing the IDs of all the non-PPA archives.")
+
+    def archiveIdList(archive=None):
+        """Return a list of archive IDs suitable for sqlvalues() or quote().
+
+        If the archive param is supplied, just its ID will be returned in
+        a list of one item.  If it is not supplied, return a list of
+        all the IDs for all the archives for the distribution.
+        """
 
     def __getitem__(name):
         """Returns a DistroSeries that matches name, or raises and
@@ -300,16 +310,31 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     def getAllPPAs():
         """Return all PPAs for this distribution."""
 
-    def searchPPAs(text=None):
-        """Return all PPAs matching the given text in this distribution."""
+    def searchPPAs(text=None, show_inactive=False):
+        """Return all PPAs matching the given text in this distribution.
+
+        'text', when passed, will restrict results to Archives with matching
+        description (using substring) or matching Archive.owner (using
+        available person fti/ftq).
+
+        'show_inactive', when False, will restrict results to Archive with
+        at least one source publication in PENDING or PUBLISHED status.
+        """
 
     def getPendingAcceptancePPAs():
         """Return only pending acceptance PPAs in this distribution."""
 
-    def getPendingPublicationPPAs(distribution=None):
+    def getPendingPublicationPPAs():
         """Return only pending publication PPAs in this distribution."""
 
+    def getArchiveByComponent(component_name):
+        """Return the archive most appropriate for the component name.
 
+        Where different components may imply a different archive (e.g.
+        partner), this method will return the archive for that component.
+
+        If the component_name supplied is unknown, None is returned.
+        """
 
 
 class IDistributionSet(Interface):

@@ -26,8 +26,8 @@ publications for a given distroseries:
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> commercial_archive = getUtility(IArchiveSet).getByDistroPurpose(
-    ...     distribution=ubuntu, purpose=ArchivePurpose.COMMERCIAL)
+    >>> partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
+    ...     distribution=ubuntu, purpose=ArchivePurpose.PARTNER)
 
     >>> dspr = ubuntu.getSourcePackage('mozilla-firefox')['0.9']
     >>> the_spr = dspr.sourcepackagerelease
@@ -49,7 +49,7 @@ archives, pockets and statuses. This function creates:
  * 1 PUBLISHED and 1 PENDING records in RELEASE pocket, main_archive;
  * 1 PUBLISHED and 1 PENDING records in UPDATES pocket, main_archive;
  * 1 PUBLISHED and 1 PENDING records in RELEASE pocket, PPA archive;
- * 1 PUBLISHED and 1 PENDING records in RELEASE pocket, COMMERCIAL archive;
+ * 1 PUBLISHED and 1 PENDING records in RELEASE pocket, PARTNER archive;
 
     >>> def create_sample_publications(distroseries):
     ...      create_publication(
@@ -72,10 +72,10 @@ archives, pockets and statuses. This function creates:
     ...           cprov.archive, PackagePublishingStatus.PENDING)
     ...      create_publication(
     ...           distroseries, PackagePublishingPocket.RELEASE,
-    ...           commercial_archive, PackagePublishingStatus.PUBLISHED)
+    ...           partner_archive, PackagePublishingStatus.PUBLISHED)
     ...      create_publication(
     ...           distroseries, PackagePublishingPocket.RELEASE,
-    ...           commercial_archive, PackagePublishingStatus.PENDING)
+    ...           partner_archive, PackagePublishingStatus.PENDING)
 
 This function will store previous publishing records that will be
 ignored later when inspecting the example results (sampledata already
@@ -100,8 +100,8 @@ for each new publishing record.
     ...     for pub in distroseries.getSourcesPublishedForAllArchives():
     ...         if pub.id in initial_candidates:
     ...             continue
-    ...         is_main = pub.archive == pub.distroseries.main_archive
-    ...         print pub.status.name, pub.pocket.name, is_main
+    ...         arch_purpose = pub.archive.purpose.name
+    ...         print pub.status.name, pub.pocket.name, arch_purpose
 
 Finally, a shortcut to do all the dirty-job:
 
@@ -120,6 +120,8 @@ retrieve the following publications:
    pocket, since we don't allow post-release pocket in PPA).
  * Only those targeted to post-release pockets (UPDATES, SECURITY,
    BACKPORTS and PROPOSED) in main_archive (default ubuntu archive)
+ * All Partner archive publications since these can be targeted to
+   RELEASE.
 
     >>> warty = ubuntu['warty']
     >>> warty.status.name
@@ -130,13 +132,15 @@ important to accomplish building-accepted-sources specification:
 
    https://launchpad.net/soyuz/+spec/build-unpublished-source
 
-This will give us only 4 of the test publications:
+This will give us only 6 of the test publications:
 
     >>> probe_candidates(warty)
-    PUBLISHED UPDATES True
-    PENDING UPDATES True
-    PUBLISHED RELEASE False
-    PENDING RELEASE False
+    PUBLISHED UPDATES PRIMARY
+    PENDING UPDATES PRIMARY
+    PUBLISHED RELEASE PPA
+    PENDING RELEASE PPA
+    PUBLISHED RELEASE PARTNER
+    PENDING RELEASE PARTNER
 
 
 == DEVELOPMENT DistroSeries ==
@@ -145,7 +149,7 @@ For a distroseries in DEVELOPMENT state, which means UNSTABLE, we
 expect to retrieve the following publications:
 
  * All PPA publications
- * All main_archive publication, including RELEASE and post-release pockets
+ * All main archive publications, including RELEASE and post-release pockets
 
     >>> hoary = ubuntu['hoary']
     >>> hoary.status.name
@@ -157,13 +161,15 @@ IDistroSeries.canUploadToPocket). This nuance will be more explored
 when fixing #67790 when we will start publishing and building
 post-release pocket in FROZEN state.
 
-Summing up, all the 6 test publications will be returned from the lookup:
+Summing up, all the 8 test publications will be returned from the lookup:
 
     >>> probe_candidates(hoary)
-    PUBLISHED RELEASE True
-    PENDING RELEASE True
-    PUBLISHED UPDATES True
-    PENDING UPDATES True
-    PUBLISHED RELEASE False
-    PENDING RELEASE False
+    PUBLISHED RELEASE PRIMARY
+    PENDING RELEASE PRIMARY
+    PUBLISHED UPDATES PRIMARY
+    PENDING UPDATES PRIMARY
+    PUBLISHED RELEASE PPA
+    PENDING RELEASE PPA
+    PUBLISHED RELEASE PARTNER
+    PENDING RELEASE PARTNER
 

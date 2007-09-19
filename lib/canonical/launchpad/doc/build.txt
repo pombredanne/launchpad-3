@@ -1,5 +1,4 @@
-The Build table
-^^^^^^^^^^^^^^^
+= The Build table =
 
 The build table contains the information pertaining to a given build
 of a sourcepackagerelease on a distroarchseries.
@@ -8,7 +7,7 @@ The build record may have many BinaryPackageRelease records pointing
 at it and it may reference a build log if the build was done on a
 launchpad build daemon.
 
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, IBuildSet)
   >>> from canonical.lp.dbschema import BuildStatus
@@ -16,6 +15,7 @@ launchpad build daemon.
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> warty = ubuntu['warty']
   >>> hoary = ubuntu['hoary']
+  >>> breezy = ubuntu['breezy-autotest']
 
 
 First up, can we get the builds out of the sample data?
@@ -46,6 +46,26 @@ Let's check the complex properties of a build object.
 
   >>> firefox_build.is_trusted
   True
+
+The build can report any corresponding uploads using the package_upload
+property:
+
+  >>> firefox_build.package_upload
+  <PackageUpload ...>
+
+  Zope proxied package uploads do not give permission to see them if you
+  are not logged in, except for the status attribute.  Firefox's build
+  upload is in the NEW state:
+
+  >>> firefox_build.package_upload.status
+  <DBItem PackageUploadStatus.NEW, (0) New>
+
+If the build does not have any uploads, None is returned:
+
+  >>> at_build = getUtility(IBuildSet).getByBuildID(20)
+  >>> print at_build.package_upload
+  None
+
 
 Test "retry" functionality:
 
@@ -108,8 +128,6 @@ given build record entry.
   >>> provides = None
   >>> essential = False
   >>> installedsize = 0
-  >>> copyright = None
-  >>> licence = None
   >>> architecturespecific = False
 
 Invoke createBinaryPackageRelease with all required arguments.
@@ -122,7 +140,6 @@ Invoke createBinaryPackageRelease with all required arguments.
   ...                                 depends, recommends, suggests,
   ...                                 conflicts, replaces, provides,
   ...                                 essential, installedsize,
-  ...                                 copyright, licence,
   ...                                 architecturespecific)
 
   >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
@@ -158,7 +175,6 @@ Emulate a huge list of binaries for 'pmount':
   ...                                 depends, recommends, suggests,
   ...                                 conflicts, replaces, provides,
   ...                                 essential, installedsize,
-  ...                                 copyright, licence,
   ...                                 architecturespecific)
 
 
@@ -203,7 +219,7 @@ collection of builds.
 We can find builds given a source package release and architecture tag.
 
   >>> bs.getBuildBySRAndArchtag(20,'i386').count()
-  5
+  6
 
 IHasBuildRecords uses a base method provided by IBuildSet,
 getBuildsByArchIds():
@@ -253,6 +269,14 @@ Checking optional 'pocket' restriction:
   ...     pocket=PackagePublishingPocket.RELEASE).count()
   5
 
+getBuildsByArchIds will also return builds for archives other than the
+primary archive.
+
+  >>> arch_ids = [arch.id for arch in breezy.architectures]
+  >>> [(build.archive.purpose.name, build.title) for build in
+  ...    bs.getBuildsByArchIds(arch_ids, name='commercialpackage')]
+  [('PARTNER', u'i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE')]
+
 
 We can find recent and pending builds for a given distroseries.
 
@@ -270,7 +294,7 @@ Exercises IHasBuildRecords abilities for distroarchseriess
   >>> hoaryi386.getBuildRecords().count()
   5
 
-  >>> hoaryi386.getBuildRecords(status=BuildStatus.FULLYBUILT).count()
+  >>> hoaryi386.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
   2
 
   >>> hoaryi386.getBuildRecords(name='pm').count()
@@ -290,7 +314,7 @@ Same for distroseriess:
   >>> hoary.getBuildRecords().count()
   5
 
-  >>> hoary.getBuildRecords(status=BuildStatus.FULLYBUILT).count()
+  >>> hoary.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
   2
 
   >>> hoary.getBuildRecords(name='pm').count()
@@ -310,28 +334,47 @@ For sourcepackage:
   >>> firefox = warty.getSourcePackage('mozilla-firefox')
 
   >>> firefox.getBuildRecords().count()
-  3
+  10
 
-  >>> firefox.getBuildRecords(status=BuildStatus.FULLYBUILT).count()
-  2
+  >>> firefox.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
+  8
 
   >>> firefox.getBuildRecords(
   ...     pocket=PackagePublishingPocket.RELEASE).count()
-  3
+  10
 
   >>> firefox.getBuildRecords(
   ...     pocket=PackagePublishingPocket.UPDATES).count()
   0
 
+getBuildRecords will return builds for packages that are no longer currently
+published. "pmount" is published twice in hoary, one is PUBLISHED and the
+other is SUPERSEDED.  The published package does not have any builds but
+the superseded one does.
+
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> from canonical.lp.dbschema import PackagePublishingStatus
+  >>> hoary_pmount = removeSecurityProxy(hoary.getSourcePackage('pmount'))
+  >>> published_hoary_pmount = hoary_pmount._getPublishingHistory(
+  ...     include_status=[PackagePublishingStatus.PUBLISHED])
+  >>> published_hoary_pmount.count()
+  1
+  >>> published_hoary_pmount[0].sourcepackagerelease.builds.count()
+  0
+  >>> hoary_pmount.getBuildRecords().count()
+  6
+
 
 For a given distribution as well:
 
   >>> ubuntu.getBuildRecords().count()
-  17
+  19
 
-  >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
+  >>> L = ubuntu.getBuildRecords(build_state=BuildStatus.FULLYBUILT)
   >>> for l in L:
   ...     print l.datebuilt, l.id, l.buildstate.value
+  2007-08-10 00:00:13+00:00 30 1
+  2007-08-09 23:59:59+00:00 29 1
   2005-03-25 00:00:01+00:00 19 1
   2005-03-25 00:00:01+00:00 16 1
   2005-03-25 00:00:01+00:00 7 1
@@ -340,7 +383,7 @@ For a given distribution as well:
 
 Retrieve the current PENDING builds
 
-  >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
+  >>> builds = ubuntu.getBuildRecords(build_state=BuildStatus.NEEDSBUILD)
   >>> builds.count()
   2
 
@@ -348,7 +391,7 @@ Note, by ordering the build by BuildQueue.lastscore, it already notice
 the existence of a new pending build, since retry already creates a
 new BuildQueue record:
 
-  >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
+  >>> builds = ubuntu.getBuildRecords(build_state=BuildStatus.NEEDSBUILD)
   >>> builds.count()
   2
 
@@ -372,12 +415,12 @@ or using optional pocket argument:
   >>> from canonical.lp.dbschema import PackagePublishingPocket
 
   >>> ubuntu.getBuildRecords(
-  ...    status=BuildStatus.NEEDSBUILD,
+  ...    build_state=BuildStatus.NEEDSBUILD,
   ...    pocket=PackagePublishingPocket.RELEASE).count()
   2
 
   >>> ubuntu.getBuildRecords(
-  ...    status=BuildStatus.NEEDSBUILD,
+  ...    build_state=BuildStatus.NEEDSBUILD,
   ...    pocket=PackagePublishingPocket.SECURITY).count()
   0
 
@@ -388,20 +431,21 @@ Check IHasBuildRecords when implemented by Builder:
 
   >>> bob_builds = bob.getBuildRecords()
   >>> bob_builds.count()
-  14
+  17
 
-  >>> bob_failed_builds = bob.getBuildRecords(status=BuildStatus.FAILEDTOBUILD)
+  >>> bob_failed_builds = bob.getBuildRecords(
+  ...     build_state=BuildStatus.FAILEDTOBUILD)
   >>> bob_failed_builds.count()
   4
 
   >>> bob_pmount_builds = bob.getBuildRecords(name='pmount')
   >>> bob_pmount_builds.count()
-  4
+  5
 
   >>> bob_pmount_ok_builds = bob.getBuildRecords(
-  ...    status=BuildStatus.FULLYBUILT, name='pmount')
+  ...    build_state=BuildStatus.FULLYBUILT, name='pmount')
   >>> bob_pmount_ok_builds.count()
-  3
+  4
 
 
 == AssertionErrors in IBuild ==

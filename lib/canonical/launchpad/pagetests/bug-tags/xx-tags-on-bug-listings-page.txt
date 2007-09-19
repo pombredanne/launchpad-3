@@ -6,7 +6,7 @@ have been used for bugs in this context.
     >>> anon_browser.url
     'http://launchpad.dev/ubuntu/+bugs'
     >>> soup = BeautifulSoup(anon_browser.contents)
-    >>> tags_portlet = soup.find('div', {'id': "bug-tags"})
+    >>> tags_portlet = soup.find('div', {'id': "portlet-tags"})
     >>> for td_tag in tags_portlet('td'):
     ...     print td_tag.renderContents()
     <a ...>crash</a>
@@ -46,7 +46,7 @@ then press the tag link again, only open bugs will be shown
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> anon_browser.getControl(name='field.status:list').value = ['Invalid']
+    >>> anon_browser.getControl(name='field.status:list').displayValue = ['Invalid']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
 

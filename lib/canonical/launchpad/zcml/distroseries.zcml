@@ -14,13 +14,18 @@
         permission="launchpad.TranslationsAdmin"
         set_attributes="hide_all_translations defer_translation_imports"
         />
+    <require
+        permission="launchpad.LanguagePacksAdmin"
+        set_attributes="language_pack_base language_pack_delta
+                        language_pack_proposed
+                        language_pack_full_export_requested"
+        />
     <!-- NB: check with SABDFL before modifying these, there is potential to
          make a huge mess if these get changed and Soyuz has to republish
          shedloads of data. -->
     <require
         permission="launchpad.Edit"
-        set_attributes="displayname title summary description
-                        datelastlangpack driver"
+        set_attributes="displayname title summary description driver"
         />
     <!-- NB: check with SABDFL before modifying these, there is potential to
          make a huge mess if these get changed and Soyuz has to republish
@@ -147,20 +152,9 @@
       facet="overview"
       template="../templates/distroseries-index.pt" />
     <browser:page
-      name="+translations"
-      facet="translations"
-      template="../templates/distroseries-translations.pt" />
-    <browser:page
-      name="+langchart"
-      template="../templates/distroseries-langchart.pt" />
-    <browser:page
       name="+packaging"
       facet="overview"
       template="../templates/distroseries-packaging.pt" />
-    <browser:page
-      name="+potlist"
-      facet="translations"
-      template="../templates/object-pots.pt" />
     <browser:page
       name="+builds"
       facet="overview"
@@ -198,8 +192,8 @@
       template="../templates/object-milestones.pt"
       />
     <browser:page
-      name="+latest-uploads"
-      template="../templates/distroseries-latest-uploads.pt"
+      name="+portlet-latestuploads"
+      template="../templates/distroseries-portlet-latestuploads.pt"
       />
   </browser:pages>
 
@@ -248,6 +242,26 @@
     template="../templates/distroseries-edit.pt"
     />
 
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesView"
+    permission="zope.Public"
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer">
+    <browser:page
+      name="+translations"
+      template="../templates/distroseries-translations.pt" />
+    <browser:page
+      name="+langchart"
+      template="../templates/distroseries-langchart.pt" />
+    <browser:page
+      name="+language-packs"
+      template="../templates/distroseries-language-packs.pt" />
+    <browser:page
+      name="+potlist"
+      template="../templates/object-pots.pt" />
+  </browser:pages>
+
   <browser:page
     for="canonical.launchpad.interfaces.IDistroSeries"
     permission="launchpad.TranslationsAdmin"
@@ -255,6 +269,16 @@
     name="+admin"
     facet="translations"
     template="../templates/distroseries-translationsadmin.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
@@ -314,6 +338,26 @@
     for="canonical.launchpad.interfaces.IDistroSeries"
     class="canonical.launchpad.browser.AskAQuestionButtonView"
     permission="zope.Public"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesLanguagePackAdminView"
+    permission="launchpad.TranslationsAdmin"
+    template="../templates/distroseries-language-packs-editing.pt"
+    name="+admin-language-packs"
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesFullLanguagePackRequestView"
+    permission="launchpad.LanguagePacksAdmin"
+    template="../templates/distroseries-language-packs-editing.pt"
+    name="+full-language-pack-request"
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
 </configure>

@@ -1,6 +1,8 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-"""Module that defines the layers used in launchpad, and also utilities
-to do with manipulating layers.
+
+"""Define the layers used in Launchpad.
+
+Also define utilities that manipulate layers.
 """
 
 __metaclass__ = type
@@ -14,8 +16,10 @@ except ImportError:
 
 from zope.interface import directlyProvides, directlyProvidedBy, Interface
 
+
 def setAdditionalLayer(request, layer):
     directlyProvides(request, directlyProvidedBy(request) + layer)
+
 
 def setFirstLayer(request, layer):
     directlyProvides(request, layer, directlyProvidedBy(request))
@@ -45,8 +49,10 @@ BlueprintsLayer = BlueprintLayer
 class AnswersLayer(LaunchpadLayer):
     """The `AnswersLayer` layer."""
 
+
 class OpenIdLayer(LaunchpadLayer):
     """The `OpenId` layer."""
+
 
 class DebugLayer(Interface):
     """The `DebugLayer` layer.

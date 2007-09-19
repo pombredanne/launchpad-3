@@ -1,7 +1,7 @@
 # Copyright Canonical Limited 2006-2007
 """Ftpmaster queue tool libraries."""
 
-# XXX StuartBishop 2007-01-31: 
+# XXX StuartBishop 2007-01-31:
 # This should be renamed to ftpmasterqueue.py or just ftpmaster.py
 # as Launchpad contains lots of queues.
 
@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'CommandRunner',
     'CommandRunnerError',
+    'QueueActionError',
     'name_queue_map'
     ]
 
@@ -98,7 +99,7 @@ class QueueAction:
                  announcelist, display, no_mail=True, exact_match=False):
         """Initialises passed variables. """
         self.terms = terms
-        # Some actions have addtional commands at the start of the terms 
+        # Some actions have addtional commands at the start of the terms
         # so allow them to state that here by specifiying the start index.
         self.terms_start_index = 0
         self.component_name = component_name
@@ -757,14 +758,14 @@ class QueueActionOverride(QueueAction):
                  component_name, section_name, priority_name,
                  announcelist, display, no_mail=True, exact_match=False):
         """Constructor for QueueActionOverride."""
-        
+
         # This exists so that self.terms_start_index can be set as this action
         # class has a command at the start of the terms.
         # Our first term is "binary" or "source" to specify the type of
         # over-ride.
         QueueAction.__init__(self, distribution_name, suite_name, queue, terms,
                              component_name, section_name, priority_name,
-                             announcelist, display, no_mail=True, 
+                             announcelist, display, no_mail=True,
                              exact_match=False)
         self.terms_start_index = 1
 
@@ -849,6 +850,17 @@ class QueueActionOverride(QueueAction):
                                         priority=priority)
                         # break loop, just in case
                         break
+                # See if the new component requires a new archive on the build:
+                if component:
+                    distribution = (
+                        build.build.distroarchseries.distroseries.distribution)
+                    new_archive = distribution.getArchiveByComponent(
+                        self.component_name)
+                    if (new_archive != build.build.archive):
+                        raise QueueActionError(
+                            "Overriding component to '%s' failed because it "
+                            "would require a new archive."
+                            % self.component_name)
                 self.displayInfo(queue_item, only=binary.name)
 
         not_overridden = set(self.package_names) - set(overridden)
@@ -879,7 +891,7 @@ class CommandRunnerError(Exception):
 class CommandRunner:
     """A wrapper for queue_action classes."""
     def __init__(self, queue, distribution_name, suite_name,
-                 announcelist, no_mail, component_name, section_name, 
+                 announcelist, no_mail, component_name, section_name,
                  priority_name, display=default_display):
         self.queue = queue
         self.distribution_name = distribution_name

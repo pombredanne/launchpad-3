@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-stats">
 
   <h2>Statistics for template
       "<span tal:replace="context/name">templatename</span>"</h2>

@@ -128,7 +128,7 @@ Confirm we can now find ed published in hoary.
 Check IPackageUploadSet behaviour:
 
   >>> from canonical.launchpad.interfaces import IPackageUploadSet
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
 
 Grab an utility:
 
@@ -156,6 +156,8 @@ Iterating over IPackageUploads via iPackageUploadSet:
   11
   12
   13
+  14
+  15
 
 Retrieving an IPackageUpload by its id:
 
@@ -168,7 +170,7 @@ Retrieving an IPackageUpload by its id:
 Counter, optionally by status (informally named "queue") and or distroseries:
 
   >>> qset.count()
-  13
+  15
 
   >>> qset.count(PackageUploadStatus.ACCEPTED)
   1
@@ -184,7 +186,7 @@ Retrieve some data from DB to play more with counter.
   >>> breezy_autotest = distro['breezy-autotest']
 
   >>> qset.count(distroseries=breezy_autotest)
-  11
+  13
 
   >>> qset.count(status=PackageUploadStatus.ACCEPTED,
   ...            distroseries=breezy_autotest)
@@ -415,7 +417,7 @@ Also check the optional argument pocket:
 
   >>> breezy_autotest.getQueueItems(
   ...      pocket=PackagePublishingPocket.RELEASE).count()
-  8
+  10
 
   >>> breezy_autotest.getQueueItems(
   ...      pocket=PackagePublishingPocket.UPDATES).count()
@@ -426,7 +428,7 @@ Ensure list of pockets is also valid:
   >>> breezy_autotest.getQueueItems(
   ...      pocket=[PackagePublishingPocket.UPDATES,
   ...              PackagePublishingPocket.RELEASE]).count()
-  9
+  11
 
 
 Check if association of status and pocket arguments works well:
