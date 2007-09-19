@@ -1,6 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Python harness for librarianformatter_noca.txt."""
 
 __metaclass__ = type
 
@@ -8,10 +8,6 @@ import unittest
 
 from zope.testing import doctest
 from canonical.testing import reset_logging
-
-import os.path
-
-this_directory = os.path.dirname(__file__)
 
 def setUp(test):
     # Suck this modules environment into the test environment
