@@ -79,6 +79,47 @@ displayed.
     Submissions to the Hardware Database
     Foo Bar has posted no submissions.
 
+Submissions that are marked as private and owned by a team are only
+visible for members of the team and admins.
+
+    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> team_submit_data = {
+    ...     'Date Created:': '2007-01-01',
+    ...     'Format Version:': ['VERSION_1'],
+    ...     'Unique Submission ID:': 'unique id 3a',
+    ...     'Email address:': 'support@ubuntu.com',
+    ...     'Distribution:': 'ubuntu',
+    ...     'Distribution Release:': '5.04',
+    ...     'Processor Architecture:': 'x86',
+    ...     'System name:': 'Black Box 42',
+    ... }
+    >>> team_submit_data_checkboxes = {
+    ...     'Private Submission': True,
+    ...     'Contactable': False,
+    ...     'Data from Live CD': False
+    ... }
+    >>> submit_file = StringIO('some data')
+    >>> fill_form(
+    ...     browser, team_submit_data, team_submit_data_checkboxes, 
+    ...     submit_file, 'teamtest.txt')
+    >>> browser.getControl('Upload').click()
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/~ubuntu-team/+hwdb-submissions')
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Submissions to the Hardware Database
+    Ubuntu Team has posted no submissions.
+
+    >>> from zope.testbrowser.testing import Browser
+    >>> browser = Browser()
+    >>> browser.addHeader('Authorization',
+    ...                   'Basic celso.providelo@canonical.com:cprov')
+    >>> browser.open('http://launchpad.dev/~ubuntu-team/+hwdb-submissions')
+    >>> print extract_text(find_main_content(browser.contents))
+    Submissions to the Hardware Database
+    System       Date submitted Download submitted data
+    Black Box 42 ...            teamtest.txt
+
+
 == Submissions listed by fingerprint ==
 
 The pages http://launchpad.dev/hwdb/+hwdb-fingerprint/(fingerprint) list
@@ -113,6 +154,9 @@ is False.
 
 Private submissions are only displayed for the owner.
 
+    >>> from zope.testbrowser.testing import Browser
+    >>> browser = Browser()
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open(
     ...     'http://launchpad.dev/hwdb/+hwdb-fingerprint/Fujitsu%20CY26')
     >>> [content_table] = find_tags_by_class(browser.contents, 'listing')

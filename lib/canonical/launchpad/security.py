@@ -1141,7 +1141,7 @@ class ViewHWSubmission(AuthorizationBase):
             return True
 
         admins = getUtility(ILaunchpadCelebrities).admin
-        return user == self.obj.owner or user.inTeam(admins)
+        return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
     def checkUnauthenticated(self):
         return not self.obj.private
