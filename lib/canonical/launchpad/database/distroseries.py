@@ -515,7 +515,8 @@ def copy_active_translations_as_update(child, transaction, logger):
         """
     copier.extract(
         'POSubmission', joins=['POMsgSet'],
-        where_clause="active AND pms.iscomplete",
+        where_clause="""
+            active AND POSubmission.pomsgset = pms.id AND pms.iscomplete""",
         external_joins=['POMsgSet pms'],
         batch_pouring_callback=prepare_posubmission_batch,
         inert_where=have_better)
