@@ -30,7 +30,6 @@ from canonical.launchpad.webapp.opstats import OpStats
 __all__ = [
     'DisconnectionError',
     'LaunchpadDatabaseAdapter',
-    'SessionDatabaseAdapter',
     'RequestExpired',
     'set_request_started',
     'clear_request_started',
@@ -259,30 +258,6 @@ class ReconnectingDatabaseAdapter(PsycopgAdapter):
                     self.Connection(self._connection_factory), self)
             except psycopg.Error, error:
                 raise DatabaseException(str(error))
-
-
-# ---- Session database adapter
-
-class SessionDatabaseAdapter(ReconnectingDatabaseAdapter):
-    """A subclass of ReconnectionDatabaseAdapter that stores its
-    connection information in the central launchpad configuration.
-    """
-
-    def __init__(self, dsn=None):
-        """Ignore dsn"""
-        super(SessionDatabaseAdapter, self).__init__(
-            'dbi://%(dbuser)s:@%(dbhost)s/%(dbname)s' % dict(
-                dbuser=config.launchpad.session.dbuser,
-                dbhost=config.launchpad.session.dbhost or '',
-                dbname=config.launchpad.session.dbname))
-
-    def _connection_factory(self):
-        flags = _get_dirty_commit_flags()
-        connection = super(SessionDatabaseAdapter, self)._connection_factory()
-        connection.set_isolation_level(AUTOCOMMIT_ISOLATION)
-        connection.cursor().execute("SET client_encoding TO UTF8")
-        _reset_dirty_commit_flags(*flags)
-        return connection
 
 
 _local = threading.local()
