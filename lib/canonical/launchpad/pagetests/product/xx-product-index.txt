@@ -1,3 +1,6 @@
+XXX CarlosPerelloMarin 20070919: This test is not complete, we must add much
+more tests and documentation. See bug #141052 for more information.
+
 Check that the product main page works.
 
     >>> user_browser.open('http://launchpad.dev/tomcat')
