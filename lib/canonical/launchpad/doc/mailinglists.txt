@@ -49,6 +49,8 @@ None of these teams have mailing lists yet.
     []
     >>> sorted_lists(list_set.approved_lists)
     []
+    >>> sorted_lists(list_set.active_lists)
+    []
     >>> print list_set.get(team_one.name)
     None
     >>> print list_set.get(team_two.name)

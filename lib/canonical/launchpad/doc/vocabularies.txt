@@ -1276,6 +1276,53 @@ ValidTeamOwner's context must be a team.
     [u'name16']
 
 
+== ValidMailingList ==
+
+Valid mailing lists include all those that are currently active.  There are no
+active mailing lists yet.
+
+    >>> list_vocabulary = vocabulary_registry.get(None, 'ValidMailingList')
+    >>> list_vocabulary.displayname
+    'Select a valid (i.e. active) mailing list.'
+    >>> list_vocabulary.search()
+    []
+    >>> personset = getUtility(IPersonSet)
+    >>> ddaa = personset.getByName('ddaa')
+    >>> carlos = personset.getByName('carlos')
+    >>> from canonical.launchpad.interfaces import (
+    ...     IMailingListSet, MailingListStatus, TeamSubscriptionPolicy)
+    >>> team_one = personset.newTeam(
+    ...     ddaa, 'team-one', 'Team One',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> team_two = personset.newTeam(
+    ...     ddaa, 'team-two', 'Team Two',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> bass_team = personset.newTeam(
+    ...     ddaa, 'basses', 'All Your Bass Are Belong To Geddy',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> listset = getUtility(IMailingListSet)
+    >>> list_one = listset.new(team_one)
+    >>> list_two = listset.new(team_two)
+    >>> list_three = listset.new(bass_team)
+    >>> list_one.review(carlos, MailingListStatus.APPROVED)
+    >>> list_two.review(carlos, MailingListStatus.APPROVED)
+    >>> list_three.review(carlos, MailingListStatus.APPROVED)
+    >>> list_one.startConstructing()
+    >>> list_two.startConstructing()
+    >>> list_three.startConstructing()
+    >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> list_two.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> list_three.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> flush_database_updates()
+
+    >>> sorted(mailing_list.team.displayname
+    ...        for mailing_list in list_vocabulary.search(None))
+    [u'All Your Bass Are Belong To Geddy', u'Team One', u'Team Two']
+    >>> sorted(mailing_list.team.displayname
+    ...        for mailing_list in list_vocabulary.search('team'))
+    [u'Team One', u'Team Two']
+
+
 === Processor ===
 
 All processors type available in Launchpad.

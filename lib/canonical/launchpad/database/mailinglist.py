@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'MailingList',
     'MailingListSet',
+    'MailingListSubscription',
     ]
 
 import pytz
@@ -18,11 +19,12 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IMailingList, IMailingListSet, MailingListStatus)
+    CannotSubscribe, CannotUnsubscribe, ILaunchpadCelebrities,
+    IMailingList, IMailingListSet, IMailingListSubscription, MailingListStatus)
 
 
 class MailingList(SQLBase):
-    """'The mailing list for a team.
+    """The mailing list for a team.
 
     Teams may have at most one mailing list, and a mailing list is associated
     with exactly one team.  This table manages the state changes that a team
@@ -135,6 +137,47 @@ class MailingList(SQLBase):
 
     welcome_message = property(_get_welcome_message, _set_welcome_message)
 
+    def subscribe(self, person, address=None):
+        """See `IMailingList`."""
+        if person.isTeam():
+            raise CannotSubscribe('Teams cannot be mailing list members: %s' %
+                                  person.displayname)
+        if not person.hasParticipationEntryFor(self.team):
+            raise CannotSubscribe('%s is not a member of team %s' %
+                                  (person.displayname, self.team.displayname))
+        if address is not None and address.person != person:
+            raise CannotSubscribe('%s does not own the email address: %s' %
+                                  (person.displayname, address.email))
+        if MailingListSubscription.selectOneBy(person=person) is not None:
+            raise CannotSubscribe('%s is already subscribed to list %s' %
+                                  (person.displayname, self.team.displayname))
+        subscription = MailingListSubscription(
+            person=person,
+            mailing_list=self,
+            date_joined=datetime.now(pytz.timezone('UTC')),
+            email_address=address)
+
+    def unsubscribe(self, person):
+        """See `IMailingList`."""
+        subscription = MailingListSubscription.selectOneBy(person=person)
+        if subscription is None:
+            raise CannotUnsubscribe(
+                '%s is not a member of the mailing list: %s' %
+                (person.displayname, self.team.displayname))
+        MailingListSubscription.delete(subscription.id)
+
+    @property
+    def addresses(self):
+        """See `IMailingList`."""
+        subscriptions = MailingListSubscription.selectBy(mailing_list=self)
+        for subscription in subscriptions:
+            if subscription.email_address is None:
+                # Use the person's preferred email address.
+                yield subscription.person.preferredemail.email
+            else:
+                # Use the subscribed email address.
+                yield subscription.email_address.email
+
 
 class MailingListSet:
     implements(IMailingListSet)
@@ -186,6 +229,11 @@ class MailingListSet:
         return MailingList.selectBy(status=MailingListStatus.APPROVED)
 
     @property
+    def active_lists(self):
+        """See `IMailingListSet`."""
+        return MailingList.selectBy(status=MailingListStatus.ACTIVE)
+
+    @property
     def modified_lists(self):
         """See `IMailingListSet`."""
         return MailingList.selectBy(status=MailingListStatus.MODIFIED)
@@ -194,3 +242,18 @@ class MailingListSet:
     def deactivated_lists(self):
         """See `IMailingListSet`."""
         return MailingList.selectBy(status=MailingListStatus.DEACTIVATING)
+
+
+class MailingListSubscription(SQLBase):
+    """A mailing list subscription."""
+
+    implements(IMailingListSubscription)
+
+    person = ForeignKey(dbName='person', foreignKey='Person')
+
+    mailing_list = ForeignKey(dbName='mailing_list', foreignKey='Person')
+
+    date_joined = UtcDateTimeCol(notNull=True, default=None)
+
+    email_address = ForeignKey(dbName='email_address',
+                               foreignKey='EmailAddress')

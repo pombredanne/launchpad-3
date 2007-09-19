@@ -4,19 +4,23 @@
 
 __metaclass__ = type
 __all__ = [
+    'CannotSubscribe',
+    'CannotUnsubscribe',
     'IMailingList',
     'IMailingListApplication',
     'IMailingListSet',
+    'IMailingListSubscription',
     'IRequestedMailingListAPI',
     'MailingListAutoSubscribePolicy',
     'MailingListStatus',
     ]
 
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Object, Set, Text
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import IEmailAddress
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 
@@ -261,6 +265,36 @@ class IMailingList(Interface):
             mailing list is not `MailingListStatus.ACTIVE`.
         """
 
+    def subscribe(person, address=None):
+        """Subscribe a person to the mailing list.
+
+        :param person: The person to subscribe to the mailing list.  The
+            person must be a member (either direct or indirect) of the team
+            linked to this mailing list.
+        :param address: The address to use for the subscription.  The address
+            must be owned by `person`.  If None (the default), then the
+            person's preferred email address is used.  If the person's
+            preferred address changes, their subscription address will change
+            as well.
+        :raises CannotSubscribe: Raised when the person is not a member of the
+            team linked to this mailing list, or `person` is a Team or other
+            non-person.
+        """
+
+    def unsubscribe(person):
+        """Unsubscribe the person from the mailing list.
+
+        :param person: A member of the mailing list.
+        :raises CannotUnsubscribe: Raised when the person is not a member of
+            the mailing list.
+        """
+
+    addresses = Set(
+        title=_('Addresses'),
+        description=_('The set of subscribed email addresses.'),
+        value_type=Object(schema=IEmailAddress),
+        readonly=True)
+
 
 class IMailingListSet(Interface):
     """A set of mailing lists."""
@@ -301,6 +335,13 @@ class IMailingListSet(Interface):
         title=_('Approved lists'),
         description=_(
             'All mailing lists with status `MailingListStatus.APPROVED`.'),
+        value_type=Object(schema=IMailingList),
+        readonly=True)
+
+    active_lists = Set(
+        title=_('Active lists'),
+        description=_(
+            'All mailing lists with status `MailingListStatus.ACTIVE`.'),
         value_type=Object(schema=IMailingList),
         readonly=True)
 
@@ -363,3 +404,45 @@ class IRequestedMailingListAPI(Interface):
         :param statuses: A dictionary mapping team names to result strings.
             The result strings may be either 'success' or 'failure'.
         """
+
+
+class IMailingListSubscription(Interface):
+    """A mailing list subscription."""
+
+    person = Choice(
+        title=_('Person'),
+        description=_('The person who is subscribed to this mailing list.'),
+        vocabulary='ValidTeamMember',
+        required=True, readonly=True)
+
+    mailing_list = Choice(
+        title=_('Mailing list'),
+        description=_('The mailing list for this subscription.'),
+        vocabulary='ValidMailingList',
+        required=True, readonly=True)
+
+    date_joined = Datetime(
+        title=_('Date joined'),
+        description=_("The date this person joined the team's mailing list."),
+        required=True, readonly=True)
+
+    # XXX Can we do something better?
+    email_address = Attribute(
+        "Subscribed email address or None, meaning use the person's preferred "
+        'email address, even if that changes.')
+
+
+class CannotSubscribe(Exception):
+    """The subscribee is not allowed to subscribe to the mailing list.
+
+    This can be raised when a Team instead of a Person attempts to subscribe
+    to the mailing list, or when the Person is not a member of the team linked
+    to this mailing list.
+    """
+
+class CannotUnsubscribe(Exception):
+    """The person cannot unsubscribe from the mailing list.
+
+    This can be raised when Person who is not a member of the mailing list
+    tries to unsubscribe from the mailing list.
+    """

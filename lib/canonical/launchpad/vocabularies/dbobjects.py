@@ -54,6 +54,7 @@ __all__ = [
     'TranslatableLanguageVocabulary',
     'TranslationGroupVocabulary',
     'UserTeamsParticipationVocabulary',
+    'ValidMailingListVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidTeamVocabulary',
     'ValidTeamMemberVocabulary',
@@ -81,8 +82,8 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IBugTask, IDistribution, IDistributionSourcePackage,
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
-    IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMilestoneSet, IPerson,
-    IPersonSet, IPillarName, IProduct, IProject, ISourcePackage,
+    IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet,
+    IPerson, IPersonSet, IPillarName, IProduct, IProject, ISourcePackage,
     ISpecification, ITeam, IUpstreamBugTask, LanguagePackType)
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
@@ -745,6 +746,26 @@ class PersonActiveMembershipVocabulary:
                 return self.getTerm(membership.team)
         else:
             raise LookupError(token)
+
+
+class ValidMailingListVocabulary(ValidTeamVocabulary):
+    """The set of all active mailing lists."""
+
+    displayname = 'Select a valid (i.e. active) mailing list.'
+
+    def search(self, text=None):
+        """Search for active mailing lists.
+
+        :param text: The name of a mailing list, which can be a partial
+            name.  This actually matches against the name of the team to which
+            the mailing list is linked.  If None (the default), all active
+            mailing lists are returned.
+        :return: The list of active mailing lists.
+        """
+        teams = set(super(ValidMailingListVocabulary, self).search(text))
+        active_lists = set(getUtility(IMailingListSet).active_lists)
+        return list(mailing_list for mailing_list in active_lists
+                    if mailing_list.team in teams)
 
 
 def person_team_participations_vocabulary_factory(context):

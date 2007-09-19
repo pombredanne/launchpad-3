@@ -1,0 +1,194 @@
+= Team mailing list subscriptions =
+
+Members of a team, either direct or indirect, may subscribe to that team's
+mailing list, if it has one.  To illustrate, we'll first create a team and its
+team mailing list.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IMailingListSet, IPersonSet, MailingListStatus,
+    ...     TeamSubscriptionPolicy)
+    >>> from canonical.launchpad.ftests import login, ANONYMOUS
+    >>> from canonical.database.sqlbase import flush_database_updates
+
+    >>> login(ANONYMOUS)
+    >>> personset = getUtility(IPersonSet)
+    >>> ddaa = personset.getByName('ddaa')
+    >>> # XXX BarryWarsaw Set the team's subscription policy to OPEN
+    >>> # because of bug 125505.
+    >>> policy = TeamSubscriptionPolicy.OPEN
+    >>> team_one = personset.newTeam(ddaa, 'team-one', 'Team One',
+    ...                              subscriptionpolicy=policy)
+    >>> flush_database_updates()
+
+    >>> list_set = getUtility(IMailingListSet)
+    >>> list_one = list_set.new(team_one)
+    >>> flush_database_updates()
+    >>> carlos = personset.getByName('carlos')
+    >>> list_one.review(carlos, MailingListStatus.APPROVED)
+    >>> flush_database_updates()
+    >>> list_one.startConstructing()
+    >>> flush_database_updates()
+    >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
+
+Only members of the list's team may subscribe to the list.  Add two people to
+the team.
+
+    >>> salgado = personset.getByName('salgado')
+    >>> salgado.join(team_one)
+    >>> ddaa.join(team_one)
+    >>> sorted(member.displayname for member in team_one.allmembers)
+    [u'David Allouche', u'Guilherme Salgado']
+
+David subscribes to the mailing list for team one, but Guilherme does not.
+Because David does not provide an email address in his subscription, his
+preferred address is used.
+
+    >>> list_one.subscribe(ddaa)
+    >>> flush_database_updates()
+    >>> sorted(list_one.addresses)
+    [u'david.allouche@canonical.com']
+
+Now Guilherme also subscribes to the mailing list, but he does so with
+something other than his preferred email address.
+
+    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> address_set = getUtility(IEmailAddressSet)
+    >>> salgado_emails = [address
+    ...                   for address in address_set.getByPerson(salgado)
+    ...                   if address != salgado.preferredemail]
+    >>> salgado_emails[0].email
+    u'salgado@ubuntu.com'
+    >>> list_one.subscribe(salgado, salgado_emails[0])
+    >>> flush_database_updates()
+    >>> sorted(list_one.addresses)
+    [u'david.allouche@canonical.com', u'salgado@ubuntu.com']
+
+Someone who is not a member of the team may not subscribe to the team's list.
+
+    >>> no_priv = personset.getByName('no-priv')
+    >>> list_one.subscribe(no_priv)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: No Privileges Person is not a member of team Team One
+
+Neither can a team subscribe to a mailing list.
+
+    >>> list_one.subscribe(team_one)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Teams cannot be mailing list members: Team One
+
+
+== Indirect membership ==
+
+Indirect members can subscribe to a team's mailing list.  What this means is
+that if Person A is a member of Team Two but not Team One, and Team Two is a
+member of Team One, then Person A can still subscribe to Team One's mailing
+list.
+
+    >>> team_two = personset.newTeam(ddaa, 'team-two', 'Team Two',
+    ...                              subscriptionpolicy=policy)
+    >>> flush_database_updates()
+    >>> no_priv.join(team_two)
+    >>> flush_database_updates()
+    >>> sorted(member.displayname for member in team_two.allmembers)
+    [u'David Allouche', u'No Privileges Person']
+    >>> sorted(member.displayname for member in team_one.allmembers)
+    [u'David Allouche', u'Guilherme Salgado']
+
+    # Teams cannot join, they must use addMember.
+    >>> team_one.addMember(team_two, salgado, force_team_add=True)
+    >>> flush_database_updates()
+    >>> sorted(member.displayname for member in team_one.allmembers)
+    [u'David Allouche', u'Guilherme Salgado', u'No Privileges Person',
+     u'Team Two']
+
+Now, the indirect member no_priv can subscribe to the mailing list, but of
+course Team Two still cannot.
+
+    >>> list_one.subscribe(no_priv)
+    >>> flush_database_updates()
+    >>> sorted(list_one.addresses)
+    [u'david.allouche@canonical.com', u'no-priv@canonical.com',
+     u'salgado@ubuntu.com']
+    >>> list_one.subscribe(team_two)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Teams cannot be mailing list members: Team Two
+
+
+== Subscribed email addresses ==
+
+As shown above, a person can subscribe either with their preferred email
+address or any other email address they own.  If they choose to use their
+preferred email address, this will automatically track changes to their
+preferred address.
+
+    >>> ddaa_emails = [address
+    ...                for address in address_set.getByPerson(ddaa)
+    ...                if address != ddaa.preferredemail]
+    >>> ddaa_emails[0].email
+    u'david@canonical.com'
+    >>> sorted(list_one.addresses)
+    [u'david.allouche@canonical.com', u'no-priv@canonical.com',
+     u'salgado@ubuntu.com']
+    >>> ddaa.setPreferredEmail(ddaa_emails[0])
+    >>> flush_database_updates()    
+    >>> sorted(list_one.addresses)
+    [u'david@canonical.com', u'no-priv@canonical.com', u'salgado@ubuntu.com']
+
+A person cannot subscribe an email address they do not own.
+
+    >>> sabdfl = personset.getByName('sabdfl')
+    >>> sabdfl.join(team_one)
+    >>> flush_database_updates()
+    >>> list_one.subscribe(sabdfl, salgado_emails[0])
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mark Shuttleworth does not own the email address:
+        salgado@ubuntu.com
+
+
+== Unsubscribing ==
+
+Any list member can unsubscribe from the mailing list.
+
+    >>> list_one.unsubscribe(ddaa)
+    >>> flush_database_updates()
+    >>> sorted(list_one.addresses)
+    [u'no-priv@canonical.com', u'salgado@ubuntu.com']
+
+But someone who is not a member cannot unsubscribe.
+
+    >>> list_one.unsubscribe(sabdfl)
+    Traceback (most recent call last):
+    ...
+    CannotUnsubscribe: Mark Shuttleworth is not a member of the mailing list:
+        Team One
+
+
+== Double subscriptions ==
+
+A list member may only be subscribed once, with a single email address.
+
+    >>> list_one.subscribe(ddaa)
+    >>> flush_database_updates()
+    >>> sorted(list_one.addresses)
+    [u'david@canonical.com', u'no-priv@canonical.com', u'salgado@ubuntu.com']
+    >>> list_one.subscribe(ddaa)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: David Allouche is already subscribed to list Team One
+
+A current subscriber is not even allowed to subscribe multiple times with a
+different email address.
+
+    >>> ddaa_emails = [address
+    ...                for address in address_set.getByPerson(ddaa)
+    ...                if address != ddaa.preferredemail]
+    >>> ddaa_emails[0].email
+    u'david.allouche@canonical.com'
+    >>> list_one.subscribe(ddaa, ddaa_emails[0])
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: David Allouche is already subscribed to list Team One

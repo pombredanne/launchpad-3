@@ -351,6 +351,11 @@
     />
 
   <vocabulary
+    name="ValidMailingList"
+    factory="canonical.launchpad.vocabularies.ValidMailingListVocabulary"
+    />
+
+  <vocabulary
     name="ValidPersonOrTeam"
     factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
     />
