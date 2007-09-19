@@ -1,15 +1,8 @@
 Check that the product main page works.
 
-  >>> print http(r"""
-  ... GET /tomcat HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  ...
+    >>> user_browser.open('http://launchpad.dev/tomcat')
+    >>> user_browser.open('http://launchpad.dev/evolution')
 
-  >>> print http(r"""
-  ... GET /evolution HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  ...
+Also, it has a link to help translate it.
+
+    >>> user_browser.getLink('Help translate').click()
