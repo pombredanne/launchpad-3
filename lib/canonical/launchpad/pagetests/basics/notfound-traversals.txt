@@ -55,7 +55,7 @@ status is returned.
 
 >>> check("/")
 >>> check("/rdf")
->>> check("/legal")
+>>> check_redirect("/legal", status=301)
 >>> check("/feedback")
 >>> check("/+graphics")
 
