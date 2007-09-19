@@ -157,7 +157,10 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
 
     global naughty_imports
 
-    import_into = globals.get('__name__')
+    if globals is None:
+        import_into = None
+    else:
+        import_into = globals.get('__name__')
     if import_into is None:
         # We're being imported from the __import__ builtin.
         # We could find out by jumping up the stack a frame.
