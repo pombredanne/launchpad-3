@@ -104,6 +104,7 @@ class MailingList(SQLBase):
             assert target_state in (MailingListStatus.INACTIVE,
                                     MailingListStatus.FAILED), (
                 'target_state result must be inactive or failed')
+            self._clearSubscriptions()
         else:
             raise AssertionError('Not a valid state transition')
         self.status = target_state
@@ -168,6 +169,11 @@ class MailingList(SQLBase):
                 '%s is not a member of the mailing list: %s' %
                 (person.displayname, self.team.displayname))
         MailingListSubscription.delete(subscription.id)
+
+    def _clearSubscriptions(self):
+        subscriptions = MailingListSubscription.selectBy(mailing_list=self)
+        for subscription in subscriptions:
+            MailingListSubscription.delete(subscription.id)
 
     @property
     def addresses(self):
@@ -254,7 +260,7 @@ class MailingListSubscription(SQLBase):
 
     person = ForeignKey(dbName='person', foreignKey='Person')
 
-    mailing_list = ForeignKey(dbName='mailing_list', foreignKey='Person')
+    mailing_list = ForeignKey(dbName='mailing_list', foreignKey='MailingList')
 
     date_joined = UtcDateTimeCol(notNull=True, default=None)
 
