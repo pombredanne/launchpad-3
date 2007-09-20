@@ -941,8 +941,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # No warning, as we don't want to place the burden on callsites
         # to check this.
         if (not self.is_valid_person
-            or self.id is getUtility(
-                ILaunchpadCelebrities).janitor.id):
+            or self.id == getUtility(ILaunchpadCelebrities).janitor.id):
             return None
 
         if product is not None:

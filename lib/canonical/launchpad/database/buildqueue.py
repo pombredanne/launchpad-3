@@ -135,7 +135,7 @@ class BuildQueue(SQLBase):
             'universe': 250,
             'restricted': 750,
             'main': 1000,
-            'commercial' : 1250,
+            'partner' : 1250,
             }
 
         score_urgency = {

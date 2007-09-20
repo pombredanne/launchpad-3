@@ -288,16 +288,16 @@ _linkify_bug_numbers() to do this.
 Zero or more spaces may appear between the ":" and the "#".
 
     >>> spr_view._linkify_bug_numbers("LP: #10")
-    u'<a href="http://bugs.launchpad.dev/bugs/10">LP: #10</a>'
+    u'<a href="/bugs/10" title="another test bug">LP: #10</a>'
 
     >>> spr_view._linkify_bug_numbers("LP:         #10")
-    u'<a href="http://bugs.launchpad.dev/bugs/10">LP:         #10</a>'
+    u'<a href="/bugs/10" title="another test bug">LP:         #10</a>'
 
     >>> spr_view._linkify_bug_numbers("LP:#10")
-    u'<a href="http://bugs.launchpad.dev/bugs/10">LP:#10</a>'
+    u'<a href="/bugs/10" title="another test bug">LP:#10</a>'
 
     >>> spr_view._linkify_bug_numbers("LP: #999")
-    'LP: #999'
+    '<a href="/bugs/999" title="No such bug">LP: #999</a>'
 
     >>> spr_view._linkify_bug_numbers("garbage")
     'garbage'
