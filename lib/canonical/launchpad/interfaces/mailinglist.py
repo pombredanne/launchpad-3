@@ -11,7 +11,7 @@ __all__ = [
     'IMailingListSet',
     'IMailingListSubscription',
     'IMailingListSubscriptionSet',
-    'IRequestedMailingListAPI',
+    'IRequestedMailingListAPIView',
     'MailingListAutoSubscribePolicy',
     'MailingListStatus',
     ]
@@ -361,7 +361,7 @@ class IMailingListSet(Interface):
         readonly=True)
 
 
-class IRequestedMailingListAPI(Interface):
+class IRequestedMailingListAPIView(Interface):
     """XMLRPC API that Mailman polls for mailing list actions."""
 
     def getPendingActions():

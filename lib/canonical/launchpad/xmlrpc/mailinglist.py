@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'RequestedMailingListAPI',
+    'RequestedMailingListAPIView',
     ]
 
 
@@ -12,18 +12,18 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    IMailingListSet, IRequestedMailingListAPI, MailingListStatus)
+    IMailingListSet, IRequestedMailingListAPIView, MailingListStatus)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 
 
-class RequestedMailingListAPI(LaunchpadXMLRPCView):
+class RequestedMailingListAPIView(LaunchpadXMLRPCView):
     """The XMLRPC API that Mailman polls for mailing list actions."""
 
-    implements(IRequestedMailingListAPI)
+    implements(IRequestedMailingListAPIView)
 
     def getPendingActions(self):
-        """See `IRequestedMailingListAPI`."""
+        """See `IRequestedMailingListAPIView`."""
         list_set = getUtility(IMailingListSet)
         # According to the interface, the return value is a dictionary where
         # the keys are one of the pending actions 'create', 'deactivate', or
@@ -63,7 +63,7 @@ class RequestedMailingListAPI(LaunchpadXMLRPCView):
         return response
 
     def reportStatus(self, statuses):
-        """See `IRequestedMailingListActions`."""
+        """See `IRequestedMailingListAPIView`."""
         list_set = getUtility(IMailingListSet)
         for team_name, action_status in statuses.items():
             mailing_list = list_set.get(team_name)
