@@ -14,6 +14,7 @@ import re
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import LaunchpadView, canonical_url
+from canonical.launchpad.webapp.tales import FormattersAPI
 from canonical.launchpad.interfaces import IBugSet, NotFoundError
 
 
@@ -25,18 +26,16 @@ class SourcePackageReleaseView(LaunchpadView):
 
     def _linkify_bug_numbers(self, changelog):
         """Linkify to a bug if LP: #number appears in the changelog text."""
-        matches = re.findall(r'(LP:\s*#(\d+))', changelog)
-        bug_set = getUtility(IBugSet)
-        for match_text, bug_id in matches:
-            try:
-                bug = bug_set.get(bug_id)
-            except NotFoundError:
-                pass
-            else:
-                bug_url = canonical_url(bug)
+        # FormattersAPI._linkify_substitution requires a match object
+        # that has named groups "bug" and "bugnum".  The matching text for
+        # the "bug" group is used as the link text and "bugnum" forms part
+        # of the URL for the link to the bug.
+        matches = re.finditer('(?P<bug>LP:\s*#(?P<bugnum>\d+))?', changelog)
+        for match in matches:
+            replace_text = match.group('bug')
+            if replace_text is not None:
                 changelog = changelog.replace(
-                    match_text, '<a href="%s">%s</a>' % (bug_url, match_text))
-
+                    replace_text, FormattersAPI._linkify_substitution(match))
         return changelog
 
     def _linkify_packagename(self, changelog, sourcepkgnametxt):
