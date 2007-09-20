@@ -231,7 +231,7 @@ we can confirm that an event is indeed fired off.
 If we pass in a different Malone status than the existing one, an event
 will be fired off, even though the remote status stays the same.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> old_lastchanged = debian_bugwatch.lastchanged
     >>> debian_bugwatch.updateStatus(
     ...     debian_bugwatch.remotestatus, BugTaskStatus.NEW)

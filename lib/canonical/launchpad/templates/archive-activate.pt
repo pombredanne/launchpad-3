@@ -42,7 +42,7 @@
 </div>
 
     <p metal:fill-slot="help">
-       Once you activate you PPA you will be able to upload source
+       Once you activate your PPA you will be able to upload source
        packages to it and Launchpad will build and publish their
        binaries for you. Check the procedure details in the
        quick-start <a href="https://help.launchpad.net/PPAQuickStart"

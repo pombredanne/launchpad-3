@@ -186,11 +186,11 @@ class DistroArchSeries(SQLBase):
         return DistroArchSeriesBinaryPackage(
             self, name)
 
-    def getBuildRecords(self, status=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         # use facility provided by IBuildSet to retrieve the records
         return getUtility(IBuildSet).getBuildsByArchIds(
-            [self.id], status, name, pocket)
+            [self.id], build_state, name, pocket)
 
     def getReleasedPackages(self, binary_name, pocket=None,
                             include_pending=False, exclude_pocket=None,

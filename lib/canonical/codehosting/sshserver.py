@@ -1,7 +1,8 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 import binascii
 import os
+import logging
 
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
@@ -51,10 +52,12 @@ class LaunchpadAvatar(avatar.ConchUser):
         self.homeDirsRoot = homeDirsRoot
         self._launchpad = launchpad
 
-        # Fetch user details from the authserver
         self.lpid = userDict['id']
         self.lpname = userDict['name']
         self.teams = userDict['teams']
+
+        logging.getLogger('codehosting.ssh').info('%r logged in', self.lpname)
+        self.logger = logging.getLogger('codehosting.sftp.%s' % self.lpname)
 
         # Extract the initial branches from the user dict.
         branches_by_team = dict(userDict['initialBranches'])
@@ -101,6 +104,8 @@ class LaunchpadAvatar(avatar.ConchUser):
 
         Returns a Deferred with the new branch ID.
         """
+        self.logger.info(
+            'Creating branch: (%r, %r, %r)', userName, productName, branchName)
         return self._launchpad.createBranch(
             loginID, userName, productName, branchName)
 
@@ -309,6 +314,7 @@ class BazaarFileTransferServer(filetransfer.FileTransferServer):
 
     def __init__(self, data=None, avatar=None):
         filetransfer.FileTransferServer.__init__(self, data, avatar)
+        self.logger = avatar.logger
         self._dirtyBranches = set()
         self.client.filesystem.root.setListenerFactory(self.makeListener)
         self._launchpad = self.client.avatar._launchpad
@@ -325,9 +331,11 @@ class BazaarFileTransferServer(filetransfer.FileTransferServer):
         """Request that all changed branches be mirrored. Return a deferred
         which fires when each request has received a response from the server.
         """
+        self.logger.info('Requesting mirrors for: %r', self._dirtyBranches)
         deferreds = [self._launchpad.requestMirror(branch)
                      for branch in self._dirtyBranches]
         return defer.gatherResults(deferreds)
 
     def connectionLost(self, reason):
+        self.logger.info('Connection lost: %s', reason)
         self.sendMirrorRequests()
