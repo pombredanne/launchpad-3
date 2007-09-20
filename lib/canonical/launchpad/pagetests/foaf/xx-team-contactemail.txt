@@ -115,3 +115,29 @@ contact address.
     >>> browser.getControl(name='field.contact_method').displayValue
     [...Launchpad hosted team mailing list...]
 
+
+XXX: We don't really want all this functionality to be visible to users
+when this code lands on mainline, so there's a config variable which
+control its visibility.  That variable is named expose_hosted_mailing_lists
+and if it's set to False the option to use a hosted mailing list is not
+visible.  This test will go away as soon as we decide to deploy that
+functionality on production. -- Guilherme Salgado 2007-09-20
+
+    >>> from canonical.config import config
+    >>> config.mailman.expose_hosted_mailing_lists
+    True
+
+    >>> radio = browser.getControl(name='field.contact_method')
+    >>> radio.displayOptions
+    ['\xa0None; Launchpad will contact team members directly',
+     '\xa0Launchpad hosted team mailing list
+      (i.e. ubuntumembers@teams.launchpad.net)',
+     '\xa0External contact email']
+
+    >>> config.mailman.expose_hosted_mailing_lists = False
+    >>> browser.reload()
+    >>> radio = browser.getControl(name='field.contact_method')
+    >>> radio.displayOptions
+    ['\xa0None; Launchpad will contact team members directly',
+     '\xa0External contact email']
+
