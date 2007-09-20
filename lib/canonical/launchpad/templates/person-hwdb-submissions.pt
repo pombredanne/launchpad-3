@@ -19,11 +19,15 @@
             <tr>
               <th>System</th>
               <th>Date submitted</th>
-              <th>Download submitted data</th>
+              <th>Download</th>
               <th tal:condition="show_private">Private</th>
+              <th>Raw</th>
             </tr>
             <tr tal:repeat="submission batch">
-              <td tal:content="submission/system_fingerprint/fingerprint" />
+              <td>
+                <a tal:attributes="href submission/system_fingerprint/fmt:url"
+                   tal:content="submission/system_fingerprint/fingerprint" />
+              </td>
               <td tal:content="submission/date_submitted/fmt:datetime" />
               <td><a href tal:attributes="href submission/raw_submission/http_url"
                           tal:content="submission/raw_submission/filename" />
@@ -31,6 +35,9 @@
               <td tal:condition="show_private">
                 <span tal:condition="submission/private">yes</span>
         <span tal:condition="not:submission/private">no</span>
+              </td>
+              <td>
+                <a tal:attributes="href submission/fmt:url">text</a>
               </td>
             </tr>
           </tbody>

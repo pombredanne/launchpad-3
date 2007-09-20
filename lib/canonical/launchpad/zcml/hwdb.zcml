@@ -35,6 +35,18 @@
             interface="canonical.launchpad.interfaces.IHWSubmission" />
     </content>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IHWSystemFingerprint"
+        path_expression="string:+fingerprint/${fingerprint}"
+        parent_utility="canonical.launchpad.interfaces.IHWDBApplication"
+        />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IHWSubmission"
+        path_expression="string:+submission/${submission_key}"
+        parent_utility="canonical.launchpad.interfaces.IHWDBApplication"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IHWSubmission"
         name="+text" />

@@ -10,9 +10,9 @@ database submissions by this person.
     >>> anon_browser.open('http://launchpad.dev/~name12/+hwdb-submissions')
     >>> [content_table] = find_tags_by_class(anon_browser.contents, 'listing')
     >>> print extract_text(content_table)
-    System        Date submitted  Download submitted data 
-    Fujitsu CY26  ...             test.txt
-    TONKA TUFFBOOK2600 ...        hwsubmission1.xml
+    System        Date submitted  Download          Raw
+    Fujitsu CY26  ...             test.txt          ...
+    TONKA TUFFBOOK2600 ...        hwsubmission1.xml ...
 
 Submissions that are marked as private are only displayed to the 
 submitter himself.
@@ -53,9 +53,9 @@ submitter himself.
     >>> anon_browser.open('http://launchpad.dev/~name12/+hwdb-submissions')
     >>> [content_table] = find_tags_by_class(anon_browser.contents, 'listing')
     >>> print extract_text(content_table)
-    System        Date submitted  Download submitted data 
-    Fujitsu CY26  ...             test.txt
-    TONKA TUFFBOOK2600 ...        hwsubmission1.xml
+    System        Date submitted  Download          Raw
+    Fujitsu CY26  ...             test.txt          ...
+    TONKA TUFFBOOK2600 ...        hwsubmission1.xml ...
 
     >>> import transaction
     >>> transaction.commit()
@@ -68,10 +68,10 @@ status of each submission.
     >>> browser.open('http://launchpad.dev/~name12/+hwdb-submissions')
     >>> [content_table] = find_tags_by_class(browser.contents, 'listing')
     >>> print extract_text(content_table)
-    System        Date submitted  Download submitted data  Private
-    Fujitsu CY26  ...             test.txt                 no
-    Fujitsu CY26  ...             test2.txt                yes
-    TONKA TUFFBOOK2600 ...        hwsubmission1.xml        no
+    System        Date submitted  Download          Private     Raw
+    Fujitsu CY26  ...             test.txt             no       ...
+    Fujitsu CY26  ...             test2.txt           yes       ...
+    TONKA TUFFBOOK2600 ...        hwsubmission1.xml    no       ...
 
 If a person has not submitted any hardware data, an according message is
 displayed.
@@ -117,8 +117,8 @@ visible for members of the team and admins.
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+hwdb-submissions')
     >>> print extract_text(find_main_content(browser.contents))
     Submissions to the Hardware Database
-    System       Date submitted Download submitted data
-    Black Box 42 ...            teamtest.txt
+    System       Date submitted Download        Raw
+    Black Box 42 ...            teamtest.txt    ...
 
     >>> import transaction
     >>> transaction.commit()
@@ -167,15 +167,15 @@ But they can with the right permissions.
 
 == Submissions listed by fingerprint ==
 
-The pages http://launchpad.dev/hwdb/+hwdb-fingerprint/(fingerprint) list
+The pages http://launchpad.dev/hwdb/+fingerprint/(fingerprint) list
 all submissions for a fingerprint/system name.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/hwdb/+hwdb-fingerprint/Fujitsu%20CY26')
+    ...     'http://launchpad.dev/hwdb/+fingerprint/Fujitsu%20CY26')
     >>> [content_table] = find_tags_by_class(anon_browser.contents, 'listing')
     >>> print extract_text(content_table)
-    Date submitted     Download submitted data   Submitted by
-    ...                test.txt                  n/a
+    Date submitted     Submitted by    Download     Raw
+    ...                     n/a        test.txt     ...
 
 The owner is only displayed, if the page is viewed by the owner, or if 
 the field "contactable" of this submission is "True" and the "Private" 
@@ -190,12 +190,12 @@ is False.
     ...     'test3.txt')
     >>> browser.getControl('Upload').click()
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/hwdb/+hwdb-fingerprint/Fujitsu%20CY26')
+    ...     'http://launchpad.dev/hwdb/+fingerprint/Fujitsu%20CY26')
     >>> [content_table] = find_tags_by_class(anon_browser.contents, 'listing')
     >>> print extract_text(content_table)
-    Date submitted     Download submitted data   Submitted by
-    ...                test.txt                  n/a
-    ...                test3.txt                 Sample Person (name12)
+    Date submitted     Submitted by            Download     Raw
+    ...                    n/a                 test.txt     ...
+    ...                Sample Person (name12)  test3.txt    ...
 
 Private submissions are only displayed for the owner.
 
@@ -203,18 +203,18 @@ Private submissions are only displayed for the owner.
     >>> browser = Browser()
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open(
-    ...     'http://launchpad.dev/hwdb/+hwdb-fingerprint/Fujitsu%20CY26')
+    ...     'http://launchpad.dev/hwdb/+fingerprint/Fujitsu%20CY26')
     >>> [content_table] = find_tags_by_class(browser.contents, 'listing')
     >>> print extract_text(content_table)
-    Date submitted     Download submitted data   Submitted by
-    ...                test.txt                  Sample Person (name12)
-    ...                test2.txt                 Sample Person (name12)
-    ...                test3.txt                 Sample Person (name12)
+    Date submitted     Submitted by              Download        Raw
+    ...                Sample Person (name12)    test.txt        ...
+    ...                Sample Person (name12)    test2.txt       ...
+    ...                Sample Person (name12)    test3.txt       ...
 
 A page for an unknown fingerprint displays an according message.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/hwdb/+hwdb-fingerprint/unknownfingerprint')
+    ...     'http://launchpad.dev/hwdb/+fingerprint/unknownfingerprint')
     >>> print extract_text(find_main_content(anon_browser.contents))
     Submissions for system: unknownfingerprint
     There are no submissions for this system.

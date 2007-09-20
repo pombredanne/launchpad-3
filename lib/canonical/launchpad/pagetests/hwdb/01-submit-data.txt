@@ -82,7 +82,7 @@ error.
     --- missing field Distribution Release:
     Status: 200 Ok
     ...
-    X-Launchpad-Hwdb-Submission: Error in distrorelease - Required input is missing.
+    X-Launchpad-Hwdb-Submission: Error in distroseries - Required input is missing.
     ...
     --- missing field Distribution:
     Status: 200 Ok

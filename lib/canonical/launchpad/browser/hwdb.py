@@ -34,7 +34,7 @@ class HWDBUploadView(LaunchpadFormView):
     def upload_action(self, action, data):
         """Create a record in the HWSubmission table."""
         distributionset = getUtility(IDistributionSet)
-        distribution = distributionset.getByName(data['distribution'])
+        distribution = distributionset.getByName(data['distribution'].lower())
         if distribution is not None:
             release = data['distroseries']
             architecture = data['architecture']
@@ -184,7 +184,7 @@ class HWDBSubmissionSetNavigation(Navigation):
             name, user=user)
         return submission
 
-    @stepthrough('+hwdb-fingerprint')
+    @stepthrough('+fingerprint')
     def traverse_hwdb_fingerprint(self, name):
         return HWDBFingerprintSetView(self.context, self.request, name)
 
