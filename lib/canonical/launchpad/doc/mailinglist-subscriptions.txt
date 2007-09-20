@@ -166,6 +166,70 @@ But someone who is not a member cannot unsubscribe.
     CannotUnsubscribe: Mark Shuttleworth is not a member of the mailing list:
         Team One
 
+When someone leaves a direct team, they automatically get unsubscribed.
+
+    >>> carlos.join(team_one)
+    >>> list_one.subscribe(carlos)
+    >>> flush_database_updates()
+    >>> sorted(list_one.addresses)
+    [u'carlos@canonical.com', u'no-priv@canonical.com', u'salgado@ubuntu.com']
+
+    >>> carlos.leave(team_one)
+    >>> flush_database_updates()
+    >>> sorted(list_one.addresses)
+    [u'no-priv@canonical.com', u'salgado@ubuntu.com']
+
+Similarly, when someone is a member of a mailing list through an indirect
+team, and they leave that indirect team, they also get unsubscribed from the
+mailing list.
+
+    >>> carlos.join(team_two)
+    >>> list_one.subscribe(carlos)
+    >>> flush_database_updates()
+    >>> sorted(list_one.addresses)
+    [u'carlos@canonical.com', u'no-priv@canonical.com', u'salgado@ubuntu.com']
+
+    >>> carlos.leave(team_two)
+    >>> flush_database_updates()
+    >>> sorted(list_one.addresses)
+    [u'no-priv@canonical.com', u'salgado@ubuntu.com']
+
+It's also the case that if a subteam leaves its superteam, all members who
+have no other indirect membership in the super team will get unsubscribed from
+the mailing list.  To illustrate, we set up a new subteam and join a few new
+members to that team.  Only no-priv will have a path to the superteam through
+more than one subteam.
+
+    >>> subteam = personset.newTeam(ddaa, 'subteam', 'Sub Team',
+    ...                             subscriptionpolicy=policy)
+    >>> team_one.addMember(subteam, salgado, force_team_add=True)
+    >>> flush_database_updates()
+    >>> foobar = personset.getByName('name16')
+    >>> marilize = personset.getByName('marilize')
+    >>> foobar.join(subteam)
+    >>> no_priv.join(subteam)
+    >>> marilize.join(subteam)
+    >>> flush_database_updates()
+
+    >>> list_one.subscribe(foobar)
+    >>> list_one.subscribe(marilize)
+    >>> # no_priv is already a member of the list through his indirect
+    >>> # membership in team_two.
+    >>> sorted(list_one.addresses)
+    [u'foo.bar@canonical.com', u'marilize@hbd.com', u'no-priv@canonical.com',
+     u'salgado@ubuntu.com']
+
+Now remove one of the subteams from the superteam.  All of the subteams
+members that have no other path to membership in the superteam will be
+unsubscribed from the superteam's mailing list.
+
+    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
+    >>> team_one.setMembershipData(subteam, TeamMembershipStatus.DEACTIVATED,
+    ...                            salgado)
+    >>> flush_database_updates()
+    >>> sorted(list_one.addresses)
+    [u'no-priv@canonical.com', u'salgado@ubuntu.com']
+
 
 == Double subscriptions ==
 

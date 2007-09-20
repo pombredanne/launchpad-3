@@ -6,6 +6,7 @@ __all__ = [
     'MailingList',
     'MailingListSet',
     'MailingListSubscription',
+    'MailingListSubscriptionSet',
     ]
 
 import pytz
@@ -20,7 +21,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     CannotSubscribe, CannotUnsubscribe, ILaunchpadCelebrities,
-    IMailingList, IMailingListSet, IMailingListSubscription, MailingListStatus)
+    IMailingList, IMailingListSet, IMailingListSubscription,
+    IMailingListSubscriptionSet, MailingListStatus)
 
 
 class MailingList(SQLBase):
@@ -168,12 +170,12 @@ class MailingList(SQLBase):
             raise CannotUnsubscribe(
                 '%s is not a member of the mailing list: %s' %
                 (person.displayname, self.team.displayname))
-        MailingListSubscription.delete(subscription.id)
+        subscription.destroySelf()
 
     def _clearSubscriptions(self):
         subscriptions = MailingListSubscription.selectBy(mailing_list=self)
         for subscription in subscriptions:
-            MailingListSubscription.delete(subscription.id)
+            subscription.destroySelf()
 
     @property
     def addresses(self):
@@ -266,3 +268,19 @@ class MailingListSubscription(SQLBase):
 
     email_address = ForeignKey(dbName='email_address',
                                foreignKey='EmailAddress')
+
+
+class MailingListSubscriptionSet:
+    implements(IMailingListSubscriptionSet)
+
+    def deleteSubscription(self, person, team):
+        """See `IMailingListSubscriptionSet`."""
+        # Find the team's mailing list, if it has one.
+        mailing_list = MailingListSet().get(team.name)
+        if mailing_list is not None:
+            try:
+                mailing_list.unsubscribe(person)
+            except CannotUnsubscribe:
+                # The person is not a member of the mailing list, so there's
+                # nothing to do.  We can safely ignore this exception.
+                pass

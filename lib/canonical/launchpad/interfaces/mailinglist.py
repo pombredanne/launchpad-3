@@ -10,6 +10,7 @@ __all__ = [
     'IMailingListApplication',
     'IMailingListSet',
     'IMailingListSubscription',
+    'IMailingListSubscriptionSet',
     'IRequestedMailingListAPI',
     'MailingListAutoSubscribePolicy',
     'MailingListStatus',
@@ -426,10 +427,23 @@ class IMailingListSubscription(Interface):
         description=_("The date this person joined the team's mailing list."),
         required=True, readonly=True)
 
-    # XXX Can we do something better?
     email_address = Attribute(
         "Subscribed email address or None, meaning use the person's preferred "
         'email address, even if that changes.')
+
+
+class IMailingListSubscriptionSet(Interface):
+    """A set of mailing list subscription."""
+
+    def deleteSubscription(person, team):
+        """Delete a person's subscription to a team mailing list.
+
+        If the team does not have an active mailing list, or if the person is
+        not a member of that mailing list, then do nothing.
+
+        :param person: The IPerson to delete.  This must not be a team.
+        :param team: A team having a mailing list.
+        """
 
 
 class CannotSubscribe(Exception):
