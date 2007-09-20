@@ -87,15 +87,13 @@ class HWSubmissionSet:
             name=filename,
             size=filesize,
             file=raw_submission,
-            # We expect submissions only from the HWDB client, which should
-            # know that it is supposed to send XML data. Other programs
-            # might submit other data (or at least claim to be sending some
-            # other content type), but the content type as sent by the
-            # client can be checked in the browser class which manages the
-            # submissions. A real check, if we have indeed an XML file,
-            # cannot be done without parsing, and this will be done later,
-            # in a cron job.
-            contentType='text/xml',
+            # XXX: The hwdb client sends us bzipped XML, but arguably
+            # other clients could send us other formats. The right way
+            # to do this is either to enforce the format in the browser
+            # code, allow the client to specify the format, or use a
+            # magic module to sniff what it is we got.
+            #   -- kiko, 2007-09-20
+            contentType='application/x-bzip2',
             expires=None)
 
         return HWSubmission(
@@ -149,8 +147,8 @@ class HWSubmissionSet:
             query,
             clauseTables=['HWSystemFingerprint'],
             prejoinClauseTables=['HWSystemFingerprint'],
-            orderBy=['HWSystemFingerprint.fingerprint',
-                     'date_submitted',
+            orderBy=['-date_submitted',
+                     'HWSystemFingerprint.fingerprint',
                      'submission_key'])
 
     def getByOwner(self, owner, user=None):
@@ -165,8 +163,8 @@ class HWSubmissionSet:
             query,
             clauseTables=['HWSystemFingerprint'],
             prejoinClauseTables=['HWSystemFingerprint'],
-            orderBy=['HWSystemFingerprint.fingerprint',
-                     'date_submitted',
+            orderBy=['-date_submitted',
+                     'HWSystemFingerprint.fingerprint',
                      'submission_key'])
 
     def submissionIdExists(self, submission_key):
