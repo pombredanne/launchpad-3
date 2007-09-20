@@ -135,12 +135,25 @@ indirect member, and for a subteam for which he is a direct member.
      u'salgado@ubuntu.com', u'test@canonical.com']
     >>> sorted(list_three.addresses)
     [u'test@canonical.com']
-    >>> # Clean up for subsequent tests.
-    >>> list_one.unsubscribe(name12)
+
+Once the subteam is deactivated from the super team, subteam members who have
+no other indirect membership in the superteam cannot subscribe to the
+superteam's mailing list.
+
+    >>> name12.leave(team_two)
+    >>> flush_database_updates()
     >>> from canonical.launchpad.interfaces import TeamMembershipStatus
     >>> team_one.setMembershipData(team_three,
     ...     TeamMembershipStatus.DEACTIVATED, salgado)
     >>> flush_database_updates()
+    >>> sorted(list_one.addresses)
+    [u'david.allouche@canonical.com', u'no-priv@canonical.com',
+     u'salgado@ubuntu.com']
+
+    >>> list_one.subscribe(name12)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Sample Person is not a member of team Team One
 
 
 == Subscribed email addresses ==
