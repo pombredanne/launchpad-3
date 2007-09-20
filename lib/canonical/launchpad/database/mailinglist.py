@@ -154,7 +154,9 @@ class MailingList(SQLBase):
         if address is not None and address.person != person:
             raise CannotSubscribe('%s does not own the email address: %s' %
                                   (person.displayname, address.email))
-        if MailingListSubscription.selectOneBy(person=person) is not None:
+        subscription = MailingListSubscription.selectOneBy(
+            person=person, mailing_list=self)
+        if subscription is not None:
             raise CannotSubscribe('%s is already subscribed to list %s' %
                                   (person.displayname, self.team.displayname))
         subscription = MailingListSubscription(
@@ -165,7 +167,8 @@ class MailingList(SQLBase):
 
     def unsubscribe(self, person):
         """See `IMailingList`."""
-        subscription = MailingListSubscription.selectOneBy(person=person)
+        subscription = MailingListSubscription.selectOneBy(
+            person=person, mailing_list=self)
         if subscription is None:
             raise CannotUnsubscribe(
                 '%s is not a member of the mailing list: %s' %

@@ -11,24 +11,29 @@ team mailing list.
     >>> from canonical.database.sqlbase import flush_database_updates
 
     >>> login(ANONYMOUS)
+    >>> listset = getUtility(IMailingListSet)
     >>> personset = getUtility(IPersonSet)
     >>> ddaa = personset.getByName('ddaa')
-    >>> # XXX BarryWarsaw Set the team's subscription policy to OPEN
-    >>> # because of bug 125505.
-    >>> policy = TeamSubscriptionPolicy.OPEN
-    >>> team_one = personset.newTeam(ddaa, 'team-one', 'Team One',
-    ...                              subscriptionpolicy=policy)
-    >>> flush_database_updates()
-
-    >>> list_set = getUtility(IMailingListSet)
-    >>> list_one = list_set.new(team_one)
-    >>> flush_database_updates()
     >>> carlos = personset.getByName('carlos')
-    >>> list_one.review(carlos, MailingListStatus.APPROVED)
-    >>> flush_database_updates()
-    >>> list_one.startConstructing()
-    >>> flush_database_updates()
-    >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
+
+Here is a helper function for creating teams and lists.
+
+    >>> def create_team(name, displayname, with_list=True):
+    ...     # XXX BarryWarsaw Set the team's subscription policy to OPEN
+    ...     # because of bug 125505.
+    ...     policy = TeamSubscriptionPolicy.OPEN
+    ...     team = personset.newTeam(ddaa, name, displayname,
+    ...                              subscriptionpolicy=policy)
+    ...     if not with_list:
+    ...         return team
+    ...     team_list = listset.new(team)
+    ...     team_list.review(carlos, MailingListStatus.APPROVED)
+    ...     team_list.startConstructing()
+    ...     team_list.transitionToStatus(MailingListStatus.ACTIVE)
+    ...     flush_database_updates()
+    ...     return team, team_list
+
+    >>> team_one, list_one = create_team('team-one', 'Team One')
 
 Only members of the list's team may subscribe to the list.  Add two people to
 the team.
@@ -79,16 +84,14 @@ Neither can a team subscribe to a mailing list.
     CannotSubscribe: Teams cannot be mailing list members: Team One
 
 
-== Indirect membership ==
+== Nested teams ==
 
 Indirect members can subscribe to a team's mailing list.  What this means is
 that if Person A is a member of Team Two but not Team One, and Team Two is a
-member of Team One, then Person A can still subscribe to Team One's mailing
+subteam of Team One, then Person A can still subscribe to Team One's mailing
 list.
 
-    >>> team_two = personset.newTeam(ddaa, 'team-two', 'Team Two',
-    ...                              subscriptionpolicy=policy)
-    >>> flush_database_updates()
+    >>> team_two = create_team('team-two', 'Team Two', with_list=False)
     >>> no_priv.join(team_two)
     >>> flush_database_updates()
     >>> sorted(member.displayname for member in team_two.allmembers)
@@ -115,6 +118,29 @@ course Team Two still cannot.
     Traceback (most recent call last):
     ...
     CannotSubscribe: Teams cannot be mailing list members: Team Two
+
+Similarly, a person can have a membership in a superteam for which he is an
+indirect member, and for a subteam for which he is a direct member.
+
+    >>> team_three, list_three = create_team('team-three', 'Team Three')
+    >>> team_one.addMember(team_three, salgado, force_team_add=True)
+    >>> name12 = personset.getByName('name12')
+    >>> name12.join(team_two)
+    >>> name12.join(team_three)
+    >>> list_one.subscribe(name12)
+    >>> list_three.subscribe(name12)
+    >>> flush_database_updates()
+    >>> sorted(list_one.addresses)
+    [u'david.allouche@canonical.com', u'no-priv@canonical.com',
+     u'salgado@ubuntu.com', u'test@canonical.com']
+    >>> sorted(list_three.addresses)
+    [u'test@canonical.com']
+    >>> # Clean up for subsequent tests.
+    >>> list_one.unsubscribe(name12)
+    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
+    >>> team_one.setMembershipData(team_three,
+    ...     TeamMembershipStatus.DEACTIVATED, salgado)
+    >>> flush_database_updates()
 
 
 == Subscribed email addresses ==
@@ -200,8 +226,7 @@ the mailing list.  To illustrate, we set up a new subteam and join a few new
 members to that team.  Only no-priv will have a path to the superteam through
 more than one subteam.
 
-    >>> subteam = personset.newTeam(ddaa, 'subteam', 'Sub Team',
-    ...                             subscriptionpolicy=policy)
+    >>> subteam = create_team('subteam', 'Sub Team', with_list=False)
     >>> team_one.addMember(subteam, salgado, force_team_add=True)
     >>> flush_database_updates()
     >>> foobar = personset.getByName('name16')
@@ -223,7 +248,6 @@ Now remove one of the subteams from the superteam.  All of the subteams
 members that have no other path to membership in the superteam will be
 unsubscribed from the superteam's mailing list.
 
-    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
     >>> team_one.setMembershipData(subteam, TeamMembershipStatus.DEACTIVATED,
     ...                            salgado)
     >>> flush_database_updates()
