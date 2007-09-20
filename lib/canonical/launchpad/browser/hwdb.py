@@ -72,15 +72,15 @@ class HWDBUploadView(LaunchpadFormView):
                 filesize=filesize,
                 system_fingerprint=data['system'])
         except HWSubmissionInvalidEmailAddress:
-            self.addCustomHeader(
-                'Emailaddress',
-                "Error - %s isn't a valid email address" % data['emailaddress'])
+
+            self.addErrorHeader("emailaddress",
+                "%s isn't a valid email address" % data['emailaddress'])
             self.request.response.addErrorNotification(
                 "Error: %(address)s email address is invalid",
                 address = data['emailaddress'])
             return
 
-        self.addCustomHeader('', 'OK data stored')
+        self.addCustomHeader('OK data stored')
         self.request.response.addNotification(
             "Thank you for your submission.")
 
@@ -103,16 +103,17 @@ class HWDBUploadView(LaunchpadFormView):
             field_name = field.__name__
             error = self.getWidgetError(field_name)
             if error:
-                self.addCustomHeader(field_name, u'Error - %s' % error)
+                self.addErrorHeader(field_name, error)
 
-    def addCustomHeader(self, field_name, value):
-        if field_name:
-            self.request.response.setHeader(
-                u'X-Launchpad-HWDB-Submission-%s' % field_name, value)
-        else:
-            self.request.response.setHeader(
-                u'X-Launchpad-HWDB-Submission', value)
-        
+    def addErrorHeader(self, field_name, error):
+        """Adds a header informing an error to automated clients."""
+        return self.addCustomHeader(u'Error in %s - %s' % (field_name, error))
+
+    def addCustomHeader(self, value):
+        """Adds a custom header to HWDB clients."""
+        self.request.response.setHeader(
+            u'X-Launchpad-HWDB-Submission', value)
+
 
 class HWDBPersonSubmissionsView(LaunchpadView):
     """View class for preseting HWDB submissions by a person."""
