@@ -46,7 +46,7 @@ if __name__ == '__main__':
         raise RuntimeError("The person %s does not exists." % options.owner)
 
     # XXX daniels 2004-12-14:
-    # https://bugzilla.warthogs.hbd.com/bugzilla/show_bug.cgi?id=1968
+    # https://bugzilla.canonical.com/bugzilla/show_bug.cgi?id=1968
     project = Project(owner=int(options.owner), name=options.name,
                         displayname=options.display, title=options.title,
                         summary=options.short,
