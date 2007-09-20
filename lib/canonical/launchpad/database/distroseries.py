@@ -408,7 +408,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     cur.execute("""
         UPDATE %(pomsgset_holding_table)s AS holding
         SET new_id = pms.id
-        FROM %(pofile_holding_table)s pfh, POMsgSet pms
+        FROM POMsgSet pms
         WHERE
             holding.new_id IS NULL AND
             holding.potmsgset = pms.potmsgset AND
@@ -515,7 +515,8 @@ def copy_active_translations_as_update(child, transaction, logger):
         """
     copier.extract(
         'POSubmission', joins=['POMsgSet'],
-        where_clause="active AND pms.iscomplete",
+        where_clause="""
+            active AND POSubmission.pomsgset = pms.id AND pms.iscomplete""",
         external_joins=['POMsgSet pms'],
         batch_pouring_callback=prepare_posubmission_batch,
         inert_where=have_better)

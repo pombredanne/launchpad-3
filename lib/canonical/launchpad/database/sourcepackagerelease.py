@@ -99,7 +99,7 @@ class SourcePackageRelease(SQLBase):
             archive.id = build.archive AND
             archive.purpose != %s
             """ % sqlvalues(self.id, ArchivePurpose.PPA),
-            orderBy=['-datecreated', '-id'],
+            orderBy=['-datecreated', 'id'],
             clauseTables=['Archive'])
 
     @property
