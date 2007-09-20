@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'HelpTranslateButtonView',
     'RosettaApplicationView',
     'RosettaStatsView',
     'RosettaApplicationNavigation',
@@ -21,6 +22,20 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.layers import TranslationsLayer
 from canonical.launchpad.webapp import Navigation, stepto, canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator
+
+
+class HelpTranslateButtonView:
+    """View that renders a button to help translate its context."""
+
+    def __call__(self):
+        return """
+              <a href="%s">
+                <img
+                  alt="Help translate"
+                  src="/+icing/but-sml-helptranslate.gif"
+                />
+              </a>
+        """ % canonical_url(self.context, rootsite='translations')
 
 
 class TranslationsMixin:
