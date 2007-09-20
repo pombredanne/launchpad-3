@@ -1,0 +1,187 @@
+= Views for raw submission data. =
+
+The raw submission data is listed by submitter and by system fingerprint.
+
+== Submissions listed by person ==
+
+The pages http://launchpad.dev/~(name)/+hwdb-submissions lists the hardware
+database submissions by this person.
+
+    >>> anon_browser.open('http://launchpad.dev/~name12/+hwdb-submissions')
+    >>> [content_table] = find_tags_by_class(anon_browser.contents, 'listing')
+    >>> print extract_text(content_table)
+    System        Date submitted  Download submitted data 
+    Fujitsu CY26  ...             test.txt
+    TONKA TUFFBOOK2600 ...        hwsubmission1.xml
+
+Submissions that are marked as private are only displayed to the 
+submitter himself.
+
+    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> from StringIO import StringIO
+    >>> submit_data = {
+    ...     'Date Created:': '2007-01-01',
+    ...     'Format Version:': ['VERSION_1'],
+    ...     'Unique Submission ID:': 'unique-id-3',
+    ...     'Email address:': 'test@canonical.com',
+    ...     'Distribution:': 'ubuntu',
+    ...     'Distribution Release:': '5.04',
+    ...     'Processor Architecture:': 'x86',
+    ...     'System name:': 'Fujitsu CY26',
+    ... }
+    >>> submit_data_checkboxes = {
+    ...     'Private Submission': True,
+    ...     'Contactable': False,
+    ... }
+    >>> submit_file = StringIO('some data')
+    >>> def fill_form(
+    ...    browser, submit_data, submit_data_checkboxes, filedata, filename):
+    ...     for label in submit_data.keys():
+    ...         control = browser.getControl(label)
+    ...         control.value = submit_data[label]
+    ...     for label in submit_data_checkboxes.keys():
+    ...         control = browser.getControl(label)
+    ...         control.selected = submit_data_checkboxes[label]
+    ...     if filedata is not None:
+    ...         filedata.seek(0)
+    ...         control = browser.getControl('Submission data:')
+    ...         control.add_file(filedata, 'text/plain', filename)
+    >>> fill_form(
+    ...     browser, submit_data, submit_data_checkboxes, submit_file, 
+    ...     'test2.txt')
+    >>> browser.getControl('Upload').click()
+    >>> anon_browser.open('http://launchpad.dev/~name12/+hwdb-submissions')
+    >>> [content_table] = find_tags_by_class(anon_browser.contents, 'listing')
+    >>> print extract_text(content_table)
+    System        Date submitted  Download submitted data 
+    Fujitsu CY26  ...             test.txt
+    TONKA TUFFBOOK2600 ...        hwsubmission1.xml
+
+The owner of a submission sees a complete lists of his own submissions.
+He also gets an additional column in the listing, showing the "private"
+status of each submission.
+
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~name12/+hwdb-submissions')
+    >>> [content_table] = find_tags_by_class(browser.contents, 'listing')
+    >>> print extract_text(content_table)
+    System        Date submitted  Download submitted data  Private
+    Fujitsu CY26  ...             test.txt                 no
+    Fujitsu CY26  ...             test2.txt                yes
+    TONKA TUFFBOOK2600 ...        hwsubmission1.xml        no
+
+If a person has not submitted any hardware data, an according message is
+displayed.
+
+    >>> anon_browser.open('http://launchpad.dev/~name16/+hwdb-submissions')
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Submissions to the Hardware Database
+    Foo Bar has posted no submissions.
+
+Submissions that are marked as private and owned by a team are only
+visible for members of the team and admins.
+
+    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> team_submit_data = {
+    ...     'Date Created:': '2007-01-01',
+    ...     'Format Version:': ['VERSION_1'],
+    ...     'Unique Submission ID:': 'unique-id-3a',
+    ...     'Email address:': 'support@ubuntu.com',
+    ...     'Distribution:': 'ubuntu',
+    ...     'Distribution Release:': '5.04',
+    ...     'Processor Architecture:': 'x86',
+    ...     'System name:': 'Black Box 42',
+    ... }
+    >>> team_submit_data_checkboxes = {
+    ...     'Private Submission': True,
+    ...     'Contactable': False,
+    ... }
+    >>> submit_file = StringIO('some data')
+    >>> fill_form(
+    ...     browser, team_submit_data, team_submit_data_checkboxes, 
+    ...     submit_file, 'teamtest.txt')
+    >>> browser.getControl('Upload').click()
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/~ubuntu-team/+hwdb-submissions')
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Submissions to the Hardware Database
+    Ubuntu Team has posted no submissions.
+
+    >>> from zope.testbrowser.testing import Browser
+    >>> browser = Browser()
+    >>> browser.addHeader('Authorization',
+    ...                   'Basic celso.providelo@canonical.com:cprov')
+    >>> browser.open('http://launchpad.dev/~ubuntu-team/+hwdb-submissions')
+    >>> print extract_text(find_main_content(browser.contents))
+    Submissions to the Hardware Database
+    System       Date submitted Download submitted data
+    Black Box 42 ...            teamtest.txt
+
+== Viewing individual submissions ==
+
+Individual submissions can be rendered in an RFC-822-formatted file.
+
+    >>> browser.open('http://launchpad.dev/~ubuntu-team/+hwdb-submissions/unique-id-3a')
+    >>> browser.contents
+    Date-Created: 2007-01-01
+    Date-Submitted: 20...
+    Format: VERSION_1
+    Distribution: ubuntu
+    Distribution-Release: 5.04
+    Architecture: x86
+    System: Black Box 42
+    Submission URL: https://launchpadlibrarian.net/.../
+
+== Submissions listed by fingerprint ==
+
+The pages http://launchpad.dev/hwdb/+hwdb-fingerprint/(fingerprint) list
+all submissions for a fingerprint/system name.
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/hwdb/+hwdb-fingerprint/Fujitsu%20CY26')
+    >>> [content_table] = find_tags_by_class(anon_browser.contents, 'listing')
+    >>> print extract_text(content_table)
+    Date submitted     Download submitted data   Submitted by
+    ...                test.txt                  n/a
+
+The owner is only displayed, if the page is viewed by the owner, or if 
+the field "contactable" of this submission is "True" and the "Private" 
+is False.
+
+    >>> submit_data_checkboxes['Private Submission'] = False
+    >>> submit_data_checkboxes['Contactable'] = True
+    >>> submit_data['Unique Submission ID:'] = 'unique-id-4'
+    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> fill_form(
+    ...     browser, submit_data, submit_data_checkboxes, submit_file, 
+    ...     'test3.txt')
+    >>> browser.getControl('Upload').click()
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/hwdb/+hwdb-fingerprint/Fujitsu%20CY26')
+    >>> [content_table] = find_tags_by_class(anon_browser.contents, 'listing')
+    >>> print extract_text(content_table)
+    Date submitted     Download submitted data   Submitted by
+    ...                test.txt                  n/a
+    ...                test3.txt                 Sample Person (name12)
+
+Private submissions are only displayed for the owner.
+
+    >>> from zope.testbrowser.testing import Browser
+    >>> browser = Browser()
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open(
+    ...     'http://launchpad.dev/hwdb/+hwdb-fingerprint/Fujitsu%20CY26')
+    >>> [content_table] = find_tags_by_class(browser.contents, 'listing')
+    >>> print extract_text(content_table)
+    Date submitted     Download submitted data   Submitted by
+    ...                test.txt                  Sample Person (name12)
+    ...                test2.txt                 Sample Person (name12)
+    ...                test3.txt                 Sample Person (name12)
+
+A page for an unknown fingerprint displays an according message.
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/hwdb/+hwdb-fingerprint/unknownfingerprint')
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Submissions for system: unknownfingerprint
+    There are no submissions for this system.

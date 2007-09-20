@@ -38,8 +38,8 @@ class HWSubmission(SQLBase):
     contactable = BoolCol(notNull=True)
     submission_key = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person')
-    distroarchrelease = ForeignKey(dbName='distroarchseries',
-                                   foreignKey='Distroarchrelease',
+    distroarchrelease = ForeignKey(dbName='DistroArchSeries',
+                                   foreignKey='DistroArchSeries',
                                    notNull=True)
     raw_submission = ForeignKey(dbName='raw_submission',
                                 foreignKey='LibraryFileAlias',
@@ -108,37 +108,41 @@ class HWSubmissionSet:
             raw_submission=libraryfile,
             system_fingerprint=fingerprint)
 
+    def _userHasAccessClause(self, user):
+        """Limit results of HWSubmission queries to rows the user can access."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if user is None:
+            return " AND NOT HWSubmission.private"
+        elif not user.inTeam(admins):
+            return """
+                AND (NOT HWSubmission.private
+                     OR EXISTS
+                         (SELECT 1
+                             FROM HWSubmission as HWAccess, TeamParticipation
+                             WHERE HWAccess.id=HWSubmission.id
+                                 AND HWAccess.owner=TeamParticipation.team
+                                 AND TeamParticipation.person=%i
+                                 ))
+                """ % user.id
+        else:
+            return ""
+
     def getBySubmissionID(self, submission_key, user=None):
         """See `IHWSubmissionSet`."""
-        admins = getUtility(ILaunchpadCelebrities).admin
         query = "submission_key=%s" % sqlvalues(submission_key)
-        if user is None:
-            query = query + " AND not private"
-        elif not user.inTeam(admins):
-            query = query + " AND (not private OR owner=%i)" % user.id
-        else:
-            # the user is an admin and may see every submission, hence
-            # no need to add any restriction.
-            pass
+        query = query + self._userHasAccessClause(user)
+
         return HWSubmission.selectOne(query)
 
     def getByFingerprintName(self, name, user=None):
         """See `IHWSubmissionSet`."""
-        admins = getUtility(ILaunchpadCelebrities).admin
         fp = HWSystemFingerprintSet().getByName(name)
         query = """
             system_fingerprint=%s
             AND HWSystemFingerprint.id = HWSubmission.system_fingerprint
             """ % sqlvalues(fp)
-        if user is None:
-            query = query + " AND not private"
-        elif not user.inTeam(admins):
-            query = query + " AND (NOT private OR owner=%i)" % user.id
-        else:
-            # the user is an admin and may see every submission, hence
-            # no need to add any restriction.
-            pass
-            
+        query = query + self._userHasAccessClause(user)
+
         return HWSubmission.select(
             query,
             clauseTables=['HWSystemFingerprint'],
@@ -149,19 +153,11 @@ class HWSubmissionSet:
 
     def getByOwner(self, owner, user=None):
         """See `IHWSubmissionSet`."""
-        admins = getUtility(ILaunchpadCelebrities).admin
         query = """
             owner=%i
             AND HWSystemFingerprint.id = HWSubmission.system_fingerprint
             """ % owner.id
-        if user is None:
-            query = query + " AND NOT private"
-        elif not user.inTeam(admins):
-            query = query + " AND (NOT private OR owner=%s)" % user.id
-        else:
-            # the user is an admin and may see every submission, hence
-            # no need to add any restriction.
-            pass
+        query = query + self._userHasAccessClause(user)
 
         return HWSubmission.select(
             query,
@@ -170,6 +166,12 @@ class HWSubmissionSet:
             orderBy=['HWSystemFingerprint.fingerprint',
                      'date_submitted',
                      'submission_key'])
+
+    def submissionIdExists(self, submission_key):
+            """See `IHWSubmissionSet`."""
+            rows = HWSubmission.selectBy(submission_key=submission_key)
+            return rows.count() > 0
+
 
 class HWSystemFingerprint(SQLBase):
     """Identifiers of a computer system."""
