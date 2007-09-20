@@ -1105,8 +1105,8 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
         quoted_query = quote_like(query)
         sql_query = ("""
-            (Specification.name ~ %s OR
-             Specification.title ~ %s OR
+            (Specification.name LIKE %s OR
+             Specification.title LIKE %s OR
              fti @@ ftq(%s))
             """
             % (quoted_query, quoted_query, quoted_query))
