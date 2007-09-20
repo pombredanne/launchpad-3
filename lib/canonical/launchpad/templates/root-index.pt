@@ -45,21 +45,20 @@
           <h2>What&#8217;s new</h2>
           <ul class="news">
             <li>
-              <a href="https://help.launchpad.net/PPAQuickStart"
-                 >Personal Package Archives: beta of Launchpad's new Ubuntu
-                 build and repository hosting service.</a>
+              <a href="https://help.launchpad.net/BazaarSSH"
+                 >Faster code branch uploads with bzr+ssh.</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/BranchMergeProposals">Specify
-                the branch you intend to land your branch on.</a>
+              <a href="https://help.launchpad.net/KDEPlurals">
+                Translations now supports KDE's plural strings.</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/BugStatuses#trac">Trac bug
-                statuses are now captured in bug watches.</a>
+              <a href="https://help.launchpad.net/AddingBugWatches">
+                Streamlined bug tracker registration when adding bugwatches.</a>
             </li>
             <li>
-             <a href="https://translations.launchpad.net/people/+me/+imports">Individuals
-             now have their own translations import queue page.</a>
+              <a href="https://help.launchpad.net/TranslationsFullExport">
+                Export all translations for a project to a single tarball.</a>
             </li>
           </ul>
         </div>

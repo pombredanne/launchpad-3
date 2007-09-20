@@ -1,0 +1,105 @@
+Each product in Launchpad has a Translations page.
+
+    >>> anon_browser.open('http://translations.launchpad.dev/evolution')
+    >>> anon_browser.url
+    'http://translations.launchpad.dev/evolution'
+    >>> print anon_browser.contents
+    <...
+    ...Translations of The Evolution Groupware Application...
+    ...
+    ...For Evolution, Launchpad currently recommends...
+    ...Evolution trunk...
+    ...
+
+This page shows translations for upstream even if there aren't translations
+for a distribution.
+
+  >>> anon_browser.open('http://translations.launchpad.dev/netapplet')
+  >>> anon_browser.url
+  'http://translations.launchpad.dev/netapplet'
+  >>> print anon_browser.contents
+  <...
+  ...Template "netapplet" in NetApplet trunk...
+  ...
+
+If a product is not set up for translations in Launchpad, and you are its
+registrant or an admin, the Translations page suggests that you set it up for
+translation, or link the product to a translatable package.
+
+    >>> from zope.testbrowser.testing import Browser
+
+    >>> registrant = Browser()
+    >>> registrant.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> registrant.open(
+    ...     'http://translations.launchpad.dev/gnomebaker')
+    >>> print registrant.contents
+    <...
+    ...How to set up translations...
+    ...
+    >>> registrant.getLink(
+    ...     url=('/gnomebaker/trunk/'
+    ...          '+translations-upload')) is not None
+    True
+    >>> registrant.getLink(
+    ...     url='/gnomebaker/+packages'
+    ...     ) is not None
+    True
+
+(The template upload process is tested in xx-translation-import-queue.txt.)
+
+
+If you're logged in as someone else, the Translations page suggests that you
+contact the product's registrant.
+
+    >>> unprivileged = Browser()
+    >>> unprivileged.addHeader(
+    ...     'Authorization', 'Basic no-priv@canonical.com:test')
+    >>> unprivileged.open(
+    ...     'http://translations.launchpad.dev/gnomebaker')
+    >>> print unprivileged.contents
+    <...
+    ...talk with...Foo Bar...
+    ...
+
+It omits the registrant-only links ...
+
+    >>> unprivileged.getLink(url='/gnomebaker/trunk/+translations-upload')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+    >>> unprivileged.getLink(url='/gnomebaker/+packages')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+... because you can't do those things.
+
+    >>> unprivileged.open(
+    ...     'http://translations.launchpad.dev/gnomebaker/trunk/'
+    ...     '+translations-upload')
+    Traceback (most recent call last):
+    ...
+    HTTPError: HTTP Error 403: Forbidden
+
+(In the packages case, you can look at the packages, but you can't link any.)
+
+    >>> unprivileged.open(
+    ...     'http://translations.launchpad.dev/gnomebaker/trunk/+addpackage')
+    Traceback (most recent call last):
+    ...
+    HTTPError: HTTP Error 403: Forbidden
+
+
+Meanwhile, if you're not logged in at all, you might or might not be the
+registrant, so the text reflects both possibilities.
+
+    >>> anon_browser.open(
+    ...     'http://translations.launchpad.dev/gnomebaker')
+    >>> print anon_browser.contents
+    <...
+    ...If you&#8217;re Foo Bar,...
+    .../gnomebaker/+login"...log in...
+    ...
+    ...Otherwise...
+    ...talk with...Foo Bar...
+    ...

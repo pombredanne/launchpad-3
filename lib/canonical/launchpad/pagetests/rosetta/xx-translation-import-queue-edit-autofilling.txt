@@ -11,15 +11,15 @@ First, we need to feed the import queue.
   >>> tarball = open(test_file_name)
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/alsa-utils/trunk/+translations-upload')
-  >>> browser.url
-  'http://launchpad.dev/alsa-utils/trunk/+translations-upload'
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/alsa-utils/trunk/'
+  ...     '+translations-upload')
   >>> file_ctrl = browser.getControl('File:')
   >>> file_ctrl.add_file(
   ...     tarball, 'application/x-gzip', 'test-autofilling.tar.gz')
   >>> browser.getControl('Request Upload').click()
   >>> browser.url
-  'http://launchpad.dev/alsa-utils/trunk/+translations-upload'
+  'http://translations.launchpad.dev/alsa-utils/trunk/+translations-upload'
   >>> for tag in find_tags_by_class(browser.contents, 'message'):
   ...     print tag
   <div...Thank you for your upload. 2 files from the tarball will be reviewed...

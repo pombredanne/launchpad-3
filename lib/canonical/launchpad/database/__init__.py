@@ -65,6 +65,7 @@ from canonical.launchpad.database.distroarchseriesbinarypackage import *
 from canonical.launchpad.database.distroarchseriesbinarypackagerelease import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.language import *
+from canonical.launchpad.database.languagepack import *
 from canonical.launchpad.database.translationgroup import *
 from canonical.launchpad.database.translationimportqueue import *
 from canonical.launchpad.database.translator import *
@@ -123,3 +124,4 @@ from canonical.launchpad.database.emailaddress import *
 from canonical.launchpad.database.openidserver import *
 from canonical.launchpad.database.entitlement import *
 from canonical.launchpad.database.mailinglist import *
+from canonical.launchpad.database.hwdb import *

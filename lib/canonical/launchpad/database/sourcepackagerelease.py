@@ -8,6 +8,7 @@ import tarfile
 from StringIO import StringIO
 import datetime
 import pytz
+import re
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -81,12 +82,25 @@ class SourcePackageRelease(SQLBase):
     dsc_binaries = StringCol(dbName='dsc_binaries')
 
     # MultipleJoins
-    builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',
-                             orderBy=['-datecreated'])
     files = SQLMultipleJoin('SourcePackageReleaseFile',
         joinColumn='sourcepackagerelease', orderBy="libraryfile")
     publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
+
+    @property
+    def builds(self):
+        """See `ISourcePackageRelease`."""
+        # Excluding PPA builds may seem like a strange thing to do but
+        # when copy-package works for copying packages across archives,
+        # a build may well have a different archive to the corresponding
+        # sourcepackagerelease.
+        return Build.select("""
+            sourcepackagerelease = %s AND
+            archive.id = build.archive AND
+            archive.purpose != %s
+            """ % sqlvalues(self.id, ArchivePurpose.PPA),
+            orderBy=['-datecreated', 'id'],
+            clauseTables=['Archive'])
 
     @property
     def age(self):
@@ -277,7 +291,7 @@ class SourcePackageRelease(SQLBase):
 
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""
-	# Look for a published build
+        # Look for a published build
         query = """
         Build.id = BinaryPackageRelease.build AND
         BinaryPackageRelease.id =
@@ -322,6 +336,25 @@ class SourcePackageRelease(SQLBase):
             self.section = section
         if urgency is not None:
             self.urgency = urgency
+
+    @property
+    def change_summary(self):
+        """See ISourcePackageRelease"""
+        # this regex is copied from apt-listchanges.py courtesy of MDZ
+        new_stanza_line = re.compile(
+            '^\S+ \((?P<version>.*)\) .*;.*urgency=(?P<urgency>\w+).*')
+        logfile = StringIO(self.changelog)
+        change = ''
+        top_stanza = False
+        for line in logfile.readlines():
+            match = new_stanza_line.match(line)
+            if match:
+                if top_stanza:
+                    break
+                top_stanza = True
+            change += line
+
+        return change
 
     def attachTranslationFiles(self, tarball_alias, is_published,
         importer=None):

@@ -4,7 +4,7 @@ The index page for a POTemplate lists all available translations
 for a source package. No Privileges Person visits the 
 evolution-2.2 POTemplate page.
 
-    >>> anon_browser.open("http://launchpad.dev/"
+    >>> anon_browser.open("http://translations.launchpad.dev/"
     ...     "ubuntu/hoary/+source/evolution/+pots/evolution-2.2/")
     >>> anon_browser.title
     'Translation status for...
@@ -48,7 +48,7 @@ The 'Template details' portlet summarizes the state of the POTemplate.
 When products have more than one template, the page informs the user
 that there are alternates that may be translated.
 
-    >>> anon_browser.open("http://launchpad.dev/"
+    >>> anon_browser.open("http://translations.launchpad.dev/"
     ...     "evolution/trunk/+pots/evolution-2.2-test")
     >>> alternate_notice = find_main_content(
     ...     anon_browser.contents).findAll('p')[1]

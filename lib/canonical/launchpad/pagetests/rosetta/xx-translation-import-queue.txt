@@ -109,17 +109,17 @@ we can edit imports.
 
 Now, we attach a new file to an already existing translation resource.
 
-  >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload'
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/+upload')
   >>> upload = browser.getControl('File')
   >>> upload
   <Control name='file' type='file'>
   >>> from StringIO import StringIO
   >>> upload.add_file(StringIO('# foo\n'), 'text/x-gettext-translation-template', 'evolution.pot')
   >>> browser.getControl('Upload').click()
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload'
+  >>> print browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload
   >>> for tag in find_tags_by_class(browser.contents, 'message'):
   ...     print tag.renderContents()
   Thank you for your upload. The file content will be imported soon...
@@ -257,7 +257,9 @@ Corner cases
 Let's check tar.bz2 uploads. They work ;-)
 
   >>> evo_owner_browser = ff_owner_browser
-  >>> evo_owner_browser.open('http://launchpad.dev/evolution/trunk/+translations-upload')
+  >>> evo_owner_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/'
+  ...     '+translations-upload')
 
   >>> test_file_name = os.path.join(
   ...     os.path.dirname(canonical.launchpad.__file__),
@@ -268,7 +270,7 @@ Let's check tar.bz2 uploads. They work ;-)
   ...     tarball, 'application/x-bzip', test_file_name)
   >>> evo_owner_browser.getControl('Request Upload').click()
   >>> evo_owner_browser.url
-  'http://launchpad.dev/evolution/trunk/+translations-upload'
+  'http://translations.launchpad.dev/evolution/trunk/+translations-upload'
   >>> for tag in find_tags_by_class(evo_owner_browser.contents, 'message'):
   ...     print tag
   <div...Thank you for your upload. 2 files from the tarball will be reviewed...
@@ -277,7 +279,7 @@ Let's try breaking the form by not supplying a file object. It give us a
 decent error message:
 
   >>> browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/'
   ...     '+source/evolution/+pots/evolution-2.2/+upload')
   >>> browser.getControl('Upload').click()
   >>> for tag in find_tags_by_class(browser.contents, 'message'):

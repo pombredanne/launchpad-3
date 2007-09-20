@@ -203,6 +203,7 @@ class BugTrackerType(DBSchema):
         Mantis is a web-based bug tracking system written in PHP.
         """)
 
+
 class CveStatus(DBSchema):
     """The Status of this item in the CVE Database
 
@@ -2260,6 +2261,13 @@ class TranslationFileFormat(DBSchema):
         The .xpi format as used by programs from Mozilla foundation.
         """)
 
+    KDEPO = Item(4, """
+        KDE PO format
+
+        Legacy KDE PO format which embeds context and plural forms inside
+        messages itself instead of using gettext features.
+        """)
+
 
 class TranslationValidationStatus(DBSchema):
     """Translation Validation Status
@@ -2314,31 +2322,31 @@ class ArchivePurpose(DBSchema):
     """
 
     PRIMARY = Item(1, """
-        Primary Archive.
+        Primary Archive
 
         This is the primary Ubuntu archive.
         """)
 
     PPA = Item(2, """
-        PPA Archive.
+        PPA Archive
 
         This is a Personal Package Archive.
         """)
 
     EMBARGOED = Item(3, """
-        Embargoed Archive.
+        Embargoed Archive
 
         This is the archive for embargoed packages.
         """)
 
-    COMMERCIAL = Item(4, """
-        Commercial Archive.
+    PARTNER = Item(4, """
+        Partner Archive
 
-        This is the archive for commercial packages.
+        This is the archive for partner packages.
         """)
 
     OBSOLETE = Item(5, """
-        Obsolete Archive.
+        Obsolete Archive
 
         This is the archive for obsolete packages.
         """)
