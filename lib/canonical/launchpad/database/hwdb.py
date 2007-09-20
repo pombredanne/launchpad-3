@@ -17,6 +17,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces import (
     HWSubmissionFormat, HWSubmissionInvalidEmailAddress,
     HWSubmissionKeyNotUnique, HWSubmissionProcessingStatus, IHWSubmission,
@@ -38,9 +39,9 @@ class HWSubmission(SQLBase):
     contactable = BoolCol(notNull=True)
     submission_key = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person')
-    distroarchrelease = ForeignKey(dbName='DistroArchSeries',
-                                   foreignKey='DistroArchSeries',
-                                   notNull=True)
+    distroarchseries = ForeignKey(dbName='DistroArchSeries',
+                                  foreignKey='DistroArchSeries',
+                                  notNull=True)
     raw_submission = ForeignKey(dbName='raw_submission',
                                 foreignKey='LibraryFileAlias',
                                 notNull=True)
@@ -59,13 +60,14 @@ class HWSubmissionSet:
                          raw_submission, filename, filesize,
                          system_fingerprint):
         """See `IHWSubmissionSet`."""
-        
+        assert valid_name(submission_key), "Invalid key %s" % submission_key
+
         submission_exists = HWSubmission.selectOneBy(
             submission_key=submission_key)
         if submission_exists is not None:
             raise HWSubmissionKeyNotUnique(
                 'A submission with this ID already exists')
-        
+
         personset = getUtility(IPersonSet)
         owner = personset.getByEmail(emailaddress)
         if owner is None:
@@ -104,7 +106,7 @@ class HWSubmissionSet:
             contactable=contactable,
             submission_key=submission_key,
             owner=owner,
-            distroarchrelease=distroarchseries,
+            distroarchseries=distroarchseries,
             raw_submission=libraryfile,
             system_fingerprint=fingerprint)
 
@@ -127,7 +129,7 @@ class HWSubmissionSet:
         else:
             return ""
 
-    def getBySubmissionID(self, submission_key, user=None):
+    def getBySubmissionKey(self, submission_key, user=None):
         """See `IHWSubmissionSet`."""
         query = "submission_key=%s" % sqlvalues(submission_key)
         query = query + self._userHasAccessClause(user)

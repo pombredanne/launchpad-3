@@ -17,16 +17,16 @@ database submissions by this person.
 Submissions that are marked as private are only displayed to the 
 submitter himself.
 
-    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> browser.open('http://launchpad.dev/hwdb/+submit')
     >>> from StringIO import StringIO
     >>> submit_data = {
     ...     'Date Created:': '2007-01-01',
     ...     'Format Version:': ['VERSION_1'],
-    ...     'Unique Submission ID:': 'unique-id-3',
+    ...     'Unique Submission Key:': 'unique-id-3',
     ...     'Email address:': 'test@canonical.com',
     ...     'Distribution:': 'ubuntu',
     ...     'Distribution Release:': '5.04',
-    ...     'Processor Architecture:': 'x86',
+    ...     'Processor Architecture:': 'i386',
     ...     'System name:': 'Fujitsu CY26',
     ... }
     >>> submit_data_checkboxes = {
@@ -57,6 +57,9 @@ submitter himself.
     Fujitsu CY26  ...             test.txt
     TONKA TUFFBOOK2600 ...        hwsubmission1.xml
 
+    >>> import transaction
+    >>> transaction.commit()
+
 The owner of a submission sees a complete lists of his own submissions.
 He also gets an additional column in the listing, showing the "private"
 status of each submission.
@@ -81,15 +84,15 @@ displayed.
 Submissions that are marked as private and owned by a team are only
 visible for members of the team and admins.
 
-    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> browser.open('http://launchpad.dev/hwdb/+submit')
     >>> team_submit_data = {
     ...     'Date Created:': '2007-01-01',
     ...     'Format Version:': ['VERSION_1'],
-    ...     'Unique Submission ID:': 'unique-id-3a',
+    ...     'Unique Submission Key:': 'unique-id-3a',
     ...     'Email address:': 'support@ubuntu.com',
     ...     'Distribution:': 'ubuntu',
     ...     'Distribution Release:': '5.04',
-    ...     'Processor Architecture:': 'x86',
+    ...     'Processor Architecture:': 'i386',
     ...     'System name:': 'Black Box 42',
     ... }
     >>> team_submit_data_checkboxes = {
@@ -117,20 +120,50 @@ visible for members of the team and admins.
     System       Date submitted Download submitted data
     Black Box 42 ...            teamtest.txt
 
+    >>> import transaction
+    >>> transaction.commit()
+
 == Viewing individual submissions ==
 
 Individual submissions can be rendered in an RFC-822-formatted file.
 
-    >>> browser.open('http://launchpad.dev/~ubuntu-team/+hwdb-submissions/unique-id-3a')
-    >>> browser.contents
-    Date-Created: 2007-01-01
-    Date-Submitted: 20...
+    >>> browser.open(
+    ...     'http://launchpad.dev/hwdb/+submission/unique-id-1/+text')
+    >>> print browser.contents
+    Date-Created: 2007-01-01 00:00:00+00:00
+    Date-Submitted: ...
     Format: VERSION_1
     Distribution: ubuntu
-    Distribution-Release: 5.04
-    Architecture: x86
+    Distribution-Series: 5.04
+    Architecture: i386
+    System: Fujitsu CY26
+    Submission URL: http://localhost:58000/75/test.txt
+
+Private submissions can't be viewed anonymously:
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/hwdb/+submission/unique-id-3a/+text')
+    Traceback (most recent call last):
+    ...
+    NotFound: ...
+
+But they can with the right permissions.
+
+    >>> browser = Browser()
+    >>> browser.addHeader('Authorization',
+    ...                   'Basic celso.providelo@canonical.com:cprov')
+    >>> browser.open(
+    ...     'http://launchpad.dev/hwdb/+submission/unique-id-3a/+text')
+    >>> print browser.contents
+    Date-Created: 2007-01-01 00:00:00+00:00
+    Date-Submitted: ...
+    Format: VERSION_1
+    Distribution: ubuntu
+    Distribution-Series: 5.04
+    Architecture: i386
     System: Black Box 42
-    Submission URL: https://launchpadlibrarian.net/.../
+    Submission URL: http://localhost:58000/77/teamtest.txt
+
 
 == Submissions listed by fingerprint ==
 
@@ -150,8 +183,8 @@ is False.
 
     >>> submit_data_checkboxes['Private Submission'] = False
     >>> submit_data_checkboxes['Contactable'] = True
-    >>> submit_data['Unique Submission ID:'] = 'unique-id-4'
-    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> submit_data['Unique Submission Key:'] = 'unique-id-4'
+    >>> browser.open('http://launchpad.dev/hwdb/+submit')
     >>> fill_form(
     ...     browser, submit_data, submit_data_checkboxes, submit_file, 
     ...     'test3.txt')

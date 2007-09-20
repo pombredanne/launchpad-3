@@ -27,15 +27,15 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name
 
-def validate_new_submission_id(submission_id):
-    """Check, if submission_id already exists in HWDBSubmission."""
-    if not valid_name(submission_id):
+def validate_new_submission_key(submission_key):
+    """Check, if submission_key already exists in HWDBSubmission."""
+    if not valid_name(submission_key):
         raise LaunchpadValidationError(
-            'Submission ID can contain only lowercase alphanumerics.')
+            'Submission key can contain only lowercase alphanumerics.')
     submission_set = getUtility(IHWSubmissionSet)
-    if submission_set.submissionIdExists(submission_id):
+    if submission_set.submissionIdExists(submission_key):
         raise LaunchpadValidationError(
-            'Submission ID already exists.')
+            'Submission key already exists.')
     return True
 
 class HWSubmissionKeyNotUnique(Exception):
@@ -96,7 +96,7 @@ class IHWSubmission(Interface):
         title=_(u'Unique Submission ID'), required=True)
     owner = Attribute(
         _(u"The owner's IPerson"))
-    distroarchrelease = Attribute(
+    distroarchseries = Attribute(
         _(u'The DistroArchSeries'))
     raw_submission = Object(
         schema=ILibraryFileAlias,
@@ -118,14 +118,14 @@ class IHWSubmissionForm(Interface):
         title=_(u'Private Submission'), required=True)
     contactable = Bool(
         title=_(u'Contactable'), required=True)
-    submission_id = ASCIILine(
-        title=_(u'Unique Submission ID'), required=True,
-        constraint=validate_new_submission_id)
+    submission_key = ASCIILine(
+        title=_(u'Unique Submission Key'), required=True,
+        constraint=validate_new_submission_key)
     emailaddress = TextLine(
             title=_(u'Email address'), required=True)
     distribution = TextLine(
         title=_(u'Distribution'), required=True)
-    distrorelease = TextLine(
+    distroseries = TextLine(
         title=_(u'Distribution Release'), required=True)
     architecture = TextLine(
         title=_(u'Processor Architecture'), required=True)
@@ -146,8 +146,8 @@ class IHWSubmissionSet(Interface):
         If a submission with an identical submission_key already exists,
         an HWSubmissionKeyNotUnique exception is raised."""
 
-    def getBySubmissionID(submission_key, user=None):
-        """Return the submission with the given submission ID, or None.
+    def getBySubmissionKey(submission_key, user=None):
+        """Return the submission with the given submission key, or None.
 
         If a submission is marked as private, it is only returned if
         user == HWSubmission.owner, of if user is an admin.

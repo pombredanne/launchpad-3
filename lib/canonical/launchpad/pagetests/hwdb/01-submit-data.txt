@@ -2,7 +2,7 @@
 
 Submissions to the hardware database are done at the following URL:
 
-    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> browser.open('http://launchpad.dev/hwdb/+submit')
 
 All form fields must be filled with valid values.
 
@@ -10,11 +10,11 @@ All form fields must be filled with valid values.
     >>> submit_data = {
     ...     'Date Created:': '2007-01-01',
     ...     'Format Version:': ['VERSION_1'],
-    ...     'Unique Submission ID:': 'unique-id-1',
+    ...     'Unique Submission Key:': 'unique-id-1',
     ...     'Email address:': 'test@canonical.com',
     ...     'Distribution:': 'ubuntu',
     ...     'Distribution Release:': '5.04',
-    ...     'Processor Architecture:': 'x86',
+    ...     'Processor Architecture:': 'i386',
     ...     'System name:': 'Fujitsu CY26',
     ... }
     >>> submit_data_checkboxes = {
@@ -60,14 +60,14 @@ Human users get a message too.
 If fields are not set, the response contains a header explaining this
 error.
 
-    >>> submit_data['Unique Submission ID:'] = 'unique-id-2'
+    >>> submit_data['Unique Submission Key:'] = 'unique-id-2'
     >>> for field in ('Date Created:', 'Distribution Release:', 
     ...               'Distribution:', 'Email address:', 
     ...               'Processor Architecture:', 'System name:', 
-    ...               'Unique Submission ID:'):
+    ...               'Unique Submission Key:'):
     ...     wrong_data = submit_data.copy()
     ...     del wrong_data[field]
-    ...     browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    ...     browser.open('http://launchpad.dev/hwdb/+submit')
     ...     fill_form(
     ...         browser, wrong_data, submit_data_checkboxes, submit_file,
     ...         'test.txt')
@@ -104,15 +104,15 @@ error.
     ...
     X-Launchpad-Hwdb-Submission: Error in system - Required input is missing.
     ...
-    --- missing field Unique Submission ID:
+    --- missing field Unique Submission Key:
     Status: 200 Ok
     ...
-    X-Launchpad-Hwdb-Submission: Error in submission_id - Required input is missing.
+    X-Launchpad-Hwdb-Submission: Error in submission_key - Required input is missing.
     ...
 
 The file with the test data must also be provided.
 
-    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> browser.open('http://launchpad.dev/hwdb/+submit')
     >>> fill_form(
     ...     browser, wrong_data, submit_data_checkboxes, None, 'test.txt')
     >>> browser.getControl('Upload').click()
@@ -122,12 +122,12 @@ The file with the test data must also be provided.
     X-Launchpad-Hwdb-Submission: Error in submission_data - Required input is missing.
     ...
  
-If a submission uses an already existing submission ID, the submission 
+If a submission uses an already existing submission key, the submission 
 is rejected and an explaining header is added to the response.
 
     >>> wrong_data = submit_data.copy()
-    >>> wrong_data['Unique Submission ID:'] = 'unique-id-1'
-    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> wrong_data['Unique Submission Key:'] = 'unique-id-1'
+    >>> browser.open('http://launchpad.dev/hwdb/+submit')
     >>> fill_form(
     ...     browser, wrong_data, submit_data_checkboxes, submit_file,
     ...     'test.txt')
@@ -135,14 +135,14 @@ is rejected and an explaining header is added to the response.
     >>> print browser.headers
     Status: 200 Ok
     ...
-    X-Launchpad-Hwdb-Submission: Error in submission_id - Submission ID already exists.
+    X-Launchpad-Hwdb-Submission: Error in submission_key - Submission key already exists.
     ...
 
 The field "Date Created" must contain a valid timestamp.
 
     >>> wrong_data = submit_data.copy()
     >>> wrong_data['Date Created:'] = 'no timestamp'
-    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> browser.open('http://launchpad.dev/hwdb/+submit')
     >>> fill_form(
     ...     browser, wrong_data, submit_data_checkboxes, submit_file,
     ...     'test.txt')
@@ -153,11 +153,11 @@ The field "Date Created" must contain a valid timestamp.
     X-Launchpad-Hwdb-Submission: Error in date_created - Invalid datetime data
     ...
 
-The field "Submission ID" may contain only ASCII characters.
+The field "Submission Key" may contain only ASCII characters.
 
     >>> wrong_data = submit_data.copy()
-    >>> wrong_data['Unique Submission ID:'] = u'wrong id \xc0'.encode('utf8')
-    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> wrong_data['Unique Submission Key:'] = u'wrong id \xc0'.encode('utf8')
+    >>> browser.open('http://launchpad.dev/hwdb/+submit')
     >>> fill_form(
     ...     browser, wrong_data, submit_data_checkboxes, submit_file,
     ...     'test.txt')
@@ -165,14 +165,14 @@ The field "Submission ID" may contain only ASCII characters.
     >>> print browser.headers
     Status: 200 Ok
     ...
-    X-Launchpad-Hwdb-Submission: Error in submission_id - Invalid textual data
+    X-Launchpad-Hwdb-Submission: Error in submission_key - Invalid textual data
     ...
 
 The field "Email address:" musr contain a valid email address.
 
     >>> wrong_data = submit_data.copy()
     >>> wrong_data['Email address:'] = 'no email'
-    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> browser.open('http://launchpad.dev/hwdb/+submit')
     >>> fill_form(
     ...     browser, wrong_data, submit_data_checkboxes, submit_file,
     ...     'test.txt')

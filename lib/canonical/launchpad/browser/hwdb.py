@@ -9,6 +9,8 @@ __all__ = [
     'HWDBPersonSubmissionsView',
     'HWDBUploadView']
 
+from textwrap import dedent
+
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
@@ -17,7 +19,7 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from canonical.launchpad.interfaces import (
     HWSubmissionInvalidEmailAddress, IDistributionSet, IHWDBApplication,
     IHWSubmissionForm, IHWSubmissionSet, IHWSystemFingerprintSet, 
-    NotFoundError)
+    NotFoundError, ILaunchBag)
 from canonical.launchpad.webapp import (
     action, LaunchpadView, LaunchpadFormView, Navigation, stepthrough)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -34,13 +36,23 @@ class HWDBUploadView(LaunchpadFormView):
         distributionset = getUtility(IDistributionSet)
         distribution = distributionset.getByName(data['distribution'])
         if distribution is not None:
-            release = data['distrorelease']
+            release = data['distroseries']
             architecture = data['architecture']
             try:
                 distroseries = distribution.getSeries(release)
+            except NotFoundError:
+                self.addErrorHeader("distroseries",
+                    "%s isn't a valid distribution series"
+                     % data['distroseries'])
+                return
+
+            try:
                 distroarchseries = distroseries[architecture]
             except NotFoundError:
-                distroarchseries = None
+                self.addErrorHeader("distroarchseries",
+                    "%s isn't a valid distribution architecture"
+                     % data['architecture'])
+                return
         else:
             distroarchseries = None
 
@@ -64,7 +76,7 @@ class HWDBUploadView(LaunchpadFormView):
                 format=data['format'],
                 private=data['private'],
                 contactable=data['contactable'],
-                submission_key=data['submission_id'],
+                submission_key=data['submission_key'],
                 emailaddress=data['emailaddress'],
                 distroarchseries=distroarchseries,
                 raw_submission=submission_file,
@@ -72,7 +84,6 @@ class HWDBUploadView(LaunchpadFormView):
                 filesize=filesize,
                 system_fingerprint=data['system'])
         except HWSubmissionInvalidEmailAddress:
-
             self.addErrorHeader("emailaddress",
                 "%s isn't a valid email address" % data['emailaddress'])
             self.request.response.addErrorNotification(
@@ -132,13 +143,46 @@ class HWDBPersonSubmissionsView(LaunchpadView):
 class HWDBSubmissionTextView(LaunchpadView):
     """Renders a HWDBSubmission in parseable text."""
     def render(self):
-        return "XXX"
+        data = {}
+        data["date_created"] = self.context.date_created
+        data["date_submitted"] = self.context.date_submitted
+        data["format"] = self.context.format.name
+
+        dar = self.context.distroarchseries
+        if dar:
+            data["distribution"] = dar.distroseries.distribution.name
+            data["distribution_series"] = dar.distroseries.version
+            data["architecture"] = dar.architecturetag
+        else:
+            data["distribution"] = "(unknown)"
+            data["distribution_series"] = "(unknown)"
+            data["architecture"] = "(unknown)"
+
+        data["system_fingerprint"] = self.context.system_fingerprint.fingerprint
+        data["url"] = self.context.raw_submission.http_url
+
+        return dedent("""
+            Date-Created: %(date_created)s
+            Date-Submitted: %(date_submitted)s
+            Format: %(format)s
+            Distribution: %(distribution)s
+            Distribution-Series: %(distribution_series)s
+            Architecture: %(architecture)s
+            System: %(system_fingerprint)s
+            Submission URL: %(url)s""" % data)
 
 
 class HWDBSubmissionSetNavigation(Navigation):
     """Navigation class for HWDBSubmissionSet."""
 
     usedfor = IHWDBApplication
+
+    @stepthrough('+submission')
+    def traverse_submission(self, name):
+        user = getUtility(ILaunchBag).user
+        submission = getUtility(IHWSubmissionSet).getBySubmissionKey(
+            name, user=user)
+        return submission
 
     @stepthrough('+hwdb-fingerprint')
     def traverse_hwdb_fingerprint(self, name):
@@ -152,7 +196,7 @@ class HWDBFingerprintSetView(LaunchpadView):
 
     template = ViewPageTemplateFile(
         '../templates/hwdb-fingerprint-submissions.pt')
-    
+
     def __init__(self, context,  request, system_name):
         LaunchpadView.__init__(self, context, request)
         self.system_name = system_name
@@ -173,3 +217,4 @@ class HWDBFingerprintSetView(LaunchpadView):
         return (submission.owner is not None
                 and (submission.contactable
                      or (submission.owner == self.user)))
+

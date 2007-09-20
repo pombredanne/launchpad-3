@@ -25,7 +25,7 @@
         for="canonical.launchpad.interfaces.IHWDBApplication"
         class="canonical.launchpad.browser.HWDBUploadView"
         permission="zope.Public"
-        name="submit-hardware-data"
+        name="+submit"
         template="../templates/hwdb-submit-hardware-data.pt"
         />
 
@@ -34,6 +34,17 @@
             permission="launchpad.View" 
             interface="canonical.launchpad.interfaces.IHWSubmission" />
     </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IHWSubmission"
+        name="+text" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IHWSubmission"
+        class="canonical.launchpad.browser.HWDBSubmissionTextView"
+        permission="zope.Public"
+        name="+text"
+        />
 
     <securedutility
         class="canonical.launchpad.database.HWSubmissionSet"

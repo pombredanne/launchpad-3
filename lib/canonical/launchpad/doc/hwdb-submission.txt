@@ -8,13 +8,12 @@ The POST data consists of the following fields:
   * format (see hwdb.txt)
   * private (see hwdb.txt)
   * contactable (see hwdb.txt)
-  * livecd (see hwdb.txt)
-  * submission_id (see hwdb.txt)
+  * submission_key (see hwdb.txt)
   * emailaddress (see hwdb.txt)
   * distribution: The distribution name. The value should match a value
     in the SQL table Distribution, column name.
-  * distrorelease: The distrorelease version. The value should match a value
-    in the SQL table Distrorelease, column version
+  * distroseries: The distroseries version. The value should match a value
+    in the SQL table distroseries, column version
   * processorfamily: The name of the processorfamily. The value should 
     match a value in the SQL table Processorfamily, column name.
   * system: The system name as returned by HAL (system.vendor, system.product)
@@ -32,18 +31,17 @@ The POST data consists of the following fields:
     ...       'field.format':          u'VERSION_1',
     ...       'field.private':         u'',
     ...       'field.contactable':     u'',
-    ...       'field.livecd':          u'',
-    ...       'field.submission_id':   u'unique ID 1',
+    ...       'field.submission_key':  u'unique-id-1',
     ...       'field.emailaddress':    u'test@canonical.com',
     ...       'field.distribution':    u'ubuntu',
-    ...       'field.distrorelease':   u'5.04',
+    ...       'field.distroseries':    u'5.04',
     ...       'field.architecture':    u'i386',
     ...       'field.system':          u'HP 6543',
     ...       'field.submission_data': data,
     ...       'field.actions.upload':  u'Upload'}
     >>> request = LaunchpadTestRequest(method='POST', form=form)
     >>> app = getUtility(IHWDBApplication)
-    >>> submit_view = getView(app, 'submit-hardware-data', request)
+    >>> submit_view = getView(app, '+submit', request)
     >>> submit_view.initialize()
     >>> submit_view.errors
     []
@@ -52,13 +50,13 @@ The request created an entry in the HWDBSubmissions table.
 
     >>> from canonical.launchpad.interfaces import IHWSubmissionSet
     >>> submission_set = getUtility(IHWSubmissionSet)
-    >>> submission = submission_set.getBySubmissionID(u'unique ID 1')
+    >>> submission = submission_set.getBySubmissionKey(u'unique-id-1')
     >>> submission.date_created, submission.format.name
     (datetime.datetime(2007, 8, 1, 0, 0, tzinfo=<UTC>), 'VERSION_1')
     >>> submission.private, submission.contactable
     (False, False)
     >>> submission.submission_key
-    u'unique ID 1'
+    u'unique-id-1'
     >>> submission.system_fingerprint.fingerprint
     u'HP 6543'
 
@@ -69,65 +67,67 @@ The submitted data is stored in raw_submission.
     >>> submission.raw_submission.read()
     'some data.'
 
-A reference to distroarchrelease is created for the fields distribution, 
-distrorelease, architecture.
+A reference to distroarchseries is created for the fields distribution, 
+distroseries, architecture.
 
-    >>> submission.distroarchrelease.distroseries.distribution.name
+    >>> submission.distroarchseries.distroseries.distribution.name
     u'ubuntu'
-    >>> submission.distroarchrelease.distroseries.version
+    >>> submission.distroarchseries.distroseries.version
     u'5.04'
-    >>> submission.distroarchrelease.architecturetag
+    >>> submission.distroarchseries.architecturetag
     u'i386'
 
-Each submission must have a distinct submission_id, hence an attempt to submit
+Each submission must have a distinct submission_key, hence an attempt to submit
 identical data a second time leads to an error.
 
     >>> request = LaunchpadTestRequest(method='POST', form=form)
-    >>> submit_view = getView(app, 'submit-hardware-data', request)
+    >>> submit_view = getView(app, '+submit', request)
     >>> submit_view.initialize()
     >>> [error.doc() for error in submit_view.errors]
-    ['Submission ID already exists.']
+    ['Submission key already exists.']
 
 
-If the fields distribution, distrorelease and architecture contain names 
-which are not known in the Launchpad database, the distroarchrelease field
-is None.
+If the field distribution contains a name which is not known in the
+Launchpad database, the distroarchseries field is None.
 
-    >>> form['field.submission_id'] = u'unique ID 2'
+    >>> form['field.submission_key'] = u'unique-id-2'
     >>> invalid_form = form.copy()
     >>> invalid_form['field.distribution'] = 'no distribution'
     >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
-    >>> submit_view = getView(app, 'submit-hardware-data', request)
+    >>> submit_view = getView(app, '+submit', request)
     >>> submit_view.initialize()
-    >>> submission = submission_set.getBySubmissionID(u'unique ID 2')
-    >>> print submission.distroarchrelease
+    >>> submission = submission_set.getBySubmissionKey(u'unique-id-2')
+    >>> print submission.distroarchseries
     None
-    >>> form['field.submission_id'] = u'unique ID 3'
+
+If distribution is known, but distroseries or architecture are unknown
+to Launchpad, we refuse the submissions.
+
+    >>> form['field.submission_key'] = u'unique-id-3'
     >>> invalid_form = form.copy()
-    >>> invalid_form['field.distrorelease'] = 'no release'
+    >>> invalid_form['field.distroseries'] = 'no release'
     >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
-    >>> submit_view = getView(app, 'submit-hardware-data', request)
+    >>> submit_view = getView(app, '+submit', request)
     >>> submit_view.initialize()
-    >>> submission = submission_set.getBySubmissionID(u'unique ID 3')
-    >>> print submission.distroarchrelease
+    >>> print submission_set.getBySubmissionKey(u'unique-id-3')
     None
-    >>> form['field.submission_id'] = u'unique ID 4'
+    
+    >>> form['field.submission_key'] = u'unique-id-4'
     >>> invalid_form = form.copy()
     >>> invalid_form['field.architecture'] = 'no architecture'
     >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
-    >>> submit_view = getView(app, 'submit-hardware-data', request)
+    >>> submit_view = getView(app, '+submit', request)
     >>> submit_view.initialize()
-    >>> submission = submission_set.getBySubmissionID(u'unique ID 4')
-    >>> print submission.distroarchrelease
+    >>> print submission_set.getBySubmissionKey(u'unique-id-4')
     None
 
 The `date_created` field must contain a valid date.
 
-    >>> form['field.submission_id'] = u'unique ID 5'
+    >>> form['field.submission_key'] = u'unique-id-5'
     >>> invalid_form = form.copy()
     >>> invalid_form['field.date_created'] = '2007-05-35'
     >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
-    >>> submit_view = getView(app, 'submit-hardware-data', request)
+    >>> submit_view = getView(app, '+submit', request)
     >>> submit_view.initialize()
     >>> [error.doc() for error in submit_view.errors]
     [u'Invalid datetime data']
@@ -138,17 +138,17 @@ HWDBSubmissionFormat.
     >>> invalid_form = form.copy()
     >>> invalid_form['field.format'] = u'VERSION_42'
     >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
-    >>> submit_view = getView(app, 'submit-hardware-data', request)
+    >>> submit_view = getView(app, '+submit', request)
     >>> submit_view.initialize()
     >>> [error.doc() for error in submit_view.errors]
     ['Invalid value']
 
-The field `submission_id` may contain only ASCII data.
+The field `submission_key` may contain only ASCII data.
 
     >>> invalid_form = form.copy()
-    >>> invalid_form['field.submission_id'] = u'wrong id \x81'
+    >>> invalid_form['field.submission_key'] = u'wrong id \x81'
     >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
-    >>> submit_view = getView(app, 'submit-hardware-data', request)
+    >>> submit_view = getView(app, '+submit', request)
     >>> submit_view.initialize()
     >>> [error.doc() for error in submit_view.errors]
     [u'Invalid textual data']
@@ -156,25 +156,24 @@ The field `submission_id` may contain only ASCII data.
 All fields are required.
 
     >>> for field in ('field.date_created', 'field.format', 'field.private',
-    ...     'field.contactable', 'field.livecd', 'field.submission_id', 
+    ...     'field.contactable', 'field.submission_key', 
     ...     'field.emailaddress', 'field.distribution', 
-    ...     'field.distrorelease', 'field.architecture', 'field.system',
+    ...     'field.distroseries', 'field.architecture', 'field.system',
     ...     'field.submission_data'):
     ...     invalid_form = form.copy()
     ...     del invalid_form[field]
     ...     request = LaunchpadTestRequest(method='POST', form=invalid_form)
-    ...     submit_view = getView(app, 'submit-hardware-data', request)
+    ...     submit_view = getView(app, '+submit', request)
     ...     submit_view.initialize()
     ...     submit_view.widget_errors
     {'date_created': 'Required field is missing'}
     {'format': 'Required field is missing'}
     {'private': 'Required field is missing'}
     {'contactable': 'Required field is missing'}
-    {'livecd': 'Required field is missing'}
-    {'submission_id': 'Required field is missing'}
+    {'submission_key': 'Required field is missing'}
     {'emailaddress': 'Required field is missing'}
     {'distribution': 'Required field is missing'}
-    {'distrorelease': 'Required field is missing'}
+    {'distroseries': 'Required field is missing'}
     {'architecture': 'Required field is missing'}
     {'system': 'Required field is missing'}
     {'submission_data': 'Required field is missing'}
@@ -183,10 +182,10 @@ Teams can be owners of submissions.
 
     >>> team_form = form.copy()
     >>> team_form['field.emailaddress'] = 'support@ubuntu.com'
-    >>> team_form['field.submission_id'] = u'unique ID 68'
+    >>> team_form['field.submission_key'] = u'unique-id-68'
     >>> request = LaunchpadTestRequest(method='POST', form=team_form)
-    >>> submit_view = getView(app, 'submit-hardware-data', request)
+    >>> submit_view = getView(app, '+submit', request)
     >>> submit_view.initialize()
-    >>> submission = submission_set.getBySubmissionID(u'unique ID 68')
+    >>> submission = submission_set.getBySubmissionKey(u'unique-id-68')
     >>> submission.owner.displayname
     u'Ubuntu Team'
