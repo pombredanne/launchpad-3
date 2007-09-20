@@ -230,8 +230,8 @@ def mailingListXMLRPCInternalSetUp(test):
     # architecture.  Don't use ServerProxy.  We do this because it's easier to
     # debug because when things go horribly wrong, you see the errors on
     # stdout instead of in an OOPS report living in some log file somewhere.
-    from canonical.launchpad.xmlrpc import RequestedMailingListAPIView
-    class ImpedenceMatchingView(RequestedMailingListAPIView):
+    from canonical.launchpad.xmlrpc import MailingListAPIView
+    class ImpedenceMatchingView(MailingListAPIView):
         @fault_catcher
         def getPendingActions(self):
             return super(ImpedenceMatchingView, self).getPendingActions()
@@ -239,7 +239,7 @@ def mailingListXMLRPCInternalSetUp(test):
         def reportStatus(self, statuses):
             return super(ImpedenceMatchingView, self).reportStatus(statuses)
     # Expose in the doctest's globals, the view as the thing with the
-    # IRequestedMailingListAPI interface.  Also expose the helper functions.
+    # IMailingListAPI interface.  Also expose the helper functions.
     mailinglist_api = ImpedenceMatchingView(context=None, request=None)
     test.globs['mailinglist_api'] = mailinglist_api
     test.globs['print_actions'] = mailingListPrintActions

@@ -32,8 +32,8 @@
 
     <xmlrpc:view
         for="canonical.launchpad.interfaces.IMailingListApplication"
-        interface="canonical.launchpad.interfaces.IRequestedMailingListAPIView"
-        class="canonical.launchpad.xmlrpc.RequestedMailingListAPIView"
+        interface="canonical.launchpad.interfaces.IMailingListAPIView"
+        class="canonical.launchpad.xmlrpc.MailingListAPIView"
         permission="zope.Public"
         />
 
