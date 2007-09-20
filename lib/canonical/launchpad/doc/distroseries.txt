@@ -977,7 +977,7 @@ restricted to it.
 
    >>> debian_archive = getUtility(IDistributionSet)['debian'].main_archive
    >>> print debian_archive.purpose.title
-   Primary Archive.
+   Primary Archive
 
    >>> hoary.getSourcePackagePublishing(
    ...     PackagePublishingStatus.PUBLISHED,
