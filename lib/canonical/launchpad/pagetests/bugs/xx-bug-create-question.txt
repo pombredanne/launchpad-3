@@ -1,13 +1,13 @@
 = Create a question from a bug =
 
 Some bugs that are filed, aren't really bugs, they are questions.
-When the bug target's pillar uses Launchpad to track bug, the
+When the bug target's pillar uses Launchpad to track bugs, the
 bug can be converted to a question. The process creates a new
 question using the bug's owner, title, and description. The bug's
 status is set to Invalid in every location that it affects.
 
 Thunderbird does not use Launchpad to track bugs. Questions cannot
-be made from it's bugs.
+be made from its bugs.
 
     >>> user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/9')
     >>> user_browser.title
@@ -17,7 +17,7 @@ be made from it's bugs.
     ...
     LinkNotFoundError
 
-An Person with permission to edit a bug may create a question from
+An user with permission to edit a bug may create a question from
 a bug. An anonymous user cannot create a question.
 
     >>> anon_browser.open(
@@ -104,15 +104,15 @@ that is was asked by Foo Bar. Foo Bar is the only subscriber to
 this question (a question in Ubuntu would have many indirect
 subscribers in the real world). As No Privileges Person is not
 the question owner, he is invited to help answer the problem.
+He uses the link to Related bug to return to the bug.
 
-    >>> content = find_tag_by_id(user_browser.contents, 'mainarea')
+    >>> content = find_main_content(user_browser.contents)
     >>> print extract_text(content(['img'], src='/@@/question')[0].parent)
     Open Question #..., asked ... by Foo Bar
 
-    >>> portlet = content(['div'], {'id' : 'portlet-subscribers'})[0]
-    >>> portlet.h2
-    <h2>Subscribers to question #...</h2>
-
+    >>> question_id = user_browser.url.split('/')[-1]
+    >>> portlet_heading = 'Subscribers to question #%s' % question_id
+    >>> portlet = find_portlet(user_browser.contents, portlet_heading)
     >>> portlet.a
     <a href="/~name16">Foo Bar</a>
 
@@ -120,7 +120,15 @@ the question owner, he is invited to help answer the problem.
     <h2>...Can you help with this problem?...</h2>
     
     >>> user_browser.getControl("Add Answer").type
-    'submit'                                                
+    'submit'
+    
+    >>> portlet = find_portlet(user_browser.contents, 'Related bugs')
+    >>> portlet.a
+    <a href="http://bugs.launchpad.dev/bugs/10">#10: another test bug</a>
+
+    >>> user_browser.getLink('#10: another test bug').click()
+    >>> user_browser.title
+    'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
 
 Foo Bar received an email informing him that he asked a question. He
 used the link the email to view the page in his browser.

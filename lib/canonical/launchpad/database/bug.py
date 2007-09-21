@@ -555,7 +555,7 @@ class Bug(SQLBase):
     completeness_clause =  """
         BugTask.bug = Bug.id AND """ + BugTask.completeness_clause
 
-    def createQuestionFromBug(self, question_target, person):
+    def createQuestionFromBug(self, question_target, person, comment):
         """See `IBug`."""
         assert question_target.pillar.official_malone, (
             '%s official_malone must be True.' % question_target.pillar.name)
@@ -563,10 +563,11 @@ class Bug(SQLBase):
         assert question is None, (
             'This bug was already converted to question #%s.' % question.id)
 
+        # message = self.newMessage()
         question = question_target.createQuestionFromBug(self)
         for bugtask in self.bugtasks:
-            bugtask.transitionToStatus(BugTaskStatus.INVALID, person)
-            bugtask.statusexplanation = 'This is not a bug. It is a question.'
+            if bugtask.target_uses_malone:
+                bugtask.transitionToStatus(BugTaskStatus.INVALID, person)
         return question
 
     def getQuestionCreatedFromBug(self):

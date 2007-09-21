@@ -2,7 +2,6 @@ Bugs can be converted into questions when a person ascertains that
 that is the nature of the issue. The bug's target must be adaptable
 to IQuestionTarget and must use Launchpad track bugs.
 
-    >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     CreateBugParams, IBugSet, IBugTaskSet, IDistributionSet,
     ...     IDistributionSourcePackage, IDistroSeries, IPersonSet,
@@ -21,48 +20,48 @@ A Firefox bug in Debian cannot be converted to a question because the
 Distribution does not use Launchpad to track bugs.
 
     >>> firefox_bug = getUtility(IBugSet).get(8)
-    >>> firefox_package = firefox_bug.bugtasks[0].target
-    >>> IQuestionTarget.providedBy(firefox_package)
+    >>> target = firefox_bug.bugtasks[0].target
+    >>> IQuestionTarget.providedBy(target)
     True
     >>> firefox_bug.bugtasks[0].target_uses_malone
     False
-
-    >>> firefox_bug.createQuestionFromBug(firefox_package, sample_person)
-    Traceback (most recent call last):
-    ...
-    AssertionError: debian official_malone must be True.
 
 Jokosher does use Launchpad to track bugs; its bugs can be converted
 to questions.
 
     >>> login('no-priv@canonical.com')
 
-    >>> jokosher = getUtility(IProductSet)['jokosher']
+    >>> target = getUtility(IProductSet)['jokosher']
     >>> bug_params = CreateBugParams(
     ...     title="Print is broken", comment="blah blah blah", owner=no_priv)
-    >>> bug_params.setBugTarget(product=jokosher)
-    >>> jokosher_bug = getUtility(IBugSet).createBug(bug_params)
-    >>> jokosher_bugtask = jokosher_bug.bugtasks[0]
-    >>> jokosher_bugtask.status.title
+    >>> bug_params.setBugTarget(product=target)
+    >>> bug = target.createBug(bug_params)
+    >>> bugtask = bug.bugtasks[0]
+    >>> bugtask.status.title
     'New'
-    >>> jokosher.official_malone
+    >>> target.official_malone
     True
-    >>> IQuestionTarget.providedBy(jokosher)
+    >>> IQuestionTarget.providedBy(target)
     True
 
-    # The view uses the context as the QuestionTarget, but any object
-    # that provides IQuestionTarget will suffice.
-    # eg. bug.createQuestionFromBug(self.context, self.user)
+The primary use case for converting a bug into a question is when
+a bug contact recognises a bug is really a question. This happens
+at the UI level. For example, Sample Person would recognise that
+this bug is a question while reviewing Jokosher's bugs, and choose
+to make it into a question. The UI would pass Jokosher as the
+QuestionTarget and Sample Person as the Person.
+
     >>> login('test@canonical.com')
-    >>> question = jokosher_bug.createQuestionFromBug(jokosher, sample_person)
+    >>> question = bug.createQuestionFromBug(
+    ...     target, sample_person, subect, comment)
 
-    >>> question.target == jokosher
+    >>> question.target == target
     True
-    >>> question.owner == jokosher_bug.owner
+    >>> question.owner == bug.owner
     True
-    >>> question.title == jokosher_bug.title
+    >>> question.title == bug.title
     True
-    >>> question.description == jokosher_bug.description
+    >>> question.description == bug.description
     True
         
     >>> question.owner.displayname
@@ -74,17 +73,19 @@ to questions.
 
 Once converted to a question, the bugtask status is Invalid.
 
-    >>> jokosher_bugtask.status.title
+    >>> bugtask.status.title
     'Invalid'
-    >>> jokosher_bugtask.statusexplanation
-    u'This is not a bug. It is a question.'
+    >>> bugtask.statusexplanation
+    None
+    >>> # use bug.newMessage to create a comment and an email message.
+    
 
 The question is automatically linked to the original bug.
 
-    >>> [question.title for question in jokosher_bug.questions]
+    >>> [bug_link.question.title for bug_link in question.bug_links]
     [u'Print is broken']
 
-Subscribers to the bug are not notify that the bug is now invalid
+Subscribers to the bug are not notified that the bug is now invalid
 because the issue does not, nor did it ever, concern the bug contacts.
 The question owner (the bug owner) is informed by email that he asked
 a question.
@@ -102,7 +103,7 @@ a question.
 
 A bug can only be converted to a question once.
 
-    >>> question = jokosher_bug.createQuestionFromBug(jokosher, sample_person)
+    >>> question = bug.createQuestionFromBug(target, sample_person)
     Traceback (most recent call last):
     ...
     AssertionError: This bug was already converted to question #...    
