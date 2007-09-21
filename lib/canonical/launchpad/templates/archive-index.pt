@@ -119,7 +119,9 @@
     <p metal:fill-slot="help">
       Here you can find information about the source packages
       currently published in the PPA in question. This page also
-      provides estimated archive sizes.
+      provides estimated archive sizes. Anyone can read the current
+      version of <a href="https://help.launchpad.net/PPATermsofUse"
+      >PPA Terms of Use</a>.
     </p>
 
   </body>
