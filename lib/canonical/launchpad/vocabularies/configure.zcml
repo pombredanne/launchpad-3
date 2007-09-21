@@ -296,11 +296,6 @@
     />
 
   <vocabulary
-    name="TextDirection"
-    factory="canonical.launchpad.vocabularies.TextDirectionVocabulary"
-    />
-
-  <vocabulary
     name="TimezoneName"
     factory="canonical.launchpad.vocabularies.TimezoneNameVocabulary"
     />

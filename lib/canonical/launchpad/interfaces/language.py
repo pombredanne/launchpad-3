@@ -7,12 +7,30 @@ __metaclass__ = type
 __all__ = [
     'ILanguage',
     'ILanguageSet',
+    'TextDirection',
     ]
 
 from zope.schema import TextLine, Int, Choice, Bool, Field, Set
 from zope.interface import Interface, Attribute
 
-from canonical.lp.dbschema import TextDirection
+from canonical.lazr.enum import DBEnumeratedType, DBItem
+
+
+class TextDirection(DBEnumeratedType):
+    """The base text direction for a language."""
+
+    LTR = DBItem(0, """
+        Left to Right
+
+        Text is normally written from left to right in this language.
+        """)
+
+    RTL = DBItem(1, """
+        Right to Left
+
+        Text is normally written from left to right in this language.
+        """)
+
 
 class ILanguage(Interface):
     """A Language."""

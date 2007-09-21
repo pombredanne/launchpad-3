@@ -70,7 +70,6 @@ __all__ = (
 'SpecificationSort',
 'SpecificationDefinitionStatus',
 'SprintSpecificationStatus',
-'TextDirection',
 'TranslationFileFormat',
 'TranslationPriority',
 'TranslationPermission',
@@ -2081,22 +2080,6 @@ class TranslationValidationStatus(DBSchema):
         Unknown Error
 
         This translation has an unknown error.
-        """)
-
-
-class TextDirection(DBSchema):
-    """The base text direction for a language."""
-
-    LTR = Item(0, """
-        Left to Right
-
-        Text is normally written from left to right in this language.
-        """)
-
-    RTL = Item(1, """
-        Right to Left
-
-        Text is normally written from left to right in this language.
         """)
 
 
