@@ -406,6 +406,29 @@ class IMailingListAPIView(Interface):
             The result strings may be either 'success' or 'failure'.
         """
 
+    def getMembershipInformation(teams):
+        """Return membership information for the listed teams.
+
+        :param teams: The list of team names for which Mailman is requesting
+            membership information.
+        :return: A data structure representing the requested information.  See
+            below for the format of that data structure.
+
+        The return value is of the format:
+
+        {team_name: [(address, realname, flags, status), ...], ...}
+
+        And each value contains an entry for all addresses that are subscribed
+        to the mailing list linked to the named team.
+        """
+
+    def isLaunchpadMember(address):
+        """Return whether the address is a Launchpad member or not.
+
+        :param address: The text email address to check.
+        :return: True if the address is a member, otherwise False.
+        """
+
 
 class IMailingListSubscription(Interface):
     """A mailing list subscription."""

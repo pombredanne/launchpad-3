@@ -90,3 +90,11 @@ class MailingListAPIView(LaunchpadXMLRPCView):
                 return faults.BadStatus(team_name, action_status)
         # Everything was fine.
         return True
+
+    def getMembershipInformation(self, teams):
+        """See `IMailingListAPIView.`."""
+        return {}
+
+    def isLaunchpadMember(self, address):
+        """See `IMailingListAPIView.`."""
+        return False

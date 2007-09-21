@@ -238,6 +238,14 @@ def mailingListXMLRPCInternalSetUp(test):
         @fault_catcher
         def reportStatus(self, statuses):
             return super(ImpedenceMatchingView, self).reportStatus(statuses)
+        @fault_catcher
+        def getMembershipInformation(self, teams):
+            return super(ImpedenceMatchingView, self).getMembershipInformation(
+                teams)
+        @fault_catcher
+        def isLaunchpadMember(self, address):
+            return super(ImpedenceMatchingView, self).isLaunchpadMember(
+                address)
     # Expose in the doctest's globals, the view as the thing with the
     # IMailingListAPI interface.  Also expose the helper functions.
     mailinglist_api = ImpedenceMatchingView(context=None, request=None)
