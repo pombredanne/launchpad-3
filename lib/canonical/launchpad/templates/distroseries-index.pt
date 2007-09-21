@@ -23,12 +23,8 @@
             <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
           </a>
         </li>
-        <li>
-          <a href="+translations">
-            <img alt="Help translate" src="/+icing/but-sml-helptranslate.gif" />
-          </a>
-        </li>
         <li tal:content="structure context/@@+ask-a-question-button" />
+        <li tal:content="structure context/@@+help-translate-button" />
       </ul>
       <tal:packages condition="context/binarycount">
 
