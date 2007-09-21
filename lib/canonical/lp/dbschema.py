@@ -49,8 +49,6 @@ __all__ = (
 'PollAlgorithm',
 'PollSecrecy',
 'PostedMessageStatus',
-'ProjectRelationship',
-'ProjectStatus',
 'RosettaImportStatus',
 'RosettaTranslationOrigin',
 'ShipItArchitecture',
@@ -76,11 +74,7 @@ __all__ = (
 'TranslationValidationStatus',
 'PackageUploadStatus',
 'PackageUploadCustomFormat',
-'UpstreamReleaseVersionStyle',
 )
-
-#from canonical.launchpad.webapp.enum import DBSchema
-#from canonical.launchpad.webapp.enum import DBSchemaItem as Item
 
 from canonical.lazr import DBEnumeratedType as DBSchema
 from canonical.lazr import DBItem as Item
@@ -232,35 +226,6 @@ class CveStatus(DBSchema):
         """)
 
 
-class ProjectStatus(DBSchema):
-    """A Project Status
-
-    This is an enum of the values that Project.status can assume.
-    Essentially it indicates whether or not this project has been reviewed,
-    and if it has whether or not it passed review and should be considered
-    active.
-    """
-
-    NEW = Item(1, """
-        New
-
-        This project is new and has not been reviewed.
-        """)
-
-    ACTIVE = Item(2, """
-        Active
-
-        This Project has been reviewed and is considered active in the
-        launchpad.""")
-
-    DISABLED = Item(3, """
-        Disabled
-
-        This project has been reviewed, and has been disabled. Typically
-        this is because the contents appear to be bogus. Such a project
-        should not show up in searches etc.""")
-
-
 class BugBranchStatus(DBSchema):
     """The status of a bugfix branch."""
 
@@ -290,32 +255,6 @@ class BugBranchStatus(DBSchema):
         This branch contains a fix agreed upon by the community as
         being the best available branch from which to merge to fix
         this bug.
-        """)
-
-
-class ProjectRelationship(DBSchema):
-    """Project Relationship
-
-    Launchpad tracks different open source projects, and the relationships
-    between them. This schema is used to describe the relationship between
-    two open source projects.
-    """
-
-    AGGREGATES = Item(1, """
-        Subject Project Aggregates Object Project
-
-        Some open source projects are in fact an aggregation of several
-        other projects. For example, the Gnome Project aggregates
-        Gnumeric, Abiword, EOG, and many other open source projects.
-        """)
-
-    SIMILAR = Item(2, """
-        Subject Project is Similar to Object Project
-
-        Often two different groups will start open source projects
-        that are similar to one another. This relationship is used
-        to describe projects that are similar to other projects in
-        the system.
         """)
 
 
