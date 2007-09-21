@@ -38,7 +38,7 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.queue import QueueItemsView
-from canonical.launchpad.browser.rosetta import TranslationsMixin
+from canonical.launchpad.browser.translations import TranslationsMixin
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp.authorization import check_permission

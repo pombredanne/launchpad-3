@@ -10,17 +10,33 @@ __all__ = [
     'HWSubmissionKeyNotUnique',
     'HWSubmissionProcessingStatus',
     'IHWSubmission',
+    'IHWSubmissionForm',
     'IHWSubmissionSet',
     'IHWSystemFingerprint',
     'IHWSystemFingerprintSet'
     ]
 
+from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import ASCIILine, Bool, Choice, Datetime, Object
+from zope.schema import (
+    ASCIILine, Bool, Bytes, Choice, Datetime, Object, TextLine)
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.name import valid_name
+
+def validate_new_submission_key(submission_key):
+    """Check, if submission_key already exists in HWDBSubmission."""
+    if not valid_name(submission_key):
+        raise LaunchpadValidationError(
+            'Submission key can contain only lowercase alphanumerics.')
+    submission_set = getUtility(IHWSubmissionSet)
+    if submission_set.submissionIdExists(submission_key):
+        raise LaunchpadValidationError(
+            'Submission key already exists.')
+    return True
 
 class HWSubmissionKeyNotUnique(Exception):
     """Prevent two or more submission with identical submission_key."""
@@ -80,7 +96,7 @@ class IHWSubmission(Interface):
         title=_(u'Unique Submission ID'), required=True)
     owner = Attribute(
         _(u"The owner's IPerson"))
-    distroarchrelease = Attribute(
+    distroarchseries = Attribute(
         _(u'The DistroArchSeries'))
     raw_submission = Object(
         schema=ILibraryFileAlias,
@@ -90,8 +106,37 @@ class IHWSubmission(Interface):
         _(u'The system this submmission was made on'))
 
 
+class IHWSubmissionForm(Interface):
+    """The schema used to build the HW submission form."""
+
+    date_created = Datetime(
+        title=_(u'Date Created'), required=True)
+    format = Choice(
+        title=_(u'Format Version'), required=True,
+        vocabulary=HWSubmissionFormat)
+    private = Bool(
+        title=_(u'Private Submission'), required=True)
+    contactable = Bool(
+        title=_(u'Contactable'), required=True)
+    submission_key = ASCIILine(
+        title=_(u'Unique Submission Key'), required=True,
+        constraint=validate_new_submission_key)
+    emailaddress = TextLine(
+            title=_(u'Email address'), required=True)
+    distribution = TextLine(
+        title=_(u'Distribution'), required=True)
+    distroseries = TextLine(
+        title=_(u'Distribution Release'), required=True)
+    architecture = TextLine(
+        title=_(u'Processor Architecture'), required=True)
+    system = TextLine(
+        title=_(u'System name'), required=True)
+    submission_data = Bytes(
+        title=_(u'Submission data'), required=True)
+
+
 class IHWSubmissionSet(Interface):
-    """The set of HWSubmissions."""
+    """The set of HWDBSubmissions."""
 
     def createSubmission(date_created, format, private, contactable,
                          submission_key, emailaddress, distroarchseries,
@@ -101,8 +146,8 @@ class IHWSubmissionSet(Interface):
         If a submission with an identical submission_key already exists,
         an HWSubmissionKeyNotUnique exception is raised."""
 
-    def getBySubmissionID(submission_key, user=None):
-        """Return the submission with the given submission ID, or None.
+    def getBySubmissionKey(submission_key, user=None):
+        """Return the submission with the given submission key, or None.
 
         If a submission is marked as private, it is only returned if
         user == HWSubmission.owner, of if user is an admin.
@@ -122,6 +167,8 @@ class IHWSubmissionSet(Interface):
         user == HWSubmission.owner, or if user is an admin.
         """
 
+    def submissionIdExists(submission_key):
+        """Return True, if a record with ths ID exists, else return False."""
 
 class IHWSystemFingerprint(Interface):
     """Identifiers of a computer system."""
