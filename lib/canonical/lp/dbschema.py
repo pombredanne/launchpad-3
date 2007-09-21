@@ -1771,22 +1771,6 @@ class BugAttachmentType(DBSchema):
         """)
 
 
-class UpstreamReleaseVersionStyle(DBSchema):
-    """Upstream Release Version Style
-
-    Sourcerer will actively look for new upstream releases, and it needs
-    to know roughly what version numbering format upstream uses. The
-    release version number schemes understood by Sourcerer are documented
-    in this schema. XXX andrew please fill in!
-    """
-
-    GNU = Item(1, """
-        GNU-style Version Numbers
-
-        XXX Andrew need description here
-        """)
-
-
 class RevisionControlSystems(DBSchema):
     """Revision Control Systems
 
