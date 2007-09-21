@@ -45,13 +45,8 @@ __all__ = (
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'PackagePublishingPocket',
-'PersonalStanding',
-'PostedMessageStatus',
 'RosettaImportStatus',
 'RosettaTranslationOrigin',
-'ShipItArchitecture',
-'ShipItDistroSeries',
-'ShipItFlavour',
 'ShippingRequestStatus',
 'ShippingService',
 'SourcePackageFileType',
@@ -1854,71 +1849,6 @@ class BuildStatus(DBSchema):
         In those cases all the build historic information will be stored (
         buildlog, datebuilt, duration, builder, etc) and the buildd admins
         will be notified via process-upload about the reason of the rejection.
-        """)
-
-
-class PersonalStanding(DBSchema):
-    """A person's standing.
-
-    Standing is currently (just) used to determine whether a person's posts to
-    a mailing list require first-post moderation or not.  Any person with good
-    or excellent standing may post directly to the mailing list without
-    moderation.  Any person with unknown or poor standing must have their
-    first-posts moderated.
-    """
-
-    UNKNOWN = Item(0, """
-        Unknown standing
-
-        Nothing about this person's standing is known.
-        """)
-
-    POOR = Item(100, """
-        Poor standing
-
-        This person has poor standing.
-        """)
-
-    GOOD = Item(200, """
-        Good standing
-
-        This person has good standing and may post to a mailing list without
-        being subject to first-post moderation rules.
-        """)
-
-    EXCELLENT = Item(300, """
-        Excellent standing
-
-        This person has excellent standing and may post to a mailing list
-        without being subject to first-post moderation rules.
-        """)
-
-
-
-class PostedMessageStatus(DBSchema):
-    """The status of a posted message.
-
-    When a message posted to a mailing list is subject to first-post
-    moderation, the message gets one of these statuses.
-    """
-
-    NEW = Item(0, """
-        New status
-
-        The message has been posted and held for first-post moderation, but no
-        disposition of the message has yet been made.
-        """)
-
-    APPROVED = Item(1, """
-        Approved
-
-        A message held for first-post moderation has been approved.
-        """)
-
-    REJECTED = Item(2, """
-        Rejected
-
-        A message held for first-post moderation has been rejected.
         """)
 
 
