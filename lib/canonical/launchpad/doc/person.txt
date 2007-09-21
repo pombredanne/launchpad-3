@@ -648,7 +648,7 @@ certain criteria:
 
 First, Carlos does not have any completed specifications assigned to him:
 
-    >>> from canonical.lp.dbschema import SpecificationFilter
+    >>> from canonical.launchpad.interfaces import SpecificationFilter
     >>> carlos.specifications(filter=[
     ...     SpecificationFilter.ASSIGNEE, SpecificationFilter.COMPLETE]).count()
     0

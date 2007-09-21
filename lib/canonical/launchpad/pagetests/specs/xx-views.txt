@@ -159,7 +159,7 @@ Let's mark the ''second'' blueprint as ''implemented'':
     >>> browser.getLink('Change status').click()
     >>> browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/blueprint-2/+status'
-    >>> browser.getControl('Implementation Status').value = ['Implemented']
+    >>> browser.getControl('Implementation Status').value = ['IMPLEMENTED']
     >>> browser.getControl('Change').click()
     >>> browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/blueprint-2'  

@@ -57,6 +57,7 @@ from canonical.launchpad.interfaces import (
     ISpecificationBranch,
     ISpecificationSet,
     NotFoundError,
+    SpecificationDefinitionStatus,
     )
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -72,8 +73,6 @@ from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import (
     AppFrontPageSearchView, StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
-
-from canonical.lp.dbschema import SpecificationDefinitionStatus
 
 
 class NewSpecificationView(LaunchpadFormView):

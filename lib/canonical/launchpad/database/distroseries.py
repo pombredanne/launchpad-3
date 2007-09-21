@@ -30,15 +30,15 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
     ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket,
-    PackagePublishingStatus, PackageUploadStatus, SpecificationFilter,
-    SpecificationGoalStatus, SpecificationSort,
-    SpecificationImplementationStatus)
+    PackagePublishingStatus, PackageUploadStatus)
 
 from canonical.launchpad.interfaces import (
     IArchiveSet, IBinaryPackageName, IBuildSet, IDistroSeries,
     IDistroSeriesSet, IHasBuildRecords, IHasQueueItems, ILibraryFileAliasSet,
     IPublishedPackageSet, IPublishing, ISourcePackage, ISourcePackageName,
-    ISourcePackageNameSet, LanguagePackType, NotFoundError)
+    ISourcePackageNameSet, LanguagePackType, NotFoundError,
+    SpecificationFilter, SpecificationGoalStatus, SpecificationSort,
+    SpecificationImplementationStatus)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 
 from canonical.launchpad.database.bugtarget import BugTargetBase

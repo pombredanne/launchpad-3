@@ -15,13 +15,12 @@ IMilestoneSet can be accessed as a utility.
 
 To create a new Specification, use ISpecificationSet.new:
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IProductSet, SpecificationPriority, SpecificationDefinitionStatus,
+    ...     SpecificationImplementationStatus)
     >>> productset = getUtility(IProductSet)
     >>> upstream_firefox = productset.get(4)
     >>> from canonical.launchpad.database import Person
-    >>> from canonical.lp.dbschema import SpecificationPriority
-    >>> from canonical.lp.dbschema import SpecificationDefinitionStatus
-    >>> from canonical.lp.dbschema import SpecificationImplementationStatus
     >>> sabdfl = Person.byName('sabdfl')
     >>> newspec = specset.new('mng', 'Support MNG Format',
     ...     'http://www.silly.me/SpecName', 'we really need this',

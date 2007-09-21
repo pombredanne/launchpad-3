@@ -28,11 +28,6 @@ __all__ = [
     'PollSecrecyVocabulary',
     'RemoteBugTaskImportanceVocabulary',
     'RevisionControlSystemsVocabulary',
-    'SpecificationImplementationStatusVocabulary',
-    'SpecificationPriorityVocabulary',
-    'SpecificationDefinitionStatusVocabulary',
-    'SpecificationGoalStatusVocabulary',
-    'SprintSpecificationStatusVocabulary',
     'TextDirectionVocabulary',
     'TranslationFileFormatVocabulary',
     'TranslationPermissionVocabulary',
@@ -73,11 +68,6 @@ PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 RevisionControlSystemsVocabulary = vocab_factory(
     dbschema.RevisionControlSystems)
-SpecificationImplementationStatusVocabulary =  vocab_factory(dbschema.SpecificationImplementationStatus)
-SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
-SpecificationDefinitionStatusVocabulary =  vocab_factory(dbschema.SpecificationDefinitionStatus)
-SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStatus)
-SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
 TextDirectionVocabulary =  vocab_factory(dbschema.TextDirection)
 TranslationFileFormatVocabulary = vocab_factory(dbschema.TranslationFileFormat)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
