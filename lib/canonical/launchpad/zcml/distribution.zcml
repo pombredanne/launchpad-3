@@ -398,6 +398,13 @@
     />
 
   <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
+    />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IDistribution"
     class="canonical.launchpad.browser.DistributionView"
     permission="zope.Public"
