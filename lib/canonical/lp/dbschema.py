@@ -27,7 +27,6 @@ __all__ = (
 'BranchReviewStatus',
 'BugBranchStatus',
 'BugNominationStatus',
-'BugTaskStatus',
 'BugAttachmentType',
 'BugTrackerType',
 'BugExternalReferenceType',
@@ -41,9 +40,6 @@ __all__ = (
 'DistroSeriesStatus',
 'ImportTestStatus',
 'ImportStatus',
-'MailingListAutoSubscribePolicy',
-'ManifestEntryType',
-'ManifestEntryHint',
 'MirrorContent',
 'MirrorPulseType',
 'MirrorSpeed',
@@ -207,6 +203,7 @@ class BugTrackerType(DBSchema):
         Mantis is a web-based bug tracking system written in PHP.
         """)
 
+
 class CveStatus(DBSchema):
     """The Status of this item in the CVE Database
 
@@ -268,101 +265,6 @@ class ProjectStatus(DBSchema):
         This project has been reviewed, and has been disabled. Typically
         this is because the contents appear to be bogus. Such a project
         should not show up in searches etc.""")
-
-
-class ManifestEntryType(DBSchema):
-    """A Sourcerer Manifest.
-
-    This is a list of branches that are brought together to make up a source
-    package. Each branch can be included in the package in a number of
-    different ways, and the Manifest Entry Type tells sourcerer how to bring
-    that branch into the package.
-    """
-
-    DIR = Item(1, """
-        A Directory
-
-        This is a special case of Manifest Entry Type, and tells
-        sourcerer simply to create an empty directory with the given name.
-        """)
-
-    COPY = Item(2, """
-        Copied Source code
-
-        This branch will simply be copied into the source package at
-        a specified location. Typically this is used where a source
-        package includes chunks of code such as libraries or reference
-        implementation code, and builds it locally for static linking
-        rather than depending on a system-installed shared library.
-        """)
-
-    FILE = Item(3, """
-        Binary file
-
-        This is another special case of Manifest Entry Type that tells
-        sourcerer to create a branch containing just the file given.
-        """)
-
-    TAR = Item(4, """
-        A Tar File
-
-        This branch will be tarred up and installed in the source
-        package as a tar file. Typically, the package build system
-        will know how to untar that code and use it during the build.
-        """)
-
-    ZIP = Item(5, """
-        A Zip File
-
-        This branch will be zipped up and installed in the source
-        package as a zip file. Typically, the package build system
-        will know how to unzip that code and use it during the build.
-        """)
-
-    PATCH = Item(6, """
-        Patch File
-
-        This branch will be brought into the source file as a patch
-        against another branch. Usually, the patch is stored in the
-        "patches" directory, then applied at build time by the source
-        package build scripts.
-        """)
-
-
-class ManifestEntryHint(DBSchema):
-    """Hint as to purpose of a ManifestEntry.
-
-    Manifests, used by both HCT and Sourcerer, are made up of a collection
-    of Manifest Entries.  Each entry refers to a particular component of
-    the source package built by the manifest, usually each having a different
-    branch or changeset.  A Manifest Entry Hint can be assigned to suggest
-    what the purpose of the entry is.
-    """
-
-    ORIGINAL_SOURCE = Item(1, """
-        Original Source
-
-        This is the original source code of the source package, and in the
-        absence of any Patch Base, the parent of any new patch branches
-        created.
-        """)
-
-    PATCH_BASE = Item(2, """
-        Patch Base
-
-        This is an entry intended to serve as the base for any new patches
-        created and added to the source package.  It is often a patch itself,
-        or a virtual branch.  If not present, the Original Source is used
-        instead.
-        """)
-
-    PACKAGING = Item(3, """
-        Packaging
-
-        This is the packaging meta-data for the source package, usually
-        the entry that becomes the debian/ directory in the case of Debian
-        source packages or the spec file in the case of RPMs.
-        """)
 
 
 class PackagingType(DBSchema):
@@ -1917,84 +1819,6 @@ class BugNominationStatus(DBSchema):
         """)
 
 
-class BugTaskStatus(DBSchema):
-    """Bug Task Status
-
-    The various possible states for a bugfix in a specific place.
-    """
-
-    NEW = Item(10, """
-        New
-
-        This is a new bug and has not yet been confirmed by the maintainer of
-        this product or source package.
-        """)
-
-    INCOMPLETE = Item(15, """
-        Incomplete
-
-        More info is required before making further progress on this bug, likely
-        from the reporter. E.g. the exact error message the user saw, the URL
-        the user was visiting when the bug occurred, etc.
-        """)
-
-    INVALID = Item(17, """
-        Invalid
-
-        This is not a bug. It could be a support request, spam, or a misunderstanding.
-        """)
-
-    WONTFIX = Item(18, """
-        Won't Fix
-
-        This will not be fixed. For example, this might be a bug but it's not considered worth
-        fixing, or it might not be fixed in this release.
-        """)
-
-    CONFIRMED = Item(20, """
-        Confirmed
-
-        This bug has been reviewed, verified, and confirmed as something needing
-        fixing. Anyone can set this status.
-        """)
-
-    TRIAGED = Item(21, """
-        Triaged
-
-        This bug has been reviewed, verified, and confirmed as
-        something needing fixing. The user must be a bug contact to
-        set this status, so it carries more weight than merely
-        Confirmed.
-        """)
-
-    INPROGRESS = Item(22, """
-        In Progress
-
-        The person assigned to fix this bug is currently working on fixing it.
-        """)
-
-    FIXCOMMITTED = Item(25, """
-        Fix Committed
-
-        This bug has been fixed in version control, but the fix has
-        not yet made it into a released version of the affected
-        software.
-        """)
-
-    FIXRELEASED = Item(30, """
-        Fix Released
-
-        The fix for this bug is available in a released version of the
-        affected software.
-        """)
-
-    UNKNOWN = Item(999, """
-        Unknown
-
-        The status of this bug task is unknown.
-        """)
-
-
 class BugTaskImportance(DBSchema):
     """Bug Task Importance
 
@@ -2229,41 +2053,6 @@ class RosettaImportStatus(DBSchema):
         """)
 
 
-class MailingListAutoSubscribePolicy(DBSchema):
-    """A person's auto-subscription policy.
-
-    When a person joins a team, or is joined to a team, their
-    auto-subscription policy describes how and whether they will be
-    automatically subscribed to any team mailing list that the team may have.
-
-    This does not describe what happens when a team that already has members
-    gets a new team mailing list.  In that case, its members are never
-    automatically subscribed to the mailing list.
-    """
-
-    NEVER = Item(0, """
-        Never subscribe automatically
-
-        The user must explicitly subscribe to a team mailing list for any team
-        that she joins.
-        """)
-
-    ON_REGISTRATION = Item(1, """
-        Subscribe on self-registration
-
-        The user is automatically joined to any team mailng list for a team
-        that she joins explicitly.  She is never joined to any team mailing
-        list for a team that someone else joins her to.
-        """)
-
-    ALWAYS = Item(2, """
-        Always subscribe automatically
-
-        The user is automatically subscribed to any team mailing list when she
-        is added to the team, regardless of who joins her to the team.
-        """)
-
-
 class BuildStatus(DBSchema):
     """Build status type
 
@@ -2472,6 +2261,13 @@ class TranslationFileFormat(DBSchema):
         The .xpi format as used by programs from Mozilla foundation.
         """)
 
+    KDEPO = Item(4, """
+        KDE PO format
+
+        Legacy KDE PO format which embeds context and plural forms inside
+        messages itself instead of using gettext features.
+        """)
+
 
 class TranslationValidationStatus(DBSchema):
     """Translation Validation Status
@@ -2526,31 +2322,31 @@ class ArchivePurpose(DBSchema):
     """
 
     PRIMARY = Item(1, """
-        Primary Archive.
+        Primary Archive
 
         This is the primary Ubuntu archive.
         """)
 
     PPA = Item(2, """
-        PPA Archive.
+        PPA Archive
 
         This is a Personal Package Archive.
         """)
 
     EMBARGOED = Item(3, """
-        Embargoed Archive.
+        Embargoed Archive
 
         This is the archive for embargoed packages.
         """)
 
-    COMMERCIAL = Item(4, """
-        Commercial Archive.
+    PARTNER = Item(4, """
+        Partner Archive
 
-        This is the archive for commercial packages.
+        This is the archive for partner packages.
         """)
 
     OBSOLETE = Item(5, """
-        Obsolete Archive.
+        Obsolete Archive
 
         This is the archive for obsolete packages.
         """)

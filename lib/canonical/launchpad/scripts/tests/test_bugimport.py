@@ -1,5 +1,4 @@
 
-import datetime
 import os
 import pytz
 import re
@@ -14,12 +13,11 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces import (
-    IBugSet, IEmailAddressSet, IPersonSet, IProductSet,
+    BugTaskStatus, IBugSet, IEmailAddressSet, IPersonSet, IProductSet,
     PersonCreationRationale)
 from canonical.launchpad.scripts import bugimport
 from canonical.launchpad.scripts.bugimport import ET
-from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType)
+from canonical.lp.dbschema import BugAttachmentType, BugTaskImportance
 
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests import login, logout
@@ -66,7 +64,7 @@ class UtilsTestCase(unittest.TestCase):
         # Test that the get_enum_value() function returns the
         # appropriate enum value, or raises BugXMLSyntaxError if it is
         # not found.
-        from canonical.lp.dbschema import BugTaskStatus
+        from canonical.launchpad.interfaces import BugTaskStatus
         self.assertEqual(bugimport.get_enum_value(BugTaskStatus,
                                                   'FIXRELEASED'),
                          BugTaskStatus.FIXRELEASED)
@@ -308,6 +306,11 @@ sample_bug = '''\
     <tag>foo</tag>
     <tag>bar</tag>
   </tags>
+  <bugwatches>
+    <bugwatch href="http://bugzilla.mozilla.org/show_bug.cgi?id=42" />
+    <!-- The following tracker has not been registered -->
+    <bugwatch href="http://bugzilla.gnome.org/show_bug.cgi?id=43" />
+  </bugwatches>
   <subscriptions>
     <subscriber email="test@canonical.com">Sample Person</subscriber>
     <subscriber name="nobody">Nobody (will not get imported)</subscriber>
@@ -381,7 +384,7 @@ public_security_bug = '''\
   <title>A non private security bug</title>
   <description>Description</description>
   <reporter name="foo" email="foo@example.com">Foo User</reporter>
-  <status>CONFIRMED</status>
+  <status>TRIAGED</status>
   <importance>LOW</importance>
   <comment>
     <sender name="foo" email="foo@example.com">Foo User</sender>
@@ -435,6 +438,11 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertEqual(sorted(person.preferredemail.email
                                 for person in bug.getDirectSubscribers()),
                          ['foo@example.com', 'test@canonical.com'])
+        # There are two bug watches
+        self.assertEqual(bug.watches.count(), 2)
+        self.assertEqual(sorted(watch.url for watch in bug.watches),
+                         ['http://bugzilla.gnome.org/show_bug.cgi?id=43',
+                          'https://bugzilla.mozilla.org/show_bug.cgi?id=42'])
 
         # There should only be one bug task (on netapplet):
         self.assertEqual(len(bug.bugtasks), 1)

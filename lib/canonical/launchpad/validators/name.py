@@ -10,7 +10,7 @@ from textwrap import dedent
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
 
-valid_name_pattern = re.compile(r"^[a-z0-9][a-z0-9\+\.\-]*$")
+valid_name_pattern = re.compile(r"^[a-z0-9][a-z0-9\+\.\-]+$")
 invalid_name_pattern = re.compile(r"^[^a-z0-9]+|[^a-z0-9\\+\\.\\-]+")
 
 def sanitize_name(name):
@@ -35,6 +35,15 @@ def valid_name(name):
     The default name constraints may be too strict for some objects,
     such as binary packages or arch branches where naming conventions already
     exists, so they may use their own specialized name validators
+
+    >>> valid_name('hello')
+    True
+    >>> valid_name('helLo')
+    False
+    >>> valid_name('he')
+    True
+    >>> valid_name('h')
+    False
     """
     if valid_name_pattern.match(name):
         return True

@@ -286,10 +286,9 @@ will no longer show up on any of these listings.
 We are going to now poke into the back of the db's head, and "privatise" the
 bug we have been using.
 
-   >>> from canonical.launchpad.interfaces import IPersonSet, IBugSet
-   >>> from canonical.launchpad.interfaces import IDistributionSet
+   >>> from canonical.launchpad.interfaces import (
+   ...     BugTaskStatus, IPersonSet, IBugSet, IDistributionSet)
    >>> from canonical.launchpad.ftests import login, logout, syncUpdate
-   >>> from canonical.lp.dbschema import BugTaskStatus
    >>> from canonical.database.sqlbase import flush_database_updates
    >>> login('foo.bar@canonical.com')
    >>> from zope.component import getUtility

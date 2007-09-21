@@ -59,11 +59,14 @@ python update-bugtask-targetnamecaches.py -q
 echo == Expiring questions `date` ==
 python expire-questions.py
 
+echo == Expiring bugs `date` ==
+python expire-bugtasks.py
+
 echo == Product Release Finder `date` ==
 python product-release-finder.py -q
 
 echo == Updating bug watches `date` ==
-LPCONFIG=production LP_DBUSER=checkwatches python checkwatches.py
+LPCONFIG=production LP_DBUSER=temp_checkwatches python checkwatches.py
 
 rm -f $LOCK
 

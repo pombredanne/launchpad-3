@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'TranslationImporter',
+    'importers'
     ]
 
 import gettextpo
@@ -12,14 +13,18 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
+from operator import attrgetter
+
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IPersonSet, ITranslationImporter, NotExportedFromLaunchpad,
-    OldTranslationImported, PersonCreationRationale, TranslationConflict,
-    TranslationConstants)
+    IPersonSet, ITranslationExporter, ITranslationImporter,
+    NotExportedFromLaunchpad, OutdatedTranslationError,
+    PersonCreationRationale, TranslationConflict, TranslationConstants)
+from canonical.launchpad.translationformat.kde_po_importer import (
+    KdePOImporter)
 from canonical.launchpad.translationformat.gettext_po_importer import (
-    GettextPoImporter)
+    GettextPOImporter)
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     MozillaXpiImporter)
 from canonical.launchpad.webapp import canonical_url
@@ -27,7 +32,8 @@ from canonical.lp.dbschema import (
     RosettaImportStatus, TranslationFileFormat)
 
 importers = {
-    TranslationFileFormat.PO: GettextPoImporter(),
+    TranslationFileFormat.KDEPO: KdePOImporter(),
+    TranslationFileFormat.PO: GettextPOImporter(),
     TranslationFileFormat.XPI: MozillaXpiImporter(),
     }
 
@@ -70,20 +76,22 @@ class TranslationImporter:
         return person
 
     @cachedproperty
-    def file_extensions_with_importer(self):
+    def supported_file_extensions(self):
         """See ITranslationImporter."""
         file_extensions = []
 
         for importer in importers.itervalues():
             file_extensions.extend(importer.file_extensions)
 
-        return sorted(file_extensions)
+        return sorted(set(file_extensions))
 
-    def getTranslationFileFormatByFileExtension(self, file_extension):
+    def getTranslationFileFormat(self, file_extension, file_contents):
         """See `ITranslationImporter`."""
-        for importer in importers.itervalues():
+        all_importers = importers.values()
+        all_importers.sort(key=attrgetter('priority'), reverse=True)
+        for importer in all_importers:
             if file_extension in importer.file_extensions:
-                return importer.format
+                return importer.getFormat(file_contents)
 
         return None
 
@@ -104,12 +112,15 @@ class TranslationImporter:
 
         importer = self.getTranslationFormatImporter(
             translation_import_queue_entry.format)
+        exporter = getUtility(ITranslationExporter)
+        format_exporter = exporter.getExporterProducingTargetFileFormat(
+            translation_import_queue_entry.format)
 
         assert importer is not None, (
             'There is no importer available for %s files' % (
                 translation_import_queue_entry.format.name))
 
-        importer.parse(translation_import_queue_entry)
+        translation_file = importer.parse(translation_import_queue_entry)
 
         # This var will hold an special IPOFile for 'English' which will have
         # the English strings to show instead of arbitrary IDs.
@@ -125,7 +136,7 @@ class TranslationImporter:
             # We are importing a translation template.
             self.potemplate.source_file_format = (
                 translation_import_queue_entry.format)
-            if importer.has_alternative_msgid:
+            if importer.uses_source_string_msgids:
                 # We use the special 'en' language as the way to store the
                 # English strings to show instead of the msgids.
                 english_pofile = self.potemplate.getPOFileByLang('en')
@@ -133,25 +144,27 @@ class TranslationImporter:
                     english_pofile = self.potemplate.newPOFile('en')
             # Expire old messages
             self.potemplate.expireAllMessages()
-            if importer.header is not None:
+            if translation_file.header is not None:
                 # Update the header
-                self.potemplate.header = importer.header.getRawContent()
+                self.potemplate.header = (
+                    translation_file.header.getRawContent())
             UTC = pytz.timezone('UTC')
             self.potemplate.date_last_updated = datetime.datetime.now(UTC)
         else:
             # We are importing a translation.
-            if importer.header is not None:
+            if translation_file.header is not None:
                 # Check whether we are importing a new version.
-                if self.pofile.isPORevisionDateOlder(importer.header):
+                if self.pofile.isTranslationRevisionDateOlder(
+                    translation_file.header):
                     # The new imported file is older than latest one imported,
                     # we don't import it, just ignore it as it could be a
                     # mistake and it would make us lose translations.
-                    raise OldTranslationImported(
+                    raise OutdatedTranslationError(
                         'Previous imported file is newer than this one.')
                 # Get the timestamp when this file was exported from
                 # Launchpad. If it was not exported from Launchpad, it will be
                 # None.
-                lock_timestamp = importer.header.getLaunchpadExportDate()
+                lock_timestamp = translation_file.header.launchpad_export_date
 
             if (not translation_import_queue_entry.is_published and
                 lock_timestamp is None):
@@ -164,9 +177,9 @@ class TranslationImporter:
             # Expire old messages
             self.pofile.expireAllMessages()
             # Update the header with the new one.
-            self.pofile.updateHeader(importer.header)
+            self.pofile.updateHeader(translation_file.header)
             # Get last translator that touched this translation file.
-            name, email = importer.getLastTranslator()
+            name, email = translation_file.header.getLastTranslator()
             last_translator = self._getPersonByEmail(email, name)
 
             if last_translator is None:
@@ -177,7 +190,7 @@ class TranslationImporter:
         count = 0
 
         errors = []
-        for message in importer.messages:
+        for message in translation_file.messages:
             if not message.msgid:
                 # The message has no msgid, we ignore it and jump to next
                 # message.
@@ -185,13 +198,13 @@ class TranslationImporter:
 
             # Add the msgid.
             potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
-                message.msgid, context=message.msgctxt)
+                message.msgid, context=message.context)
 
             if potmsgset is None:
                 # It's the first time we see this msgid, we need to create the
                 # IPOTMsgSet for it.
                 potmsgset = self.potemplate.createMessageSetFromText(
-                    message.msgid, context=message.msgctxt)
+                    message.msgid, context=message.context)
             else:
                 # Note that we saw it.
                 potmsgset.makeMessageIDSighting(
@@ -220,10 +233,12 @@ class TranslationImporter:
                         pomsgset = (
                             self.pofile.createMessageSetFromMessageSet(
                                 potmsgset))
+
                     # Add the pomsgset to the list of pomsgsets with errors.
                     error = {
                         'pomsgset': pomsgset,
-                        'pomessage': unicode(message),
+                        'pomessage': format_exporter.exportTranslationMessage(
+                            message),
                         'error-message': (
                             "The msgid_plural field has changed since the"
                             " last time this file was generated, please"
@@ -300,7 +315,7 @@ class TranslationImporter:
                     potmsgset.filereferences = message.file_references
                     pomsgset.flagscomment = flags_comment
 
-                pomsgset.obsolete = message.obsolete
+                pomsgset.obsolete = message.is_obsolete
 
                 # Use the importer rights to make sure the imported
                 # translations are actually accepted instead of being just
@@ -330,7 +345,8 @@ class TranslationImporter:
             except TranslationConflict:
                 error = {
                     'pomsgset': pomsgset,
-                    'pomessage': unicode(message),
+                    'pomessage': format_exporter.exportTranslationMessage(
+                        message),
                     'error-message': (
                         "This message was updated by someone else after you"
                         " got the translation file. This translation is now"
@@ -353,7 +369,8 @@ class TranslationImporter:
                 # Add the pomsgset to the list of pomsgsets with errors.
                 error = {
                     'pomsgset': pomsgset,
-                    'pomessage': unicode(message),
+                    'pomessage': format_exporter.exportTranslationMessage(
+                        message),
                     'error-message': unicode(e)
                 }
 
