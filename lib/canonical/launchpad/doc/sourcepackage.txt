@@ -148,10 +148,10 @@ Distro sourcepackages know how to compare to each other:
 You can search for bugs in an IDistroSourcePackage using the
 .searchTasks method:
 
-    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
-    >>> from canonical.lp import dbschema
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskSearchParams, BugTaskStatus)
     >>> params = BugTaskSearchParams(
-    ...     status=dbschema.BugTaskStatus.NEW, user=None)
+    ...     status=BugTaskStatus.NEW, user=None)
     >>> tasks = ubuntu_firefox.searchTasks(params)
     >>> tasks.count()
     1
@@ -253,6 +253,9 @@ distroseries
     True
 
 Linkified changelogs are available through SourcePackageReleaseView:
+XXX julian 2007-09-17
+This is duplicating the page test. Instead it should be more like the bug
+number linkification just below.
 
     >>> from zope.component import queryView
     >>> from zope.publisher.browser import TestRequest
@@ -277,13 +280,33 @@ Linkified changelogs are available through SourcePackageReleaseView:
     <BLANKLINE>
     <BLANKLINE>
 
+The view will linkify bug numbers of the format "LP: #number" in the changelog
+if number is a valid bug ID (also see Soyuz page tests
+24-sourcepackage-changelog.txt).  The changelog() method calls a method
+_linkify_bug_numbers() to do this.
+
+Zero or more spaces may appear between the ":" and the "#".
+
+    >>> spr_view._linkify_bug_numbers("LP: #10")
+    u'<a href="/bugs/10" title="another test bug">LP: #10</a>'
+
+    >>> spr_view._linkify_bug_numbers("LP:         #10")
+    u'<a href="/bugs/10" title="another test bug">LP:         #10</a>'
+
+    >>> spr_view._linkify_bug_numbers("LP:#10")
+    u'<a href="/bugs/10" title="another test bug">LP:#10</a>'
+
+    >>> spr_view._linkify_bug_numbers("LP: #999")
+    '<a href="/bugs/999" title="No such bug">LP: #999</a>'
+
+    >>> spr_view._linkify_bug_numbers("garbage")
+    'garbage'
+
+
 Checking handy Sourcepackage properties:
 
 XXX cprov 20060125: it's still very primitive test but it's better
 than nothing ... bug # 29659
-
-    >>> sp.manifest.uuid
-    u'e0451064-b405-4f52-b387-ebfc1a7ee298'
 
     >>> len(sp.releases)
     2

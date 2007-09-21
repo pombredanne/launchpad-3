@@ -12,7 +12,8 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    flush_database_updates, SQLBase, sqlvalues)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -265,6 +266,11 @@ class TeamMembership(SQLBase):
             _fillTeamParticipation(self.person, self.team)
         else:
             _cleanTeamParticipation(self.person, self.team)
+
+        # Flush all updates to ensure any subsequent calls to this method on
+        # the same transaction will operate on the correct data.  That is the
+        # case with our script to expire team memberships.
+        flush_database_updates()
 
         # When a member proposes himself, a more detailed notification is
         # sent to the team admins by a subscriber of JoinTeamEvent; that's

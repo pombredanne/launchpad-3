@@ -142,7 +142,7 @@ class PackageUpload(SQLBase):
         """See IPackageUpload."""
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks for 'ubuntu' main distro.
-        if self.archive.purpose != ArchivePurpose.PPA:
+        if not self.archive.allowUpdatesToReleasePocket():
             assert self.distroseries.canUploadToPocket(self.pocket), (
                 "Not permitted acceptance in the %s pocket in a "
                 "series in the '%s' state." % (
@@ -284,7 +284,7 @@ class PackageUpload(SQLBase):
             "Can not publish a non-ACCEPTED queue record (%s)" % self.id)
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks
-        if self.archive.purpose != ArchivePurpose.PPA:
+        if not self.archive.allowUpdatesToReleasePocket():
             assert self.distroseries.canUploadToPocket(self.pocket), (
                 "Not permitted to publish to the %s pocket in a "
                 "series in the '%s' state." % (
@@ -409,7 +409,11 @@ class PackageUpload(SQLBase):
             "CHANGESFILE": guess_encoding("".join(changes_lines)),
         }
         debug(self.logger, "Sending rejection email.")
-        rejection_template = get_email_template('upload-rejection.txt')
+        if self.isPPA():
+            rejection_template = get_email_template(
+                'ppa-upload-rejection.txt')
+        else:
+            rejection_template = get_email_template('upload-rejection.txt')
         sender = format_address(config.uploader.default_sender_name,
                                 config.uploader.default_sender_address)
         self._sendMail(
@@ -447,11 +451,9 @@ class PackageUpload(SQLBase):
                 new_template % interpolations)
             return
 
-        # Every message sent from here onwards uses the accepted template.
-        accepted_template = get_email_template('upload-accepted.txt')
-
         if self.isPPA():
             # PPA uploads receive an acceptance message.
+            accepted_template = get_email_template('ppa-upload-accepted.txt')
             interpolations["STATUS"] = "[PPA %s] Accepted" % (
                 self.archive.owner.name)
             subject = "[PPA %s] Accepted %s %s (%s)" % (
@@ -463,6 +465,9 @@ class PackageUpload(SQLBase):
                 subject,
                 accepted_template % interpolations)
             return
+
+        # Every message sent from here onwards uses the accepted template.
+        accepted_template = get_email_template('upload-accepted.txt')
 
         # Auto-approved uploads to backports skips the announcement,
         # they are usually processed with the sync policy.
@@ -594,7 +599,14 @@ class PackageUpload(SQLBase):
             # This is a signed upload.
             signer = self.signing_key.owner
             candidate_recipients.append(signer)
+        else:
+            debug(self.logger,
+                "Changes file is unsigned, adding changer as recipient")
+            candidate_recipients.append(changer)
 
+        # PPA uploads only email the uploader but for everything else
+        # we consider maintainer and changed-by also.
+        if self.signing_key and not self.isPPA():
             maintainer = self._emailToPerson(changes['maintainer'])
             if (maintainer and maintainer != signer and
                     maintainer.isUploader(self.distroseries.distribution)):
@@ -605,10 +617,6 @@ class PackageUpload(SQLBase):
                     changer.isUploader(self.distroseries.distribution)):
                 debug(self.logger, "Adding changed-by to recipients")
                 candidate_recipients.append(changer)
-        else:
-            debug(self.logger,
-                "Changes file is unsigned, adding changer as recipient")
-            candidate_recipients.append(changer)
 
         # Now filter list of recipients for persons only registered in
         # Launchpad to avoid spamming the innocent.

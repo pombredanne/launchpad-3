@@ -20,6 +20,7 @@ from canonical.librarian.interfaces import UploadFailed, DownloadFailed
 
 __all__ = ['FileUploadClient', 'FileDownloadClient', 'LibrarianClient']
 
+
 class FileUploadClient:
     """Simple blocking client for uploading to the librarian."""
 

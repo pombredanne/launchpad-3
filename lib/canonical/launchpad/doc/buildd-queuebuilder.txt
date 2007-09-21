@@ -117,7 +117,6 @@ createMissingBuilds() method. Additionally if the target is an already
 released distroseries it can only be visible if published in in
 special pocket (UPDATES, SECURITY or BACKPORTS)
 
-  >>> from canonical.launchpad.database import Manifest
   >>> count = 1
   >>> def createPackageAndPublication(name, series, architecturehintlist,
   ...     archive=None):
@@ -126,7 +125,6 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
   ...     Return a tuple with (SourcePackageRelease, publication)
   ...     """
   ...     global count
-  ...     manifest = Manifest(uuid="fake %d" % count)
   ...     tar = SourcePackageFileType.TARBALL
   ...     published = PackagePublishingStatus.PUBLISHED
   ...     release_pocket = PackagePublishingPocket.UPDATES
@@ -146,7 +144,6 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
   ...         dsc=None,
   ...         copyright='placeholder ...',
   ...         changelog=None,
-  ...         manifest=manifest,
   ...         dscsigningkey=None,
   ...         dsc_format="1.0",
   ...         dsc_maintainer_rfc822="mark <mark@mark.com>",
@@ -345,7 +342,7 @@ the default score value of 0:
 Check the published component name retriever, they might be different,
 i.e., the published component can be different than the original component.
 
-  >>> bq.component_name
+  >>> bq.current_component.name
   u'main'
   >>> bq.build.sourcepackagerelease.component.name
   u'main'
@@ -357,14 +354,6 @@ After sanitising the jobs, only the ones containing
 sourcepackagerelease files should remain:
 
   >>> jobs = bm.sanitiseAndScoreCandidates()
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
 
   >>> new_jobs = [job for job in jobs if job not in old_jobs]
   >>> len(new_jobs)
@@ -378,12 +367,12 @@ And we grant some score depending on: time pending on the buildqueue,
 component the package belongs to, and the urgency of the upload.
 There is still some work to do here, for further information see the
 buildmaster/master.py code. The job presented should won
-exactly ** 995 ** points last turn (5 for the default urgency 'LOW'
-1000 for the 'Main' component and -10 for one unsatisfied dependency,
-further tests for scoring are in buildd-scoring.txt)
+exactly ** 1005 ** points last turn (5 for the default urgency 'LOW'
+and 1000 for the 'Main' component, further tests for scoring are in
+buildd-scoring.txt)
 
   >>> job.lastscore
-  995
+  1005
 
 == PPA work ==
 
@@ -427,15 +416,7 @@ Check if BuildQueue are also created for ppa_builds:
 
   >>> bm.addMissingBuildQueueEntries()
   >>> jobs = bm.sanitiseAndScoreCandidates()
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary hppa
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
-  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in hoary i386
+
   >>> new_jobs = [job for job in jobs if job not in old_jobs]
   >>> len(new_jobs)
   1

@@ -1,5 +1,4 @@
-SourcePackage View Classes
-==========================
+= SourcePackage View Classes = 
 
   >>> from zope.component import queryView
   >>> from zope.publisher.browser import TestRequest
@@ -60,7 +59,8 @@ have only on binary.
 
   >>> for bin_name, archs in firefox_view.binaries().items():
   ...    print bin_name, archs
-  mozilla-firefox [u'i386']
+  mozilla-firefox [u'hppa', u'i386']
+  mozilla-firefox-data [u'hppa', u'i386']
 
 Check dependency related view attributes:
 

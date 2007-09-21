@@ -1,0 +1,57 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <securedutility
+        class="canonical.launchpad.translationformat.TranslationExporter"
+        provides="canonical.launchpad.interfaces.ITranslationExporter">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationExporter" />
+    </securedutility>
+
+    <content
+        class="canonical.launchpad.translationformat.gettext_po_exporter.ExportedTranslationFile">
+        <allow
+          interface="canonical.launchpad.interfaces.IExportedTranslationFile" />
+    </content>
+
+    <!-- Translation file export plugins -->
+    <content
+        class="canonical.launchpad.translationformat.gettext_po_exporter.GettextPOExporter">
+        <allow
+          interface="canonical.launchpad.interfaces.ITranslationFormatExporter" />
+    </content>
+
+    <subscriber
+        for="canonical.launchpad.interfaces.ITranslationExporter"
+        provides="canonical.launchpad.interfaces.ITranslationFormatExporter"
+        factory="canonical.launchpad.translationformat.gettext_po_exporter.GettextPOExporter"
+        />
+
+    <content
+        class="canonical.launchpad.translationformat.gettext_mo_exporter.GettextMOExporter">
+        <allow
+          interface="canonical.launchpad.interfaces.ITranslationFormatExporter" />
+    </content>
+
+    <subscriber
+        for="canonical.launchpad.interfaces.ITranslationExporter"
+        provides="canonical.launchpad.interfaces.ITranslationFormatExporter"
+        factory="canonical.launchpad.translationformat.gettext_mo_exporter.GettextMOExporter"
+        />
+
+    <content
+        class="canonical.launchpad.translationformat.kde_po_exporter.KdePOExporter">
+        <allow
+          interface="canonical.launchpad.interfaces.ITranslationFormatExporter" />
+    </content>
+
+    <subscriber
+        for="canonical.launchpad.interfaces.ITranslationExporter"
+        provides="canonical.launchpad.interfaces.ITranslationFormatExporter"
+        factory="canonical.launchpad.translationformat.kde_po_exporter.KdePOExporter"
+        />
+
+</configure>

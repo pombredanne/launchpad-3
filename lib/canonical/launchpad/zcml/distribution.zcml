@@ -19,6 +19,10 @@
                       mirror_admin homepage_content icon logo
                       mugshot"
       />
+    <require
+      permission="launchpad.TranslationsAdmin"
+      set_attributes="language_pack_admin"
+      />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getSupportedLanguages
@@ -212,11 +216,6 @@
       template="../templates/distribution-members.pt"
       />
     <browser:page
-      name="+translations"
-      facet="translations"
-      template="../templates/distribution-translations.pt"
-        />
-    <browser:page
       name="+builds"
       facet="overview"
       template="../templates/distribution-builds.pt"
@@ -398,6 +397,24 @@
     template="../templates/distribution-bugcontact.pt"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionView"
+    permission="zope.Public"
+    name="+translations"
+    facet="translations"
+    template="../templates/distribution-translations.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+      name="+help-translate-button"
+      facet="translations"
+      for="canonical.launchpad.interfaces.IDistribution"
+      class="canonical.launchpad.browser.HelpTranslateButtonView"
+      permission="zope.Public"
+      />
+
   <browser:editform
     name="+changetranslators"
     for="canonical.launchpad.interfaces.IDistribution"
@@ -406,6 +423,7 @@
     fields="translationgroup translationpermission"
     permission="launchpad.Edit"
     template="../templates/distribution-translators.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
   <browser:page
@@ -415,6 +433,16 @@
     facet="translations"
     permission="zope.Public"
     template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    name="+select-language-pack-admin"
+    class="canonical.launchpad.browser.DistributionLanguagePackAdminView"
+    facet="translations"
+    permission="launchpad.TranslationsAdmin"
+    template="../templates/distribution-language-pack-admin.pt"
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 

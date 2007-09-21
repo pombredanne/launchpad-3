@@ -1,0 +1,191 @@
+= Submissions to the hardware database =
+
+The hardware database client collects information from various sources,
+and submits it in an HTTP POST request to the hardware database server.
+The POST data consists of the following fields:
+
+  * date_created (see hwdb.txt)
+  * format (see hwdb.txt)
+  * private (see hwdb.txt)
+  * contactable (see hwdb.txt)
+  * submission_key (see hwdb.txt)
+  * emailaddress (see hwdb.txt)
+  * distribution: The distribution name. The value should match a value
+    in the SQL table Distribution, column name.
+  * distroseries: The distroseries version. The value should match a value
+    in the SQL table distroseries, column version
+  * processorfamily: The name of the processorfamily. The value should 
+    match a value in the SQL table Processorfamily, column name.
+  * system: The system name as returned by HAL (system.vendor, system.product)
+  * submission_data: An XML file containing the collected data. This file is
+    simply stored as a Librarian file, and parsed later by a cron job.
+
+    >>> from StringIO import StringIO
+    >>> from zope.app.zapi import getView
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IHWDBApplication
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> data = StringIO('some data.')
+    >>> data.filename = 'hardware-info'
+    >>> form={'field.date_created':    u'2007-08-01',
+    ...       'field.format':          u'VERSION_1',
+    ...       'field.private':         u'',
+    ...       'field.contactable':     u'',
+    ...       'field.submission_key':  u'unique-id-1',
+    ...       'field.emailaddress':    u'test@canonical.com',
+    ...       'field.distribution':    u'ubuntu',
+    ...       'field.distroseries':    u'5.04',
+    ...       'field.architecture':    u'i386',
+    ...       'field.system':          u'HP 6543',
+    ...       'field.submission_data': data,
+    ...       'field.actions.upload':  u'Upload'}
+    >>> request = LaunchpadTestRequest(method='POST', form=form)
+    >>> app = getUtility(IHWDBApplication)
+    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view.initialize()
+    >>> submit_view.errors
+    []
+
+The request created an entry in the HWDBSubmissions table.
+
+    >>> from canonical.launchpad.interfaces import IHWSubmissionSet
+    >>> submission_set = getUtility(IHWSubmissionSet)
+    >>> submission = submission_set.getBySubmissionKey(u'unique-id-1')
+    >>> submission.date_created, submission.format.name
+    (datetime.datetime(2007, 8, 1, 0, 0, tzinfo=<UTC>), 'VERSION_1')
+    >>> submission.private, submission.contactable
+    (False, False)
+    >>> submission.submission_key
+    u'unique-id-1'
+    >>> submission.system_fingerprint.fingerprint
+    u'HP 6543'
+
+The submitted data is stored in raw_submission.
+
+    >>> import transaction
+    >>> transaction.commit()
+    >>> submission.raw_submission.read()
+    'some data.'
+
+A reference to distroarchseries is created for the fields distribution, 
+distroseries, architecture.
+
+    >>> submission.distroarchseries.distroseries.distribution.name
+    u'ubuntu'
+    >>> submission.distroarchseries.distroseries.version
+    u'5.04'
+    >>> submission.distroarchseries.architecturetag
+    u'i386'
+
+Each submission must have a distinct submission_key, hence an attempt to submit
+identical data a second time leads to an error.
+
+    >>> request = LaunchpadTestRequest(method='POST', form=form)
+    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view.initialize()
+    >>> [error.doc() for error in submit_view.errors]
+    ['Submission key already exists.']
+
+
+If the field distribution contains a name which is not known in the
+Launchpad database, the distroarchseries field is None.
+
+    >>> form['field.submission_key'] = u'unique-id-2'
+    >>> invalid_form = form.copy()
+    >>> invalid_form['field.distribution'] = 'no distribution'
+    >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
+    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view.initialize()
+    >>> submission = submission_set.getBySubmissionKey(u'unique-id-2')
+    >>> print submission.distroarchseries
+    None
+
+If distribution is known, but distroseries or architecture are unknown
+to Launchpad, we refuse the submissions.
+
+    >>> form['field.submission_key'] = u'unique-id-3'
+    >>> invalid_form = form.copy()
+    >>> invalid_form['field.distroseries'] = 'no release'
+    >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
+    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view.initialize()
+    >>> print submission_set.getBySubmissionKey(u'unique-id-3')
+    None
+    
+    >>> form['field.submission_key'] = u'unique-id-4'
+    >>> invalid_form = form.copy()
+    >>> invalid_form['field.architecture'] = 'no architecture'
+    >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
+    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view.initialize()
+    >>> print submission_set.getBySubmissionKey(u'unique-id-4')
+    None
+
+The `date_created` field must contain a valid date.
+
+    >>> form['field.submission_key'] = u'unique-id-5'
+    >>> invalid_form = form.copy()
+    >>> invalid_form['field.date_created'] = '2007-05-35'
+    >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
+    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view.initialize()
+    >>> [error.doc() for error in submit_view.errors]
+    [u'Invalid datetime data']
+
+The `format` field must contain a value that matches the DBEnumeratedType
+HWDBSubmissionFormat.
+
+    >>> invalid_form = form.copy()
+    >>> invalid_form['field.format'] = u'VERSION_42'
+    >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
+    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view.initialize()
+    >>> [error.doc() for error in submit_view.errors]
+    ['Invalid value']
+
+The field `submission_key` may contain only ASCII data.
+
+    >>> invalid_form = form.copy()
+    >>> invalid_form['field.submission_key'] = u'wrong id \x81'
+    >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
+    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view.initialize()
+    >>> [error.doc() for error in submit_view.errors]
+    [u'Invalid textual data']
+
+All fields are required.
+
+    >>> for field in ('field.date_created', 'field.format', 'field.private',
+    ...     'field.contactable', 'field.submission_key', 
+    ...     'field.emailaddress', 'field.distribution', 
+    ...     'field.distroseries', 'field.architecture', 'field.system',
+    ...     'field.submission_data'):
+    ...     invalid_form = form.copy()
+    ...     del invalid_form[field]
+    ...     request = LaunchpadTestRequest(method='POST', form=invalid_form)
+    ...     submit_view = getView(app, '+submit', request)
+    ...     submit_view.initialize()
+    ...     submit_view.widget_errors
+    {'date_created': 'Required field is missing'}
+    {'format': 'Required field is missing'}
+    {'private': 'Required field is missing'}
+    {'contactable': 'Required field is missing'}
+    {'submission_key': 'Required field is missing'}
+    {'emailaddress': 'Required field is missing'}
+    {'distribution': 'Required field is missing'}
+    {'distroseries': 'Required field is missing'}
+    {'architecture': 'Required field is missing'}
+    {'system': 'Required field is missing'}
+    {'submission_data': 'Required field is missing'}
+
+Teams can be owners of submissions.
+
+    >>> team_form = form.copy()
+    >>> team_form['field.emailaddress'] = 'support@ubuntu.com'
+    >>> team_form['field.submission_key'] = u'unique-id-68'
+    >>> request = LaunchpadTestRequest(method='POST', form=team_form)
+    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view.initialize()
+    >>> submission = submission_set.getBySubmissionKey(u'unique-id-68')
+    >>> submission.owner.displayname
+    u'Ubuntu Team'

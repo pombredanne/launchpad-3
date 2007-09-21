@@ -1,6 +1,10 @@
   <tr class="ppa_package_row">
      <td tal:content="context/sourcepackagerelease/title"
          >foo - 1.0</td>
+     <td tal:condition="context/archive/owner/isTeam">
+         <a id="uploader"
+            tal:attributes="href context/sourcepackagerelease/dscsigningkey/owner/fmt:url"
+            tal:content="context/sourcepackagerelease/dscsigningkey/owner/name"/></td>
      <td tal:attributes="title context/datepublished/fmt:datetime"
          tal:content="context/datepublished/fmt:approximatedate"
          >2005-09-16</td>
