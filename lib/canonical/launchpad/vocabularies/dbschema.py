@@ -21,8 +21,6 @@ __all__ = [
     'DistroSeriesStatusVocabulary',
     'InfestationStatusVocabulary',
     'PackagePublishingPocketVocabulary',
-    'PollAlgorithmVocabulary',
-    'PollSecrecyVocabulary',
     'RemoteBugTaskImportanceVocabulary',
     'SpecificationImplementationStatusVocabulary',
     'SpecificationPriorityVocabulary',
@@ -57,8 +55,6 @@ DistroSeriesStatusVocabulary = vocab_factory(dbschema.DistroSeriesStatus)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 PackagePublishingPocketVocabulary = vocab_factory(
     dbschema.PackagePublishingPocket)
-PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
-PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 SpecificationImplementationStatusVocabulary =  vocab_factory(dbschema.SpecificationImplementationStatus)
 SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)

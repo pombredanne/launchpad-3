@@ -196,16 +196,6 @@
     />
 
   <vocabulary
-    name="PollAlgorithm"
-    factory="canonical.launchpad.vocabularies.PollAlgorithmVocabulary"
-    />
-
-  <vocabulary
-    name="PollSecrecy"
-    factory="canonical.launchpad.vocabularies.PollSecrecyVocabulary"
-    />
-
-  <vocabulary
     name="POTemplateName"
     factory="canonical.launchpad.vocabularies.POTemplateNameVocabulary"
     />

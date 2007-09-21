@@ -46,8 +46,6 @@ __all__ = (
 'PackagePublishingStatus',
 'PackagePublishingPocket',
 'PersonalStanding',
-'PollAlgorithm',
-'PollSecrecy',
 'PostedMessageStatus',
 'RosettaImportStatus',
 'RosettaTranslationOrigin',
@@ -1895,44 +1893,6 @@ class PersonalStanding(DBSchema):
         without being subject to first-post moderation rules.
         """)
 
-
-class PollSecrecy(DBSchema):
-    """The secrecy of a given Poll."""
-
-    OPEN = Item(1, """
-        Public Votes (Anyone can see a person's vote)
-
-        Everyone who wants will be able to see a person's vote.
-        """)
-
-    ADMIN = Item(2, """
-        Semi-secret Votes (Only team administrators can see a person's vote)
-
-        All team owners and administrators will be able to see a person's vote.
-        """)
-
-    SECRET = Item(3, """
-        Secret Votes (It's impossible to track a person's vote)
-
-        We don't store the option a person voted in our database,
-        """)
-
-
-class PollAlgorithm(DBSchema):
-    """The algorithm used to accept and calculate the results."""
-
-    SIMPLE = Item(1, """
-        Simple Voting
-
-        The most simple method for voting; you just choose a single option.
-        """)
-
-    CONDORCET = Item(2, """
-        Condorcet Voting
-
-        One of various methods used for calculating preferential votes. See
-        http://www.electionmethods.org/CondorcetEx.htm for more information.
-        """)
 
 
 class PostedMessageStatus(DBSchema):
