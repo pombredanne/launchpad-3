@@ -9,8 +9,6 @@ __metaclass__ = type
 
 __all__ = [
     'vocab_factory',
-    'BountyDifficultyVocabulary',
-    'BountyStatusVocabulary',
     'BranchReviewStatusVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
@@ -42,14 +40,10 @@ __all__ = [
 from canonical.lp import dbschema
 
 from canonical.launchpad.webapp.vocabulary import vocab_factory
-from canonical.launchpad.interfaces import (
-    QuestionAction, QuestionPriority, QuestionSort, QuestionStatus)
 
 
 # DB Schema Vocabularies
 
-BountyDifficultyVocabulary = vocab_factory(dbschema.BountyDifficulty)
-BountyStatusVocabulary = vocab_factory(dbschema.BountyStatus)
 BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)

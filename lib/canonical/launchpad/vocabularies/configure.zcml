@@ -6,16 +6,6 @@
     />
 
   <vocabulary
-    name="BountyDifficulty"
-    factory="canonical.launchpad.vocabularies.BountyDifficultyVocabulary"
-    />
-
-  <vocabulary
-    name="BountyStatus"
-    factory="canonical.launchpad.vocabularies.BountyStatusVocabulary"
-    />
-
-  <vocabulary
     name="BranchReviewStatus"
     factory="canonical.launchpad.vocabularies.BranchReviewStatusVocabulary"
     />

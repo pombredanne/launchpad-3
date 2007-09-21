@@ -22,8 +22,6 @@ __all__ = (
 'ArchivePurpose',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
-'BountyDifficulty',
-'BountyStatus',
 'BranchReviewStatus',
 'BugBranchStatus',
 'BugNominationStatus',
@@ -1502,95 +1500,6 @@ class SourcePackageRelationships(DBSchema):
         source package, but for a different distribution. For example, the
         "apache2" Ubuntu package "correspondsto" the "httpd2" package in Red
         Hat.  """)
-
-
-class BountyDifficulty(DBSchema):
-    """Bounty Difficulty
-
-    An indicator of the difficulty of a particular bounty."""
-
-    TRIVIAL = Item(10, """
-        Trivial
-
-        This bounty requires only very basic skills to complete the task. No
-        real domain knowledge is required, only simple system
-        administration, writing or configuration skills, and the ability to
-        publish the work.""")
-
-    BASIC = Item(20, """
-        Basic
-
-        This bounty requires some basic programming skills, in a high level
-        language like Python or C# or... BASIC. However, the project is
-        being done "standalone" and so no knowledge of existing code is
-        required.""")
-
-    STRAIGHTFORWARD = Item(30, """
-        Straightforward
-
-        This bounty is easy to implement but does require some broader
-        understanding of the framework or application within which the work
-        must be done.""")
-
-    NORMAL = Item(50, """
-        Normal
-
-        This bounty requires a moderate amount of programming skill, in a
-        high level language like HTML, CSS, JavaScript, Python or C#. It is
-        an extension to an existing application or package so the work will
-        need to follow established project coding standards.""")
-
-    CHALLENGING = Item(60, """
-        Challenging
-
-        This bounty requires knowledge of a low-level programming language
-        such as C or C++.""")
-
-    DIFFICULT = Item(70, """
-        Difficult
-
-        This project requires knowledge of a low-level programming language
-        such as C or C++ and, in addition, requires extensive knowledge of
-        an existing codebase into which the work must fit.""")
-
-    VERYDIFFICULT = Item(90, """
-        Very Difficult
-
-        This project requires exceptional programming skill and knowledge of
-        very low level programming environments, such as assembly language.""")
-
-    EXTREME = Item(100, """
-        Extreme
-
-        In order to complete this work, detailed knowledge of an existing
-        project is required, and in addition the work itself must be done in
-        a low-level language like assembler or C on multiple architectures.""")
-
-
-class BountyStatus(DBSchema):
-    """Bounty Status
-
-    An indicator of the status of a particular bounty. This can be edited by
-    the bounty owner or reviewer."""
-
-    OPEN = Item(1, """
-        Open
-
-        This bounty is open. People are still welcome to contact the creator
-        or reviewer of the bounty, and submit their work for consideration
-        for the bounty.""")
-
-    WITHDRAWN = Item(9, """
-        Withdrawn
-
-        This bounty has been withdrawn.
-        """)
-
-    CLOSED = Item(10, """
-        Closed
-
-        This bounty is closed. No further submissions will be considered.
-        """)
 
 
 class BinaryPackageFileType(DBSchema):
