@@ -263,6 +263,14 @@
   </browser:pages>
 
   <browser:page
+      name="+help-translate-button"
+      facet="translations"
+      for="canonical.launchpad.interfaces.IDistroSeries"
+      class="canonical.launchpad.browser.HelpTranslateButtonView"
+      permission="zope.Public"
+      />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IDistroSeries"
     permission="launchpad.TranslationsAdmin"
     class="canonical.launchpad.browser.DistroSeriesTranslationsAdminView"

@@ -20,7 +20,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IBuild"
-	urldata="canonical.launchpad.browser.build.BuildUrl" />
+        urldata="canonical.launchpad.browser.build.BuildUrl" />
 
     <browser:menus
         module="canonical.launchpad.browser.build"
