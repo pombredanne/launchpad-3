@@ -27,6 +27,11 @@
         method="get"
         accept-charset="UTF-8"
       >
+        <tal:comment replace="nothing">
+          Do not replace the line below: "Is your project registerd yet?"
+          without contacting the IS team. It's used by Nagios to verify
+          the app servers are running.
+        </tal:comment>
         <label for="text">Is your project registered yet?</label>
         <input id="text" type="text" name="text" size="20" />
         <input type="submit" value="Search" />
