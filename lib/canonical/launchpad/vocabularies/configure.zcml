@@ -251,11 +251,6 @@
     />
 
   <vocabulary
-    name="RevisionControlSystems"
-    factory="canonical.launchpad.vocabularies.RevisionControlSystemsVocabulary"
-    />
-
-  <vocabulary
     name="Specification"
     factory="canonical.launchpad.vocabularies.SpecificationVocabulary"
     />

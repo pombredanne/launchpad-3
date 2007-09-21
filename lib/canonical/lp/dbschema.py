@@ -51,7 +51,6 @@ __all__ = (
 'PostedMessageStatus',
 'ProjectRelationship',
 'ProjectStatus',
-'RevisionControlSystems',
 'RosettaImportStatus',
 'RosettaTranslationOrigin',
 'ShipItArchitecture',
@@ -1768,31 +1767,6 @@ class BugAttachmentType(DBSchema):
 
         This is everything else. It can be a screenshot, a log file, a core
         dump, etc. Basically anything that adds more information to the bug.
-        """)
-
-
-class RevisionControlSystems(DBSchema):
-    """Revision Control Systems
-
-    Bazaar brings code from a variety of upstream revision control
-    systems into Arch. This schema documents the known and supported
-    revision control systems.
-    """
-
-    CVS = Item(1, """
-        Concurrent Version System
-
-        The Concurrent Version System is very widely used among
-        older open source projects, it was the first widespread
-        open source version control system in use.
-        """)
-
-    SVN = Item(2, """
-        Subversion
-
-        Subversion aims to address some of the shortcomings in
-        CVS, but retains the central server bottleneck inherent
-        in the CVS design.
         """)
 
 

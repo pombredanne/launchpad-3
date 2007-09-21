@@ -31,9 +31,9 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.interfaces import (
     PackagingType, IProductSeries, IProductSeriesSet,
-    IProductSeriesSourceAdmin, NotFoundError)
+    IProductSeriesSourceAdmin, NotFoundError, RevisionControlSystems)
 from canonical.lp.dbschema import (
-    ImportStatus,  RevisionControlSystems, SpecificationSort,
+    ImportStatus, SpecificationSort,
     SpecificationGoalStatus, SpecificationFilter,
     SpecificationDefinitionStatus, SpecificationImplementationStatus)
 
@@ -76,7 +76,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                              default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
         schema=ImportStatus, default=None)
-    rcstype = EnumCol(dbName='rcstype', schema=RevisionControlSystems,
+    rcstype = EnumCol(dbName='rcstype', enum=RevisionControlSystems,
         notNull=False, default=None)
     cvsroot = StringCol(default=None)
     cvsmodule = StringCol(default=None)
