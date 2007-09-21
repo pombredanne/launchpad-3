@@ -242,6 +242,13 @@
     template="../templates/distroseries-edit.pt"
     />
 
+  <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroSeries"
     class="canonical.launchpad.browser.DistroSeriesView"

@@ -92,6 +92,14 @@
     <browser:page
         name="+translate"
         for="canonical.launchpad.interfaces.IPOFile"
+        facet="overview"
+        class="canonical.launchpad.browser.TranslateRedirectView"
+        permission="zope.Public"
+        />
+
+    <browser:page
+        name="+translate"
+        for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
         template="../templates/pofile-translate.pt"
         class="canonical.launchpad.browser.POFileTranslateView"
