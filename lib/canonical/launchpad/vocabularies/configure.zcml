@@ -326,11 +326,6 @@
     />
 
   <vocabulary
-    name="UpstreamFileType"
-    factory="canonical.launchpad.vocabularies.UpstreamFileTypeVocabulary"
-    />
-
-  <vocabulary
     name="UserTeamsParticipation"
     factory="canonical.launchpad.vocabularies.UserTeamsParticipationVocabulary"
     />

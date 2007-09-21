@@ -78,7 +78,6 @@ __all__ = (
 'TranslationValidationStatus',
 'PackageUploadStatus',
 'PackageUploadCustomFormat',
-'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
 )
 
@@ -383,56 +382,6 @@ class DistroSeriesStatus(DBSchema):
 
         This distroseries is no longer supported, it is considered
         obsolete and should not be used on production systems.
-        """)
-
-
-class UpstreamFileType(DBSchema):
-    """Upstream File Type
-
-    When upstream open source project release a product they will
-    include several files in the release. All of these files are
-    stored in Launchpad (we throw nothing away ;-). This schema
-    gives the type of files that we know about.
-    """
-
-    CODETARBALL = Item(1, """
-        Code Release Tarball
-
-        This file contains code in a compressed package like
-        a tar.gz or tar.bz or .zip file.
-        """)
-
-    README = Item(2, """
-        README File
-
-        This is a README associated with the upstream
-        release. It might be in .txt or .html format, the
-        filename would be an indicator.
-        """)
-
-    RELEASENOTES = Item(3, """
-        Release Notes
-
-        This file contains the release notes of the new
-        upstream release. Again this could be in .txt or
-        in .html format.
-        """)
-
-    CHANGELOG = Item(4, """
-        ChangeLog File
-
-        This file contains information about changes in this
-        release from the previous release in the series. This
-        is usually not a detailed changelog, but a high-level
-        summary of major new features and fixes.
-        """)
-
-    INSTALLER = Item(5, """
-        Installer file
-
-        This file contains an installer for a product.  It may
-        be a Debian package, an RPM file, an OS X disk image, a
-        Windows installer, or some other type of installer.
         """)
 
 
