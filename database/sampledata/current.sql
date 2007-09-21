@@ -2879,6 +2879,8 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (60, 60, 'es.po', 'application/x-po', NULL, '2007-01-03 17:26:27.288968');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (61, 61, 'language-pack-ar_1.0.dsc', 'application/dsc', NULL, '2007-02-15 14:26:27.288968');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (62, 62, 'iceweasel-1.0.dsc', 'application/dsc', NULL, '2007-05-14 23:21:11.121446');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires,
+last_accessed) VALUES (63, 63, 'hwsubmission1.xml', 'text/xml', NULL, '2007-05-14 23:21:11.121446');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (65, 65, 'commercialpackage_1.0-1_source.changes', 'text/plain', NULL, '2007-08-09 21:25:37.832976');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (66, 66, 'commercialpackage_1.0.orig.tar.gz', 'application/gzipped-tar', NULL, '2007-08-09 21:25:37.832976');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (67, 67, 'commercialpackage_1.0-1.diff.gz', 'application/gzipped-patch', NULL, '2007-08-09 21:25:37.832976');
@@ -2954,6 +2956,7 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (60, '2007-01-03 17:26:27.288968', NULL, 11793, 'df3a6670671781d5e08d7795ca1ada776815d87f', false, 'e8120781cd606202fd259a4f0d4585bb');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (61, '2007-02-15 14:26:27.288968', NULL, 100, 'df3a6670671781d5e08d7795ca1ada776815d87f', false, 'e8120781cd606202fd259a4f0d4585b1');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (62, '2007-05-14 23:21:11.121446', NULL, 123, 'd06b970f258e57547ef1104fba3499eb4ab43ff6', false, '767e1635f55ff5e833410523decec438');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (63, '2007-05-14 23:21:11.121446', NULL, 123, 'd06b970f258e57547ef1104fba3499eb4ab43ff6', false, '767e1635f55ff5e833410523decec438');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (65, '2007-08-09 21:25:37.832976', NULL, 958, 'df4adf483eb24fec455e8411ca3dceb0bee51b44', false, 'b85b447f88c326c4124f0554e175097f');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (66, '2007-08-09 21:25:37.832976', NULL, 179, '3e00fea68e91f6e03de6333b4c8e60c2ce441926', false, 'f27fb7494c5afbb0fb10b78d16f7da37');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (67, '2007-08-09 21:25:37.832976', NULL, 610, '01bedc249af59cb80abb40b4898eced10f5d5e20', false, '7d6fa416334c6da3b954bf9ebff6e9ae');
