@@ -223,7 +223,8 @@ team, and they leave that indirect team, they also get unsubscribed from the
 mailing list.
 
     >>> carlos.join(team_two)
-    >>> list_one.subscribe(carlos)
+    >>> # XXX Should this pass or fail?
+    >>> # list_one.subscribe(carlos)
     >>> flush_database_updates()
     >>> sorted(list_one.addresses)
     [u'carlos@canonical.com', u'no-priv@canonical.com', u'salgado@ubuntu.com']
@@ -315,3 +316,43 @@ A list that is not active cannot be subscribed to.
     Traceback (most recent call last):
     ...
     CannotSubscribe: Mailing list is not active: Team One
+
+
+== Persistence of preferences ==
+
+When someone gets unsubscribed because they leave a team, their subscription
+preferences are preserved, so that if they re-join the team, their
+subscription gets re-instated.  Currently, the subscribed email address is the
+only relevant preference.
+
+    >>> team_four, list_four = create_team('team-four', 'Team Four')
+    >>> salgado.join(team_four)
+    >>> list_four.subscribe(salgado)
+    >>> flush_database_updates()
+    >>> sorted(list_four.addresses)
+    [u'guilherme.salgado@canonical.com']
+    >>> salgado.leave(team_four)
+    >>> flush_database_updates()
+    >>> sorted(list_four.addresses)
+    []
+    >>> salgado.join(team_four)
+    >>> flush_database_updates()
+    >>> sorted(list_four.addresses)
+    [u'guilherme.salgado@canonical.com']
+
+This is true even if they subscribe with an address that's different than
+their preferred email address.
+
+    >>> list_four.unsubscribe(salgado)
+    >>> salgado_emails = [address
+    ...                   for address in address_set.getByPerson(salgado)
+    ...                   if address != salgado.preferredemail]
+    >>> salgado_emails[0].email
+    u'salgado@ubuntu.com'
+    >>> list_four.subscribe(salgado, salgado_emails[0])
+    >>> flush_database_updates()
+    >>> sorted(list_four.addresses)
+    [u'salgado@ubuntu.com']
+
+
+== Changing subscribed email address ==

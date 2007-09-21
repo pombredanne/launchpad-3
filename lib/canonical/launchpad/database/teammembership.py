@@ -26,8 +26,8 @@ from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
-    IMailingListSubscriptionSet, ITeamMembership, ITeamParticipation,
-    ITeamMembershipSet, TeamMembershipRenewalPolicy, TeamMembershipStatus)
+    ITeamMembership, ITeamParticipation, ITeamMembershipSet,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
@@ -457,10 +457,6 @@ def _removeParticipantFromTeamAndSuperTeams(person, team):
     result = TeamParticipation.selectOneBy(person=person, team=team)
     if result is not None:
         result.destroySelf()
-
-    # If this team has a mailing list and the person is subscribed to that
-    # mailing list, they must be unsubscribed now.
-    getUtility(IMailingListSubscriptionSet).deleteSubscription(person, team)
 
     for superteam in team.getSuperTeams():
         if person not in superteam.activemembers:
