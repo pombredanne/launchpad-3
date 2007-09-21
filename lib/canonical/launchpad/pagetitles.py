@@ -527,6 +527,10 @@ hassprints_sprints = ContextTitle("Events related to %s")
 
 hastranslationimports_index = 'Translation import queue'
 
+hwdb_fingerprint_submissions = "Hardware Database submissions for a fingerprint"
+
+hwdb_submit_hardware_data = 'Submit New Data to the Launchpad Hardware Database'
+
 karmaaction_index = 'Karma actions'
 
 karmaaction_edit = 'Edit karma action'
@@ -772,6 +776,9 @@ person_editsshkeys = ContextDisplayName(smartquote("%s's SSH keys"))
 person_editwikinames = ContextDisplayName(smartquote("%s's wiki names"))
 
 # person_foaf is an rdf file
+
+person_hwdb_submissions = ContextDisplayName(
+    "Hardware Database submissions by %s")
 
 person_images = ContextDisplayName(smartquote("%s's hackergotchi and emblem"))
 

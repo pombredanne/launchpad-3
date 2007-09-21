@@ -164,6 +164,14 @@
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
+  <browser:page
+    name="+help-translate-button"
+    facet="translations"
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.HelpTranslateButtonView"
+    permission="zope.Public"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IProduct"
     permission="zope.Public"

@@ -10,7 +10,11 @@
         icingroot string:${rooturl}+icing/rev${revno};
         site_message modules/canonical.config/config/launchpad/site_message;
         devmode modules/canonical.config/config/devmode;
-        is_demo modules/canonical.config/config/launchpad/is_demo">
+        is_demo modules/canonical.config/config/launchpad/is_demo"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+>
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad style sheet -->
@@ -28,7 +32,7 @@
       type="text/css"
       tal:condition="view/isPrivate | CONTEXTS/lp:immediate_object_is_private"
       id="privatestyle"
-    >#nonheader {background: url(/@@/private-bg) top left repeat-x;}</style>
+    >#container {background: url(/@@/private-bg) top left repeat-x;}</style>
     <style tal:condition="is_demo" type="text/css"
     >html, body {background-image: url(/@@/demo) !important;}</style>
     <style tal:condition="site_message" type="text/css"
@@ -97,9 +101,6 @@
         </tr>
       </table>
     </div>
-
-    <div id="nonheader">
-
     <div id="nonhelp">
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <table
@@ -165,7 +166,7 @@
                       <div
                         tal:condition="not:view/macro:pagehas/applicationtabs"
                         id="noapplicationchooser"
-                      >&nbsp;</div>
+                      ></div>
                       <tal:applicationtabs
                         condition="view/macro:pagehas/applicationtabs"
                       >
@@ -212,12 +213,6 @@
                           </tal:facet>
                         </ul>
                       </tal:applicationtabs>
-                      <!-- this br is conditional so that it does not show
-                           on applicationhomes, where it causes a large
-                           white space at the top of the page content area
-                           -->
-                      <br class="clear"
-                          tal:condition="view/macro:pagehas/pageheading"/>
                       <div id="container">
                         <div id="maincontent">
                            <div class="pageheading"
@@ -348,13 +343,10 @@
         <li class="item"><a href="/people">People</a></li>
         <li class="item"><a href="/sprints">Meetings</a></li>
     </div>
-
-    </div><!--id="nonheader"-->
   </body>
 </html>
 <tal:requestlog
     define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
     replace="structure string:<!-- at least ${log} -->" />
 </metal:page>
-<!-- 1-0 inprogress Help panel wrong in IE/Win; portlets wrong in IE/Mac -->
-
+<!-- 1-0 inprogress portlets wrong in IE/Mac -->

@@ -54,14 +54,6 @@
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
-  <!-- legal link -->
-  <browser:page
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
-    name="legal"
-    template="templates/launchpad-legal.pt"
-    permission="zope.Public"
-    />
-
   <!-- feedback page -->
   <browser:page
     for="canonical.launchpad.interfaces.ILaunchpadRoot"
