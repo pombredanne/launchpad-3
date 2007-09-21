@@ -508,6 +508,15 @@
     />
 
   <browser:page
+    for="canonical.launchpad.interfaces.IProductSet"
+    class="canonical.launchpad.browser.ProductNonfreeRegistration"
+    facet="overview"
+    permission="launchpad.AnyPerson"
+    name="+nonfree-registration"
+    template="../templates/product-nonfree-registration.pt"
+    />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IProduct"
     name="+shortlink"
     permission="zope.Public"
