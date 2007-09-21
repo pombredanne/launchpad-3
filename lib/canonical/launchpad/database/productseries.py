@@ -30,10 +30,10 @@ from canonical.launchpad.database.specification import (
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.interfaces import (
-    IProductSeries, IProductSeriesSet, IProductSeriesSourceAdmin,
-    NotFoundError)
+    PackagingType, IProductSeries, IProductSeriesSet,
+    IProductSeriesSourceAdmin, NotFoundError)
 from canonical.lp.dbschema import (
-    ImportStatus, PackagingType, RevisionControlSystems, SpecificationSort,
+    ImportStatus,  RevisionControlSystems, SpecificationSort,
     SpecificationGoalStatus, SpecificationFilter,
     SpecificationDefinitionStatus, SpecificationImplementationStatus)
 

@@ -181,11 +181,6 @@
     />
 
   <vocabulary
-    name="PackagingType"
-    factory="canonical.launchpad.vocabularies.PackagingTypeVocabulary"
-    />
-
-  <vocabulary
     name="PersonAccountToMerge"
     factory="canonical.launchpad.vocabularies.PersonAccountToMergeVocabulary"
     />

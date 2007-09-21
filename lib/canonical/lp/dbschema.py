@@ -45,7 +45,6 @@ __all__ = (
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'PackagePublishingPocket',
-'PackagingType',
 'PersonalStanding',
 'PollAlgorithm',
 'PollSecrecy',
@@ -263,33 +262,6 @@ class ProjectStatus(DBSchema):
         This project has been reviewed, and has been disabled. Typically
         this is because the contents appear to be bogus. Such a project
         should not show up in searches etc.""")
-
-
-class PackagingType(DBSchema):
-    """Source packages.
-
-    Source packages include software from one or more Upstream open source
-    projects. This schema shows the relationship between a source package
-    and the upstream open source products that it might incorporate. This
-    schema is used in the Packaging table.
-    """
-
-    PRIME = Item(1, """
-        Primary Product
-
-        This is the primary product packaged in this source package. For
-        example, a source package "apache2" would have a "prime" Packaging
-        relationship with the "apache2" product from the Apache Project.
-        The product and package don't have to have the same name.
-        """)
-
-    INCLUDES = Item(2, """
-        SourcePackage Includes Product
-
-        This source package includes some part or all of the product. For
-        example, the "cadaver" source package has an "includes" Packaging
-        relationship with the libneon product.
-        """)
 
 
 class BugBranchStatus(DBSchema):
