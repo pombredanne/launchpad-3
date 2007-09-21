@@ -305,21 +305,22 @@ class NoneFormatter:
     implements(ITraversable)
 
     allowed_names = set([
-        'nl_to_br',
-        'nice_pre',
+        'approximatedate',
+        'approximateduration',
         'breadcrumbs',
         'break-long-words',
         'date',
-        'time',
         'datetime',
-        'approximatedate',
         'displaydate',
-        'rfc822utcdatetime',
-        'exactduration',
-        'approximateduration',
-        'pagetitle',
-        'text-to-html',
         'email-to-html',
+        'exactduration',
+        'lower',
+        'nice_pre',
+        'nl_to_br',
+        'pagetitle',
+        'rfc822utcdatetime',
+        'text-to-html',
+        'time',
         'url',
         ])
 
@@ -1456,7 +1457,7 @@ class FormattersAPI:
     # '> > ' are valid quoting sequences.
     # The dpkg version is used for exceptional cases where it
     # is better to not assume '|' is a start of a quoted passage.
-    _re_quoted = re.compile('^(([|] ?)+ |(&gt; ?)+ )')
+    _re_quoted = re.compile('^(([|] ?)+|(&gt; ?)+)')
     _re_dpkg_quoted = re.compile('^(&gt; ?)+ ')
 
     # Match blocks that start as signatures or PGP inclusions.
@@ -1619,6 +1620,10 @@ class FormattersAPI:
             r'<email address hidden>', self._stringtoformat)
         return text
 
+    def lower(self):
+        """Return the string in lowercase"""
+        return self._stringtoformat.lower()
+
     def shorten(self, maxlength):
         """Use like tal:content="context/foo/fmt:shorten/60"."""
         if len(self._stringtoformat) > maxlength:
@@ -1629,6 +1634,8 @@ class FormattersAPI:
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
             return self.nl_to_br()
+        elif name == 'lower':
+            return self.lower()
         elif name == 'break-long-words':
             return self.break_long_words()
         elif name == 'text-to-html':

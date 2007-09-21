@@ -6,21 +6,16 @@ tarball to provide language packs.
 Some initialisation tasks:
 
     >>> import datetime
-    >>> import email
     >>> import pytz
-    >>> import re
     >>> import sys
     >>> import traceback
     >>> import transaction
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.launchpad.helpers import string_to_tarfile
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
-    >>> from canonical.launchpad.mail.stub import test_emails
     >>> from canonical.launchpad.scripts.language_pack import \
     ...    export_language_pack
     >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> login("daf@canonical.com")
-    >>> librarian_file_alias_set = getUtility(ILibraryFileAliasSet)
 
     # This is a dummy logger class to capture the export's log messages.
     >>> class FakeLogger:
@@ -39,15 +34,6 @@ Some initialisation tasks:
     ...             if line.strip():
     ...                 self.log(line)
 
-    >>> def get_librarian_file_from_email(msg):
-    ...     alias_num = None
-    ...     for line in msg.get_payload(decode=True).splitlines():
-    ...         if line.startswith('Librarian file alias:'):
-    ...             alias_num = re.search(
-    ...                 'Librarian file alias: (\d+)', line).group(1)
-    ...     librarian_file_alias = librarian_file_alias_set[alias_num]
-    ...     return string_to_tarfile(librarian_file_alias.read())
-
 
 == Base language pack export using Librarian ==
 
@@ -55,14 +41,12 @@ When a new language pack export is requested, you can select to use Librarian
 to store the language pack. That is noted with output_file set to None.
 
     >>> logger = FakeLogger()
-    >>> export_language_pack(
+    >>> language_pack = export_language_pack(
     ...     distribution_name='ubuntu',
     ...     series_name='hoary',
     ...     component='main',
-    ...     update=False,
     ...     force_utf8=True,
     ...     output_file=None,
-    ...     email_addresses=['daf@canonical.com'],
     ...     logger=logger)
     >>> transaction.commit()
 
@@ -79,22 +63,8 @@ Check that the log looks ok.
     Done.
     Upload complete, file alias: ...
 
-Also, a notification email has been sent:
-
-    >>> len(test_emails)
-    1
-    >>> from_addr, to_addrs, raw_message = test_emails.pop()
-    >>> msg = email.message_from_string(raw_message)
-    >>> print msg["Subject"]
-    Language pack export complete
-    >>> print msg.get_payload(decode=True)
-    Distribution: ubuntu
-    Release: hoary
-    Component: main
-    Librarian file alias: ...
-
     # Get the generated tarball.
-    >>> tarfile = get_librarian_file_from_email(msg)
+    >>> tarfile = string_to_tarfile(language_pack.file.read())
 
 The tarball has the right members.
 
@@ -214,17 +184,18 @@ This is handy for examining the tar files that are generated.
     ...             lines = 0
     ...         print "| %5d | %s" % (lines, member.name)
 
-Now we export the PO files we've just created.
+First, export without any existing base language pack: should get both PO
+files.
 
+    >>> print series.language_pack_base
+    None
     >>> logger = FakeLogger()
-    >>> export_language_pack(
+    >>> language_pack = export_language_pack(
     ...     distribution_name='ubuntu',
     ...     series_name='grumpy',
     ...     component=None,
-    ...     update=False,
     ...     force_utf8=True,
     ...     output_file=None,
-    ...     email_addresses=['daf@canonical.com'],
     ...     logger=logger)
     >>> transaction.commit()
 
@@ -240,24 +211,10 @@ Check that the log looks ok.
     Done.
     Upload complete, file alias: ...
 
-Also, a notification email has been sent:
-
-    >>> len(test_emails)
-    1
-    >>> from_addr, to_addrs, raw_message = test_emails.pop()
-    >>> msg = email.message_from_string(raw_message)
-    >>> print msg["Subject"]
-    Language pack export complete
-    >>> print msg.get_payload(decode=True)
-    Distribution: ubuntu
-    Release: grumpy
-    Component: All available
-    Librarian file alias: ...
 
     # Get the generated tarball.
-    >>> tarfile = get_librarian_file_from_email(msg)
+    >>> tarfile = string_to_tarfile(language_pack.file.read())
 
-First, export without a date limit: should get both PO files.
 
     WARNING:root:PO file header entry has no content-type field
     WARNING:root:PO file header entry has no content-type field
@@ -322,44 +279,35 @@ Check the files look OK.
     msgid "blah"
     msgstr "blah (cy)"
 
+We set this langauge pack as the base package for the distroseries. Next
+export will be a delta based on that one.
+
+    >>> series.language_pack_base = language_pack
+
 This is needed to make the PO export cache work, since it uses the Librarian.
 
     >>> transaction.commit()
 
 Then, export with a date limit: we should only get the second PO file.
-The way to set date limits is setting when last language pack was done, thus,
-we set it and request an update export, which means we should get only files
-that where updated after 2000-01-02.
+The way to set date limits is setting when the base language pack was
+exported, thus, we set it and request an update export, which means we should
+get only files that where updated after 2000-01-02.
 
-    >>> series.datelastlangpack = d2000_01_02
+    >>> series.language_pack_base.date_exported = d2000_01_02
     >>> transaction.commit()
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-    >>> export_language_pack(
+    >>> language_pack = export_language_pack(
     ...     distribution_name='ubuntu',
     ...     series_name='grumpy',
     ...     component=None,
-    ...     update=True,
     ...     force_utf8=True,
     ...     output_file=None,
-    ...     email_addresses=['daf@canonical.com'],
     ...     logger=logger)
     >>> transaction.commit()
 
-    >>> len(test_emails)
-    1
-    >>> from_addr, to_addrs, raw_message = test_emails.pop()
-    >>> msg = email.message_from_string(raw_message)
-    >>> print msg["Subject"]
-    Language pack export complete
-    >>> print msg.get_payload(decode=True)
-    Distribution: ubuntu
-    Release: grumpy
-    Component: All available
-    Librarian file alias: ...
-
     # Get the generated tarball.
-    >>> tarfile = get_librarian_file_from_email(msg)
+    >>> tarfile = string_to_tarfile(language_pack.file.read())
 
 Now, there is only one file exported, the one that had the modification date
 after the last generated language pack.
@@ -371,5 +319,3 @@ after the last generated language pack.
     |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
     |     1 | rosetta-grumpy/timestamp.txt
     |     1 | rosetta-grumpy/mapping.txt
-
-

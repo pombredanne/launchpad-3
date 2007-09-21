@@ -419,27 +419,19 @@ class MozillaXpiImporter:
         self.content = None
         self._translation_file = None
 
-    @property
-    def format(self):
+    def getFormat(self, file_contents):
         """See `ITranslationFormatImporter`."""
         return TranslationFileFormat.XPI
 
-    @property
-    def content_type(self):
-        """See `ITranslationFormatImporter`."""
-        # using "application/x-xpinstall" would trigger installation in
-        # firefox.
-        return 'application/zip'
+    priority = 0
 
-    @property
-    def file_extensions(self):
-        """See `ITranslationFormatImporter`."""
-        return ['.xpi']
+    # using "application/x-xpinstall" would trigger installation in
+    # firefox.
+    content_type = 'application/zip'
 
-    @property
-    def uses_source_string_msgids(self):
-        """See `ITranslationFormatImporter`."""
-        return True
+    file_extensions = ['.xpi']
+
+    uses_source_string_msgids = True
 
     def parse(self, translation_import_queue_entry):
         """See `ITranslationFormatImporter`."""

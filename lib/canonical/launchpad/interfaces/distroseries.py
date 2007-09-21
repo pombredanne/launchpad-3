@@ -9,11 +9,12 @@ __all__ = [
     'IDistroSeriesSet',
     ]
 
-from zope.schema import Bool, Choice, Int, TextLine
+from zope.schema import Bool, Choice, Int, Object, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
 from canonical.launchpad.interfaces.specificationtarget import (
@@ -116,8 +117,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "this series.")
     distroserieslanguages = Attribute("The set of dr-languages in this "
         "series.")
-    datelastlangpack = Attribute(
-        "The date of the last base language pack export for this series.")
+
     hide_all_translations = Bool(
         title=u'Hide translations for this release', required=True,
         description=(
@@ -128,6 +128,47 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
              " will not be confused by imports that are in progress."),
         default=True)
 
+    language_pack_base = Choice(
+        title=_('Language pack base'), required=False,
+        description=_('''
+            Language pack export with the export of all translations available
+            for this `IDistroSeries` when it was generated. Next delta exports
+            will be generated based on this one.
+            '''), vocabulary='FilteredFullLanguagePack')
+
+    language_pack_delta = Choice(
+        title=_('Language pack delta'), required=False,
+        description=_('''
+            Language pack export with the export of all translation updates
+            available for this `IDistroSeries` since language_pack_base was
+            generated.
+            '''), vocabulary='FilteredDeltaLanguagePack')
+
+    language_pack_proposed = Choice(
+        title=_('Proposed language pack update'), required=False,
+        description=_('''
+            Base or delta language pack export that is being tested and
+            proposed to be used as the new language_pack_base or
+            language_pack_delta for this `IDistroSeries`.
+            '''), vocabulary='FilteredLanguagePack')
+
+    language_pack_full_export_requested = Bool(
+        title=_('Request a full language pack export'), required=True,
+        description=_('''
+            Whether next language pack generation will be a full export. This
+            is useful when delta packages are too big and want to merge all
+            those changes in the base package.
+            '''))
+
+    last_full_language_pack_exported = Object(
+        title=_('Latest exported language pack with all translation files.'),
+        required=False, readonly=True, schema=ILanguagePack)
+
+    last_delta_language_pack_exported = Object(
+        title=_(
+            'Lastest exported language pack with updated translation files.'),
+        required=False, readonly=True, schema=ILanguagePack)
+
     # related joins
     packagings = Attribute("All of the Packaging entries for this "
         "distroseries.")
@@ -136,6 +177,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     binary_package_caches = Attribute("All of the cached binary package "
         "records for this distroseries.")
+
+    language_packs = Attribute(
+        "All language packs associated with this distribution series.")
 
     # other properties
     previous_serieses = Attribute("Previous series from the same "
@@ -276,7 +320,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def createUploadedSourcePackageRelease(
         sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator, urgency,
-        changelog, dsc, dscsigningkey, section, manifest, dsc_maintainer_rfc822,
+        changelog, dsc, dscsigningkey, section, dsc_maintainer_rfc822,
         dsc_standards_version, dsc_format, dsc_binaries, archive, copyright,
         dateuploaded=None):
         """Create an uploads SourcePackageRelease
@@ -294,7 +338,6 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
          * component: IComponent
          * section: ISection
          * urgency: dbschema.SourcePackageUrgency
-         * manifest: IManifest
          * dscsigningkey: IGPGKey used to sign the DSC file
          * dsc: string, original content of the dsc file
          * copyright: string, the original debian/copyright content

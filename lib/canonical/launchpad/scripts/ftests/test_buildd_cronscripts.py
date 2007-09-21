@@ -8,8 +8,6 @@ import subprocess
 import sys
 from unittest import TestCase, TestLoader
 
-from zope.component import getUtility
-
 from canonical.config import config
 from canonical.testing import LaunchpadLayer
 
@@ -89,19 +87,6 @@ class TestCronscriptBase(TestCase):
     def testRunQueueBuilderLocked(self):
         """Check is buildd-queue-builder.py respect build-master lock."""
         self.assertLocked(runner=self.runBuilddQueueBuilder)
-
-    def testRunQueueBuilderLockedByCronDaily(self):
-        """Check if buildd-queue-builder respect cron.daily lock.
-
-        Additionally to the 0 (zero) exit code we also want to ensure that
-        no output is generated.
-        """
-        lock = open(config.builddmaster.crondaily_lockfile, 'w')
-        lock.write('Go away !')
-        lock.close()
-        rc, out, err = self.assertRuns(runner=self.runBuilddQueueBuilder)
-        self.assertEqual('', err.strip(), "Output should be empty:\n%s" % err)
-        os.remove(config.builddmaster.crondaily_lockfile)
 
 
 def test_suite():

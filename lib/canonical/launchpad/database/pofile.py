@@ -318,10 +318,14 @@ class POFile(SQLBase, POFileMixIn):
             "Calling prepareTranslationCredits on a message with "
             "msgid '%s'." % msgid)
         text = potmsgset.translationsForLanguage(self.language.code)[0]
-        if (msgid == u'_: EMAIL OF TRANSLATORS\nYour emails'):
+        if msgid in [u'_: EMAIL OF TRANSLATORS\nYour emails', u'Your emails']:
             emails = []
             if text is not None:
                 emails.append(text)
+
+            # Add two empty email fields to make formatting nicer.
+            # See bug #133817 for details.
+            emails.extend([u'',u''])
 
             for contributor in self.contributors:
                 preferred_email = contributor.preferredemail
@@ -331,10 +335,14 @@ class POFile(SQLBase, POFileMixIn):
                 else:
                     emails.append(preferred_email.email)
             return u','.join(emails)
-        elif (msgid == u'_: NAME OF TRANSLATORS\nYour names'):
+        elif msgid in [u'_: NAME OF TRANSLATORS\nYour names', u'Your names']:
             names = []
             if text is not None:
                 names.append(text)
+            # Add an empty name as a separator, and 'Launchpad
+            # Contributions' header; see bug #133817 for details.
+            names.extend([u'',
+                          u'Launchpad Contributions:'])
             names.extend([
                 contributor.displayname
                 for contributor in self.contributors])
@@ -350,7 +358,7 @@ class POFile(SQLBase, POFileMixIn):
 
                 text += 'Launchpad Contributions:'
                 for contributor in self.contributors:
-                    text += ("\n  %s <%s>" %
+                    text += ("\n  %s %s" %
                              (contributor.displayname,
                               canonical_url(contributor)))
             return text
@@ -636,6 +644,14 @@ class POFile(SQLBase, POFileMixIn):
         for msgset in self.currentMessageSets():
             msgset.sequence = 0
 
+    def getStatistics(self):
+        """See `IPOFile`."""
+        return (
+            self.currentcount,
+            self.updatescount,
+            self.rosettacount,
+            self.unreviewed_count)
+
     def updateStatistics(self, tested=False):
         """See `IPOFile`."""
         # make sure all the data is in the db
@@ -711,7 +727,7 @@ class POFile(SQLBase, POFileMixIn):
         self.updatescount = updates
         self.rosettacount = rosetta
         self.unreviewed_count = unreviewed
-        return (current, updates, rosetta, unreviewed)
+        return self.getStatistics()
 
     def createMessageSetFromMessageSet(self, potmsgset):
         """See `IPOFile`."""
@@ -1279,6 +1295,10 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
+    def getStatistics(self):
+        """See `IPOFile`."""
+        return (0, 0, 0, )
+
     def updateStatistics(self):
         """See `IPOFile`."""
         raise NotImplementedError
@@ -1364,6 +1384,11 @@ class POFileSet:
                 POTemplate.sourcepackagename = %s''' % sqlvalues(
                     path, distroseries.id, sourcepackagename.id),
                 clauseTables=['POTemplate'])
+
+    def getBatch(self, starting_id, batch_size):
+        """See `IPOFileSet`."""
+        return POFile.select(
+            "id >= %s" % quote(starting_id), orderBy="id", limit=batch_size)
 
 
 class POFileTranslator(SQLBase):
