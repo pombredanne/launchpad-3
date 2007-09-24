@@ -2355,183 +2355,206 @@ class ArchivePurpose(DBSchema):
 class License(DBSchema):
     """This schema contains OSI approved licenses."""
 
-    ACADEMIC_FREE_LICENSE = Item(1,
+    ACADEMIC_FREE_LICENSE = Item(10,
         "Academic Free License")
 
-    ADAPTIVE_PUBLIC_LICENSE = Item(2,
+    ADAPTIVE_PUBLIC_LICENSE = Item(20,
         "Adaptive Public License")
 
-    APACHE_SOFTWARE_LICENSE = Item(3,
-        "Apache Software License")
+    APACHE_LICENSE = Item(30,
+        "Apache License")
 
-    APACHE_LICENSE_2_0 = Item(4,
-        "Apache License, 2.0")
-
-    APPLE_PUBLIC_SOURCE_LICENSE = Item(5,
+    APPLE_PUBLIC_SOURCE_LICENSE = Item(50,
         "Apple Public Source License")
 
-    ARTISTIC_LICENSE = Item(6,
+    ARTISTIC_LICENSE = Item(60,
         "Artistic license")
 
-    ARTISTIC_LICENSE_2_0 = Item(7,
+    ARTISTIC_LICENSE_2_0 = Item(70,
         "Artistic license 2.0")
 
-    ATTRIBUTION_ASSURANCE_LICENSES = Item(8,
+    ATTRIBUTION_ASSURANCE_LICENSES = Item(80,
         "Attribution Assurance Licenses")
 
-    NEW_BSD_LICENSE = Item(9,
-        "New BSD license")
+    BOOST_LICENSE = Item(85,
+        "Boost Software License")
 
-    COMPUTER_ASSOCIATES_TRUSTED_OPEN_SOURCE_LICENSE_1_1 = Item(10,
-        "Computer Associates Trusted Open Source License 1.1")
+    BSD_LICENSE = Item(90,
+        "BSD license (New)")
 
-    COMMON_DEVELOPMENT_AND_DISTRIBUTION_LICENSE = Item(11,
+    CECILL_LICENSE = Item(95,
+        "CeCILL License")
+
+    COMMON_DEVELOPMENT_AND_DISTRIBUTION_LICENSE = Item(100,
         "Common Development and Distribution License")
 
-    COMMON_PUBLIC_ATTRIBUTION_LICENSE_1_0 = Item(12,
+    COMMON_PUBLIC_ATTRIBUTION_LICENSE_1_0 = Item(110,
         "Common Public Attribution License 1.0 (CPAL)")
 
-    COMMON_PUBLIC_LICENSE_1_0 = Item(13,
+    COMMON_PUBLIC_LICENSE_1_0 = Item(120,
         "Common Public License 1.0")
 
-    CUA_OFFICE_PUBLIC_LICENSE_VERSION_1_0 = Item(14,
+    COMPUTER_ASSOCIATES_TRUSTED_OPEN_SOURCE_LICENSE_1_1 = Item(130,
+        "Computer Associates Trusted Open Source License 1.1")
+
+    CRYPTIX_LICENSE = Item(135,
+        "Cryptix License")
+
+    CUA_OFFICE_PUBLIC_LICENSE_VERSION_1_0 = Item(140,
         "CUA Office Public License Version 1.0")
 
-    EU_DATAGRID_SOFTWARE_LICENSE = Item(15,
-        "EU DataGrid Software License")
-
-    ECLIPSE_PUBLIC_LICENSE = Item(16,
+    ECLIPSE_PUBLIC_LICENSE = Item(150,
         "Eclipse Public License")
 
-    EDUCATIONAL_COMMUNITY_LICENSE_VERSION_2_0 = Item(17,
+    ECOS_LICENSE = Item(160,
+        "eCos License")
+
+    EDUCATIONAL_COMMUNITY_LICENSE_VERSION_2_0 = Item(170,
         "Educational Community License, Version 2.0")
 
-    EIFFEL_FORUM_LICENSE = Item(18,
+    EIFFEL_FORUM_LICENSE = Item(180,
         "Eiffel Forum License")
 
-    EIFFEL_FORUM_LICENSE_V2_0 = Item(19,
+    EIFFEL_FORUM_LICENSE_V2_0 = Item(190,
         "Eiffel Forum License V2.0")
 
-    ENTESSA_PUBLIC_LICENSE = Item(20,
+    ENTESSA_PUBLIC_LICENSE = Item(200,
         "Entessa Public License")
 
-    FAIR_LICENSE = Item(21,
+    EU_DATAGRID_SOFTWARE_LICENSE = Item(205,
+        "EU DataGrid Software License")
+
+    FAIR_LICENSE = Item(210,
         "Fair License")
 
-    FRAMEWORX_LICENSE = Item(22,
+    FRAMEWORX_LICENSE = Item(220,
         "Frameworx License")
 
-    GPL = Item(23,
+    GPL = Item(230,
         "GNU General Public License (GPL)")
 
-    LGPL = Item(24,
+    LGPL = Item(240,
         'GNU Library or "Lesser" General Public License (LGPL)')
 
-    HISTORICAL_PERMISSION_NOTICE_AND_DISCLAIMER = Item(25,
+    HISTORICAL_PERMISSION_NOTICE_AND_DISCLAIMER = Item(250,
         "Historical Permission Notice and Disclaimer")
 
-    IBM_PUBLIC_LICENSE = Item(26,
+    IBM_PUBLIC_LICENSE = Item(260,
         "IBM Public License")
 
-    INTEL_OPEN_SOURCE_LICENSE = Item(27,
+    INTEL_OPEN_SOURCE_LICENSE = Item(270,
         "Intel Open Source License")
 
-    JABBER_OPEN_SOURCE_LICENSE = Item(28,
+    JABBER_OPEN_SOURCE_LICENSE = Item(280,
         "Jabber Open Source License")
 
-    LUCENT_PUBLIC_LICENSE = Item(29,
+    LUCENT_PUBLIC_LICENSE = Item(290,
         "Lucent Public License (Plan9)")
 
-    LUCENT_PUBLIC_LICENSE_VERSION_1_02 = Item(30,
+    LUCENT_PUBLIC_LICENSE_VERSION_1_02 = Item(300,
         "Lucent Public License Version 1.02")
 
-    MIT_LICENSE = Item(31,
-        "MIT license")
+    MIT_LICENSE = Item(310,
+        "MIT license (aka X11 or Expat license)")
 
-    MITRE_COLLABORATIVE_VIRTUAL_WORKSPACE_LICENSE = Item(32,
+    MITRE_COLLABORATIVE_VIRTUAL_WORKSPACE_LICENSE = Item(320,
         "MITRE Collaborative Virtual Workspace License (CVW License)")
 
-    MOTOSOTO_LICENSE = Item(33,
+    MOTOSOTO_LICENSE = Item(330,
         "Motosoto License")
 
-    MOZILLA_PUBLIC_LICENSE_1_0 = Item(34,
+    MOZILLA_PUBLIC_LICENSE_1_0 = Item(340,
         "Mozilla Public License 1.0 (MPL)")
 
-    MOZILLA_PUBLIC_LICENSE_1_1 = Item(35,
+    MOZILLA_PUBLIC_LICENSE_1_1 = Item(350,
         "Mozilla Public License 1.1 (MPL)")
 
-    NASA_OPEN_SOURCE_AGREEMENT_1_3 = Item(36,
+    NASA_OPEN_SOURCE_AGREEMENT_1_3 = Item(360,
         "NASA Open Source Agreement 1.3")
 
-    NAUMEN_PUBLIC_LICENSE = Item(37,
+    NAUMEN_PUBLIC_LICENSE = Item(370,
         "Naumen Public License")
 
-    NETHACK_GENERAL_PUBLIC_LICENSE = Item(38,
+    NETHACK_GENERAL_PUBLIC_LICENSE = Item(380,
         "Nethack General Public License")
 
-    NOKIA_OPEN_SOURCE_LICENSE = Item(39,
+    NOKIA_OPEN_SOURCE_LICENSE = Item(390,
         "Nokia Open Source License")
 
-    OCLC_RESEARCH_PUBLIC_LICENSE_2_0 = Item(40,
+    OCLC_RESEARCH_PUBLIC_LICENSE_2_0 = Item(400,
         "OCLC Research Public License 2.0")
 
-    OPEN_GROUP_TEST_SUITE_LICENSE = Item(41,
+    OPEN_GROUP_TEST_SUITE_LICENSE = Item(410,
         "Open Group Test Suite License")
 
-    OPEN_SOFTWARE_LICENSE = Item(42,
+    OPEN_SOFTWARE_LICENSE = Item(420,
         "Open Software License")
 
-    PHP_LICENSE = Item(43,
+    OPENLDAP_LICENSE = Item(425,
+        "OpenLDAP License")
+
+    PHP_LICENSE = Item(430,
         "PHP License")
 
-    CNRI_PYTHON_LICENSE = Item(44,
-        "Python license (CNRI Python License)")
+    PUBLIC_DOMAIN = Item(435,
+        "Public Domain")
 
-    PYTHON_SOFTWARE_FOUNDATION_LICENSE = Item(45,
-        "Python Software Foundation License")
+    CNRI_PYTHON_LICENSE = Item(440,
+        "Python License (versions 1.6a2 and prior) (CNRI)")
 
-    QT_PUBLIC_LICENSE = Item(46,
+    PYTHON_SOFTWARE_FOUNDATION_LICENSE = Item(450,
+        "Python Software Foundation License (versions 2.0.1, 2.1.1, and newer)")
+
+    QT_PUBLIC_LICENSE = Item(460,
         "Qt Public License (QPL)")
 
-    REALNETWORKS_PUBLIC_SOURCE_LICENSE_1_0 = Item(47,
+    REALNETWORKS_PUBLIC_SOURCE_LICENSE_1_0 = Item(470,
         "RealNetworks Public Source License V1.0")
 
-    RECIPROCAL_PUBLIC_LICENSE = Item(48,
+    RECIPROCAL_PUBLIC_LICENSE = Item(480,
         "Reciprocal Public License")
 
-    RICOH_SOURCE_CODE_PUBLIC_LICENSE = Item(49,
+    RICOH_SOURCE_CODE_PUBLIC_LICENSE = Item(490,
         "Ricoh Source Code Public License")
 
-    SLEEPYCAT_LICENSE = Item(50,
+    RUBY_LICENSE = Item(495,
+        "Ruby License")
+
+    SLEEPYCAT_LICENSE = Item(500,
         "Sleepycat License")
 
-    SUN_INDUSTRY_STANDARDS_SOURCE_LICENSE = Item(51,
+    SMLNJ_LICENSE = Item(505,
+        "Standard ML of New Jersey Copyright License")
+
+    SUN_INDUSTRY_STANDARDS_SOURCE_LICENSE = Item(510,
         "Sun Industry Standards Source License (SISSL)")
 
-    SUN_PUBLIC_LICENSE = Item(52,
+    SUN_PUBLIC_LICENSE = Item(520,
         "Sun Public License")
 
-    SYBASE_OPEN_WATCOM_PUBLIC_LICENSE_1_0 = Item(53,
+    SYBASE_OPEN_WATCOM_PUBLIC_LICENSE_1_0 = Item(530,
         "Sybase Open Watcom Public License 1.0")
 
-    UNIVERSITY_OF_ILLINOIS_NCSA_OPEN_SOURCE_LICENSE = Item(54,
+    UNIVERSITY_OF_ILLINOIS_NCSA_OPEN_SOURCE_LICENSE = Item(540,
         "University of Illinois/NCSA Open Source License")
 
-    VOVIDA_SOFTWARE_LICENSE_V_1_0 = Item(55,
+    VIM_LICENSE = Item(545,
+        "VIM License")
+
+    VOVIDA_SOFTWARE_LICENSE_V_1_0 = Item(550,
         "Vovida Software License v. 1.0")
 
-    W3C_LICENSE = Item(56,
+    W3C_LICENSE = Item(560,
         "W3C License")
 
-    WXWINDOWS_LIBRARY_LICENSE = Item(57,
+    WXWINDOWS_LIBRARY_LICENSE = Item(570,
         "wxWindows Library License")
 
-    X_NET_LICENSE = Item(58,
+    X_NET_LICENSE = Item(580,
         "X.Net License")
 
-    ZOPE_PUBLIC_LICENSE = Item(59,
-        "Zope Public License")
-
-    ZLIB_LIBPNG_LICENSE = Item(60,
+    ZLIB_LIBPNG_LICENSE = Item(590,
         "zlib/libpng license")
 
+    ZOPE_PUBLIC_LICENSE = Item(600,
+        "Zope Public License")

@@ -28,28 +28,8 @@
       project group.
     </p>
 
-    <div style="padding-left: 10em" metal:fill-slot="extra_top">
-
-        <input type="radio" name="license_category" value="unknown" 
-               id="unknown" 
-               onclick="window.location = 'https://help.launchpad.net/RegisteringANewProject'"
-               />
-        <label for="unknown">Unknown License</label><br/>
-
-
-
-        <input type="radio" name="license_category" value="non-osi" 
-               id="non-osi" 
-               onclick="window.location = '/projects/+nonfree-registration'"
-               />
-        <label for="non-osi">Non-OSI-Approved License</label><br/>
-
-
-
-        <input type="radio" name="license_category" value="osi" 
-               id="osi" />
-        <label for="osi">OSI-Approved License</label><br/>
-    </div>
+    <tal:block replace="structure context/@@+license-category" 
+            metal:fill-slot="extra_top" />
 
   </div>
 

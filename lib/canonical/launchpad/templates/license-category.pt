@@ -1,0 +1,22 @@
+    <div style="padding-left: 10em">
+
+        <input type="radio" name="license_category" value="unknown" 
+               id="unknown" 
+               onclick="window.location = 'https://help.launchpad.net/RegisteringANewProject'"
+               />
+        <label for="unknown">Unknown License</label><br/>
+
+
+
+        <input type="radio" name="license_category" value="non-osi" 
+               id="non-osi" 
+               onclick="window.location = '/projects/+nonfree-registration'"
+               />
+        <label for="non-osi">Non-Approved License</label><br/>
+
+
+
+        <input type="radio" name="license_category" value="osi" 
+               id="osi" />
+        <label for="osi">Approved License</label><br/>
+    </div>
