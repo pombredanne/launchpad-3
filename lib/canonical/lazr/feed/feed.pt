@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<entry xmlns="http://www.w3.org/2005/Atom"
+      xmlns:lp="http://api.launchpad.net/schema"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal">
+
+    <metal:bug metal:use-macro="context/@@bug_entry_atom/bug_entry" />
+</entry>

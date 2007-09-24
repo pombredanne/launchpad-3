@@ -35,3 +35,4 @@ database/schema/diagrams/*.dot
 thread*.request
 ./TAGS
 lib/mailman
+TAGS
