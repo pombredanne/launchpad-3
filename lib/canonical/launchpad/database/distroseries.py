@@ -525,6 +525,11 @@ def copy_active_translations_as_update(child, transaction, logger):
         inert_where=have_better)
     cur = cursor()
 
+    cur.execute(
+        "CREATE UNIQUE INDEX posubmission_holding_triplet "
+        "ON %s (potranslation, pomsgset, pluralform)"
+        % holding_tables['posubmission'])
+
     # Remember which POFiles we will affect, so we can update their stats
     # later.
     cur.execute(
