@@ -3,10 +3,13 @@
 __metaclass__ = type
 
 __all__ = [
+    'HelpTranslateButtonView',
     'RosettaApplicationView',
     'RosettaStatsView',
     'RosettaApplicationNavigation',
-    'TranslationsMixin'
+    'TranslateRedirectView',
+    'TranslationsMixin',
+    'TranslationsRedirectView',
     ]
 
 from zope.component import getUtility
@@ -21,6 +24,20 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.layers import TranslationsLayer
 from canonical.launchpad.webapp import Navigation, stepto, canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator
+
+
+class HelpTranslateButtonView:
+    """View that renders a button to help translate its context."""
+
+    def __call__(self):
+        return """
+              <a href="%s">
+                <img
+                  alt="Help translate"
+                  src="/+icing/but-sml-helptranslate.gif"
+                />
+              </a>
+        """ % canonical_url(self.context, rootsite='translations')
 
 
 class TranslationsMixin:
@@ -119,3 +136,34 @@ class RosettaApplicationNavigation(Navigation):
     def products(self):
         # DEPRECATED
         return getUtility(IProductSet)
+
+
+class PageRedirectView:
+    """Redirects to translations site for the given page."""
+
+    def __init__(self, context, request, page):
+        self.context = context
+        self.request = request
+        self.page = page
+
+    def __call__(self):
+        """Redirect to self.page in the translations site."""
+        self.request.response.redirect(
+            '/'.join([
+                canonical_url(self.context, rootsite='translations'),
+                self.page
+                ]), status=301)
+
+
+class TranslateRedirectView(PageRedirectView):
+    """Redirects to translations site for +translate page."""
+
+    def __init__(self, context, request):
+        PageRedirectView.__init__(self, context, request, '+translate')
+
+
+class TranslationsRedirectView(PageRedirectView):
+    """Redirects to translations site for +translations page."""
+
+    def __init__(self, context, request):
+        PageRedirectView.__init__(self, context, request, '+translations')

@@ -21,14 +21,17 @@ series is working.
   >>> print anon_browser.url
   http://translations.launchpad.dev/evolution/trunk
 
+  >>> print anon_browser.title
+  Translation templates for Evolution Series: trunk
+
   >>> print anon_browser.contents
   <...
-      <title>Translation templates for Evolution Series: trunk</title>
   ...
       <tr>
   <BLANKLINE>
           <td>
             <a href="/evolution/trunk/+pots/evolution-2.2/af/+translate">Afrikaans</a>
           </td>
-          <td class="amount">22</td>
+  ...
+          <td> <span class="sortkey">22</span>
   ...

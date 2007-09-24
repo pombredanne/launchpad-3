@@ -487,6 +487,16 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             )""" % sqlvalues(personID=self.id),
             clauseTables=['Question'], distinct=True))
 
+    @property
+    def translatable_languages(self):
+        """See `IPerson`."""
+        return Language.select("""
+            Language.id = PersonLanguage.language AND
+            PersonLanguage.person = %s AND
+            Language.code <> 'en' AND
+            Language.visible""" % quote(self),
+            clauseTables=['PersonLanguage'], orderBy='englishname')
+
     def getDirectAnswerQuestionTargets(self):
         """See `IPerson`."""
         answer_contacts = AnswerContact.select(
@@ -941,8 +951,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # No warning, as we don't want to place the burden on callsites
         # to check this.
         if (not self.is_valid_person
-            or self.id is getUtility(
-                ILaunchpadCelebrities).janitor.id):
+            or self.id == getUtility(ILaunchpadCelebrities).janitor.id):
             return None
 
         if product is not None:
