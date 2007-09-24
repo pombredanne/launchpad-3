@@ -4,7 +4,8 @@
 
 import xmlrpclib
 
-from canonical.launchpad.interfaces import IPersonSet, TeamSubscriptionPolicy
+from canonical.launchpad.interfaces import (
+    IPersonSet, IMailingListSet, MailingListStatus, TeamSubscriptionPolicy)
 from zope.component import getUtility
 
 
@@ -66,8 +67,8 @@ def mailingListPrintActions(pending_actions):
                 print team, '-->', action
 
 
-def mailingListNewTeam(team_name):
-    """A helper function for the mailinglist-xmlrpc.txt doctest.
+def mailingListNewTeam(team_name, with_list=False):
+    """A helper function for the mailinglist related doctests.
 
     This just provides a convenience function for creating the kinds of teams
     we need to use in the doctest.
@@ -78,7 +79,16 @@ def mailingListNewTeam(team_name):
     policy = TeamSubscriptionPolicy.OPEN
     personset = getUtility(IPersonSet)
     ddaa = personset.getByName('ddaa')
-    return personset.newTeam(ddaa, team_name, displayname,
+    team = personset.newTeam(ddaa, team_name, displayname,
                              subscriptionpolicy=policy)
+    if not with_list:
+        return team
+    # Create the associated mailing list.
+    carlos = personset.getByName('carlos')
+    team_list = getUtility(IMailingListSet).new(team)
+    team_list.review(carlos, MailingListStatus.APPROVED)
+    team_list.startConstructing()
+    team_list.transitionToStatus(MailingListStatus.ACTIVE)
+    return team, team_list
 
 

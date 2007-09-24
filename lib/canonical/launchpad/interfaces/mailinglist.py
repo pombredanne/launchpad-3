@@ -425,7 +425,8 @@ class IMailingListAPIView(Interface):
         :param teams: The list of team names for which Mailman is requesting
             membership information.
         :return: A data structure representing the requested information.  See
-            below for the format of that data structure.
+            below for the format of that data structure.  The records in
+            values are sorted by email address.
 
         The return value is of the format:
 

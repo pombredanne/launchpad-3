@@ -1,1 +1,120 @@
 = XMLRPC access to mailing list memberships =
+
+Just like the creation and deactivation of mailing lists, membership changes
+to mailing lists must be communicated to Mailman over XMLRPC.  Because the
+bandwidth involved is not expected to be overwhelming, a simplified interface
+was chosen.
+
+The communication pattern is initiated by Mailman in all cases; in other
+words, Mailman polls Launchpad to see if there is any work for Mailman to do.
+
+    >>> # Note that this test is run multiple times, with the harness
+    >>> # providing several globals including `mailinglist_api`,
+    >>> # `print_actions`, `new_team`, and `commit`.
+
+
+== Requesting membership information ==
+
+Mailman requests membership information for specific list of teams.  Let's
+create and populate some teams to demonstrate.
+
+    >>> team_one, list_one = new_team('team-one', with_list=True)
+    >>> flush_database_updates()
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> personset = getUtility(IPersonSet)
+    >>> ddaa = personset.getByName('ddaa')
+    >>> carlos = personset.getByName('carlos')
+    >>> salgado = personset.getByName('salgado')
+    >>> no_priv = personset.getByName('no-priv')
+    >>> name12 = personset.getByName('name12')
+    >>> sabdfl = personset.getByName('sabdfl')
+    >>> foobar = personset.getByName('name16')
+    >>> marilize = personset.getByName('marilize')
+    >>> people = [ddaa, carlos, salgado, no_priv, name12, sabdfl, foobar,
+    ...           marilize]
+    >>> for person in people:
+    ...     person.join(team_one)
+    ...     list_one.subscribe(person)
+    >>> flush_database_updates()
+
+Asking for the membership information for team-one's list returns all the
+above people.
+
+    >>> def print_info(info):
+    ...     for team_name in sorted(info):
+    ...         print team_name
+    ...         subscribees = info[team_name]
+    ...         for address, realname, flags, status in subscribees:
+    ...             # Make the display name ASCII-safe or Zope's doctest will
+    ...             # barf on Carlos's name with a UnicodeDecodeError.
+    ...             realname = realname.encode('ascii', 'replace')
+    ...             print '\t', address, realname, flags, status
+
+    >>> info = mailinglist_api.getMembershipInformation(('team-one',))
+    >>> print_info(info)
+    team-one
+     	carlos@canonical.com Carlos Perell? Mar?n 0 0
+     	david.allouche@canonical.com David Allouche 0 0
+     	foo.bar@canonical.com Foo Bar 0 0
+     	guilherme.salgado@canonical.com Guilherme Salgado 0 0
+     	marilize@hbd.com Marilize Coetzee 0 0
+     	mark@hbd.com Mark Shuttleworth 0 0
+     	no-priv@canonical.com No Privileges Person 0 0
+     	test@canonical.com Sample Person 0 0
+
+We can also ask for the membership information for more than one mailing list
+at a time.  Mix things up for the fun of it.
+
+    >>> team_two, list_two = new_team('team-two', with_list=True)
+    >>> no_priv.leave(team_one)
+    >>> sabdfl.leave(team_one)
+    >>> for person in people:
+    ...     if person is ddaa:
+    ...         continue
+    ...     person.join(team_two)
+    ...     list_two.subscribe(person)
+    >>> flush_database_updates()
+    >>> info = mailinglist_api.getMembershipInformation(
+    ...     ('team-one', 'team-two'))
+    >>> print_info(info)
+     team-one
+     	carlos@canonical.com Carlos Perell? Mar?n 0 0
+     	david.allouche@canonical.com David Allouche 0 0
+     	foo.bar@canonical.com Foo Bar 0 0
+     	guilherme.salgado@canonical.com Guilherme Salgado 0 0
+     	marilize@hbd.com Marilize Coetzee 0 0
+     	test@canonical.com Sample Person 0 0
+     team-two
+     	carlos@canonical.com Carlos Perell? Mar?n 0 0
+     	foo.bar@canonical.com Foo Bar 0 0
+     	guilherme.salgado@canonical.com Guilherme Salgado 0 0
+     	marilize@hbd.com Marilize Coetzee 0 0
+     	mark@hbd.com Mark Shuttleworth 0 0
+     	no-priv@canonical.com No Privileges Person 0 0
+     	test@canonical.com Sample Person 0 0
+
+
+== Membership tests ==
+
+Mailman may also occasionally ask whether a specific email address is
+registered with Launchpad.  It does this as a simple line-of-defense against
+spam.  Email from addresses not registered with Launchpad are summarily
+discarded.
+
+    >>> mailinglist_api.isLaunchpadMember('carlos@canonical.com')
+    True
+    >>> mailinglist_api.isLaunchpadMember('foo.bar@canonical.com')
+    True
+    >>> mailinglist_api.isLaunchpadMember('geddy.lee@canonical.com')
+    False
+
+
+== Error cases ==
+
+If Mailman requests the membership information for a team that doesn't exist,
+the method will raise a fault.
+
+    >>> mailinglist_api.getMembershipInformation(('no-such-team',))
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 140: 'No such team mailing list: no-such-team'>

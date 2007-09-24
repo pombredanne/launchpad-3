@@ -8,13 +8,22 @@ __all__ = [
     ]
 
 
+from operator import itemgetter
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    IMailingListAPIView, IMailingListSet, MailingListStatus)
+    IEmailAddressSet, IMailingListAPIView, IMailingListSet, MailingListStatus)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
+
+# Not all developers will have built the Mailman instance (via
+# 'make mailman_instance').  In that case, this import will fail, but in that
+# case just use the constant value directly.
+try:
+    from Mailman.MemberAdaptor import ENABLED
+except ImportError:
+    ENABLED = 0
 
 
 class MailingListAPIView(LaunchpadXMLRPCView):
@@ -93,8 +102,31 @@ class MailingListAPIView(LaunchpadXMLRPCView):
 
     def getMembershipInformation(self, teams):
         """See `IMailingListAPIView.`."""
-        return {}
+        listset = getUtility(IMailingListSet)
+        emailset = getUtility(IEmailAddressSet)
+        response = {}
+        for team_name in teams:
+            mailing_list = listset.get(team_name)
+            if mailing_list is None:
+                return faults.NoSuchTeamMailingList(team_name)
+            members = []
+            for address in mailing_list.addresses:
+                email_address = emailset.getByEmail(address)
+                real_name = email_address.person.displayname
+                # Hard code flags to 0 currently, meaning the member will get
+                # regular (not digest) delivery, will not get post
+                # acknowledgements, will receive their own posts, and will not
+                # be moderated.  A future phase may change some of these
+                # values.
+                flags = 0
+                # Hard code the status to ENABLED so that the member will
+                # receive list messages.  A future phase may change this when
+                # bounce processing is added.
+                status = ENABLED
+                members.append((address, real_name, flags, status))
+            response[team_name] = sorted(members, key=itemgetter(0))
+        return response
 
     def isLaunchpadMember(self, address):
         """See `IMailingListAPIView.`."""
-        return False
+        return getUtility(IEmailAddressSet).getByEmail(address) is not None
