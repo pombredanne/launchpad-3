@@ -392,6 +392,9 @@ def copy_active_translations_as_update(child, transaction, logger):
         'POMsgSet', joins=['POFile'], inert_where=pomsgset_inert_where,
         batch_pouring_callback=prepare_pomsgset_batch)
     cur = cursor()
+    cur.execute(
+        "CREATE UNIQUE INDEX pomsgset_holding_potmsgset_pofile "
+        "ON %s (potmsgset, pofile)" % holding_tables['pomsgset'])
 
     # Set potmsgset to point to equivalent POTMsgSet in copy's POFile.  This
     # is similar to what MultiTableCopy would have done for us had we included
@@ -2057,10 +2060,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             # We're a new distroseries; copy from scratch
             copy_active_translations_to_new_series(
                 self, transaction, copier, logger)
-        elif copier.needsRecovery():
-            # Recover data from previous, abortive run
-            logger.info("A copy was already running.  Resuming...")
-            copier.pour(transaction)
         else:
             # Incremental copy of updates from parent distroseries
             copy_active_translations_as_update(self, transaction, logger)
