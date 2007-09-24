@@ -998,13 +998,15 @@ k            </description>
     </sectiontype>
 
     <sectiontype name="codeimport">
-        <key name="default_interval_cvs" datatype="integer">
+        <key name="default_interval_cvs" datatype="integer"
+             required="no" default="43200">
           <description>
               The default value of the update interval of a code import from
               CVS, in seconds.
           </description>
         </key>
-        <key name="default_interval_subversion" datatype="integer">
+        <key name="default_interval_subversion" datatype="integer"
+             required="no" default="21600">
           <description>
               The default value of the update interval of a code import from
               Subversion, in seconds.
