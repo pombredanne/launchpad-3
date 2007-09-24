@@ -218,16 +218,19 @@ When someone leaves a direct team, they automatically get unsubscribed.
     >>> sorted(list_one.addresses)
     [u'no-priv@canonical.com', u'salgado@ubuntu.com']
 
-Similarly, when someone is a member of a mailing list through an indirect
-team, and they leave that indirect team, they also get unsubscribed from the
-mailing list.
+When a person re-joins a team that gives them indirect membership in a team
+with a mailing list that they were previously subscribed to, they get
+re-subscribed to that mailing list automatically.  See the section on
+persistence of preferences below for more examples of this.
 
     >>> carlos.join(team_two)
-    >>> # XXX Should this pass or fail?
-    >>> # list_one.subscribe(carlos)
     >>> flush_database_updates()
     >>> sorted(list_one.addresses)
     [u'carlos@canonical.com', u'no-priv@canonical.com', u'salgado@ubuntu.com']
+
+Similarly, when someone is a member of a mailing list through an indirect
+team, and they leave that indirect team, they also get unsubscribed from the
+mailing list.
 
     >>> carlos.leave(team_two)
     >>> flush_database_updates()
@@ -356,3 +359,40 @@ their preferred email address.
 
 
 == Changing subscribed email address ==
+
+A member of a mailing list can request to change certain aspects of their
+subscription.  Currently the only thing they can change is their subscribed
+address.  Let's say for example that Salgado wants to change the address that
+he is subscribed to List Four with.
+
+    >>> salgado_emails = []
+    >>> for address in address_set.getByPerson(salgado):
+    ...     salgado_emails.append(address)
+    ...     list_four.changeAddress(salgado, address)
+    ...     flush_database_updates()
+    ...     print address.email, sorted(list_four.addresses)
+    guilherme.salgado@canonical.com [u'guilherme.salgado@canonical.com']
+    salgado@ubuntu.com [u'salgado@ubuntu.com']
+
+Salgado can also change his email address to None, which uses and tracks any
+changes in his preferred email address.
+
+    >>> list_four.changeAddress(salgado, None)
+    >>> flush_database_updates()
+    >>> sorted(list_four.addresses)
+    [u'guilherme.salgado@canonical.com']
+    >>> for address in salgado_emails:
+    ...     salgado.setPreferredEmail(address)
+    ...     flush_database_updates()
+    ...     print address.email, sorted(list_four.addresses)
+    guilherme.salgado@canonical.com [u'guilherme.salgado@canonical.com']
+    salgado@ubuntu.com [u'salgado@ubuntu.com']
+
+Someone who is not a member of the mailing list of course cannot change their
+subscription address.
+
+    >>> list_four.changeAddress(ddaa, None)
+    Traceback (most recent call last):
+    ...
+    CannotChangeSubscription: David Allouche is not a member of
+        the mailing list: Team Four

@@ -19,8 +19,9 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
-    CannotSubscribe, CannotUnsubscribe, ILaunchpadCelebrities,
-    IMailingList, IMailingListSet, IMailingListSubscription, MailingListStatus)
+    CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
+    ILaunchpadCelebrities, IMailingList, IMailingListSet,
+    IMailingListSubscription, MailingListStatus)
 
 
 class MailingList(SQLBase):
@@ -172,6 +173,20 @@ class MailingList(SQLBase):
                 '%s is not a member of the mailing list: %s' %
                 (person.displayname, self.team.displayname))
         subscription.destroySelf()
+
+    def changeAddress(self, person, address=None):
+        """See `IMailingList`."""
+        subscription = MailingListSubscription.selectOneBy(
+            person=person, mailing_list=self)
+        if subscription is None:
+            raise CannotChangeSubscription(
+                '%s is not a member of the mailing list: %s' %
+                (person.displayname, self.team.displayname))
+        if address is not None and address.person != person:
+            raise CannotChangeSubscription(
+                '%s does not own the email address: %s' %
+                (person.displayname, address.email))
+        subscription.email_address = address
 
     def _clearSubscriptions(self):
         subscriptions = MailingListSubscription.selectBy(mailing_list=self)
