@@ -26,6 +26,8 @@
   details for those objects, for instance, IDistroSeries.name. -->
   <permission id="launchpad.TranslationsAdmin" title="Administer something
         related with translations." />
+  <permission id="launchpad.LanguagePacksAdmin" title="Administer Language
+        Packs." />
 
   <!-- XXX: GuilhermeSalgado 2005-08-25
   To be removed soon, this is only needed by the page to upload SSH

@@ -38,7 +38,7 @@ from canonical.launchpad.interfaces import (
     IArchiveSet, IBinaryPackageName, IBuildSet, IDistroSeries,
     IDistroSeriesSet, IHasBuildRecords, IHasQueueItems, ILibraryFileAliasSet,
     IPublishedPackageSet, IPublishing, ISourcePackage, ISourcePackageName,
-    ISourcePackageNameSet, NotFoundError)
+    ISourcePackageNameSet, LanguagePackType, NotFoundError)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -63,6 +63,7 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.distroarchseries import DistroArchSeries
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.languagepack import LanguagePack
 from canonical.launchpad.database.distroserieslanguage import (
     DistroSeriesLanguage, DummyDistroSeriesLanguage)
 from canonical.launchpad.database.sourcepackage import SourcePackage
@@ -407,7 +408,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     cur.execute("""
         UPDATE %(pomsgset_holding_table)s AS holding
         SET new_id = pms.id
-        FROM %(pofile_holding_table)s pfh, POMsgSet pms
+        FROM POMsgSet pms
         WHERE
             holding.new_id IS NULL AND
             holding.potmsgset = pms.potmsgset AND
@@ -514,7 +515,8 @@ def copy_active_translations_as_update(child, transaction, logger):
         """
     copier.extract(
         'POSubmission', joins=['POMsgSet'],
-        where_clause="active AND pms.iscomplete",
+        where_clause="""
+            active AND POSubmission.pomsgset = pms.id AND pms.iscomplete""",
         external_joins=['POMsgSet pms'],
         batch_pouring_callback=prepare_posubmission_batch,
         inert_where=have_better)
@@ -757,19 +759,29 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     nominatedarchindep = ForeignKey(
         dbName='nominatedarchindep',foreignKey='DistroArchSeries',
         notNull=False, default=None)
-    datelastlangpack = UtcDateTimeCol(
-        dbName='datelastlangpack', notNull=False, default=None)
     messagecount = IntCol(notNull=True, default=0)
     binarycount = IntCol(notNull=True, default=DEFAULT)
     sourcecount = IntCol(notNull=True, default=DEFAULT)
     defer_translation_imports = BoolCol(notNull=True, default=True)
     hide_all_translations = BoolCol(notNull=True, default=True)
+    language_pack_base = ForeignKey(
+        foreignKey="LanguagePack", dbName="language_pack_base", notNull=False,
+        default=None)
+    language_pack_delta = ForeignKey(
+        foreignKey="LanguagePack", dbName="language_pack_delta",
+        notNull=False, default=None)
+    language_pack_proposed = ForeignKey(
+        foreignKey="LanguagePack", dbName="language_pack_proposed",
+        notNull=False, default=None)
+    language_pack_full_export_requested = BoolCol(notNull=True, default=False)
 
     architectures = SQLMultipleJoin(
         'DistroArchSeries', joinColumn='distroseries',
         orderBy='architecturetag')
     binary_package_caches = SQLMultipleJoin('DistroSeriesPackageCache',
         joinColumn='distroseries', orderBy='name')
+    language_packs = SQLMultipleJoin(
+        'LanguagePack', joinColumn='distroseries', orderBy='-date_exported')
     sections = SQLRelatedJoin(
         'Section', joinColumn='distrorelease', otherColumn='section',
         intermediateTable='SectionSelection')
@@ -998,6 +1010,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def bugtargetdisplayname(self):
         """See IBugTarget."""
         return self.fullseriesname
+
+    @property
+    def last_full_language_pack_exported(self):
+        return LanguagePack.selectFirstBy(
+            distroseries=self, type=LanguagePackType.FULL,
+            orderBy='-date_exported')
+
+    @property
+    def last_delta_language_pack_exported(self):
+        return LanguagePack.selectFirstBy(
+            distroseries=self, type=LanguagePackType.DELTA,
+            updates=self.language_pack_base, orderBy='-date_exported')
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""

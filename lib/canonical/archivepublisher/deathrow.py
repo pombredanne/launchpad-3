@@ -8,6 +8,8 @@ import logging
 import pytz
 import os
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archivepublisher.diskpool import DiskPool
 
@@ -20,7 +22,7 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.interfaces import (
     NotInPool, ISecureSourcePackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory)
-from canonical.lp.dbschema import PackagePublishingStatus
+from canonical.lp.dbschema import PackagePublishingStatus, ArchivePurpose
 
 
 def getDeathRow(archive, log, pool_root_override):
@@ -30,7 +32,8 @@ def getDeathRow(archive, log, pool_root_override):
                     DeathRow object.
     :param log: Use this logger for script debug logging.
     :param pool_root_override: Use this pool root for the archive instead of
-                               its publisher configured value.
+         the one provided by the publishing-configuration, it will be only
+         used for PRIMARY archives.
     """
     log.debug("Grab Lucille config.")
     try:
@@ -39,16 +42,21 @@ def getDeathRow(archive, log, pool_root_override):
         log.error(info)
         raise
 
-    if pool_root_override is not None:
+    pubconf = removeSecurityProxy(pubconf)
+
+    if (pool_root_override is not None and
+        archive.purpose == ArchivePurpose.PRIMARY):
         pool_root = pool_root_override
     else:
         pool_root = pubconf.poolroot
 
     log.debug("Preparing on-disk pool representation.")
-    dp = DiskPool(pool_root, pubconf.temproot,
-        logging.getLogger("DiskPool"))
+
+    diskpool_log = logging.getLogger("DiskPool")
     # Set the diskpool's log level to INFO to suppress debug output
-    dp.logger.setLevel(20)
+    diskpool_log.setLevel(20)
+
+    dp = DiskPool(pool_root, pubconf.temproot, diskpool_log)
 
     log.debug("Preparing death row.")
     return DeathRow(archive, dp, log)
@@ -63,7 +71,6 @@ class DeathRow:
     """
     def __init__(self, archive, diskpool, logger):
         self.archive = archive
-        self.distribution = archive.distribution
         self.diskpool = diskpool
         self._removeFile = diskpool.removeFile
         self.logger = logger

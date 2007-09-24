@@ -253,6 +253,9 @@ distroseries
     True
 
 Linkified changelogs are available through SourcePackageReleaseView:
+XXX julian 2007-09-17
+This is duplicating the page test. Instead it should be more like the bug
+number linkification just below.
 
     >>> from zope.component import queryView
     >>> from zope.publisher.browser import TestRequest
@@ -276,6 +279,29 @@ Linkified changelogs are available through SourcePackageReleaseView:
      -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
     <BLANKLINE>
     <BLANKLINE>
+
+The view will linkify bug numbers of the format "LP: #number" in the changelog
+if number is a valid bug ID (also see Soyuz page tests
+24-sourcepackage-changelog.txt).  The changelog() method calls a method
+_linkify_bug_numbers() to do this.
+
+Zero or more spaces may appear between the ":" and the "#".
+
+    >>> spr_view._linkify_bug_numbers("LP: #10")
+    u'<a href="/bugs/10" title="another test bug">LP: #10</a>'
+
+    >>> spr_view._linkify_bug_numbers("LP:         #10")
+    u'<a href="/bugs/10" title="another test bug">LP:         #10</a>'
+
+    >>> spr_view._linkify_bug_numbers("LP:#10")
+    u'<a href="/bugs/10" title="another test bug">LP:#10</a>'
+
+    >>> spr_view._linkify_bug_numbers("LP: #999")
+    '<a href="/bugs/999" title="No such bug">LP: #999</a>'
+
+    >>> spr_view._linkify_bug_numbers("garbage")
+    'garbage'
+
 
 Checking handy Sourcepackage properties:
 

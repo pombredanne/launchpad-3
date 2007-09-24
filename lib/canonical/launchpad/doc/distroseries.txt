@@ -322,7 +322,7 @@ distroseries (bumby.
 the SPR returns all build records for it.
 
    >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
-   5
+   4
 
 == Translatable Packages and Packaging ==
 
@@ -977,7 +977,7 @@ restricted to it.
 
    >>> debian_archive = getUtility(IDistributionSet)['debian'].main_archive
    >>> print debian_archive.purpose.title
-   Primary Archive.
+   Primary Archive
 
    >>> hoary.getSourcePackagePublishing(
    ...     PackagePublishingStatus.PUBLISHED,

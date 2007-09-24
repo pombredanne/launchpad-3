@@ -118,7 +118,7 @@ contact any external servers.
 
     >>> print err
     INFO    creating lockfile
-    ERROR   There's no debbugs db at /srv/bugs-mirror.debian.org/
+    ERROR   There's no debbugs db at /srv/bugs-mirror.debian.org/.
     INFO    No watches to update on http://bugs.debian.org
     INFO    No watches to update on http://bugzilla.gnome.org/bugs
     INFO    ExternalBugtracker for BugTrackerType 'SOURCEFORGE' is not known.
@@ -168,7 +168,6 @@ Next, we monkey-patch urllib2.urlopen so that it always times out.
     ...     raise socket.timeout("Connection timed out.")
     >>> try:
     ...     urllib2.urlopen = do_not_urlopen
-    ...     socket.setdefaulttimeout(1)
     ...     updater = BugWatchUpdater(transaction)
     ...     updater._login()
     ...     updater.updateBugTracker(example_bug_tracker)

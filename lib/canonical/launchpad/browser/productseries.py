@@ -43,7 +43,7 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.poexportrequest import BaseExportView
-from canonical.launchpad.browser.rosetta import TranslationsMixin
+from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
     canonical_url, LaunchpadView, StandardLaunchpadFacets,
@@ -118,9 +118,10 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'overview'
-    links = ['edit', 'driver', 'editsource', 'ubuntupkg',
-             'add_package', 'add_milestone', 'add_release',
-             'add_potemplate', 'rdf', 'review']
+    links = [
+        'edit', 'driver', 'editsource', 'ubuntupkg', 'add_package',
+        'add_milestone', 'add_release', 'rdf', 'review'
+        ]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -159,11 +160,6 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     def rdf(self):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
-
-    @enabled_with_permission('launchpad.Admin')
-    def add_potemplate(self):
-        text = 'Add translation template'
-        return Link('+addpotemplate', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
     def review(self):

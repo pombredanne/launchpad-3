@@ -81,6 +81,7 @@ from canonical.launchpad.interfaces.irc import *
 from canonical.launchpad.interfaces.jabber import *
 from canonical.launchpad.interfaces.karma import *
 from canonical.launchpad.interfaces.language import *
+from canonical.launchpad.interfaces.languagepack import *
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.launchpadstatistic import *
 from canonical.launchpad.interfaces.librarian import *
