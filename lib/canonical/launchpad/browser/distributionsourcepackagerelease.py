@@ -6,12 +6,12 @@ __all__ = [
     'DistributionSourcePackageReleaseFacets',
     'DistributionSourcePackageReleaseNavigation',
     'DistributionSourcePackageReleaseShortLink',
-    'DistributionSourcePackageReleaseView',
     ]
 
 from zope.component import getUtility
 
-from canonical.launchpad.browser.launchpad import DefaultShortLink
+from canonical.launchpad.browser.launchpad import (
+    DefaultShortLink)
 
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackageRelease, ILaunchBag, IBuildSet, NotFoundError)
@@ -55,14 +55,8 @@ class DistributionSourcePackageReleaseNavigation(Navigation):
             return None
 
 
-class DistributionSourcePackageReleaseView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-
 class DistributionSourcePackageReleaseShortLink(DefaultShortLink):
 
     def getLinkText(self):
         return self.context.sourcepackagerelease.version
+

@@ -4,7 +4,7 @@ Exporting Files from PO Templates Through the Web
 Not logged in users can't access the +export page.
 
   >>> anon_browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary'
   ...     '/+source/evolution/+pots/evolution-2.2/')
   >>> anon_browser.getLink('Download').click()
   Traceback (most recent call last):
@@ -15,13 +15,9 @@ Logged in as a regular user, the +export page is accessible.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary'
   ...     '/+source/evolution/+pots/evolution-2.2')
   >>> browser.getLink('Download translations').click()
-
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export'
-
   >>> print browser.title
   Download translations for “Template "evolution-2.2" in Ubuntu Hoary
   package "evolution"”
@@ -54,9 +50,8 @@ added to the export queue and individual requests are added for the PO files.
   >>> browser.getControl('Everything').selected = True
   >>> browser.getControl('Format:').value = ['PO']
   >>> browser.getControl('Request Download').click()
-
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2'
+  >>> print browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2
 
   >>> for message in get_feedback_messages(browser.contents):
   ...     print message
@@ -71,9 +66,8 @@ This is a no-op: (See bug https://launchpad.net/rosetta/+bug/1558)
   >>> browser.getControl('The PO template').selected = True
   >>> browser.getControl('Format:').value = ['PO']
   >>> browser.getControl('Request Download').click()
-
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2'
+  >>> print browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2
 
   >>> for message in get_feedback_messages(browser.contents):
   ...     print message

@@ -4,17 +4,15 @@ __metaclass__ = type
 
 from cStringIO import StringIO
 import datetime
-import sys
 import unittest
 
 import pytz
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IEmailAddressSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
-    PersonCreationRationale)
+    BugTaskStatus, IEmailAddressSet, ILaunchpadCelebrities, IPersonSet,
+    IProductSet, PersonCreationRationale)
 from canonical.launchpad.scripts import sftracker
-from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType)
+from canonical.lp.dbschema import BugAttachmentType, BugTaskImportance
 
 from canonical.testing import LaunchpadZopelessLayer
 

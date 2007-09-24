@@ -22,14 +22,22 @@ Try to create branches with URLs in bazaar.launchpad.dev.
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
-    Don't manually register a bzr branch on bazaar.launchpad.dev...
+    For Launchpad to mirror a branch, the original branch cannot be on
+    launchpad.dev. Did you want to create a hosted branch instead?
 
     >>> add_branch('http://bazaar.launchpad.dev/~me/that/this')
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
-    Don't manually register a bzr branch on bazaar.launchpad.dev...
+    For Launchpad to mirror a branch, the original branch cannot be on
+    launchpad.dev. Did you want to create a hosted branch instead?
 
+    >>> add_branch('sftp://bazaar.launchpad.dev/~me/that/this')
+    >>> for message in get_feedback_messages(user_browser):
+    ...     print message
+    There is 1 error.
+    For Launchpad to mirror a branch, the original branch cannot be on
+    launchpad.dev. Did you want to create a hosted branch instead?
 
 Try to create a branch with a URL that is already registered.
 

@@ -106,12 +106,7 @@ def find_portlet(content, name):
 
 def find_main_content(content):
     """Find and return the main content area of the page"""
-    # Look for standard page with portlets first.
-    tag = find_tag_by_id(content, 'maincontent')
-    if tag:
-        return tag
-    # Fall back to looking for the single-column page.
-    return find_tag_by_id(content, 'singlecolumn')
+    return find_tag_by_id(content, 'maincontent')
 
 
 def get_feedback_messages(content):

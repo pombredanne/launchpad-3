@@ -45,7 +45,7 @@ then press the tag link again, only open bugs will be shown
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> anon_browser.getControl(name='field.status:list').value = ['Invalid']
+    >>> anon_browser.getControl(name='field.status:list').displayValue = ['Invalid']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
 

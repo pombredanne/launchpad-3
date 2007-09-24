@@ -47,7 +47,7 @@ If the status isn't one that our Trac ExternalBugTracker can understand,
 Unknown will be returned and a warning logged.
 
     >>> trac.convertRemoteStatus('eggs').title
-    WARNING:...:Unknown status 'eggs'
+    WARNING:...:Unknown remote status 'eggs'.
     'Unknown'
 
 UNKNOWN_REMOTE_STATUS maps to Unknown without generating a
@@ -126,7 +126,7 @@ invalid bug:
     >>> invalid_bug = {'id': 1, 'description': 'This bug has no status'}
     >>> trac.bugs = {invalid_bug['id']: invalid_bug}
     >>> trac.getRemoteStatus(invalid_bug['id'])
-    WARNING:root:Trac ticket 1 defines no status
+    WARNING:root:Trac ticket 1 defines no status.
     'UNKNOWN'
 
 

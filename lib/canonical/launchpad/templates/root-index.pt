@@ -45,22 +45,20 @@
           <h2>What&#8217;s new</h2>
           <ul class="news">
             <li>
-              <a href="https://help.launchpad.net/FrequentlyAskedQuestions"
-                 >Frequently Asked Questions: create standard answers to FAQs
-                in the Answer Tracker</a>
+              <a href="https://help.launchpad.net/BazaarSSH"
+                 >Faster code branch uploads with bzr+ssh.</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/Mantis">Watch remote bugs
-                in Mantis bug trackers</a>
+              <a href="https://help.launchpad.net/KDEPlurals">
+                Translations now supports KDE's plural strings.</a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/FileDownloadsOverview">File
-                downloads: make installers, documentation and other files
-                available from your project's overview page</a>
+              <a href="https://help.launchpad.net/AddingBugWatches">
+                Streamlined bug tracker registration when adding bugwatches.</a>
             </li>
             <li>
-             <a href="https://help.launchpad.net/BugStatuses">New clearer bug
-                status names</a>
+              <a href="https://help.launchpad.net/TranslationsFullExport">
+                Export all translations for a project to a single tarball.</a>
             </li>
           </ul>
         </div>

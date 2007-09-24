@@ -21,8 +21,6 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> http_base_url = 'http://foo.bar.com/pub'
     >>> new_mirror = ubuntu.newMirror(
     ...     owner, speed, brazil, content, http_base_url=http_base_url)
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-    >>> LibrarianTestSetup().setUp()
 
 When a new mirror is created we'll generate a unique name for it, based on its
 host name and content.

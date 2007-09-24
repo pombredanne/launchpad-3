@@ -8,7 +8,8 @@ messages.  Carlos is going to update this translation to Serbian,
 which has so far been untranslated.
 
     >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/alsa-utils/trunk/+pots/'
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/alsa-utils/trunk/+pots/'
     ...     'alsa-utils/sr/+translate')
 
 GNOME-style credits string is 'translation-credits'.
@@ -54,8 +55,8 @@ displayed credits once we submit the translation.
     >>> inputfield = browser.getControl(name='msgset_198_sr_translation_0_new')
     >>> inputfield.value = 'Test translation'
     >>> browser.getControl('Save & Continue').click()
-    >>> browser.url
-    'http://launchpad.dev/alsa-utils/trunk/+pots/alsa-utils/sr/+translate'
+    >>> print browser.url
+    http://translations.launchpad.dev/alsa-utils/trunk/+pots/alsa-utils/sr/+translate
 
 Translation has been updated.
 
@@ -67,12 +68,12 @@ And translation credits now list Carlos.
 
     >>> extract_text(find_tag_by_id(browser.contents,
     ...                             'msgset_199_sr_translation_0'))
-    u'Launchpad Contributions:\nCarlos Perell\xf3 Mar\xedn &lt;http://launchpad.dev/~carlos&gt;'
+    u'Launchpad Contributions:\nCarlos Perell\xf3 Mar\xedn http://translations.launchpad.dev/~carlos'
 
     >>> extract_text(find_tag_by_id(browser.contents,
     ...                             'msgset_200_sr_translation_0'))
-    u'carlos@canonical.com'
+    u',,carlos@canonical.com'
 
     >>> extract_text(find_tag_by_id(browser.contents,
     ...                             'msgset_201_sr_translation_0'))
-    u'Carlos Perell\xf3 Mar\xedn'
+    u',Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
