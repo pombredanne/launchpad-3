@@ -51,11 +51,6 @@
     />
 
   <vocabulary
-    name="BugTaskStatus"
-    factory="canonical.launchpad.vocabularies.BugTaskStatusVocabulary"
-    />
-
-  <vocabulary
     name="BugTaskImportance"
     factory="canonical.launchpad.vocabularies.BugTaskImportanceVocabulary"
     />
@@ -120,6 +115,11 @@
     factory="canonical.launchpad.vocabularies.FAQVocabulary"
     />
 
+  <vocabulary
+    name="FilteredDeltaLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredDeltaLanguagePackVocabulary"
+    />
+
    <vocabulary
     name="FilteredDistroArchSeries"
     factory="canonical.launchpad.vocabularies.FilteredDistroArchSeriesVocabulary"
@@ -128,6 +128,16 @@
   <vocabulary
     name="FilteredDistroSeries"
     factory="canonical.launchpad.vocabularies.FilteredDistroSeriesVocabulary"
+    />
+
+  <vocabulary
+    name="FilteredFullLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredFullLanguagePackVocabulary"
+    />
+
+  <vocabulary
+    name="FilteredLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredLanguagePackVocabulary"
     />
 
   <vocabulary
@@ -248,11 +258,6 @@
   <vocabulary
     name="ProjectProductsUsingMalone"
     factory="canonical.launchpad.vocabularies.project_products_using_malone_vocabulary_factory"
-    />
-
-  <vocabulary
-    name="RemoteBugTaskStatus"
-    factory="canonical.launchpad.vocabularies.RemoteBugTaskStatusVocabulary"
     />
 
   <vocabulary

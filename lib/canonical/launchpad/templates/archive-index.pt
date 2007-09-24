@@ -41,7 +41,7 @@
       <h2>Packages</h2>
 
       <p tal:condition="not:context/number_of_sources">
-        This PPA does not contain any package yet.
+        This PPA does not contain any packages yet.
       </p>
 
       <tal:active_ppa condition="context/number_of_sources">
@@ -49,10 +49,10 @@
       <div>
         <ul id="package_counters">
           <li id="source_counter">
-             <span tal:replace="context/number_of_sources"/> Sources
+             <span tal:replace="view/source_count_text" />
              (<span tal:replace="context/sources_size/fmt:bytes" />)</li>
           <li id="binary_counter">
-             <span tal:replace="context/number_of_binaries"/> Binaries
+             <span tal:replace="view/binary_count_text" />
              (<span tal:replace="context/binaries_size/fmt:bytes" />)</li>
 	  <li id="total_size">
              Estimated archive size:
@@ -74,15 +74,17 @@
         </form>
       </div>
 
-      <div tal:define="batch view/search_results">
+      <div style="padding-top: 1em;" tal:define="batch view/search_results">
 
       <tal:navigation_top
+           condition="python: view.name_filter is not None"
            replace="structure view/batchnav/@@+navigation-links-upper" />
 
       <table class="listing sortable" id="packages_list" tal:condition="batch">
         <thead>
           <tr>
             <th>Source</th>
+            <th tal:condition="context/owner/isTeam">Uploader</th>
             <th>Published</th>
             <th>Status</th>
             <th>Target</th>
@@ -99,6 +101,7 @@
       </table>
 
       <tal:navigation_bottom
+           condition="python: view.name_filter is not None"
            replace="structure view/batchnav/@@+navigation-links-lower" />
 
         <div id="empty-result" tal:condition="not: batch">

@@ -7,29 +7,25 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
-# XXX: thumper 2007-05-25:
-# This import should really be tidied up. Made into alphabetical
-# order ideally.
 from canonical.launchpad.interfaces import (
-    IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
-    IDistribution, IFAQ, IFAQTarget, ITeamMembership, IMilestone, IBug,
-    ITranslator, ITranslationGroup, ITranslationGroupSet, IProduct,
-    IProductSeries, IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet,
-    ISourcePackage, ILaunchpadCelebrities, IDistroSeries, IBugTracker,
-    IBugAttachment, IPoll, IPollSubset, IPollOption, IProductRelease,
-    IBranchMergeProposal, IQuestion, IQuestionTarget,
-    IShippingRequest, IShippingRequestSet, IRequestedCDs,
-    IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification, ITranslationImportQueueEntry,
-    ITranslationImportQueue, IDistributionMirror, IHasBug,
-    IBazaarApplication, IPackageUpload, IBuilderSet, IPackageUploadQueue,
-    IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
-    IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset,
-    IDistroSeriesLanguage, IBranch, IBranchSubscription, ICodeImport,
-    ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet, IEntitlement)
+    IBazaarApplication, IBranch, IBranchMergeProposal, IBranchSubscription,
+    IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
+    IBuilder, IBuilderSet, ICodeImport, ICodeImportMachine,
+    ICodeImportMachineSet, ICodeImportSet, IDistribution, IDistributionMirror,
+    IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
+    IHasBug, IHasDrivers, IHasOwner, IHWSubmission, ILanguage, ILanguagePack,
+    ILanguageSet, ILaunchpadCelebrities, IMilestone, IPackageUpload,
+    IPackageUploadQueue, IPerson, IPOFile, IPoll, IPollSubset, IPollOption,
+    IPOTemplate, IPOTemplateName, IPOTemplateNameSet, IPOTemplateSubset,
+    IProduct, IProductRelease, IProductSeries, IQuestion, IQuestionTarget,
+    IRequestedCDs, IShipItApplication, IShippingRequest, IShippingRequestSet,
+    IShippingRun, ISourcePackage, ISpecification, ISpecificationSubscription,
+    ISprint, ISprintSpecification, IStandardShipItRequest,
+    IStandardShipItRequestSet, ITeam, ITeamMembership, ITranslationGroup,
+    ITranslationGroupSet, ITranslationImportQueue,
+    ITranslationImportQueueEntry, ITranslator)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
-
 from canonical.lp.dbschema import PackageUploadStatus
 
 
@@ -1085,3 +1081,67 @@ class ViewEntitlement(AuthorizationBase):
         return (user.inTeam(self.obj.person) or
                 user.inTeam(self.obj.registrant) or
                 user.inTeam(admins))
+
+
+class AdminDistroSeriesLanguagePacks(
+    OnlyRosettaExpertsAndAdmins,
+    EditDistroSeriesByOwnersOrDistroOwnersOrAdmins):
+    permission = 'launchpad.LanguagePacksAdmin'
+    usedfor = IDistroSeries
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IDistroSeries` language packs?
+
+        Any Launchpad/Launchpad Translations administrator, people allowed to
+        edit distroseries or members of IDistribution.language_pack_admin team
+        are able to change the language packs available.
+        """
+        return (
+            OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+            EditDistroSeriesByOwnersOrDistroOwnersOrAdmins.checkAuthenticated(
+                self, user) or
+            user.inTeam(self.obj.distribution.language_pack_admin))
+
+
+class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
+                                    EditDistributionByDistroOwnersOrAdmins):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IDistribution
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IDistribution` translations settings?
+
+        Any Launchpad/Launchpad Translations administrator or people allowed
+        to edit distribution details are able to change translation settings
+        for a distribution.
+        """
+        return (
+            OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+            EditDistributionByDistroOwnersOrAdmins.checkAuthenticated(
+                self, user))
+
+
+class AdminLanguagePack(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.LanguagePacksAdmin'
+    usedfor = ILanguagePack
+
+
+class ViewHWSubmission(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IHWSubmission
+
+    def checkAuthenticated(self, user):
+        """Can the user view the submission details?
+
+        Submissions that not marked private are publicly visible,
+        private submissions may only be accessed by their owner and by
+        admins.
+        """
+        if not self.obj.private:
+            return True
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.obj.owner) or user.inTeam(admins)
+
+    def checkUnauthenticated(self):
+        return not self.obj.private

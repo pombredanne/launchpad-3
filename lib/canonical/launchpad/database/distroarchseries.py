@@ -186,11 +186,11 @@ class DistroArchSeries(SQLBase):
         return DistroArchSeriesBinaryPackage(
             self, name)
 
-    def getBuildRecords(self, status=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None):
         """See IHasBuildRecords"""
         # use facility provided by IBuildSet to retrieve the records
         return getUtility(IBuildSet).getBuildsByArchIds(
-            [self.id], status, name, pocket)
+            [self.id], build_state, name, pocket)
 
     def getReleasedPackages(self, binary_name, pocket=None,
                             include_pending=False, exclude_pocket=None,
@@ -253,10 +253,10 @@ class DistroArchSeries(SQLBase):
         # restrict to a specific pocket.
         queries.append('pocket = %s' % sqlvalues(pocket))
 
-        # exclude RELEASE pocket if the distroseries was already released,
-        # since it should not change.
+        # Exclude RELEASE pocket if the distroseries was already released,
+        # since it should not change, unless the archive allows it.
         if (not self.distroseries.isUnstable() and
-            archive.purpose != ArchivePurpose.PPA):
+            not archive.allowUpdatesToReleasePocket()):
             queries.append(
             'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 

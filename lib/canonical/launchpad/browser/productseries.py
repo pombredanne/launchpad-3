@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -10,6 +10,7 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesBugsMenu',
            'ProductSeriesSpecificationsMenu',
            'ProductSeriesTranslationMenu',
+           'ProductSeriesTranslationsExportView',
            'ProductSeriesView',
            'ProductSeriesEditView',
            'ProductSeriesSourceView',
@@ -41,7 +42,8 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
-from canonical.launchpad.browser.rosetta import TranslationsMixin
+from canonical.launchpad.browser.poexportrequest import BaseExportView
+from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
     canonical_url, LaunchpadView, StandardLaunchpadFacets,
@@ -116,9 +118,10 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'overview'
-    links = ['edit', 'driver', 'editsource', 'ubuntupkg',
-             'add_package', 'add_milestone', 'add_release',
-             'add_potemplate', 'rdf', 'review']
+    links = [
+        'edit', 'driver', 'editsource', 'ubuntupkg', 'add_package',
+        'add_milestone', 'add_release', 'rdf', 'review'
+        ]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -157,11 +160,6 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     def rdf(self):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
-
-    @enabled_with_permission('launchpad.Admin')
-    def add_potemplate(self):
-        text = 'Add translation template'
-        return Link('+addpotemplate', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
     def review(self):
@@ -239,7 +237,7 @@ class ProductSeriesTranslationMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'translations'
-    links = ['translationupload', 'imports']
+    links = ['translationupload', 'imports', 'translationdownload']
 
     def imports(self):
         text = 'See import queue'
@@ -248,6 +246,31 @@ class ProductSeriesTranslationMenu(ApplicationMenu):
     def translationupload(self):
         text = 'Upload translations'
         return Link('+translations-upload', text, icon='add')
+
+    def translationdownload(self):
+        text = 'Download translations'
+        return Link('+export', text, icon='download')
+
+
+class ProductSeriesTranslationsExportView(BaseExportView):
+    """Request tarball export of productseries' complete translations.
+
+    Only complete downloads are supported for now; there is no option to
+    select languages, and templates are always included.
+    """
+
+    def processForm(self):
+        """Process form submission requesting translations export."""
+        pofiles = []
+        for potemplate in self.context.potemplates:
+            pofiles += list(potemplate.pofiles)
+        return (self.context.potemplates, pofiles)
+
+    def getDefaultFormat(self):
+        templates = self.context.potemplates
+        if len(templates) == 0:
+            return None
+        return templates[0].source_file_format
 
 
 def get_series_branch_error(product, branch):
@@ -400,7 +423,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
 
         root, ext = os.path.splitext(filename)
         translation_importer = getUtility(ITranslationImporter)
-        if (ext in translation_importer.file_extensions_with_importer):
+        if (ext in translation_importer.supported_file_extensions):
             # Add it to the queue.
             translation_import_queue_set.addOrUpdateEntry(
                 filename, content, True, self.user,

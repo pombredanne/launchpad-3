@@ -18,8 +18,8 @@ def pop_notifications(sort_key=None):
     that the notifications are queued in stub.test_emails and pops these
     notifications from the queue.
 
-    Specify sort_key to change the default sorting.  sort_key specifies a 
-    function of one argument that is used to extract a comparison key from 
+    Specify sort_key to change the default sorting.  sort_key specifies a
+    function of one argument that is used to extract a comparison key from
     each list element.  (See the sorted() Python built-in.)
     """
     transaction.commit()

@@ -38,6 +38,47 @@ URLs) it will get redirected to the PPA page automatically:
     >>> cprov_browser.url
     'http://launchpad.dev/~cprov/+archive'
 
+Only users with lp.Edit permission on PPA (owner and admin), are able
+to see and click on the 'Review terms of service' menu link on PPA pages and
+read the current version of the document.
+
+    >>> cprov_browser.getLink("Review terms of service").click()
+    >>> cprov_browser.url
+    'http://launchpad.dev/~cprov/+archive/+view-tos'
+
+    >>> print cprov_browser.contents
+    <BLANKLINE>
+    ...
+    ...<h2>Personal Package Archive Terms of Service</h2>
+    ...
+
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> admin_browser.getLink("Review terms of service").click()
+    >>> admin_browser.url
+    'http://launchpad.dev/~cprov/+archive/+view-tos'
+
+    >>> user_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> user_browser.getLink("Review terms of service").click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> user_browser.open("http://launchpad.dev/~cprov/+archive/+view-tos")
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...'browserDefault', 'launchpad.Edit')
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> anon_browser.getLink("Review terms of service").click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/+view-tos")
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...'browserDefault', 'launchpad.Edit')
+
 
 == Activating Personal Package Archives for Users ==
 

@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces import (
     IProductSeries, IProductSeriesBugTask, NominationError,
     NominationSeriesObsoleteError, NotFoundError, IProduct, IDistribution,
     UNRESOLVED_BUGTASK_STATUSES,
-    ISourcePackage)
+    IBugBranch, ISourcePackage)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -185,6 +185,7 @@ class Bug(SQLBase):
         orderBy='-datecreated')
     bug_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='bug', orderBy='id')
+    date_last_message = UtcDateTimeCol(default=None)
 
     @property
     def displayname(self):
@@ -513,14 +514,16 @@ class Bug(SQLBase):
 
         return branch is not None
 
-    def addBranch(self, branch, whiteboard=None):
+    def addBranch(self, branch, whiteboard=None, status=None):
         """See `IBug`."""
         for bug_branch in shortlist(self.bug_branches):
             if bug_branch.branch == branch:
                 return bug_branch
+        if status is None:
+            status = IBugBranch['status'].default
 
         bug_branch = BugBranch(
-            branch=branch, bug=self, whiteboard=whiteboard)
+            branch=branch, bug=self, whiteboard=whiteboard, status=status)
 
         notify(SQLObjectCreatedEvent(bug_branch))
 
@@ -623,7 +626,7 @@ class Bug(SQLBase):
                     distroseries=None):
         """See `IBug`."""
         return NullBugTask(bug=self, product=product,
-                           productseries=productseries, 
+                           productseries=productseries,
                            sourcepackagename=sourcepackagename,
                            distribution=distribution,
                            distroseries=distroseries)

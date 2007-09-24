@@ -130,7 +130,7 @@ class Build(SQLBase):
         from canonical.launchpad.database.distroarchseriesbinarypackagerelease\
             import (DistroArchSeriesBinaryPackageRelease)
         return [DistroArchSeriesBinaryPackageRelease(
-            self.distroarchseries, bp) 
+            self.distroarchseries, bp)
             for bp in self.binarypackages]
 
     @property
@@ -163,6 +163,15 @@ class Build(SQLBase):
             "value is not suitable for this build record (%d)"
             % self.id)
         return self.datebuilt - self.buildduration
+
+    @property
+    def package_upload(self):
+        """See `IBuild`."""
+        packageuploadbuild = PackageUploadBuild.selectOneBy(build=self.id)
+        if packageuploadbuild is None:
+            return None
+        else:
+            return packageuploadbuild.packageupload
 
     def retry(self):
         """See `IBuild`."""

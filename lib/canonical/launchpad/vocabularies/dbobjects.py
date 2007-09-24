@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Vocabularies pulling stuff from the database.
 
@@ -23,8 +23,11 @@ __all__ = [
     'DistributionUsingMaloneVocabulary',
     'DistroSeriesVocabulary',
     'FAQVocabulary',
+    'FilteredDeltaLanguagePackVocabulary',
     'FilteredDistroArchSeriesVocabulary',
     'FilteredDistroSeriesVocabulary',
+    'FilteredFullLanguagePackVocabulary',
+    'FilteredLanguagePackVocabulary',
     'FilteredProductSeriesVocabulary',
     'FutureSprintVocabulary',
     'KarmaCategoryVocabulary',
@@ -60,33 +63,31 @@ __all__ = [
 import cgi
 from operator import attrgetter
 
+from sqlobject import AND, CONTAINSSTRING, OR, SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from zope.security.proxy import isinstance as zisinstance
 
-from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectNotFound
-
-from canonical.launchpad.webapp.vocabulary import (
-    CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary, 
-    NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
-from canonical.launchpad.helpers import shortlist
-from canonical.lp.dbschema import DistroSeriesStatus
-from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
-    Distribution, DistroSeries, Person, SourcePackageRelease, Branch,
-    BranchSet, BugWatch, Sprint, DistroArchSeries, KarmaCategory, Language,
-    Milestone, Product, Project, ProductRelease, ProductSeries,
-    TranslationGroup, BugTracker, POTemplateName, Bounty, Country,
-    Specification, Bug, Processor, ProcessorFamily, Component,
-    PillarName)
+    Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component, Country,
+    Distribution, DistroArchSeries, DistroSeries, KarmaCategory, Language,
+    LanguagePack, Milestone, Person, PillarName, POTemplateName, Processor,
+    ProcessorFamily, Product, ProductRelease, ProductSeries, Project,
+    SourcePackageRelease, Specification, Sprint, TranslationGroup)
+from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    IBugTask, IDistribution, IDistributionSourcePackage,
-    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IFAQ, IFAQTarget,
-    IEmailAddressSet, ILaunchBag, IMilestoneSet, IPerson, IPersonSet,
-    IPillarName, IProduct, IProject, ISourcePackage, ISpecification, ITeam,
-    IUpstreamBugTask, EmailAddressStatus)
+    EmailAddressStatus, IBugTask, IDistribution, IDistributionSourcePackage,
+    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
+    IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMilestoneSet, IPerson,
+    IPersonSet, IPillarName, IProduct, IProject, ISourcePackage,
+    ISpecification, ITeam, IUpstreamBugTask, LanguagePackType)
+from canonical.launchpad.webapp.vocabulary import (
+    CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
+    NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
+from canonical.lp.dbschema import DistroSeriesStatus
 
 
 class BasePersonVocabulary:
@@ -224,7 +225,7 @@ class FAQVocabulary:
     implements(IHugeVocabulary)
 
     displayname = 'Select a FAQ'
-    
+
     def __init__(self, context):
         """Create a new vocabulary for the context.
 
@@ -280,15 +281,25 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
     _table = Language
     _orderBy = 'englishname'
 
+    def __contains__(self, language):
+        """See `IVocabulary`."""
+        assert ILanguage.providedBy(language), (
+            "'in LanguageVocabulary' requires ILanguage as left operand, "
+            "got %s instead." % type(language))
+        return super(LanguageVocabulary, self).__contains__(language)
+
     def toTerm(self, obj):
+        """See `IVocabulary`."""
         return SimpleTerm(obj, obj.code, obj.displayname)
 
     def getTerm(self, obj):
+        """See `IVocabulary`."""
         if obj not in self:
             raise LookupError(obj)
         return SimpleTerm(obj, obj.code, obj.displayname)
 
     def getTermByToken(self, token):
+        """See `IVocabulary`."""
         try:
             found_language = Language.byCode(token)
         except SQLObjectNotFound:
@@ -298,21 +309,32 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
 
 class TranslatableLanguageVocabulary(LanguageVocabulary):
     """All the translatable languages known by Launchpad.
-    
-    English is not a translatable language. It is excluded from the terms.
-    """
 
+    Messages cannot be translated into English or a non-visible language.
+    This vocabulary contains all the languages known to Launchpad,
+    excluding English and non-visible languages.
+    """
     def __contains__(self, language):
-        """See `IVocabulary`."""
+        """See `IVocabulary`.
+
+        This vocabulary excludes English and languages that are not visible.
+        """
+        assert ILanguage.providedBy(language), (
+            "'in TranslatableLanguageVocabulary' requires ILanguage as "
+            "left operand, got %s instead." % type(language))
         if language.code == 'en':
             return False
-        return super(
+        return language.visible == True and super(
             TranslatableLanguageVocabulary, self).__contains__(language)
 
     def __iter__(self):
-        """See `IVocabulary`."""
+        """See `IVocabulary`.
+
+        Iterate languages that are visible and not English.
+        """
         languages = self._table.select(
-            "Language.code != 'en'", orderBy=self._orderBy)
+            "Language.code != 'en' AND Language.visible = True",
+            orderBy=self._orderBy)
         for language in languages:
             yield self.toTerm(language)
 
@@ -320,8 +342,11 @@ class TranslatableLanguageVocabulary(LanguageVocabulary):
         """See `IVocabulary`."""
         if token == 'en':
             raise LookupError(token)
-        return super(
-            TranslatableLanguageVocabulary, self).getTermByToken(token)
+        term = super(TranslatableLanguageVocabulary, self).getTermByToken(
+            token)
+        if not term.value.visible:
+            raise LookupError(token)
+        return term
 
 
 class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
@@ -593,7 +618,7 @@ class ValidPersonOrTeamVocabulary(
             ircid_match_query,
             clauseTables=['ValidPersonOrTeamCache', 'IRCId'])
 
-        # XXX Guilherme Salgado 2006-01-30 bug=30053: 
+        # XXX Guilherme Salgado 2006-01-30 bug=30053:
         # We have to explicitly provide an orderBy here as a workaround
         return name_matches.union(ircid_matches).union(
             email_matches, orderBy=['displayname', 'name'])
@@ -1106,7 +1131,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
     def _all_specs(self):
         return self._filter_specs(self.context.target.specifications())
-    
+
     def __iter__(self):
         return (self.toTerm(spec) for spec in self._all_specs())
 
@@ -1427,3 +1452,77 @@ class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
         else:
             return IDistribution.providedBy(obj)
 
+
+class FilteredLanguagePackVocabularyBase(SQLObjectVocabularyBase):
+    """Base vocabulary class to retrieve language packs for a distroseries."""
+    _table = LanguagePack
+    _orderBy = '-date_exported'
+
+    def toTerm(self, obj):
+        return SimpleTerm(
+            obj, obj.id, '%s' % obj.date_exported.strftime('%F %T %Z'))
+
+    def _baseQueryList(self):
+        """Return a list of sentences that defines the specific filtering.
+
+        That list will be linked with an ' AND '.
+        """
+        raise NotImplementedError
+
+    def __iter__(self):
+        if not IDistroSeries.providedBy(self.context):
+            # This vocabulary is only useful from a DistroSeries context.
+            return
+
+        query = self._baseQueryList()
+        query.append('distroseries = %s' % sqlvalues(self.context))
+        language_packs = self._table.select(
+            ' AND '.join(query), orderBy=self._orderBy)
+
+        for language_pack in language_packs:
+            yield self.toTerm(language_pack)
+
+
+class FilteredFullLanguagePackVocabulary(FilteredLanguagePackVocabularyBase):
+    """Full export Language Pack for a distribution series."""
+    displayname = 'Select a full export language pack'
+
+    def _baseQueryList(self):
+        """See `FilteredLanguagePackVocabularyBase`."""
+        return ['type = %s' % sqlvalues(LanguagePackType.FULL)]
+
+
+class FilteredDeltaLanguagePackVocabulary(FilteredLanguagePackVocabularyBase):
+    """Delta export Language Pack for a distribution series."""
+    displayname = 'Select a delta export language pack'
+
+    def _baseQueryList(self):
+        """See `FilteredLanguagePackVocabularyBase`."""
+        return ['(type = %s AND updates = %s)' % sqlvalues(
+            LanguagePackType.DELTA, self.context.language_pack_base)]
+
+
+class FilteredLanguagePackVocabulary(FilteredLanguagePackVocabularyBase):
+    displayname = 'Select a language pack'
+
+    def toTerm(self, obj):
+        return SimpleTerm(
+            obj, obj.id, '%s (%s)' % (
+                obj.date_exported.strftime('%F %T %Z'), obj.type.title))
+
+    def _baseQueryList(self):
+        """See `FilteredLanguagePackVocabularyBase`."""
+        # We are interested on any full language pack or language pack
+        # that is a delta of the current base lanuage pack type,
+        # except the ones already used.
+        used_lang_packs = []
+        if self.context.language_pack_base is not None:
+            used_lang_packs.append(self.context.language_pack_base.id)
+        if self.context.language_pack_delta is not None:
+            used_lang_packs.append(self.context.language_pack_delta.id)
+        query = []
+        if used_lang_packs:
+            query.append('id NOT IN %s' % sqlvalues(used_lang_packs))
+        query.append('(updates is NULL OR updates = %s)' % sqlvalues(
+            self.context.language_pack_base))
+        return query

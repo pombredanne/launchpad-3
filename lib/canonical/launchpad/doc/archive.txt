@@ -2,7 +2,7 @@
 
 An Archive models a Debian Archive ...
 
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.lp.dbschema import ArchivePurpose
   >>> from canonical.launchpad.interfaces import (
   ...     IPerson, IPersonSet, IArchiveSet, IArchive,
@@ -173,13 +173,14 @@ This method can return build records for sources matching the given
 Or return build records in a specific status:
 
   >>> from canonical.lp.dbschema import BuildStatus
-  >>> cprov_archive.getBuildRecords(status=BuildStatus.FULLYBUILT).count()
+  >>> cprov_archive.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
   3
 
-  >>> cprov_archive.getBuildRecords(status=BuildStatus.FAILEDTOBUILD).count()
+  >>> cprov_archive.getBuildRecords(
+  ...     build_state=BuildStatus.FAILEDTOBUILD).count()
   1
 
-  >>> cprov_archive.getBuildRecords(status=BuildStatus.NEEDSBUILD).count()
+  >>> cprov_archive.getBuildRecords(build_state=BuildStatus.NEEDSBUILD).count()
   0
 
 And finally build records target to a given pocket:
@@ -197,7 +198,7 @@ All the attributes can be combined in order to refine the result:
 
   >>> cprov_archive.getBuildRecords(
   ...     name='ice',
-  ...     status=BuildStatus.FULLYBUILT,
+  ...     build_state=BuildStatus.FULLYBUILT,
   ...     pocket=PackagePublishingPocket.RELEASE).count()
   1
 
@@ -315,17 +316,17 @@ IArchiveSet.getByDistroPurpose retrieves an IArchive given a distribution
 and an ArchivePurpose:
 
   >>> from canonical.lp.dbschema import ArchivePurpose
-  >>> commercial_archive = getUtility(IArchiveSet).getByDistroPurpose(
-  ...     ubuntutest, ArchivePurpose.COMMERCIAL)
-  >>> commercial_archive.description
-  u'Commercial archive'
+  >>> partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
+  ...     ubuntutest, ArchivePurpose.PARTNER)
+  >>> partner_archive.description
+  u'Partner archive'
 
 
 IArchive.archive_url will return a URL for the archive that the builder can
 use to retrieve files from it.
 
-  >>> commercial_archive.archive_url
-  u'http://launchpad.dev/ubuntutest-commercial'
+  >>> partner_archive.archive_url
+  u'http://launchpad.dev/ubuntutest-partner'
 
   >>> sandbox_archive.archive_url
   u'http://ppa.launchpad.dev/name16/ubuntu'
@@ -335,17 +336,30 @@ use to retrieve files from it.
   u'http://launchpad.dev/ubuntutest'
 
 
-The publisher config for COMMERCIAL contains only 'commercial' in its
-components.  This prevents non-commercial being published in the commercial
+The publisher config for PARTNER contains only 'partner' in its
+components.  This prevents non-partner being published in the partner
 archive.
 
   >>> comm_pubconf = removeSecurityProxy(
-  ...     commercial_archive.getPubConfig())
+  ...     partner_archive.getPubConfig())
   >>> for distroseries in comm_pubconf._distroserieses.keys():
   ...     print set(comm_pubconf._distroserieses[distroseries]['components'])
-  set(['commercial'])
-  set(['commercial'])
+  set(['partner'])
+  set(['partner'])
 
+
+IArchive.allowUpdatesToReleasePocket returns whether the archive is allowed
+to publish to the RELEASE pocket no matter what state the distroseries is in.
+
+  >>> partner_archive.allowUpdatesToReleasePocket()
+  True
+
+  >>> cprov_archive.allowUpdatesToReleasePocket()
+  True
+
+  >>> getUtility(IArchiveSet).getByDistroPurpose(
+  ...     ubuntutest, ArchivePurpose.PRIMARY).allowUpdatesToReleasePocket()
+  False
 
 Iteration over the own utility is performed against all archives,
 including the *main_archives*:

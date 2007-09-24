@@ -92,6 +92,7 @@
     <sectiontype name="shipitkubuntu" extends="virtual_host" />
     <sectiontype name="shipitedubuntu" extends="virtual_host" />
     <sectiontype name="xmlrpc" extends="virtual_host" />
+    <sectiontype name="xmlrpc-private" extends="virtual_host" />
 
     <sectiontype name="virtual_hosts">
         <key name="use_https" datatype="boolean" required="yes">
@@ -111,6 +112,8 @@
         <section name="*" type="shipitkubuntu" attribute="shipitkubuntu" required="yes" />
         <section name="*" type="shipitedubuntu" attribute="shipitedubuntu" required="yes" />
         <section name="*" type="xmlrpc" attribute="xmlrpc" required="yes" />
+        <section name="*" type="xmlrpc-private" attribute="xmlrpc_private"
+                          required="yes" />
     </sectiontype>
 
     <sectiontype name="launchpad_errorreports">
@@ -198,32 +201,6 @@ k            </description>
         </key>
         <key name="browser_notification_level" required="no"
             datatype="canonical.config.loglevel" default="info" />
-        <key name="supermirror_root" datatype="canonical.config.urlbase"
-            default="http://bazaar.launchpad.net/">
-            <description>
-                The prefix of the URL for the public area of the Supermirror.
-                This value is usually not meaningful to change, so it should
-                generally not be set explicitly so the default value is used.
-
-                This should end with a slash.
-
-                If that value is changed in production, the
-                branch_url_constraint_not_supermirror database constraint
-                should be updated.
-            </description>
-            <example>http://bazaar.launchpad.net/</example>
-        </key>
-        <key name="smartserver_root" datatype="canonical.config.urlbase"
-            default="bzr+ssh://bazaar.launchpad.net/">
-            <description>
-                The prefix of the URL for the codehosting smart server.
-                This value is usually not meaningful to change, so it should
-                generally not be set explicitly so the default value is used.
-
-                This should end with a slash.
-            </description>
-            <example>bzr+ssh://bazaar.launchpad.net/</example>
-        </key>
         <key name="bzr_imports_root_url" datatype="canonical.config.urlbase"
             default="http://escudero.ubuntu.com:680/">
             <description>
@@ -231,15 +208,6 @@ k            </description>
                 other RCSes like CVS.  Used to generate URLs for the branch
                 puller to use, not for public URLs.
             </description>
-        </key>
-        <key name="codebrowse_root" datatype="canonical.config.urlbase"
-             default="http://codebrowse.launchpad.net/">
-            <description>
-                The URL prefix for links to the Bazaar code browser.
-                Links are formed by appending the branch's unique name
-                to the root URL.
-            </description>
-            <example>http://codebrowse.launchpad.net/</example>
         </key>
         <key name="default_blob_expiry" datatype="integer" default="10800">
             <description>
@@ -408,6 +376,15 @@ k            </description>
             </description>
         </key>
 
+        <key name="componentoverride" datatype="string" required="no">
+            <description>
+                If specified, override packages' components to this value.
+                This only affects the publisher tables and may also override
+                the archive according to the existing component/archive
+                overriding rules.
+            </description>
+        </key>
+
         <key name="katie_dbname" datatype="string" required="no">
             <description>
                 The Katie database that should be used to extract extra
@@ -565,6 +542,19 @@ k            </description>
               without being truncated when displayed on the main bug
               page.
           </description>
+        </key>
+        <key name="expiration_dbuser" datatype="string" 
+            default="bugnotification">
+            <description>
+                The database user that will be used to expire bugtask.
+            </description>
+        </key>
+        <key name="days_before_expiration" datatype="integer"
+             default="60">
+            <description>
+                The number of days of inactivity required before an unassigned
+                bugtask with the status of INCOMPLETE is expired.
+            </description>
         </key>
         <key name="search_comments" datatype="boolean" required="no"
              default="no">
@@ -907,8 +897,6 @@ k            </description>
         <key name="dbuser" datatype="string" default="supermirror" />
         <key name="branchesdest" datatype="string" default="/var/tmp/sm-ng/mirrors" />
         <key name="masterlock" datatype="string" default="/var/tmp/sm-ng/masterlock" />
-        <key name="branchlistsource" datatype="string"
-             default="http://gangotri.ubuntu.com:9000/supermirror-pull-list.txt" />
         <key name="authserver_url" datatype="canonical.config.urlbase"
              default="http://localhost:8999/branch/">
             <description>
@@ -941,8 +929,6 @@ k            </description>
 
     <sectiontype name="codehosting">
         <key name="authserver" datatype="string" />
-        <key name="upload_url_base" datatype="string"
-             default="sftp://%s@bazaar.launchpad.net" />
         <key name="host_key_pair_path" datatype="string" />
         <key name="branches_root" datatype="string" />
         <key name="banner" datatype="string" />
@@ -950,6 +936,42 @@ k            </description>
         <key name="launch" datatype="boolean" required="no" default="no" />
         <key name="spew" datatype="boolean" required="no" default="no" />
         <key name="logfile" datatype="string" required="no" default="-" />
+        <key name="debug_logfile" datatype="string" required="no" />
+        <key name="smartserver_root" datatype="canonical.config.urlbase"
+            default="bzr+ssh://%(user)s@bazaar.launchpad.net/">
+            <description>
+                The prefix of the URL for the codehosting smart server.
+                This value is usually not meaningful to change, so it should
+                generally not be set explicitly so the default value is used.
+
+                This should end with a slash.
+            </description>
+            <example>bzr+ssh://bazaar.launchpad.net/</example>
+        </key>
+        <key name="supermirror_root" datatype="canonical.config.urlbase"
+            default="http://bazaar.launchpad.net/">
+            <description>
+                The prefix of the URL for the public area of the Supermirror.
+                This value is usually not meaningful to change, so it should
+                generally not be set explicitly so the default value is used.
+
+                This should end with a slash.
+
+                If that value is changed in production, the
+                branch_url_constraint_not_supermirror database constraint
+                should be updated.
+            </description>
+            <example>http://bazaar.launchpad.net/</example>
+        </key>
+        <key name="codebrowse_root" datatype="canonical.config.urlbase"
+             default="http://codebrowse.launchpad.net/">
+            <description>
+                The URL prefix for links to the Bazaar code browser.
+                Links are formed by appending the branch's unique name
+                to the root URL.
+            </description>
+            <example>http://codebrowse.launchpad.net/</example>
+        </key>
     </sectiontype>
 
     <sectiontype name="authserver" extends="database_options">
@@ -976,13 +998,14 @@ k            </description>
     </sectiontype>
 
     <sectiontype name="personalpackagearchive">
-        <key name="root" datatype="string" required="yes">
+        <key name="root" datatype="string" required="no"
+             default="/var/tmp/ppa">
             <description>
                 Directory to be created to store PPAs.
             </description>
         </key>
         <key name="base_url" datatype="string" required="no"
-             default="http://ppa.launchpad.dev">
+             default="http://ppa.launchpad.net">
             <description>
                 External base URL for PPAs.
             </description>
@@ -997,7 +1020,7 @@ k            </description>
             </description>
         </key>
         <key name="base_url" datatype="string" required="no"
-            default="http://launchpad.dev">
+            default="http://archive.launchpad.net">
             <description>
                 External base URL for distribution archives.
             </description>
@@ -1024,6 +1047,11 @@ k            </description>
         <key name="xmlrpc_url" datatype="string"
              default="http://xmlrpc.launchpad.dev/mailinglists" />
         <key name="xmlrpc_runner_sleep" datatype="integer" default="10" />
+    </sectiontype>
+
+    <sectiontype name="checkwatches">
+        <key name="batch_query_threshold" datatype="integer" default="10" />
+        <key name="default_socket_timeout" datatype="integer" default="30" />
     </sectiontype>
 
     <sectiontype name="canonical" extends="database_options">
@@ -1075,6 +1103,7 @@ k            </description>
         <section name="*" type="mailman" attribute="mailman" />
         <section name="*" type="archivepublisher" 
             attribute="archivepublisher" />
+        <section name="*" type="checkwatches" attribute="checkwatches" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file

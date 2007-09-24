@@ -23,8 +23,9 @@ from zope.publisher.browser import FileUpload
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.pomsgset import (
     BaseTranslationView, POMsgSetView)
+from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.potemplate import (
-    BaseExportView, POTemplateSOP, POTemplateFacets)
+    POTemplateSOP, POTemplateFacets)
 from canonical.launchpad.interfaces import (
     IPOFile, ITranslationImporter, ITranslationImportQueue,
     UnexpectedFormData, NotFoundError)
@@ -82,7 +83,7 @@ class POFileNavigation(Navigation):
                 self.context.language.code, self.context.variant)
         else:
             # It's a POST.
-            # XXX CarlosPerelloMarin 2006-04-20 bug=40275: 
+            # XXX CarlosPerelloMarin 2006-04-20 bug=40275:
             # We should check the kind of POST we got,
             # a Log out action will be also a POST and we
             # should not create a POMsgSet in that case.
@@ -175,7 +176,7 @@ class POFileUploadView(POFileView):
         translation_import_queue = getUtility(ITranslationImportQueue)
         root, ext = os.path.splitext(filename)
         translation_importer = getUtility(ITranslationImporter)
-        if (ext not in translation_importer.file_extensions_with_importer):
+        if (ext not in translation_importer.supported_file_extensions):
             self.request.response.addErrorNotification(
                 "Ignored your upload because the file you uploaded was not"
                 " recognised as a file that can be imported.")
@@ -392,21 +393,13 @@ class POFileTranslateView(BaseTranslationView):
 class POExportView(BaseExportView):
 
     def processForm(self):
-        if self.request.method != 'POST':
-            return
-
-        format = self.validateFileFormat(self.request.form.get('format'))
-        if not format:
-            return
-
         if self.context.validExportCache():
             # There is already a valid exported file cached in Librarian, we
             # can serve that file directly.
             self.request.response.redirect(self.context.exportfile.http_url)
-            return
+            return None
 
-        # Register the request to be processed later with our export script.
-        self.request_set.addRequest(
-            self.user, pofiles=[self.context], format=format)
-        self.nextURL()
+        return (None, [self.context])
 
+    def getDefaultFormat(self):
+        return self.context.potemplate.source_file_format

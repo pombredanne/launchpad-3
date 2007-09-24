@@ -21,8 +21,6 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> http_base_url = 'http://foo.bar.com/pub'
     >>> new_mirror = ubuntu.newMirror(
     ...     owner, speed, brazil, content, http_base_url=http_base_url)
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-    >>> LibrarianTestSetup().setUp()
 
 When a new mirror is created we'll generate a unique name for it, based on its
 host name and content.
@@ -132,7 +130,7 @@ distribution owner can see them and mark the ones that should be official.
 
 It's possible to retrieve a mirror by its name:
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import IDistributionMirror
     >>> example_mirror = mirrorset.getByName('archive-mirror')
     >>> verifyObject(IDistributionMirror, example_mirror)

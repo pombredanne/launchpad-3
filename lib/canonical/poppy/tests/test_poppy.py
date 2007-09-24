@@ -81,7 +81,10 @@ class TestPoppy(unittest.TestCase):
         conn.quit()
 
     def testCWD(self):
-        """Check automatic creation of directories 'cwd'ed in."""
+        """Check automatic creation of directories 'cwd'ed in.
+
+        Also ensure they are created with proper permission (g+rwx)
+        """
         conn = self.getFTPConnection()
         self.assertEqual(
             conn.cwd("foo/bar"), "250 CWD command successful.")
@@ -90,10 +93,15 @@ class TestPoppy(unittest.TestCase):
         conn.quit()
         self.waitForClose()
         wanted_path = self._uploadPath('foo/bar')
+
         self.assertTrue(os.path.exists(wanted_path))
+        self.assertEqual(os.stat(wanted_path).st_mode, 040775)
 
     def testMKD(self):
-        """Check recursive MKD (aka mkdir -p)"""
+        """Check recursive MKD (aka mkdir -p).
+
+        Also ensure they are created with proper permission (g+rwx)
+        """
         conn = self.getFTPConnection()
         self.assertEqual(
             conn.mkd("foo/bar"), "")
@@ -106,7 +114,9 @@ class TestPoppy(unittest.TestCase):
         conn.quit()
         self.waitForClose()
         wanted_path = self._uploadPath('foo/bar')
+
         self.assertTrue(os.path.exists(wanted_path))
+        self.assertEqual(os.stat(wanted_path).st_mode, 040775)
 
     def testRMD(self):
         """Check recursive RMD (aka rmdir)"""

@@ -85,6 +85,50 @@
       />
   </browser:pages>
 
+  <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.sourcepackage.SourcePackageView"
+    layer="canonical.launchpad.layers.TranslationsLayer" >
+    <browser:page
+      name="+potlist"
+      facet="translations"
+      template="../templates/object-pots.pt"
+      />
+    <browser:page
+      name="+translate"
+      facet="translations"
+      template="../templates/sourcepackage-translate.pt"
+      />
+    <browser:page
+      name="+translations"
+      facet="translations"
+      template="../templates/object-translations.pt"
+      />
+  </browser:pages>
+
+  <!--
+    XXX CarlosPerelloMarin 2007-08-12: This redirect is only useful until all
+    supported Ubuntu distro series stop pointing to
+    https://launchpad.net/ubuntu/.../+translate URLs and instead, use the
+    translations.launchpad.net domain for the 'Translate this application'
+    menu entry available in most graphical applications. See bug #138090 for
+    more details.
+    -->
+  <browser:page
+    name="+translate"
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    class="canonical.launchpad.browser.TranslateRedirectView"
+    permission="zope.Public"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.ISourcePackage"
     permission="zope.Public"
@@ -100,11 +144,6 @@
       template="../templates/sourcepackage-gethelp.pt"
       />
     <browser:page
-      name="+translate"
-      facet="translations"
-      template="../templates/sourcepackage-translate.pt"
-      />
-    <browser:page
       name="+changelog"
       facet="overview"
       template="../templates/sourcepackage-changelog.pt"
@@ -115,11 +154,6 @@
       template="../templates/sourcepackage-packaging.pt"
       />
     <browser:page
-      name="+translations"
-      facet="translations"
-      template="../templates/object-translations.pt"
-      />
-    <browser:page
       name="+builds"
       facet="overview"
       template="../templates/sourcepackage-builds.pt"
@@ -127,11 +161,6 @@
     <browser:page
       name="+builds-list"
       template="../templates/builds-list.pt"
-      />
-    <browser:page
-      name="+potlist"
-      facet="translations"
-      template="../templates/object-pots.pt"
       />
 
     <!-- SourcePackage Portlets -->
@@ -143,16 +172,15 @@
     />
   </browser:pages>
 
-  <browser:pages
+  <browser:page
     for="canonical.launchpad.interfaces.ISourcePackage"
     permission="launchpad.Admin"
-    class="canonical.launchpad.browser.sourcepackage.SourcePackageView">
-    <browser:page
-      name="+potemplatenames"
-      facet="translations"
-      template="../templates/object-potemplatenames.pt"
-      />
-  </browser:pages>
+    class="canonical.launchpad.browser.sourcepackage.SourcePackageView"
+    name="+potemplatenames"
+    facet="translations"
+    template="../templates/object-potemplatenames.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
 
   <browser:page
     for="canonical.launchpad.interfaces.ISourcePackage"
