@@ -23,7 +23,7 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces import ITeam, PollAlgorithm, PollSecrecy
+from canonical.launchpad.interfaces import ITeam
 from canonical.launchpad.fields import ContentNameField
 
 from canonical.lazr.enum import DBEnumeratedType, DBItem
