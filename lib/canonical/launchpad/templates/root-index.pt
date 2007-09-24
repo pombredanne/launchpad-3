@@ -42,25 +42,44 @@
           </p>
         </div>
         <div class="three column middle">
-          <h2>What&#8217;s new</h2>
+          <h2 style="margin-bottom: 0">What&#8217;s new in 1.1.9</h2>
+          <div class="lesser">(Updated 2007-09-21)</div>
           <ul class="news">
             <li>
               <a href="https://help.launchpad.net/BazaarSSH"
-                 >Faster code branch uploads with bzr+ssh.</a>
+                ><strong>Code hosting:</strong> faster code branch uploads 
+                with bzr+ssh.</a>
             </li>
             <li>
               <a href="https://help.launchpad.net/KDEPlurals">
-                Translations now supports KDE's plural strings.</a>
+                <strong>KDE translations:</strong> support for KDE credits 
+                and plural strings.</a>
             </li>
             <li>
               <a href="https://help.launchpad.net/AddingBugWatches">
-                Streamlined bug tracker registration when adding bugwatches.</a>
+                <strong>Bug watches:</strong> streamlined bug tracker 
+                registration when adding new watches.</a>
             </li>
             <li>
               <a href="https://help.launchpad.net/TranslationsFullExport">
-                Export all translations for a project to a single tarball.</a>
+                <strong>Unified translation downloads:</strong> export all 
+                translations for a project to a single tarball.</a>
+            </li>
+            <li>
+              <a href="https://help.launchpad.net/PPAQuickStart"
+                 ><strong>Personal Package Archives:</strong>
+                 ongoing beta of Launchpad's package
+                 build and repository hosting service.</a>
+            </li>
+            <li>
+              <a href="https://help.launchpad.net/JoiningLaunchpadBetaTesters"
+                 ><strong>Launchpad Beta:</strong>
+                 participate in our beta program and get access to pre-release
+                 features.</a>
             </li>
           </ul>
+          <div style="text-align: right"><a 
+              href="http://news.launchpad.net">More...</a></div>
         </div>
         <div class="three column right">
           <h2>Featured projects</h2>

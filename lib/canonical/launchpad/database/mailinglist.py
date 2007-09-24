@@ -6,7 +6,6 @@ __all__ = [
     'MailingList',
     'MailingListSet',
     'MailingListSubscription',
-    'MailingListSubscriptionSet',
     ]
 
 import pytz
@@ -20,9 +19,9 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
-    CannotSubscribe, CannotUnsubscribe, ILaunchpadCelebrities,
-    IMailingList, IMailingListSet, IMailingListSubscription,
-    IMailingListSubscriptionSet, MailingListStatus)
+    CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
+    ILaunchpadCelebrities, IMailingList, IMailingListSet,
+    IMailingListSubscription, MailingListStatus)
 
 
 class MailingList(SQLBase):
@@ -175,6 +174,20 @@ class MailingList(SQLBase):
                 (person.displayname, self.team.displayname))
         subscription.destroySelf()
 
+    def changeAddress(self, person, address=None):
+        """See `IMailingList`."""
+        subscription = MailingListSubscription.selectOneBy(
+            person=person, mailing_list=self)
+        if subscription is None:
+            raise CannotChangeSubscription(
+                '%s is not a member of the mailing list: %s' %
+                (person.displayname, self.team.displayname))
+        if address is not None and address.person != person:
+            raise CannotChangeSubscription(
+                '%s does not own the email address: %s' %
+                (person.displayname, address.email))
+        subscription.email_address = address
+
     def _clearSubscriptions(self):
         subscriptions = MailingListSubscription.selectBy(mailing_list=self)
         for subscription in subscriptions:
@@ -183,7 +196,11 @@ class MailingList(SQLBase):
     @property
     def addresses(self):
         """See `IMailingList`."""
-        subscriptions = MailingListSubscription.selectBy(mailing_list=self)
+        subscriptions = MailingListSubscription.select(
+            """mailing_list = %s AND person IN (
+                    SELECT person FROM TeamParticipation
+                    WHERE team = %d)
+            """ % (self.id, self.team.id))
         for subscription in subscriptions:
             if subscription.email_address is None:
                 # Use the person's preferred email address.
@@ -271,19 +288,3 @@ class MailingListSubscription(SQLBase):
 
     email_address = ForeignKey(dbName='email_address',
                                foreignKey='EmailAddress')
-
-
-class MailingListSubscriptionSet:
-    implements(IMailingListSubscriptionSet)
-
-    def deleteSubscription(self, person, team):
-        """See `IMailingListSubscriptionSet`."""
-        # Find the team's mailing list, if it has one.
-        mailing_list = MailingListSet().get(team.name)
-        if mailing_list is not None:
-            try:
-                mailing_list.unsubscribe(person)
-            except CannotUnsubscribe:
-                # The person is not a member of the mailing list, so there's
-                # nothing to do.  We can safely ignore this exception.
-                pass

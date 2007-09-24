@@ -23,13 +23,6 @@
          interface="canonical.launchpad.interfaces.IMailingListApplication"/>
     </securedutility>
 
-    <securedutility
-      class="canonical.launchpad.database.MailingListSubscriptionSet"
-      provides="canonical.launchpad.interfaces.IMailingListSubscriptionSet">
-      <allow
-       interface="canonical.launchpad.interfaces.IMailingListSubscriptionSet"/>
-    </securedutility>
-
     <xmlrpc:view
         for="canonical.launchpad.interfaces.IMailingListApplication"
         interface="canonical.launchpad.interfaces.IMailingListAPIView"

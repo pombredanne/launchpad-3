@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'CannotChangeSubscription',
     'CannotSubscribe',
     'CannotUnsubscribe',
     'IMailingList',
@@ -11,7 +12,6 @@ __all__ = [
     'IMailingListApplication',
     'IMailingListSet',
     'IMailingListSubscription',
-    'IMailingListSubscriptionSet',
     'MailingListAutoSubscribePolicy',
     'MailingListStatus',
     ]
@@ -290,6 +290,19 @@ class IMailingList(Interface):
             the mailing list.
         """
 
+    def changeAddress(person, address=None):
+        """Change the address a person is subscribed with.
+
+        :param person: The mailing list subscriber.
+        :param address: The new address to use for the subscription.  The
+            address must be owned by `person`.  If None (the default), then
+            the person's preferred email address is used.  If the person's
+            preferred address changes, their subscription address will change
+            as well.
+        :raises CannotChangeSubscription: Raised when the person is not a
+            member of the mailing list.
+        """
+
     addresses = Set(
         title=_('Addresses'),
         description=_('The set of subscribed email addresses.'),
@@ -455,20 +468,6 @@ class IMailingListSubscription(Interface):
         'email address, even if that changes.')
 
 
-class IMailingListSubscriptionSet(Interface):
-    """A set of mailing list subscription."""
-
-    def deleteSubscription(person, team):
-        """Delete a person's subscription to a team mailing list.
-
-        If the team does not have an active mailing list, or if the person is
-        not a member of that mailing list, then do nothing.
-
-        :param person: The IPerson to delete.  This must not be a team.
-        :param team: A team having a mailing list.
-        """
-
-
 class CannotSubscribe(Exception):
     """The subscribee is not allowed to subscribe to the mailing list.
 
@@ -482,4 +481,11 @@ class CannotUnsubscribe(Exception):
 
     This can be raised when Person who is not a member of the mailing list
     tries to unsubscribe from the mailing list.
+    """
+
+class CannotChangeSubscription(Exception):
+    """The subscription change cannot be fulfilled.
+
+    This can be raised when a change of subscription is requested for a person
+    who is not subscribed to the mailing list.
     """
