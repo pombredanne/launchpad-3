@@ -487,6 +487,16 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             )""" % sqlvalues(personID=self.id),
             clauseTables=['Question'], distinct=True))
 
+    @property
+    def translatable_languages(self):
+        """See `IPerson`."""
+        return Language.select("""
+            Language.id = PersonLanguage.language AND
+            PersonLanguage.person = %s AND
+            Language.code <> 'en' AND
+            Language.visible""" % quote(self),
+            clauseTables=['PersonLanguage'], orderBy='englishname')
+
     def getDirectAnswerQuestionTargets(self):
         """See `IPerson`."""
         answer_contacts = AnswerContact.select(
