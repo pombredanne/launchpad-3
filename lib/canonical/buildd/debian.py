@@ -83,7 +83,7 @@ class DebianBuildManager(BuildManager):
             self.ogre = extra_args['ogrecomponent']
         else:
             self.ogre = False
-        if 'archives' in extra_args:
+        if 'archives' in extra_args and extra_args['archives']:
             self.sources_list = extra_args['archives']
         else:
             self.sources_list = None

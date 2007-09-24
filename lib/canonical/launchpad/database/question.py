@@ -544,7 +544,7 @@ class QuestionSet:
         return Question.select("""
             id in (SELECT Question.id
                 FROM Question
-                    LEFT JOIN QuestionBug
+                    LEFT OUTER JOIN QuestionBug
                         ON Question.id = QuestionBug.question
                     LEFT OUTER JOIN BugTask
                         ON QuestionBug.bug = BugTask.bug
@@ -552,10 +552,10 @@ class QuestionSet:
                 WHERE
                     Question.status IN (%s, %s)
                     AND (Question.datelastresponse IS NULL
-                         OR Question.datelastresponse < 
-                            (current_timestamp - interval '%s days'))
-                    AND Question.datelastquery < 
-                        (current_timestamp - interval '%s days')
+                         OR Question.datelastresponse < (CURRENT_TIMESTAMP
+                            AT TIME ZONE 'UTC' - interval '%s days'))
+                    AND Question.datelastquery < (CURRENT_TIMESTAMP
+                            AT TIME ZONE 'UTC' - interval '%s days')
                     AND Question.assignee IS NULL
                     AND BugTask.status IS NULL)
             """ % sqlvalues(

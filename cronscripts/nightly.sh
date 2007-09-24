@@ -59,6 +59,9 @@ python update-bugtask-targetnamecaches.py -q
 echo == Expiring questions `date` ==
 python expire-questions.py
 
+echo == Expiring bugs `date` ==
+python expire-bugtasks.py
+
 echo == Product Release Finder `date` ==
 python product-release-finder.py -q
 
