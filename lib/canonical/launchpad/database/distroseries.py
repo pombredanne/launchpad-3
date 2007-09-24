@@ -187,9 +187,9 @@ def copy_active_translations_as_update(child, transaction, logger):
     """Update child distroseries with translations from parent."""
     full_name = "%s_%s" % (child.distribution.name, child.name)
     tables = ['POFile', 'POMsgSet', 'POSubmission']
-    copier = MultiTableCopy(
-        full_name, tables, restartable=False, logger=logger)
+    copier = MultiTableCopy(full_name, tables, logger=logger)
 
+    copier.dropHoldingTables()
     drop_tables(cursor(), [
         'temp_equiv_template', 'temp_equiv_potmsgset', 'temp_inert_pomsgsets',
         'temp_changed_pofiles'])
