@@ -7,14 +7,6 @@
   <facet facet="bugs">
 
 
-    <!-- Feeds -->
-    <browser:page
-        name="latest-bugs.atom"
-        for="*"
-        permission="zope.Public"
-        class="canonical.launchpad.feeds.ProjectBugsFeed"
-        />
-
     <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
         class="canonical.launchpad.browser.BugTargetView"

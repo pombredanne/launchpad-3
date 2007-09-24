@@ -66,6 +66,7 @@
     <include file="entitlement.zcml" />
     <include file="faq.zcml" />
     <include file="faqcollection.zcml" />
+    <include file="feed.zcml" />
     <include file="files.zcml" />
     <include file="gpgkey.zcml" />
     <include file="hwdb.zcml" />

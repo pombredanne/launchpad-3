@@ -14,6 +14,8 @@ __all__ = [
     'MINUTES',
     ]
 
+from datetime import datetime
+
 from zope.app.pagetemplate import ViewPageTemplateFile
 
 # XXX - bac - 20 Sept 2007, modules in canonical.lazr should not import from
@@ -38,6 +40,8 @@ class FeedBase(LaunchpadView):
     - getItems()
     - itemToAtomFeedEntry
     """
+
+    # XXX bac - need caching headers, including expiration, etc.
 
     max_age = 60 * MINUTES
     items = []
@@ -66,16 +70,26 @@ class FeedBase(LaunchpadView):
     def itemToFeedEntry(self, item):
         raise NotImplementedError
 
+    def getNow(self):
+        # isoformat returns the seconds to six decimal places
+        # which confuses Atom readers
+        #return "%sZ" % datetime.utcnow().isoformat()
+        return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     @property
     def template(self):
         return ViewPageTemplateFile(self.template_file)
 
     def render(self):
-        print "template file: ", self.template_file
-        t = ViewPageTemplateFile(self.template_file)
-        print "t: ", t
-        return t(self)
-
+        # XXX, bac - This call looks funny, but the callable template must be
+        # passed a reference to the view.  The first use of self is to
+        # reference the property.
+        return self.template(self)
 
 class FeedEntry:
-    pass
+    title = None
+    URL = None
+    content = None
+    date_published = None
+    date_updated = None
+    author = None
+    id_ = None

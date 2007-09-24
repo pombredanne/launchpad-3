@@ -43,10 +43,11 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, ICalendarOwner, IFAQTarget,
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
-    ILaunchpadStatisticSet, IPersonSet, IProduct, IProductSet,
-    IQuestionTarget, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH)
+    DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType,
+    BugTaskSearchParams,ICalendarOwner, IFAQTarget, IHasIcon, IHasLogo,
+    IHasMugshot, ILaunchpadCelebrities, ILaunchpadStatisticSet, IPersonSet,
+    IProduct, IProductSet, IQuestionTarget, NotFoundError,
+    QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.lp.dbschema import (
     TranslationPermission, SpecificationSort, SpecificationFilter,
     SpecificationDefinitionStatus, SpecificationImplementationStatus)
@@ -264,6 +265,15 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def bugtargetname(self):
         """See `IBugTarget`."""
         return self.name
+
+    def getLatestBugTasks(self, quantity=5):
+        """See `IProduct`."""
+        params = BugTaskSearchParams(orderby="-datecreated",
+                                     omit_dupes=True,
+                                     user=None)
+
+        tasklist = self.searchTasks(params)
+        return tasklist[:quantity]
 
     def getLatestBranches(self, quantity=5, visible_by_user=None):
         """See `IProduct`."""
@@ -753,5 +763,3 @@ class ProductSet:
 
     def count_codified(self):
         return self.stats.value('products_with_branches')
-
-

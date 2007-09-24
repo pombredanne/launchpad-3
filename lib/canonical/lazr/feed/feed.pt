@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<entry xmlns="http://www.w3.org/2005/Atom"
+<feed xmlns="http://www.w3.org/2005/Atom"
       xmlns:lp="http://api.launchpad.net/schema"
       xmlns:tal="http://xml.zope.org/namespaces/tal"
       xmlns:metal="http://xml.zope.org/namespaces/metal">
 
-    <metal:bug metal:use-macro="context/@@bug_entry_atom/bug_entry" />
-</entry>
+    <title tal:content="view/getTitle">Recently opened bugs</title>
+
+    <id tal:content="view/getURL">http://api.launchpad.net/bugs/</id>
+    <link rel="self" href="http://api.launchpad.net/bugs/" />
+    <updated tal:content="view/getNow">2007-05-26T12:45:01Z</updated>
+    <entry tal:repeat="entry view/getItems">
+       <metal:entry metal:use-macro="entry/@@feed-entry/feed-entry" />
+    </entry>
+</feed>

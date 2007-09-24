@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metal:entry metal:define-macro="feed-entry"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:lp="http://api.launchpad.net/schema"
+    xmlns:metal="http://xml.zope.org/namespaces/metal">
+    <title tal:content="entry/title" />
+    <link tal:content="entry/URL" />
+    <updated tal:content="entry/date_updated" />
+    <id tal:content="entry/id_">http://api.launchpad.net/bugs/NNN#description</id>
+    <content tal:content="structure entry/content/fmt:shorten/100/fmt:text-to-html" type="html" />
+</metal:entry>
