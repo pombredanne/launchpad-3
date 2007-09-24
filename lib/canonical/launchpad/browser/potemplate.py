@@ -32,7 +32,7 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.productseries import (
     ProductSeriesSOP, ProductSeriesFacets)
-from canonical.launchpad.browser.rosetta import TranslationsMixin
+from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.browser.sourcepackage import (
     SourcePackageSOP, SourcePackageFacets)
 from canonical.launchpad.interfaces import (

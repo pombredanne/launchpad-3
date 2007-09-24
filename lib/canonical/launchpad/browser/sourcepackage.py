@@ -8,7 +8,6 @@ __all__ = [
     'SourcePackageNavigation',
     'SourcePackageSOP',
     'SourcePackageFacets',
-    'SourcePackageTranslateRedirectView',
     'SourcePackageView',
     ]
 
@@ -25,7 +24,7 @@ from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
-from canonical.launchpad.browser.rosetta import TranslationsMixin
+from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
 from canonical.launchpad.webapp import (
@@ -253,26 +252,3 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
         # this page is because it's unlikely that there will be so
         # many builds that the listing will be overwhelming.
         return None
-
-class SourcePackageTranslateRedirectView:
-    """Redirects to translations site for +translate page.
-
-    XXX CarlosPerelloMarin 2007-08-12: This redirect is only useful until all
-    supported Ubuntu distro series stop pointing to
-    https://launchpad.net/ubuntu/.../+translate URLs and instead, use the
-    translations.launchpad.net domain for the 'Translate this application'
-    menu entry available in most graphical applications. See bug #138090 for
-    more details.
-    """
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        """Redirect to the +translate page in the translations site."""
-        self.request.response.redirect(
-            '/'.join([
-                canonical_url(self.context, rootsite='translations'),
-                '+translate'
-                ]), status=301)
