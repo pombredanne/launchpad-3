@@ -72,12 +72,12 @@ class CodeImport(SQLBase):
         """See `ICodeImport`."""
         if self.update_interval is not None:
             return self.update_interval
-        if self.rcs_type is RevisionControlSystems.CVS:
-            seconds = config.codeimport.default_interval_cvs
-        elif self.rcs_type is RevisionControlSystems.SVN:
-            seconds = config.codeimport.default_interval_subversion
-        else:
-            raise AssertionError('Unknown rcs_type: %s' % (self.rcs_type,))
+        default_interval_dict = {
+            RevisionControlSystems.CVS:
+                config.codeimport.default_interval_cvs,
+            RevisionControlSystems.SVN:
+                config.codeimport.default_interval_subversion}
+        seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
 
 

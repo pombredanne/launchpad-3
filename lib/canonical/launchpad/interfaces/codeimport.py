@@ -9,7 +9,7 @@ __all__ = [
     'ICodeImportSet',
     ]
 
-from zope.interface import Attribute, Interface
+from zope.interface import Interface
 from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
 
 from canonical.launchpad import _
@@ -96,14 +96,14 @@ class ICodeImport(Interface):
 
     update_interval = Timedelta(
         title=_("Update interval"), required=False, description=_(
-        "The user-specified time between automatic updates of this import."
+        "The user-specified time between automatic updates of this import. "
         "If this is unspecified, the effective update interval is a default "
         "value selected by Launchpad administrators."))
 
     effective_update_interval = Timedelta(
         title=_("Effective update interval"), required=True, readonly=True,
         description=_(
-        "The effective time between automatic updates of this import."
+        "The effective time between automatic updates of this import. "
         "If the user did not specify an update interval, this is a default "
         "value selected by Launchpad adminstrators."))
 
