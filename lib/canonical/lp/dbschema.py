@@ -72,7 +72,6 @@ __all__ = (
 'SpecificationSort',
 'SpecificationDefinitionStatus',
 'SprintSpecificationStatus',
-'TranslationFileFormat',
 'PackageUploadStatus',
 'PackageUploadCustomFormat',
 'UpstreamFileType',
@@ -2073,39 +2072,6 @@ class PostedMessageStatus(DBSchema):
         Rejected
 
         A message held for first-post moderation has been rejected.
-        """)
-
-
-class TranslationFileFormat(DBSchema):
-    """Translation File Format
-
-    This is an enumeration of the different sorts of file that Launchpad
-    Translations knows about.
-    """
-
-    PO = Item(1, """
-        PO format
-
-        Gettext's standard text file format.
-        """)
-
-    MO = Item(2, """
-        MO format
-
-        Gettext's standard binary file format.
-        """)
-
-    XPI = Item(3, """
-        Mozilla XPI format
-
-        The .xpi format as used by programs from Mozilla foundation.
-        """)
-
-    KDEPO = Item(4, """
-        KDE PO format
-
-        Legacy KDE PO format which embeds context and plural forms inside
-        messages itself instead of using gettext features.
         """)
 
 

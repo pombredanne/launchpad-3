@@ -12,12 +12,11 @@ Such features include plural forms support and context support.
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces import (
     ...     ILaunchpadCelebrities, IPOTemplateNameSet, IPersonSet,
-    ...	    IProductSet, ITranslationImportQueue)
+    ...     IProductSet, ITranslationImportQueue, TranslationFileFormat)
     >>> from canonical.launchpad.database import (
     ...     POTemplateSubset, SourcePackageName)
     >>> from canonical.launchpad.scripts.po_import import (
     ...     AutoApproveProcess, ImportProcess)
-    >>> from canonical.lp.dbschema import TranslationFileFormat
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')

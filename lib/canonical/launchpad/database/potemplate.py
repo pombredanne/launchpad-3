@@ -38,12 +38,11 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
     ITranslationExporter, ITranslationFile, ITranslationImporter,
     IVPOTExportSet, LanguageNotFound, NotFoundError, RosettaImportStatus,
-    TranslationConstants, TranslationFormatInvalidInputError,
-    TranslationFormatSyntaxError)
+    TranslationConstants, TranslationFileFormat,
+    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.translationformat import TranslationMessage
-from canonical.lp.dbschema import TranslationFileFormat
 
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s

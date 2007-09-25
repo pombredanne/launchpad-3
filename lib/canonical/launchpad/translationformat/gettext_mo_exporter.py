@@ -16,11 +16,10 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    ITranslationExporter, ITranslationFormatExporter,
+    ITranslationExporter, ITranslationFormatExporter, TranslationFileFormat,
     UnknownTranslationExporterError)
 from canonical.launchpad.translationformat.translation_export import (
     ExportedTranslationFile, LaunchpadWriteTarFile)
-from canonical.lp.dbschema import TranslationFileFormat
 
 
 class POCompiler:
