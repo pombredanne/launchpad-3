@@ -185,6 +185,7 @@ class Bug(SQLBase):
         orderBy='-datecreated')
     bug_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='bug', orderBy='id')
+    date_last_message = UtcDateTimeCol(default=None)
 
     @property
     def displayname(self):

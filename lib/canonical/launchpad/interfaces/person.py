@@ -455,6 +455,8 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             description=_('The Organization requesting the CDs')
             )
     languages = Attribute(_('List of languages known by this person'))
+    translatable_languages = Attribute(
+        _('Languages this person knows, apart from English'))
 
     hide_email_addresses = Bool(
         title=_("Hide my email addresses from other Launchpad users"),
@@ -847,13 +849,13 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     def latestKarma(quantity=25):
         """Return the latest karma actions for this person.
-        
+
         Return no more than the number given as quantity.
         """
 
     def iterTopProjectsContributedTo(limit=10):
         """Iterate over the top projects contributed to.
-        
+
         Iterate no more than the given limit.
         """
 
@@ -941,7 +943,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     def hasParticipationEntryFor(team):
         """Return True when this person is a member of the given team.
-        
+
         The person's membership may be direct or indirect.
         """
 

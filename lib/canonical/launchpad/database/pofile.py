@@ -318,7 +318,7 @@ class POFile(SQLBase, POFileMixIn):
             "Calling prepareTranslationCredits on a message with "
             "msgid '%s'." % msgid)
         text = potmsgset.translationsForLanguage(self.language.code)[0]
-        if (msgid == u'_: EMAIL OF TRANSLATORS\nYour emails'):
+        if msgid in [u'_: EMAIL OF TRANSLATORS\nYour emails', u'Your emails']:
             emails = []
             if text is not None:
                 emails.append(text)
@@ -335,7 +335,7 @@ class POFile(SQLBase, POFileMixIn):
                 else:
                     emails.append(preferred_email.email)
             return u','.join(emails)
-        elif (msgid == u'_: NAME OF TRANSLATORS\nYour names'):
+        elif msgid in [u'_: NAME OF TRANSLATORS\nYour names', u'Your names']:
             names = []
             if text is not None:
                 names.append(text)

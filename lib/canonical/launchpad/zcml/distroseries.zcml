@@ -242,6 +242,13 @@
     template="../templates/distroseries-edit.pt"
     />
 
+  <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroSeries"
     class="canonical.launchpad.browser.DistroSeriesView"
@@ -261,6 +268,14 @@
       name="+potlist"
       template="../templates/object-pots.pt" />
   </browser:pages>
+
+  <browser:page
+      name="+help-translate-button"
+      facet="translations"
+      for="canonical.launchpad.interfaces.IDistroSeries"
+      class="canonical.launchpad.browser.HelpTranslateButtonView"
+      permission="zope.Public"
+      />
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistroSeries"

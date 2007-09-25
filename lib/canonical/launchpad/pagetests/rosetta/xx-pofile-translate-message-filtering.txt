@@ -179,3 +179,45 @@ The exact same batch of messages is shown again, but with the error.
   number of format specifications in 'msgid' and 'msgstr' does not match
   ...
 
+
+== Filters and alternative languages ==
+
+Handling of http parameters gets a bit more complex when we post forms.
+Nonetheless we can submit translations while combining message filters with
+alternative suggestion languages.
+
+  >>> user_browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/zh_CN/+translate?show=untranslated')
+  >>> user_browser.getControl('Spanish (es)').selected = True
+  >>> user_browser.getControl(name='select_alternate_language').click()
+
+  >>> user_browser.getControl(
+  ...     name='msgset_161_zh_CN_translation_0_radiobutton').value = [
+  ...         'msgset_161_zh_CN_translation_0_new']
+  >>> user_browser.getControl(
+  ...     name='msgset_161_zh_CN_translation_0_new').value = 'Chinese!'
+  >>> user_browser.getControl(name='submit_translations').click()
+
+If we browse back to the page we just submitted translations for, we don't
+see our own translation since we are only showing untranslated strings.
+
+  >>> user_browser.getLink("Previous").click()
+
+  >>> text = extract_text(find_main_content(user_browser.contents))
+  >>> import re
+  >>> re.search('Chinese!', text) == None
+  True
+
+We do, however, see Spanish suggestions.
+
+  >>> print text
+  Template ...
+  English: evolution addressbook
+  Current Chinese (China): (no translation yet)
+  Suggestions:
+  ...
+  libreta de direcciones de Evolution
+  Spanish
+  ...
+
