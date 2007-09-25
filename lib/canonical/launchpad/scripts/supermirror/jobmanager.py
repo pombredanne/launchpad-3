@@ -18,12 +18,15 @@ class JobManager:
     branches.
     """
 
-    def __init__(self, branch_type):
+    def __init__(self, branch_status_client, branch_type):
+        self.branch_status_client = branch_status_client
         self.branches_to_mirror = []
         self.actualLock = None
         self.branch_type = branch_type
         self.name = 'branch-puller-%s' % branch_type.name.lower()
         self.lockfilename = '/var/lock/launchpad-%s.lock' % self.name
+        self._addBranches(
+            branch_status_client.getBranchPullQueue(branch_type.name))
 
     def run(self, logger):
         """Run all branches_to_mirror registered with the JobManager"""
@@ -32,14 +35,12 @@ class JobManager:
             self.branches_to_mirror.pop(0).mirror(logger)
         logger.info('Mirroring complete')
 
-    def addBranches(self, branch_status_client):
-        """Queue branches from the list given by the branch status client."""
-        branches_to_pull = branch_status_client.getBranchPullQueue(
-            self.branch_type.name)
+    def _addBranches(self, branches_to_pull):
         for branch_id, branch_src, unique_name in branches_to_pull:
             self.branches_to_mirror.append(
                 self.getBranchToMirror(
-                    branch_status_client, branch_id, branch_src, unique_name))
+                    self.branch_status_client, branch_id, branch_src,
+                    unique_name))
 
     def getBranchToMirror(self, branch_status_client, branch_id, branch_src,
                           unique_name):

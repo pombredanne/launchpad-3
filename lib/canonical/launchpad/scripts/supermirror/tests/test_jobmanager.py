@@ -33,10 +33,19 @@ class TestJobManager(unittest.TestCase):
         return FakeBranchStatusClient(
             {'HOSTED': hosted, 'MIRRORED': mirrored, 'IMPORTED': imported})
 
+    def makeJobManager(self, branch_type, branch_tuples):
+        if branch_type == BranchType.HOSTED:
+            client = self.makeFakeClient(branch_tuples, [], [])
+        elif branch_type == BranchType.MIRRORED:
+            client = self.makeFakeClient([], branch_tuples, [])
+        elif branch_type == BranchType.IMPORTED:
+            client = self.makeFakeClient([], [], branch_tuples)
+        else:
+            self.fail("Unknown branch type: %r" % (branch_type,))
+        return jobmanager.JobManager(client, branch_type)
+
     def testEmptyAddBranches(self):
-        fakeclient = self.makeFakeClient([], [], [])
-        manager = jobmanager.JobManager(BranchType.HOSTED)
-        manager.addBranches(fakeclient)
+        manager = self.makeJobManager(BranchType.HOSTED, [])
         self.assertEqual([], manager.branches_to_mirror)
 
     def testSingleAddBranches(self):
@@ -46,15 +55,13 @@ class TestJobManager(unittest.TestCase):
             dest=config.supermirror.branchesdest + '/00/00/00/00',
             branch_status_client=None, branch_id=None, unique_name=None,
             branch_type=None)
-        fakeclient = self.makeFakeClient(
-            [(0, 'managersingle', u'name//trunk')], [], [])
-        manager = jobmanager.JobManager(BranchType.HOSTED)
-        manager.addBranches(fakeclient)
+        manager = self.makeJobManager(
+            BranchType.HOSTED, [(0, 'managersingle', u'name//trunk')])
         self.assertEqual([expected_branch], manager.branches_to_mirror)
 
     def testManagerCreatesLocks(self):
         try:
-            manager = jobmanager.JobManager(BranchType.HOSTED)
+            manager = self.makeJobManager(BranchType.HOSTED, [])
             manager.lockfilename = self.masterlock
             manager.lock()
             self.failUnless(os.path.exists(self.masterlock))
@@ -64,10 +71,10 @@ class TestJobManager(unittest.TestCase):
 
     def testManagerEnforcesLocks(self):
         try:
-            manager = jobmanager.JobManager(BranchType.HOSTED)
+            manager = self.makeJobManager(BranchType.HOSTED, [])
             manager.lockfilename = self.masterlock
             manager.lock()
-            anothermanager = jobmanager.JobManager(BranchType.HOSTED)
+            anothermanager = self.makeJobManager(BranchType.HOSTED, [])
             anothermanager.lockfilename = self.masterlock
             self.assertRaises(jobmanager.LockError, anothermanager.lock)
             self.failUnless(os.path.exists(self.masterlock))
@@ -80,12 +87,10 @@ class TestJobManager(unittest.TestCase):
             os.unlink(self.masterlock)
 
     def testImportAddBranches(self):
-        client = self.makeFakeClient(
-            [], [],
+        import_manager = self.makeJobManager(
+            BranchType.IMPORTED,
             [(14, 'http://escudero.ubuntu.com:680/0000000e',
               'vcs-imports//main')])
-        import_manager = jobmanager.JobManager(BranchType.IMPORTED)
-        import_manager.addBranches(client)
         expected_branch = BranchToMirror(
             src='http://escudero.ubuntu.com:680/0000000e',
             dest=config.supermirror.branchesdest + '/00/00/00/0e',
@@ -97,11 +102,9 @@ class TestJobManager(unittest.TestCase):
         self.assertEqual(branch_types, [BranchType.IMPORTED])
 
     def testUploadAddBranches(self):
-        client = self.makeFakeClient(
-            [(25, '/tmp/sftp-test/branches/00/00/00/19', u'name12//pushed')],
-            [], [])
-        upload_manager = jobmanager.JobManager(BranchType.HOSTED)
-        upload_manager.addBranches(client)
+        upload_manager = self.makeJobManager(
+            BranchType.HOSTED,
+            [(25, '/tmp/sftp-test/branches/00/00/00/19', u'name12//pushed')])
         expected_branch = BranchToMirror(
             src='/tmp/sftp-test/branches/00/00/00/19',
             dest=config.supermirror.branchesdest + '/00/00/00/19',
@@ -113,12 +116,9 @@ class TestJobManager(unittest.TestCase):
         self.assertEqual(branch_types, [BranchType.HOSTED])
 
     def testMirrorAddBranches(self):
-        client = self.makeFakeClient(
-            [],
-            [(15, 'http://example.com/gnome-terminal/main', u'name12//main')],
-            [])
-        mirror_manager = jobmanager.JobManager(BranchType.MIRRORED)
-        mirror_manager.addBranches(client)
+        mirror_manager = self.makeJobManager(
+            BranchType.MIRRORED,
+            [(15, 'http://example.com/gnome-terminal/main', u'name12//main')])
         expected_branch = BranchToMirror(
             src='http://example.com/gnome-terminal/main',
             dest=config.supermirror.branchesdest + '/00/00/00/0f',
@@ -162,18 +162,16 @@ class TestJobManagerInLaunchpad(unittest.TestCase):
                          dest_branch.last_revision())
 
     def testJobRunner(self):
-        manager = jobmanager.JobManager(BranchType.HOSTED)
-        self.assertEqual(len(manager.branches_to_mirror), 0)
-
         client = BranchStatusClient()
+        manager = jobmanager.JobManager(client, BranchType.HOSTED)
+
         branches = [
             self._makeBranch("brancha", 1, client),
             self._makeBranch("branchb", 2, client),
             self._makeBranch("branchc", 3, client),
             self._makeBranch("branchd", 4, client),
             self._makeBranch("branche", 5, client)]
-
-        manager.branches_to_mirror.extend(branches)
+        manager.branches_to_mirror = list(branches)
 
         manager.run(logging.getLogger())
 
