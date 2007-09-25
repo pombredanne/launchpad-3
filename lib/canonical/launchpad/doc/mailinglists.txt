@@ -347,6 +347,29 @@ But lists which are not active may not be deactivated.
     AssertionError: Only active mailing lists may be deactivated
 
 
+== Reactivating lists ==
+
+A list which is inactive may be reactivated.
+
+    >>> list_three.status.name
+    'INACTIVE'
+    >>> list_three.reactivate()
+
+This doesn't immediately reactivate the mailing list though.  Mailman still
+needs to query for the requested reactivations, take the necessary actions,
+and report the reactivation results.
+
+    >>> list_three.status.name
+    'APPROVED'
+
+But lists which are not inactive may not be reactivated.
+
+    >>> list_three.reactivate()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only inactive mailing lists may be reactivated
+
+
 == Welcome messages ==
 
 Mailing lists have a welcome message text which is sent to new members when
