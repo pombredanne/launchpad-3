@@ -55,8 +55,9 @@
           <tal:is-closed condition="not: view/is_open">
           <p class="informational message">
             ShipIt is currently closed while we prepare for the
-            <span tal:replace="view/flavour/title" /> 7.10 (Gutsy Gibbon)
-            release. We'll be back in a few days.
+            <span tal:replace="view/flavour/title" />
+            <span tal:replace="view/series/title" /> release. We'll be
+            back in a few days.
           </p>
           <p>To view existing requests, first sign in using your
           <a href="https://launchpad.net">Launchpad</a> account.

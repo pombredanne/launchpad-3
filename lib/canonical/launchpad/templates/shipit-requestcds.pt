@@ -243,7 +243,8 @@
   <h1>ShipIt is currently closed</h1>
 
   <p class="informational message">We'll be back in a few days, shipping
-  <span tal:replace="view/flavour/title" /> 7.10 (Gutsy Gibbon) CDs.
+  <span tal:replace="view/flavour/title" />
+  <span tal:replace="view/series/title" /> CDs.
   </p>
 
   <tal:pastrequests condition="view/user/pastShipItRequests"
