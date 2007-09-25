@@ -128,10 +128,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                     HasTranslationImportsMixin):
     """A source package, e.g. apache2, in a distroseries.
 
-    This object implements the MagicSourcePackage specification. It is not a
-    true database object, but rather attempts to represent the concept of a
-    source package in a distro series, with links to the relevant database
-    objects.
+    This object is not a true database object, but rather attempts to
+    represent the concept of a source package in a distro series, with links
+    to the relevant database objects.
     """
 
     implements(ISourcePackage, IHasBuildRecords, IQuestionTarget)
