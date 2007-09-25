@@ -1000,7 +1000,7 @@ to set up the sources.list appropriately.
   ensurepresent called
   ensurepresent called
   OkSlave BUILDING
-  Archives: [u'deb http://launchpad.dev/ubuntu-partner hoary main', u'deb http://ftpmaster.internal/ubuntu hoary main restricted']
+  Archives: [u'deb http://launchpad.dev/ubuntu-partner hoary main', u'deb http://ftpmaster.internal/ubuntu hoary main restricted', u'deb http://ftpmaster.internal/ubuntu hoary-security main restricted', u'deb http://ftpmaster.internal/ubuntu hoary-updates main restricted']
 
 Clean up before continuing:
 
