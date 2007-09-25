@@ -112,6 +112,12 @@ class MailingList(SQLBase):
             'Only active mailing lists may be deactivated')
         self.status = MailingListStatus.DEACTIVATING
 
+    def reactivate(self):
+        """See `IMailingList`."""
+        assert self.status == MailingListStatus.INACTIVE, (
+            'Only inactive mailing lists may be reactivated')
+        self.status = MailingListStatus.APPROVED
+
     def _get_welcome_message(self):
         return self.welcome_message_text
 

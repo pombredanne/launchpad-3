@@ -261,6 +261,15 @@ class IMailingList(Interface):
             mailing list is not `MailingListStatus.ACTIVE`.
         """
 
+    def reactivate():
+        """Reactivate the mailing list.
+
+        This sets the status to `MailingListStatus.APPROVED`.
+
+        :raises AssertionError: When prior to reactivation, the status of the
+            mailing list is not `MailingListStatus.INACTIVE`.
+        """
+
 
 class IMailingListSet(Interface):
     """A set of mailing lists."""
