@@ -43,7 +43,8 @@ from canonical.lp import dbschema
 
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 from canonical.launchpad.interfaces import (
-    QuestionAction, QuestionPriority, QuestionSort, QuestionStatus)
+    QuestionAction, QuestionPriority, QuestionSort, QuestionStatus,
+    TextDirection)
 
 
 # DB Schema Vocabularies
@@ -78,7 +79,7 @@ SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
 SpecificationDefinitionStatusVocabulary =  vocab_factory(dbschema.SpecificationDefinitionStatus)
 SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStatus)
 SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
-TextDirectionVocabulary =  vocab_factory(dbschema.TextDirection)
+TextDirectionVocabulary =  vocab_factory(TextDirection)
 TranslationFileFormatVocabulary = vocab_factory(dbschema.TranslationFileFormat)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
 UpstreamFileTypeVocabulary = vocab_factory(dbschema.UpstreamFileType)

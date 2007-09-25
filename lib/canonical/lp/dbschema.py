@@ -73,7 +73,6 @@ __all__ = (
 'SpecificationSort',
 'SpecificationDefinitionStatus',
 'SprintSpecificationStatus',
-'TextDirection',
 'TranslationFileFormat',
 'TranslationPriority',
 'TranslationPermission',
@@ -2240,22 +2239,6 @@ class TranslationFileFormat(DBSchema):
 
         Legacy KDE PO format which embeds context and plural forms inside
         messages itself instead of using gettext features.
-        """)
-
-
-class TextDirection(DBSchema):
-    """The base text direction for a language."""
-
-    LTR = Item(0, """
-        Left to Right
-
-        Text is normally written from left to right in this language.
-        """)
-
-    RTL = Item(1, """
-        Right to Left
-
-        Text is normally written from left to right in this language.
         """)
 
 
