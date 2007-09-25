@@ -506,12 +506,7 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadFormView):
         requester = self.context.requester
 
         if self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL:
-            # TODO: Must hook things up here (or in setPreferredEmail() to
-            # deactivate any existing mailing list before changing the
-            # preferred email.
-            if requester.preferredemail is not None:
-                requester.preferredemail.destroySelf()
-            requester.setPreferredEmail(email)
+            requester.setContactAddress(email)
         elif self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
             requester.validateAndEnsurePreferredEmail(email)
         else:

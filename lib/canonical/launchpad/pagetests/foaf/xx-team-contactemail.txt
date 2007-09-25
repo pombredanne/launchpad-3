@@ -89,6 +89,14 @@ effect until it's approved by a Launchpad admin.
     >>> mailing_list.status
     <...MailingListStatus.REGISTERED...>
 
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl(name='field.contact_method').displayValue
+    ['\xa0External contact email']
+
+Once it's approved (but not yet active) the contact method for the team
+that is seen in the UI is the 'Launchpad hosted List', but a notification
+is shown saying that the mailing list is still being created.
+
     >>> from canonical.launchpad.interfaces import MailingListStatus
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
@@ -96,18 +104,30 @@ effect until it's approved by a Launchpad admin.
     ...     Person.byName('name16'), MailingListStatus.APPROVED)
     >>> mailing_list.syncUpdate()
     >>> logout()
-
-    >>> browser.getLink('Change contact address').click()
+    >>> browser.reload()
+    >>> browser.getControl(name='field.contact_method').displayValue
+    [...Launchpad hosted team mailing list...]
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
     This team's mailing list has been approved and is being constructed...
 
+    >>> mailing_list.startConstructing()
+    >>> browser.reload()
+    >>> browser.getControl(name='field.contact_method').displayValue
+    [...Launchpad hosted team mailing list...]
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    This team's mailing list has been approved and is being constructed...
+
+
 When the mailing list is actually constructed, it's used as the team's
 contact address.
 
-    >>> mailing_list.startConstructing()
+    >>> login('foo.bar@canonical.com')
     >>> mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
     >>> mailing_list.syncUpdate()
+    >>> logout()
+
     >>> browser.reload()
     >>> [msg for msg in get_feedback_messages(browser)]
     []

@@ -784,8 +784,17 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             'open_inprogress': The number of open bugs that ar In Progress.
         """
 
+    def setContactAddress(email):
+        """Set the given email address as this team's contact address.
+
+        This method must be used only for teams.
+        """
+
     def setPreferredEmail(email):
-        """Set the given email address as this person's preferred one."""
+        """Set the given email address as this person's preferred one.
+
+        This method must be used only for people, not teams.
+        """
 
     def getBranch(product_name, branch_name):
         """The branch associated to this person and product with this name.

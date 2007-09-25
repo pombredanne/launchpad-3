@@ -18,7 +18,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IMailingList, IMailingListSet, MailingListStatus)
+    IEmailAddressSet, ILaunchpadCelebrities, IMailingList, IMailingListSet,
+    MailingListStatus)
 
 
 class MailingList(SQLBase):
@@ -49,6 +50,10 @@ class MailingList(SQLBase):
                      default=MailingListStatus.REGISTERED)
 
     welcome_message_text = StringCol(default=None)
+
+    @property
+    def address(self):
+        return '%s@lists.launchpad.net' % self.team.name
 
     def __repr__(self):
         return '<MailingList for team "%s"; status=%s at %#x>' % (
@@ -105,10 +110,10 @@ class MailingList(SQLBase):
         else:
             raise AssertionError('Not a valid state transition')
         self.status = target_state
-        if self.status == MailingListStatus.ACTIVE:
-            # TODO: Delete the existing contact address and set this mailing
-            # list's address as the new one for the team.
-            pass
+        if target_state == MailingListStatus.ACTIVE:
+            team = self.team
+            email = getUtility(IEmailAddressSet).new(self.address, team)
+            team.setContactAddress(email)
 
     def deactivate(self):
         """See `IMailingList`."""

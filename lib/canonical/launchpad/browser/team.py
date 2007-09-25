@@ -183,8 +183,14 @@ class TeamContactAddressView(LaunchpadFormView):
         context = self.context
         if context.preferredemail is not None:
             mailing_list = getUtility(IMailingListSet).get(context.name)
+            active_or_approved_or_constructing = [
+                MailingListStatus.ACTIVE, MailingListStatus.APPROVED,
+                MailingListStatus.CONSTRUCTING]
             if (mailing_list is not None and
-                mailing_list.status == MailingListStatus.ACTIVE):
+                mailing_list.status in active_or_approved_or_constructing):
+                # XXX: Should we set the method to HOSTED_LIST when the
+                # mailing list's status is REGISTERED as well? Need to ask
+                # Mathew about that.
                 method = TeamContactMethod.HOSTED_LIST
             else:
                 method = TeamContactMethod.EXTERNAL_ADDRESS

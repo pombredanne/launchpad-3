@@ -14,7 +14,7 @@ __all__ = [
 
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Object, Set, Text
+from zope.schema import Choice, Datetime, Object, Set, TextLine, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
@@ -205,6 +205,8 @@ class IMailingList(Interface):
                       'and doing so changes the status of the list to '
                       'MODIFIED.')
         )
+
+    address = TextLine(title=_("This list's email address."))
 
     def review(reviewer, status):
         """Review the mailing list's registration.

@@ -47,14 +47,14 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet, IEmailAddress,
     IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo, IHasMugshot, IIrcID,
     IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
-    ILaunchpadStatisticSet, ILoginTokenSet, IPasswordEncryptor, IPerson,
-    IPersonSet, IPillarNameSet, IProduct, ISignedCodeOfConductSet,
-    ISourcePackageNameSet, ISSHKey, ISSHKeySet, ITeam, ITranslationGroupSet,
-    IWikiName, IWikiNameSet, JoinNotAllowed, LoginTokenType,
-    PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants,
-    ShippingRequestStatus, SSHKeyType, TeamMembershipRenewalPolicy,
-    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
-    UNRESOLVED_BUGTASK_STATUSES)
+    ILaunchpadStatisticSet, ILoginTokenSet, IMailingListSet,
+    IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet, IProduct,
+    ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey, ISSHKeySet,
+    ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet, JoinNotAllowed,
+    LoginTokenType, MailingListStatus, PersonCreationRationale,
+    QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants, ShippingRequestStatus,
+    SSHKeyType, TeamMembershipRenewalPolicy, TeamMembershipStatus,
+    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar
@@ -1541,6 +1541,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
+        assert not self.isTeam(), "This method must not be used for teams."
         if not IEmailAddress.providedBy(email):
             raise TypeError, (
                 "Any person's email address must provide the IEmailAddress "
@@ -1559,17 +1560,25 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # This branch will be executed only in the first time a person
             # uses Launchpad. Either when creating a new account or when
             # resetting the password of an automatically created one.
-            self.setPreferredEmail(email)
+            self._setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
 
+    def setContactAddress(self, email):
+        """See `IPerson`."""
+        assert self.isTeam(), "This method must be used only for teams."
+        if self.preferredemail is not None:
+            self.preferredemail.destroySelf()
+        mailing_list = getUtility(IMailingListSet).get(self.name)
+        if (mailing_list is not None
+            and mailing_list.address != email.email
+            and mailing_list.status == MailingListStatus.ACTIVE):
+            mailing_list.deactivate()
+        self._setPreferredEmail(email)
+
     def setPreferredEmail(self, email):
         """See `IPerson`."""
-        if not IEmailAddress.providedBy(email):
-            raise TypeError, (
-                "Any person's email address must provide the IEmailAddress "
-                "interface. %s doesn't." % email)
-        assert email.person.id == self.id
+        assert not self.isTeam(), "This method must not be used for teams."
         preferredemail = self.preferredemail
         if preferredemail is not None:
             preferredemail.status = EmailAddressStatus.VALIDATED
@@ -1577,7 +1586,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # SQLObject will issue the changes and we can't set the new
             # address to PREFERRED until the old one has been set to VALIDATED
             preferredemail.syncUpdate()
-        elif not self.isTeam():
+        else:
             # This is the first time we're confirming this person's email
             # address, so we now assume this person has a Launchpad account.
             # XXX: This is a hack! In the future we won't have this
@@ -1585,10 +1594,14 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # will do for now. -- Guilherme Salgado, 2007-07-03
             self.account_status = AccountStatus.ACTIVE
             self.account_status_comment = None
-        else:
-            # This is a team, so we just need to create the new email address
-            # and set it as its preferred one.
-            pass
+        self._setPreferredEmail(email)
+
+    def _setPreferredEmail(self, email):
+        if not IEmailAddress.providedBy(email):
+            raise TypeError, (
+                "Any person's email address must provide the IEmailAddress "
+                "interface. %s doesn't." % email)
+        assert email.person.id == self.id
 
         # Get the non-proxied EmailAddress object, so we can call
         # syncUpdate() on it.
