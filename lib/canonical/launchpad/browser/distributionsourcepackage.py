@@ -8,7 +8,8 @@ __all__ = [
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
     'DistributionSourcePackageOverviewMenu',
-    'DistributionSourcePackageBugContactsView'
+    'DistributionSourcePackageBugContactsView',
+    'DistributionSourcePackageView'
     ]
 
 from operator import attrgetter
@@ -28,7 +29,7 @@ from canonical.launchpad.browser.questiontarget import (
 from canonical.launchpad.webapp import (
     action, StandardLaunchpadFacets, Link, ApplicationMenu,
     GetitemNavigation, canonical_url, redirection, LaunchpadFormView,
-    custom_widget)
+    LaunchpadView, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
@@ -288,4 +289,27 @@ class DistributionSourcePackageBugContactsView(LaunchpadFormView):
     def user_teams(self):
         """Return the teams that the current user is an administrator of."""
         return list(self.user.getAdministratedTeams())
+
+
+class DistributionSourcePackageView(LaunchpadView):
+
+    def published_versions(self):
+        result = []
+        for sourcepackage in self.context.get_distroseries_packages():
+            pockets = []
+            for published in \
+                sourcepackage.published_by_pocket.iteritems():
+                if len(published[1]) > 0:
+                    pockets.append(
+                        {'pocket': published[0].name.lower(),
+                         'dsprs': published[1]
+                         })
+            result.append(
+                {'distroseries': sourcepackage.distroseries.name,
+                 'pockets': pockets,
+                 'packaging': sourcepackage.direct_packaging,
+                 'sp': sourcepackage
+                 })
+        return result
+
 

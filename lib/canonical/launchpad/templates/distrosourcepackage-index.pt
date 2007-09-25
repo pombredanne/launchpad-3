@@ -24,30 +24,48 @@
   <table class="listing">
     <thead>
       <tr>
-        <th><span tal:replace="context/distribution/displayname" /> version</th>
+        <th colspan="2">
+          <span tal:replace="context/distribution/displayname" /> version
+        </th>
         <th>Upstream version</th>
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="sp context/get_distroseries_packages">
+      <tr tal:repeat="version view/published_versions">
         <td>
-          <span tal:replace="sp/distroseries/displayname">Hoary</span>:
-          <span tal:replace="sp/name" />
-          <span tal:replace="sp/currentrelease/version" />
+          <span tal:replace="version/distroseries">hoary</span>
         </td>
-        <tal:pkg_def define="pkging sp/direct_packaging">
-          <td>
-            <span tal:condition="pkging"
-                  tal:replace="pkging/productseries/title" />
-            <tal:no_direct condition="not: pkging">
+        <td>
+          <table width="100%">
+            <tbody>
+              <tr tal:repeat="pocket version/pockets">
+                <td tal:content="pocket/pocket">release</td>
+                <td>
+                  <table width="100%">
+                    <tbody>
+                      <tr tal:repeat="dspr pocket/dsprs">
+                        <td tal:content="dspr/sourcepackagerelease/version">
+                          0.12-1
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </td>
+        <td>
+          <span tal:condition="version/packaging"
+                tal:replace="version/packaging/productseries/title" />
+          <tal:no_direct condition="not: version/packaging">
             None defined
-            </tal:no_direct>
-            <a tal:attributes="href string:${sp/fmt:url}/+edit-packaging"
-               title="Edit association with upstream version">
-              <img src="/@@/edit" />
-            </a>
-          </td>
-        </tal:pkg_def>
+          </tal:no_direct>
+          <a tal:attributes="href string:${version/sp/fmt:url}/+edit-packaging"
+             title="Edit association with upstream version">
+            <img src="/@@/edit" />
+          </a>
+        </td>
       </tr>
     </tbody>
   </table>
