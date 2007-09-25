@@ -36,15 +36,19 @@ class JobManager:
         """Queue branches from the list given by the branch status client."""
         branches_to_pull = branch_status_client.getBranchPullQueue(
             self.branch_type.name)
-        destination = config.supermirror.branchesdest
         for branch_id, branch_src, unique_name in branches_to_pull:
-            branch_src = branch_src.strip()
-            path = branchtarget(branch_id)
-            branch_dest = os.path.join(destination, path)
-            branch = BranchToMirror(
-                branch_src, branch_dest, branch_status_client, branch_id,
-                unique_name, self.branch_type)
-            self.branches_to_mirror.append(branch)
+            self.branches_to_mirror.append(
+                self.getBranchToMirror(
+                    branch_status_client, branch_id, branch_src, unique_name))
+
+    def getBranchToMirror(self, branch_status_client, branch_id, branch_src,
+                          unique_name):
+        branch_src = branch_src.strip()
+        path = branchtarget(branch_id)
+        branch_dest = os.path.join(config.supermirror.branchesdest, path)
+        return BranchToMirror(
+            branch_src, branch_dest, branch_status_client, branch_id,
+            unique_name, self.branch_type)
 
     def lock(self):
         self.actualLock = GlobalLock(self.lockfilename)
