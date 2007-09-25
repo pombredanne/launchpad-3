@@ -9,8 +9,33 @@ __metaclass__ = type
 __all__ = [
     'IPOSubmission',
     'IPOSubmissionSet',
+    'RosettaTranslationOrigin',
     'TranslationValidationStatus'
     ]
+
+
+class RosettaTranslationOrigin(DBEnumeratedType):
+    """Rosetta Translation Origin
+
+    Translation sightings in Rosetta can come from a variety
+    of sources. We might see a translation for the first time
+    in CVS, or we might get it through the web, for example.
+    This schema documents those options.
+    """
+
+    SCM = DBItem(1, """
+        Source Control Management Source
+
+        This translation sighting came from a PO File we
+        analysed in a source control managements sytem first.
+        """)
+
+    ROSETTAWEB = DBItem(2, """
+        Rosetta Web Source
+
+        This translation was presented to Rosetta via
+        the community web site.
+        """)
 
 
 class TranslationValidationStatus(DBEnumeratedType):

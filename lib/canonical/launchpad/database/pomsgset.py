@@ -20,8 +20,7 @@ from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
 from canonical.launchpad.interfaces import (
     IPOMsgSet, TranslationConflict, IPOSubmissionSet,
-    TranslationValidationStatus)
-from canonical.lp.dbschema import RosettaTranslationOrigin
+    RosettaTranslationOrigin, TranslationValidationStatus)
 
 
 class POMsgSetMixIn:
