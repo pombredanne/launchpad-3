@@ -64,17 +64,34 @@ class FeedBase(LaunchpadView):
     def getURL(self):
         raise NotImplementedError
 
+    def getSiteURL(self):
+        raise NotImplementedError
+
     def getItems(self):
         raise NotImplementedError
 
     def itemToFeedEntry(self, item):
         raise NotImplementedError
 
+    def getLogo(self):
+        """Get the URL for the feed logo."""
+        raise NotImplementedError
+
+    def getUpdated(self):
+        """Get the update time for the feed.
+
+        By default this is set to the most recent update of the entries in the
+        feed.
+        """
+        items = self.getItems()
+        return items[0].date_updated
+
     def getNow(self):
         # isoformat returns the seconds to six decimal places
         # which confuses Atom readers
         #return "%sZ" % datetime.utcnow().isoformat()
         return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
     @property
     def template(self):
         return ViewPageTemplateFile(self.template_file)
@@ -86,6 +103,10 @@ class FeedBase(LaunchpadView):
         return self.template(self)
 
 class FeedEntry:
+    # XXX bac, This needs to be cleaned up.  Have an __init__ with the
+    # required elements with no default and optional defined elements with
+    # defaults.  Extension elements should go in a dictionary.  How will
+    # output format be specified?
     title = None
     URL = None
     content = None
