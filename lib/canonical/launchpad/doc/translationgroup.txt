@@ -52,7 +52,7 @@ Let's make it the translation group for Evolution.
 
 Let's only allow translators from that group to translate.
 
-    >>> from canonical.lp.dbschema import TranslationPermission
+    >>> from canonical.launchpad.interfaces import TranslationPermission
     >>> evolution.translationpermission = TranslationPermission.CLOSED
 
 No Privileges Person isn't allowed to translate into Welsh.
