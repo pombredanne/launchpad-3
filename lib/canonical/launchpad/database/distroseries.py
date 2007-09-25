@@ -364,10 +364,7 @@ def copy_active_translations_as_update(child, transaction, logger):
             """ % (holding_table, batch_clause))
         cur.execute("""
             DELETE FROM %s AS holding
-            WHERE %s AND
-                NOT EXISTS (
-                    SELECT * FROM POFile WHERE holding.pofile = POFile.id
-                    )
+            WHERE %s AND pofile NOT IN (SELECT id FROM POFile)
             """ % (holding_table, batch_clause))
 
     # We'll extract POMsgSets that already have equivalents in the child
