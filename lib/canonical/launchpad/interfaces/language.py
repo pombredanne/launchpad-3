@@ -97,7 +97,7 @@ class ILanguage(Interface):
         title=u'Text direction',
         description=u'The direction of text in this language.',
         required=True,
-        vocabulary='TextDirection')
+        vocabulary=TextDirection)
 
     displayname = TextLine(
         title=u'The displayname of the language',

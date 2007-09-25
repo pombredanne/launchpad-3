@@ -143,6 +143,7 @@ class IProductRelease(Interface):
     def getFileAliasByName(name):
         """Return the LibraryFileAlias by file name or None if not found."""
 
+
 class IProductReleaseFile(Interface):
 
     productrelease = Choice(title=_('Project release'), required=True,
@@ -151,11 +152,12 @@ class IProductReleaseFile(Interface):
                          description=_("The attached file."),
                          required=True)
     filetype = Choice(title=_("Upstream file type"), required=True,
-                      vocabulary='UpstreamFileType',
+                      vocabulary=UpstreamFileType,
                       default=UpstreamFileType.CODETARBALL)
 
     description = Text(title=_("Description"), required=False,
         description=_('A detailed description of the file contents'))
+
 
 class IProductReleaseFileAddForm(Interface):
     """Schema for adding ProductReleaseFiles to a project."""
@@ -167,8 +169,9 @@ class IProductReleaseFileAddForm(Interface):
         constraint=productrelease_file_size_constraint)
 
     contenttype = Choice(title=_("File content type"), required=True,
-                         vocabulary='UpstreamFileType',
+                         vocabulary=UpstreamFileType,
                          default=UpstreamFileType.CODETARBALL)
+
 
 class IProductReleaseSet(Interface):
     """Auxiliary class for ProductRelease handling."""

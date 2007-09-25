@@ -71,7 +71,7 @@ class IPackaging(IHasOwner):
         vocabulary='DistroSeries')
 
     packaging = Choice(
-        title=_('Packaging'), required=True, vocabulary='PackagingType')
+        title=_('Packaging'), required=True, vocabulary=PackagingType)
 
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
