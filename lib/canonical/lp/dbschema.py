@@ -55,7 +55,6 @@ __all__ = (
 'ProjectRelationship',
 'ProjectStatus',
 'RevisionControlSystems',
-'RosettaImportStatus',
 'ShipItArchitecture',
 'ShipItDistroSeries',
 'ShipItFlavour',
@@ -1891,53 +1890,6 @@ class RevisionControlSystems(DBSchema):
         Subversion aims to address some of the shortcomings in
         CVS, but retains the central server bottleneck inherent
         in the CVS design.
-        """)
-
-
-class RosettaImportStatus(DBSchema):
-    """Rosetta Import Status
-
-    Define the status of an import on the Import queue. It could have one
-    of the following states: approved, imported, deleted, failed, needs_review
-    or blocked.
-    """
-
-    APPROVED = Item(1, """
-        Approved
-
-        The entry has been approved by a Rosetta Expert or was able to be
-        approved by our automatic system and is waiting to be imported.
-        """)
-
-    IMPORTED = Item(2, """
-        Imported
-
-        The entry has been imported.
-        """)
-
-    DELETED = Item(3, """
-        Deleted
-
-        The entry has been removed before being imported.
-        """)
-
-    FAILED = Item(4, """
-        Failed
-
-        The entry import failed.
-        """)
-
-    NEEDS_REVIEW = Item(5, """
-        Needs Review
-
-        A Rosetta Expert needs to review this entry to decide whether it will
-        be imported and where it should be imported.
-        """)
-
-    BLOCKED = Item(6, """
-        Blocked
-
-        The entry has been blocked to be imported by a Rosetta Expert.
         """)
 
 
