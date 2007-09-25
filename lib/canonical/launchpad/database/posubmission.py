@@ -16,10 +16,10 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import (RosettaTranslationOrigin,
-    TranslationValidationStatus)
+from canonical.lp.dbschema import RosettaTranslationOrigin
 
-from canonical.launchpad.interfaces import IPOSubmission, IPOSubmissionSet
+from canonical.launchpad.interfaces.posubmission import (
+    IPOSubmission, IPOSubmissionSet, TranslationValidationStatus)
 
 
 class POSubmissionSet:

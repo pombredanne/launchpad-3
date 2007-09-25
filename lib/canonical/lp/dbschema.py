@@ -78,7 +78,6 @@ __all__ = (
 'TranslationFileFormat',
 'TranslationPriority',
 'TranslationPermission',
-'TranslationValidationStatus',
 'PackageUploadStatus',
 'PackageUploadCustomFormat',
 'UpstreamFileType',
@@ -2266,33 +2265,6 @@ class TranslationFileFormat(DBSchema):
 
         Legacy KDE PO format which embeds context and plural forms inside
         messages itself instead of using gettext features.
-        """)
-
-
-class TranslationValidationStatus(DBSchema):
-    """Translation Validation Status
-
-    Every time a translation is added to Rosetta we should checked that
-    follows all rules to be a valid translation inside a .po file.
-    This schema documents the status of that validation.
-    """
-
-    UNKNOWN = Item(0, """
-        Unknown
-
-        This translation has not been validated yet.
-        """)
-
-    OK = Item(1, """
-        Ok
-
-        This translation has been validated and no errors were discovered.
-        """)
-
-    UNKNOWNERROR = Item(2, """
-        Unknown Error
-
-        This translation has an unknown error.
         """)
 
 

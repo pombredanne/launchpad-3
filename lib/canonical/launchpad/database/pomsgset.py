@@ -19,9 +19,9 @@ from canonical.launchpad import helpers
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
 from canonical.launchpad.interfaces import (
-    IPOMsgSet, TranslationConflict, IPOSubmissionSet)
-from canonical.lp.dbschema import (RosettaTranslationOrigin,
+    IPOMsgSet, TranslationConflict, IPOSubmissionSet,
     TranslationValidationStatus)
+from canonical.lp.dbschema import RosettaTranslationOrigin
 
 
 class POMsgSetMixIn:

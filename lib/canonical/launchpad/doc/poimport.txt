@@ -239,7 +239,7 @@ errors.
     ... ''' % datetime.datetime.now(UTC).isoformat()
 
 This is the dbschema that controls the validation of a translation.
-    >>> from canonical.lp.dbschema import TranslationValidationStatus
+    >>> from canonical.launchpad.interfaces import TranslationValidationStatus
 
 The process of importing a PO file is much like that of importing a PO
 template. Remember, we need to tell the system that this po file is a

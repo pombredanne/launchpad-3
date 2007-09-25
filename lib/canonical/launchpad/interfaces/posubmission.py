@@ -3,12 +3,42 @@
 from zope.interface import Interface, Attribute
 from zope.schema import Bool
 from canonical.launchpad import _
+from canonical.lazr import DBEnumeratedType, DBItem
 
 __metaclass__ = type
 __all__ = [
     'IPOSubmission',
-    'IPOSubmissionSet'
+    'IPOSubmissionSet',
+    'TranslationValidationStatus'
     ]
+
+
+class TranslationValidationStatus(DBEnumeratedType):
+    """Translation Validation Status
+
+    Every time a translation is added to Rosetta we should checked that
+    follows all rules to be a valid translation inside a .po file.
+    This schema documents the status of that validation.
+    """
+
+    UNKNOWN = DBItem(0, """
+        Unknown
+
+        This translation has not been validated yet.
+        """)
+
+    OK = DBItem(1, """
+        Ok
+
+        This translation has been validated and no errors were discovered.
+        """)
+
+    UNKNOWNERROR = DBItem(2, """
+        Unknown Error
+
+        This translation has an unknown error.
+        """)
+
 
 class IPOSubmissionSet(Interface):
     """The set of submissions we have in our database."""

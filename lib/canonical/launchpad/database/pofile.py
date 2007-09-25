@@ -41,15 +41,15 @@ from canonical.launchpad.interfaces import (
     ITranslationFile, ITranslationImporter, IVPOExportSet,
     NotExportedFromLaunchpad, NotFoundError, OutdatedTranslationError,
     TranslationConstants, TranslationFormatSyntaxError,
-    TranslationFormatInvalidInputError, ZeroLengthPOExportError)
+    TranslationFormatInvalidInputError, TranslationValidationStatus,
+    ZeroLengthPOExportError)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.translationformat import TranslationMessage
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
-from canonical.lp.dbschema import (
-    RosettaImportStatus, TranslationPermission, TranslationValidationStatus)
+from canonical.lp.dbschema import (RosettaImportStatus, TranslationPermission)
 
 
 def _check_translation_perms(permission, translators, person):
