@@ -35,7 +35,7 @@
                         isSubscribedToDupes getSubscribersFromDuplicates
                         getAlsoNotifiedSubscribers getBugWatch getBugTask
                         canBeNominatedFor getNominationFor getNominations
-                        getQuestionCreatedFromBug"
+                        date_last_message getQuestionCreatedFromBug"
             />
         <require
             permission="launchpad.Edit"
