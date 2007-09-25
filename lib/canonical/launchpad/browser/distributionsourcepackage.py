@@ -303,7 +303,7 @@ class DistributionSourcePackageView(LaunchpadView):
                     series_result.append({
                         'series': sourcepackage.distroseries.name,
                         'pocket': published[0].name.lower(),
-                        'version': drspr.sourcepackagerelease.version,
+                        'package': drspr,
                         'packaging': sourcepackage.direct_packaging,
                         'sourcepackage': sourcepackage
                         })

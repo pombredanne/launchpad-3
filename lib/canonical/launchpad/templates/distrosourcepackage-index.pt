@@ -34,7 +34,9 @@
       <tr tal:repeat="row view/version_listing">
         <td tal:content="row/series">hoary</td>
         <td tal:content="row/pocket">release</td>
-        <td tal:content="row/version">2.2.1-1</td>
+        <td><a tal:content="row/package/version"
+               tal:attributes="href row/package/fmt:url">2.2.1-1</a>
+        </td>
         <td>
           <tal:distroseries_row condition="row/series">
             <span tal:condition="row/packaging"
