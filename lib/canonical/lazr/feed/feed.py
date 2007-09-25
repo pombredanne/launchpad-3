@@ -11,6 +11,8 @@ __metaclass__ = type
 __all__ = [
     'FeedBase',
     'FeedEntry',
+    'FeedPerson',
+    'FeedTypedData',
     'MINUTES',
     ]
 
@@ -21,6 +23,7 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 # XXX - bac - 20 Sept 2007, modules in canonical.lazr should not import from
 # canonical.launchpad, but we're doing it here as an expediency to get a
 # working prototype.
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.publisher import LaunchpadView
 
 
@@ -44,7 +47,7 @@ class FeedBase(LaunchpadView):
     # XXX bac - need caching headers, including expiration, etc.
 
     max_age = 60 * MINUTES
-    items = []
+    items = None
     template_file = 'feed.pt'
 
     def __init__(self, context, request):
@@ -83,8 +86,11 @@ class FeedBase(LaunchpadView):
         By default this is set to the most recent update of the entries in the
         feed.
         """
-        items = self.getItems()
-        return items[0].date_updated
+        if self.items is None:
+            items = self.getItems()
+        if len(self.items) == 0:
+            return None
+        return self.items[0].date_updated
 
     def getNow(self):
         # isoformat returns the seconds to six decimal places
@@ -103,14 +109,46 @@ class FeedBase(LaunchpadView):
         return self.template(self)
 
 class FeedEntry:
-    # XXX bac, This needs to be cleaned up.  Have an __init__ with the
-    # required elements with no default and optional defined elements with
-    # defaults.  Extension elements should go in a dictionary.  How will
-    # output format be specified?
-    title = None
-    URL = None
-    content = None
-    date_published = None
-    date_updated = None
-    author = None
-    id_ = None
+    """An entry for a feed.
+
+    """
+    def __init__(self,
+                 title,
+                 id_,
+                 link_alternate,
+                 date_updated=None,
+                 date_published=None,
+                 authors=None,
+                 contributors=None,
+                 content=None,
+                 generator=None,
+                 logo=None,
+                 icon=None):
+        self.title = title
+        self.link_alternate = link_alternate
+        self.content = content
+        self.date_published = date_published
+        self.date_updated = date_updated
+        if authors is None:
+            authors = []
+        self.authors = authors
+        if contributors is None:
+            contribuors = []
+        self.contributors = contributors
+        self.id = id_
+
+class FeedTypedData:
+
+    content_types = ['text', 'html', 'xhtml']
+    def __init__(self, content, content_type='text'):
+        self.content = content
+        if content_type not in self.content_types:
+            raise ValueError, "%s: is not valid" % content_type
+        self.content_type = content_type
+
+class FeedPerson:
+    def __init__(self, person):
+        self.name = person.displayname
+        # We don't want to disclose email addresses in public feeds.
+        self.email = None
+        self.uri = canonical_url(person)

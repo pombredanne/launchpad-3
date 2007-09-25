@@ -10,7 +10,6 @@
         name="feed-entry"
 	permission="zope.Public"
 	template="../../lazr/feed/feed-entry.pt"
-        class="canonical.lazr.feed.FeedEntry"
         />
 
     <browser:page

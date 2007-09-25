@@ -9,7 +9,8 @@ __all__ = [
 import cgi
 from datetime import datetime
 
-from canonical.lazr.feed import FeedBase,FeedEntry, MINUTES
+from canonical.lazr.feed import (
+    FeedBase,FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 from canonical.launchpad.interfaces import IProduct
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import FormattersAPI
@@ -39,7 +40,6 @@ class ProductBugsFeed(FeedBase):
         return "%s/%s" % (canonical_url(self.context), self.feed_name)
 
     def getSiteURL(self):
-        #return allvhosts.configs['mainsite'].rooturl
         return self.request.getApplicationURL()
 
     def getItems(self, quantity=5):
@@ -47,9 +47,10 @@ class ProductBugsFeed(FeedBase):
         # either globally for Launchpad as a whole, or in the ZCML.
         # If we find we have a requirement for different numbers of items per
         # feed, we'll include it in the class definition.
-        #import pdb; pdb.set_trace(); # DO NOT COMMIT
-        items = self.context.getLatestBugTasks(quantity=quantity)
-        return [self.itemToFeedEntry(item) for item in items]
+        if self.items is None:
+            items = self.context.getLatestBugTasks(quantity=quantity)
+            self.items = [self.itemToFeedEntry(item) for item in items]
+        return self.items
 
     def getLogo(self):
         return "http://launchpad.dev/+icing/app-bugs.gif"
@@ -57,25 +58,18 @@ class ProductBugsFeed(FeedBase):
     def itemToFeedEntry(self, item):
         bugtask = item
         bug = bugtask.bug
-
-        entry = FeedEntry()
-        entry.title = '[%s] %s' % (bug.id, bug.title)
-        entry.URL = canonical_url(bugtask, rootsite="bugs")
-
-        # text_to_html will return a subclass of unicode that tells the
-        # framework that HTML quoting is taken care of
-        ###entry.content = text_to_html(bug.description)
+        title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
+        url = canonical_url(bugtask, rootsite="bugs")
         formatter = FormattersAPI(bug.description)
         # XXX bac, The Atom spec says all content is to be escaped.  When it
         # is escaped Safari and Firefox do not display the HTML correctly.
         #entry.content = cgi.escape(formatter.text_to_html())
-        entry.content = formatter.text_to_html()
-
-        entry.date_published = bugtask.datecreated
-        entry.date_updated = bug.date_last_updated
-
-        #entry.date_updated = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-        entry.author = bug.owner
-        entry.id_ = entry.URL
-
+        content = formatter.text_to_html()
+        entry = FeedEntry(title = title,
+                          id_ = url,
+                          link_alternate = url,
+                          date_updated = bug.date_last_updated,
+                          date_published = bugtask.datecreated,
+                          authors = [FeedPerson(bug.owner)],
+                          content = FeedTypedData(content, content_type="html"))
         return entry
