@@ -299,17 +299,38 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def potemplates(self):
+        """See `ISourcePackage`."""
         result = POTemplate.selectBy(
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
         return sorted(list(result), key=lambda x: x.potemplatename.name)
 
     @property
-    def currentpotemplates(self):
-        result = POTemplate.selectBy(
-            distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename,
-            iscurrent=True)
+    def current_potemplates(self):
+        """See `ISourcePackage`."""
+        result = POTemplate.select('''
+            distroseries=%s AND
+            sourcepackagename=%s AND
+            iscurrent IS TRUE AND
+            distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = Distribution.id AND
+            Distribution.official_rosetta IS TRUE
+            ''' % sqlvalues(self.distroseries, self.sourcepackagename),
+            clauseTables = ['DistroRelease', 'Distribution'])
+        return sorted(list(result), key=lambda x: x.potemplatename.name)
+
+    @property
+    def obsolete_potemplates(self):
+        """See `ISourcePackage`."""
+        result = POTemplate.select('''
+            distroseries=%s AND
+            sourcepackagename=%s AND
+            (iscurrent IS FALSE OR
+             (distrorelease = DistroRelease.id AND
+              DistroRelease.distribution = Distribution.id AND
+              Distribution.official_rosetta IS FALSE))
+            ''' % sqlvalues(self.distroseries, self.sourcepackagename),
+            clauseTables = ['DistroRelease', 'Distribution'])
         return sorted(list(result), key=lambda x: x.potemplatename.name)
 
     @property
