@@ -2,9 +2,12 @@
 
 import os
 import socket
+import subprocess
+import sys
 
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
+import canonical
 from canonical.config import config
 from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
@@ -32,8 +35,20 @@ class JobManager:
         """Run all branches_to_mirror registered with the JobManager"""
         logger.info('%d branches to mirror', len(self.branches_to_mirror))
         while self.branches_to_mirror:
-            self.branches_to_mirror.pop(0).mirror(logger)
+            branch_to_mirror = self.branches_to_mirror.pop(0)
+            self.mirror(branch_to_mirror, logger)
         logger.info('Mirroring complete')
+
+    def mirror(self, branch_to_mirror, logger):
+        path_to_script = os.path.join(
+            os.path.dirname(
+                os.path.dirname(os.path.dirname(canonical.__file__))),
+            'scripts/mirror-branch.py')
+        subprocess.Popen(
+            [sys.executable, path_to_script, branch_to_mirror.source,
+             branch_to_mirror.dest, str(branch_to_mirror.branch_id),
+             branch_to_mirror.unique_name, self.branch_type.name],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
 
     def _addBranches(self, branches_to_pull):
         for branch_id, branch_src, unique_name in branches_to_pull:

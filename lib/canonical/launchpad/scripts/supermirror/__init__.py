@@ -5,7 +5,6 @@ import datetime
 import pytz
 
 from canonical.launchpad.scripts.supermirror.jobmanager import LockError
-from canonical.authserver.client.branchstatus import BranchStatusClient
 
 
 UTC = pytz.timezone('UTC')
@@ -13,8 +12,6 @@ UTC = pytz.timezone('UTC')
 
 def mirror(logger, manager):
     """Mirror all current branches that need to be mirrored."""
-    client = BranchStatusClient()
-
     try:
         manager.lock()
     except LockError, exception:
@@ -23,10 +20,10 @@ def mirror(logger, manager):
 
     try:
         date_started = datetime.datetime.now(UTC)
-        manager.addBranches(client)
         manager.run(logger)
         date_completed = datetime.datetime.now(UTC)
-        manager.recordActivity(client, date_started, date_completed)
+        manager.recordActivity(
+            manager.branch_status_client, date_started, date_completed)
     finally:
         manager.unlock()
     return 0

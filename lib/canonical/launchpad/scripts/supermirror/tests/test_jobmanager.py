@@ -179,14 +179,14 @@ class TestJobManagerInLaunchpad(unittest.TestCase):
         for branch in branches:
             self.assertMirrored(branch)
 
-    def _makeBranch(self, relativedir, target, branch_status_client,
-                    unique_name=None):
+    def _makeBranch(self, relativedir, target, branch_status_client):
         """Given a relative directory, make a strawman branch and return it.
 
         @param relativedir - The directory to make the branch
         @output BranchToMirror - A branch object representing the strawman
                                     branch
         """
+        unique_name = '~testuser/+junk/' + relativedir
         branchdir = os.path.join(self.testdir, relativedir)
         createbranch(branchdir)
         if target == None:
