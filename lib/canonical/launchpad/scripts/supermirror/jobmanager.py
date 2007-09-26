@@ -7,6 +7,7 @@ import sys
 
 from twisted.internet import defer, error, reactor
 from twisted.internet.protocol import ProcessProtocol
+from twisted.protocols.policies import TimeoutMixin
 from twisted.python import failure
 
 from contrib.glock import GlobalLock, LockAlreadyAcquired
@@ -20,22 +21,31 @@ from canonical.launchpad.scripts.supermirror.branchtomirror import (
 
 MAXIMUM_PROCESSES = 5
 
+# Time in seconds.
+INACTIVITY_TIMEOUT = 5
 
-class FireOnExit(ProcessProtocol):
 
-    def __init__(self, deferred):
+class FireOnExit(ProcessProtocol, TimeoutMixin):
+
+    def __init__(self, deferred, timeout_period):
         self.deferred = deferred
         self._output = ''
         self._error = ''
+        self.setTimeout(timeout_period)
 
     def outReceived(self, data):
+        ProcessProtocol.outReceived(self, data)
+        self.resetTimeout()
         self._output += data
 
     def errReceived(self, data):
+        ProcessProtocol.errReceived(self, data)
+        self.resetTimeout()
         self._error += data
 
     def processEnded(self, reason):
         ProcessProtocol.processEnded(self, reason)
+        self.setTimeout(None)
         self.deferred, deferred = None, self.deferred
         if reason.check(error.ConnectionDone):
             deferred.callback(None)
@@ -81,7 +91,7 @@ class JobManager:
                 os.path.dirname(os.path.dirname(canonical.__file__))),
             'scripts/mirror-branch.py')
         deferred = defer.Deferred()
-        protocol = FireOnExit(deferred)
+        protocol = FireOnExit(deferred, INACTIVITY_TIMEOUT)
         reactor.spawnProcess(
             protocol, sys.executable,
             [sys.executable, path_to_script, branch_to_mirror.source,
