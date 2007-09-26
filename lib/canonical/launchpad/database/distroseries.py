@@ -337,6 +337,16 @@ def copy_active_translations_as_update(child, transaction, logger):
 
     # ### POMsgSet ###
 
+    def prepare_pomsgset_pouring(holding_table, source_table):
+        """Prevent pouring of `POMsgSet`s whose `POFile`s weren't poured."""
+        # POFile has already been poured by the time this gets invoked; we
+        # recognize references to deleted POFiles by the fact that they don't
+        # exist in the POFile source table.
+        cursor().execute("""
+            DELETE FROM %s AS HOLDING
+            WHERE pofile NOT IN (SELECT id FROM POFile)
+            """ % holding_table)
+
     def prepare_pomsgset_batch(
         holding_table, source_table, batch_size, start_id, end_id):
         """Prepare pouring of a batch of `POMsgSet`s.
@@ -362,10 +372,6 @@ def copy_active_translations_as_update(child, transaction, logger):
                 holding.potmsgset = pms.potmsgset AND
                 holding.pofile = pms.pofile
             """ % (holding_table, batch_clause))
-        cur.execute("""
-            DELETE FROM %s AS holding
-            WHERE %s AND pofile NOT IN (SELECT id FROM POFile)
-            """ % (holding_table, batch_clause))
 
     # We'll extract POMsgSets that already have equivalents in the child
     # distroseries, to make it easier to copy POSubmissions for them
@@ -387,6 +393,7 @@ def copy_active_translations_as_update(child, transaction, logger):
 
     copier.extract(
         'POMsgSet', joins=['POFile'], inert_where=pomsgset_inert_where,
+        pre_pouring_callback=prepare_pomsgset_pouring,
         batch_pouring_callback=prepare_pomsgset_batch)
     cur = cursor()
     cur.execute(
@@ -440,6 +447,15 @@ def copy_active_translations_as_update(child, transaction, logger):
 
     # ### POSubmission ###
 
+    def prepare_posubmission_pouring(holding_table, source_table):
+        """Prevent pouring of `POSubmission`s withou `POMsgSet`s."""
+        # POMsgSet has already been poured.  Delete from POSubmission holding
+        # table any rows referring to nonexistent POMsgSets.
+        cursor().execute("""
+            DELETE FROM %s AS holding
+            WHERE holding.pomsgset NOT IN (SELECT id FROM POMsgSet)
+            """ % holding_table)
+
     def prepare_posubmission_batch(
         holding_table, source_table, batch_size, start_id, end_id):
         """Prepare pouring of a batch of `POSubmission`s.
@@ -459,17 +475,6 @@ def copy_active_translations_as_update(child, transaction, logger):
             "holding.id >= %s AND holding.id < %s"
             % sqlvalues(start_id, end_id))
         cur = cursor()
-
-        # Don't pour POSubmissions whose POMsgSets have disappeared.
-        cur.execute("""
-            DELETE FROM %s AS holding
-            WHERE %s AND
-                NOT EXISTS (
-                    SELECT *
-                    FROM POMsgSet
-                    WHERE holding.pomsgset = POMsgSet.id
-                    )
-            """ % (holding_table, batch_clause))
 
         # Don't pour POSubmissions for which the child already has a better
         # replacement.
@@ -518,6 +523,7 @@ def copy_active_translations_as_update(child, transaction, logger):
         where_clause="""
             active AND POSubmission.pomsgset = pms.id AND pms.iscomplete""",
         external_joins=['POMsgSet pms'],
+        pre_pouring_callback=prepare_posubmission_pouring,
         batch_pouring_callback=prepare_posubmission_batch,
         inert_where=have_better)
     cur = cursor()

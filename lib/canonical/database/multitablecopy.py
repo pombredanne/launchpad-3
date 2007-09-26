@@ -223,6 +223,7 @@ class MultiTableCopy:
         self.last_extracted_table = None
         self.restartable = restartable
         self.batch_pouring_callbacks = {}
+        self.pre_pouring_callbacks = {}
         if logger is not None:
             self.logger = logger
         else:
@@ -261,8 +262,8 @@ class MultiTableCopy:
         return foreign_key
 
     def extract(self, source_table, joins=None, where_clause=None,
-        id_sequence=None, inert_where=None, batch_pouring_callback=None,
-        external_joins=None):
+        id_sequence=None, inert_where=None, pre_pouring_callback=None,
+        batch_pouring_callback=None, external_joins=None):
         """Extract (selected) rows from source_table into a holding table.
 
         The holding table gets an additional new_id column with identifiers
@@ -310,6 +311,14 @@ class MultiTableCopy:
             values they had in `source_table`, but for each "x" of these
             foreign keys, the holding table will have a column "new_x" that
             holds the redirected foreign key.
+        :param pre_pouring_callback: a callback that is called just before
+            pouring this table.  At that time the holding table will no longer
+            have its new_id column, its values having been copied to the
+            regular id column.  This means that the copied rows' original ids
+            are no longer known.  The callback takes as arguments the holding
+            table's name and the source table's name.  The callback may be
+            invoked more than once if pouring is interrupted and later
+            resumed.
         :param batch_pouring_callback: a callback that is called before each
             batch of rows is poured, within the same transaction that pours
             those rows.  It takes as arguments the holding table's name; the
@@ -338,6 +347,9 @@ class MultiTableCopy:
         if batch_pouring_callback is not None:
             callbacks = self.batch_pouring_callbacks
             callbacks[source_table] = batch_pouring_callback
+
+        if pre_pouring_callback is not None:
+            self.pre_pouring_callbacks[source_table] = pre_pouring_callback
 
         if external_joins is None:
             external_joins = []
@@ -582,6 +594,10 @@ class MultiTableCopy:
             cur.execute("ALTER TABLE %s DROP COLUMN new_id" % holding_table)
             self._commit(transaction_manager)
             self.logger.debug("...rearranged ids...")
+
+        callback = self.pre_pouring_callbacks.get(table)
+        if callback is not None:
+            callback(holding_table, table)
 
         # Now pour holding table's data into its source table.  This is where
         # we start writing to tables that other clients will be reading, and
