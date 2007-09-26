@@ -13,7 +13,7 @@ __all__ = [
 from zope.schema import TextLine, Int, Choice, Bool, Field, Set
 from zope.interface import Interface, Attribute
 
-from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.enum import DBEnumeratedType, DBItem
 
 
 class TextDirection(DBEnumeratedType):
@@ -97,7 +97,7 @@ class ILanguage(Interface):
         title=u'Text direction',
         description=u'The direction of text in this language.',
         required=True,
-        vocabulary='TextDirection')
+        vocabulary=TextDirection)
 
     displayname = TextLine(
         title=u'The displayname of the language',

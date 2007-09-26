@@ -12,9 +12,8 @@ from sqlobject import (
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces.language import TextDirection
 from canonical.launchpad.interfaces import (
-    ILanguageSet, ILanguage, IPersonSet, NotFoundError)
+    ILanguageSet, ILanguage, IPersonSet, NotFoundError, TextDirection)
 
 
 class Language(SQLBase):

@@ -22,8 +22,6 @@ __all__ = (
 'ArchivePurpose',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
-'BountyDifficulty',
-'BountyStatus',
 'BranchReviewStatus',
 'BugBranchStatus',
 'BugNominationStatus',
@@ -47,17 +45,6 @@ __all__ = (
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'PackagePublishingPocket',
-'PackagingType',
-'PersonalStanding',
-'PollAlgorithm',
-'PollSecrecy',
-'PostedMessageStatus',
-'ProjectRelationship',
-'ProjectStatus',
-'RevisionControlSystems',
-'ShipItArchitecture',
-'ShipItDistroSeries',
-'ShipItFlavour',
 'ShippingRequestStatus',
 'ShippingService',
 'SourcePackageFileType',
@@ -74,12 +61,7 @@ __all__ = (
 'SprintSpecificationStatus',
 'PackageUploadStatus',
 'PackageUploadCustomFormat',
-'UpstreamFileType',
-'UpstreamReleaseVersionStyle',
 )
-
-#from canonical.launchpad.webapp.enum import DBSchema
-#from canonical.launchpad.webapp.enum import DBSchemaItem as Item
 
 from canonical.lazr import DBEnumeratedType as DBSchema
 from canonical.lazr import DBItem as Item
@@ -231,62 +213,6 @@ class CveStatus(DBSchema):
         """)
 
 
-class ProjectStatus(DBSchema):
-    """A Project Status
-
-    This is an enum of the values that Project.status can assume.
-    Essentially it indicates whether or not this project has been reviewed,
-    and if it has whether or not it passed review and should be considered
-    active.
-    """
-
-    NEW = Item(1, """
-        New
-
-        This project is new and has not been reviewed.
-        """)
-
-    ACTIVE = Item(2, """
-        Active
-
-        This Project has been reviewed and is considered active in the
-        launchpad.""")
-
-    DISABLED = Item(3, """
-        Disabled
-
-        This project has been reviewed, and has been disabled. Typically
-        this is because the contents appear to be bogus. Such a project
-        should not show up in searches etc.""")
-
-
-class PackagingType(DBSchema):
-    """Source packages.
-
-    Source packages include software from one or more Upstream open source
-    projects. This schema shows the relationship between a source package
-    and the upstream open source products that it might incorporate. This
-    schema is used in the Packaging table.
-    """
-
-    PRIME = Item(1, """
-        Primary Product
-
-        This is the primary product packaged in this source package. For
-        example, a source package "apache2" would have a "prime" Packaging
-        relationship with the "apache2" product from the Apache Project.
-        The product and package don't have to have the same name.
-        """)
-
-    INCLUDES = Item(2, """
-        SourcePackage Includes Product
-
-        This source package includes some part or all of the product. For
-        example, the "cadaver" source package has an "includes" Packaging
-        relationship with the libneon product.
-        """)
-
-
 class BugBranchStatus(DBSchema):
     """The status of a bugfix branch."""
 
@@ -316,32 +242,6 @@ class BugBranchStatus(DBSchema):
         This branch contains a fix agreed upon by the community as
         being the best available branch from which to merge to fix
         this bug.
-        """)
-
-
-class ProjectRelationship(DBSchema):
-    """Project Relationship
-
-    Launchpad tracks different open source projects, and the relationships
-    between them. This schema is used to describe the relationship between
-    two open source projects.
-    """
-
-    AGGREGATES = Item(1, """
-        Subject Project Aggregates Object Project
-
-        Some open source projects are in fact an aggregation of several
-        other projects. For example, the Gnome Project aggregates
-        Gnumeric, Abiword, EOG, and many other open source projects.
-        """)
-
-    SIMILAR = Item(2, """
-        Subject Project is Similar to Object Project
-
-        Often two different groups will start open source projects
-        that are similar to one another. This relationship is used
-        to describe projects that are similar to other projects in
-        the system.
         """)
 
 
@@ -406,56 +306,6 @@ class DistroSeriesStatus(DBSchema):
 
         This distroseries is no longer supported, it is considered
         obsolete and should not be used on production systems.
-        """)
-
-
-class UpstreamFileType(DBSchema):
-    """Upstream File Type
-
-    When upstream open source project release a product they will
-    include several files in the release. All of these files are
-    stored in Launchpad (we throw nothing away ;-). This schema
-    gives the type of files that we know about.
-    """
-
-    CODETARBALL = Item(1, """
-        Code Release Tarball
-
-        This file contains code in a compressed package like
-        a tar.gz or tar.bz or .zip file.
-        """)
-
-    README = Item(2, """
-        README File
-
-        This is a README associated with the upstream
-        release. It might be in .txt or .html format, the
-        filename would be an indicator.
-        """)
-
-    RELEASENOTES = Item(3, """
-        Release Notes
-
-        This file contains the release notes of the new
-        upstream release. Again this could be in .txt or
-        in .html format.
-        """)
-
-    CHANGELOG = Item(4, """
-        ChangeLog File
-
-        This file contains information about changes in this
-        release from the previous release in the series. This
-        is usually not a detailed changelog, but a high-level
-        summary of major new features and fixes.
-        """)
-
-    INSTALLER = Item(5, """
-        Installer file
-
-        This file contains an installer for a product.  It may
-        be a Debian package, an RPM file, an OS X disk image, a
-        Windows installer, or some other type of installer.
         """)
 
 
@@ -1414,95 +1264,6 @@ class SourcePackageRelationships(DBSchema):
         Hat.  """)
 
 
-class BountyDifficulty(DBSchema):
-    """Bounty Difficulty
-
-    An indicator of the difficulty of a particular bounty."""
-
-    TRIVIAL = Item(10, """
-        Trivial
-
-        This bounty requires only very basic skills to complete the task. No
-        real domain knowledge is required, only simple system
-        administration, writing or configuration skills, and the ability to
-        publish the work.""")
-
-    BASIC = Item(20, """
-        Basic
-
-        This bounty requires some basic programming skills, in a high level
-        language like Python or C# or... BASIC. However, the project is
-        being done "standalone" and so no knowledge of existing code is
-        required.""")
-
-    STRAIGHTFORWARD = Item(30, """
-        Straightforward
-
-        This bounty is easy to implement but does require some broader
-        understanding of the framework or application within which the work
-        must be done.""")
-
-    NORMAL = Item(50, """
-        Normal
-
-        This bounty requires a moderate amount of programming skill, in a
-        high level language like HTML, CSS, JavaScript, Python or C#. It is
-        an extension to an existing application or package so the work will
-        need to follow established project coding standards.""")
-
-    CHALLENGING = Item(60, """
-        Challenging
-
-        This bounty requires knowledge of a low-level programming language
-        such as C or C++.""")
-
-    DIFFICULT = Item(70, """
-        Difficult
-
-        This project requires knowledge of a low-level programming language
-        such as C or C++ and, in addition, requires extensive knowledge of
-        an existing codebase into which the work must fit.""")
-
-    VERYDIFFICULT = Item(90, """
-        Very Difficult
-
-        This project requires exceptional programming skill and knowledge of
-        very low level programming environments, such as assembly language.""")
-
-    EXTREME = Item(100, """
-        Extreme
-
-        In order to complete this work, detailed knowledge of an existing
-        project is required, and in addition the work itself must be done in
-        a low-level language like assembler or C on multiple architectures.""")
-
-
-class BountyStatus(DBSchema):
-    """Bounty Status
-
-    An indicator of the status of a particular bounty. This can be edited by
-    the bounty owner or reviewer."""
-
-    OPEN = Item(1, """
-        Open
-
-        This bounty is open. People are still welcome to contact the creator
-        or reviewer of the bounty, and submit their work for consideration
-        for the bounty.""")
-
-    WITHDRAWN = Item(9, """
-        Withdrawn
-
-        This bounty has been withdrawn.
-        """)
-
-    CLOSED = Item(10, """
-        Closed
-
-        This bounty is closed. No further submissions will be considered.
-        """)
-
-
 class BinaryPackageFileType(DBSchema):
     """Binary Package File Type
 
@@ -1851,47 +1612,6 @@ class BugAttachmentType(DBSchema):
         """)
 
 
-class UpstreamReleaseVersionStyle(DBSchema):
-    """Upstream Release Version Style
-
-    Sourcerer will actively look for new upstream releases, and it needs
-    to know roughly what version numbering format upstream uses. The
-    release version number schemes understood by Sourcerer are documented
-    in this schema. XXX andrew please fill in!
-    """
-
-    GNU = Item(1, """
-        GNU-style Version Numbers
-
-        XXX Andrew need description here
-        """)
-
-
-class RevisionControlSystems(DBSchema):
-    """Revision Control Systems
-
-    Bazaar brings code from a variety of upstream revision control
-    systems into Arch. This schema documents the known and supported
-    revision control systems.
-    """
-
-    CVS = Item(1, """
-        Concurrent Version System
-
-        The Concurrent Version System is very widely used among
-        older open source projects, it was the first widespread
-        open source version control system in use.
-        """)
-
-    SVN = Item(2, """
-        Subversion
-
-        Subversion aims to address some of the shortcomings in
-        CVS, but retains the central server bottleneck inherent
-        in the CVS design.
-        """)
-
-
 class BuildStatus(DBSchema):
     """Build status type
 
@@ -1969,109 +1689,6 @@ class BuildStatus(DBSchema):
         In those cases all the build historic information will be stored (
         buildlog, datebuilt, duration, builder, etc) and the buildd admins
         will be notified via process-upload about the reason of the rejection.
-        """)
-
-
-class PersonalStanding(DBSchema):
-    """A person's standing.
-
-    Standing is currently (just) used to determine whether a person's posts to
-    a mailing list require first-post moderation or not.  Any person with good
-    or excellent standing may post directly to the mailing list without
-    moderation.  Any person with unknown or poor standing must have their
-    first-posts moderated.
-    """
-
-    UNKNOWN = Item(0, """
-        Unknown standing
-
-        Nothing about this person's standing is known.
-        """)
-
-    POOR = Item(100, """
-        Poor standing
-
-        This person has poor standing.
-        """)
-
-    GOOD = Item(200, """
-        Good standing
-
-        This person has good standing and may post to a mailing list without
-        being subject to first-post moderation rules.
-        """)
-
-    EXCELLENT = Item(300, """
-        Excellent standing
-
-        This person has excellent standing and may post to a mailing list
-        without being subject to first-post moderation rules.
-        """)
-
-
-class PollSecrecy(DBSchema):
-    """The secrecy of a given Poll."""
-
-    OPEN = Item(1, """
-        Public Votes (Anyone can see a person's vote)
-
-        Everyone who wants will be able to see a person's vote.
-        """)
-
-    ADMIN = Item(2, """
-        Semi-secret Votes (Only team administrators can see a person's vote)
-
-        All team owners and administrators will be able to see a person's vote.
-        """)
-
-    SECRET = Item(3, """
-        Secret Votes (It's impossible to track a person's vote)
-
-        We don't store the option a person voted in our database,
-        """)
-
-
-class PollAlgorithm(DBSchema):
-    """The algorithm used to accept and calculate the results."""
-
-    SIMPLE = Item(1, """
-        Simple Voting
-
-        The most simple method for voting; you just choose a single option.
-        """)
-
-    CONDORCET = Item(2, """
-        Condorcet Voting
-
-        One of various methods used for calculating preferential votes. See
-        http://www.electionmethods.org/CondorcetEx.htm for more information.
-        """)
-
-
-class PostedMessageStatus(DBSchema):
-    """The status of a posted message.
-
-    When a message posted to a mailing list is subject to first-post
-    moderation, the message gets one of these statuses.
-    """
-
-    NEW = Item(0, """
-        New status
-
-        The message has been posted and held for first-post moderation, but no
-        disposition of the message has yet been made.
-        """)
-
-    APPROVED = Item(1, """
-        Approved
-
-        A message held for first-post moderation has been approved.
-        """)
-
-    REJECTED = Item(2, """
-        Rejected
-
-        A message held for first-post moderation has been rejected.
         """)
 
 
