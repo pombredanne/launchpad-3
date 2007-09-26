@@ -308,13 +308,6 @@ class Builder(SQLBase):
                         'deb http://ftpmaster.internal/ubuntu %s %s'
                         % (dist_pocket, ubuntu_components))
 
-                # For the non-primary archive sources line:
-                # Add the pocket to the distro to make the full suite name.
-                # PPA always builds in RELEASE so it does not need this code.
-                pocket = build_queue_item.build.pocket
-                if pocket != PackagePublishingPocket.RELEASE:
-                    dist_name += pocketsuffix[pocket]
-
             source_line = (
                 'deb %s %s %s'
                 % (archive_url, dist_name, ogre_components))
