@@ -18,6 +18,7 @@ these CDs are sent to the user.
   ...    ShipItDistroSeries)
   >>> requestset = getUtility(IShippingRequestSet)
   >>> foobar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+  >>> feisty = ShipItDistroSeries.FEISTY
 
 Let's create a new request for foo.bar@canonical.com.
 
@@ -36,7 +37,7 @@ Let's create a new request for foo.bar@canonical.com.
   >>> request = requestset.new(recipient, name, country, city,
   ...                          addressline1, phone, reason=reason)
   >>> quantities = {UBUNTU: {X86: 30, AMD64: 5, PPC: 2}}
-  >>> request.setQuantities(quantities)
+  >>> request.setQuantities(quantities, distroseries=feisty)
 
 Note that we store a normalized version of the request's address, so that we
 can identify people making requests from multiple different accounts.
@@ -80,7 +81,7 @@ The number of CDs can be altered by the user, if he wants.
 
   >>> login('foo.bar@canonical.com')
   >>> quantities = {UBUNTU: {X86: 10, AMD64: 3, PPC: 1}}
-  >>> request.setQuantities(quantities)
+  >>> request.setQuantities(quantities, distroseries=feisty)
   >>> request.getTotalCDs()
   14
 
@@ -205,7 +206,6 @@ of a given distroseries (or both, obviously).
    (u'Daniel Henrique Debonzi', 7), (u'Jordi Mallach', 16),
    (u'James Blackwell', 17), (u'ShipIt Administrators', 19)]
 
-  >>> feisty = ShipItDistroSeries.FEISTY
   >>> [(shipreq.recipient.displayname , shipreq.id)
   ...  for shipreq in requestset.search(distroseries=feisty)]
   [(u'Robert Collins', 4), (u'No Privileges Person', 1),
@@ -287,7 +287,8 @@ getUnshippedRequestsIDs method of ShippingRequestSet.
   >>> import transaction
   >>> transaction.commit()
   >>> high = ShippingRequestPriority.HIGH
-  >>> unshipped_requests = requestset.getUnshippedRequestsIDs(high)
+  >>> unshipped_requests = requestset.getUnshippedRequestsIDs(
+  ...     high, distroseries=feisty)
   >>> len(unshipped_requests)
   1
 
@@ -295,7 +296,7 @@ To actually export the files and upload them to Librarian we use
 ShippingRequestSet.exportRequestsToFiles(). Let's do an export of all high
 priority requests.
 
-  >>> requestset.exportRequestsToFiles(high, transaction)
+  >>> requestset.exportRequestsToFiles(high, transaction, distroseries=feisty)
   >>> flush_database_updates()
   >>> run = ShippingRun.select(orderBy='-id', limit=1)[0]
   >>> run.requests_count
@@ -362,13 +363,16 @@ priority requests.
 Now we do an export of all normal priority requests that are ready to be
 shipped, by running the shipit-exports cronscript.
 
-  >>> sorted(requestset.getUnshippedRequestsIDs(ShippingRequestPriority.NORMAL))
+  >>> sorted(requestset.getUnshippedRequestsIDs(
+  ...     ShippingRequestPriority.NORMAL, distroseries=feisty))
   [1, 2, 3, 4, 5, 7]
 
   >>> import subprocess
+  >>> cmd = ('cronscripts/shipit-exports.py -q --priority=normal '
+  ...        '--distroseries=feisty')
   >>> process = subprocess.Popen(
-  ...     'cronscripts/shipit-exports.py -q --priority=normal', shell=True,
-  ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  ...     cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+  ...     stderr=subprocess.PIPE)
   >>> (out, err) = process.communicate()
   >>> out, err
   ('', '')
@@ -377,7 +381,8 @@ shipped, by running the shipit-exports cronscript.
 
   >>> transaction.commit()
   >>> flush_database_updates()
-  >>> len(requestset.getUnshippedRequestsIDs(ShippingRequestPriority.NORMAL))
+  >>> len(requestset.getUnshippedRequestsIDs(
+  ...     ShippingRequestPriority.NORMAL, distroseries=feisty))
   0
   >>> run = ShippingRun.select(orderBy='-datecreated', limit=1)[0]
   >>> sorted([request.id for request in run.requests])
@@ -398,6 +403,12 @@ to each country.
 The generateCountryBasedReport() method accepts a current_series_only
 argument that, if True, will include only requests of
 ShipItConstants.current_distroseries.
+
+  # Let's pretend the current series is Feisty so that we don't need to
+  # change our sampledata when we start shipping a new release.
+  >>> from canonical.launchpad.interfaces import ShipItConstants
+  >>> orig_current_series = ShipItConstants.current_distroseries
+  >>> ShipItConstants.current_distroseries = feisty
 
   >>> csv_file = requestset.generateCountryBasedReport(
   ...     current_series_only=False)
@@ -1115,6 +1126,9 @@ This is the description of each column, in its context:
      people with karma: 0
   avg CDs per shipment: 0
 
+  # Restore the current_distroseries to its original value so that we don't
+  # screw up other tests.
+  >>> ShipItConstants.current_distroseries = orig_current_series
 
 All these reports are generated periodically and stored in the Librarian by
 the shipit-reports cronscript.
