@@ -22,8 +22,9 @@ from canonical.database.sqlbase import (
 from canonical.functional import FunctionalDocFileSuite, StdoutHandler
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet, ILaunchBag,
-    IPersonSet, TeamSubscriptionPolicy)
+    CreateBugParams, IBugTaskSet, IDistributionSet, IEmailAddressSet,
+    ILanguageSet, ILaunchBag, IMailingListSet, IPersonSet, MailingListStatus,
+    PersonCreationRationale, TeamSubscriptionPolicy)
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -251,7 +252,7 @@ def mailingListPrintActions(pending_actions):
                 print team, '-->', action
 
 
-def mailingListNewTeam(team_name):
+def mailingListNewTeam(team_name, with_list=False):
     """A helper function for the mailinglist-xmlrpc.txt doctest.
 
     This just provides a convenience function for creating the kinds of teams
@@ -263,8 +264,39 @@ def mailingListNewTeam(team_name):
     policy = TeamSubscriptionPolicy.OPEN
     personset = getUtility(IPersonSet)
     ddaa = personset.getByName('ddaa')
-    return personset.newTeam(ddaa, team_name, displayname,
+    team = personset.newTeam(ddaa, team_name, displayname,
                              subscriptionpolicy=policy)
+    if not with_list:
+        return team
+    carlos = personset.getByName('carlos')
+    list_set = getUtility(IMailingListSet)
+    team_list = list_set.new(team)
+    team_list.review(carlos, MailingListStatus.APPROVED)
+    team_list.startConstructing()
+    team_list.transitionToStatus(MailingListStatus.ACTIVE)
+    return team, team_list
+
+
+def mailingListNewPerson(first_name):
+    """Create a new person with the given first name.
+
+    The person will be given two email addresses, with the 'long form'
+    (e.g. anne.person@example.com) as the preferred address.  Return the new
+    person object.
+    """
+    variable_name = first_name.lower()
+    full_name = first_name + ' Person'
+    # E.g. firstname.person@example.com will be an alternative address.
+    preferred_address = variable_name + '.person@example.com'
+    # E.g. aperson@example.org will be the preferred address.
+    alternative_address = variable_name[0] + 'person@example.org'
+    person, email = getUtility(IPersonSet).createPersonAndEmail(
+        preferred_address,
+        PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
+        name=variable_name, displayname=full_name)
+    person.setPreferredEmail(email)
+    getUtility(IEmailAddressSet).new(alternative_address, person)
+    return person
 
 
 # XXX BarryWarsaw 15-Aug-2007: See bug 132784 as a placeholder for improving
@@ -337,6 +369,12 @@ def mailingListXMLRPCExternalSetUp(test):
     test.globs['print_actions'] = mailingListPrintActions
     test.globs['new_team'] = mailingListNewTeam
     test.globs['commit'] = flush_database_updates
+
+
+def mailingListSubscriptionSetUp(test):
+    setUp(test)
+    test.globs['new_team'] = mailingListNewTeam
+    test.globs['new_person'] = mailingListNewPerson
 
 
 def LayeredDocFileSuite(*args, **kw):
@@ -589,6 +627,13 @@ special = {
     'mailinglist-xmlrpc.txt-external': FunctionalDocFileSuite(
             '../doc/mailinglist-xmlrpc.txt',
             setUp=mailingListXMLRPCExternalSetUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadFunctionalLayer,
+            ),
+    'mailinglist-subscriptions.txt': FunctionalDocFileSuite(
+            '../doc/mailinglist-subscriptions.txt',
+            setUp=mailingListSubscriptionSetUp,
             tearDown=tearDown,
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer,
