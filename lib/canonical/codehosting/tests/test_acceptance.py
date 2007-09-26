@@ -391,7 +391,7 @@ class AcceptanceTests(SSHTestCase):
         self.captureStderr(
             self.assertRaises,
             (BzrCommandError, TransportNotPossible), self.push, remote_url)
-    
+
     @deferToThread
     def test_cant_push_to_existing_unowned_hosted_branch(self):
         # Users can only push to hosted branches that they own.
@@ -417,7 +417,7 @@ class AcceptanceTests(SSHTestCase):
         # XXX: JonathanLange 2007-08-07, We shoudn't be able to push to
         # branches that have revisions in the database but not actual files:
         # it's a pathological case.
-        # 
+        #
         # However, at the moment we don't provide any checking for this. We
         # should in the future. Until then, this test is disabled.
         return
@@ -446,6 +446,7 @@ class SmartserverTests(SSHTestCase):
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.getDatabaseBranch(person_name, product_name, branch_name)
         branch.branch_type = BranchType.MIRRORED
+        branch.url = "http://example.com/smartservertest/branch"
         LaunchpadZopelessTestSetup().txn.commit()
         return ro_branch_url
 

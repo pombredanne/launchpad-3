@@ -1,4 +1,5 @@
-<div class="portlet" tal:condition="context/reopenings">
+<div class="portlet" id="portlet-reopenings"
+     tal:condition="context/reopenings">
   <h2>This question was reopened</h2>
 
   <div class="portletBody portletContent">

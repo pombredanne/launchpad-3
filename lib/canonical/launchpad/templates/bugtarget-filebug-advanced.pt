@@ -13,11 +13,19 @@
   <div tal:replace="structure context/@@+portlet-details|nothing" />
 </metal:rightportlets>
 
-<metal:heading fill-slot="pageheading">
-  <h1>Report a new bug</h1>
-</metal:heading>
-
 <div metal:fill-slot="main">
+
+      <h1>
+        <img
+          tal:condition="view/isPrivate"
+          alt="(Private)"
+          id="privatebadge"
+          src="/@@/private-large"
+          style="float: right;"
+          title="This bug report will be private, though you can disclose it later."
+        />
+        Report a bug
+      </h1>
 
   <metal:not_uses_malone
     use-macro="context/@@+filebug-macros/not_uses_malone" />

@@ -23,12 +23,8 @@
             <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
           </a>
         </li>
-        <li>
-          <a href="+translations">
-            <img alt="Help translate" src="/+icing/but-sml-helptranslate.gif" />
-          </a>
-        </li>
         <li tal:content="structure context/@@+ask-a-question-button" />
+        <li tal:content="structure context/@@+help-translate-button" />
       </ul>
       <tal:packages condition="context/binarycount">
 
@@ -51,8 +47,8 @@
       <div class="left">
         <div
           class="section"
-          tal:condition="context/getLastUploads"
-          tal:content="structure context/@@+latest-uploads"
+          tal:condition="context/getLatestUploads"
+          tal:content="structure context/@@+portlet-latestuploads"
         />
         <div class="section" tal:condition="context/architectures">
           <h2>Architectures</h2>

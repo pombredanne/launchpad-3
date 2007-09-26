@@ -4,22 +4,73 @@ Processes removals of packages that are scheduled for deletion.
 """
 
 import datetime
+import logging
 import pytz
 import os
+
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.archivepublisher.config import LucilleConfigError
+from canonical.archivepublisher.diskpool import DiskPool
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
 from canonical.launchpad.database.publishing import (
-    SourcePackageFilePublishing, BinaryPackageFilePublishing)
-from canonical.launchpad.interfaces import NotInPool
-from canonical.lp.dbschema import PackagePublishingStatus
+    SourcePackageFilePublishing, SecureSourcePackagePublishingHistory,
+    BinaryPackageFilePublishing, SecureBinaryPackagePublishingHistory)
+from canonical.launchpad.interfaces import (
+    NotInPool, ISecureSourcePackagePublishingHistory,
+    ISecureBinaryPackagePublishingHistory)
+from canonical.lp.dbschema import PackagePublishingStatus, ArchivePurpose
+
+
+def getDeathRow(archive, log, pool_root_override):
+    """Return a Deathrow object for the archive supplied.
+
+    :param archive: Use the publisher config for this archive to derive the
+                    DeathRow object.
+    :param log: Use this logger for script debug logging.
+    :param pool_root_override: Use this pool root for the archive instead of
+         the one provided by the publishing-configuration, it will be only
+         used for PRIMARY archives.
+    """
+    log.debug("Grab Lucille config.")
+    try:
+        pubconf = archive.getPubConfig()
+    except LucilleConfigError, info:
+        log.error(info)
+        raise
+
+    pubconf = removeSecurityProxy(pubconf)
+
+    if (pool_root_override is not None and
+        archive.purpose == ArchivePurpose.PRIMARY):
+        pool_root = pool_root_override
+    else:
+        pool_root = pubconf.poolroot
+
+    log.debug("Preparing on-disk pool representation.")
+
+    diskpool_log = logging.getLogger("DiskPool")
+    # Set the diskpool's log level to INFO to suppress debug output
+    diskpool_log.setLevel(20)
+
+    dp = DiskPool(pool_root, pubconf.temproot, diskpool_log)
+
+    log.debug("Preparing death row.")
+    return DeathRow(archive, dp, log)
 
 
 class DeathRow:
-    """A Distribution Archive Removal Processor."""
-    def __init__(self, distribution, diskpool, logger):
-        self.distribution = distribution
+    """A Distribution Archive Removal Processor.
+
+    DeathRow will remove archive files from disk if they are marked for
+    removal in the publisher tables, and if they are no longer referenced
+    by other packages.
+    """
+    def __init__(self, archive, diskpool, logger):
+        self.archive = archive
         self.diskpool = diskpool
         self._removeFile = diskpool.removeFile
         self.logger = logger
@@ -50,67 +101,85 @@ class DeathRow:
     def _collectCondemned(self):
         source_files = SourcePackageFilePublishing.select("""
             publishingstatus = %s AND
-            distribution = %s AND
             sourcepackagefilepublishing.archive = %s AND
             SourcePackagePublishingHistory.id =
                  SourcePackageFilePublishing.sourcepackagepublishing AND
             SourcePackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
-                            self.distribution, self.distribution.main_archive,
-                            UTC_NOW),
+                            self.archive, UTC_NOW),
             clauseTables=['SourcePackagePublishingHistory'],
             orderBy="id")
 
+        self.logger.debug("%d Sources" % source_files.count())
+
         binary_files = BinaryPackageFilePublishing.select("""
             publishingstatus = %s AND
-            distribution = %s AND
             binarypackagefilepublishing.archive = %s AND
             BinaryPackagePublishingHistory.id =
                  BinaryPackageFilePublishing.binarypackagepublishing AND
             BinaryPackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
-                            self.distribution, self.distribution.main_archive,
-                            UTC_NOW),
+                            self.archive, UTC_NOW),
             clauseTables=['BinaryPackagePublishingHistory'],
             orderBy="id")
+
+        self.logger.debug("%d Binaries" % binary_files.count())
+
         return (source_files, binary_files)
 
-    def canRemove(self, publication_class, filename):
-        """Whether or not a filename can be remove of the archive pool.
+    def canRemove(self, publication_class, file_md5):
+        """Check if given MD5 can be removed from the archive pool.
 
         Check the archive reference-counter implemented in:
-        `SourcePackageFilePublishing` or `BinaryPackageFilePublishing`.
+        `SecureSourcePackagePublishingHistory` or
+        `SecureBinaryPackagePublishingHistory`.
 
         Only allow removal of unnecessary files.
         """
-        # 'prejoin'ing {S,B}PPH would help here if we face performance
-        # problems, but we can not do it dynamically due to the hack
-        # performed by IArchiveFilePublishing.publishing_record which
-        # 'magically' decided what is the respective publishing record
-        # needs to be retrieved. Something in direction of:
-        # "default_prejoins = 'SPPH' or 'BPPH'" would work very
-        # well for Source/BinaryPackageFilePublishing classes in this case.
-        # However we are still able to decide what to 'prejoin' here, in the
-        # callsite by testing what is the interface implemented by the
-        # publication_class.
-        all_publications = publication_class.select("""
-           libraryfilealiasfilename = %s AND
-           distribution = %s AND
-           archive = %s
-        """ % sqlvalues(filename, self.distribution,
-                        self.distribution.main_archive))
+        clauses = []
+        clauseTables = []
+
+        if ISecureSourcePackagePublishingHistory.implementedBy(
+            publication_class):
+            clauses.append("""
+                SecureSourcePackagePublishingHistory.status != %s AND
+                SecureSourcePackagePublishingHistory.archive = %s AND
+                SecureSourcePackagePublishingHistory.sourcepackagerelease =
+                    SourcePackageReleaseFile.sourcepackagerelease AND
+                SourcePackageReleaseFile.libraryfile = LibraryFileAlias.id
+            """ % sqlvalues(PackagePublishingStatus.REMOVED, self.archive))
+            clauseTables.append('SourcePackageReleaseFile')
+        elif ISecureBinaryPackagePublishingHistory.implementedBy(
+            publication_class):
+            clauses.append("""
+                SecureBinaryPackagePublishingHistory.status != %s AND
+                SecureBinaryPackagePublishingHistory.archive = %s AND
+                SecureBinaryPackagePublishingHistory.binarypackagerelease =
+                    BinaryPackageFile.binarypackagerelease AND
+                BinaryPackageFile.libraryfile = LibraryFileAlias.id
+            """ % sqlvalues(PackagePublishingStatus.REMOVED, self.archive))
+            clauseTables.append('BinaryPackageFile')
+        else:
+            raise AssertionError("%r is not supported." % publication_class)
+
+        clauses.append("""
+           LibraryFileAlias.content = LibraryFileContent.id AND
+           LibraryFileContent.md5 = %s
+        """ % sqlvalues(file_md5))
+        clauseTables.extend(
+            ['LibraryFileAlias', 'LibraryFileContent'])
+
+        all_publications = publication_class.select(
+            " AND ".join(clauses), clauseTables=clauseTables)
 
         right_now = datetime.datetime.now(pytz.timezone('UTC'))
-
-        for file_pub in all_publications:
+        for pub in all_publications:
             # Deny removal if any reference is still active.
-            if (file_pub.publishingstatus !=
-                PackagePublishingStatus.PENDINGREMOVAL):
+            if (pub.status != PackagePublishingStatus.PENDINGREMOVAL):
                 return False
             # Deny removal if any reference is still in 'quarantine'.
             # See PubConfig.pendingremovalduration value.
-            if (file_pub.publishing_record.scheduleddeletiondate >
-                right_now):
+            if (pub.scheduleddeletiondate > right_now):
                 return False
 
         return True
@@ -126,18 +195,27 @@ class DeathRow:
         bytes = 0
         condemned_files = set()
         condemned_records = set()
+        considered_md5s = set()
         details = {}
 
         content_files = (
-            (SourcePackageFilePublishing, condemned_source_files),
-            (BinaryPackageFilePublishing, condemned_binary_files),)
+            (SecureSourcePackagePublishingHistory, condemned_source_files),
+            (SecureBinaryPackagePublishingHistory, condemned_binary_files),)
 
         for publication_class, pub_files in content_files:
             for pub_file in pub_files:
-                # Check if the removal is allowed, if not continue.
-                if not self.canRemove(
-                    publication_class, pub_file.libraryfilealiasfilename):
+                file_md5 = pub_file.libraryfilealias.content.md5
+                # Check if the LibraryFileAlias in question was already
+                # verified. If it was, continue.
+                if file_md5 in considered_md5s:
                     continue
+                considered_md5s.add(file_md5)
+
+                filename = pub_file.libraryfilealiasfilename
+                # Check if the removal is allowed, if not continue.
+                if not self.canRemove(publication_class, file_md5):
+                    continue
+
                 # Update local containers, in preparation to file removal.
                 pub_file_details = (
                     pub_file.libraryfilealiasfilename,
@@ -152,8 +230,8 @@ class DeathRow:
         self.logger.info(
             "Removing %s files marked for reaping" % len(condemned_files))
 
-        for condemened_file in sorted(condemned_files, reverse=True):
-            file_name, source_name, component_name = details[condemened_file]
+        for condemned_file in sorted(condemned_files, reverse=True):
+            file_name, source_name, component_name = details[condemned_file]
             try:
                 bytes += self._removeFile(
                     component_name, source_name, file_name)

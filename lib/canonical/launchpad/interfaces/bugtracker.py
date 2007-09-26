@@ -74,18 +74,21 @@ class IBugTracker(Interface):
     summary = Text(
         title=_('Summary'),
         description=_(
-            'A brief introduction or overview of this bug tracker instance.'))
+            'A brief introduction or overview of this bug tracker instance.'),
+        required=False)
     baseurl = BugTrackerBaseURL(
         title=_('Base URL'),
-        description=_('The top-level URL for the bug tracker. This '
-        'must be accurate so that Launchpad can link to external bug reports.'))
+        description=_(
+            'The top-level URL for the bug tracker. This must be accurate '
+            'so that Launchpad can link to external bug reports.'))
     owner = Int(title=_('Owner'))
     contactdetails = Text(
         title=_('Contact details'),
         description=_(
             'The contact details for the external bug tracker (so that, for '
             'example, its administrators can be contacted about a security '
-            'breach).'))
+            'breach).'),
+        required=False)
     watches = Attribute('The remote watches on this bug tracker.')
     projects = Attribute('The projects which use this bug tracker.')
     latestwatches = Attribute('The last 10 watches created.')

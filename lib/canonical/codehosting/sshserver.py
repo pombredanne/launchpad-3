@@ -1,7 +1,8 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 import binascii
 import os
+import logging
 
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
@@ -24,6 +25,7 @@ from twisted.vfs.adapters import sftp
 
 from canonical.codehosting.bazaarfs import SFTPServerRoot
 from canonical.codehosting.smartserver import launch_smart_server
+from canonical.config import config
 
 from zope.interface import implements
 
@@ -50,10 +52,12 @@ class LaunchpadAvatar(avatar.ConchUser):
         self.homeDirsRoot = homeDirsRoot
         self._launchpad = launchpad
 
-        # Fetch user details from the authserver
         self.lpid = userDict['id']
         self.lpname = userDict['name']
         self.teams = userDict['teams']
+
+        logging.getLogger('codehosting.ssh').info('%r logged in', self.lpname)
+        self.logger = logging.getLogger('codehosting.sftp.%s' % self.lpname)
 
         # Extract the initial branches from the user dict.
         branches_by_team = dict(userDict['initialBranches'])
@@ -100,13 +104,15 @@ class LaunchpadAvatar(avatar.ConchUser):
 
         Returns a Deferred with the new branch ID.
         """
+        self.logger.info(
+            'Creating branch: (%r, %r, %r)', userName, productName, branchName)
         return self._launchpad.createBranch(
             loginID, userName, productName, branchName)
 
     def _cbRememberProductID(self, productID, productName):
         if productID is None:
             return None
-        # XXX: Andrew Bennetts 2007-01-26: 
+        # XXX: Andrew Bennetts 2007-01-26:
         # Why convert the number to a string here?
         productID = str(productID)
         self._productIDs[productName] = productID
@@ -188,11 +194,19 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
 
     def __init__(self, transport=None):
         self.transport = transport
+        self._configured_banner_sent = False
 
     def sendBanner(self, text, language='en'):
         bytes = '\r\n'.join(text.encode('UTF8').splitlines() + [''])
         self.transport.sendPacket(userauth.MSG_USERAUTH_BANNER,
                                   NS(bytes) + NS(language))
+
+    def _sendConfiguredBanner(self, passed_through):
+        if (not self._configured_banner_sent
+            and config.codehosting.banner is not None):
+            self._configured_banner_sent = True
+            self.sendBanner(config.codehosting.banner)
+        return passed_through
 
     # XXX Jonathan Lange 2007-03-19: Copied from
     # twisted/conch/ssh/userauth.py, with modifications noted.
@@ -209,6 +223,7 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         if not d:
             self._ebBadAuth(failure.Failure(ConchError('auth returned none')))
             return
+        d.addCallback(self._sendConfiguredBanner)
         d.addCallbacks(self._cbFinishedAuth)
         d.addErrback(self._ebMaybeBadAuth)
         # The following line does not appear in the original Twisted source.
@@ -299,6 +314,7 @@ class BazaarFileTransferServer(filetransfer.FileTransferServer):
 
     def __init__(self, data=None, avatar=None):
         filetransfer.FileTransferServer.__init__(self, data, avatar)
+        self.logger = avatar.logger
         self._dirtyBranches = set()
         self.client.filesystem.root.setListenerFactory(self.makeListener)
         self._launchpad = self.client.avatar._launchpad
@@ -315,9 +331,11 @@ class BazaarFileTransferServer(filetransfer.FileTransferServer):
         """Request that all changed branches be mirrored. Return a deferred
         which fires when each request has received a response from the server.
         """
+        self.logger.info('Requesting mirrors for: %r', self._dirtyBranches)
         deferreds = [self._launchpad.requestMirror(branch)
                      for branch in self._dirtyBranches]
         return defer.gatherResults(deferreds)
 
     def connectionLost(self, reason):
+        self.logger.info('Connection lost: %s', reason)
         self.sendMirrorRequests()

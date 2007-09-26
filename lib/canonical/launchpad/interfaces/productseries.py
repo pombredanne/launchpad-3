@@ -10,6 +10,7 @@ __all__ = [
     'IProductSeriesSourceAdmin',
     'validate_cvs_root',
     'validate_cvs_module',
+    'RevisionControlSystems',
     ]
 
 import re
@@ -20,13 +21,43 @@ from zope.interface import Interface, Attribute
 from CVS.protocol import CVSRoot, CvsRootError
 
 from canonical.launchpad.fields import ContentNameField, URIField
-from canonical.launchpad.interfaces import (
-    IBugTarget, ISpecificationGoal, IHasAppointedDriver, IHasOwner,
-    IHasDrivers, validate_url)
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.launchpad import (
+    IHasAppointedDriver, IHasOwner, IHasDrivers)
+from canonical.launchpad.interfaces.specificationtarget import (
+    ISpecificationGoal)
+from canonical.launchpad.interfaces.validation import validate_url
 
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad import _
+
+from canonical.lazr.enum import DBEnumeratedType, DBItem
+
+
+class RevisionControlSystems(DBEnumeratedType):
+    """Revision Control Systems
+
+    Bazaar brings code from a variety of upstream revision control
+    systems into bzr. This schema documents the known and supported
+    revision control systems.
+    """
+
+    CVS = DBItem(1, """
+        Concurrent Version System
+
+        The Concurrent Version System is very widely used among
+        older open source projects, it was the first widespread
+        open source version control system in use.
+        """)
+
+    SVN = DBItem(2, """
+        Subversion
+
+        Subversion aims to address some of the shortcomings in
+        CVS, but retains the central server bottleneck inherent
+        in the CVS design.
+        """)
 
 
 class ProductSeriesNameField(ContentNameField):
@@ -56,6 +87,7 @@ def validate_cvs_root(cvsroot):
             'Please use a fully qualified host name.')
     return True
 
+
 def validate_cvs_module(cvsmodule):
     valid_module = re.compile('^[a-zA-Z][a-zA-Z0-9_/.+-]*$')
     if not valid_module.match(cvsmodule):
@@ -65,11 +97,13 @@ def validate_cvs_module(cvsmodule):
         raise LaunchpadValidationError('A CVS module can not be called "CVS".')
     return True
 
+
 def validate_cvs_branch(branch):
     if branch and re.match('^[a-zA-Z][a-zA-Z0-9_-]*$', branch):
         return True
     else:
         raise LaunchpadValidationError('Your CVS branch name is invalid.')
+
 
 def validate_release_glob(value):
     if validate_url(value, ["http", "https", "ftp"]):
@@ -214,7 +248,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "will reflect our current status for importing and syncing the "
         "upstream code and publishing it as a Bazaar branch.")
     rcstype = Choice(title=_("Type of RCS"),
-        required=False, vocabulary='RevisionControlSystems',
+        required=False, vocabulary=RevisionControlSystems,
         description=_("The type of revision control used for "
         "the upstream branch of this series. Can be CVS or Subversion."))
     cvsroot = TextLine(title=_("Repository"), required=False,

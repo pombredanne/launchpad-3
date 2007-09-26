@@ -73,12 +73,12 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def setUpDBBranch(self):
         LaunchpadZopelessLayer.txn.begin()
-        arbitraryownerid = 1
+        arbitraryowner = getUtility(IPersonSet).get(1)
         self.db_branch = getUtility(IBranchSet).new(
             branch_type=BranchType.MIRRORED,
             name="test",
-            creator=arbitraryownerid,
-            owner=arbitraryownerid,
+            creator=arbitraryowner,
+            owner=arbitraryowner,
             product=None,
             url=self.bzr_branch_url,
             title="Test branch",

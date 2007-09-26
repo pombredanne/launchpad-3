@@ -58,18 +58,17 @@
     highlights.
   </p>
 
-  <h2>Contact details</h2>
+  <h2 tal:condition="context/contactdetails">
+    Contact details
+  </h2>
 
-  <div tal:condition="not: context/contactdetails">
-    None provided.
-  </div>
   <div tal:condition="context/contactdetails"
        tal:content="context/contactdetails" >
     The contact details for the admins of this bug tracker go here, so we
     can get to them in an emergency.
   </div>
 
-  <h2>Bug watches</h2>
+  <h2 tal:condition="context/watches">Bug watches</h2>
   <tal:navigation tal:replace="structure view/batchnav/@@+navigation-links-upper" />
 
   <tal:block define="watches view/batchnav/batch"

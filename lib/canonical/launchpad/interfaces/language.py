@@ -7,12 +7,30 @@ __metaclass__ = type
 __all__ = [
     'ILanguage',
     'ILanguageSet',
+    'TextDirection',
     ]
 
-from zope.schema import TextLine, Int, Choice, Bool, Field
+from zope.schema import TextLine, Int, Choice, Bool, Field, Set
 from zope.interface import Interface, Attribute
 
-from canonical.lp.dbschema import TextDirection
+from canonical.lazr.enum import DBEnumeratedType, DBItem
+
+
+class TextDirection(DBEnumeratedType):
+    """The base text direction for a language."""
+
+    LTR = DBItem(0, """
+        Left to Right
+
+        Text is normally written from left to right in this language.
+        """)
+
+    RTL = DBItem(1, """
+        Right to Left
+
+        Text is normally written from left to right in this language.
+        """)
+
 
 class ILanguage(Interface):
     """A Language."""
@@ -51,9 +69,23 @@ class ILanguage(Interface):
         title=u'List of Teams that translate into this language.',
         required=True)
 
-    countries = Field(
-        title=u'A list of Countries where this language is spoken in.',
-        required=True)
+    countries = Set(
+        title=u'Spoken in',
+        description=u'List of countries this language is spoken in.',
+        required=True,
+        value_type=Choice(vocabulary="CountryName"))
+
+    def addCountry(country):
+        """Add a country to a list of countries this language is spoken in.
+
+        Provided by SQLObject.
+        """
+
+    def removeCountry(country):
+        """Remove a country from a list of countries this language is spoken in.
+
+        Provided by SQLObject.
+        """
 
     visible = Bool(
         title=u'Visible',
@@ -65,7 +97,7 @@ class ILanguage(Interface):
         title=u'Text direction',
         description=u'The direction of text in this language.',
         required=True,
-        vocabulary='TextDirection')
+        vocabulary=TextDirection)
 
     displayname = TextLine(
         title=u'The displayname of the language',
@@ -87,7 +119,6 @@ class ILanguage(Interface):
                u' in HTML files.'),
         required=True,
         readonly=True)
-
 
 class ILanguageSet(Interface):
     """The collection of languages."""

@@ -8,6 +8,7 @@ import tarfile
 from StringIO import StringIO
 import datetime
 import pytz
+import re
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -30,13 +31,14 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
-    ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
-    BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
+    BugTaskSearchParams, ILaunchpadCelebrities, ISourcePackageRelease,
+    ITranslationImportQueue, UNRESOLVED_BUGTASK_STATUSES
     )
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
+from canonical.launchpad.scripts.queue import QueueActionError
 
 
 class SourcePackageRelease(SQLBase):
@@ -51,12 +53,12 @@ class SourcePackageRelease(SQLBase):
     maintainer = ForeignKey(foreignKey='Person', dbName='maintainer',
         notNull=True)
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
-    manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
         default=SourcePackageUrgency.LOW, notNull=True)
     dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
         default=UTC_NOW)
     dsc = StringCol(dbName='dsc')
+    copyright = StringCol(dbName='copyright', notNull=True)
     version = StringCol(dbName='version', notNull=True)
     changelog = StringCol(dbName='changelog')
     builddepends = StringCol(dbName='builddepends')
@@ -80,12 +82,25 @@ class SourcePackageRelease(SQLBase):
     dsc_binaries = StringCol(dbName='dsc_binaries')
 
     # MultipleJoins
-    builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',
-                             orderBy=['-datecreated'])
     files = SQLMultipleJoin('SourcePackageReleaseFile',
         joinColumn='sourcepackagerelease', orderBy="libraryfile")
     publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
+
+    @property
+    def builds(self):
+        """See `ISourcePackageRelease`."""
+        # Excluding PPA builds may seem like a strange thing to do but
+        # when copy-package works for copying packages across archives,
+        # a build may well have a different archive to the corresponding
+        # sourcepackagerelease.
+        return Build.select("""
+            sourcepackagerelease = %s AND
+            archive.id = build.archive AND
+            archive.purpose != %s
+            """ % sqlvalues(self.id, ArchivePurpose.PPA),
+            orderBy=['-datecreated', 'id'],
+            clauseTables=['Archive'])
 
     @property
     def age(self):
@@ -163,7 +178,7 @@ class SourcePackageRelease(SQLBase):
             # imports us, so avoid circular import
             from canonical.launchpad.database.sourcepackage import \
                  SourcePackage
-            # Only process main archive to skip PPA publishings.
+            # Only process main archives to skip PPA publishings.
             if publishing.archive.purpose == ArchivePurpose.PPA:
                 continue
             sp = SourcePackage(self.sourcepackagename,
@@ -224,12 +239,14 @@ class SourcePackageRelease(SQLBase):
             BinaryPackagePublishingHistory.distroarchrelease =
                DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %d AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                BinaryPackageRelease.id AND
             BinaryPackageRelease.build = Build.id AND
             Build.sourcepackagerelease = %d
-            """ % (distroseries, distroseries.main_archive, self),
+            """ % (distroseries,
+                   distroseries.distribution.all_distro_archive_ids,
+                   self),
             clauseTables=clauseTables))
 
         return archSerieses
@@ -274,7 +291,7 @@ class SourcePackageRelease(SQLBase):
 
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""
-	# Look for a published build
+        # Look for a published build
         query = """
         Build.id = BinaryPackageRelease.build AND
         BinaryPackageRelease.id =
@@ -307,10 +324,37 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         if component is not None:
             self.component = component
+            # See if the new component requires a new archive:
+            distribution = self.uploaddistroseries.distribution
+            new_archive = distribution.getArchiveByComponent(component.name)
+            if new_archive is not None:
+                self.upload_archive = new_archive
+            else:
+                raise QueueActionError(
+                    "New component '%s' requires a non-existent archive.")
         if section is not None:
             self.section = section
         if urgency is not None:
             self.urgency = urgency
+
+    @property
+    def change_summary(self):
+        """See ISourcePackageRelease"""
+        # this regex is copied from apt-listchanges.py courtesy of MDZ
+        new_stanza_line = re.compile(
+            '^\S+ \((?P<version>.*)\) .*;.*urgency=(?P<urgency>\w+).*')
+        logfile = StringIO(self.changelog)
+        change = ''
+        top_stanza = False
+        for line in logfile.readlines():
+            match = new_stanza_line.match(line)
+            if match:
+                if top_stanza:
+                    break
+                top_stanza = True
+            change += line
+
+        return change
 
     def attachTranslationFiles(self, tarball_alias, is_published,
         importer=None):

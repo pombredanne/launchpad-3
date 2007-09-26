@@ -20,7 +20,7 @@ CodeImports are created and found using the ICodeImportSet interface,
 which is registered as a utility.
 
     >>> from canonical.launchpad.interfaces import ICodeImport, ICodeImportSet
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
     >>> code_import_set = getUtility(ICodeImportSet)
@@ -57,7 +57,7 @@ read.
 The rcs_type field, which indicates whether the import is from CVS or
 Subversion, takes values from the 'RevisionControlSystems' vocabulary.
 
-    >>> from canonical.lp.dbschema import RevisionControlSystems
+    >>> from canonical.launchpad.interfaces import RevisionControlSystems
 
 
 === Import from CVS ===

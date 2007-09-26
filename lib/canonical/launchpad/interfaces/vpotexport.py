@@ -39,4 +39,5 @@ class IVPOTExport(Interface):
 
     pluralform = Attribute("See IPOMsgIDSighting.pluralform")
 
+    context = Attribute("See IPOTMsgSet.context")
     msgid = Attribute("See IPOMsgID.pomsgid")

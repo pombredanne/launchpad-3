@@ -596,7 +596,15 @@ and the bug will have been edited.
     [u'doc']
 
 
+Emails are sent out by adding entries to the bugnotification table. We
+need to know how many messages are currently in that table.
+
+    >>> from canonical.launchpad.database import BugNotification, Bug
+    >>> bn_set = BugNotification.select(BugNotification.q.bugID == bug_one.id)
+    >>> start_bugnotification_count = bn_set.count()
+
 Re-adding the same tag that already exists shouldn't notify anyone.
+
     >>> edit_values['field.tags'] = u'doc doc'
     >>> bug_edit.submit('change', edit_values)
     >>> bug_edit.hasErrors()
@@ -605,6 +613,9 @@ Re-adding the same tag that already exists shouldn't notify anyone.
     ...     print message
 
     >>> bug_edit.wasRedirected()
+    True
+    >>> bn_set = BugNotification.select(BugNotification.q.bugID == bug_one.id)
+    >>> bn_set.count() == start_bugnotification_count
     True
 
 The tag 'doc' has already been used for other Firefox bugs, let's try
@@ -647,3 +658,13 @@ the bug page, and the bug will have the new tag.
 
     >>> bug_one.tags
     [u'doc', u'new-tag']
+
+Since the 'new-tag' was added, a new entry in the bugnotification table
+should exist.
+
+    >>> bn_set = BugNotification.select(BugNotification.q.bugID == bug_one.id,
+    ...                                 orderBy = BugNotification.q.id)
+    >>> start_bugnotification_count == bn_set.count() - 1
+    True
+    >>> bn_set[-1].message.text_contents
+    u'** Tags added: new-tag'

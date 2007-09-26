@@ -51,7 +51,7 @@ class BuildSequencerJob(protocol.ProcessProtocol):
         self.forcelog = confsegment.alwayslog
         self.getCurrentTime = sequencer.getCurrentTime
         self.updateDue()
-        
+
     def updateDue(self):
         """Update the due time to now+delay."""
         self.due = self.getCurrentTime() + self.delay
@@ -62,7 +62,7 @@ class BuildSequencerJob(protocol.ProcessProtocol):
         self.log = ""
         self.errlog = ""
         reactor.spawnProcess(self, self.command, self.args, env=os.environ)
-        
+
     def outReceived(self, data):
         """Pass on stdout data to the log."""
         self.log += data

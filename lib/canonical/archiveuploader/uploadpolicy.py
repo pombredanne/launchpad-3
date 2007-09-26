@@ -8,10 +8,11 @@ __all__ = ["findPolicyByName", "findPolicyByOptions", "UploadPolicyError"]
 
 from zope.component import getUtility
 
+from canonical.archiveuploader.nascentuploadfile import UploadError
 from canonical.launchpad.interfaces import (
     IDistributionSet, ILaunchpadCelebrities)
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, DistroSeriesStatus)
+    ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket)
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
@@ -118,10 +119,21 @@ class AbstractUploadPolicy:
             if self.pocket != PackagePublishingPocket.RELEASE:
                 upload.reject(
                     "PPA uploads must be for the RELEASE pocket.")
+        elif (self.archive.purpose == ArchivePurpose.PARTNER and
+              self.pocket != PackagePublishingPocket.RELEASE and
+              self.pocket != PackagePublishingPocket.PROPOSED):
+              # Partner uploads can only go to the release or proposed
+              # pockets.
+              upload.reject(
+                "Partner uploads must be for the RELEASE or "
+                "PROPOSED pocket.")
         else:
+            # Uploads to the partner archive are allowed in any distroseries
+            # state.
             # XXX julian 2005-05-29 bug=117557:
             # This is a greasy hack until bug #117557 is fixed.
             if (self.distroseries and
+                self.archive.purpose != ArchivePurpose.PARTNER and
                 not self.distroseries.canUploadToPocket(self.pocket)):
                 upload.reject(
                     "Not permitted to upload to the %s pocket in a "
@@ -131,8 +143,33 @@ class AbstractUploadPolicy:
         # reject PPA uploads by default
         self.rejectPPAUploads(upload)
 
+        # Ensure that the archive for binary uploads matches that of the
+        # source upload.
+        self.checkArchiveConsistency(upload)
+
         # execute policy specific checks
         self.policySpecificChecks(upload)
+
+    def checkArchiveConsistency(self, upload):
+        """Reject binary uploads whose archive differs from its source's.
+
+        If a build generates binaries which would end up in a different
+        archive to the source, then the upload is rejected.
+        """
+        if upload.sourceful and upload.binaryful:
+            # Mixed mode uploads do not need this check, there is no existing
+            # source package.
+            return
+
+        for binary_package_file in upload.changes.binary_package_files:
+            try:
+                spr = binary_package_file.findSourcePackageRelease()
+            except UploadError:
+                # The binary has no source package.
+                continue
+            if self.archive != spr.upload_archive:
+                upload.reject(
+                    "Archive for binary differs to the source's archive.")
 
     def rejectPPAUploads(self, upload):
         """Reject uploads targeted to PPA.
@@ -323,6 +360,25 @@ class AnythingGoesUploadPolicy(AbstractUploadPolicy):
         pass
 
 AbstractUploadPolicy._registerPolicy(AnythingGoesUploadPolicy)
+
+
+class AbsolutelyAnythingGoesUploadPolicy(AnythingGoesUploadPolicy):
+    """This policy is invoked when processing uploads from the test process.
+
+    Absolutely everything is allowed, for when you don't want the hassle
+    of dealing with inappropriate checks in tests.
+    """
+
+    def __init__(self):
+        AnythingGoesUploadPolicy.__init__(self)
+        self.name = "absolutely-anything"
+        self.unsigned_changes_ok = True
+
+    def policySpecificChecks(self, upload):
+        """Nothing, let it go."""
+        pass
+
+AbstractUploadPolicy._registerPolicy(AbsolutelyAnythingGoesUploadPolicy)
 
 
 class SecurityUploadPolicy(AbstractUploadPolicy):

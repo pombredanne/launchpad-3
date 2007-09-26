@@ -1,7 +1,6 @@
-<div
+<div class="portlet" id="portlet-coming-events"
   tal:define="coming_sprints context/coming_sprints"
-  tal:condition="coming_sprints"
-  class="portlet">
+  tal:condition="coming_sprints">
 
   <h2>Coming events</h2>
 

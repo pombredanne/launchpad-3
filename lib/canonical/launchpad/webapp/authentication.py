@@ -205,7 +205,7 @@ class LaunchpadLoginSource:
 
     def getPrincipal(self, id):
         """Return a principal based on the person with the provided id.
-        
+
         Note that we currently need to be able to retrieve principals for
         invalid People, as the login machinery needs the principal to
         validate the password against so it may then email a validation

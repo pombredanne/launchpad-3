@@ -15,10 +15,8 @@ from canonical.launchpad.database.productseries import (
     DatePublishedSyncError, ProductSeries, NoImportBranchError)
 from canonical.launchpad.ftests import login
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
-from canonical.launchpad.interfaces import IProductSet
+from canonical.launchpad.interfaces import IProductSet, RevisionControlSystems
 from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
-from canonical.launchpad.interfaces import IProductSet
-from canonical.lp.dbschema import RevisionControlSystems
 
 
 class ImportdTestCase(TestCase):
@@ -105,8 +103,8 @@ class TestImportUpdated(ImportdTestCase):
     # from the importd slaves.
 
     def testLastMirroredIsNone(self):
-        # If import_branch.last_mirrored is None, importUpdated just sets
-        # datelastsynced to UTC_NOW.
+        # If import_branch.last_mirrored is None, importUpdated sets
+        # datelastsynced and import_branch.mirror_request_time to UTC_NOW.
         series = self.series()
         series.import_branch.last_mirrored = None
         series.datelastsynced = None
@@ -114,6 +112,8 @@ class TestImportUpdated(ImportdTestCase):
         # use str() to work around sqlobject lazy evaluation
         self.assertEqual(str(series.datepublishedsync), str(None))
         self.assertEqual(str(series.datelastsynced), str(UTC_NOW))
+        self.assertEqual(
+            str(series.import_branch.mirror_request_time), str(UTC_NOW))
 
     def testLastSyncedIsNone(self):
         # Make sure that importUpdated() still work when encountering the

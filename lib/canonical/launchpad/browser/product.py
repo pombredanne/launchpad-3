@@ -26,7 +26,6 @@ __all__ = [
     'ProductAddSeriesView',
     'ProductBugContactEditView',
     'ProductReassignmentView',
-    'ProductLaunchpadUsageEditView',
     'ProductRdfView',
     'ProductSetFacets',
     'ProductSetSOP',
@@ -48,13 +47,12 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import alsoProvides, implements
-from zope.app.form.interfaces import WidgetsError
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
+    ILaunchpadCelebrities, IProduct,
     ICountry, IProductSet, IProductSeries, IProject, ISourcePackage,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     IBranchSet, RESOLVED_BUGTASK_STATUSES,
@@ -66,7 +64,6 @@ from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.launchpad import (
@@ -87,8 +84,6 @@ from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces import ITeam
 
 
 class ProductNavigation(
@@ -210,8 +205,7 @@ class ProductOverviewMenu(ApplicationMenu):
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
-        'series_add', 'launchpad_usage', 'administer', 'branch_visibility',
-        'rdf']
+        'series_add', 'administer', 'branch_visibility', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -261,11 +255,6 @@ class ProductOverviewMenu(ApplicationMenu):
     def branch_add(self):
         text = 'Register branch'
         return Link('+addbranch', text, icon='add')
-
-    @enabled_with_permission('launchpad.Edit')
-    def launchpad_usage(self):
-        text = 'Define Launchpad usage'
-        return Link('+launchpad', text, icon='edit')
 
     def rdf(self):
         text = structured(
@@ -369,7 +358,11 @@ class ProductTranslationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'translations'
-    links = ['translators', 'edit']
+    links = ['translators', 'edit', 'imports', 'translationdownload']
+
+    def imports(self):
+        text = 'See import queue'
+        return Link('+imports', text)
 
     def translators(self):
         text = 'Change translators'
@@ -379,6 +372,16 @@ class ProductTranslationsMenu(ApplicationMenu):
     def edit(self):
         text = 'Edit template names'
         return Link('+potemplatenames', text, icon='edit')
+
+    def translationdownload(self):
+        text = 'Download translations'
+        preferred_series = self.context.primary_translatable
+        enabled = (preferred_series is not None)
+        link = ''
+        if enabled:
+            link = '%s/+export' % preferred_series.name
+
+        return Link(link, text, icon='download', enabled=enabled)
 
 
 def _sort_distros(a, b):
@@ -650,10 +653,12 @@ class ProductEditView(LaunchpadEditFormView):
     schema = IProduct
     label = "Edit details"
     field_names = [
-        "project", "displayname", "title", "summary", "description",
+        "displayname", "title", "summary", "description", "project",
+        "bugtracker", "official_rosetta", "official_answers",
         "homepageurl", "sourceforgeproject",
         "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
         "programminglang", "development_focus"]
+    custom_widget('bugtracker', ProductBugTrackerWidget)
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -676,26 +681,6 @@ class ProductReviewView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "reviewed",
                    "private_bugs"]
-
-
-class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
-    """View class for defining Launchpad usage."""
-
-    schema = IProductLaunchpadUsageForm
-    label = "Describe Launchpad usage"
-    custom_widget('bugtracker', ProductBugTrackerWidget)
-
-    @action("Change", name='change')
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    @property
-    def adapters(self):
-        return {self.schema: self.context}
 
 
 class ProductAddSeriesView(LaunchpadFormView):
@@ -1049,10 +1034,10 @@ class ProductReassignmentView(ObjectReassignmentView):
 
         """
         import_queue = getUtility(ITranslationImportQueue)
+        for entry in import_queue.getAllEntries(target=product):
+            if entry.importer == oldOwner:
+                entry.importer = newOwner
         for series in product.serieses:
-            for entry in import_queue.getEntryByProductSeries(series):
-                if entry.importer == oldOwner:
-                    entry.importer = newOwner
             if series.owner == oldOwner:
                 series.owner = newOwner
         for release in product.releases:
@@ -1076,7 +1061,7 @@ class ProductBranchesView(BranchListingView):
 
     @property
     def no_branch_message(self):
-        if self.selected_lifecycle_status:
+        if self.selected_lifecycle_status is not None:
             message = (
                 'There may be branches registered for %s '
                 'but none of them match the current filter criteria '

@@ -20,6 +20,7 @@ from canonical.librarian.interfaces import UploadFailed, DownloadFailed
 
 __all__ = ['FileUploadClient', 'FileDownloadClient', 'LibrarianClient']
 
+
 class FileUploadClient:
     """Simple blocking client for uploading to the librarian."""
 
@@ -31,7 +32,7 @@ class FileUploadClient:
 
     def _connect(self):
         """Connect this client.
-        
+
         The host and port default to what is specified in the configuration
         """
         host = config.librarian.upload_host
@@ -75,7 +76,7 @@ class FileUploadClient:
             on the server, which will be marked with the value given.
 
         :returns: aliasID as an integer
-        
+
         :raises UploadFailed: If the server rejects the upload for some reason,
             or the size is 0.
         """
@@ -135,7 +136,7 @@ class FileUploadClient:
                 md5Digester.update(chunk)
 
             assert bytesWritten == size, (
-                'size is %d, but %d were read from the file' 
+                'size is %d, but %d were read from the file'
                 % (size, bytesWritten))
             self.state.f.flush()
 
@@ -196,7 +197,7 @@ class FileUploadClient:
                 bytesWritten += len(chunk)
 
             assert bytesWritten == size, (
-                'size is %d, but %d were read from the file' 
+                'size is %d, but %d were read from the file'
                 % (size, bytesWritten))
             self.state.f.flush()
 

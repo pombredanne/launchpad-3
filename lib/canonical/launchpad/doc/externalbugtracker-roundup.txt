@@ -1,0 +1,186 @@
+= ExternalBugTracker: Roundup =
+
+This covers the implementation of the ExternalBugTracker class for Roundup
+bugwatches.
+
+
+== Basics ==
+
+The ExternalBugTracker descendant class which implements methods for updating
+bug watches on Roundup bug trackers is externalbugtracker.Roundup, which
+implements IExternalBugTracker.
+
+    >>> from canonical.launchpad.components.externalbugtracker import Roundup
+    >>> from canonical.launchpad.interfaces.externalbugtracker import (
+    ...     IExternalBugtracker)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(IExternalBugtracker, Roundup('http://roundup.foo.com'))
+    True
+
+
+== Status Conversion ==
+
+The basic Roundup bug statuses (i.e. those available by default in new Roundup instances) map to Launchpad bug statuses. Roundup.convertRemoteStatus() handles the conversion.
+
+    >>> roundup = Roundup('http://spam.eggs')
+    >>> roundup.convertRemoteStatus(1).title
+    'New'
+    >>> roundup.convertRemoteStatus(2).title
+    'Confirmed'
+    >>> roundup.convertRemoteStatus(3).title
+    'Incomplete'
+    >>> roundup.convertRemoteStatus(4).title
+    'Incomplete'
+    >>> roundup.convertRemoteStatus(5).title
+    'In Progress'
+    >>> roundup.convertRemoteStatus(6).title
+    'In Progress'
+    >>> roundup.convertRemoteStatus(7).title
+    'Fix Committed'
+    >>> roundup.convertRemoteStatus(8).title
+    'Fix Released'
+
+If the status isn't something that our Roundup ExternalBugTracker can
+understand, Unknown will be returned and a warning logged.
+
+    >>> roundup.convertRemoteStatus('eggs').title
+    WARNING:...:Unknown remote status 'eggs'.
+    'Unknown'
+
+UNKNOWN_REMOTE_STATUS maps to Unknown without generating a warning. This
+handles the case where we've tried to probe for a bug but didn't succeed. For
+example, if the bug number was invalid.
+
+    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
+    >>> roundup.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
+    'Unknown'
+
+
+== Initialization ==
+
+Calling initializeRemoteBugDB() on our Roundup instance and passing it a set
+of remote bug IDs will fetch those bug IDs from the server and file them in a
+local variable for later use.
+
+We use a test-oriented implementation for the purposes of these tests, which 
+overrides ExternalBugTracker.urlopen() so that we don't have to rely on a
+working network connection.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestRoundup, print_bugwatches)
+    >>> roundup = TestRoundup('http://test.roundup')
+    >>> roundup.initializeRemoteBugDB([1])
+    >>> sorted(roundup.bugs.keys())
+    [1]
+
+
+== Export Methods ==
+
+There are two means by which we can export Roundup bug statuses: on a
+bug-by-bug basis and as a batch. When the number of bugs that need updating is
+less than a given bug roundupker's batch_query_threshold the bugs will be
+fetched one-at-a-time:
+
+    >>> roundup.batch_query_threshold
+    10
+
+    >>> roundup.trace_calls = True
+    >>> roundup.initializeRemoteBugDB([6, 7, 8, 9, 10])
+    CALLED urlopen('http://test.roundup/issue?...&id=6')
+    CALLED urlopen('http://test.roundup/issue?...&id=7')
+    CALLED urlopen('http://test.roundup/issue?...&id=8')
+    CALLED urlopen('http://test.roundup/issue?...&id=9')
+    CALLED urlopen('http://test.roundup/issue?...&id=10')
+
+If there are more than batch_query_threshold bugs to update then they are
+fetched as a batch:
+
+    >>> roundup.batch_query_threshold = 4
+    >>> roundup.initializeRemoteBugDB([6, 7, 8, 9, 10])
+    CALLED urlopen('http://test.roundup/issue?...@startwith=0')
+
+
+== Updating Bug Watches ==
+
+First, we create some bug watches to test with:
+
+    >>> from canonical.launchpad.database import BugTracker
+    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from canonical.lp.dbschema import BugTrackerType
+
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+
+    >>> example_bug_tracker = BugTracker(
+    ...     name="example-bugs",
+    ...     title="Example.com Roundup",
+    ...     bugtrackertype=BugTrackerType.ROUNDUP,
+    ...     baseurl="http://bugs.example.com",
+    ...     summary="Contains bugs for Example.com",
+    ...     contactdetails="foo.bar@example.com",
+    ...     owner=sample_person)
+
+    >>> login('test@canonical.com')
+
+    >>> example_bug = getUtility(IBugSet).get(10)
+    >>> example_bugwatch = example_bug.addWatch(
+    ...     example_bug_tracker, 1, sample_person)
+
+    >>> login('no-priv@canonical.com')
+
+Collect the Example.com watches:
+
+    >>> print_bugwatches(example_bug_tracker.watches)
+    Remote bug 1: None
+
+And have a Roundup instance process them:
+
+    >>> roundup = TestRoundup(example_bug_tracker.baseurl)
+    >>> roundup.updateBugWatches(example_bug_tracker.watches)
+    >>> print_bugwatches(example_bug_tracker.watches)
+    Remote bug 1: 1
+
+We'll add some more watches now.
+
+    >>> from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
+    >>> print_bugwatches(example_bug_tracker.watches,
+    ...     roundup.convertRemoteStatus)
+    Remote bug 1: New
+
+    >>> remote_bugs = [
+    ...     (2, 'Confirmed'),
+    ...     (3, 'Incomplete'),
+    ...     (4, 'Incomplete'),
+    ...     (5, 'In Progress'),
+    ...     (9, 'In Progress'),
+    ...     (10, 'Fix Committed'),
+    ...     (11, 'Fix Released'),
+    ...     (12, 'Incomplete'),
+    ...     (13, 'Incomplete'),
+    ...     (14, 'In Progress')
+    ... ]
+
+    >>> bug_watch_set = getUtility(IBugWatchSet)
+    >>> for remote_bug_id, remote_status in remote_bugs:
+    ...     bug_watch = bug_watch_set.createBugWatch(
+    ...         bug=example_bug, owner=sample_person,
+    ...         bugtracker=example_bug_tracker,
+    ...         remotebug=str(remote_bug_id))
+
+    >>> roundup.trace_calls = True
+    >>> roundup.updateBugWatches(example_bug_tracker.watches)
+    CALLED urlopen(u'http://bugs.example.com/issue?...@startwith=0')
+
+    >>> print_bugwatches(example_bug_tracker.watches,
+    ...     roundup.convertRemoteStatus)
+    Remote bug 1: New
+    Remote bug 2: Confirmed
+    Remote bug 3: Incomplete
+    Remote bug 4: Incomplete
+    Remote bug 5: In Progress
+    Remote bug 9: In Progress
+    Remote bug 10: Fix Committed
+    Remote bug 11: Fix Released
+    Remote bug 12: Incomplete
+    Remote bug 13: Incomplete
+    Remote bug 14: In Progress
+

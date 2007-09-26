@@ -39,11 +39,11 @@ from canonical.launchpad.interfaces import (
     IProject, IDistributionSourcePackage, NotFoundError,
     CreateBugParams, IBugAddForm, ILaunchpadCelebrities,
     IProductSeries, ITemporaryStorageManager, IMaloneApplication,
-    IFrontPageBugAddForm, IProjectBugAddForm, UNRESOLVED_BUGTASK_STATUSES)
+    IFrontPageBugAddForm, IProjectBugAddForm, UNRESOLVED_BUGTASK_STATUSES,
+    BugTaskStatus)
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
     safe_action, urlappend)
-from canonical.lp.dbschema import BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
@@ -180,8 +180,15 @@ class FileBugViewBase(LaunchpadFormView):
 
         return {'packagename': self.context.name}
 
+    def isPrivate(self):
+        """Whether bug reports on this target are private by default."""
+        return IProduct.providedBy(self.context) and self.context.private_bugs
+
     def contextIsProduct(self):
         return IProduct.providedBy(self.context)
+
+    def contextIsProject(self):
+        return IProject.providedBy(self.context)
 
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
@@ -385,7 +392,7 @@ class FileBugViewBase(LaunchpadFormView):
                     filename=attachment['filename'],
                     content_type=attachment['content_type'])
                 notifications.append(
-                    'The file "%s" was attached to the bug report.' % 
+                    'The file "%s" was attached to the bug report.' %
                         cgi.escape(attachment['filename']))
 
         if extra_data.subscribers:
@@ -423,7 +430,7 @@ class FileBugViewBase(LaunchpadFormView):
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 
-    @action("Subscribe to This Bug", name="this_is_my_bug",
+    @action("Subscribe to This Bug Report", name="this_is_my_bug",
             failure=handleSubmitBugFailure)
     def this_is_my_bug_action(self, action, data):
         """Subscribe to the bug suggested."""
@@ -818,7 +825,7 @@ class FrontPageFileBugGuidedView(FrontPageFileBugMixin, FileBugGuidedView):
             data['bugtarget'] = self.widgets['bugtarget'].getInputValue()
 
             # Check that Malone is actually used by this bugtarget.
-            if (IProduct.providedBy(data['bugtarget']) or 
+            if (IProduct.providedBy(data['bugtarget']) or
                 IDistribution.providedBy(data['bugtarget'])):
                 product_or_distro = data['bugtarget']
             elif IProductSeries.providedBy(data['bugtarget']):
@@ -829,7 +836,7 @@ class FrontPageFileBugGuidedView(FrontPageFileBugMixin, FileBugGuidedView):
             else:
                 product_or_distro = None
 
-            if (product_or_distro is not None and 
+            if (product_or_distro is not None and
                 not product_or_distro.official_malone):
                 self.setFieldError('bugtarget',
                                     "%s does not use Launchpad as its bug "
@@ -879,7 +886,7 @@ class FrontPageFileBugAdvancedView(FrontPageFileBugMixin, FileBugAdvancedView):
         product_or_distro = self.getProductOrDistroFromContext()
 
         # If we have a context that we can test for Malone use, we do so.
-        if (product_or_distro is not None and 
+        if (product_or_distro is not None and
             not product_or_distro.official_malone):
             self.setFieldError('bugtarget',
                                "%s does not use Launchpad as its bug tracker" %
@@ -1005,8 +1012,7 @@ class BugTargetBugTagsView(LaunchpadView):
     def _getSearchURL(self, tag):
         """Return the search URL for the tag."""
         # Use path_only here to reduce the size of the rendered page.
-        return "%s?field.tag=%s" % (
-            self.request.getURL(path_only=True), urllib.quote(tag))
+        return "+bugs?field.tag=%s" % urllib.quote(tag)
 
     def getUsedBugTagsWithURLs(self):
         """Return the bug tags and their search URLs."""

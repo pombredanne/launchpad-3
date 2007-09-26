@@ -67,6 +67,10 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://launchpad.dev/
     althosts:
     ----
+    xmlrpc_private @ xmlrpc-private.launchpad.dev
+    rooturl: http://xmlrpc-private.launchpad.dev/
+    althosts:
+    ----
 
 
 The hostnames and alternative hostnames for all virtual hosts are
@@ -86,6 +90,7 @@ hostname is handled by this Launchpad instance:
     shipit.kubuntu.dev
     shipit.ubuntu.dev
     translations.launchpad.dev
+    xmlrpc-private.launchpad.dev
     xmlrpc.launchpad.dev
 
 
@@ -146,12 +151,12 @@ chosen.
     True
 
     >>> from canonical.launchpad.webapp.servers import (
-    ...     LaunchpadXMLRPCRequest, XMLRPCLaunchpadPublication
+    ...     PublicXMLRPCRequest, PublicXMLRPCPublication
     ...     )
     >>> requestfactory, publicationfactory = factory()
-    >>> publicationfactory is XMLRPCLaunchpadPublication
+    >>> publicationfactory is PublicXMLRPCPublication
     True
-    >>> requestfactory.requestfactory is LaunchpadXMLRPCRequest
+    >>> requestfactory.requestfactory is PublicXMLRPCRequest
     True
 
 If the given host name isn't one of the configured host names,

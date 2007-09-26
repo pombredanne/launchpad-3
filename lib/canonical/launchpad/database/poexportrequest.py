@@ -8,16 +8,22 @@ from sqlobject import ForeignKey
 
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import (SQLBase, sqlvalues)
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import TranslationFileFormat
 
-from canonical.launchpad.interfaces import IPOExportRequestSet, \
-    IPOExportRequest
+from canonical.launchpad.interfaces import (
+    IPOExportRequestSet, IPOExportRequest, IPOTemplate)
+
 
 class POExportRequestSet:
     implements(IPOExportRequestSet)
+
+    @property
+    def entry_count(self):
+        """See `IPOExportRequestSet`."""
+        return POExportRequest.select().count()
 
     def _addRequestEntry(self, person, potemplate, pofile, format):
         """Add a request entry to the queue.
@@ -37,35 +43,46 @@ class POExportRequestSet:
             pofile=pofile,
             format=format)
 
-    def addRequest(self, person, potemplate=None, pofiles=None,
+    def addRequest(self, person, potemplates=None, pofiles=None,
             format=TranslationFileFormat.PO):
-        """See IPOExportRequestSet."""
+        """See `IPOExportRequestSet`."""
+        if potemplates is None:
+            potemplates = []
+        elif IPOTemplate.providedBy(potemplates):
+            # Allow single POTemplate as well as list of POTemplates
+            potemplates = [potemplates]
         if pofiles is None:
             pofiles = []
 
-        if not (potemplate or pofiles):
-            raise ValueError(
-                "Can't add a request with no PO template and no PO files")
+        if not (potemplates or pofiles):
+            raise AssertionError(
+                "Can't add a request with no PO templates and no PO files.")
 
-        if potemplate:
+        for potemplate in potemplates:
             self._addRequestEntry(person, potemplate, None, format)
 
         for pofile in pofiles:
             self._addRequestEntry(person, pofile.potemplate, pofile, format)
 
     def popRequest(self):
-        """See IPOExportRequestSet."""
-
+        """See `IPOExportRequestSet`."""
         try:
             request = POExportRequest.select(limit=1, orderBy='id')[0]
         except IndexError:
             return None
 
-        requests = POExportRequest.selectBy(
-            person=request.person, potemplate=request.potemplate)
-        person = requests[0].person
-        potemplate = requests[0].potemplate
-        format = requests[0].format
+        person = request.person
+        format = request.format
+
+        query = """
+            person = %s AND
+            format = %s AND
+            date_created = (
+                SELECT date_created
+                FROM POExportRequest
+                ORDER BY id
+                LIMIT 1)""" % sqlvalues(person, format)
+        requests = POExportRequest.select(query, orderBy='potemplate')
         objects = []
 
         for request in requests:
@@ -76,7 +93,8 @@ class POExportRequestSet:
 
             POExportRequest.delete(request.id)
 
-        return person, potemplate, objects, format
+        return person, objects, format
+
 
 class POExportRequest(SQLBase):
     implements(IPOExportRequest)
