@@ -26,7 +26,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
-    enabled_with_permission, GetitemNavigation, stepthrough,
+    enabled_with_permission, GetitemNavigation, stepthrough, stepto,
     LaunchpadEditFormView, action)
 from canonical.launchpad.webapp.dynmenu import DynMenu
 
@@ -99,6 +99,20 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
     @stepthrough('+package')
     def package(self, name):
         return self.context.getBinaryPackage(name)
+
+    @stepto('+latest-full-language-pack')
+    def latest_full_language_pack(self):
+        if self.context.last_full_language_pack_exported is None:
+            return None
+        else:
+            return self.context.last_full_language_pack_exported.file
+
+    @stepto('+latest-delta-language-pack')
+    def redirect_latest_delta_language_pack(self):
+        if self.context.last_delta_language_pack_exported is None:
+            return None
+        else:
+            return self.context.last_delta_language_pack_exported.file
 
 
 class DistroSeriesSOP(StructuralObjectPresentation):
@@ -503,7 +517,7 @@ export.
             else:
                 self.request.response.addInfoNotification('''
 Your request has been noted, next language pack export will be an export
-relative to current language_pack_base.
+relative to current base language pack.
 ''')
         else:
             self.request.response.addInfoNotification(
