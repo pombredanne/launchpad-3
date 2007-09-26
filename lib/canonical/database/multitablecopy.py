@@ -211,7 +211,9 @@ class MultiTableCopy:
         :param restartable: whether you want the remaining data to be
             available for recovery if the connection (or the process) fails
             while in the pouring stage.  If False, will extract to temp
-            tables.
+            tables.  CAUTION: our connections currently get reset every time
+            we commit a transaction, obliterating any temp tables possibly in
+            the middle of the pouring process!
         :param logger: a logger to write informational output to.  If none is
             given, the default is used.
         """
