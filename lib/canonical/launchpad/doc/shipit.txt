@@ -5,153 +5,153 @@ ShipIt is our application to ship Ubuntu CDs to our users. Any user can
 make an request with any number of CDs, and as soon as the request is approved,
 these CDs are sent to the user.
 
-  >>> from datetime import date
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.webapp.testing import verifyObject
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> from canonical.launchpad.ftests import login
-  >>> from canonical.launchpad.database import ShippingRun
-  >>> from canonical.launchpad.interfaces import (
-  ...    IStandardShipItRequestSet, IShippingRequestSet, IPersonSet,
-  ...    IShippingRequest, ILaunchBag, ShippingRequestPriority,
-  ...    ShipItFlavour, ShipItArchitecture, ShippingRequestStatus,
-  ...    ShipItDistroSeries)
-  >>> requestset = getUtility(IShippingRequestSet)
-  >>> foobar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-  >>> feisty = ShipItDistroSeries.FEISTY
+    >>> from datetime import date
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.database import ShippingRun
+    >>> from canonical.launchpad.interfaces import (
+    ...    IStandardShipItRequestSet, IShippingRequestSet, IPersonSet,
+    ...    IShippingRequest, ILaunchBag, ShippingRequestPriority,
+    ...    ShipItFlavour, ShipItArchitecture, ShippingRequestStatus,
+    ...    ShipItDistroSeries)
+    >>> requestset = getUtility(IShippingRequestSet)
+    >>> foobar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> feisty = ShipItDistroSeries.FEISTY
 
 Let's create a new request for foo.bar@canonical.com.
 
-  >>> UBUNTU = ShipItFlavour.UBUNTU
-  >>> X86 = ShipItArchitecture.X86
-  >>> AMD64 = ShipItArchitecture.AMD64
-  >>> PPC = ShipItArchitecture.PPC
-  >>> recipient = foobar
-  >>> country = 31 # Brazil
-  >>> city = 'Sao Carlos'
-  >>> addressline1 = 'Antonio Rodrigues Cajado 1506'
-  >>> name = 'Guilherme Salgado'
-  >>> phone = '+551635015218'
-  >>> reason = ("I'm going to give away some CDs in the next meeting of my "
-  ...           "city's LUG.")
-  >>> request = requestset.new(recipient, name, country, city,
-  ...                          addressline1, phone, reason=reason)
-  >>> quantities = {UBUNTU: {X86: 30, AMD64: 5, PPC: 2}}
-  >>> request.setQuantities(quantities, distroseries=feisty)
+    >>> UBUNTU = ShipItFlavour.UBUNTU
+    >>> X86 = ShipItArchitecture.X86
+    >>> AMD64 = ShipItArchitecture.AMD64
+    >>> PPC = ShipItArchitecture.PPC
+    >>> recipient = foobar
+    >>> country = 31 # Brazil
+    >>> city = 'Sao Carlos'
+    >>> addressline1 = 'Antonio Rodrigues Cajado 1506'
+    >>> name = 'Guilherme Salgado'
+    >>> phone = '+551635015218'
+    >>> reason = ("I'm going to give away some CDs in the next meeting of my "
+    ...           "city's LUG.")
+    >>> request = requestset.new(recipient, name, country, city,
+    ...                          addressline1, phone, reason=reason)
+    >>> quantities = {UBUNTU: {X86: 30, AMD64: 5, PPC: 2}}
+    >>> request.setQuantities(quantities, distroseries=feisty)
 
 Note that we store a normalized version of the request's address, so that we
 can identify people making requests from multiple different accounts.
 
-  >>> request.normalized_address
-  u'antoniorodriguescajado1506saocarlos'
+    >>> request.normalized_address
+    u'antoniorodriguescajado1506saocarlos'
 
 A request can be custom or standard; if the request contains custom
 quantities for a flavour, then that request is considered a custom one
 for that specific flavour.
 
-  >>> request.containsCustomQuantitiesOfFlavour(ShipItFlavour.KUBUNTU)
-  False
-  >>> request.containsCustomQuantitiesOfFlavour(ShipItFlavour.UBUNTU)
-  True
+    >>> request.containsCustomQuantitiesOfFlavour(ShipItFlavour.KUBUNTU)
+    False
+    >>> request.containsCustomQuantitiesOfFlavour(ShipItFlavour.UBUNTU)
+    True
 
 We're not allowed to add a second request for the same recipient, while the
 existing one is not yet exported.
 
-  >>> request = requestset.new(recipient, name, country, city,
-  ...                          addressline1, phone, reason=reason)
-  Traceback (most recent call last):
-  ...
-  AssertionError
-
-  >>> verifyObject(IShippingRequest, request)
-  True
-
-  >>> request.getTotalCDs()
-  37
-  >>> recipient.currentShipItRequest() == request
-  True
+    >>> request = requestset.new(recipient, name, country, city,
+    ...                          addressline1, phone, reason=reason)
+    Traceback (most recent call last):
+    ...
+    AssertionError
+ 
+    >>> verifyObject(IShippingRequest, request)
+    True
+ 
+    >>> request.getTotalCDs()
+    37
+    >>> recipient.currentShipItRequest() == request
+    True
   
 If a request is not approved yet, it'll have its status == PENDING. If it
 was approved, then status will be APPROVED.
 
-  >>> request.status == ShippingRequestStatus.PENDING
-  True
+    >>> request.status == ShippingRequestStatus.PENDING
+    True
 
 The number of CDs can be altered by the user, if he wants.
 
-  >>> login('foo.bar@canonical.com')
-  >>> quantities = {UBUNTU: {X86: 10, AMD64: 3, PPC: 1}}
-  >>> request.setQuantities(quantities, distroseries=feisty)
-  >>> request.getTotalCDs()
-  14
+    >>> login('foo.bar@canonical.com')
+    >>> quantities = {UBUNTU: {X86: 10, AMD64: 3, PPC: 1}}
+    >>> request.setQuantities(quantities, distroseries=feisty)
+    >>> request.getTotalCDs()
+    14
 
 When a request is approved, you must specify the approved quantities.
 
-  >>> login('marilize@hbd.com')
-  >>> request.approve(whoapproved=getUtility(ILaunchBag).user)
-  >>> request.status == ShippingRequestStatus.APPROVED
-  True
-  >>> request.whoapproved.displayname
-  u'Marilize Coetzee'
-  >>> quantities = request.getRequestedCDsGroupedByFlavourAndArch()
-  >>> quantities[UBUNTU][X86].quantityapproved
-  10
-  >>> quantities[UBUNTU][AMD64].quantityapproved
-  3
-  >>> quantities[UBUNTU][PPC].quantityapproved
-  1
+    >>> login('marilize@hbd.com')
+    >>> request.approve(whoapproved=getUtility(ILaunchBag).user)
+    >>> request.status == ShippingRequestStatus.APPROVED
+    True
+    >>> request.whoapproved.displayname
+    u'Marilize Coetzee'
+    >>> quantities = request.getRequestedCDsGroupedByFlavourAndArch()
+    >>> quantities[UBUNTU][X86].quantityapproved
+    10
+    >>> quantities[UBUNTU][AMD64].quantityapproved
+    3
+    >>> quantities[UBUNTU][PPC].quantityapproved
+    1
 
 The approved quantities can be changed only if the request is approved.
 
-  >>> quantities = {UBUNTU: {X86: 5, AMD64: 3, PPC: 2}}
-  >>> request.setApprovedQuantities(quantities)
-  >>> sorted([
-  ...     (reqcds.flavour.name, reqcds.architecture.name,
-  ...         reqcds.quantityapproved)
-  ...     for reqcds in request.getAllRequestedCDs()
-  ...     ])
-  [('UBUNTU', 'AMD64', 3), ('UBUNTU', 'PPC', 2), ('UBUNTU', 'X86', 5)]
+    >>> quantities = {UBUNTU: {X86: 5, AMD64: 3, PPC: 2}}
+    >>> request.setApprovedQuantities(quantities)
+    >>> sorted([
+    ...     (reqcds.flavour.name, reqcds.architecture.name,
+    ...         reqcds.quantityapproved)
+    ...     for reqcds in request.getAllRequestedCDs()
+    ...     ])
+    [('UBUNTU', 'AMD64', 3), ('UBUNTU', 'PPC', 2), ('UBUNTU', 'X86', 5)]
 
 We can also mark a request as pending approval, automatically cleaning the
 approved quantities.
 
-  >>> request.clearApproval()
-  >>> request.isAwaitingApproval()
-  True
-  >>> flush_database_updates()
-  >>> sorted([
-  ...     (reqcds.flavour.name, reqcds.architecture.name,
-  ...         reqcds.quantityapproved)
-  ...     for reqcds in request.getAllRequestedCDs()
-  ...     ])
-  [('UBUNTU', 'AMD64', 0), ('UBUNTU', 'PPC', 0), ('UBUNTU', 'X86', 0)]
+    >>> request.clearApproval()
+    >>> request.isAwaitingApproval()
+    True
+    >>> flush_database_updates()
+    >>> sorted([
+    ...     (reqcds.flavour.name, reqcds.architecture.name,
+    ...      reqcds.quantityapproved)
+    ...     for reqcds in request.getAllRequestedCDs()
+    ...     ])
+    [('UBUNTU', 'AMD64', 0), ('UBUNTU', 'PPC', 0), ('UBUNTU', 'X86', 0)]
 
 If a request hasn't been exported yet, it can still be denied.
 
-  >>> request.deny()
-  >>> request.isDenied()
-  True
+    >>> request.deny()
+    >>> request.isDenied()
+    True
 
 A request can also be cancelled, and this means the approved and
 quantity*approved will be set back to None.
 
-  >>> request.cancel(getUtility(ILaunchBag).user)
-  >>> request.isCancelled()
-  True
-  >>> request.whocancelled.displayname
-  u'Marilize Coetzee'
-  >>> flush_database_updates()
+    >>> request.cancel(getUtility(ILaunchBag).user)
+    >>> request.isCancelled()
+    True
+    >>> request.whocancelled.displayname
+    u'Marilize Coetzee'
+    >>> flush_database_updates()
 
 When a request is cancelled it'll not show up as the recipient's current
 request.
 
-  >>> recipient.currentShipItRequest() is None
-  True
+    >>> recipient.currentShipItRequest() is None
+    True
 
 Instead, it'll be part of the past requests of that recipient.
 
-  >>> request in recipient.pastShipItRequests()
-  True
+    >>> request in recipient.pastShipItRequests()
+    True
 
 
 Searching for requests
@@ -159,90 +159,91 @@ Searching for requests
 
 We have 16 requests, and two of them are cancelled
 
-  >>> sorted((shipreq.id, shipreq.recipient.name) 
-  ...        for shipreq in requestset.search())
-  [(1, u'no-priv'), (2, u'stub'), (3, u'kreutzm'), (4, u'lifeless'),
-   (5, u'ddaa'), (6, u'cprov'), (7, u'debonzi'), (12, u'jdub'),
-   (13, u'shipit-admins'), (14, u'jblack'), (15, u'ddaa'),
-   (16, u'jordi'), (17, u'jblack'), (18, u'ddaa'), (19, u'shipit-admins'),
-   (20, u'sabdfl'), (21L, u'name16')]
+    >>> sorted((shipreq.id, shipreq.recipient.name) 
+    ...        for shipreq in requestset.search())
+    [(1, u'no-priv'), (2, u'stub'), (3, u'kreutzm'), (4, u'lifeless'),
+     (5, u'ddaa'), (6, u'cprov'), (7, u'debonzi'), (12, u'jdub'),
+     (13, u'shipit-admins'), (14, u'jblack'), (15, u'ddaa'),
+     (16, u'jordi'), (17, u'jblack'), (18, u'ddaa'), (19, u'shipit-admins'),
+     (20, u'sabdfl'), (21L, u'name16')]
 
-  >>> cancelled = ShippingRequestStatus.CANCELLED
-  >>> sorted((shipreq.id, shipreq.recipient.name) 
-  ...        for shipreq in requestset.search(status=cancelled))
-  [(6, u'cprov'), (21L, u'name16')]
+    >>> cancelled = ShippingRequestStatus.CANCELLED
+    >>> sorted((shipreq.id, shipreq.recipient.name) 
+    ...        for shipreq in requestset.search(status=cancelled))
+    [(6, u'cprov'), (21L, u'name16')]
 
 Two of them are pending review, because their recipients asked for extra CDs.
 
-  >>> pending = ShippingRequestStatus.PENDING
-  >>> for request in requestset.search(status=pending):
-  ...     print request.id, ":", request.reason
-  12 : I want 100 more CDs.
-  13 : I need 50 more CDs to give away to my friends.
+    >>> pending = ShippingRequestStatus.PENDING
+    >>> for request in requestset.search(status=pending):
+    ...     print request.id, ":", request.reason
+    12 : I want 100 more CDs.
+    13 : I need 50 more CDs to give away to my friends.
 
 Eight are approved but not yet shipped.
   
-  >>> approved = ShippingRequestStatus.APPROVED
-  >>> sorted((shipreq.id, shipreq.recipient.name) 
-  ...         for shipreq in requestset.search(status=approved))
-  [(1, u'no-priv'), (2, u'stub'), (3, u'kreutzm'), (4, u'lifeless'),
-   (5, u'ddaa'), (7, u'debonzi'), (16, u'jordi'), (19, u'shipit-admins')]
+    >>> approved = ShippingRequestStatus.APPROVED
+    >>> sorted((shipreq.id, shipreq.recipient.name) 
+    ...         for shipreq in requestset.search(status=approved))
+    [(1, u'no-priv'), (2, u'stub'), (3, u'kreutzm'), (4, u'lifeless'),
+     (5, u'ddaa'), (7, u'debonzi'), (16, u'jordi'), (19, u'shipit-admins')]
 
 And finally, four of them are already shipped.
 
-  >>> shipped = ShippingRequestStatus.SHIPPED
-  >>> sorted((shipreq.id, shipreq.recipient.name) 
-  ...         for shipreq in requestset.search(status=shipped))
-  [(14, u'jblack'), (15, u'ddaa'), (17, u'jblack'), (18, u'ddaa')]
+    >>> shipped = ShippingRequestStatus.SHIPPED
+    >>> sorted((shipreq.id, shipreq.recipient.name) 
+    ...         for shipreq in requestset.search(status=shipped))
+    [(14, u'jblack'), (15, u'ddaa'), (17, u'jblack'), (18, u'ddaa')]
 
 
 It's also possible to search for requests containing CDs of a given flavour or
 of a given distroseries (or both, obviously).
 
-  >>> kubuntu = ShipItFlavour.KUBUNTU
-  >>> [(shipreq.recipient.displayname , shipreq.id)
-  ...  for shipreq in requestset.search(flavour=kubuntu)]
-  [(u'Celso Providelo', 6), (u'David Allouche', 5),
-   (u'Daniel Henrique Debonzi', 7), (u'Jordi Mallach', 16),
-   (u'James Blackwell', 17), (u'ShipIt Administrators', 19)]
+    >>> kubuntu = ShipItFlavour.KUBUNTU
+    >>> [(shipreq.recipient.displayname , shipreq.id)
+    ...  for shipreq in requestset.search(flavour=kubuntu)]
+    [(u'Celso Providelo', 6), (u'David Allouche', 5),
+     (u'Daniel Henrique Debonzi', 7), (u'Jordi Mallach', 16),
+     (u'James Blackwell', 17), (u'ShipIt Administrators', 19)]
 
-  >>> [(shipreq.recipient.displayname , shipreq.id)
-  ...  for shipreq in requestset.search(distroseries=feisty)]
-  [(u'Robert Collins', 4), (u'No Privileges Person', 1),
-   (u'Celso Providelo', 6), (u'Mark Shuttleworth', 20),
-   (u'Helge Kreutzmann', 3), (u'David Allouche', 5),
-   (u'Daniel Henrique Debonzi', 7), (u'David Allouche', 18),
-   (u'Jordi Mallach', 16), (u'Jeff Waugh', 12),
-   (u'ShipIt Administrators', 13), (u'James Blackwell', 17),
-   (u'Stuart Bishop', 2), (u'Foo Bar', 21L)]
+    >>> [(shipreq.recipient.displayname , shipreq.id)
+    ...  for shipreq in requestset.search(distroseries=feisty)]
+    [(u'Robert Collins', 4), (u'No Privileges Person', 1),
+     (u'Celso Providelo', 6), (u'Mark Shuttleworth', 20),
+     (u'Helge Kreutzmann', 3), (u'David Allouche', 5),
+     (u'Daniel Henrique Debonzi', 7), (u'David Allouche', 18),
+     (u'Jordi Mallach', 16), (u'Jeff Waugh', 12),
+     (u'ShipIt Administrators', 13), (u'James Blackwell', 17),
+     (u'Stuart Bishop', 2), (u'Foo Bar', 21L)]
 
-  >>> edubuntu = ShipItFlavour.EDUBUNTU
-  >>> [(shipreq.recipient.displayname , shipreq.id)
-  ...  for shipreq in requestset.search(distroseries=feisty, flavour=edubuntu)]
-  [(u'David Allouche', 18), (u'Jordi Mallach', 16),
-   (u'ShipIt Administrators', 13)]
+    >>> edubuntu = ShipItFlavour.EDUBUNTU
+    >>> [(shipreq.recipient.displayname , shipreq.id)
+    ...  for shipreq in requestset.search(
+    ...      distroseries=feisty, flavour=edubuntu)]
+    [(u'David Allouche', 18), (u'Jordi Mallach', 16),
+     (u'ShipIt Administrators', 13)]
 
-  >>> edgy = ShipItDistroSeries.EDGY
-  >>> [(shipreq.recipient.displayname , shipreq.id)
-  ...  for shipreq in requestset.search(distroseries=edgy)]
-  [(u'ShipIt Administrators', 19)]
+    >>> edgy = ShipItDistroSeries.EDGY
+    >>> [(shipreq.recipient.displayname , shipreq.id)
+    ...  for shipreq in requestset.search(distroseries=edgy)]
+    [(u'ShipIt Administrators', 19)]
 
 
 Another way of searching is by using any part of the recipient's name or the
 beginning of his email address.
 
-  >>> [shipreq.recipient.displayname 
-  ...  for shipreq in requestset.search(recipient_text='Kreutzmann')]
-  [u'Helge Kreutzmann']
+    >>> [shipreq.recipient.displayname 
+    ...  for shipreq in requestset.search(recipient_text='Kreutzmann')]
+    [u'Helge Kreutzmann']
 
-  >>> [shipreq.recipient_email
-  ...  for shipreq in requestset.search(recipient_text='Stuart.Bishop')]
-  [u'stuart.bishop@canonical.com']
+    >>> [shipreq.recipient_email
+    ...  for shipreq in requestset.search(recipient_text='Stuart.Bishop')]
+    [u'stuart.bishop@canonical.com']
 
-  >>> [shipreq.recipient_email
-  ...  for shipreq in requestset.search(status=ShippingRequestStatus.PENDING,
-  ...                                   recipient_text='marilize')]
-  ['info@shipit.ubuntu.com']
+    >>> [shipreq.recipient_email
+    ...  for shipreq in requestset.search(status=ShippingRequestStatus.PENDING,
+    ...                                   recipient_text='marilize')]
+    ['info@shipit.ubuntu.com']
 
 
 == Standard request templates ==
@@ -284,112 +285,113 @@ When exporting requests, we'll want to get all approved requests that weren't
 approved yet, with a given priority. This is done using the
 getUnshippedRequestsIDs method of ShippingRequestSet.
 
-  >>> import transaction
-  >>> transaction.commit()
-  >>> high = ShippingRequestPriority.HIGH
-  >>> unshipped_requests = requestset.getUnshippedRequestsIDs(
-  ...     high, distroseries=feisty)
-  >>> len(unshipped_requests)
-  1
+    >>> import transaction
+    >>> transaction.commit()
+    >>> high = ShippingRequestPriority.HIGH
+    >>> unshipped_requests = requestset.getUnshippedRequestsIDs(
+    ...     high, distroseries=feisty)
+    >>> len(unshipped_requests)
+    1
 
 To actually export the files and upload them to Librarian we use
 ShippingRequestSet.exportRequestsToFiles(). Let's do an export of all high
 priority requests.
 
-  >>> requestset.exportRequestsToFiles(high, transaction, distroseries=feisty)
-  >>> flush_database_updates()
-  >>> run = ShippingRun.select(orderBy='-id', limit=1)[0]
-  >>> run.requests_count
-  1
-  >>> run.requests[0].highpriority
-  True
+    >>> requestset.exportRequestsToFiles(
+    ...     high, transaction, distroseries=feisty)
+    >>> flush_database_updates()
+    >>> run = ShippingRun.select(orderBy='-id', limit=1)[0]
+    >>> run.requests_count
+    1
+    >>> run.requests[0].highpriority
+    True
 
-  >>> def pprint_csv(content):
-  ...     lines = content.split('\n')
-  ...     headings = [heading.replace('"', '').strip()
-  ...                 for heading in lines.pop(0).split('",')]
-  ...     longest_heading = max(map(len, headings))
-  ...     count = 1
-  ...     for line in lines:
-  ...         if not line or line.isspace():
-  ...             continue
-  ...         print "-" * 60, 'Line %d' % count
-  ...         count += 1
-  ...         fields = [field.replace('"', '').strip()
-  ...                   for field in line.split('",')]
-  ...         for idx in range(len(fields)):
-  ...             format = "%%%ds" % longest_heading
-  ...             heading = format % headings[idx]
-  ...             value = fields[idx]
-  ...             try:
-  ...                 float(value)
-  ...                 try:
-  ...                     int(value)
-  ...                 except ValueError:
-  ...                     # This is a numeric value and is not an integer, so
-  ...                     # we'll round it to two decimal places.
-  ...                     value = "%.4s" % value
-  ...             except ValueError:
-  ...                 pass
-  ...             print "%s: %s" % (heading, value)
+    >>> def pprint_csv(content):
+    ...     lines = content.split('\n')
+    ...     headings = [heading.replace('"', '').strip()
+    ...                 for heading in lines.pop(0).split('",')]
+    ...     longest_heading = max(map(len, headings))
+    ...     count = 1
+    ...     for line in lines:
+    ...         if not line or line.isspace():
+    ...             continue
+    ...         print "-" * 60, 'Line %d' % count
+    ...         count += 1
+    ...         fields = [field.replace('"', '').strip()
+    ...                   for field in line.split('",')]
+    ...         for idx in range(len(fields)):
+    ...             format = "%%%ds" % longest_heading
+    ...             heading = format % headings[idx]
+    ...             value = fields[idx]
+    ...             try:
+    ...                 float(value)
+    ...                 try:
+    ...                     int(value)
+    ...                 except ValueError:
+    ...                     # This is a numeric value and is not an integer, so
+    ...                     # we'll round it to two decimal places.
+    ...                     value = "%.4s" % value
+    ...             except ValueError:
+    ...                 pass
+    ...             print "%s: %s" % (heading, value)
 
-  >>> pprint_csv(run.csvfile.read())
-  ------------------------------------------------------------ Line 1
-                          recordnr: 16
-                   Ship to company: Some Organization
-                      Ship to name: Jordi Mallach
-                     Ship to addr1: Ridge Rustic Park
-                     Ship to addr2: in this world
-                      Ship to city: whatever
-                    Ship to county: not mandatory
-                       Ship to zip: =04277
-                   Ship to country: IO
-                     Ship to phone: +55 16 3374-2027
-             Ship to email address: jordi@ubuntu.com
-           ship Ubuntu quantity PC: 0
-    ship Ubuntu quantity 64-bit PC: 0
-          ship Ubuntu quantity Mac: 0
-          ship Kubuntu quantity PC: 5
-   ship Kubuntu quantity 64-bit PC: 0
-         ship Kubuntu quantity Mac: 0
-         ship Edubuntu quantity PC: 5
-  ship Edubuntu quantity 64-bit PC: 0
-        ship Edubuntu quantity Mac: 0
-                             token: ...
-                          Ship via: TNT
-                           display: 0
+    >>> pprint_csv(run.csvfile.read())
+    ------------------------------------------------------------ Line 1
+                            recordnr: 16
+                     Ship to company: Some Organization
+                        Ship to name: Jordi Mallach
+                       Ship to addr1: Ridge Rustic Park
+                       Ship to addr2: in this world
+                        Ship to city: whatever
+                      Ship to county: not mandatory
+                         Ship to zip: =04277
+                     Ship to country: IO
+                       Ship to phone: +55 16 3374-2027
+               Ship to email address: jordi@ubuntu.com
+             ship Ubuntu quantity PC: 0
+      ship Ubuntu quantity 64-bit PC: 0
+            ship Ubuntu quantity Mac: 0
+            ship Kubuntu quantity PC: 5
+     ship Kubuntu quantity 64-bit PC: 0
+           ship Kubuntu quantity Mac: 0
+           ship Edubuntu quantity PC: 5
+    ship Edubuntu quantity 64-bit PC: 0
+          ship Edubuntu quantity Mac: 0
+                               token: ...
+                            Ship via: TNT
+                             display: 0
 
 
 Now we do an export of all normal priority requests that are ready to be
 shipped, by running the shipit-exports cronscript.
 
-  >>> sorted(requestset.getUnshippedRequestsIDs(
-  ...     ShippingRequestPriority.NORMAL, distroseries=feisty))
-  [1, 2, 3, 4, 5, 7]
+    >>> sorted(requestset.getUnshippedRequestsIDs(
+    ...     ShippingRequestPriority.NORMAL, distroseries=feisty))
+    [1, 2, 3, 4, 5, 7]
 
-  >>> import subprocess
-  >>> cmd = ('cronscripts/shipit-exports.py -q --priority=normal '
-  ...        '--distroseries=feisty')
-  >>> process = subprocess.Popen(
-  ...     cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-  ...     stderr=subprocess.PIPE)
-  >>> (out, err) = process.communicate()
-  >>> out, err
-  ('', '')
-  >>> process.returncode
-  0
+    >>> import subprocess
+    >>> cmd = ('cronscripts/shipit-exports.py -q --priority=normal '
+    ...        '--distroseries=feisty')
+    >>> process = subprocess.Popen(
+    ...     cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> out, err
+    ('', '')
+    >>> process.returncode
+    0
 
-  >>> transaction.commit()
-  >>> flush_database_updates()
-  >>> len(requestset.getUnshippedRequestsIDs(
-  ...     ShippingRequestPriority.NORMAL, distroseries=feisty))
-  0
-  >>> run = ShippingRun.select(orderBy='-datecreated', limit=1)[0]
-  >>> sorted([request.id for request in run.requests])
-  [1, 2, 3, 4, 5, 7]
+    >>> transaction.commit()
+    >>> flush_database_updates()
+    >>> len(requestset.getUnshippedRequestsIDs(
+    ...     ShippingRequestPriority.NORMAL, distroseries=feisty))
+    0
+    >>> run = ShippingRun.select(orderBy='-datecreated', limit=1)[0]
+    >>> sorted([request.id for request in run.requests])
+    [1, 2, 3, 4, 5, 7]
 
-  >>> run.requests[0].highpriority
-  False
+    >>> run.requests[0].highpriority
+    False
 
 Generating reports
 ------------------
@@ -404,292 +406,292 @@ The generateCountryBasedReport() method accepts a current_series_only
 argument that, if True, will include only requests of
 ShipItConstants.current_distroseries.
 
-  # Let's pretend the current series is Feisty so that we don't need to
-  # change our sampledata when we start shipping a new release.
-  >>> from canonical.launchpad.interfaces import ShipItConstants
-  >>> orig_current_series = ShipItConstants.current_distroseries
-  >>> ShipItConstants.current_distroseries = feisty
+    # Let's pretend the current series is Feisty so that we don't need to
+    # change our sampledata when we start shipping a new release.
+    >>> from canonical.launchpad.interfaces import ShipItConstants
+    >>> orig_current_series = ShipItConstants.current_distroseries
+    >>> ShipItConstants.current_distroseries = feisty
 
-  >>> csv_file = requestset.generateCountryBasedReport(
-  ...     current_series_only=False)
-  >>> pprint_csv(csv_file.read())
-  ------------------------------------------------------------ Line 1
-                          Country: Bermuda
-             Total Shipped Ubuntu: 10
-            Total Shipped Kubuntu: 0
-           Total Shipped Edubuntu: 0
-                    Total Shipped: 10
-           Shipped Ubuntu x86 CDs: 8
-         Shipped Ubuntu AMD64 CDs: 1
-           Shipped Ubuntu PPC CDs: 1
-          Shipped Kubuntu x86 CDs: 0
-        Shipped Kubuntu AMD64 CDs: 0
-          Shipped Kubuntu PPC CDs: 0
-         Shipped Edubuntu x86 CDs: 0
-       Shipped Edubuntu AMD64 CDs: 0
-         Shipped Edubuntu PPC CDs: 0
-            Normal-prio shipments: 1
-              High-prio shipments: 0
-             Average request size: 10
-        Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 9.80%
-                        Continent: North America
-  ------------------------------------------------------------ Line 2
-                          Country: British Indian Ocean Territory
-             Total Shipped Ubuntu: 25
-            Total Shipped Kubuntu: 11
-           Total Shipped Edubuntu: 5
-                    Total Shipped: 41
-           Shipped Ubuntu x86 CDs: 9
-         Shipped Ubuntu AMD64 CDs: 6
-           Shipped Ubuntu PPC CDs: 10
-          Shipped Kubuntu x86 CDs: 6
-        Shipped Kubuntu AMD64 CDs: 5
-          Shipped Kubuntu PPC CDs: 0
-         Shipped Edubuntu x86 CDs: 5
-       Shipped Edubuntu AMD64 CDs: 0
-         Shipped Edubuntu PPC CDs: 0
-            Normal-prio shipments: 3
-              High-prio shipments: 1
-             Average request size: 10
-        Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 40.20%
-                        Continent: Asia
-  ------------------------------------------------------------ Line 3
-                          Country: Burkina Faso
-             Total Shipped Ubuntu: 10
-            Total Shipped Kubuntu: 0
-           Total Shipped Edubuntu: 0
-                    Total Shipped: 10
-           Shipped Ubuntu x86 CDs: 10
-         Shipped Ubuntu AMD64 CDs: 0
-           Shipped Ubuntu PPC CDs: 0
-          Shipped Kubuntu x86 CDs: 0
-        Shipped Kubuntu AMD64 CDs: 0
-          Shipped Kubuntu PPC CDs: 0
-         Shipped Edubuntu x86 CDs: 0
-       Shipped Edubuntu AMD64 CDs: 0
-         Shipped Edubuntu PPC CDs: 0
-            Normal-prio shipments: 1
-              High-prio shipments: 0
-             Average request size: 10
-        Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 9.80%
-                        Continent: Africa
-  ------------------------------------------------------------ Line 4
-                          Country: China
-             Total Shipped Ubuntu: 1
-            Total Shipped Kubuntu: 0
-           Total Shipped Edubuntu: 0
-                    Total Shipped: 1
-           Shipped Ubuntu x86 CDs: 0
-         Shipped Ubuntu AMD64 CDs: 1
-           Shipped Ubuntu PPC CDs: 0
-          Shipped Kubuntu x86 CDs: 0
-        Shipped Kubuntu AMD64 CDs: 0
-          Shipped Kubuntu PPC CDs: 0
-         Shipped Edubuntu x86 CDs: 0
-       Shipped Edubuntu AMD64 CDs: 0
-         Shipped Edubuntu PPC CDs: 0
-            Normal-prio shipments: 1
-              High-prio shipments: 0
-             Average request size: 1
-        Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 0.98%
-                        Continent: Asia
-  ------------------------------------------------------------ Line 5
-                          Country: France
-             Total Shipped Ubuntu: 0
-            Total Shipped Kubuntu: 10
-           Total Shipped Edubuntu: 1
-                    Total Shipped: 11
-           Shipped Ubuntu x86 CDs: 0
-         Shipped Ubuntu AMD64 CDs: 0
-           Shipped Ubuntu PPC CDs: 0
-          Shipped Kubuntu x86 CDs: 8
-        Shipped Kubuntu AMD64 CDs: 2
-          Shipped Kubuntu PPC CDs: 0
-         Shipped Edubuntu x86 CDs: 1
-       Shipped Edubuntu AMD64 CDs: 0
-         Shipped Edubuntu PPC CDs: 0
-            Normal-prio shipments: 1
-              High-prio shipments: 1
-             Average request size: 5
-        Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 10.78%
-                        Continent: Europe
-  ------------------------------------------------------------ Line 6
-                          Country: Heard Island and McDonald Islands
-             Total Shipped Ubuntu: 5
-            Total Shipped Kubuntu: 0
-           Total Shipped Edubuntu: 0
-                    Total Shipped: 5
-           Shipped Ubuntu x86 CDs: 5
-         Shipped Ubuntu AMD64 CDs: 0
-           Shipped Ubuntu PPC CDs: 0
-          Shipped Kubuntu x86 CDs: 0
-        Shipped Kubuntu AMD64 CDs: 0
-          Shipped Kubuntu PPC CDs: 0
-         Shipped Edubuntu x86 CDs: 0
-       Shipped Edubuntu AMD64 CDs: 0
-         Shipped Edubuntu PPC CDs: 0
-            Normal-prio shipments: 1
-              High-prio shipments: 0
-             Average request size: 5
-        Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 4.90%
-                        Continent: Antarctica
-  ------------------------------------------------------------ Line 7
-                          Country: United States
-             Total Shipped Ubuntu: 24
-            Total Shipped Kubuntu: 0
-           Total Shipped Edubuntu: 0
-                    Total Shipped: 24
-           Shipped Ubuntu x86 CDs: 9
-         Shipped Ubuntu AMD64 CDs: 6
-           Shipped Ubuntu PPC CDs: 9
-          Shipped Kubuntu x86 CDs: 0
-        Shipped Kubuntu AMD64 CDs: 0
-          Shipped Kubuntu PPC CDs: 0
-         Shipped Edubuntu x86 CDs: 0
-       Shipped Edubuntu AMD64 CDs: 0
-         Shipped Edubuntu PPC CDs: 0
-            Normal-prio shipments: 1
-              High-prio shipments: 0
-             Average request size: 24
-        Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 23.53%
-                        Continent: North America
+    >>> csv_file = requestset.generateCountryBasedReport(
+    ...     current_series_only=False)
+    >>> pprint_csv(csv_file.read())
+    ------------------------------------------------------------ Line 1
+                            Country: Bermuda
+               Total Shipped Ubuntu: 10
+              Total Shipped Kubuntu: 0
+             Total Shipped Edubuntu: 0
+                      Total Shipped: 10
+             Shipped Ubuntu x86 CDs: 8
+           Shipped Ubuntu AMD64 CDs: 1
+             Shipped Ubuntu PPC CDs: 1
+            Shipped Kubuntu x86 CDs: 0
+          Shipped Kubuntu AMD64 CDs: 0
+            Shipped Kubuntu PPC CDs: 0
+           Shipped Edubuntu x86 CDs: 0
+         Shipped Edubuntu AMD64 CDs: 0
+           Shipped Edubuntu PPC CDs: 0
+              Normal-prio shipments: 1
+                High-prio shipments: 0
+               Average request size: 10
+          Approved CDs (percentage): 100.00%
+    Percentage of total shipped CDs: 9.80%
+                          Continent: North America
+    ------------------------------------------------------------ Line 2
+                            Country: British Indian Ocean Territory
+               Total Shipped Ubuntu: 25
+              Total Shipped Kubuntu: 11
+             Total Shipped Edubuntu: 5
+                      Total Shipped: 41
+             Shipped Ubuntu x86 CDs: 9
+           Shipped Ubuntu AMD64 CDs: 6
+             Shipped Ubuntu PPC CDs: 10
+            Shipped Kubuntu x86 CDs: 6
+          Shipped Kubuntu AMD64 CDs: 5
+            Shipped Kubuntu PPC CDs: 0
+           Shipped Edubuntu x86 CDs: 5
+         Shipped Edubuntu AMD64 CDs: 0
+           Shipped Edubuntu PPC CDs: 0
+              Normal-prio shipments: 3
+                High-prio shipments: 1
+               Average request size: 10
+          Approved CDs (percentage): 100.00%
+    Percentage of total shipped CDs: 40.20%
+                          Continent: Asia
+    ------------------------------------------------------------ Line 3
+                            Country: Burkina Faso
+               Total Shipped Ubuntu: 10
+              Total Shipped Kubuntu: 0
+             Total Shipped Edubuntu: 0
+                      Total Shipped: 10
+             Shipped Ubuntu x86 CDs: 10
+           Shipped Ubuntu AMD64 CDs: 0
+             Shipped Ubuntu PPC CDs: 0
+            Shipped Kubuntu x86 CDs: 0
+          Shipped Kubuntu AMD64 CDs: 0
+            Shipped Kubuntu PPC CDs: 0
+           Shipped Edubuntu x86 CDs: 0
+         Shipped Edubuntu AMD64 CDs: 0
+           Shipped Edubuntu PPC CDs: 0
+              Normal-prio shipments: 1
+                High-prio shipments: 0
+               Average request size: 10
+          Approved CDs (percentage): 100.00%
+    Percentage of total shipped CDs: 9.80%
+                          Continent: Africa
+    ------------------------------------------------------------ Line 4
+                            Country: China
+               Total Shipped Ubuntu: 1
+              Total Shipped Kubuntu: 0
+             Total Shipped Edubuntu: 0
+                      Total Shipped: 1
+             Shipped Ubuntu x86 CDs: 0
+           Shipped Ubuntu AMD64 CDs: 1
+             Shipped Ubuntu PPC CDs: 0
+            Shipped Kubuntu x86 CDs: 0
+          Shipped Kubuntu AMD64 CDs: 0
+            Shipped Kubuntu PPC CDs: 0
+           Shipped Edubuntu x86 CDs: 0
+         Shipped Edubuntu AMD64 CDs: 0
+           Shipped Edubuntu PPC CDs: 0
+              Normal-prio shipments: 1
+                High-prio shipments: 0
+               Average request size: 1
+          Approved CDs (percentage): 100.00%
+    Percentage of total shipped CDs: 0.98%
+                          Continent: Asia
+    ------------------------------------------------------------ Line 5
+                            Country: France
+               Total Shipped Ubuntu: 0
+              Total Shipped Kubuntu: 10
+             Total Shipped Edubuntu: 1
+                      Total Shipped: 11
+             Shipped Ubuntu x86 CDs: 0
+           Shipped Ubuntu AMD64 CDs: 0
+             Shipped Ubuntu PPC CDs: 0
+            Shipped Kubuntu x86 CDs: 8
+          Shipped Kubuntu AMD64 CDs: 2
+            Shipped Kubuntu PPC CDs: 0
+           Shipped Edubuntu x86 CDs: 1
+         Shipped Edubuntu AMD64 CDs: 0
+           Shipped Edubuntu PPC CDs: 0
+              Normal-prio shipments: 1
+                High-prio shipments: 1
+               Average request size: 5
+          Approved CDs (percentage): 100.00%
+    Percentage of total shipped CDs: 10.78%
+                          Continent: Europe
+    ------------------------------------------------------------ Line 6
+                            Country: Heard Island and McDonald Islands
+               Total Shipped Ubuntu: 5
+              Total Shipped Kubuntu: 0
+             Total Shipped Edubuntu: 0
+                      Total Shipped: 5
+             Shipped Ubuntu x86 CDs: 5
+           Shipped Ubuntu AMD64 CDs: 0
+             Shipped Ubuntu PPC CDs: 0
+            Shipped Kubuntu x86 CDs: 0
+          Shipped Kubuntu AMD64 CDs: 0
+            Shipped Kubuntu PPC CDs: 0
+           Shipped Edubuntu x86 CDs: 0
+         Shipped Edubuntu AMD64 CDs: 0
+           Shipped Edubuntu PPC CDs: 0
+              Normal-prio shipments: 1
+                High-prio shipments: 0
+               Average request size: 5
+          Approved CDs (percentage): 100.00%
+    Percentage of total shipped CDs: 4.90%
+                          Continent: Antarctica
+    ------------------------------------------------------------ Line 7
+                            Country: United States
+               Total Shipped Ubuntu: 24
+              Total Shipped Kubuntu: 0
+             Total Shipped Edubuntu: 0
+                      Total Shipped: 24
+             Shipped Ubuntu x86 CDs: 9
+           Shipped Ubuntu AMD64 CDs: 6
+             Shipped Ubuntu PPC CDs: 9
+            Shipped Kubuntu x86 CDs: 0
+          Shipped Kubuntu AMD64 CDs: 0
+            Shipped Kubuntu PPC CDs: 0
+           Shipped Edubuntu x86 CDs: 0
+         Shipped Edubuntu AMD64 CDs: 0
+           Shipped Edubuntu PPC CDs: 0
+              Normal-prio shipments: 1
+                High-prio shipments: 0
+               Average request size: 24
+          Approved CDs (percentage): 100.00%
+    Percentage of total shipped CDs: 23.53%
+                          Continent: North America
 
-  >>> csv_file = requestset.generateCountryBasedReport(
-  ...     current_series_only=True)
-  >>> pprint_csv(csv_file.read())
-  ------------------------------------------------------------ Line 1
-                          Country: Bermuda
-             Total Shipped Ubuntu: 10
-            Total Shipped Kubuntu: 0
-           Total Shipped Edubuntu: 0
-                    Total Shipped: 10
-           Shipped Ubuntu x86 CDs: 8
-         Shipped Ubuntu AMD64 CDs: 1
-           Shipped Ubuntu PPC CDs: 1
-          Shipped Kubuntu x86 CDs: 0
-        Shipped Kubuntu AMD64 CDs: 0
-          Shipped Kubuntu PPC CDs: 0
-         Shipped Edubuntu x86 CDs: 0
-       Shipped Edubuntu AMD64 CDs: 0
-         Shipped Edubuntu PPC CDs: 0
-            Normal-prio shipments: 1
-              High-prio shipments: 0
-             Average request size: 10
-        Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 18.52%
-                        Continent: North America
-  ------------------------------------------------------------ Line 2
-                          Country: British Indian Ocean Territory
-             Total Shipped Ubuntu: 1
-            Total Shipped Kubuntu: 11
-           Total Shipped Edubuntu: 5
-                    Total Shipped: 17
-           Shipped Ubuntu x86 CDs: 0
-         Shipped Ubuntu AMD64 CDs: 0
-           Shipped Ubuntu PPC CDs: 1
-          Shipped Kubuntu x86 CDs: 6
-        Shipped Kubuntu AMD64 CDs: 5
-          Shipped Kubuntu PPC CDs: 0
-         Shipped Edubuntu x86 CDs: 5
-       Shipped Edubuntu AMD64 CDs: 0
-         Shipped Edubuntu PPC CDs: 0
-            Normal-prio shipments: 2
-              High-prio shipments: 1
-             Average request size: 5
-        Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 31.48%
-                        Continent: Asia
-  ------------------------------------------------------------ Line 3
-                          Country: Burkina Faso
-             Total Shipped Ubuntu: 10
-            Total Shipped Kubuntu: 0
-           Total Shipped Edubuntu: 0
-                    Total Shipped: 10
-           Shipped Ubuntu x86 CDs: 10
-         Shipped Ubuntu AMD64 CDs: 0
-           Shipped Ubuntu PPC CDs: 0
-          Shipped Kubuntu x86 CDs: 0
-        Shipped Kubuntu AMD64 CDs: 0
-          Shipped Kubuntu PPC CDs: 0
-         Shipped Edubuntu x86 CDs: 0
-       Shipped Edubuntu AMD64 CDs: 0
-         Shipped Edubuntu PPC CDs: 0
-            Normal-prio shipments: 1
-              High-prio shipments: 0
-             Average request size: 10
-        Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 18.52%
-                        Continent: Africa
-  ------------------------------------------------------------ Line 4
-                          Country: China
-             Total Shipped Ubuntu: 1
-            Total Shipped Kubuntu: 0
-           Total Shipped Edubuntu: 0
-                    Total Shipped: 1
-           Shipped Ubuntu x86 CDs: 0
-         Shipped Ubuntu AMD64 CDs: 1
-           Shipped Ubuntu PPC CDs: 0
-          Shipped Kubuntu x86 CDs: 0
-        Shipped Kubuntu AMD64 CDs: 0
-          Shipped Kubuntu PPC CDs: 0
-         Shipped Edubuntu x86 CDs: 0
-       Shipped Edubuntu AMD64 CDs: 0
-         Shipped Edubuntu PPC CDs: 0
-            Normal-prio shipments: 1
-              High-prio shipments: 0
-             Average request size: 1
-        Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 1.85%
-                        Continent: Asia
-  ------------------------------------------------------------ Line 5
-                          Country: France
-             Total Shipped Ubuntu: 0
-            Total Shipped Kubuntu: 10
-           Total Shipped Edubuntu: 1
-                    Total Shipped: 11
-           Shipped Ubuntu x86 CDs: 0
-         Shipped Ubuntu AMD64 CDs: 0
-           Shipped Ubuntu PPC CDs: 0
-          Shipped Kubuntu x86 CDs: 8
-        Shipped Kubuntu AMD64 CDs: 2
-          Shipped Kubuntu PPC CDs: 0
-         Shipped Edubuntu x86 CDs: 1
-       Shipped Edubuntu AMD64 CDs: 0
-         Shipped Edubuntu PPC CDs: 0
-            Normal-prio shipments: 1
-              High-prio shipments: 1
-             Average request size: 5
-        Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 20.37%
-                        Continent: Europe
-  ------------------------------------------------------------ Line 6
-                          Country: Heard Island and McDonald Islands
-             Total Shipped Ubuntu: 5
-            Total Shipped Kubuntu: 0
-           Total Shipped Edubuntu: 0
-                    Total Shipped: 5
-           Shipped Ubuntu x86 CDs: 5
-         Shipped Ubuntu AMD64 CDs: 0
-           Shipped Ubuntu PPC CDs: 0
-          Shipped Kubuntu x86 CDs: 0
-        Shipped Kubuntu AMD64 CDs: 0
-          Shipped Kubuntu PPC CDs: 0
-         Shipped Edubuntu x86 CDs: 0
-       Shipped Edubuntu AMD64 CDs: 0
-         Shipped Edubuntu PPC CDs: 0
-            Normal-prio shipments: 1
-              High-prio shipments: 0
-             Average request size: 5
-        Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 9.26%
-                        Continent: Antarctica
+    >>> csv_file = requestset.generateCountryBasedReport(
+    ...     current_series_only=True)
+    >>> pprint_csv(csv_file.read())
+    ------------------------------------------------------------ Line 1
+                            Country: Bermuda
+               Total Shipped Ubuntu: 10
+              Total Shipped Kubuntu: 0
+             Total Shipped Edubuntu: 0
+                      Total Shipped: 10
+             Shipped Ubuntu x86 CDs: 8
+           Shipped Ubuntu AMD64 CDs: 1
+             Shipped Ubuntu PPC CDs: 1
+            Shipped Kubuntu x86 CDs: 0
+          Shipped Kubuntu AMD64 CDs: 0
+            Shipped Kubuntu PPC CDs: 0
+           Shipped Edubuntu x86 CDs: 0
+         Shipped Edubuntu AMD64 CDs: 0
+           Shipped Edubuntu PPC CDs: 0
+              Normal-prio shipments: 1
+                High-prio shipments: 0
+               Average request size: 10
+          Approved CDs (percentage): 100.00%
+    Percentage of total shipped CDs: 18.52%
+                          Continent: North America
+    ------------------------------------------------------------ Line 2
+                            Country: British Indian Ocean Territory
+               Total Shipped Ubuntu: 1
+              Total Shipped Kubuntu: 11
+             Total Shipped Edubuntu: 5
+                      Total Shipped: 17
+             Shipped Ubuntu x86 CDs: 0
+           Shipped Ubuntu AMD64 CDs: 0
+             Shipped Ubuntu PPC CDs: 1
+            Shipped Kubuntu x86 CDs: 6
+          Shipped Kubuntu AMD64 CDs: 5
+            Shipped Kubuntu PPC CDs: 0
+           Shipped Edubuntu x86 CDs: 5
+         Shipped Edubuntu AMD64 CDs: 0
+           Shipped Edubuntu PPC CDs: 0
+              Normal-prio shipments: 2
+                High-prio shipments: 1
+               Average request size: 5
+          Approved CDs (percentage): 100.00%
+    Percentage of total shipped CDs: 31.48%
+                          Continent: Asia
+    ------------------------------------------------------------ Line 3
+                            Country: Burkina Faso
+               Total Shipped Ubuntu: 10
+              Total Shipped Kubuntu: 0
+             Total Shipped Edubuntu: 0
+                      Total Shipped: 10
+             Shipped Ubuntu x86 CDs: 10
+           Shipped Ubuntu AMD64 CDs: 0
+             Shipped Ubuntu PPC CDs: 0
+            Shipped Kubuntu x86 CDs: 0
+          Shipped Kubuntu AMD64 CDs: 0
+            Shipped Kubuntu PPC CDs: 0
+           Shipped Edubuntu x86 CDs: 0
+         Shipped Edubuntu AMD64 CDs: 0
+           Shipped Edubuntu PPC CDs: 0
+              Normal-prio shipments: 1
+                High-prio shipments: 0
+               Average request size: 10
+          Approved CDs (percentage): 100.00%
+    Percentage of total shipped CDs: 18.52%
+                          Continent: Africa
+    ------------------------------------------------------------ Line 4
+                            Country: China
+               Total Shipped Ubuntu: 1
+              Total Shipped Kubuntu: 0
+             Total Shipped Edubuntu: 0
+                      Total Shipped: 1
+             Shipped Ubuntu x86 CDs: 0
+           Shipped Ubuntu AMD64 CDs: 1
+             Shipped Ubuntu PPC CDs: 0
+            Shipped Kubuntu x86 CDs: 0
+          Shipped Kubuntu AMD64 CDs: 0
+            Shipped Kubuntu PPC CDs: 0
+           Shipped Edubuntu x86 CDs: 0
+         Shipped Edubuntu AMD64 CDs: 0
+           Shipped Edubuntu PPC CDs: 0
+              Normal-prio shipments: 1
+                High-prio shipments: 0
+               Average request size: 1
+          Approved CDs (percentage): 100.00%
+    Percentage of total shipped CDs: 1.85%
+                          Continent: Asia
+    ------------------------------------------------------------ Line 5
+                            Country: France
+               Total Shipped Ubuntu: 0
+              Total Shipped Kubuntu: 10
+             Total Shipped Edubuntu: 1
+                      Total Shipped: 11
+             Shipped Ubuntu x86 CDs: 0
+           Shipped Ubuntu AMD64 CDs: 0
+             Shipped Ubuntu PPC CDs: 0
+            Shipped Kubuntu x86 CDs: 8
+          Shipped Kubuntu AMD64 CDs: 2
+            Shipped Kubuntu PPC CDs: 0
+           Shipped Edubuntu x86 CDs: 1
+         Shipped Edubuntu AMD64 CDs: 0
+           Shipped Edubuntu PPC CDs: 0
+              Normal-prio shipments: 1
+                High-prio shipments: 1
+               Average request size: 5
+          Approved CDs (percentage): 100.00%
+    Percentage of total shipped CDs: 20.37%
+                          Continent: Europe
+    ------------------------------------------------------------ Line 6
+                            Country: Heard Island and McDonald Islands
+               Total Shipped Ubuntu: 5
+              Total Shipped Kubuntu: 0
+             Total Shipped Edubuntu: 0
+                      Total Shipped: 5
+             Shipped Ubuntu x86 CDs: 5
+           Shipped Ubuntu AMD64 CDs: 0
+             Shipped Ubuntu PPC CDs: 0
+            Shipped Kubuntu x86 CDs: 0
+          Shipped Kubuntu AMD64 CDs: 0
+            Shipped Kubuntu PPC CDs: 0
+           Shipped Edubuntu x86 CDs: 0
+         Shipped Edubuntu AMD64 CDs: 0
+           Shipped Edubuntu PPC CDs: 0
+              Normal-prio shipments: 1
+                High-prio shipments: 0
+               Average request size: 5
+          Approved CDs (percentage): 100.00%
+    Percentage of total shipped CDs: 9.26%
+                          Continent: Antarctica
 
 
 There's another report which gives us the number of shipments of all shipment
@@ -699,312 +701,312 @@ The generateShipmentSizeBasedReport() method accepts a current_series_only
 argument that, if True, will include only requests of
 ShipItConstants.current_distroseries.
 
-  >>> csv_file = requestset.generateShipmentSizeBasedReport(
-  ...     current_series_only=False)
-  >>> pprint_csv(csv_file.read())
-  ------------------------------------------------------------ Line 1
-        Number of CDs: 1
-  Number of Shipments: 2
-  ------------------------------------------------------------ Line 2
-        Number of CDs: 2
-  Number of Shipments: 1
-  ------------------------------------------------------------ Line 3
-        Number of CDs: 5
-  Number of Shipments: 2
-  ------------------------------------------------------------ Line 4
-        Number of CDs: 10
-  Number of Shipments: 4
-  ------------------------------------------------------------ Line 5
-        Number of CDs: 24
-  Number of Shipments: 2
+    >>> csv_file = requestset.generateShipmentSizeBasedReport(
+    ...     current_series_only=False)
+    >>> pprint_csv(csv_file.read())
+    ------------------------------------------------------------ Line 1
+          Number of CDs: 1
+    Number of Shipments: 2
+    ------------------------------------------------------------ Line 2
+          Number of CDs: 2
+    Number of Shipments: 1
+    ------------------------------------------------------------ Line 3
+          Number of CDs: 5
+    Number of Shipments: 2
+    ------------------------------------------------------------ Line 4
+          Number of CDs: 10
+    Number of Shipments: 4
+    ------------------------------------------------------------ Line 5
+          Number of CDs: 24
+    Number of Shipments: 2
 
-  >>> csv_file = requestset.generateShipmentSizeBasedReport(
-  ...     current_series_only=True)
-  >>> pprint_csv(csv_file.read())
-  ------------------------------------------------------------ Line 1
-        Number of CDs: 1
-  Number of Shipments: 2
-  ------------------------------------------------------------ Line 2
-        Number of CDs: 2
-  Number of Shipments: 1
-  ------------------------------------------------------------ Line 3
-        Number of CDs: 5
-  Number of Shipments: 2
-  ------------------------------------------------------------ Line 4
-        Number of CDs: 10
-  Number of Shipments: 4
+    >>> csv_file = requestset.generateShipmentSizeBasedReport(
+    ...     current_series_only=True)
+    >>> pprint_csv(csv_file.read())
+    ------------------------------------------------------------ Line 1
+          Number of CDs: 1
+    Number of Shipments: 2
+    ------------------------------------------------------------ Line 2
+          Number of CDs: 2
+    Number of Shipments: 1
+    ------------------------------------------------------------ Line 3
+          Number of CDs: 5
+    Number of Shipments: 2
+    ------------------------------------------------------------ Line 4
+          Number of CDs: 10
+    Number of Shipments: 4
 
 
 There's also a report of requests by week, which can be tweaked to report only
 requests for CDs of the current distroseries or all requests.
 
-  >>> start_date = date(2006, 2, 24)
-  >>> end_date = date(2006, 4, 3)
-  >>> csv_file = requestset.generateWeekBasedReport(
-  ...     start_date, end_date, only_current_distroseries=True)
-  >>> pprint_csv(csv_file.read())
-  ------------------------------------------------------------ Line 1
-                              Year: 2006
-                       Week number: 8
-                        Week start: 2006-02-20
-                          Requests: 0
-                      Ubuntu Total: 0
-                     Kubuntu Total: 0
-                    Edubuntu Total: 0
-                       Grand Total: 0
-           Ubuntu Requested PC CDs: 0
-    Ubuntu Requested 64-bit PC CDs: 0
-          Ubuntu Requested Mac CDs: 0
-          Kubuntu Requested PC CDs: 0
-   Kubuntu Requested 64-bit PC CDs: 0
-         Kubuntu Requested Mac CDs: 0
-         Edubuntu Requested PC CDs: 0
-  Edubuntu Requested 64-bit PC CDs: 0
-        Edubuntu Requested Mac CDs: 0
-  ------------------------------------------------------------ Line 2
-                              Year: 2006
-                       Week number: 9
-                        Week start: 2006-02-27
-                          Requests: 5
-                      Ubuntu Total: 11
-                     Kubuntu Total: 11
-                    Edubuntu Total: 6
-                       Grand Total: 28
-           Ubuntu Requested PC CDs: 10
-    Ubuntu Requested 64-bit PC CDs: 0
-          Ubuntu Requested Mac CDs: 1
-          Kubuntu Requested PC CDs: 6
-   Kubuntu Requested 64-bit PC CDs: 5
-         Kubuntu Requested Mac CDs: 0
-         Edubuntu Requested PC CDs: 6
-  Edubuntu Requested 64-bit PC CDs: 0
-        Edubuntu Requested Mac CDs: 0
-  ------------------------------------------------------------ Line 3
-                              Year: 2006
-                       Week number: 10
-                        Week start: 2006-03-06
-                          Requests: 2
-                      Ubuntu Total: 10
-                     Kubuntu Total: 0
-                    Edubuntu Total: 5
-                       Grand Total: 15
-           Ubuntu Requested PC CDs: 10
-    Ubuntu Requested 64-bit PC CDs: 0
-          Ubuntu Requested Mac CDs: 0
-          Kubuntu Requested PC CDs: 0
-   Kubuntu Requested 64-bit PC CDs: 0
-         Kubuntu Requested Mac CDs: 0
-         Edubuntu Requested PC CDs: 5
-  Edubuntu Requested 64-bit PC CDs: 0
-        Edubuntu Requested Mac CDs: 0
-  ------------------------------------------------------------ Line 4
-                              Year: 2006
-                       Week number: 11
-                        Week start: 2006-03-13
-                          Requests: 1
-                      Ubuntu Total: 0
-                     Kubuntu Total: 10
-                    Edubuntu Total: 0
-                       Grand Total: 10
-           Ubuntu Requested PC CDs: 0
-    Ubuntu Requested 64-bit PC CDs: 0
-          Ubuntu Requested Mac CDs: 0
-          Kubuntu Requested PC CDs: 8
-   Kubuntu Requested 64-bit PC CDs: 2
-         Kubuntu Requested Mac CDs: 0
-         Edubuntu Requested PC CDs: 0
-  Edubuntu Requested 64-bit PC CDs: 0
-        Edubuntu Requested Mac CDs: 0
-  ------------------------------------------------------------ Line 5
-                              Year: 2006
-                       Week number: 12
-                        Week start: 2006-03-20
-                          Requests: 0
-                      Ubuntu Total: 0
-                     Kubuntu Total: 0
-                    Edubuntu Total: 0
-                       Grand Total: 0
-           Ubuntu Requested PC CDs: 0
-    Ubuntu Requested 64-bit PC CDs: 0
-          Ubuntu Requested Mac CDs: 0
-          Kubuntu Requested PC CDs: 0
-   Kubuntu Requested 64-bit PC CDs: 0
-         Kubuntu Requested Mac CDs: 0
-         Edubuntu Requested PC CDs: 0
-  Edubuntu Requested 64-bit PC CDs: 0
-        Edubuntu Requested Mac CDs: 0
-  ------------------------------------------------------------ Line 6
-                              Year: 2006
-                       Week number: 13
-                        Week start: 2006-03-27
-                          Requests: 1
-                      Ubuntu Total: 5
-                     Kubuntu Total: 0
-                    Edubuntu Total: 0
-                       Grand Total: 5
-           Ubuntu Requested PC CDs: 5
-    Ubuntu Requested 64-bit PC CDs: 0
-          Ubuntu Requested Mac CDs: 0
-          Kubuntu Requested PC CDs: 0
-   Kubuntu Requested 64-bit PC CDs: 0
-         Kubuntu Requested Mac CDs: 0
-         Edubuntu Requested PC CDs: 0
-  Edubuntu Requested 64-bit PC CDs: 0
-        Edubuntu Requested Mac CDs: 0
+    >>> start_date = date(2006, 2, 24)
+    >>> end_date = date(2006, 4, 3)
+    >>> csv_file = requestset.generateWeekBasedReport(
+    ...     start_date, end_date, only_current_distroseries=True)
+    >>> pprint_csv(csv_file.read())
+    ------------------------------------------------------------ Line 1
+                                Year: 2006
+                         Week number: 8
+                          Week start: 2006-02-20
+                            Requests: 0
+                        Ubuntu Total: 0
+                       Kubuntu Total: 0
+                      Edubuntu Total: 0
+                         Grand Total: 0
+             Ubuntu Requested PC CDs: 0
+      Ubuntu Requested 64-bit PC CDs: 0
+            Ubuntu Requested Mac CDs: 0
+            Kubuntu Requested PC CDs: 0
+     Kubuntu Requested 64-bit PC CDs: 0
+           Kubuntu Requested Mac CDs: 0
+           Edubuntu Requested PC CDs: 0
+    Edubuntu Requested 64-bit PC CDs: 0
+          Edubuntu Requested Mac CDs: 0
+    ------------------------------------------------------------ Line 2
+                                Year: 2006
+                         Week number: 9
+                          Week start: 2006-02-27
+                            Requests: 5
+                        Ubuntu Total: 11
+                       Kubuntu Total: 11
+                      Edubuntu Total: 6
+                         Grand Total: 28
+             Ubuntu Requested PC CDs: 10
+      Ubuntu Requested 64-bit PC CDs: 0
+            Ubuntu Requested Mac CDs: 1
+            Kubuntu Requested PC CDs: 6
+     Kubuntu Requested 64-bit PC CDs: 5
+           Kubuntu Requested Mac CDs: 0
+           Edubuntu Requested PC CDs: 6
+    Edubuntu Requested 64-bit PC CDs: 0
+          Edubuntu Requested Mac CDs: 0
+    ------------------------------------------------------------ Line 3
+                                Year: 2006
+                         Week number: 10
+                          Week start: 2006-03-06
+                            Requests: 2
+                        Ubuntu Total: 10
+                       Kubuntu Total: 0
+                      Edubuntu Total: 5
+                         Grand Total: 15
+             Ubuntu Requested PC CDs: 10
+      Ubuntu Requested 64-bit PC CDs: 0
+            Ubuntu Requested Mac CDs: 0
+            Kubuntu Requested PC CDs: 0
+     Kubuntu Requested 64-bit PC CDs: 0
+           Kubuntu Requested Mac CDs: 0
+           Edubuntu Requested PC CDs: 5
+    Edubuntu Requested 64-bit PC CDs: 0
+          Edubuntu Requested Mac CDs: 0
+    ------------------------------------------------------------ Line 4
+                                Year: 2006
+                         Week number: 11
+                          Week start: 2006-03-13
+                            Requests: 1
+                        Ubuntu Total: 0
+                       Kubuntu Total: 10
+                      Edubuntu Total: 0
+                         Grand Total: 10
+             Ubuntu Requested PC CDs: 0
+      Ubuntu Requested 64-bit PC CDs: 0
+            Ubuntu Requested Mac CDs: 0
+            Kubuntu Requested PC CDs: 8
+     Kubuntu Requested 64-bit PC CDs: 2
+           Kubuntu Requested Mac CDs: 0
+           Edubuntu Requested PC CDs: 0
+    Edubuntu Requested 64-bit PC CDs: 0
+          Edubuntu Requested Mac CDs: 0
+    ------------------------------------------------------------ Line 5
+                                Year: 2006
+                         Week number: 12
+                          Week start: 2006-03-20
+                            Requests: 0
+                        Ubuntu Total: 0
+                       Kubuntu Total: 0
+                      Edubuntu Total: 0
+                         Grand Total: 0
+             Ubuntu Requested PC CDs: 0
+      Ubuntu Requested 64-bit PC CDs: 0
+            Ubuntu Requested Mac CDs: 0
+            Kubuntu Requested PC CDs: 0
+     Kubuntu Requested 64-bit PC CDs: 0
+           Kubuntu Requested Mac CDs: 0
+           Edubuntu Requested PC CDs: 0
+    Edubuntu Requested 64-bit PC CDs: 0
+          Edubuntu Requested Mac CDs: 0
+    ------------------------------------------------------------ Line 6
+                                Year: 2006
+                         Week number: 13
+                          Week start: 2006-03-27
+                            Requests: 1
+                        Ubuntu Total: 5
+                       Kubuntu Total: 0
+                      Edubuntu Total: 0
+                         Grand Total: 5
+             Ubuntu Requested PC CDs: 5
+      Ubuntu Requested 64-bit PC CDs: 0
+            Ubuntu Requested Mac CDs: 0
+            Kubuntu Requested PC CDs: 0
+     Kubuntu Requested 64-bit PC CDs: 0
+           Kubuntu Requested Mac CDs: 0
+           Edubuntu Requested PC CDs: 0
+    Edubuntu Requested 64-bit PC CDs: 0
+          Edubuntu Requested Mac CDs: 0
 
-  >>> start_date = date(2005, 5, 1)
-  >>> end_date = date(2005, 5, 23)
-  >>> csv_file = requestset.generateWeekBasedReport(
-  ...     start_date, end_date, only_current_distroseries=True)
-  >>> pprint_csv(csv_file.read())
-  ------------------------------------------------------------ Line 1
-                              Year: 2005
-                       Week number: 17
-                        Week start: 2005-04-25
-                          Requests: 0
-                      Ubuntu Total: 0
-                     Kubuntu Total: 0
-                    Edubuntu Total: 0
-                       Grand Total: 0
-           Ubuntu Requested PC CDs: 0
-    Ubuntu Requested 64-bit PC CDs: 0
-          Ubuntu Requested Mac CDs: 0
-          Kubuntu Requested PC CDs: 0
-   Kubuntu Requested 64-bit PC CDs: 0
-         Kubuntu Requested Mac CDs: 0
-         Edubuntu Requested PC CDs: 0
-  Edubuntu Requested 64-bit PC CDs: 0
-        Edubuntu Requested Mac CDs: 0
-  ------------------------------------------------------------ Line 2
-                              Year: 2005
-                       Week number: 18
-                        Week start: 2005-05-02
-                          Requests: 0
-                      Ubuntu Total: 0
-                     Kubuntu Total: 0
-                    Edubuntu Total: 0
-                       Grand Total: 0
-           Ubuntu Requested PC CDs: 0
-    Ubuntu Requested 64-bit PC CDs: 0
-          Ubuntu Requested Mac CDs: 0
-          Kubuntu Requested PC CDs: 0
-   Kubuntu Requested 64-bit PC CDs: 0
-         Kubuntu Requested Mac CDs: 0
-         Edubuntu Requested PC CDs: 0
-  Edubuntu Requested 64-bit PC CDs: 0
-        Edubuntu Requested Mac CDs: 0
-  ------------------------------------------------------------ Line 3
-                              Year: 2005
-                       Week number: 19
-                        Week start: 2005-05-09
-                          Requests: 0
-                      Ubuntu Total: 0
-                     Kubuntu Total: 0
-                    Edubuntu Total: 0
-                       Grand Total: 0
-           Ubuntu Requested PC CDs: 0
-    Ubuntu Requested 64-bit PC CDs: 0
-          Ubuntu Requested Mac CDs: 0
-          Kubuntu Requested PC CDs: 0
-   Kubuntu Requested 64-bit PC CDs: 0
-         Kubuntu Requested Mac CDs: 0
-         Edubuntu Requested PC CDs: 0
-  Edubuntu Requested 64-bit PC CDs: 0
-        Edubuntu Requested Mac CDs: 0
-  ------------------------------------------------------------ Line 4
-                              Year: 2005
-                       Week number: 20
-                        Week start: 2005-05-16
-                          Requests: 0
-                      Ubuntu Total: 0
-                     Kubuntu Total: 0
-                    Edubuntu Total: 0
-                       Grand Total: 0
-           Ubuntu Requested PC CDs: 0
-    Ubuntu Requested 64-bit PC CDs: 0
-          Ubuntu Requested Mac CDs: 0
-          Kubuntu Requested PC CDs: 0
-   Kubuntu Requested 64-bit PC CDs: 0
-         Kubuntu Requested Mac CDs: 0
-         Edubuntu Requested PC CDs: 0
-  Edubuntu Requested 64-bit PC CDs: 0
-        Edubuntu Requested Mac CDs: 0
-
-  >>> csv_file = requestset.generateWeekBasedReport(
-  ...     start_date, end_date, only_current_distroseries=False)
-  >>> pprint_csv(csv_file.read())
-  ------------------------------------------------------------ Line 1
-                              Year: 2005
-                       Week number: 17
-                        Week start: 2005-04-25
-                          Requests: 1
-                      Ubuntu Total: 24
-                     Kubuntu Total: 0
-                    Edubuntu Total: 0
-                       Grand Total: 24
-           Ubuntu Requested PC CDs: 9
-    Ubuntu Requested 64-bit PC CDs: 6
-          Ubuntu Requested Mac CDs: 9
-          Kubuntu Requested PC CDs: 0
-   Kubuntu Requested 64-bit PC CDs: 0
-         Kubuntu Requested Mac CDs: 0
-         Edubuntu Requested PC CDs: 0
-  Edubuntu Requested 64-bit PC CDs: 0
-        Edubuntu Requested Mac CDs: 0
-  ------------------------------------------------------------ Line 2
-                              Year: 2005
-                       Week number: 18
-                        Week start: 2005-05-02
-                          Requests: 0
-                      Ubuntu Total: 0
-                     Kubuntu Total: 0
-                    Edubuntu Total: 0
-                       Grand Total: 0
-           Ubuntu Requested PC CDs: 0
-    Ubuntu Requested 64-bit PC CDs: 0
-          Ubuntu Requested Mac CDs: 0
-          Kubuntu Requested PC CDs: 0
-   Kubuntu Requested 64-bit PC CDs: 0
-         Kubuntu Requested Mac CDs: 0
-         Edubuntu Requested PC CDs: 0
-  Edubuntu Requested 64-bit PC CDs: 0
-        Edubuntu Requested Mac CDs: 0
-  ------------------------------------------------------------ Line 3
-                              Year: 2005
-                       Week number: 19
-                        Week start: 2005-05-09
-                          Requests: 0
-                      Ubuntu Total: 0
-                     Kubuntu Total: 0
-                    Edubuntu Total: 0
-                       Grand Total: 0
-           Ubuntu Requested PC CDs: 0
-    Ubuntu Requested 64-bit PC CDs: 0
-          Ubuntu Requested Mac CDs: 0
-          Kubuntu Requested PC CDs: 0
-   Kubuntu Requested 64-bit PC CDs: 0
-         Kubuntu Requested Mac CDs: 0
-         Edubuntu Requested PC CDs: 0
-  Edubuntu Requested 64-bit PC CDs: 0
-        Edubuntu Requested Mac CDs: 0
-  ------------------------------------------------------------ Line 4
-                              Year: 2005
-                       Week number: 20
-                        Week start: 2005-05-16
-                          Requests: 1
-                      Ubuntu Total: 24
-                     Kubuntu Total: 0
-                    Edubuntu Total: 0
-                       Grand Total: 24
-           Ubuntu Requested PC CDs: 9
-    Ubuntu Requested 64-bit PC CDs: 6
-          Ubuntu Requested Mac CDs: 9
-          Kubuntu Requested PC CDs: 0
-   Kubuntu Requested 64-bit PC CDs: 0
-         Kubuntu Requested Mac CDs: 0
-         Edubuntu Requested PC CDs: 0
-  Edubuntu Requested 64-bit PC CDs: 0
-        Edubuntu Requested Mac CDs: 0
+    >>> start_date = date(2005, 5, 1)
+    >>> end_date = date(2005, 5, 23)
+    >>> csv_file = requestset.generateWeekBasedReport(
+    ...     start_date, end_date, only_current_distroseries=True)
+    >>> pprint_csv(csv_file.read())
+    ------------------------------------------------------------ Line 1
+                                Year: 2005
+                         Week number: 17
+                          Week start: 2005-04-25
+                            Requests: 0
+                        Ubuntu Total: 0
+                       Kubuntu Total: 0
+                      Edubuntu Total: 0
+                         Grand Total: 0
+             Ubuntu Requested PC CDs: 0
+      Ubuntu Requested 64-bit PC CDs: 0
+            Ubuntu Requested Mac CDs: 0
+            Kubuntu Requested PC CDs: 0
+     Kubuntu Requested 64-bit PC CDs: 0
+           Kubuntu Requested Mac CDs: 0
+           Edubuntu Requested PC CDs: 0
+    Edubuntu Requested 64-bit PC CDs: 0
+          Edubuntu Requested Mac CDs: 0
+    ------------------------------------------------------------ Line 2
+                                Year: 2005
+                         Week number: 18
+                          Week start: 2005-05-02
+                            Requests: 0
+                        Ubuntu Total: 0
+                       Kubuntu Total: 0
+                      Edubuntu Total: 0
+                         Grand Total: 0
+             Ubuntu Requested PC CDs: 0
+      Ubuntu Requested 64-bit PC CDs: 0
+            Ubuntu Requested Mac CDs: 0
+            Kubuntu Requested PC CDs: 0
+     Kubuntu Requested 64-bit PC CDs: 0
+           Kubuntu Requested Mac CDs: 0
+           Edubuntu Requested PC CDs: 0
+    Edubuntu Requested 64-bit PC CDs: 0
+          Edubuntu Requested Mac CDs: 0
+    ------------------------------------------------------------ Line 3
+                                Year: 2005
+                         Week number: 19
+                          Week start: 2005-05-09
+                            Requests: 0
+                        Ubuntu Total: 0
+                       Kubuntu Total: 0
+                      Edubuntu Total: 0
+                         Grand Total: 0
+             Ubuntu Requested PC CDs: 0
+      Ubuntu Requested 64-bit PC CDs: 0
+            Ubuntu Requested Mac CDs: 0
+            Kubuntu Requested PC CDs: 0
+     Kubuntu Requested 64-bit PC CDs: 0
+           Kubuntu Requested Mac CDs: 0
+           Edubuntu Requested PC CDs: 0
+    Edubuntu Requested 64-bit PC CDs: 0
+          Edubuntu Requested Mac CDs: 0
+    ------------------------------------------------------------ Line 4
+                                Year: 2005
+                         Week number: 20
+                          Week start: 2005-05-16
+                            Requests: 0
+                        Ubuntu Total: 0
+                       Kubuntu Total: 0
+                      Edubuntu Total: 0
+                         Grand Total: 0
+             Ubuntu Requested PC CDs: 0
+      Ubuntu Requested 64-bit PC CDs: 0
+            Ubuntu Requested Mac CDs: 0
+            Kubuntu Requested PC CDs: 0
+     Kubuntu Requested 64-bit PC CDs: 0
+           Kubuntu Requested Mac CDs: 0
+           Edubuntu Requested PC CDs: 0
+    Edubuntu Requested 64-bit PC CDs: 0
+          Edubuntu Requested Mac CDs: 0
+ 
+    >>> csv_file = requestset.generateWeekBasedReport(
+    ...     start_date, end_date, only_current_distroseries=False)
+    >>> pprint_csv(csv_file.read())
+    ------------------------------------------------------------ Line 1
+                                Year: 2005
+                         Week number: 17
+                          Week start: 2005-04-25
+                            Requests: 1
+                        Ubuntu Total: 24
+                       Kubuntu Total: 0
+                      Edubuntu Total: 0
+                         Grand Total: 24
+             Ubuntu Requested PC CDs: 9
+      Ubuntu Requested 64-bit PC CDs: 6
+            Ubuntu Requested Mac CDs: 9
+            Kubuntu Requested PC CDs: 0
+     Kubuntu Requested 64-bit PC CDs: 0
+           Kubuntu Requested Mac CDs: 0
+           Edubuntu Requested PC CDs: 0
+    Edubuntu Requested 64-bit PC CDs: 0
+          Edubuntu Requested Mac CDs: 0
+    ------------------------------------------------------------ Line 2
+                                Year: 2005
+                         Week number: 18
+                          Week start: 2005-05-02
+                            Requests: 0
+                        Ubuntu Total: 0
+                       Kubuntu Total: 0
+                      Edubuntu Total: 0
+                         Grand Total: 0
+             Ubuntu Requested PC CDs: 0
+      Ubuntu Requested 64-bit PC CDs: 0
+            Ubuntu Requested Mac CDs: 0
+            Kubuntu Requested PC CDs: 0
+     Kubuntu Requested 64-bit PC CDs: 0
+           Kubuntu Requested Mac CDs: 0
+           Edubuntu Requested PC CDs: 0
+    Edubuntu Requested 64-bit PC CDs: 0
+          Edubuntu Requested Mac CDs: 0
+    ------------------------------------------------------------ Line 3
+                                Year: 2005
+                         Week number: 19
+                          Week start: 2005-05-09
+                            Requests: 0
+                        Ubuntu Total: 0
+                       Kubuntu Total: 0
+                      Edubuntu Total: 0
+                         Grand Total: 0
+             Ubuntu Requested PC CDs: 0
+      Ubuntu Requested 64-bit PC CDs: 0
+            Ubuntu Requested Mac CDs: 0
+            Kubuntu Requested PC CDs: 0
+     Kubuntu Requested 64-bit PC CDs: 0
+           Kubuntu Requested Mac CDs: 0
+           Edubuntu Requested PC CDs: 0
+    Edubuntu Requested 64-bit PC CDs: 0
+          Edubuntu Requested Mac CDs: 0
+    ------------------------------------------------------------ Line 4
+                                Year: 2005
+                         Week number: 20
+                          Week start: 2005-05-16
+                            Requests: 1
+                        Ubuntu Total: 24
+                       Kubuntu Total: 0
+                      Edubuntu Total: 0
+                         Grand Total: 24
+             Ubuntu Requested PC CDs: 9
+      Ubuntu Requested 64-bit PC CDs: 6
+            Ubuntu Requested Mac CDs: 9
+            Kubuntu Requested PC CDs: 0
+     Kubuntu Requested 64-bit PC CDs: 0
+           Kubuntu Requested Mac CDs: 0
+           Edubuntu Requested PC CDs: 0
+    Edubuntu Requested 64-bit PC CDs: 0
+          Edubuntu Requested Mac CDs: 0
 
 
 To help identify if we're reaching new users with every series, we have a
@@ -1060,85 +1062,85 @@ This is the description of each column, in its context:
         ** shipments
             Same as above but for shipments rather than requests.
 
-  >>> csv_file = requestset.generateRequestDistributionReport()
+    >>> csv_file = requestset.generateRequestDistributionReport()
 
-  # Skip the first two lines since they have headers which are supposed to
-  # span across multiple columns, screwing our pprint_csv() function.
-  >>> header1, blankline1, header2, blankline2, content = (
-  ...     csv_file.read().split('\n', 4))
-  >>> print header1
-  "","","","Current Series Only","","","","","","","Previous Series Only","","",""
-  >>> print header2
-  "","requests","","","","shipments","","","","requests","","","","shipments","","",""
-  >>> pprint_csv(content)
-  ------------------------------------------------------------ Line 1
-         # of requests: 0
-           # of people: 0
-                     %: 0.0
-     people with karma: 0
-   avg CDs per request: 0
-           # of people: 0
-                     %: 0.0
-     people with karma: 0
-  avg CDs per shipment: 0
-           # of people: 8
-                     %: 80.0
-     people with karma: 1
-   avg CDs per request: 0.0
-           # of people: 8
-                     %: 80.0
-     people with karma: 1
-  avg CDs per shipment: 0.0
-  ------------------------------------------------------------ Line 2
-         # of requests: 1
-           # of people: 9
-                     %: 90.0
-     people with karma: 1
-   avg CDs per request: 7.66
-           # of people: 7
-                     %: 87.5
-     people with karma: 0
-  avg CDs per shipment: 7.28
-           # of people: 2
-                     %: 20.0
-     people with karma: 0
-   avg CDs per request: 24.0
-           # of people: 2
-                     %: 20.0
-     people with karma: 0
-  avg CDs per shipment: 24.0
-  ------------------------------------------------------------ Line 3
-         # of requests: 2
-           # of people: 1
-                     %: 10.0
-     people with karma: 0
-   avg CDs per request: 1.5
-           # of people: 1
-                     %: 12.5
-     people with karma: 0
-  avg CDs per shipment: 1.5
-           # of people: 0
-                     %: 0.0
-     people with karma: 0
-   avg CDs per request: 0
-           # of people: 0
-                     %: 0.0
-     people with karma: 0
-  avg CDs per shipment: 0
+    # Skip the first two lines since they have headers which are supposed to
+    # span across multiple columns, screwing our pprint_csv() function.
+    >>> header1, blankline1, header2, blankline2, content = (
+    ...     csv_file.read().split('\n', 4))
+    >>> print header1
+    "","","","Current Series Only","","","","","","","Previous Series Only","","",""
+    >>> print header2
+    "","requests","","","","shipments","","","","requests","","","","shipments","","",""
+    >>> pprint_csv(content)
+    ------------------------------------------------------------ Line 1
+           # of requests: 0
+             # of people: 0
+                       %: 0.0
+       people with karma: 0
+     avg CDs per request: 0
+             # of people: 0
+                       %: 0.0
+       people with karma: 0
+      avg CDs per shipment: 0
+             # of people: 8
+                       %: 80.0
+       people with karma: 1
+     avg CDs per request: 0.0
+             # of people: 8
+                       %: 80.0
+       people with karma: 1
+    avg CDs per shipment: 0.0
+    ------------------------------------------------------------ Line 2
+           # of requests: 1
+             # of people: 9
+                       %: 90.0
+       people with karma: 1
+     avg CDs per request: 7.66
+             # of people: 7
+                       %: 87.5
+       people with karma: 0
+      avg CDs per shipment: 7.28
+             # of people: 2
+                       %: 20.0
+       people with karma: 0
+     avg CDs per request: 24.0
+             # of people: 2
+                       %: 20.0
+       people with karma: 0
+    avg CDs per shipment: 24.0
+    ------------------------------------------------------------ Line 3
+           # of requests: 2
+             # of people: 1
+                       %: 10.0
+       people with karma: 0
+     avg CDs per request: 1.5
+             # of people: 1
+                       %: 12.5
+       people with karma: 0
+      avg CDs per shipment: 1.5
+             # of people: 0
+                       %: 0.0
+       people with karma: 0
+     avg CDs per request: 0
+             # of people: 0
+                       %: 0.0
+       people with karma: 0
+    avg CDs per shipment: 0
 
-  # Restore the current_distroseries to its original value so that we don't
-  # screw up other tests.
-  >>> ShipItConstants.current_distroseries = orig_current_series
+    # Restore the current_distroseries to its original value so that we don't
+    # screw up other tests.
+    >>> ShipItConstants.current_distroseries = orig_current_series
 
 All these reports are generated periodically and stored in the Librarian by
 the shipit-reports cronscript.
 
-  >>> process = subprocess.Popen(
-  ...     'cronscripts/shipit-reports.py -q', shell=True,
-  ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  >>> (out, err) = process.communicate()
-  >>> out, err
-  ('', '')
-  >>> process.returncode
-  0
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/shipit-reports.py -q', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> out, err
+    ('', '')
+    >>> process.returncode
+    0
 
