@@ -315,6 +315,6 @@ class DistributionSourcePackageView(LaunchpadView):
                        series_result[row][column] = None
             for row in series_result:
                 result.append(row)
-            return result
+        return result
 
 
