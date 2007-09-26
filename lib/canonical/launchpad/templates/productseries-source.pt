@@ -98,10 +98,10 @@
               break;
             }
           }
-          form['field.cvsroot'].disabled = (rcstype != 'Concurrent Version System');
-          form['field.cvsbranch'].disabled = (rcstype != 'Concurrent Version System');
-          form['field.cvsmodule'].disabled = (rcstype != 'Concurrent Version System');
-          form['field.svnrepository'].disabled = (rcstype != 'Subversion');
+          form['field.cvsroot'].disabled = (rcstype != 'CVS');
+          form['field.cvsbranch'].disabled = (rcstype != 'CVS');
+          form['field.cvsmodule'].disabled = (rcstype != 'CVS');
+          form['field.svnrepository'].disabled = (rcstype != 'SVN');
         }
         updateWidgets();
       </script>
