@@ -18,12 +18,17 @@ def mirror(logger, manager):
         logger.info('Could not acquire lock: %s', exception)
         return 0
 
-    try:
-        date_started = datetime.datetime.now(UTC)
-        manager.run(logger)
+    date_started = datetime.datetime.now(UTC)
+
+    def recordSuccess(ignored):
         date_completed = datetime.datetime.now(UTC)
         manager.recordActivity(date_started, date_completed)
-    finally:
+
+    def unlock(ignored):
         manager.unlock()
-    return 0
+
+    deferred = manager.run(logger)
+    deferred.addCallback(recordSuccess)
+    deferred.addBoth(unlock)
+    return deferred
 

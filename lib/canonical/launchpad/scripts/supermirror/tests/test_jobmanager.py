@@ -6,6 +6,8 @@ import unittest
 
 import bzrlib
 
+from twisted.trial.unittest import TestCase as TrialTestCase 
+
 from canonical.codehosting import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
@@ -130,7 +132,7 @@ class TestJobManager(unittest.TestCase):
         self.assertEqual(branch_types, [BranchType.MIRRORED])
 
 
-class TestJobManagerInLaunchpad(unittest.TestCase):
+class TestJobManagerInLaunchpad(TrialTestCase):
     layer = LaunchpadFunctionalLayer
 
     testdir = None
@@ -173,11 +175,14 @@ class TestJobManagerInLaunchpad(unittest.TestCase):
             self._makeBranch("branche", 5, client)]
         manager.branches_to_mirror = list(branches)
 
-        manager.run(logging.getLogger())
+        deferred = manager.run(logging.getLogger())
 
-        self.assertEqual(len(manager.branches_to_mirror), 0)
-        for branch in branches:
-            self.assertMirrored(branch)
+        def check_mirrored(ignored):
+            self.assertEqual(len(manager.branches_to_mirror), 0)
+            for branch in branches:
+                self.assertMirrored(branch)
+
+        return deferred.addCallback(check_mirrored)
 
     def _makeBranch(self, relativedir, target, branch_status_client):
         """Given a relative directory, make a strawman branch and return it.

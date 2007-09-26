@@ -5,6 +5,10 @@ import socket
 import subprocess
 import sys
 
+from twisted.internet import defer, error, reactor
+from twisted.internet.protocol import ProcessProtocol
+from twisted.python import failure
+
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 import canonical
@@ -12,6 +16,31 @@ from canonical.codehosting import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)
+
+
+MAXIMUM_PROCESSES = 5
+
+
+class FireOnExit(ProcessProtocol):
+
+    def __init__(self, deferred):
+        self.deferred = deferred
+        self._output = ''
+        self._error = ''
+
+    def outReceived(self, data):
+        self._output += data
+
+    def errReceived(self, data):
+        self._error += data
+
+    def processEnded(self, reason):
+        ProcessProtocol.processEnded(self, reason)
+        self.deferred, deferred = None, self.deferred
+        if reason.check(error.ConnectionDone):
+            deferred.callback(None)
+        else:
+            deferred.errback(failure.Failure(Exception(self._error)))
 
 
 class JobManager:
@@ -34,9 +63,16 @@ class JobManager:
     def run(self, logger):
         """Run all branches_to_mirror registered with the JobManager"""
         logger.info('%d branches to mirror', len(self.branches_to_mirror))
-        while self.branches_to_mirror:
-            branch_to_mirror = self.branches_to_mirror.pop(0)
-            self.mirror(branch_to_mirror, logger)
+        semaphore = defer.DeferredSemaphore(MAXIMUM_PROCESSES)
+        deferreds = [
+            semaphore.run(self.mirror, branch_to_mirror, logger)
+            for branch_to_mirror in self.branches_to_mirror]
+        deferred = defer.gatherResults(deferreds)
+        deferred.addCallback(self._finishedRunning, logger)
+        return deferred
+
+    def _finishedRunning(self, ignored, logger):
+        self.branches_to_mirror = []
         logger.info('Mirroring complete')
 
     def mirror(self, branch_to_mirror, logger):
@@ -44,11 +80,14 @@ class JobManager:
             os.path.dirname(
                 os.path.dirname(os.path.dirname(canonical.__file__))),
             'scripts/mirror-branch.py')
-        subprocess.Popen(
+        deferred = defer.Deferred()
+        protocol = FireOnExit(deferred)
+        reactor.spawnProcess(
+            protocol, sys.executable,
             [sys.executable, path_to_script, branch_to_mirror.source,
              branch_to_mirror.dest, str(branch_to_mirror.branch_id),
-             branch_to_mirror.unique_name, self.branch_type.name],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+             branch_to_mirror.unique_name, self.branch_type.name])
+        return deferred
 
     def _addBranches(self, branches_to_pull):
         for branch_id, branch_src, unique_name in branches_to_pull:

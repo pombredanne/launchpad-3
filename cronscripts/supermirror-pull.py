@@ -5,11 +5,18 @@ import _pythonpath
 
 from optparse import OptionParser
 
+from twisted.internet import reactor
+
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts import logger_options, logger
 from canonical.launchpad.scripts.supermirror import mirror, jobmanager
+
+
+def run_mirror(log, manager):
+    deferred = mirror(log, manager)
+    deferred.addCallback(lambda ignored: reactor.stop())
 
 
 if __name__ == '__main__':
@@ -43,4 +50,5 @@ if __name__ == '__main__':
 
     log = logger(options, 'branch-puller')
 
-    mirror(log, manager)
+    reactor.callWhenRunning(run_mirror, log, manager)
+    reactor.run()
