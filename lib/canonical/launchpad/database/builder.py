@@ -294,7 +294,7 @@ class Builder(SQLBase):
                     # Partner is a very special case because the partner
                     # component is only in the partner archive, so we have
                     # to be careful with the sources.list archives.
-                    ubuntu_components = 'main restricted'
+                    ubuntu_components = 'main restricted universe multiverse'
 
                 # Here we build a list of sources.list lines for each pocket
                 # required in the primary archive.

@@ -138,7 +138,8 @@ class Build(SQLBase):
         """See `IBuild`."""
         # check if the build would be properly collected if it was
         # reset. Do not reset denied builds.
-        if (self.is_trusted and not
+        if (self.is_trusted and
+            self.archive.purpose != ArchivePurpose.PARTNER and not
             self.distroseries.canUploadToPocket(self.pocket)):
             return False
 
