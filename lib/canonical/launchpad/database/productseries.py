@@ -31,11 +31,10 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.interfaces import (
     IProductSeries, IProductSeriesSet, IProductSeriesSourceAdmin,
-    NotFoundError, SpecificationSort, SpecificationGoalStatus,
-    SpecificationFilter, SpecificationDefinitionStatus,
-    SpecificationImplementationStatus)
-from canonical.lp.dbschema import (
-    ImportStatus, PackagingType, RevisionControlSystems)
+    NotFoundError, PackagingType, RevisionControlSystems, SpecificationSort,
+    SpecificationGoalStatus, SpecificationFilter,
+    SpecificationDefinitionStatus, SpecificationImplementationStatus)
+from canonical.lp.dbschema import ImportStatus, PackagingType
 
 
 class NoImportBranchError(Exception):
@@ -76,7 +75,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                              default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
         schema=ImportStatus, default=None)
-    rcstype = EnumCol(dbName='rcstype', schema=RevisionControlSystems,
+    rcstype = EnumCol(dbName='rcstype', enum=RevisionControlSystems,
         notNull=False, default=None)
     cvsroot = StringCol(default=None)
     cvsmodule = StringCol(default=None)

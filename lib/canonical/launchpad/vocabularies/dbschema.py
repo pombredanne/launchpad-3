@@ -9,8 +9,6 @@ __metaclass__ = type
 
 __all__ = [
     'vocab_factory',
-    'BountyDifficultyVocabulary',
-    'BountyStatusVocabulary',
     'BranchReviewStatusVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
@@ -23,28 +21,18 @@ __all__ = [
     'DistroSeriesStatusVocabulary',
     'InfestationStatusVocabulary',
     'PackagePublishingPocketVocabulary',
-    'PackagingTypeVocabulary',
-    'PollAlgorithmVocabulary',
-    'PollSecrecyVocabulary',
     'RemoteBugTaskImportanceVocabulary',
-    'RevisionControlSystemsVocabulary',
-    'TextDirectionVocabulary',
     'TranslationFileFormatVocabulary',
     'TranslationPermissionVocabulary',
-    'UpstreamFileTypeVocabulary',
     ]
 
 from canonical.lp import dbschema
 
 from canonical.launchpad.webapp.vocabulary import vocab_factory
-from canonical.launchpad.interfaces import (
-    QuestionAction, QuestionPriority, QuestionSort, QuestionStatus)
 
 
 # DB Schema Vocabularies
 
-BountyDifficultyVocabulary = vocab_factory(dbschema.BountyDifficulty)
-BountyStatusVocabulary = vocab_factory(dbschema.BountyStatus)
 BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
@@ -62,13 +50,6 @@ DistroSeriesStatusVocabulary = vocab_factory(dbschema.DistroSeriesStatus)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 PackagePublishingPocketVocabulary = vocab_factory(
     dbschema.PackagePublishingPocket)
-PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
-PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
-PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
-RevisionControlSystemsVocabulary = vocab_factory(
-    dbschema.RevisionControlSystems)
-TextDirectionVocabulary =  vocab_factory(dbschema.TextDirection)
 TranslationFileFormatVocabulary = vocab_factory(dbschema.TranslationFileFormat)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
-UpstreamFileTypeVocabulary = vocab_factory(dbschema.UpstreamFileType)

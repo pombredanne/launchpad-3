@@ -13,12 +13,11 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchType, CannotDeleteBranch,
     CreateBugParams, IBugSet, ILaunchpadCelebrities, IPersonSet,
     InvalidBranchMergeProposal, IProductSet, ISpecificationSet,
-    SpecificationDefinitionStatus)
+    SpecificationDefinitionStatus, RevisionControlSystems)
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.database.codeimport import CodeImportSet
 from canonical.launchpad.database.product import ProductSet
 from canonical.launchpad.database.revision import RevisionSet
-from canonical.lp.dbschema import RevisionControlSystems
 
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 

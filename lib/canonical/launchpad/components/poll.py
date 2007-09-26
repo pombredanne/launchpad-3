@@ -7,8 +7,8 @@ __all__ = ['PollSubset', 'PollOptionSubset']
 from zope.interface import implements
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IPollSubset, IPollSet, PollStatus
-from canonical.lp.dbschema import PollAlgorithm
+from canonical.launchpad.interfaces import (
+    IPollSubset, IPollSet, PollAlgorithm, PollStatus)
 
 
 class PollSubset:

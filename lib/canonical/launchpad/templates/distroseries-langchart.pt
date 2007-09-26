@@ -14,9 +14,11 @@
     <thead>
       <tr>
         <th>Language</th>
-        <th>Status</th>
         <th>Contributors</th>
+        <th>Status</th>
         <th>Untranslated</th>
+        <th>Need review</th>
+        <th>Changed</th>
       </tr>
     </thead>
 
@@ -28,11 +30,45 @@
              Language Name
           </a>
         </td>
+        <td>
+          <span class="sortkey" tal:content="drlang/contributor_count">0</span>
+          <tal:count
+            tal:condition="drlang/contributor_count"
+            tal:replace="drlang/contributor_count">0</tal:count>
+          <tal:count condition="not: drlang/contributor_count">
+            &mdash;
+          </tal:count>
+        </td>
         <td style="white-space: nowrap">
           <div tal:replace="structure drlang/@@+barchart" />
         </td>
-        <td tal:content="drlang/contributor_count">16</td>
-        <td tal:content="drlang/untranslatedCount">42344</td>
+        <td>
+          <span class="sortkey" tal:content="drlang/untranslatedCount">0</span>
+          <tal:count
+            tal:condition="drlang/untranslatedCount"
+            tal:replace="drlang/untranslatedCount">0</tal:count>
+          <tal:count condition="not: drlang/untranslatedCount">
+            &mdash;
+          </tal:count>
+        </td>
+        <td>
+          <span class="sortkey" tal:content="drlang/unreviewedCount">0</span>
+          <tal:count
+            tal:condition="drlang/unreviewedCount"
+            tal:replace="drlang/unreviewedCount">0</tal:count>
+          <tal:count condition="not: drlang/unreviewedCount">
+            &mdash;
+          </tal:count>
+        </td>
+        <td>
+          <span class="sortkey" tal:content="drlang/updatesCount">0</span>
+          <tal:count
+            tal:condition="drlang/updatesCount"
+            tal:replace="drlang/updatesCount">0</tal:count>
+          <tal:count condition="not: drlang/updatesCount">
+            &mdash;
+          </tal:count>
+        </td>
       </tr>
     </tbody>
   </table>

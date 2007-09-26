@@ -6,16 +6,6 @@
     />
 
   <vocabulary
-    name="BountyDifficulty"
-    factory="canonical.launchpad.vocabularies.BountyDifficultyVocabulary"
-    />
-
-  <vocabulary
-    name="BountyStatus"
-    factory="canonical.launchpad.vocabularies.BountyStatusVocabulary"
-    />
-
-  <vocabulary
     name="BranchReviewStatus"
     factory="canonical.launchpad.vocabularies.BranchReviewStatusVocabulary"
     />
@@ -191,11 +181,6 @@
     />
 
   <vocabulary
-    name="PackagingType"
-    factory="canonical.launchpad.vocabularies.PackagingTypeVocabulary"
-    />
-
-  <vocabulary
     name="PersonAccountToMerge"
     factory="canonical.launchpad.vocabularies.PersonAccountToMergeVocabulary"
     />
@@ -208,16 +193,6 @@
   <vocabulary
     name="PersonTeamParticipations"
     factory="canonical.launchpad.vocabularies.person_team_participations_vocabulary_factory"
-    />
-
-  <vocabulary
-    name="PollAlgorithm"
-    factory="canonical.launchpad.vocabularies.PollAlgorithmVocabulary"
-    />
-
-  <vocabulary
-    name="PollSecrecy"
-    factory="canonical.launchpad.vocabularies.PollSecrecyVocabulary"
     />
 
   <vocabulary
@@ -266,11 +241,6 @@
     />
 
   <vocabulary
-    name="RevisionControlSystems"
-    factory="canonical.launchpad.vocabularies.RevisionControlSystemsVocabulary"
-    />
-
-  <vocabulary
     name="SpecificationDependencies"
     factory="canonical.launchpad.vocabularies.SpecificationDependenciesVocabulary"
     />
@@ -283,11 +253,6 @@
   <vocabulary
     name="Sprint"
     factory="canonical.launchpad.vocabularies.SprintVocabulary"
-    />
-
-  <vocabulary
-    name="TextDirection"
-    factory="canonical.launchpad.vocabularies.TextDirectionVocabulary"
     />
 
   <vocabulary
@@ -308,11 +273,6 @@
   <vocabulary
     name="TranslationPermission"
     factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
-    />
-
-  <vocabulary
-    name="UpstreamFileType"
-    factory="canonical.launchpad.vocabularies.UpstreamFileTypeVocabulary"
     />
 
   <vocabulary
