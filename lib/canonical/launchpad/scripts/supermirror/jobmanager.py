@@ -8,8 +8,8 @@ import sys
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 import canonical
+from canonical.codehosting import branch_id_to_path
 from canonical.config import config
-from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)
 
@@ -57,7 +57,7 @@ class JobManager:
 
     def getBranchToMirror(self, branch_id, branch_src, unique_name):
         branch_src = branch_src.strip()
-        path = branchtarget(branch_id)
+        path = branch_id_to_path(branch_id)
         branch_dest = os.path.join(config.supermirror.branchesdest, path)
         return BranchToMirror(
             branch_src, branch_dest, self.branch_status_client, branch_id,

@@ -6,11 +6,11 @@ import unittest
 
 import bzrlib
 
+from canonical.codehosting import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)
-from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
 from canonical.launchpad.scripts.supermirror.tests import createbranch
 from canonical.launchpad.scripts.supermirror import jobmanager
 from canonical.authserver.client.branchstatus import BranchStatusClient
@@ -192,7 +192,7 @@ class TestJobManagerInLaunchpad(unittest.TestCase):
         if target == None:
             targetdir = None
         else:
-            targetdir = os.path.join(self.testdir, branchtarget(target))
+            targetdir = os.path.join(self.testdir, branch_id_to_path(target))
         return BranchToMirror(
                 branchdir, targetdir, branch_status_client, target,
                 unique_name, branch_type=None)
@@ -210,4 +210,3 @@ class FakeBranchStatusClient:
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

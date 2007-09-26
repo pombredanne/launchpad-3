@@ -23,7 +23,7 @@ from canonical.codehosting.tests.helpers import (
     adapt_suite, deferToThread, ServerTestCase)
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
-from canonical.codehosting.transport import branch_id_to_path
+from canonical.codehosting import branch_id_to_path
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import database
