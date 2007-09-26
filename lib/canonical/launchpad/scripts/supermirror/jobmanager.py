@@ -53,17 +53,14 @@ class JobManager:
     def _addBranches(self, branches_to_pull):
         for branch_id, branch_src, unique_name in branches_to_pull:
             self.branches_to_mirror.append(
-                self.getBranchToMirror(
-                    self.branch_status_client, branch_id, branch_src,
-                    unique_name))
+                self.getBranchToMirror(branch_id, branch_src, unique_name))
 
-    def getBranchToMirror(self, branch_status_client, branch_id, branch_src,
-                          unique_name):
+    def getBranchToMirror(self, branch_id, branch_src, unique_name):
         branch_src = branch_src.strip()
         path = branchtarget(branch_id)
         branch_dest = os.path.join(config.supermirror.branchesdest, path)
         return BranchToMirror(
-            branch_src, branch_dest, branch_status_client, branch_id,
+            branch_src, branch_dest, self.branch_status_client, branch_id,
             unique_name, self.branch_type)
 
     def lock(self):
@@ -76,10 +73,9 @@ class JobManager:
     def unlock(self):
         self.actualLock.release()
 
-    def recordActivity(self, branch_status_client,
-                       date_started, date_completed):
+    def recordActivity(self, date_started, date_completed):
         """Record successful completion of the script."""
-        branch_status_client.recordSuccess(
+        self.branch_status_client.recordSuccess(
             self.name, socket.gethostname(), date_started, date_completed)
 
 

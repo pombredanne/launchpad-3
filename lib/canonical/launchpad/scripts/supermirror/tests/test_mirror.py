@@ -36,13 +36,13 @@ class TestMirrorCommand(unittest.TestCase):
     def testMainRunsManager(self):
         self.startMirror()
         call_log = MockJobManager.instances[-1]._call_log
-        self.assertEquals(6, len(call_log))
-        self.assertEquals(call_log[0], ("__init__",))
-        self.assertEquals(call_log[1], ("lock",))
-        self.assertEquals(call_log[2], ("addBranches",))
-        self.assertEquals(call_log[3], ("run", self.logger))
-        self.assertEquals(call_log[4], ("activity",))
-        self.assertEquals(call_log[5], ("unlock",))
+        self.assertEquals(
+            call_log, [
+                ("__init__",),
+                ("lock",),
+                ("run", self.logger),
+                ("activity",),
+                ("unlock",)])
 
     def startMirror(self):
         self.assertEqual(0, mirror(self.logger, MockJobManager()))
@@ -60,12 +60,11 @@ class TestMockJobManager(unittest.TestCase):
         # maybe
         manager = MockJobManager()
         manager.lock()
-        manager.addBranches(None)
         manager.unlock()
         # we want a list of tuples, one tuple for each api called.
         self.assertEquals(
             manager._call_log,
-            [("__init__",), ("lock",), ("addBranches",), ("unlock",)])
+            [("__init__",), ("lock",), ("unlock",)])
 
 
 class MockJobManager:
@@ -83,9 +82,6 @@ class MockJobManager:
         MockJobManager.locked = True
         self._call_log.append(("lock",))
 
-    def addBranches(self, client):
-        self._call_log.append(("addBranches",))
-
     def unlock(self):
         MockJobManager.locked = False
         self._call_log.append(("unlock",))
@@ -93,7 +89,7 @@ class MockJobManager:
     def run(self, logger):
         self._call_log.append(("run", logger))
 
-    def recordActivity(self, client, started, completed):
+    def recordActivity(self, started, completed):
         self._call_log.append(("activity",))
 
 
