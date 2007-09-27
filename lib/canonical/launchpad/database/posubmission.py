@@ -138,6 +138,7 @@ class POSubmissionSet:
                 POTMsgSet.primemsgid IN %(wanted_primemsgids)s AND
                 NOT POMsgSet.isfuzzy AND
                 NOT %(one_of_ours)s
+            ON COMMIT DROP
             """ % parameters)
         cur.execute(
             "CREATE INDEX %(temp_table)s_idx ON %(temp_table)s(id)"
