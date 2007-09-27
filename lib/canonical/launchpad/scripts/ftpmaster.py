@@ -1603,7 +1603,7 @@ class PackageRemover(SoyuzScript):
             removables.append(source)
             removables.extend(binaries)
 
-        self.logger.info("Removing:")
+        self.logger.info("Removing candidates:")
         for removable in removables:
             self.logger.info('\t%s' % removable.title)
 
