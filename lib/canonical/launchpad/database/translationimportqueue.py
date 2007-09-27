@@ -25,11 +25,12 @@ from canonical.launchpad.interfaces import (
     IDistribution, IDistroSeries, IHasTranslationImports, ILanguageSet,
     IPerson, IPOFileSet, IPOTemplateSet, IProduct, IProductSeries,
     ISourcePackage, ITranslationImporter, ITranslationImportQueue,
-    ITranslationImportQueueEntry, NotFoundError)
+    ITranslationImportQueueEntry, NotFoundError, RosettaImportStatus,
+    TranslationFileFormat)
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.lp.dbschema import RosettaImportStatus, TranslationFileFormat
 
 from canonical.launchpad.database.pillar import pillar_sort_key
+
 
 # Number of days when the DELETED and IMPORTED entries are removed from the
 # queue.

@@ -142,6 +142,7 @@ from canonical.launchpad.interfaces.teammembership import *
 from canonical.launchpad.interfaces.temporaryblobstorage import *
 from canonical.launchpad.interfaces.translationcommonformat import *
 from canonical.launchpad.interfaces.translationexporter import *
+from canonical.launchpad.interfaces.translationfileformat import *
 from canonical.launchpad.interfaces.translationimporter import *
 from canonical.launchpad.interfaces.translations import *
 from canonical.launchpad.interfaces.question import *

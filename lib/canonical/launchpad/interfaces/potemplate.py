@@ -14,6 +14,8 @@ from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageName)
 from canonical.launchpad import _
+from canonical.lazr import DBEnumeratedType, DBItem
+
 
 __metaclass__ = type
 
@@ -24,11 +26,46 @@ __all__ = [
     'IPOTemplateSubset',
     'IPOTemplateWithContent',
     'LanguageNotFound',
+    'TranslationPriority',
     ]
 
 
 class LanguageNotFound(NotFoundError):
     """Raised when a a language does not exist in the database."""
+
+
+class TranslationPriority(DBEnumeratedType):
+    """Translation Priority
+
+    Translations in Rosetta can be assigned a priority. This is used in a
+    number of places. The priority stored on the translation itself is set
+    by the upstream project maintainers, and used to identify the
+    translations they care most about. For example, if Apache were nearing a
+    big release milestone they would set the priority on those POTemplates
+    to 'high'. The priority is also used by TranslationEfforts to indicate
+    how important that POTemplate is to the effort. And lastly, an
+    individual translator can set the priority on his personal subscription
+    to a project, to determine where it shows up on his list.  """
+
+    HIGH = DBItem(1, """
+        High
+
+        This translation should be shown on any summary list of translations
+        in the relevant context. For example, 'high' priority projects show
+        up on the home page of a TranslationEffort or Project in Rosetta.
+        """)
+
+    MEDIUM = DBItem(2, """
+        Medium
+
+        A medium priority POTemplate should be shown on longer lists and
+        dropdowns lists of POTemplates in the relevant context.  """)
+
+    LOW = DBItem(3, """
+        Low
+
+        A low priority POTemplate should only show up if a comprehensive
+        search or complete listing is requested by the user.  """)
 
 
 class IHasTranslationTemplates(Interface):
