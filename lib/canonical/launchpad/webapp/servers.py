@@ -251,6 +251,12 @@ class LaunchpadRequestPublicationFactory:
                     self._thread_local.host = (
                         config.launchpad.vhosts.xmlrpc_private.hostname)
                     return True
+                if (server.address[1] == port and
+                    server.type == 'FeedsHTTP'):
+                    # This request came over the feeds port.
+                    self._thread_local.host = (
+                        config.launchpad.vhosts.feeds.hostname)
+                    return True
 
         host = environment['HTTP_HOST']
         if ":" in host:
@@ -815,6 +821,27 @@ class PrivateXMLRPCPublication(PublicXMLRPCPublication):
 class PrivateXMLRPCRequest(PublicXMLRPCRequest):
     """Request type for doing private XML-RPC in Launchpad."""
     # For now, the same as public requests.
+
+
+class FeedsPublication(XXX):
+    """The publication used for Launchpad feed requests."""
+
+    root_object_interface = IFeedsApplication
+
+    def traverseName(self, request, ob, name):
+        """Traverse to an end point or let normal traversal do its thing."""
+        assert isinstance(request, FeedsRequest), (
+            'Not a feeds request')
+        missing = object()
+        end_point = getattr(ob, name, missing)
+        if end_point is missing:
+            return super(FeedsPublication, self).traverseName(
+                request, ob, name)
+        return end_point
+
+
+class FeedsRequest(XXX):
+    """Request type for a launchpad feed."""
 
 
 # ---- openid
