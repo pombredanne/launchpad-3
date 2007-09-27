@@ -20,9 +20,9 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (cursor, SQLBase, sqlvalues)
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
-    ICodeImport, ICodeImportSet, ILaunchpadCelebrities, NotFoundError)
-from canonical.lp.dbschema import (
-    CodeImportReviewStatus, RevisionControlSystems)
+    ICodeImport, ICodeImportSet, ILaunchpadCelebrities, NotFoundError,
+    RevisionControlSystems)
+from canonical.lp.dbschema import CodeImportReviewStatus
 
 
 class CodeImport(SQLBase):

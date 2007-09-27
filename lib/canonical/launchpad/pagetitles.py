@@ -1042,13 +1042,13 @@ series_bug_nominations = ContextDisplayName('Bugs nominated for %s')
 
 shipit_adminrequest = 'ShipIt admin request'
 
-shipit_index = 'ShipIt'
-
-shipit_index_new = 'ShipIt'
-
 shipit_exports = 'ShipIt exports'
 
 shipit_forbidden = 'Forbidden'
+
+shipit_index = 'ShipIt'
+
+shipit_login = 'ShipIt'
 
 shipit_myrequest = "Your ShipIt order"
 

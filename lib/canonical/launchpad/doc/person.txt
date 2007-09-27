@@ -82,6 +82,21 @@ a user account when its first email address is confirmed)
     >>> p.account_status
     <DBItem AccountStatus.ACTIVE...
 
+In the case of teams, though, the account_status is not changed as their
+account_status must always be set to NOACCOUNT.
+
+    >>> shipit_admins = personset.getByName('shipit-admins')
+    >>> shipit_admins.account_status
+    <DBItem AccountStatus.NOACCOUNT...
+
+    >>> emailset = getUtility(IEmailAddressSet)
+    >>> email = emailset.new('foo@baz.com', shipit_admins)
+    >>> shipit_admins.setPreferredEmail(email)
+    >>> email.status
+    <DBItem EmailAddressStatus.PREFERRED...
+    >>> shipit_admins.account_status
+    <DBItem AccountStatus.NOACCOUNT...
+
 When a new sourcepackage is imported and a Person entry has to be created
 because we don't know about the maintainer of that package, the code to create
 the person should look like this:

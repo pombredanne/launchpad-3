@@ -17,10 +17,10 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import ITranslationFormatImporter
+from canonical.launchpad.interfaces import (
+    ITranslationFormatImporter, TranslationFileFormat)
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
-from canonical.lp.dbschema import TranslationFileFormat
 
 
 class KdePOImporter(GettextPOImporter):

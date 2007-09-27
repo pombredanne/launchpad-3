@@ -4,9 +4,9 @@
     i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1 tal:content="context/title">pmount 0.1-1 in Fooix 6.04</h1>
-    </metal:heading>
+<metal:heading fill-slot="pageheading">
+  <h1>Source package overview</h1>
+</metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -19,18 +19,26 @@
 
 <div metal:fill-slot="main">
 
-  <h2>Changelog</h2>
+  <h2>Publishing history</h2>
 
-  <pre id="changelog" tal:content="context/sourcepackagerelease/changelog" />
-
-   <div id="changesfile" tal:define="changesfile context/changesfile">
-     <p tal:condition="changesfile">
-        <a tal:attributes="href changesfile/http_url">
-           View changesfile
-        </a>
-     </p>
-     <p tal:condition="not: changesfile">No changesfile available.</p>
-   </div>
+  <table class="listing">
+    <thead>
+    <tr>
+        <th>When</th>
+        <th>Status</th>
+        <th>Target</th>
+        <th>Pocket</th>
+        <th>Component</th>
+        <th>Section</th>
+        <th>Version</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tal:block repeat="publishing context/publishing_history"
+                 replace="structure publishing/@@+listing-detailed">
+      </tal:block>
+    </tbody>
+  </table>
 
   <h2>Download</h2>
 
@@ -43,6 +51,19 @@
         </li>
      </ul>
      <p tal:condition="not:context/files">No files available for download.</p>
+   </div>
+
+  <h2>Changelog</h2>
+
+  <pre id="changelog" tal:content="context/sourcepackagerelease/changelog" />
+
+   <div id="changesfile" tal:define="changesfile context/changesfile">
+     <p tal:condition="changesfile">
+        <a tal:attributes="href changesfile/http_url">
+           View changesfile
+        </a>
+     </p>
+     <p tal:condition="not: changesfile">No changesfile available.</p>
    </div>
 
 </div>

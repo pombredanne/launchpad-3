@@ -43,7 +43,6 @@
         </div>
         <div class="three column middle">
           <h2 style="margin-bottom: 0">What&#8217;s new in 1.1.9</h2>
-          <div class="lesser">(Updated 2007-09-21)</div>
           <ul class="news">
             <li>
               <a href="https://help.launchpad.net/BazaarSSH"
@@ -78,8 +77,10 @@
                  features.</a>
             </li>
           </ul>
-          <div style="text-align: right"><a 
-              href="http://news.launchpad.net">More...</a></div>
+          <div class="discreet" style="text-align: right">
+            Updated 2007-09-21.
+            <a href="http://news.launchpad.net">More...</a>
+          </div>
         </div>
         <div class="three column right">
           <h2>Featured projects</h2>
