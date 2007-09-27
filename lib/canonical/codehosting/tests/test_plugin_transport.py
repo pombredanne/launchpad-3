@@ -9,7 +9,6 @@ import tempfile
 import unittest
 
 from bzrlib import errors
-from bzrlib.branch import Branch
 from bzrlib.transport import get_transport, _get_protocol_handlers
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
 from bzrlib.tests import TestCase
