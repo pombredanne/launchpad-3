@@ -73,7 +73,8 @@
 
   <tal:no-current-order condition="not: view/current_order">
     <h1 tal:condition="not: view/current_order">
-      Request <span tal:replace="view/flavour/title" /> 7.04 (Feisty Fawn) CDs
+      Request <span tal:replace="view/flavour/title" />
+      <span tal:replace="view/series/title" /> CDs
     </h1>
 
     <p class="informational message">
@@ -242,7 +243,8 @@
   <h1>ShipIt is currently closed</h1>
 
   <p class="informational message">We'll be back in a few days, shipping
-  <span tal:replace="view/flavour/title" /> 7.04 (Feisty Fawn) CDs.
+  <span tal:replace="view/flavour/title" />
+  <span tal:replace="view/series/title" /> CDs.
   </p>
 
   <tal:pastrequests condition="view/user/pastShipItRequests"

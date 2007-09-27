@@ -17,50 +17,50 @@
       </p>
 
       <h2>Current language packs</h2>
-      <ul>
-        <li>
+      <dl>
+        <dt>
+          <img tal:condition="context/language_pack_base"
+               alt="download icon" src="/@@/download" />
+          Base pack: 
           <a tal:condition="context/language_pack_base"
              tal:attributes="href context/language_pack_base/file/http_url">
-            <img alt="download icon" src="/@@/download" />
+            <tal:export-date
+              replace="context/language_pack_base/date_exported/fmt:datetime" />
           </a>
-          Base pack: 
-          <tal:export-date
-            condition="context/language_pack_base"
-            replace="context/language_pack_base/date_exported/fmt:datetime" />
           <tal:not-export-date condition="not: context/language_pack_base">
             none yet
           </tal:not-export-date>
           <br />A complete set of translations for the OS.
-        </li>
-        <li>
+        </dt>
+        <dt>
+          <img tal:condition="context/language_pack_delta"
+               alt="download icon" src="/@@/download" />
+          Delta pack: 
           <a tal:condition="context/language_pack_delta"
              tal:attributes="href context/language_pack_delta/file/http_url">
-            <img alt="download icon" src="/@@/download" />
+            <tal:export-date
+              replace="context/language_pack_delta/date_exported/fmt:datetime" />
           </a>
-          Delta pack: 
-          <tal:export-date
-            condition="context/language_pack_delta"
-            replace="context/language_pack_delta/date_exported/fmt:datetime" />
           <tal:not-export-date condition="not: context/language_pack_delta">
             none yet
           </tal:not-export-date>
           <br />Translation updates, applied on top of the base pack.
-        </li>
-      </ul>
+        </dt>
+      </dl>
 
       <h2>Language pack being tested</h2>
       <dl tal:condition="context/language_pack_proposed">
         <dt>
-          <a tal:attributes="
-                href context/language_pack_proposed/file/http_url">
-            <img alt="download icon" src="/@@/download" />
-          </a>
+          <img alt="download icon" src="/@@/download" />
           <tal:type content="context/language_pack_proposed/type/name" />
           language pack:
-          <tal:export-date
-            condition="context/language_pack_proposed"
-            replace="context/language_pack_proposed/date_exported/fmt:datetime"
-            />
+          <a tal:attributes="
+                href context/language_pack_proposed/file/http_url">
+            <tal:export-date
+              condition="context/language_pack_proposed"
+              replace="context/language_pack_proposed/date_exported/fmt:datetime"
+              />
+          </a>
           <br />This one is bein tested to become the new
           <tal:type content="context/language_pack_proposed/type/name" />
           language pack.
@@ -72,16 +72,16 @@
 
       <tal:has-unused condition="view/unused_language_packs">
         <h2>Currently unused language packs</h2>
-        <ul>
-          <li tal:repeat="lang_pack view/unused_language_packs">
-            <a tal:attributes="href lang_pack/file/http_url">
-              <img alt="download icon" src="/@@/download" />
-            </a>
+        <dl>
+          <dt tal:repeat="lang_pack view/unused_language_packs">
+            <img alt="download icon" src="/@@/download" />
             <tal:type content="lang_pack/type/title" /> language pack: 
-            <tal:date-exported
-                content="lang_pack/date_exported/fmt:datetime" />.
-          </li>
-        </ul>
+            <a tal:attributes="href lang_pack/file/http_url">
+              <tal:date-exported
+                content="lang_pack/date_exported/fmt:datetime" />
+            </a>.
+          </dt>
+        </dl>
       </tal:has-unused>
     </div>
   </body>

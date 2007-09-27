@@ -11,10 +11,8 @@ from zope.interface import implements
 from canonical.database.sqlbase import (SQLBase, sqlvalues)
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import TranslationFileFormat
-
 from canonical.launchpad.interfaces import (
-    IPOExportRequestSet, IPOExportRequest, IPOTemplate)
+    IPOExportRequestSet, IPOExportRequest, IPOTemplate, TranslationFileFormat)
 
 
 class POExportRequestSet:

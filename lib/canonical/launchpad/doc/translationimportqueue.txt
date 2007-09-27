@@ -16,11 +16,11 @@ Here we have some imports and utility fetch.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import ITranslationImportQueue
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces import RosettaImportStatus
     >>> from canonical.launchpad.database import ProductSeries
     >>> from canonical.launchpad.database import DistroSeries
     >>> from canonical.launchpad.database import SourcePackageName
     >>> from canonical.launchpad.ftests import login
-    >>> from canonical.lp.dbschema import RosettaImportStatus
     >>> translationimportqueue = getUtility(ITranslationImportQueue)
     >>> rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
 

@@ -9,9 +9,8 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IPOExportRequestSet, ITranslationExporter)
+    IPOExportRequestSet, ITranslationExporter, TranslationFileFormat)
 from canonical.launchpad.webapp import (canonical_url, LaunchpadView)
-from canonical.lp.dbschema import TranslationFileFormat
 
 
 class BaseExportView(LaunchpadView):
