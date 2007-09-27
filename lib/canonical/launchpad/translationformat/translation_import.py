@@ -20,7 +20,8 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     IPersonSet, ITranslationExporter, ITranslationImporter,
     NotExportedFromLaunchpad, OutdatedTranslationError,
-    PersonCreationRationale, TranslationConflict, TranslationConstants)
+    PersonCreationRationale, RosettaImportStatus, TranslationConflict,
+    TranslationConstants, TranslationFileFormat)
 from canonical.launchpad.translationformat.kde_po_importer import (
     KdePOImporter)
 from canonical.launchpad.translationformat.gettext_po_importer import (
@@ -28,8 +29,6 @@ from canonical.launchpad.translationformat.gettext_po_importer import (
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     MozillaXpiImporter)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import (
-    RosettaImportStatus, TranslationFileFormat)
 
 importers = {
     TranslationFileFormat.KDEPO: KdePOImporter(),

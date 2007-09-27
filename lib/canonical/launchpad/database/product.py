@@ -46,10 +46,9 @@ from canonical.launchpad.interfaces import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, ICalendarOwner, IFAQTarget,
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, IPersonSet, IProduct, IProductSet,
-    IQuestionTarget, NotFoundError, SpecificationSort, SpecificationFilter,
-    SpecificationDefinitionStatus, SpecificationImplementationStatus,
-    QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.lp.dbschema import TranslationPermission
+    IQuestionTarget, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
+    SpecificationSort, SpecificationFilter, SpecificationDefinitionStatus,
+    SpecificationImplementationStatus, TranslationPermission)
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,

@@ -5,6 +5,7 @@ Let's have a look at the requests that are still pending approval.
     >>> browser = setupBrowser(auth='Basic marilize@hbd.com:test')
     >>> browser.open('http://shipit.ubuntu.dev/requests')
     >>> browser.getControl(name='statusfilter').value = ['PENDING']
+    >>> browser.getControl(name='seriesfilter').value = ['FEISTY']
     >>> browser.getControl('Show').click()
     >>> print extract_text(find_tag_by_id(browser.contents, 'results'))
     1 ... of 2 results...

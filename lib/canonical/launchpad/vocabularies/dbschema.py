@@ -29,6 +29,8 @@ __all__ = [
 from canonical.lp import dbschema
 
 from canonical.launchpad.webapp.vocabulary import vocab_factory
+from canonical.launchpad.interfaces import (
+    TranslationFileFormat, TranslationPermission)
 
 
 # DB Schema Vocabularies
@@ -51,5 +53,5 @@ InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 PackagePublishingPocketVocabulary = vocab_factory(
     dbschema.PackagePublishingPocket)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
-TranslationFileFormatVocabulary = vocab_factory(dbschema.TranslationFileFormat)
-TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
+TranslationFileFormatVocabulary = vocab_factory(TranslationFileFormat)
+TranslationPermissionVocabulary = vocab_factory(TranslationPermission)
