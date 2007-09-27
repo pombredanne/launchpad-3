@@ -20,12 +20,11 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     ICalendarOwner, IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct,
     IProject, IProjectSet, ISearchableByQuestionOwner, NotFoundError,
-    QUESTION_STATUS_DEFAULT_SEARCH)
+    QUESTION_STATUS_DEFAULT_SEARCH, TranslationPermission)
 
 from canonical.lp.dbschema import (
-    TranslationPermission, ImportStatus, SpecificationSort,
-    SpecificationFilter, SprintSpecificationStatus,
-    SpecificationImplementationStatus)
+    ImportStatus, SpecificationSort, SpecificationFilter,
+    SprintSpecificationStatus, SpecificationImplementationStatus)
 
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
