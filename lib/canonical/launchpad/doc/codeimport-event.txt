@@ -1,0 +1,137 @@
+= Code Import Events =
+
+The code-import events record the audit trail of the the code import
+system. Events record a log that can be used to diagnose the interaction
+of the multiple moving parts that form the code-import system and to
+measure the quality of the service.
+
+CodeImports are hidden from regular users currently. David Allouche is a
+member of the vcs-imports team and can access the objects freely.
+
+    >>> login('david.allouche@canonical.com')
+
+== Creating Events ==
+
+Events of each type are created by separate methods in the
+ICodeImportEventSet utility.
+
+    >>> from zope.component import getUtility
+    >>> from zope.interface.verify import verifyObject
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces import ICodeImportEventSet
+    >>> event_set = getUtility(ICodeImportEventSet)
+    >>> verifyObject(ICodeImportEventSet, removeSecurityProxy(event_set))
+    True
+
+To easily verify objects returned by the individual event creation
+methods, we define a small helper function:
+
+    >>> from canonical.launchpad.interfaces import ICodeImportEvent
+    >>> def verify_event(event):
+    ...     if verifyObject(ICodeImportEvent, removeSecurityProxy(event)):
+    ...         print event.event_type.name
+    ...     else:
+    ...         print "verifyObject failed"
+
+To help us test the output of the items() method, we define a helper
+function that do not print values which are potentially unstable
+database ids.
+
+    >>> def print_items(event):
+    ...     if len(event.items()) == 0:
+    ...         print '<nothing>'
+    ...     for k, v in sorted(event.items()):
+    ...         if k.name in ('BRANCH', 'CODE_IMPORT'):
+    ...             print k.name, '<muted>'
+    ...         else:
+    ...             print k.name, repr(v)
+
+
+=== CREATE ===
+
+When a CodeImport is created, a CREATE event should be recorded. Any
+authenticated user can create a CodeImport.
+
+Creating a CodeImport is complicated, and we will create two of them, so
+we define a helper function. Since CodeImportSet.new should record the
+CodeImportEvent, we need to use the CodeImport constructor directly.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     CodeImportEventDataType, BranchType, ILaunchpadCelebrities,
+    ...     IBranchSet, IPersonSet, IProductSet)
+    >>> from canonical.launchpad.database import CodeImport
+
+    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+
+    >>> def new_code_import(name, **kw_details):
+    ...     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+    ...     product = getUtility(IProductSet).getByName('firefox')
+    ...     import_branch = getUtility(IBranchSet).new(
+    ...         BranchType.IMPORTED,
+    ...         name, vcs_imports, vcs_imports, product,
+    ...         None, 'Import branch')
+    ...     return CodeImport(
+    ...         registrant=nopriv, owner=nopriv, branch=import_branch,
+    ...         **kw_details)
+
+First we create a Subversion import.
+
+    >>> from canonical.launchpad.interfaces import RevisionControlSystems
+    >>> svn_url = 'svn://svn.example.com/trunk'
+    >>> svn_import = new_code_import('svn-trunk',
+    ...     rcs_type=RevisionControlSystems.SVN, svn_branch_url=svn_url)
+
+CodeImportSet.newCreate creates an event from the new CodeImport object
+and the person that created it. Here, the creator is the nopriv user.
+
+    >>> svn_create_event = event_set.newCreate(svn_import, nopriv)
+    >>> verify_event(svn_create_event)
+    CREATE
+    >>> print svn_create_event.person.name
+    no-priv
+    >>> svn_create_event.code_import == svn_import
+    True
+
+The initial import details are recorded in the event, and can be
+retrieved using the items() method.
+
+    >>> print_items(svn_create_event)
+    CODE_IMPORT <muted>
+    BRANCH <muted>
+    OWNER u'52'
+    REVIEW_STATUS u'NEW'
+    ASSIGNEE None
+    UPDATE_INTERVAL None
+    SVN_BRANCH_URL u'svn://svn.example.com/trunk'
+
+The database IDs of the CodeImport and its associated branch are also
+recorded. They are useful to collate events associated to deleted
+CodeImport objects.
+
+    >>> event_dict = dict(svn_create_event.items())
+    >>> event_dict[CodeImportEventDataType.CODE_IMPORT] == (
+    ...     unicode(svn_import.id))
+    True
+    >>> event_dict[CodeImportEventDataType.BRANCH] == (
+    ...     unicode(svn_import.branch.id))
+    True
+
+Different source details are recorded according to the type of the
+import source. For a CVS import, CVS details are recorded instead of the
+Subversion URL.
+
+    >>> cvs_import = new_code_import('cvs-main',
+    ...     rcs_type=RevisionControlSystems.CVS,
+    ...     cvs_root=':pserver:anonymous@cvs.example.com:/cvsroot',
+    ...     cvs_module='hello')
+    >>> cvs_create_event = event_set.newCreate(cvs_import, nopriv)
+    >>> print_items(cvs_create_event)
+    CODE_IMPORT <muted>
+    BRANCH <muted>
+    OWNER u'52'
+    REVIEW_STATUS u'NEW'
+    ASSIGNEE None
+    UPDATE_INTERVAL None
+    CVS_ROOT u':pserver:anonymous@cvs.example.com:/cvsroot'
+    CVS_MODULE u'hello'
+
