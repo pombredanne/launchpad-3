@@ -4,6 +4,11 @@
 
 import xmlrpclib
 
+from canonical.launchpad.interfaces import (
+    IEmailAddressSet, IMailingListSet, IPersonSet, MailingListStatus,
+    PersonCreationRationale, TeamSubscriptionPolicy)
+from zope.component import getUtility
+
 
 def fault_catcher(func):
     """Decorator for displaying Faults in a cross-compatible way.
@@ -71,3 +76,50 @@ def mailingListPrintInfo(info):
         subscribees = info[team_name]
         for address, realname, flags, status in subscribees:
             print '   ', address, realname, flags, status
+
+
+def mailingListNewTeam(team_name, with_list=False):
+    """A helper function for the mailinglist doctests.
+
+    This just provides a convenience function for creating the kinds of teams
+    we need to use in the doctest.
+    """
+    displayname = ' '.join(word.capitalize() for word in team_name.split('-'))
+    # XXX BarryWarsaw Set the team's subscription policy to OPEN because of
+    # bug 125505.
+    policy = TeamSubscriptionPolicy.OPEN
+    personset = getUtility(IPersonSet)
+    ddaa = personset.getByName('ddaa')
+    team = personset.newTeam(ddaa, team_name, displayname,
+                             subscriptionpolicy=policy)
+    if not with_list:
+        return team
+    carlos = personset.getByName('carlos')
+    list_set = getUtility(IMailingListSet)
+    team_list = list_set.new(team)
+    team_list.review(carlos, MailingListStatus.APPROVED)
+    team_list.startConstructing()
+    team_list.transitionToStatus(MailingListStatus.ACTIVE)
+    return team, team_list
+
+
+def mailingListNewPerson(first_name):
+    """Create a new person with the given first name.
+
+    The person will be given two email addresses, with the 'long form'
+    (e.g. anne.person@example.com) as the preferred address.  Return the new
+    person object.
+    """
+    variable_name = first_name.lower()
+    full_name = first_name + ' Person'
+    # E.g. firstname.person@example.com will be an alternative address.
+    preferred_address = variable_name + '.person@example.com'
+    # E.g. aperson@example.org will be the preferred address.
+    alternative_address = variable_name[0] + 'person@example.org'
+    person, email = getUtility(IPersonSet).createPersonAndEmail(
+        preferred_address,
+        PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
+        name=variable_name, displayname=full_name)
+    person.setPreferredEmail(email)
+    getUtility(IEmailAddressSet).new(alternative_address, person)
+    return person
