@@ -94,7 +94,8 @@ class PouringLoop:
         # Disable slow sequential scans.  These may happen a lot otherwise
         # because the database server is reluctant to use indexes on tables
         # that undergo large changes.  We do this for every commit since
-        # psycopg1 resets our database connection with every new transaction.
+        # initZopeless resets our database connection with every new
+        # transaction.
         postgresql.allow_sequential_scans(self.cur, False)
 
     def prepareBatch(self, from_table, to_table, batch_size, begin_id, end_id):
