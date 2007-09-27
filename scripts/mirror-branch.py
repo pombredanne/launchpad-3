@@ -75,4 +75,4 @@ if __name__ == '__main__':
 
     BranchToMirror(
         source_url, destination_url, branch_status_client, int(branch_id),
-        unique_name, branch_type).mirror(log)
+        unique_name, branch_type, log).mirror()

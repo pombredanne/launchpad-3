@@ -92,11 +92,8 @@ class JobManager:
             'scripts/mirror-branch.py')
         deferred = defer.Deferred()
         protocol = FireOnExit(deferred, INACTIVITY_TIMEOUT)
-        reactor.spawnProcess(
-            protocol, sys.executable,
-            [sys.executable, path_to_script, branch_to_mirror.source,
-             branch_to_mirror.dest, str(branch_to_mirror.branch_id),
-             branch_to_mirror.unique_name, self.branch_type.name])
+        command = [sys.executable, path_to_script] + branch_to_mirror
+        reactor.spawnProcess(protocol, sys.executable, command)
         return deferred
 
     def _addBranches(self, branches_to_pull):
@@ -108,9 +105,9 @@ class JobManager:
         branch_src = branch_src.strip()
         path = branch_id_to_path(branch_id)
         branch_dest = os.path.join(config.supermirror.branchesdest, path)
-        return BranchToMirror(
-            branch_src, branch_dest, self.branch_status_client, branch_id,
-            unique_name, self.branch_type)
+        return [
+            branch_src, branch_dest, str(branch_id), unique_name,
+            self.branch_type.name]
 
     def lock(self):
         self.actualLock = GlobalLock(self.lockfilename)

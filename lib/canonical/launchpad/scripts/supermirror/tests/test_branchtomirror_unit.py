@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import logging
 import unittest
 
 from canonical.launchpad.scripts.supermirror import branchtomirror
@@ -98,7 +99,8 @@ class TestCanonicalUrl(unittest.TestCase):
         assert branch.unique_name == '~' + unique_name
         branch_to_mirror = branchtomirror.BranchToMirror(
             src=None, dest=None, branch_status_client=None,
-            branch_id=None, unique_name=unique_name, branch_type=None)
+            branch_id=None, unique_name=unique_name, branch_type=None,
+            logger=logging.getLogger())
         # Now check that our implementation of canonical_url is consistent with
         # the canonical one.
         self.assertEqual(

@@ -50,17 +50,6 @@ class TestJobManager(unittest.TestCase):
         manager = self.makeJobManager(BranchType.HOSTED, [])
         self.assertEqual([], manager.branches_to_mirror)
 
-    def testSingleAddBranches(self):
-        # Get a list of branches and ensure that it can add a branch object.
-        expected_branch = BranchToMirror(
-            src='managersingle',
-            dest=config.supermirror.branchesdest + '/00/00/00/00',
-            branch_status_client=None, branch_id=None, unique_name=None,
-            branch_type=None)
-        manager = self.makeJobManager(
-            BranchType.HOSTED, [(0, 'managersingle', u'name//trunk')])
-        self.assertEqual([expected_branch], manager.branches_to_mirror)
-
     def testManagerCreatesLocks(self):
         try:
             manager = self.makeJobManager(BranchType.HOSTED, [])
@@ -87,49 +76,6 @@ class TestJobManager(unittest.TestCase):
     def _removeLockFile(self):
         if os.path.exists(self.masterlock):
             os.unlink(self.masterlock)
-
-    def testImportAddBranches(self):
-        import_manager = self.makeJobManager(
-            BranchType.IMPORTED,
-            [(14, 'http://escudero.ubuntu.com:680/0000000e',
-              'vcs-imports//main')])
-        expected_branch = BranchToMirror(
-            src='http://escudero.ubuntu.com:680/0000000e',
-            dest=config.supermirror.branchesdest + '/00/00/00/0e',
-            branch_status_client=None, branch_id=None, unique_name=None,
-            branch_type=None)
-        self.assertEqual(import_manager.branches_to_mirror, [expected_branch])
-        branch_types = [branch.branch_type
-                        for branch in import_manager.branches_to_mirror]
-        self.assertEqual(branch_types, [BranchType.IMPORTED])
-
-    def testUploadAddBranches(self):
-        upload_manager = self.makeJobManager(
-            BranchType.HOSTED,
-            [(25, '/tmp/sftp-test/branches/00/00/00/19', u'name12//pushed')])
-        expected_branch = BranchToMirror(
-            src='/tmp/sftp-test/branches/00/00/00/19',
-            dest=config.supermirror.branchesdest + '/00/00/00/19',
-            branch_status_client=None, branch_id=None, unique_name=None,
-            branch_type=None)
-        self.assertEqual(upload_manager.branches_to_mirror, [expected_branch])
-        branch_types = [branch.branch_type
-                        for branch in upload_manager.branches_to_mirror]
-        self.assertEqual(branch_types, [BranchType.HOSTED])
-
-    def testMirrorAddBranches(self):
-        mirror_manager = self.makeJobManager(
-            BranchType.MIRRORED,
-            [(15, 'http://example.com/gnome-terminal/main', u'name12//main')])
-        expected_branch = BranchToMirror(
-            src='http://example.com/gnome-terminal/main',
-            dest=config.supermirror.branchesdest + '/00/00/00/0f',
-            branch_status_client=None, branch_id=None, unique_name=None,
-            branch_type=None)
-        self.assertEqual(mirror_manager.branches_to_mirror, [expected_branch])
-        branch_types = [branch.branch_type
-                        for branch in mirror_manager.branches_to_mirror]
-        self.assertEqual(branch_types, [BranchType.MIRRORED])
 
 
 class TestJobManagerInLaunchpad(TrialTestCase):
@@ -173,7 +119,10 @@ class TestJobManagerInLaunchpad(TrialTestCase):
             self._makeBranch("branchc", 3, client),
             self._makeBranch("branchd", 4, client),
             self._makeBranch("branche", 5, client)]
-        manager.branches_to_mirror = list(branches)
+        manager.branches_to_mirror = [
+            [branch.source, branch.dest, str(branch.branch_id),
+             branch.unique_name, 'HOSTED']
+            for branch in branches]
 
         deferred = manager.run(logging.getLogger())
 
@@ -200,7 +149,7 @@ class TestJobManagerInLaunchpad(TrialTestCase):
             targetdir = os.path.join(self.testdir, branch_id_to_path(target))
         return BranchToMirror(
                 branchdir, targetdir, branch_status_client, target,
-                unique_name, branch_type=None)
+                unique_name, branch_type=None, logger=logging.getLogger())
 
 
 class FakeBranchStatusClient:

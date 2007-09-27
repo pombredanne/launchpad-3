@@ -71,9 +71,9 @@ class TestBranchToMirror(unittest.TestCase):
         client = BranchStatusClient()
         to_mirror = BranchToMirror(
             srcbranchdir, destbranchdir, client, branch_id=1, unique_name=None,
-            branch_type=None)
+            branch_type=None, logger=logging.getLogger())
         tree = createbranch(srcbranchdir)
-        to_mirror.mirror(logging.getLogger())
+        to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(tree.last_revision(),
                          mirrored_branch.last_revision())
@@ -96,13 +96,13 @@ class TestBranchToMirror(unittest.TestCase):
         client = BranchStatusClient()
         to_mirror = BranchToMirror(
             srcbranchdir, destbranchdir, client, branch_id=1, unique_name=None,
-            branch_type=None)
+            branch_type=None, logger=logging.getLogger())
 
         # create empty source branch
         os.makedirs(srcbranchdir)
         tree = bzrdir.BzrDir.create_standalone_workingtree(srcbranchdir)
 
-        to_mirror.mirror(logging.getLogger())
+        to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(None, mirrored_branch.last_revision())
 
@@ -183,8 +183,8 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
         source_url = os.path.abspath('src-branch')
         to_mirror = BranchToMirror(
             source_url, 'dest-branch', client, branch_id=1, unique_name=None,
-            branch_type=None)
-        to_mirror.mirror(logging.getLogger())
+            branch_type=None, logger=logging.getLogger())
+        to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         return mirrored_branch
 
@@ -228,8 +228,9 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         client = BranchStatusClient()
         mybranch = BranchToMirror(
             non_existent_source, dest_dir, client, branch_id=1,
-            unique_name='foo/bar/baz', branch_type=None)
-        mybranch.mirror(logging.getLogger())
+            unique_name='foo/bar/baz', branch_type=None,
+            logger=logging.getLogger())
+        mybranch.mirror()
         self.failIf(os.path.exists(dest_dir), 'dest-dir should not exist')
 
     def testMissingSourceWhines(self):
@@ -239,8 +240,9 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         client.mirrorComplete(1, NULL_REVISION)
         mybranch = BranchToMirror(
             non_existent_source, "non-existent-destination",
-            client, branch_id=1, unique_name='foo/bar/baz', branch_type=None)
-        mybranch.mirror(logging.getLogger())
+            client, branch_id=1, unique_name='foo/bar/baz', branch_type=None,
+            logger=logging.getLogger())
+        mybranch.mirror()
         transaction.abort()
         branch = database.Branch.get(1)
         self.assertEqual(1, branch.mirror_failures)
@@ -265,8 +267,9 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         source_url = os.path.abspath('missingrevision')
         mybranch = BranchToMirror(
             source_url, "non-existent-destination", client, branch_id=1,
-            unique_name='foo/bar/baz', branch_type=None)
-        mybranch.mirror(logging.getLogger())
+            unique_name='foo/bar/baz', branch_type=None,
+            logger=logging.getLogger())
+        mybranch.mirror()
         transaction.abort()
         branch = database.Branch.get(1)
         self.assertEqual(1, branch.mirror_failures)
@@ -323,7 +326,8 @@ class ErrorHandlingTestCase(unittest.TestCase):
         client = StubbedBranchStatusClient()
         self.branch = StubbedBranchToMirror(
             src='foo', dest='bar', branch_status_client=client, branch_id=1,
-            unique_name='owner/product/foo', branch_type=None)
+            unique_name='owner/product/foo', branch_type=None,
+            logger=logging.getLogger())
         self.errors = []
         self.open_call_count = 0
         self.branch.testcase = self
@@ -343,7 +347,7 @@ class ErrorHandlingTestCase(unittest.TestCase):
         """Run mirror, check that we receive exactly one error, and return its
         str().
         """
-        self.branch.mirror(logging.getLogger())
+        self.branch.mirror()
         self.assertEqual(len(self.errors), 1)
         error = str(self.errors[0])
         self.errors = []
@@ -525,7 +529,7 @@ class TestCanTraverseReferences(unittest.TestCase):
         return BranchToMirror(
             src='foo', dest='bar', branch_status_client=self.client,
             branch_id=1, unique_name='owner/product/foo',
-            branch_type=branch_type)
+            branch_type=branch_type, logger=logging.getLogger())
 
     def testTrueForMirrored(self):
         """We can traverse branch references when pulling mirror branches."""
@@ -577,7 +581,8 @@ class TestCheckBranchReference(unittest.TestCase):
     def setUp(self):
         client = BranchStatusClient()
         self.branch = StubbedBranchToMirrorForCheckBranchReference(
-            'foo', 'bar', client, 1, 'owner/product/foo', None)
+            'foo', 'bar', client, 1, 'owner/product/foo', None,
+            logging.getLogger())
         self.branch.testcase = self
         self.get_branch_reference_calls = []
         self.reference_values = {}

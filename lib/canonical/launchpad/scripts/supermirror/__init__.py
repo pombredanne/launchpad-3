@@ -4,6 +4,8 @@ import datetime
 
 import pytz
 
+from twisted.internet import defer
+
 from canonical.launchpad.scripts.supermirror.jobmanager import LockError
 
 
@@ -16,7 +18,7 @@ def mirror(logger, manager):
         manager.lock()
     except LockError, exception:
         logger.info('Could not acquire lock: %s', exception)
-        return 0
+        return defer.succeed(0)
 
     date_started = datetime.datetime.now(UTC)
 
