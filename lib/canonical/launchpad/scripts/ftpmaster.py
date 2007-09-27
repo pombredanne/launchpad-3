@@ -1579,6 +1579,9 @@ class PackageRemover(SoyuzScript):
 
         Can raise SoyuzScriptError.
         """
+        # Uses SoyuzScript.setupLocation() to parse the locations options.
+        self.setupLocation()
+
         packagename = self.args[0]
 
         if self.options.user is None:
@@ -1626,4 +1629,4 @@ class PackageRemover(SoyuzScript):
             self.logger.info("No package removed (bug ?!?).")
 
         # Information returned mainly for the benefit of the test harness.
-        return removed
+        return removals

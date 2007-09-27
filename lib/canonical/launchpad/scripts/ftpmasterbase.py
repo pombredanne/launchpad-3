@@ -264,7 +264,7 @@ class SoyuzScript(LaunchpadScript):
             return False
         return True
 
-    def _setupLocation(self):
+    def setupLocation(self):
         """Setup `PackageLocation` for context distribution and suite."""
         # These can raise PackageLocationError, but we're happy to pass
         # it upwards.
@@ -302,7 +302,6 @@ class SoyuzScript(LaunchpadScript):
                 "At least one non-option argument must be given, "
                 "the packagename.")
         try:
-            self._setupLocation()
             self.mainTask()
         except (SoyuzScriptError, PackageLocationError), err:
             raise LaunchpadScriptFailure(err)
