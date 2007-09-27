@@ -124,8 +124,6 @@ class POSubmissionSet:
         # Intermediate results are kept in a temporary table.
         # This is not a good thing, and if it's any faster than a single big
         # query, that's pure coincidence.
-        # XXX: JeroenVermeulen 2007-09-02 bug=30602: Evaluate performance with
-        # this change on staging, and roll back if necessary.
         parameters['temp_table'] = 'temp_suggestion_pomsgset'
         postgresql.drop_tables(cur, [parameters['temp_table']])
         cur.execute("""
@@ -158,7 +156,7 @@ class POSubmissionSet:
                     better.pluralform = pos.pluralform AND
                     better.potranslation = pos.potranslation AND
                     better.active)
-            ORDER BY potranslation, primemsgid, pos.datecreated DESC
+            ORDER BY potranslation, primemsgid, pos.id DESC
             ) AS suggestions
             """ % parameters)
         available.update(dict(cur.fetchall()))
