@@ -58,17 +58,14 @@ __metaclass__  = type
 import commands
 import urlparse
 
-from psycopg import IntegrityError
 from sqlobject.main import SQLObjectNotFound
 
 import canonical.lp
-from canonical.launchpad.interfaces import NotFoundError
 
 from pybaz import NameParser
 
-from canonical.lp.dbschema import (
-    ManifestEntryType, ManifestEntryHint, RevisionControlSystems
-    )
+from canonical.lp.dbschema import ManifestEntryType, ManifestEntryHint
+
 from canonical.librarian.db import Library
 from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.database.constants import UTC_NOW

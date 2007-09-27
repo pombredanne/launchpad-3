@@ -18,11 +18,12 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import ITranslationFormatExporter
+from canonical.launchpad.interfaces import (
+    ITranslationFormatExporter, TranslationFileFormat)
 
 from canonical.launchpad.translationformat.gettext_po_exporter import (
     GettextPOExporter)
-from canonical.lp.dbschema import TranslationFileFormat
+
 
 class KdePOExporter(GettextPOExporter):
     """Support class for exporting legacy KDE .po files."""

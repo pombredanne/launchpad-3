@@ -49,25 +49,6 @@ vocabulary registry.
 
 == Enumerable Vocabularies ==
 
-Creating a new Enumeratable Vocabulary based on an existent dbschema
-constant:
-
-    >>> from canonical.lp import dbschema
-    >>> from canonical.launchpad.webapp.vocabulary import vocab_factory
-    >>> PackagingVocabulary = vocab_factory(dbschema.PackagingType)
-
-The right place to do it is in the file vocabularies/dbschema.py.
-Note: don't forget to registry your brand new instance for zope lookup
-in configure.zcml.
-
-
-=== PackagingVocabulary ===
-
-Reflects the available constants for Packaging.packaging field.
-
-In cases where we won't have many rows, some of the database
-vocabularies can be enumerated over.
-
 === DistroSeriesVocabulary ===
 
 Reflects the available distribution serieses.  Results are ordered by

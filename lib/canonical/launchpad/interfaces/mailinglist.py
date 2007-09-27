@@ -14,6 +14,8 @@ __all__ = [
     'IRequestedMailingListAPI',
     'MailingListAutoSubscribePolicy',
     'MailingListStatus',
+    'PersonalStanding',
+    'PostedMessageStatus',
     ]
 
 
@@ -147,6 +149,70 @@ class MailingListAutoSubscribePolicy(DBEnumeratedType):
 
         The user is automatically subscribed to any team mailing list when she
         is added to the team, regardless of who joins her to the team.
+        """)
+
+
+class PersonalStanding(DBEnumeratedType):
+    """A person's standing.
+
+    Standing is currently (just) used to determine whether a person's posts to
+    a mailing list require first-post moderation or not.  Any person with good
+    or excellent standing may post directly to the mailing list without
+    moderation.  Any person with unknown or poor standing must have their
+    first-posts moderated.
+    """
+
+    UNKNOWN = DBItem(0, """
+        Unknown standing
+
+        Nothing about this person's standing is known.
+        """)
+
+    POOR = DBItem(100, """
+        Poor standing
+
+        This person has poor standing.
+        """)
+
+    GOOD = DBItem(200, """
+        Good standing
+
+        This person has good standing and may post to a mailing list without
+        being subject to first-post moderation rules.
+        """)
+
+    EXCELLENT = DBItem(300, """
+        Excellent standing
+
+        This person has excellent standing and may post to a mailing list
+        without being subject to first-post moderation rules.
+        """)
+
+
+class PostedMessageStatus(DBEnumeratedType):
+    """The status of a posted message.
+
+    When a message posted to a mailing list is subject to first-post
+    moderation, the message gets one of these statuses.
+    """
+
+    NEW = DBItem(0, """
+        New status
+
+        The message has been posted and held for first-post moderation, but no
+        disposition of the message has yet been made.
+        """)
+
+    APPROVED = DBItem(1, """
+        Approved
+
+        A message held for first-post moderation has been approved.
+        """)
+
+    REJECTED = DBItem(2, """
+        Rejected
+
+        A message held for first-post moderation has been rejected.
         """)
 
 
