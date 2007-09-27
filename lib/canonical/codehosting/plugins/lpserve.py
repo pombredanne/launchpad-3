@@ -10,9 +10,7 @@ __metaclass__ = type
 __all__ = ['cmd_launchpad_server']
 
 
-import signal
 import sys
-import thread
 import xmlrpclib
 
 from bzrlib.commands import Command, register_command

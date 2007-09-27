@@ -255,8 +255,8 @@ class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
         """
         Create a new WriteLoggingDirectory.
 
-        :type flagAsDirty: callable
-        :param flagAsDirty: Called when the directory is written to.
+        :param avatar: A LaunchpadAvatar object, representing the logged-in
+            user.
 
         For other parameters, see osfs.OSDirectory.
         """
@@ -265,29 +265,25 @@ class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
         self.logger = logger
 
     def childFileFactory(self):
-        """Return a child file which uses the same listener.
-
-        The listener is the '_flagAsDirty' callable, set by the constructor.
-        """
+        """Return a child file that logs certain operations."""
         def makeLoggingFile(path, name, parent):
             return LoggingFile(path, self.logger, name, parent)
         return makeLoggingFile
 
     def childDirFactory(self):
-        """Return a child directory which uses the same listener.
-
-        The listener is the '_flagAsDirty' callable, set by the constructor.
-        """
-        def childWithListener(path, name, parent):
+        """Return a child directory logs certain operations."""
+        def makeLoggingDirectory(path, name, parent):
             return WriteLoggingDirectory(
                 self.avatar, path, self.logger, name, parent)
-        return childWithListener
+        return makeLoggingDirectory
 
     def createDirectory(self, name):
+        """See `twisted.vfs.ivfs.IFileSystemContainer`."""
         self.logger.info('Creating directory %r in %r', name, self)
         return osfs.OSDirectory.createDirectory(self, name)
 
     def createFile(self, name, exclusive=True):
+        """See `twisted.vfs.ivfs.IFileSystemContainer`."""
         self.logger.info('Creating file %r in %r', name, self)
         return osfs.OSDirectory.createFile(self, name, exclusive)
 
@@ -295,10 +291,16 @@ class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
         return self.parent.getBranchID()
 
     def remove(self):
+        """See `twisted.vfs.ivfs.IFileSystemContainer`."""
         self.logger.info('Removing %r', self)
         osfs.OSDirectory.remove(self)
 
     def rename(self, newName):
+        """See `twisted.vfs.ivfs.IFileSystemContainer`.
+
+        If the rename is actually Bazaar unlocking the branch, then request
+        that this branch be mirrored.
+        """
         if self.getAbsolutePath().endswith('held'):
             self.avatar._launchpad.requestMirror(self.getBranchID())
         self.logger.info('Renaming %r to %r', self, newName)

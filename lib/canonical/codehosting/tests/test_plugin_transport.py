@@ -106,6 +106,13 @@ class TestLaunchpadServer(TestCase):
         self.server.tearDown()
         self.assertFalse(self.server.scheme in _get_protocol_handlers().keys())
 
+    def test_noMirrorsRequestedIfNoBranchesChanged(self):
+        # Starting up and shutting down the server will send no mirror
+        # requests.
+        self.server.setUp()
+        self.server.tearDown()
+        self.assertEqual([], self.authserver._request_mirror_log)
+
     def test_get_url(self):
         # The URL of the server is 'lp-<number>:///', where <number> is the
         # id() of the server object. Including the id allows for multiple

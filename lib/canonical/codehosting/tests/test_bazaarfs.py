@@ -374,12 +374,18 @@ class TestSFTPServerBranch(AvatarTestCase):
 
     def testUnlockRequestsMirror(self):
         """Unlocking a branch requests that branch be mirrored."""
+
+        # Create a branch lock directory
         bzr_dir = self.server_branch.createDirectory('.bzr')
         branch_dir = bzr_dir.createDirectory('branch')
         lock_dir = branch_dir.createDirectory('lock')
+
+        # Simulate locking the branch by renaming something to 'held'.
         actual_lock = lock_dir.createDirectory('temporary')
         # For some insane reason, we need to pass the absolute path to rename.
         actual_lock.rename(os.path.join(lock_dir.getAbsolutePath(), 'held'))
+
+        # Simulate unlocking by renaming 'held' to something else.
         actual_lock.rename(
             os.path.join(lock_dir.getAbsolutePath(), 'temporary'))
         self.assertEqual(
