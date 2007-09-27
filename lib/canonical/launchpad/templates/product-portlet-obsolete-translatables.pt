@@ -1,0 +1,14 @@
+<div class="portlet" id="portlet-obsolete-translatable-branches"
+     tal:condition="context/obsolete_translatable_serieses">
+  <h2>All branches with obsolete templates</h2>
+
+  <div class="portletBody portletContent">
+    <ul>
+      <li class="translations"
+        tal:repeat="series context/obsolete_translatable_serieses">
+        <a tal:content="series/title"
+           tal:attributes="href series/fmt:url">series title</a>
+      </li>
+    </ul>
+  </div>
+</div>

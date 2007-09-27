@@ -2165,7 +2165,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         result = POTemplate.select('''
-            distroseries=%s AND
+            distrorelease = %s AND
             iscurrent IS TRUE AND
             distrorelease = DistroRelease.id AND
             DistroRelease.distribution = Distribution.id AND
@@ -2179,7 +2179,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         result = POTemplate.select('''
-            distroseries=%s AND
+            distrorelease = %s AND
             (iscurrent IS FALSE OR
              (distrorelease = DistroRelease.id AND
               DistroRelease.distribution = Distribution.id AND

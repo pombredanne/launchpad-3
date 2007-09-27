@@ -454,55 +454,59 @@ class ProductView(LaunchpadView):
         self.product = self.context
         self.status_message = None
 
+    @cachedproperty
+    def uses_translations(self):
+        """Whether this product has translatable templates."""
+        return (self.context.official_rosetta and self.primary_translatable)
+
+    @cachedproperty
     def primary_translatable(self):
         """Return a dictionary with the info for a primary translatable.
 
-        If there is no primary translatable object, returns None.
+        If there is no primary translatable object, returns an empty
+        dictionary.
 
         The dictionary has the keys:
          * 'title': The title of the translatable object.
          * 'potemplates': a set of PO Templates for this object.
          * 'base_url': The base URL to reach the base URL for this object.
         """
+        object_translatable = {}
         translatable = self.context.primary_translatable
 
-        if translatable is not None:
-            if ISourcePackage.providedBy(translatable):
-                sourcepackage = translatable
-
-                object_translatable = {
-                    'title': sourcepackage.title,
-                    'potemplates':
-                        sourcepackage.getCurrentTranslationTemplates(),
-                    'base_url': '/distros/%s/%s/+sources/%s' % (
-                        sourcepackage.distribution.name,
-                        sourcepackage.distroseries.name,
-                        sourcepackage.name)
-                    }
-
-            elif IProductSeries.providedBy(translatable):
-                productseries = translatable
-
-                object_translatable = {
-                    'title': productseries.title,
-                    'potemplates':
-                        productseries.getCurrentTranslationTemplates(),
-                    'base_url': '/projects/%s/%s' % (
-                        self.context.name,
-                        productseries.name)
-                    }
-            else:
-                # The translatable object does not implements an
-                # ISourcePackage nor a IProductSeries. As it's not a critical
-                # failure, we log only it instead of raise an exception.
-                warn("Got an unknown type object as primary translatable",
-                     RuntimeWarning)
-                return None
-
+        if translatable is None:
             return object_translatable
 
+        if ISourcePackage.providedBy(translatable):
+            sourcepackage = translatable
+
+            object_translatable = {
+                'title': sourcepackage.title,
+                'potemplates':
+                    sourcepackage.getCurrentTranslationTemplates(),
+                'base_url': '/distros/%s/%s/+sources/%s' % (
+                    sourcepackage.distribution.name,
+                    sourcepackage.distroseries.name,
+                    sourcepackage.name)
+                }
+
+        elif IProductSeries.providedBy(translatable):
+            productseries = translatable
+
+            object_translatable = {
+                'title': productseries.title,
+                'potemplates':
+                    productseries.getCurrentTranslationTemplates(),
+                'base_url': '/projects/%s/%s' % (
+                    self.context.name,
+                    productseries.name)
+                }
         else:
-            return None
+            # The translatable object does not implements an
+            # ISourcePackage nor a IProductSeries. As it's not a critical
+            # failure, we log only it instead of raise an exception.
+            warn("Got an unknown type object as primary translatable",
+                 RuntimeWarning)
 
     def requestCountry(self):
         return ICountry(self.request, None)

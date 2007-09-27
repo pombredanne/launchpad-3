@@ -546,12 +546,12 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         result = POTemplate.select('''
-            productseries=%s AND
+            productseries = %s AND
             productseries = ProductSeries.id AND
             (iscurrent IS FALSE OR
              (ProductSeries.product = Product.id AND
               Product.official_rosetta IS FALSE))
-            ''' % sqlvalues(self.distroseries),
+            ''' % sqlvalues(self),
             clauseTables = ['ProductSeries', 'Product'])
         result = result.prejoin(['potemplatename'])
         return sorted(

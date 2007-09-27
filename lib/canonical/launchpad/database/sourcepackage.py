@@ -528,8 +528,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     def getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         result = POTemplate.select('''
-            distroseries=%s AND
-            sourcepackagename=%s AND
+            distrorelease = %s AND
+            sourcepackagename = %s AND
             iscurrent IS TRUE AND
             distrorelease = DistroRelease.id AND
             DistroRelease.distribution = Distribution.id AND
@@ -543,8 +543,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         result = POTemplate.select('''
-            distroseries=%s AND
-            sourcepackagename=%s AND
+            distrorelease = %s AND
+            sourcepackagename = %s AND
             (iscurrent IS FALSE OR
              (distrorelease = DistroRelease.id AND
               DistroRelease.distribution = Distribution.id AND

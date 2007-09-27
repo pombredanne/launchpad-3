@@ -6,93 +6,98 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:condition="context/project"
-       tal:replace="structure context/project/@@+portlet-details" />
-</metal:leftportlets>
-
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-preflangs" />
 </metal:rightportlets>
 
     <metal:heading fill-slot="pageheading">
-      <h1 tal:condition="context/primary_translatable">Translation overview</h1>
-      <tal:untranslatable condition="not: context/primary_translatable">
-        <h1 tal:condition="context/required:launchpad.Edit"
-        >How to set up translations</h1>
-        <h1 tal:condition="not: context/required:launchpad.Edit"
-        >Translation setup needed</h1>
-      </tal:untranslatable>
+      <tal:uses-translations condition="view/uses_translations">
+        <h1>Translation overview</h1>
+      </tal:uses-translations>
+      <tal:not-uses-translations condition="not: view/uses_translations">
+        <h1 tal:condition="context/required:launchpad.TranslationsAdmin">
+          How to start using Launchpad Translations
+        </h1>
+        <h1 tal:condition="not: context/required:launchpad.TranslationsAdmin">
+          Translation setup needed
+        </h1>
+      </tal:not-uses-translations>
     </metal:heading>
     <div metal:fill-slot="main">
-      <tal:translatable
-        condition="context/primary_translatable"
-        define="target context/primary_translatable"
-      >
-        <p>
-          For <tal:product replace="context/displayname" />,
-          Launchpad currently recommends translating
-          &#8220;<span tal:replace="target/displayname">main</span>&#8221;.
-        </p>
-        <div tal:replace="structure target/@@+potlist" />
-        <div tal:replace="structure context/@@+portlet-translatables" />
-      </tal:translatable>
-      <tal:untranslatable condition="not: context/primary_translatable">
-        <tal:registrantoradmin condition="context/required:launchpad.Edit">
+      <tal:uses-translations condition="view/uses_translations">
+        <tal:translatable define="target context/primary_translatable">
           <p>
-            To set up
-            <tal:product replace="context/displayname" />
-            for translation in Launchpad, you need to upload the
-            <abbr>PO</abbr> template for one of its release series.
+            For <tal:product replace="context/displayname" />,
+            Launchpad currently recommends translating
+            &#8220;<span tal:replace="target/displayname">main</span>&#8221;.
+          </p>
+          <div tal:replace="structure target/@@+potlist" />
+          <div tal:replace="structure context/@@+portlet-translatables" />
+        </tal:translatable>
+      </tal:uses-translations>
+      <tal:not-uses-translations condition="not: view/uses_translations">
+        <tal:registrantoradmin
+          condition="context/required:launchpad.TranslationsAdmin">
+          <p>
+            To set up <tal:product replace="context/displayname" /> for
+            translation in Launchpad, you need to upload a translation
+            template for one of its release series.
           </p>
           <ul>
             <li tal:repeat="series context/serieses">
-              <a
-                tal:attributes=
-                  "href string:${series/fmt:url}/+translations-upload"
-                tal:content="series/displayname"
-              >main</a>
+              <a tal:attributes="
+                   href string:${series/fmt:url}/+translations-upload"
+                 tal:content="series/title">main</a>
             </li>
           </ul>
           <p>
             Or you may want to
-            <a tal:attributes="href string:${context/fmt:url}/+packages"
-            >link the project to a distribution package</a>
-            set up for translation, if there is one,
-            so their translations can be shared.
+            <a tal:attributes="href string:${context/fmt:url}/+packages">
+              link the project to a distribution package
+            </a> set up for translation, if there is one, so their
+            translations can be shared.
           </p>
         </tal:registrantoradmin>
-        <tal:other condition="not: context/required:launchpad.Edit">
+        <tal:other
+          condition="not: context/required:launchpad.TranslationsAdmin">
           <p>
-            The <tal:product replace="context/displayname" /> product
-            is not set up for translation in Launchpad.
+            The <tal:product replace="context/displayname" /> project is not
+            set up for translation in Launchpad.
           </p>
-          <tal:loggedout condition="not: request/lp:person">
-            <p>
-              If you&#8217;re <tal:person replace="context/owner/displayname" />,
-              <a tal:attributes=
-              "href string:${context/fmt:url}/+login">log in</a>
-              to begin the setup process.
-            </p>
-            <p>
-              Otherwise, you might want to talk with
-              <a
-                tal:attributes="href context/owner/fmt:url"
-                tal:content="context/owner/displayname"
-		>Foo Bar</a>, the project registrant, about using Launchpad
-              for translations.
-            </p>
-          </tal:loggedout>
+          <p tal:condition="not:request/lp:person">
+            If you&#8217;re
+            <tal:person replace="context/owner/displayname" />,
+            <a href="+login">log in</a> to begin the setup process.
+          </p>
+          <p>
+            Otherwise, you might want to talk with
+            <a tal:attributes="href context/owner/fmt:url"
+               tal:content="context/owner/displayname">
+              Foo Bar
+            </a>, the project registrant, about using Launchpad for
+            translations.
+          </p>
           <p tal:condition="request/lp:person">
             You might want to talk with
-            <a
-              tal:attributes="href context/owner/fmt:url"
-              tal:content="context/owner/displayname"
-            >Foo Bar</a>, the project registrant, about using Rosetta.
+            <a tal:attributes="href context/owner/fmt:url"
+               tal:content="context/owner/displayname">
+              Foo Bar
+            </a>, the project registrant, about using Launchpad for
+            translations.
           </p>
         </tal:other>
-      </tal:untranslatable>
+      </tal:not-uses-translations>
+      <tal:registrant-or-admin
+        condition="context/required:launchpad.TranslationsAdmin">
+        <tal:has-obsolete-entries
+          condition="context/obsolete_translatable_serieses">
+          <p>
+            Foo
+          </p>
+          <div
+            tal:replace="structure context/@@+portlet-obsolete-translatables" />
+        </tal:has-obsolete-entries>
+      </tal:registrant-or-admin>
     </div>
   </body>
 </html>

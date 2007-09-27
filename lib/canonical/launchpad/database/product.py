@@ -361,20 +361,27 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             orderBy='datecreated', distinct=True)
         return list(series)
 
+    def obsolete_translatable_serieses(self):
+        """See `IProduct`."""
+        obsolete_product_serieses = set(
+            product_series for product_series in self.serieses
+            if len(product_series.getObsoleteTranslationTemplates()) > 0)
+        return sorted(obsolete_product_serieses, key=lambda s: s.datecreated)
+
     @property
     def primary_translatable(self):
         """See `IProduct`."""
         packages = self.translatable_packages
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         targetseries = ubuntu.currentseries
-        series = self.translatable_series
+        product_series = self.translatable_series
 
         # First, go with development focus branch
-        if series and self.development_focus in series:
+        if product_series and self.development_focus in product_series:
             return self.development_focus
         # Next, go with the latest product series that has templates:
-        if series:
-            return series[-1]
+        if product_series:
+            return product_series[-1]
         # Otherwise, look for an Ubuntu package in the current distroseries:
         for package in packages:
             if package.distroseries == targetseries:
