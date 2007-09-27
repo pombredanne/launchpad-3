@@ -3,6 +3,7 @@
 """Test harness for Launchpad/Mailman doctests."""
 
 import time
+import atexit
 import doctest
 import datetime
 import unittest
@@ -22,9 +23,12 @@ class MailmanLayer(LaunchpadFunctionalLayer):
     @classmethod
     @profiled
     def setUp(cls):
-        # Don't register the atexit handler because our tearDown will
-        # explicitly shut Mailman down.
         runmailman.start_mailman()
+        # Register this atexit handler, so we're guaranteed to kill Mailman
+        # when the test harness exits.  Don't worry about trying to kill
+        # Mailman more than once.  We'll get a warning from Mailman but that
+        # can safely be ignored.
+        atexit.register(runmailman.stop_mailman)
 
     @classmethod
     @profiled
@@ -48,7 +52,7 @@ class TestMailmanXMLRPC(unittest.TestCase):
         # Now poll every 1/2 second until the mailing list status changes,
         # then check to ensure that Mailman actually created the mailing
         # lists.  Wait no longer than 5 seconds.
-        until = datetime.datetime.now() + datetime.timedelta(seconds=500)
+        until = datetime.datetime.now() + datetime.timedelta(seconds=5)
         while datetime.datetime.now() < until:
             flush_database_updates()
             if list_one.status == MailingListStatus.ACTIVE:
