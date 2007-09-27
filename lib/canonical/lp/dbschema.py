@@ -1338,7 +1338,17 @@ class PackagePublishingStatus(DBSchema):
         Superseded
 
         When a newer version of a [source] package is published the existing
-        one is marked as "superseded".  """)
+        one is marked as "superseded".
+        """)
+
+    DELETED = Item(4, """
+        Deleted
+
+        When a publication was "deleted" from the archive by user request.
+        Records in this state contain a reference to the Launchpad user
+        responsible for the deletion and a text comment with the removal
+        reason.
+        """)
 
 
 class PackagePublishingPriority(DBSchema):

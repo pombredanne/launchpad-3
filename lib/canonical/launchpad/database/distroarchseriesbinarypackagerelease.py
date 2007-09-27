@@ -315,3 +315,14 @@ class DistroArchSeriesBinaryPackageRelease:
 
         return current
 
+    def delete(self, removed_by, removal_comment=None):
+        """See IDistroArchSeriesBinaryPackageRelease."""
+        # Retrieve current publishing info
+        current = self.current_publishing_record
+        current = SecureBinaryPackagePublishingHistory.get(current.id)
+        current.status = PackagePublishingStatus.DELETED
+        current.datesuperseded = UTC_NOW
+        current.removed_by = removed_by
+        current.removal_comment = removal_comment
+
+        return current
