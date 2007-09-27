@@ -97,14 +97,11 @@ class TestCanonicalUrl(unittest.TestCase):
         # sample data. This is an invariant of the test, so use a plain assert.
         unique_name = 'name12/gnome-terminal/main'
         assert branch.unique_name == '~' + unique_name
-        branch_to_mirror = branchtomirror.BranchToMirror(
-            src=None, dest=None, branch_status_client=None,
-            branch_id=None, unique_name=unique_name, branch_type=None,
-            logger=logging.getLogger())
         # Now check that our implementation of canonical_url is consistent with
         # the canonical one.
         self.assertEqual(
-            branch_to_mirror._canonical_url(), canonical_url(branch))
+            canonical_url(branch),
+            branchtomirror.get_canonical_url(unique_name))
 
 
 def test_suite():

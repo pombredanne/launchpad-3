@@ -29,23 +29,30 @@ __all__ = [
     'BranchReferenceForbidden',
     'BranchReferenceValueError',
     'BranchToMirror',
+    'get_canonical_url',
+    'PullerWorkerProtocol'
     ]
 
 
-class BadUrlSsh(Exception):
+class MirroringException(Exception):
+    """Generic error that occurred during mirroring."""
+
+
+class BadUrlSsh(MirroringException):
     """Tried to mirror a branch from sftp or bzr+ssh."""
 
 
-class BadUrlLaunchpad(Exception):
+class BadUrlLaunchpad(MirroringException):
     """Tried to mirror a branch from launchpad.net."""
 
-class BranchReferenceForbidden(Exception):
+
+class BranchReferenceForbidden(MirroringException):
     """Trying to mirror a branch reference and the branch type does not allow
     references.
     """
 
 
-class BranchReferenceValueError(Exception):
+class BranchReferenceValueError(MirroringException):
     """Encountered a branch reference with an unsafe value.
 
     An unsafe value is a local URL, such as a file:// URL or an http:// URL in
@@ -65,17 +72,62 @@ class BranchReferenceLoopError(Exception):
     """
 
 
-class Protocol:
+def get_canonical_url(unique_name):
+    """Custom implementation of canonical_url(branch) for error reporting.
+
+    The actual canonical_url method cannot be used because we do not have
+    access to real content objects.
+    """
+    if config.launchpad.vhosts.use_https:
+        scheme = 'https'
+    else:
+        scheme = 'http'
+    hostname = config.launchpad.vhosts.code.hostname
+    return scheme + '://' + hostname + '/~' + unique_name
+
+
+
+class PullerWorkerProtocol:
 
     def __init__(self, logger, branch_status_client):
         self.logger = logger
         self.branch_status_client = branch_status_client
 
-    def mirrorSucceeded(self):
-        pass
+    def _record_oops(self, branch_to_mirror, message=None):
+        """Record an oops for the current exception.
 
-    def mirrorFailed(self):
-        pass
+        This must only be called while handling an exception.
+
+        :param message: custom explanatory error message. Do not use
+            str(exception) to fill in this parameter, it should only be set
+            when a human readable error has been explicitely generated.
+        """
+        request = errorlog.ScriptRequest([
+            ('branch_id', branch_to_mirror.branch_id),
+            ('source', branch_to_mirror.source),
+            ('dest', branch_to_mirror.dest),
+            ('error-explanation', str(message))])
+        request.URL = get_canonical_url(branch_to_mirror.unique_name)
+        errorlog.globalErrorUtility.raising(sys.exc_info(), request)
+        self.logger.info('Recorded %s', request.oopsid)
+
+    def startMirroring(self, branch_to_mirror):
+        self.logger.info(
+            'Mirroring branch %d: %s to %s',
+            branch_to_mirror.branch_id, branch_to_mirror.source,
+            branch_to_mirror.dest)
+        self.branch_status_client.startMirroring(branch_to_mirror.branch_id)
+
+    def mirrorSucceeded(self, branch_to_mirror, last_revision):
+        self.branch_status_client.mirrorComplete(
+            branch_to_mirror.branch_id, last_revision)
+        self.logger.info('Successfully mirrored to rev %s', last_revision)
+
+    def mirrorFailed(self, branch_to_mirror, message):
+        self._record_oops(branch_to_mirror, message)
+        self.branch_status_client.mirrorFailed(
+            branch_to_mirror.branch_id, str(message))
+        self.logger.info('Recorded failure: %s', str(message))
 
 
 def identical_formats(branch_one, branch_two):
@@ -101,7 +153,6 @@ class BranchToMirror:
                  unique_name, branch_type, logger):
         self.source = src
         self.dest = dest
-        self.branch_status_client = branch_status_client
         self.branch_id = branch_id
         self.unique_name = unique_name
         # The branch_type argument should always be set to a BranchType enum in
@@ -110,7 +161,7 @@ class BranchToMirror:
         self.branch_type = branch_type
         self._source_branch = None
         self._dest_branch = None
-        self.logger = logger
+        self.protocol = PullerWorkerProtocol(logger, branch_status_client)
 
     def _checkSourceUrl(self):
         """Check the validity of the source URL.
@@ -246,64 +297,11 @@ class BranchToMirror:
         branch.pull(self._source_branch)
         return branch
 
-    def _mirrorFailed(self, error_msg):
-        """Record that the mirroring of this branch failed.
-
-        Update the branch status in the database and emit a log message.
-        """
-        self.branch_status_client.mirrorFailed(self.branch_id, str(error_msg))
-        self.logger.info('Recorded failure: %s', str(error_msg))
-
-    def _mirrorSuccessful(self):
-        """Record that the mirroring of this branch was successful.
-
-        Update the branch status in the database and emit a log message.
-        """
-        last_rev = self._dest_branch.last_revision()
-        if last_rev is None:
-            last_rev = NULL_REVISION
-        self.branch_status_client.mirrorComplete(self.branch_id, last_rev)
-        self.logger.info('Successfully mirrored to rev %s', last_rev)
-
-    def _record_oops(self, message=None):
-        """Record an oops for the current exception.
-
-        This must only be called while handling an exception.
-
-        :param message: custom explanatory error message. Do not use
-            str(exception) to fill in this parameter, it should only be set
-            when a human readable error has been explicitely generated.
-        """
-        request = errorlog.ScriptRequest([
-            ('branch_id', self.branch_id),
-            ('source', self.source),
-            ('dest', self.dest),
-            ('error-explanation', message)])
-        request.URL = self._canonical_url()
-        errorlog.globalErrorUtility.raising(sys.exc_info(), request)
-        self.logger.info('Recorded %s', request.oopsid)
-
-    def _canonical_url(self):
-        """Custom implementation of canonical_url(branch) for error reporting.
-
-        The actual canonical_url method cannot be used because we do not have
-        access to real content objects.
-        """
-        if config.launchpad.vhosts.use_https:
-            scheme = 'https'
-        else:
-            scheme = 'http'
-        hostname = config.launchpad.vhosts.code.hostname
-        return scheme + '://' + hostname + '/~' + self.unique_name
-
     def mirror(self):
         """Open source and destination branches and pull source into
         destination.
         """
-        self.branch_status_client.startMirroring(self.branch_id)
-        self.logger.info('Mirroring branch %d: %s to %s',
-                         self.branch_id, self.source, self.dest)
-
+        self.protocol.startMirroring(self)
         try:
             self._checkSourceUrl()
             self._checkBranchReference()
@@ -319,34 +317,28 @@ class BranchToMirror:
                 # be able to get rid of this.
                 # https://launchpad.net/products/bzr/+bug/42383
                 msg = "Authentication required."
-            self._record_oops(msg)
-            self._mirrorFailed(msg)
+            self.protocol.mirrorFailed(self, msg)
 
         except socket.error, e:
             msg = 'A socket error occurred: %s' % str(e)
-            self._record_oops(msg)
-            self._mirrorFailed(msg)
+            self.protocol.mirrorFailed(self, msg)
 
         except UnsupportedFormatError, e:
             msg = ("Launchpad does not support branches from before "
                    "bzr 0.7. Please upgrade the branch using bzr upgrade.")
-            self._record_oops(msg)
-            self._mirrorFailed(msg)
+            self.protocol.mirrorFailed(self, msg)
 
         except UnknownFormatError, e:
-            self._record_oops(self.logger)
-            self._mirrorFailed(e)
+            self.protocol.mirrorFailed(self, e)
 
         except (ParamikoNotPresent, BadUrlSsh), e:
             msg = ("Launchpad cannot mirror branches from SFTP and SSH URLs."
                    " Please register a HTTP location for this branch.")
-            self._record_oops(msg)
-            self._mirrorFailed(msg)
+            self.protocol.mirrorFailed(self, msg)
 
         except BadUrlLaunchpad:
             msg = "Launchpad does not mirror branches from Launchpad."
-            self._record_oops(msg)
-            self._mirrorFailed(msg)
+            self.protocol.mirrorFailed(self, msg)
 
         except NotBranchError, e:
             hosted_branch_error = NotBranchError(
@@ -356,28 +348,23 @@ class BranchToMirror:
                 BranchType.IMPORTED: "Not a branch.",
                 }
             msg = message_by_type.get(self.branch_type, str(e))
-            self._record_oops(msg)
-            self._mirrorFailed(msg)
+            self.protocol.mirrorFailed(self, msg)
 
         except BranchReferenceForbidden, e:
             msg = ("Branch references are not allowed for branches of type %s."
                    % (self.branch_type.title,))
-            self._record_oops(msg)
-            self._mirrorFailed(msg)
+            self.protocol.mirrorFailed(self, msg)
 
         except BranchReferenceValueError, e:
             msg = "Bad branch reference value: %s" % (e.url,)
-            self._record_oops(msg)
-            self._mirrorFailed(msg)
+            self.protocol.mirrorFailed(self, msg)
 
         except BranchReferenceLoopError, e:
             msg = "Circular branch reference."
-            self._record_oops(msg)
-            self._mirrorFailed(msg)
+            self.protocol.mirrorFailed(self, msg)
 
         except BzrError, e:
-            self._record_oops(self.logger)
-            self._mirrorFailed(e)
+            self.protocol.mirrorFailed(self, e)
 
         except (KeyboardInterrupt, SystemExit):
             # Do not record OOPS for those exceptions.
@@ -385,11 +372,14 @@ class BranchToMirror:
 
         except:
             # Any exception not handled specially is recorded as OOPS.
-            self._record_oops(self.logger)
+            self.protocol.mirrorFailed(self, sys.exc_info()[1])
             raise
 
         else:
-            self._mirrorSuccessful()
+            last_rev = self._dest_branch.last_revision()
+            if last_rev is None:
+                last_rev = NULL_REVISION
+            self.protocol.mirrorSucceeded(self, last_rev)
 
     def __eq__(self, other):
         return self.source == other.source and self.dest == other.dest

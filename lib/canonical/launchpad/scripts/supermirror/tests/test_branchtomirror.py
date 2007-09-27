@@ -33,7 +33,7 @@ from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.scripts.supermirror.tests import createbranch
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
-    BranchReferenceForbidden, BranchReferenceValueError)
+    BranchReferenceForbidden, BranchReferenceValueError, PullerWorkerProtocol)
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.testing import LaunchpadFunctionalLayer, reset_logging
@@ -282,11 +282,30 @@ class StubbedBranchStatusClient(BranchStatusClient):
         pass
 
 
+class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
+
+    def __init__(self):
+        pass
+
+    def startMirroring(self, branch_to_mirror):
+        pass
+
+    def mirrorSucceeded(self, branch_to_mirror, last_revision):
+        pass
+
+    def mirrorFailed(self, branch_to_mirror, message):
+        branch_to_mirror.testcase.errors.append(message)
+
+
 class StubbedBranchToMirror(BranchToMirror):
     """Partially stubbed subclass of BranchToMirror, for unit tests."""
 
     enable_checkBranchReference = False
     enable_checkSourceUrl = True
+
+    def __init__(self, *args, **kwargs):
+        BranchToMirror.__init__(self, *args, **kwargs)
+        self.protocol = StubbedPullerWorkerProtocol()
 
     def _checkSourceUrl(self):
         if self.enable_checkSourceUrl:
@@ -301,12 +320,6 @@ class StubbedBranchToMirror(BranchToMirror):
 
     def _mirrorToDestBranch(self):
         pass
-
-    def _mirrorSuccessful(self, logger):
-        pass
-
-    def _mirrorFailed(self, logger, error_msg):
-        self.testcase.errors.append(error_msg)
 
 
 class ErrorHandlingTestCase(unittest.TestCase):
