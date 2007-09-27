@@ -11,7 +11,6 @@ import logging
 from optparse import OptionParser
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.config import config
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (

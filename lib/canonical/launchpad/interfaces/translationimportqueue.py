@@ -4,8 +4,6 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, TextLine, Datetime, Field
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.translationfileformat import (
-    TranslationFileFormat)
 from canonical.lazr import DBEnumeratedType, DBItem
 
 __metaclass__ = type
