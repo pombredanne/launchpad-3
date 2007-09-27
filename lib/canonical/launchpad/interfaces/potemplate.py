@@ -75,9 +75,6 @@ class IHasTranslationTemplates(Interface):
     and IProductSeries.
     """
 
-    def getTranslationTemplates():
-        """Return an iterator over its translation templates."""
-
     def getCurrentTranslationTemplates():
         """Return an iterator over its active translation templates.
 

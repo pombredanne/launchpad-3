@@ -70,7 +70,8 @@ from canonical.launchpad.interfaces import (
     IDistroSeriesSet, IHasBuildRecords, IHasQueueItems,
     IHasTranslationTemplates, ILibraryFileAliasSet,
     IPublishedPackageSet, IPublishing, ISourcePackage, ISourcePackageName,
-    ISourcePackageNameSet, ITunableLoop, LanguagePackType, NotFoundError)
+    ISourcePackageNameSet, LanguagePackType, NotFoundError)
+from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
 from canonical.lp.dbschema import (
     ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket,
