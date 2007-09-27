@@ -125,7 +125,6 @@ class CodeImportSet:
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
         return code_import
 
-
     def delete(self, id):
         """See `ICodeImportSet`."""
         CodeImport.delete(id)
