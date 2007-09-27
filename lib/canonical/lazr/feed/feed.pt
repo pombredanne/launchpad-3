@@ -1,4 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE feed [
+<!ENTITY nbsp "&#160;">
+]>
+
+<!-- XXX: Edwin: This is not working for some reason.
+<!DOCTYPE feed [
+<!ENTITY % HTMLlat1 PUBLIC 
+    "-//W3C//ENTITIES Latin 1 for XHTML//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml-lat1.ent">
+%HTMLlat1;
+]>
+-->
 
 <feed xmlns="http://www.w3.org/2005/Atom"
       xmlns:lp="http://api.launchpad.net/schema"
@@ -14,7 +26,6 @@
     <updated tal:condition="view/getUpdated"
              tal:content="view/getUpdated">2007-05-26T12:45:01Z</updated>
     <entry tal:repeat="entry view/getItems">
-       <p tal:content="entry/title/content" />
        <metal:entry metal:use-macro="entry/@@feed-entry/feed-entry" />
     </entry>
 </feed>

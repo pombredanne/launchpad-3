@@ -10,11 +10,20 @@ import cgi
 from datetime import datetime
 
 from canonical.lazr.feed import (
-    FeedBase,FeedEntry, FeedPerson, FeedTypedData, MINUTES)
+    FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 from canonical.launchpad.interfaces import IProduct
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import FormattersAPI
+from zope.app.pagetemplate import ViewPageTemplateFile
+from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.browser.bugtask import BugTaskView
 
+class BugFeedContentView(LaunchpadView):
+    template = ViewPageTemplateFile('bug-feed-content.pt')
+
+    def getBugCommentsForDisplay(self):
+        bug_task_view = BugTaskView(self.context.bugtasks[0], self.request)
+        return bug_task_view.getBugCommentsForDisplay()
 
 class ProductBugsFeed(FeedBase):
 
@@ -60,16 +69,13 @@ class ProductBugsFeed(FeedBase):
         bug = bugtask.bug
         title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
         url = canonical_url(bugtask, rootsite="bugs")
-        formatter = FormattersAPI(bug.description)
-        # XXX bac, The Atom spec says all content is to be escaped.  When it
-        # is escaped Safari and Firefox do not display the HTML correctly.
-        #entry.content = cgi.escape(formatter.text_to_html())
-        content = formatter.text_to_html()
+        content_view = BugFeedContentView(bug, self.request)
         entry = FeedEntry(title = title,
                           id_ = url,
                           link_alternate = url,
                           date_updated = bug.date_last_updated,
                           date_published = bugtask.datecreated,
                           authors = [FeedPerson(bug.owner)],
-                          content = FeedTypedData(content, content_type="html"))
+                          content = FeedTypedData(content_view.render(), 
+                                                  content_type="xhtml"))
         return entry
