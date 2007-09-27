@@ -40,16 +40,15 @@ from canonical.launchpad.interfaces import (
     IPOFileSet, IPOFileTranslator, IPOSubmissionSet, ITranslationExporter,
     ITranslationFile, ITranslationImporter, IVPOExportSet,
     NotExportedFromLaunchpad, NotFoundError, OutdatedTranslationError,
-    TranslationConstants, TranslationFormatSyntaxError,
-    TranslationFormatInvalidInputError, ZeroLengthPOExportError)
+    RosettaImportStatus, TranslationConstants, TranslationFormatSyntaxError,
+    TranslationFormatInvalidInputError, TranslationPermission,
+    TranslationValidationStatus, ZeroLengthPOExportError)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.translationformat import TranslationMessage
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
-from canonical.lp.dbschema import (
-    RosettaImportStatus, TranslationPermission, TranslationValidationStatus)
 
 
 def _check_translation_perms(permission, translators, person):
@@ -318,7 +317,7 @@ class POFile(SQLBase, POFileMixIn):
             "Calling prepareTranslationCredits on a message with "
             "msgid '%s'." % msgid)
         text = potmsgset.translationsForLanguage(self.language.code)[0]
-        if (msgid == u'_: EMAIL OF TRANSLATORS\nYour emails'):
+        if msgid in [u'_: EMAIL OF TRANSLATORS\nYour emails', u'Your emails']:
             emails = []
             if text is not None:
                 emails.append(text)
@@ -335,7 +334,7 @@ class POFile(SQLBase, POFileMixIn):
                 else:
                     emails.append(preferred_email.email)
             return u','.join(emails)
-        elif (msgid == u'_: NAME OF TRANSLATORS\nYour names'):
+        elif msgid in [u'_: NAME OF TRANSLATORS\nYour names', u'Your names']:
             names = []
             if text is not None:
                 names.append(text)

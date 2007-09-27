@@ -60,11 +60,7 @@
           </a>
         </li>
         <li tal:content="structure context/@@+ask-a-question-button" />
-        <li>
-          <a href="+translations">
-            <img alt="Help translate" src="/+icing/but-sml-helptranslate.gif" />
-          </a>
-        </li>
+        <li tal:content="structure context/@@+help-translate-button" />
         <li tal:define="has_mentoring context/mentoring_offers/count">
           <a href="+mentoring" tal:condition="has_mentoring">
             <img alt="Mentoring available"

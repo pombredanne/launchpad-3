@@ -57,7 +57,7 @@ read.
 The rcs_type field, which indicates whether the import is from CVS or
 Subversion, takes values from the 'RevisionControlSystems' vocabulary.
 
-    >>> from canonical.lp.dbschema import RevisionControlSystems
+    >>> from canonical.launchpad.interfaces import RevisionControlSystems
 
 
 === Import from CVS ===

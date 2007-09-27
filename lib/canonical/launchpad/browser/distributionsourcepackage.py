@@ -8,7 +8,8 @@ __all__ = [
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
     'DistributionSourcePackageOverviewMenu',
-    'DistributionSourcePackageBugContactsView'
+    'DistributionSourcePackageBugContactsView',
+    'DistributionSourcePackageView'
     ]
 
 from operator import attrgetter
@@ -28,7 +29,7 @@ from canonical.launchpad.browser.questiontarget import (
 from canonical.launchpad.webapp import (
     action, StandardLaunchpadFacets, Link, ApplicationMenu,
     GetitemNavigation, canonical_url, redirection, LaunchpadFormView,
-    custom_widget)
+    LaunchpadView, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
@@ -288,4 +289,32 @@ class DistributionSourcePackageBugContactsView(LaunchpadFormView):
     def user_teams(self):
         """Return the teams that the current user is an administrator of."""
         return list(self.user.getAdministratedTeams())
+
+
+class DistributionSourcePackageView(LaunchpadView):
+
+    def version_listing(self):
+        result = []
+        for sourcepackage in self.context.get_distroseries_packages():
+            series_result = []
+            for published in \
+                sourcepackage.published_by_pocket.iteritems():
+                for drspr in published[1]:
+                    series_result.append({
+                        'series': sourcepackage.distroseries.name,
+                        'pocket': published[0].name.lower(),
+                        'package': drspr,
+                        'packaging': sourcepackage.direct_packaging,
+                        'sourcepackage': sourcepackage
+                        })
+            for row in range(len(series_result)-1, 0, -1):
+                for column in ['series', 'pocket', 'version', 'upstream',
+                               'sourcepackage']:
+                    if series_result[row][column] == \
+                       series_result[row-1][column]:
+                       series_result[row][column] = None
+            for row in series_result:
+                result.append(row)
+        return result
+
 

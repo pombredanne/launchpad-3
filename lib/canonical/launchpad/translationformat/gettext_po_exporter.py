@@ -17,11 +17,11 @@ from cStringIO import StringIO
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    ITranslationFormatExporter, TranslationConstants)
+    ITranslationFormatExporter, TranslationConstants, TranslationFileFormat)
 from canonical.launchpad.translationformat import TranslationMessage
 from canonical.launchpad.translationformat.translation_export import (
     ExportedTranslationFile, LaunchpadWriteTarFile)
-from canonical.lp.dbschema import TranslationFileFormat
+
 
 def comments_text_representation(translation_message):
     r'''Return text representation of the comments.

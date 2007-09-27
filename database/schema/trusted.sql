@@ -766,3 +766,31 @@ $$
 $$;
 
 
+CREATE OR REPLACE FUNCTION set_bug_date_last_message() RETURNS TRIGGER
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+$$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE Bug
+        SET date_last_message = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+        WHERE Bug.id = NEW.bug;
+    ELSE
+        UPDATE Bug
+        SET date_last_message = max_datecreated
+        FROM (
+            SELECT BugMessage.bug, max(Message.datecreated) AS max_datecreated
+            FROM BugMessage, Message
+            WHERE BugMessage.id <> OLD.id
+                AND BugMessage.bug = OLD.bug
+                AND BugMessage.message = Message.id
+            GROUP BY BugMessage.bug
+            ) AS MessageSummary
+        WHERE Bug.id = MessageSummary.bug;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION set_bug_date_last_message() IS 'AFTER INSERT trigger on BugMessage maintaining the Bug.date_last_message column';
+
+

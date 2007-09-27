@@ -13,7 +13,9 @@ from zope.schema import Int, Object
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import IPOTemplate
-from canonical.lp.dbschema import TranslationFileFormat
+from canonical.launchpad.interfaces.translationfileformat import (
+    TranslationFileFormat)
+
 
 class IPOExportRequestSet(Interface):
     entry_count = Int(
