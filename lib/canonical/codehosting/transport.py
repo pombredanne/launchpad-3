@@ -23,7 +23,7 @@ from bzrlib.transport import (
 from canonical.authserver.interfaces import READ_ONLY
 
 from canonical.codehosting.bazaarfs import (
-    ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR)
+    ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR, is_lock_directory)
 from canonical.config import config
 
 
@@ -403,8 +403,9 @@ class LaunchpadTransport(Transport):
         path, permissions = self._translate_virtual_path(rel_to)
         if permissions == READ_ONLY:
             raise TransportNotPossible('readonly transport')
-        if rel_from.endswith('held'):
-            self.server.requestMirror(self._abspath(rel_from))
+        abs_from = self._abspath(rel_from)
+        if is_lock_directory(abs_from):
+            self.server.requestMirror(abs_from)
         return self._call('rename', rel_from, path)
 
     def rmdir(self, relpath):

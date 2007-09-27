@@ -7,6 +7,10 @@ Currently assumes twisted.vfs as of SVN revision 15836.
 """
 
 __metaclass__ = type
+__all__ = [
+    'ALLOWED_DIRECTORIES', 'FORBIDDEN_DIRECTORY_ERROR', 'is_lock_directory',
+    'SFTPServerRoot']
+
 
 import os
 
@@ -19,6 +23,11 @@ from twisted.vfs.ivfs import NotFoundError, PermissionError
 ALLOWED_DIRECTORIES = ('.bzr', '.bzr.backup')
 FORBIDDEN_DIRECTORY_ERROR = (
     "Cannot create '%s'. Only Bazaar branches are allowed.")
+
+
+def is_lock_directory(absolute_path):
+    """Is 'absolute_path' a Bazaar branch lock directory?"""
+    return os.path.basename(absolute_path) == 'held'
 
 
 class LoggingMixin:
@@ -301,7 +310,7 @@ class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
         If the rename is actually Bazaar unlocking the branch, then request
         that this branch be mirrored.
         """
-        if self.getAbsolutePath().endswith('held'):
+        if is_lock_directory(self.getAbsolutePath()):
             self.avatar._launchpad.requestMirror(self.getBranchID())
         self.logger.info('Renaming %r to %r', self, newName)
         osfs.OSDirectory.rename(self, newName)
