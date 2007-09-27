@@ -4,10 +4,6 @@
 
 import xmlrpclib
 
-from canonical.launchpad.interfaces import (
-    IPersonSet, IMailingListSet, MailingListStatus, TeamSubscriptionPolicy)
-from zope.component import getUtility
-
 
 def fault_catcher(func):
     """Decorator for displaying Faults in a cross-compatible way.
@@ -67,28 +63,11 @@ def mailingListPrintActions(pending_actions):
                 print team, '-->', action
 
 
-def mailingListNewTeam(team_name, with_list=False):
-    """A helper function for the mailinglist related doctests.
-
-    This just provides a convenience function for creating the kinds of teams
-    we need to use in the doctest.
+def mailingListPrintInfo(info):
+    """A helper function for the mailinglist-subscription-xmlrpc.txt doctest.
     """
-    displayname = ' '.join(word.capitalize() for word in team_name.split('-'))
-    # XXX BarryWarsaw Set the team's subscription policy to OPEN because of
-    # bug 125505.
-    policy = TeamSubscriptionPolicy.OPEN
-    personset = getUtility(IPersonSet)
-    ddaa = personset.getByName('ddaa')
-    team = personset.newTeam(ddaa, team_name, displayname,
-                             subscriptionpolicy=policy)
-    if not with_list:
-        return team
-    # Create the associated mailing list.
-    carlos = personset.getByName('carlos')
-    team_list = getUtility(IMailingListSet).new(team)
-    team_list.review(carlos, MailingListStatus.APPROVED)
-    team_list.startConstructing()
-    team_list.transitionToStatus(MailingListStatus.ACTIVE)
-    return team, team_list
-
-
+    for team_name in sorted(info):
+        print team_name
+        subscribees = info[team_name]
+        for address, realname, flags, status in subscribees:
+            print '   ', address, realname, flags, status

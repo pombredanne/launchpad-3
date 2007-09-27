@@ -236,7 +236,7 @@ Now verify we still get a product for that source package
 And if we want to link that productseries to a source package in that
 distroseries
 
-    >>> from canonical.lp.dbschema import PackagingType
+    >>> from canonical.launchpad.interfaces import PackagingType
     >>> from canonical.launchpad.database import Person
     >>> foobar = Person.byName('name16')
     >>> PackagingUtil().createPackaging(
