@@ -342,10 +342,9 @@ def copy_active_translations_as_update(child, transaction, logger):
         # POFile has already been poured by the time this gets invoked; we
         # recognize references to deleted POFiles by the fact that they don't
         # exist in the POFile source table.
-        cursor().execute("""
-            DELETE FROM %s AS HOLDING
-            WHERE pofile NOT IN (SELECT id FROM POFile)
-            """ % holding_table)
+        cursor().execute(
+            "DELETE FROM %s WHERE pofile NOT IN (SELECT id FROM POFile)"
+            % holding_table)
 
     def prepare_pomsgset_batch(
         holding_table, source_table, batch_size, start_id, end_id):
@@ -396,6 +395,9 @@ def copy_active_translations_as_update(child, transaction, logger):
         pre_pouring_callback=prepare_pomsgset_pouring,
         batch_pouring_callback=prepare_pomsgset_batch)
     cur = cursor()
+    # Make sure we can do fast joins on (potmsgset, pofile) to speed up the
+    # delete statement that protects uniqueness of POMsgSets in the POMsgSet
+    # batch pouring callback.
     cur.execute(
         "CREATE UNIQUE INDEX pomsgset_holding_potmsgset_pofile "
         "ON %s (potmsgset, pofile)" % holding_tables['pomsgset'])
@@ -448,7 +450,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     # ### POSubmission ###
 
     def prepare_posubmission_pouring(holding_table, source_table):
-        """Prevent pouring of `POSubmission`s withou `POMsgSet`s."""
+        """Prevent pouring of `POSubmission`s without `POMsgSet`s."""
         # POMsgSet has already been poured.  Delete from POSubmission holding
         # table any rows referring to nonexistent POMsgSets.
         cursor().execute("""
@@ -528,6 +530,9 @@ def copy_active_translations_as_update(child, transaction, logger):
         inert_where=have_better)
     cur = cursor()
 
+    # Make sure we can do fast joins on (potranslation, pomsgset, pluralform)
+    # to speed up the delete statement that protects uniqueness of active
+    # submissions in the POSubmission batch pouring callback.
     cur.execute(
         "CREATE UNIQUE INDEX posubmission_holding_triplet "
         "ON %s (potranslation, pomsgset, pluralform)"

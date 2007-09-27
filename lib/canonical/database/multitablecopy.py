@@ -91,6 +91,11 @@ class PouringLoop:
         self.transaction_manager.commit()
         self.transaction_manager.begin()
         self.cur = cursor()
+        # Disable slow sequential scans.  These may happen a lot otherwise
+        # because the database server is reluctant to use indexes on tables
+        # that undergo large changes.  We do this for every commit since
+        # psycopg1 resets our database connection with every new transaction.
+        postgresql.allow_sequential_scans(self.cur, False)
 
     def prepareBatch(self, from_table, to_table, batch_size, begin_id, end_id):
         """If batch_pouring_callback is defined, call it."""
@@ -346,12 +351,8 @@ class MultiTableCopy:
         if joins is None:
             joins = []
 
-        if batch_pouring_callback is not None:
-            callbacks = self.batch_pouring_callbacks
-            callbacks[source_table] = batch_pouring_callback
-
-        if pre_pouring_callback is not None:
-            self.pre_pouring_callbacks[source_table] = pre_pouring_callback
+        self.batch_pouring_callbacks[source_table] = batch_pouring_callback
+        self.pre_pouring_callbacks[source_table] = pre_pouring_callback
 
         if external_joins is None:
             external_joins = []
