@@ -18,6 +18,7 @@ from canonical.launchpad import _
 __metaclass__ = type
 
 __all__ = [
+    'IHasTranslationTemplates',
     'IPOTemplate',
     'IPOTemplateSet',
     'IPOTemplateSubset',
@@ -28,6 +29,33 @@ __all__ = [
 
 class LanguageNotFound(NotFoundError):
     """Raised when a a language does not exist in the database."""
+
+
+class IHasTranslationTemplates(Interface):
+    """An entity that has translation templates attached.
+
+    Examples include ISourcePackage, IDistribution, IDistroSeries, IProduct
+    and IProductSeries.
+    """
+
+    def getTranslationTemplates():
+        """Return an iterator over its translation templates."""
+
+    def getCurrentTranslationTemplates():
+        """Return an iterator over its active translation templates.
+
+        A translation template is considered active when both
+        `IPOTemplate`.iscurrent and `IDistribution`.official_rosetta flags
+        are set to True.
+        """
+
+    def getObsoleteTranslationTemplates():
+        """Return an iterator over its not active translation templates.
+
+        A translation template is considered not active when any of
+        `IPOTemplate`.iscurrent or `IDistribution`.official_rosetta flags
+        are set to False.
+        """
 
 
 class IPOTemplate(IRosettaStats):

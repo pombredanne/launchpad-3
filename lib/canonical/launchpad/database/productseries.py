@@ -30,8 +30,9 @@ from canonical.launchpad.database.specification import (
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.interfaces import (
-    PackagingType, IProductSeries, IProductSeriesSet,
-    IProductSeriesSourceAdmin, NotFoundError, RevisionControlSystems)
+    PackagingType, IHasTranslationTemplates, IProductSeries,
+    IProductSeriesSet, IProductSeriesSourceAdmin, NotFoundError,
+    RevisionControlSystems)
 from canonical.lp.dbschema import (
     ImportStatus, SpecificationSort,
     SpecificationGoalStatus, SpecificationFilter,
@@ -59,7 +60,9 @@ class DatePublishedSyncError(Exception):
 class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     HasTranslationImportsMixin):
     """A series of product releases."""
-    implements(IProductSeries, IProductSeriesSourceAdmin)
+    implements(
+        IProductSeries, IProductSeriesSourceAdmin, IHasTranslationTemplates)
+
     _table = 'ProductSeries'
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
@@ -167,18 +170,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if self.user_branch is not None:
             return self.user_branch
         return self.import_branch
-
-    @property
-    def potemplates(self):
-        result = POTemplate.selectBy(productseries=self)
-        result = list(result)
-        return sorted(result, key=lambda x: x.potemplatename.name)
-
-    @property
-    def currentpotemplates(self):
-        result = POTemplate.selectBy(productseries=self, iscurrent=True)
-        result = list(result)
-        return sorted(result, key=lambda x: x.potemplatename.name)
 
     def getPOTemplate(self, name):
         """See IProductSeries."""
@@ -530,6 +521,41 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See IProductSeries."""
         return Milestone(name=name, dateexpected=dateexpected,
                          product=self.product, productseries=self)
+
+    def getTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.selectBy(productseries=self)
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            result, key=lambda x: (-x.priority, x.potemplatename.name))
+
+    def getCurrentTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.select('''
+            productseries = %s AND
+            productseries = ProductSeries.id AND
+            iscurrent IS TRUE AND
+            ProductSeries.product = Product.id AND
+            Product.official_rosetta IS TRUE
+            ''' % sqlvalues(self),
+            clauseTables = ['ProductSeries', 'Product'])
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            result, key=lambda x: (-x.priority, x.potemplatename.name))
+
+    def getObsoleteTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.select('''
+            productseries=%s AND
+            productseries = ProductSeries.id AND
+            (iscurrent IS FALSE OR
+             (ProductSeries.product = Product.id AND
+              Product.official_rosetta IS FALSE))
+            ''' % sqlvalues(self.distroseries),
+            clauseTables = ['ProductSeries', 'Product'])
+        result = result.prejoin(['potemplatename'])
+        return sorted(
+            result, key=lambda x: (-x.priority, x.potemplatename.name))
 
 
 class ProductSeriesSet:

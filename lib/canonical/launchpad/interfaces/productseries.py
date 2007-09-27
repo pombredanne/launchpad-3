@@ -155,11 +155,6 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     release_files = Attribute("An iterator over the release files in this "
         "Series, sorted with latest release first.")
 
-    potemplates = Attribute(
-        _("Return an iterator over this series' PO templates."))
-    currentpotemplates = Attribute(
-        _("Return an iterator over this series' PO templates that "
-          "have the 'iscurrent' flag set'."))
     packagings = Attribute("An iterator over the Packaging entries "
         "for this product series.")
     specifications = Attribute("The specifications targeted to this "

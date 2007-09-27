@@ -81,17 +81,6 @@ class ISourcePackage(IBugTarget):
         "pocket. The result is a dictionary, with the pocket dbschema "
         "as a key, and a list of source package releases as the value.")
 
-    potemplates = Attribute(
-        "Return an iterator over its translation templates.")
-
-    current_potemplates = Attribute("""
-        Return an iterator over its translation templates that are currently
-        active.""")
-
-    obsolete_potemplates = Attribute("""
-        Return an iterator over its translation templates that are currently
-        not active.""")
-
     def __getitem__(version):
         """Return the source package release with the given version in this
         distro series, or None."""
