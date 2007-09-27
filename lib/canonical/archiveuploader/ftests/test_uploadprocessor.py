@@ -416,9 +416,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("foocomm_1.0-1_binary")
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Check it went ok to the NEW queue and all is going well so far.
-        self._checkPartnerUploadEmailSuccess()
-
         # Find the binarypackagerelease and check its component.
         foocomm_binname = BinaryPackageName.selectOneBy(name="foocomm")
         foocomm_bpr = BinaryPackageRelease.selectOneBy(
@@ -474,11 +471,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Now do the same thing with a binary package.
         upload_dir = self.queueUpload("foocomm_1.0-1_binary")
         self.processUpload(uploadprocessor, upload_dir)
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        self.assertTrue(
-            "NEW" in raw_msg,
-            "Expected email containing 'NEW', got:\n%s"
-            % raw_msg)
 
         # Accept and publish the upload.
         self._publishPackage("foocomm", "1.0-1", source=False,
@@ -488,23 +480,24 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("foocomm_1.0-2")
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Check it is in the accepted queue.
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        self.assertTrue(
-            "OK: foocomm_1.0-2.dsc" in raw_msg,
-            "Expected email containing 'OK: foocomm_1.0-2.dsc', got:\n%s"
-            % raw_msg)
+        # Check it is in the DONE queue (pure source uploads with ancestry
+        # skip ACCEPTED).
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.DONE,
+            version="1.0-2",
+            name="foocomm")
+        self.assertEqual(queue_items.count(), 1)
 
         # Upload the next binary version of the package.
         upload_dir = self.queueUpload("foocomm_1.0-2_binary")
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Check it is in the accepted queue.
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        self.assertTrue(
-            "OK: foocomm_1.0-2_i386.deb" in raw_msg,
-            "Expected email containing 'OK: foocomm_1.0-2_i386.deb', got:\n%s"
-            % raw_msg)
+        # Check that it is accepted:
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED,
+            version="1.0-2",
+            name="foocomm")
+        self.assertEqual(queue_items.count(), 1)
 
     def testPartnerUploadToProposedPocket(self):
         """Upload a partner package to the proposed pocket."""

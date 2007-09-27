@@ -55,6 +55,12 @@ def debug(logger, msg):
     if logger is not None:
         logger.debug(msg)
 
+def info(logger, msg):
+    """Helper function to call logger.info if logger is not None."""
+    if logger is not None:
+        logger.info(msg)
+
+
 class PackageUploadQueue:
 
     implements(IPackageUploadQueue)
@@ -395,7 +401,7 @@ class PackageUpload(SQLBase):
         return summary
 
     def _sendRejectionNotification(self, recipients, changes_lines,
-                                   summary_text):
+                                   summary_text, dry_run):
         """Send a rejection email."""
 
         default_recipient = "%s <%s>" % (
@@ -420,10 +426,11 @@ class PackageUpload(SQLBase):
             sender,
             recipients,
             "%s rejected" % self.changesfile.filename,
-            rejection_template % interpolations)
+            rejection_template % interpolations,
+            dry_run)
 
     def _sendSuccessNotification(self, recipients, announce_list,
-            changes_lines, changes, summarystring):
+            changes_lines, changes, summarystring, dry_run):
         """Send a success email."""
         interpolations = {
             "SUMMARY": summarystring,
@@ -448,7 +455,8 @@ class PackageUpload(SQLBase):
                 uploader_address,
                 recipients,
                 "%s is NEW" % self.changesfile.filename,
-                new_template % interpolations)
+                new_template % interpolations,
+                dry_run)
             return
 
         if self.isPPA():
@@ -463,7 +471,8 @@ class PackageUpload(SQLBase):
                 uploader_address,
                 recipients,
                 subject,
-                accepted_template % interpolations)
+                accepted_template % interpolations,
+                dry_run)
             return
 
         # Every message sent from here onwards uses the accepted template.
@@ -479,7 +488,8 @@ class PackageUpload(SQLBase):
                 uploader_address,
                 recipients,
                 subject,
-                accepted_template % interpolations)
+                accepted_template % interpolations,
+                dry_run)
             return
 
         # Auto-approved binary uploads to security skips the announcement,
@@ -494,7 +504,8 @@ class PackageUpload(SQLBase):
                 uploader_address,
                 recipients,
                 subject,
-                accepted_template % interpolations)
+                accepted_template % interpolations,
+                dry_run)
             return
 
         # Unapproved uploads coming from an insecure policy only send
@@ -510,7 +521,8 @@ class PackageUpload(SQLBase):
                 uploader_address,
                 recipients,
                 subject,
-                accepted_template % interpolations)
+                accepted_template % interpolations,
+                dry_run)
             return
 
         # Fallback, all the rest coming from insecure, secure and sync
@@ -521,7 +533,8 @@ class PackageUpload(SQLBase):
             uploader_address,
             recipients,
             subject,
-            accepted_template % interpolations)
+            accepted_template % interpolations,
+            dry_run)
         if announce_list:
             sender = ""
             if not self.signing_key:
@@ -535,14 +548,23 @@ class PackageUpload(SQLBase):
                 [str(announce_list)],
                 subject,
                 announce_template % interpolations,
+                dry_run,
                 bcc="%s_derivatives@packages.qa.debian.org" % self.displayname)
         return
 
     def notify(self, announce_list=None, summary_text=None,
-               changes_file_object=None, logger=None):
+               changes_file_object=None, logger=None, dry_run=False):
         """See `IDistroSeriesQueue`."""
 
         self.logger = logger
+
+        # If this is a binary or mixed upload, we don't send *any* emails
+        # provided it's not a rejection or a security upload:
+        if(self.containsBuild and
+           self.status != PackageUploadStatus.REJECTED and
+           self.pocket != PackagePublishingPocket.SECURITY):
+            debug(self.logger, "Not sending email, upload contains binaries.")
+            return
 
         # Get the changes file from the librarian and parse the tags to
         # a dictionary.  This can throw exceptions but since the tag file
@@ -582,12 +604,13 @@ class PackageUpload(SQLBase):
 
         # If we need to send a rejection, do it now and return early.
         if self.status == PackageUploadStatus.REJECTED:
-            self._sendRejectionNotification(recipients, changes_lines,
-                summary_text)
+            self._sendRejectionNotification(
+                recipients, changes_lines, summary_text, dry_run)
             return
 
-        self._sendSuccessNotification(recipients, announce_list, changes_lines,
-            changes, summarystring)
+        self._sendSuccessNotification(
+            recipients, announce_list, changes_lines, changes, summarystring,
+            dry_run)
 
     def _getRecipients(self, changes):
         """Return a list of recipients for notification emails."""
@@ -652,7 +675,8 @@ class PackageUpload(SQLBase):
         debug(self.logger, "Decision: %s" % uploader)
         return uploader
 
-    def _sendMail(self, from_addr, to_addrs, subject, mail_text, bcc=None):
+    def _sendMail(self, from_addr, to_addrs, subject, mail_text, dry_run,
+                  bcc=None):
         """Send an email to to_addrs with the given text and subject.
 
         :from_addr: The email address to be used as the sender.  Must be a
@@ -679,26 +703,36 @@ class PackageUpload(SQLBase):
         extra_headers['Bcc'] = ascii_smash(bcc_text)
 
         recipients = ascii_smash(", ".join(to_addrs))
-        debug(self.logger, "Sent a mail:")
-        debug(self.logger, "    Subject: %s" % subject)
-        debug(self.logger, "    Recipients: %s" % recipients)
-        debug(self.logger, "    Body:")
-        for line in mail_text.splitlines():
-            debug(self.logger, line)
-
         if isinstance(from_addr, unicode):
             # ascii_smash only works on unicode strings.
             from_addr = ascii_smash(from_addr)
         else:
             from_addr.encode('ascii')
 
-        simple_sendmail(
-            from_addr,
-            recipients,
-            subject,
-            mail_text,
-            extra_headers
-        )
+        if dry_run:
+            info(self.logger, "Would be sending a mail:")
+            info(self.logger, "  Subject: %s" % subject)
+            info(self.logger, "  Sender: %s" % from_addr)
+            info(self.logger, "  Recipients: %s" % recipients)
+            info(self.logger, "  Bcc: %s" % extra_headers['Bcc'])
+            info(self.logger, "  Body:")
+            for line in mail_text.splitlines():
+                info(self.logger, line)
+        else:
+            debug(self.logger, "Sent a mail:")
+            debug(self.logger, "    Subject: %s" % subject)
+            debug(self.logger, "    Recipients: %s" % recipients)
+            debug(self.logger, "    Body:")
+            for line in mail_text.splitlines():
+                debug(self.logger, line)
+
+            simple_sendmail(
+                from_addr,
+                recipients,
+                subject,
+                mail_text,
+                extra_headers
+            )
 
 
 class PackageUploadBuild(SQLBase):

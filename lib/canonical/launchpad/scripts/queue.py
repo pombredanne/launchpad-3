@@ -14,12 +14,14 @@ __all__ = [
     'name_queue_map'
     ]
 
-import os
-import tempfile
 import errno
-from email import message_from_string
+import os
 import pytz
+import tempfile
+
 from datetime import datetime
+from email import message_from_string
+from logging import getLogger
 from sha import sha
 
 from zope.component import getUtility
@@ -96,7 +98,8 @@ class QueueAction:
 
     def __init__(self, distribution_name, suite_name, queue, terms,
                  component_name, section_name, priority_name,
-                 announcelist, display, no_mail=True, exact_match=False):
+                 announcelist, display, no_mail=True, exact_match=False,
+                 log=None):
         """Initialises passed variables. """
         self.terms = terms
         # Some actions have addtional commands at the start of the terms
@@ -118,6 +121,7 @@ class QueueAction:
             config.uploader.default_recipient_name,
             config.uploader.default_recipient_address)
         self.display = display
+        self.log=log
 
     @cachedproperty
     def size(self):
@@ -305,108 +309,6 @@ class QueueAction:
                          % (queue_custom.libraryfilealias.filename,
                             queue_custom.customformat.name))
 
-    def displayMessage(self, message):
-        """Display formated message."""
-        self.display("Would be sending a mail:")
-        self.display("   Subject: %s" % message['Subject'])
-        self.display("   Sender: %s" % message['From'])
-        self.display("   Recipients: %s" % message['To'])
-        self.display("   Bcc: %s" % message['Bcc'])
-        self.display("   Body:")
-        for line in message.get_payload().split("\n"):
-            self.display(line)
-
-    def send_email(self, message):
-        """Send the mails provided using the launchpad mail infrastructure."""
-        mail_message = message_from_string(ascii_smash(message))
-        mail_message['X-Katie'] = "Launchpad actually"
-        # XXX cprov 2006-07-11 bug=51742: Empty 'To:' due
-        # invalid uploader LP email on reject. We always have Bcc:, so, it's
-        # promoted to To:
-        if not mail_message['To']:
-            mail_message['X-Non-LP-Uploader'] = ""
-            mail_message.replace_header('To', self.default_recipient)
-            mail_message.replace_header('Bcc', '')
-
-        if not self.no_mail:
-            sendmail(mail_message)
-            return
-
-        self.displayMessage(mail_message)
-
-    # XXX: dsilvers 2005-02-03: This code is essentially cargo-culted from
-    # nascentupload.py and ideally should be migrated into a database
-    # method.
-    def _components_valid_for(self, person):
-        """Return the set of components this person could upload to."""
-
-        possible_components = set()
-        for acl in self.distribution.uploaders:
-            if person in acl:
-                possible_components.add(acl.component.name)
-
-        return possible_components
-
-    def is_person_in_keyring(self, person):
-        """Return whether or not the specified person is in the keyring."""
-        in_keyring = len(self._components_valid_for(person)) > 0
-        return in_keyring
-
-    # The above were stolen for this code to be useful.
-    def filter_addresses(self, addresslist):
-        """Filter the list of addresses provided based on the distribution's
-        permitted uploaders.
-        """
-        okay = []
-        person_util = getUtility(IPersonSet)
-        for address in addresslist:
-            p = person_util.getByEmail(address)
-            if p is not None:
-                if self.is_person_in_keyring(p):
-                    okay.append(address)
-        return okay
-
-    def find_addresses_from(self, changesfile):
-        """Given a libraryfilealias which is a changes file, find a
-        set of permitted recipients for the current distroseries.
-        """
-        full_set = set()
-        recipient_addresses = []
-        from_address = self.default_sender
-
-        temp_fd, temp_name = tempfile.mkstemp()
-        temp_fd = os.fdopen(temp_fd, "w")
-
-        changesfile.open()
-        temp_fd.write(changesfile.read())
-        temp_fd.close()
-        changesfile.close()
-
-        try:
-            changes = parse_tagfile(temp_name, allow_unsigned=True)
-        except TagFileParseError, e:
-            os.remove(temp_name)
-        else:
-            os.remove(temp_name)
-
-            (rfc822, rfc2047, name, email) = safe_fix_maintainer(
-                changes['maintainer'], 'maintainer')
-            full_set.add(email)
-
-            (rfc822, rfc2047, name, email) = safe_fix_maintainer(
-                changes['changed-by'], 'changed-by')
-            full_set.add(email)
-
-            # Finally, filter the set of recipients based on the whitelist
-            recipient_addresses.extend(self.filter_addresses(full_set))
-
-            if email in recipient_addresses:
-                from_address = rfc2047
-
-        # Return the sender for the announce and any recipients for the
-        # accept/reject messages themselves
-        return from_address, recipient_addresses
-
 
 class QueueActionHelp(QueueAction):
     """Present provided actions summary"""
@@ -569,51 +471,7 @@ class QueueActionReject(QueueAction):
                              % (queue_item.displayname, info))
             else:
                 queue_item.syncUpdate()
-                summary = []
-                for queue_source in queue_item.sources:
-                    # XXX: dsilvers 2006-02-03: This needs to be able to
-                    # be given a reason for the rejection, otherwise it's
-                    # not desperately useful.
-                    src_rel = queue_source.sourcepackagerelease
-                    summary.append('%s %s was REJECTED.\n\t'
-                                   'Component: %s Section: %s'
-                                   % (src_rel.name, src_rel.version,
-                                      src_rel.component.name,
-                                      src_rel.section.name))
-
-                for queue_build in queue_item.builds:
-                    summary.append(
-                        '%s (%s) was REJECTED'
-                        % (queue_build.build.title, queue_build.build.id))
-
-                for queue_custom in queue_item.customfiles:
-                    summary.append(
-                        '%s (%s) was REJECTED'
-                        % (queue_custom.libraryfilealias.filename,
-                           queue_custom.libraryfilealias.http_url))
-
-                sender, recipients = self.find_addresses_from(
-                        queue_item.changesfile)
-
-                queue_item.changesfile.open()
-                # XXX cprov 2006-02-21: guess_encoding breaks the
-                # GPG signature.
-                changescontent = guess_encoding(
-                    queue_item.changesfile.read())
-                queue_item.changesfile.close()
-
-                replacements = {
-                    "SENDER": sender,
-                    "RECIPIENT": ", ".join(recipients),
-                    "CHANGES": queue_item.changesfile.filename,
-                    "SUMMARY": "\n".join(summary),
-                    "CHANGESFILE": changescontent,
-                    "DEFAULT_RECIPIENT": self.default_recipient,
-                    }
-
-                # append an email describing this action.
-                message = rejection_template % replacements
-                self.send_email(message)
+                queue_item.notify(logger=self.log, dry_run=self.no_mail)
 
         self.displayRule()
         self.displayBottom()
@@ -639,94 +497,11 @@ class QueueActionAccept(QueueAction):
                              % (queue_item.displayname, info))
             else:
                 queue_item.syncUpdate()
-                summary = []
-                for queue_source in queue_item.sources:
-                    # XXX: dsilvers 2006-02-03: This needs to be able to
-                    # be given a reason for the rejection, otherwise it's
-                    # not desperately useful.
-                    src_rel = queue_source.sourcepackagerelease
-                    summary.append('%s %s was ACCEPTED.\n\t'
-                                   'Component: %s Section: %s'
-                                   % (src_rel.name, src_rel.version,
-                                      src_rel.component.name,
-                                      src_rel.section.name))
-
-                for queue_build in queue_item.builds:
-                    summary.append(
-                        '%s (%s) was ACCEPTED' % (queue_build.build.title,
-                                                  queue_build.build.id))
-
-                for queue_custom in queue_item.customfiles:
-                    summary.append(
-                        '%s (%s) was ACCEPTED'
-                        % (queue_custom.libraryfilealias.filename,
-                           queue_custom.libraryfilealias.http_url))
-
-                self.maybeSendAnnouncement(queue_item, "\n".join(summary))
+                queue_item.notify(announce_list=self.announcelist,
+                                  logger=self.log, dry_run=self.no_mail)
 
         self.displayRule()
         self.displayBottom()
-
-    def maybeSendAnnouncement(self, queue_item, summary):
-        """Build and send oppropriate annoncement email if allowed.
-
-        Take the summary given, and derive the rest of the information
-        for the email from the queue_item.
-
-        This method only sends email for sourceful or single custom uploads,
-        i.e., it skips binary uploads.
-
-        Usually uploaders and 'announcelist' will recieve acceptance message.
-
-        It does not include 'announcelist' as recipient for uploads to pocket
-        BACKPORTS.
-
-        It also do not send messages for source uploads targeted to section
-        'translations' ('laguage-pack-*' & 'language-support-*').
-        """
-        # Skip announcement for binary or mixed uploads.
-        if queue_item.containsBuild:
-            return
-
-        # Skip annoncement for source uploads targeted to 'translation'
-        # section ('laguage-pack-*' & 'language-support-*')
-        if queue_item.containsSource:
-            source = queue_item.sources[0]
-            # XXX cprov 2007-02-28: instead of using the original section
-            # we should be aware of pre-publication overrides when we
-            # have them. See NativeSourceSync specification.
-            section_name = source.sourcepackagerelease.section.name
-            if section_name == 'translations':
-                return
-
-        sender, recipients = self.find_addresses_from(
-            queue_item.changesfile)
-
-        # Only include announcelist as recipient if the upload is not
-        # targeted for BACKPORTS.
-        if (self.announcelist is not None and
-            queue_item.pocket != PackagePublishingPocket.BACKPORTS):
-            recipients.append(self.announcelist)
-
-        queue_item.changesfile.open()
-        # XXX cprov 2006-02-21: guess_encoding breaks the GPG signature.
-        changescontent = guess_encoding(queue_item.changesfile.read())
-        queue_item.changesfile.close()
-
-        replacements = {
-            "MAINTAINERFROM": sender,
-            "SOURCE": queue_item.displayname,
-            "VERSION": queue_item.displayversion,
-            "ARCH": queue_item.displayarchs,
-            "CHANGESFILE": changescontent,
-            "SUMMARY": summary,
-            "ANNOUNCE": ", ".join(recipients),
-            "DEFAULT_RECIPIENT": self.default_recipient
-        }
-
-        # append an email describing this action.
-        message = announce_template % replacements
-        self.send_email(message)
 
 
 class QueueActionOverride(QueueAction):
@@ -756,7 +531,8 @@ class QueueActionOverride(QueueAction):
 
     def __init__(self, distribution_name, suite_name, queue, terms,
                  component_name, section_name, priority_name,
-                 announcelist, display, no_mail=True, exact_match=False):
+                 announcelist, display, no_mail=True, exact_match=False,
+                 log=None):
         """Constructor for QueueActionOverride."""
 
         # This exists so that self.terms_start_index can be set as this action
@@ -766,7 +542,7 @@ class QueueActionOverride(QueueAction):
         QueueAction.__init__(self, distribution_name, suite_name, queue, terms,
                              component_name, section_name, priority_name,
                              announcelist, display, no_mail=True,
-                             exact_match=False)
+                             exact_match=False, log=log)
         self.terms_start_index = 1
 
     def run(self):
@@ -892,7 +668,7 @@ class CommandRunner:
     """A wrapper for queue_action classes."""
     def __init__(self, queue, distribution_name, suite_name,
                  announcelist, no_mail, component_name, section_name,
-                 priority_name, display=default_display):
+                 priority_name, display=default_display, log=None):
         self.queue = queue
         self.distribution_name = distribution_name
         self.suite_name = suite_name
@@ -902,6 +678,7 @@ class CommandRunner:
         self.section_name = section_name
         self.priority_name = priority_name
         self.display = display
+        self.log = log
 
     def execute(self, terms, exact_match=False):
         """Execute a single queue action."""
@@ -934,7 +711,8 @@ class CommandRunner:
                 component_name=self.component_name,
                 section_name=self.section_name,
                 priority_name=self.priority_name,
-                exact_match=exact_match)
+                exact_match=exact_match,
+                log=self.log)
             queue_action.initialize()
             queue_action.run()
         except QueueActionError, info:
