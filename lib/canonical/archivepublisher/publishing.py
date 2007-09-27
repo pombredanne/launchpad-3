@@ -282,9 +282,9 @@ class Publisher(object):
         return True
 
     def _makeFileGroupWriteableAndWorldReadable(self, file_path):
-        """Make the file group writable and world readable."""
+        """Make the file group readable/writable and world readable."""
         mode = stat.S_IMODE(os.stat(file_path).st_mode)
-        os.chmod(file_path, mode | stat.S_IWGRP | stat.S_IROTH)
+        os.chmod(file_path, mode | stat.S_IWGRP | stat.S_IRGRP | stat.S_IROTH)
 
     def _writeComponentIndexes(self, distroseries, pocket, component):
         """Write Index files for single distroseries + pocket + component.

@@ -739,7 +739,8 @@ class TestPublisher(TestNativePublishingBase):
         for file in (sourcesgz_file, packagesgz_file):
             mode = stat.S_IMODE(os.stat(file).st_mode)
             self.assertTrue(
-                (mode & stat.S_IROTH) == stat.S_IROTH,
+                (mode & (stat.S_IROTH | stat.S_IRGRP)) ==
+                (stat.S_IROTH | stat.S_IRGRP),
                 "%s is not world readable." % file)
 
 
