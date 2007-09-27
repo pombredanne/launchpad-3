@@ -346,7 +346,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def translatable_packages(self):
         """See `IProduct`."""
         packages = set(package for package in self.sourcepackages
-                       if len(package.currentpotemplates) > 0)
+                       if len(package.getCurrentTranslationTemplates()) > 0)
         # Sort packages by distroseries.name and package.name
         return sorted(packages, key=lambda p: (p.distroseries.name, p.name))
 

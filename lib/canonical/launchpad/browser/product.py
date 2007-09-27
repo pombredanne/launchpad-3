@@ -472,7 +472,8 @@ class ProductView(LaunchpadView):
 
                 object_translatable = {
                     'title': sourcepackage.title,
-                    'potemplates': sourcepackage.currentpotemplates,
+                    'potemplates':
+                        sourcepackage.getCurrentTranslationTemplates(),
                     'base_url': '/distros/%s/%s/+sources/%s' % (
                         sourcepackage.distribution.name,
                         sourcepackage.distroseries.name,
@@ -484,7 +485,8 @@ class ProductView(LaunchpadView):
 
                 object_translatable = {
                     'title': productseries.title,
-                    'potemplates': productseries.currentpotemplates,
+                    'potemplates':
+                        productseries.getCurrentTranslationTemplates(),
                     'base_url': '/projects/%s/%s' % (
                         self.context.name,
                         productseries.name)
@@ -554,7 +556,7 @@ class ProductView(LaunchpadView):
         potemplatenames = set([])
 
         for series in self.context.serieses:
-            for potemplate in series.potemplates:
+            for potemplate in series.getTranslationTemplates():
                 potemplatenames.add(potemplate.potemplatename)
 
         return sorted(potemplatenames, key=lambda item: item.name)

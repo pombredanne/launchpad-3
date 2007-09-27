@@ -263,12 +263,12 @@ class ProductSeriesTranslationsExportView(BaseExportView):
     def processForm(self):
         """Process form submission requesting translations export."""
         pofiles = []
-        for potemplate in self.context.potemplates:
+        for potemplate in self.context.getTranslationTemplates():
             pofiles += list(potemplate.pofiles)
-        return (self.context.potemplates, pofiles)
+        return (self.context.getTranslationTemplates(), pofiles)
 
     def getDefaultFormat(self):
-        templates = self.context.potemplates
+        templates = self.context.getTranslationTemplates()
         if len(templates) == 0:
             return None
         return templates[0].source_file_format
@@ -300,7 +300,8 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         self.has_errors = False
 
         # Whether there is more than one PO template.
-        self.has_multiple_templates = len(self.context.currentpotemplates) > 1
+        self.has_multiple_templates = len(
+            self.context.getCurrentTranslationTemplates()) > 1
 
         # let's find out what source package is associated with this
         # productseries in the current release of ubuntu

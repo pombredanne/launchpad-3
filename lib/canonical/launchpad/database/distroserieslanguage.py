@@ -1,30 +1,31 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+
 """An implementation of DistroSeriesLanguage objects."""
 
 __metaclass__ = type
-__all__ = ['DistroSeriesLanguage', 'DummyDistroSeriesLanguage',
-           'DistroSeriesLanguageSet']
+
+__all__ = [
+    'DistroSeriesLanguage',
+    'DistroSeriesLanguageSet'
+    'DummyDistroSeriesLanguage',
+    ]
 
 from datetime import datetime
+import pytz
 
-# Zope interfaces
+from sqlobject import ForeignKey, IntCol
 from zope.interface import implements
 from zope.component import getUtility
 
-# SQL imports
-from sqlobject import ForeignKey, IntCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
-# canonical imports
-import pytz
-
-from canonical.launchpad.interfaces import (IDistroSeriesLanguage,
-    IDistroSeriesLanguageSet, IPersonSet)
+from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.translator import Translator
-from canonical.database.constants import DEFAULT, UTC_NOW
-from canonical.launchpad.components.rosettastats import RosettaStats
+from canonical.launchpad.interfaces import (
+    IDistroSeriesLanguage, IDistroSeriesLanguageSet, IPersonSet)
+
 
 class DistroSeriesLanguage(SQLBase, RosettaStats):
     """See `IDistroSeriesLanguage`.
@@ -76,7 +77,7 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
         # SourcePackageName for every DummyPOFile when displaying the
         # list of templates per distribution series.
         translated_pots = set(pofile.potemplate for pofile in pofiles)
-        all_pots = set(self.distroseries.currentpotemplates)
+        all_pots = set(self.distroseries.getCurrentTranslationTemplates())
         untranslated_pots = all_pots - translated_pots
         dummies = [DummyPOFile(pot, self.language)
                    for pot in untranslated_pots]
@@ -178,7 +179,7 @@ class DummyDistroSeriesLanguage(RosettaStats):
         """We need to pretend that we have pofiles, so we will use
         DummyPOFile's."""
         pofiles = []
-        for potemplate in self.distroseries.currentpotemplates:
+        for potemplate in self.distroseries.getCurrentTranslationTemplates():
             pofiles.append(DummyPOFile(potemplate, self.language))
         return pofiles
 
