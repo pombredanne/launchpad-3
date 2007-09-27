@@ -1022,15 +1022,31 @@ But any person without a single email address can't.
     False
 
 Any person that's already merged is not part of this vocabulary:
-# XXX kiko 2007-01-18: Here we cheat because IPerson.merged is a
-# readonly attribute.
 
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov in vocab
+    True
+
+    # Here we cheat because IPerson.merged is a readonly attribute.
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(fooperson).merged = 1
-    >>> flush_database_updates()
-    >>> fooperson in vocab
+    >>> naked_cprov = removeSecurityProxy(cprov)
+    >>> naked_cprov.merged = 1
+    >>> naked_cprov.syncUpdate()
+    >>> cprov in vocab
     False
 
+A person whose account_status is any of the statuses of
+INACTIVE_ACCOUNT_STATUSES is part of the vocabulary, though.
+
+    >>> from canonical.launchpad.interfaces import INACTIVE_ACCOUNT_STATUSES
+    >>> naked_cprov.merged = None
+    >>> checked_count = 0
+    >>> for status in INACTIVE_ACCOUNT_STATUSES:
+    ...     naked_cprov.account_status = status
+    ...     naked_cprov.syncUpdate()
+    ...     checked_count += int(cprov in vocab)
+    >>> checked_count == len(INACTIVE_ACCOUNT_STATUSES)
+    True
 
 === NonMergedPeopleAndTeams ===
 

@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'AccountStatus',
     'IAdminRequestPeopleMerge',
+    'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'IObjectReassignment',
     'IPersonChangePassword',
@@ -78,6 +79,10 @@ class AccountStatus(DBEnumeratedType):
         The account associated with this Person has been suspended by a
         Launchpad admin.
         """)
+
+
+INACTIVE_ACCOUNT_STATUSES = [
+    AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED]
 
 
 class PersonCreationRationale(DBEnumeratedType):
