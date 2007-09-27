@@ -203,6 +203,10 @@ class ICodeImportEventSet(Interface):
         For use only in tests.
         """
 
+    def getEventsForCodeImport(code_import):
+        """Iterate over `CodeImportEvent` objects associated to a CodeImport.
+        """
+
     def newCreate(code_import, person):
         """Record the creation of a `CodeImport` object.
 

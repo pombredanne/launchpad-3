@@ -67,7 +67,12 @@ class CodeImportEventSet:
 
     def getAll(self):
         """See `ICodeImportEventSet`."""
-        return CodeImportEvent.select(orderBy='id')
+        return CodeImportEvent.select(orderBy=['date_created', 'id'])
+
+    def getEventsForCodeImport(self, code_import):
+        """See `ICodeImportEventSet`."""
+        return CodeImportEvent.selectBy(code_import=code_import).orderBy(
+            ['date_created', 'id'])
 
     # All CodeImportEvent creation methods should assert arguments against
     # None. The database schema and the interface allow all foreign keys to be

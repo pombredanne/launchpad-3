@@ -20,8 +20,9 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (cursor, SQLBase, sqlvalues)
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
-    ICodeImport, ICodeImportSet, ILaunchpadCelebrities, NotFoundError,
-    RevisionControlSystems)
+    ILaunchpadCelebrities, NotFoundError,
+    RevisionControlSystems, ICodeImportEventSet,
+    ICodeImport, ICodeImportSet)
 from canonical.lp.dbschema import CodeImportReviewStatus
 
 
@@ -85,10 +86,12 @@ class CodeImportSet:
             raise AssertionError(
                 "Don't know how to sanity check source details for unknown "
                 "rcs_type %s"%rcs_type)
-        return CodeImport(
+        code_import = CodeImport(
             registrant=registrant, owner=registrant, branch=branch,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
+        getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
+        return code_import
 
     # XXX: DavidAllouche 2007-07-05:
     # newWithId is only needed for code-import-sync-script. This method
@@ -115,10 +118,13 @@ class CodeImportSet:
                 SELECT last_value from codeimport_id_seq)));"""
             % sqlvalues(id))
         assert len(cur.fetchall()) == 1
-        return CodeImport(
+        code_import = CodeImport(
             id=id, registrant=registrant, owner=registrant, branch=branch,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
+        getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
+        return code_import
+
 
     def delete(self, id):
         """See `ICodeImportSet`."""

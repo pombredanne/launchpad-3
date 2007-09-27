@@ -52,6 +52,15 @@ read.
     ...         None, 'Import branch')
 
 
+== CodeImport events ==
+
+Most mutating operations affecting code imports should create CodeImportEvent
+objects in the database to provide an audit trail.
+
+    >>> from canonical.launchpad.interfaces import ICodeImportEventSet
+    >>> event_set = getUtility(ICodeImportEventSet) 
+
+
 == Supported source systems ==
 
 The rcs_type field, which indicates whether the import is from CVS or
@@ -75,6 +84,11 @@ in the repository, known as the "module".
     >>> verifyObject(ICodeImport, removeSecurityProxy(cvs_import))
     True
 
+Creating a CodeImport object creates a corresponding CodeImportEvent.
+
+    >>> cvs_events = event_set.getEventsForCodeImport(cvs_import)
+    >>> [event.event_type.name for event in cvs_events]
+    ['CREATE']
 
 === Import from Subversion ===
 
@@ -89,6 +103,12 @@ retrieve the tree to import.
     ...     rcs_type=svn, svn_branch_url=svn_url)
     >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
     True
+
+Creating a CodeImport object creates a corresponding CodeImportEvent.
+
+    >>> svn_events = event_set.getEventsForCodeImport(svn_import)
+    >>> [event.event_type.name for event in svn_events]
+    ['CREATE']
 
 
 == Creating a CodeImport from existing data ==
