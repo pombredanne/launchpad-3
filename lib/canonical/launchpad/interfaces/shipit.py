@@ -212,7 +212,7 @@ class ShipItConstants:
     ubuntu_url = 'https://shipit.ubuntu.com'
     kubuntu_url = 'https://shipit.kubuntu.com'
     edubuntu_url = 'https://shipit.edubuntu.com'
-    current_distroseries = ShipItDistroSeries.FEISTY
+    current_distroseries = ShipItDistroSeries.GUTSY
     max_size_for_auto_approval = 16
 
 
