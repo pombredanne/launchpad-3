@@ -26,7 +26,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
-    enabled_with_permission, GetitemNavigation, stepthrough,
+    enabled_with_permission, GetitemNavigation, stepthrough, stepto,
     LaunchpadEditFormView, action)
 from canonical.launchpad.webapp.dynmenu import DynMenu
 
@@ -38,7 +38,7 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.queue import QueueItemsView
-from canonical.launchpad.browser.rosetta import TranslationsMixin
+from canonical.launchpad.browser.translations import TranslationsMixin
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp.authorization import check_permission
@@ -99,6 +99,20 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
     @stepthrough('+package')
     def package(self, name):
         return self.context.getBinaryPackage(name)
+
+    @stepto('+latest-full-language-pack')
+    def latest_full_language_pack(self):
+        if self.context.last_full_language_pack_exported is None:
+            return None
+        else:
+            return self.context.last_full_language_pack_exported.file
+
+    @stepto('+latest-delta-language-pack')
+    def redirect_latest_delta_language_pack(self):
+        if self.context.last_delta_language_pack_exported is None:
+            return None
+        else:
+            return self.context.last_delta_language_pack_exported.file
 
 
 class DistroSeriesSOP(StructuralObjectPresentation):
@@ -497,13 +511,13 @@ class DistroSeriesFullLanguagePackRequestView(LaunchpadEditFormView):
             # There are changes.
             if self.context.language_pack_full_export_requested:
                 self.request.response.addInfoNotification('''
-Your request has been noted, next language pack export will include a full
-export.
+Your request has been noted. Next language pack export will include all
+available translations.
 ''')
             else:
                 self.request.response.addInfoNotification('''
-Your request has been noted, next language pack export will be an export
-relative to current language_pack_base.
+Your request has been noted. Next language pack export will be made relative
+to the current base language pack.
 ''')
         else:
             self.request.response.addInfoNotification(

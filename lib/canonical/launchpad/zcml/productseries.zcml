@@ -130,9 +130,6 @@
         <browser:page
             name="+milestones"
             template="../templates/object-milestones.pt" />
-        <browser:page
-            name="+portlet-potemplates"
-            template="../templates/object-portlet-potemplates.pt" />
     </browser:pages>
 
     <browser:pages
@@ -149,6 +146,13 @@
             template="../templates/productseries-importstatus.pt"
             />
     </browser:pages>
+
+    <browser:page
+        name="+translations"
+        for="canonical.launchpad.interfaces.IProductSeries"
+        class="canonical.launchpad.browser.TranslationsRedirectView"
+        permission="zope.Public"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"

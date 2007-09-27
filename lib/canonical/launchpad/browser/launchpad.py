@@ -60,6 +60,7 @@ from canonical.launchpad.interfaces import (
     ICodeOfConductSet,
     ICveSet,
     IDistributionSet,
+    IHWDBApplication,
     IKarmaActionSet,
     ILanguageSet,
     ILaunchBag,
@@ -403,6 +404,12 @@ class LaunchpadRootNavigation(Navigation):
             getUtility(ILaunchpadRoot), rootsite='answers')
         return self.redirectSubTree(target_url + 'questions', status=301)
 
+    @stepto('legal')
+    def redirect_legal(self):
+        """Redirect /legal to help.launchpad.net/Legal site."""
+        return self.redirectSubTree(
+            'https://help.launchpad.net/Legal', status=301)
+
     stepto_utilities = {
         'binarypackagenames': IBinaryPackageNameSet,
         'bounties': IBountySet,
@@ -412,6 +419,7 @@ class LaunchpadRootNavigation(Navigation):
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
         'distros': IDistributionSet,
+        'hwdb': IHWDBApplication,
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
