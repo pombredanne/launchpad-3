@@ -9,6 +9,7 @@ __all__ = [
 import os
 import sys
 import shutil
+import socket
 import tarfile
 import traceback
 import xmlrpclib
@@ -85,7 +86,7 @@ class XMLRPCRunner(Runner):
         """See if there are any list actions to perform."""
         try:
             actions = proxy.getPendingActions()
-        except xmlrpclib.ProtocolError, error:
+        except (xmlrpclib.ProtocolError, socket.error), error:
             syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
             return
         if actions:
@@ -126,7 +127,7 @@ class XMLRPCRunner(Runner):
                         if list_name <> mm_cfg.MAILMAN_SITE_LIST]
         try:
             info = proxy.getMembershipInformation(active_lists)
-        except xmlrpclib.ProtocolError, error:
+        except (xmlrpclib.ProtocolError, socket.error), error:
             syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
             return
         for list_name in info:

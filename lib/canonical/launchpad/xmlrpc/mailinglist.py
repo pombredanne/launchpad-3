@@ -12,8 +12,10 @@ from operator import itemgetter
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.ftests import xmlrpc_helper
 from canonical.launchpad.interfaces import (
-    IEmailAddressSet, IMailingListAPIView, IMailingListSet, MailingListStatus)
+    IEmailAddressSet, IMailingListAPIView, IMailingListSet, IPersonSet,
+    MailingListStatus)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 
@@ -101,7 +103,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         return True
 
     def getMembershipInformation(self, teams):
-        """See `IMailingListAPIView.`."""
+        """See `IMailingListAPIView`."""
         listset = getUtility(IMailingListSet)
         emailset = getUtility(IEmailAddressSet)
         response = {}
@@ -128,5 +130,29 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         return response
 
     def isLaunchpadMember(self, address):
-        """See `IMailingListAPIView.`."""
+        """See `IMailingListAPIView`."""
         return getUtility(IEmailAddressSet).getByEmail(address) is not None
+
+    def testStep(self, step):
+        """See `IMailingListAPIView`."""
+        if step == 1:
+            # Create two teams and a list for each team.  Don't pass
+            # with_list=True to mailingListNewTeam() because that will
+            # construct and activate the list, and we want to let Mailman do
+            # that instead (kind of the whole point of this test).
+            listset = getUtility(IMailingListSet)
+            team_one = xmlrpc_helper.mailingListNewTeam('team-one')
+            list_one = listset.new(team_one)
+            # Review the list, which approves it.
+            carlos = getUtility(IPersonSet).getByName('carlos')
+            list_one.review(carlos, MailingListStatus.APPROVED)
+            # Create a second list too.
+            team_two = xmlrpc_helper.mailingListNewTeam('team-two')
+            list_two = listset.new(team_two)
+            list_two.review(carlos, MailingListStatus.APPROVED)
+            return True
+        else:
+            # I really don't want to create a special fault for this case.
+            # It's good enough that providing a bad step will generally cause
+            # an integration test to fail anyway.
+            pass

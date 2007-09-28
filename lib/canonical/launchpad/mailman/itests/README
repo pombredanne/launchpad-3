@@ -1,0 +1,8 @@
+This directory contains integration tests for proper interaction between
+Launchpad and Mailman.  These are /not/ unit tests that can be run inside of
+either application though, so this directory is not a Python package.
+
+In order to perform these integration tests, you must build Launchpad, enable
+the build of Mailman in your launchpad.conf, and run 'make mailman_instance'.
+Then you must start Launchpad with 'make run_all' and at that point you can
+manually run the scripts in this directory from the command line.

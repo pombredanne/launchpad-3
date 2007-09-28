@@ -113,7 +113,6 @@ class MailmanService(Service):
         # Don't run the server if it wasn't asked for.
         if not self.should_launch:
             return
-        print >> sys.stderr, 'LAUNCHING MAILMAN'
         runmailman.start_mailman()
         atexit.register(runmailman.stop_mailman)
 
