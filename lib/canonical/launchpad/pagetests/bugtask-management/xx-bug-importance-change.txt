@@ -19,10 +19,8 @@ product or distro, can edit Importance.
     >>> logout()
 
     >>> def user_sees_importance_widget(user, url):
-    ...     browser = Browser()
-    ...     browser.addHeader(
-    ...         "Authorization", "Basic %s:test" %
-    ...         user.preferredemail.email)
+    ...     browser = setupBrowser(
+    ...         "Basic %s:test" % user.preferredemail.email)
     ...     browser.open(url)
     ...     try:
     ...         browser.getControl("Importance")
