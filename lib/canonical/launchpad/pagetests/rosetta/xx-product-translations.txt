@@ -28,8 +28,7 @@ translation, or link the product to a translatable package.
 
     >>> from zope.testbrowser.testing import Browser
 
-    >>> registrant = Browser()
-    >>> registrant.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> registrant = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> registrant.open(
     ...     'http://translations.launchpad.dev/gnomebaker')
     >>> print registrant.contents
@@ -51,9 +50,7 @@ translation, or link the product to a translatable package.
 If you're logged in as someone else, the Translations page suggests that you
 contact the product's registrant.
 
-    >>> unprivileged = Browser()
-    >>> unprivileged.addHeader(
-    ...     'Authorization', 'Basic no-priv@canonical.com:test')
+    >>> unprivileged = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> unprivileged.open(
     ...     'http://translations.launchpad.dev/gnomebaker')
     >>> print unprivileged.contents
@@ -79,7 +76,7 @@ It omits the registrant-only links ...
     ...     '+translations-upload')
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 403: Forbidden
+    Unauthorized:...
 
 (In the packages case, you can look at the packages, but you can't link any.)
 
@@ -87,7 +84,7 @@ It omits the registrant-only links ...
     ...     'http://translations.launchpad.dev/gnomebaker/trunk/+addpackage')
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 403: Forbidden
+    Unauthorized:...
 
 
 Meanwhile, if you're not logged in at all, you might or might not be the

@@ -5,8 +5,7 @@ An upstream maintainer can use Launchpad to submit their initial template upload
 
     >>> from zope.testbrowser.testing import Browser
 
-    >>> ff_owner_browser = Browser()
-    >>> ff_owner_browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> ff_owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> ff_owner_browser.open(
     ...     'http://translations.launchpad.dev/firefox/1.0/+translations-upload')
     >>> 'Upload either a single file' in ff_owner_browser.contents
@@ -95,8 +94,7 @@ files such as directories or devices.
 If we are logged in as an administrator, the same page provides a link to where
 we can edit imports.
 
-  >>> browser = Browser()
-  >>> browser.addHeader('Authorization', 'Basic jordi@ubuntu.com:test')
+  >>> browser = setupBrowser(auth='Basic jordi@ubuntu.com:test')
   >>> browser.open('http://translations.launchpad.dev/+imports')
   >>> 'po/es.po' in browser.contents
   True
@@ -199,9 +197,7 @@ No Privileges Person will try to remove it, but will fail.
 
 But Jordi, a Rosetta expert, will be allowed to remove it.
 
-  >>> jordi_browser = Browser()
-  >>> jordi_browser.handleErrors = False
-  >>> jordi_browser.addHeader('Authorization', 'Basic jordi@ubuntu.com:test')
+  >>> jordi_browser = setupBrowser(auth='Basic jordi@ubuntu.com:test')
   >>> jordi_browser.open('http://translations.launchpad.dev/+imports')
   >>> jordi_browser.getControl(name='field.status_1').value = ['DELETED']
   >>> jordi_browser.getControl('Change status').click()
