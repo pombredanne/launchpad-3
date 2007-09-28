@@ -1,13 +1,9 @@
 Let's first setup some objects that we'll need.
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> no_priv_browser = Browser()
-  >>> no_priv_browser.handleErrors = False
-  >>> no_priv_browser.addHeader(
-  ...     'Authorization', 'Basic no-priv@canonical.com:test')
-  >>> team_admin_browser = browser
-  >>> team_admin_browser.addHeader(
-  ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> no_priv_browser = setupBrowser(
+  ...     auth='Basic no-priv@canonical.com:test')
+  >>> team_admin_browser = setupBrowser(
+  ...    'Basic jeff.waugh@ubuntulinux.com:jdub')
 
 If you're not logged in and go to the +polls page of the "Ubuntu Team"
 you'll see a link to login as a team administrator.
