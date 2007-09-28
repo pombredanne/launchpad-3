@@ -9,6 +9,7 @@ import logging
 import os
 import shutil
 import socket
+from StringIO import StringIO
 import tempfile
 import unittest
 import urllib2
@@ -27,6 +28,8 @@ from bzrlib.errors import (
     NotBranchError)
 
 import transaction
+from twisted.conch.ssh.common import getNS
+
 from canonical.launchpad import database
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
@@ -283,8 +286,17 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
 class StubbedBranchStatusClient(BranchStatusClient):
     """Partially stubbed subclass of BranchStatusClient, for unit tests."""
 
+    def __init__(self):
+        self.calls = []
+
     def startMirroring(self, branch_id):
-        pass
+        self.calls.append(('startMirroring', branch_id))
+
+    def mirrorComplete(self, branch_id, revno):
+        self.calls.append(('mirrorComplete', branch_id, revno))
+
+    def mirrorFailed(self, branch_id, reason):
+        self.calls.append(('mirrorFailed', branch_id, reason))
 
 
 class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
@@ -797,6 +809,67 @@ class TestErrorHandling(ErrorHandlingTestCase):
         self.branch._openSourceBranch = stubOpenSourceBranch
         expected_msg = 'A generic bzr error'
         self.runMirrorAndAssertErrorEquals(expected_msg)
+
+
+class TestWorkerProtocol(unittest.TestCase):
+    """Tests for the client-side implementation of the protocol used to
+    communicate to the master process.
+    """
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.resetBuffers()
+        logger = logging.getLogger()
+        client = StubbedBranchStatusClient()
+        self.protocol = PullerWorkerProtocol(
+            self.output, self.error, logger, client)
+        self.branch_to_mirror = self._makeBranchToMirror()
+
+    def assertNoError(self):
+        self.assertEqual('', self.error.getvalue())
+
+    def resetBuffers(self):
+        """Empty the test output and error buffers."""
+        self.output = StringIO()
+        self.error = StringIO()
+
+    def _getBranchDir(self, branch_name):
+        # XXX: Copied from test case at the top of the file. Refactor to base.
+        return os.path.join(self.test_dir, branch_name)
+
+    def _makeBranchToMirror(self):
+        """Create a BranchToMirror object to be used in tests."""
+        # XXX: Copied from test case at the top of the file. Refactor to base.
+        src_branch_dir = self._getBranchDir("branchtomirror-testmirror-src")
+        dest_branch_dir = self._getBranchDir("branchtomirror-testmirror-dest")
+        client = BranchStatusClient()
+        return BranchToMirror(
+            src_branch_dir, dest_branch_dir, client, branch_id=1,
+            unique_name=None, branch_type=None, logger=logging.getLogger())
+
+    def test_nothingSentOnConstruction(self):
+        """The protocol sends nothing until it receives an event."""
+        self.assertEqual('', self.output.getvalue())
+        self.assertNoError()
+
+    def test_startMirror(self):
+        """Calling startMirroring sends 'startMirroring' as a netstring."""
+        self.protocol.startMirroring(self.branch_to_mirror)
+        command, remainder = getNS(self.output.getvalue())
+        self.assertEqual('startMirroring', command)
+        self.assertEqual('', remainder)
+        self.assertNoError()
+
+    def test_mirrorSucceeded(self):
+        """Calling 'mirrorSucceeded' sends the revno and 'mirrorSucceeded'."""
+        self.protocol.startMirroring(self.branch_to_mirror)
+        self.resetBuffers()
+        self.protocol.mirrorSucceeded(self.branch_to_mirror, 1234)
+        command, revno, remainder = getNS(self.output.getvalue(), 2)
+        self.assertEqual('mirrorSucceeded', command)
+        self.assertEqual('1234', revno)
+        self.assertEqual('', remainder)
+        self.assertNoError()
 
 
 def test_suite():
