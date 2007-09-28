@@ -545,6 +545,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     # Make sure we can do fast joins on (potranslation, pomsgset, pluralform)
     # to speed up the delete statement that protects uniqueness of active
     # submissions in the POSubmission batch pouring callback.
+    logger.info("Indexing POSUbmission(potranslation, pomsgset, pluralform)")
     cur.execute(
         "CREATE UNIQUE INDEX posubmission_holding_triplet "
         "ON %s (potranslation, pomsgset, pluralform)"
@@ -552,6 +553,7 @@ def copy_active_translations_as_update(child, transaction, logger):
 
     # Remember which POFiles we will affect, so we can update their stats
     # later.
+    logger.info("Recording affected POFiles")
     cur.execute(
         "CREATE TABLE temp_changed_pofiles "
         "AS SELECT new_id AS id FROM %s" % holding_tables['pofile'])
@@ -561,10 +563,12 @@ def copy_active_translations_as_update(child, transaction, logger):
 
     # Now get rid of those inert rows whose new_ids we messed with, or
     # horrible things will happen during pouring.
+    logger.info("Filtering out inert POFiles")
     cur.execute("""
         DELETE FROM %(pofile_holding_table)s AS holding
         USING POFile
         WHERE holding.id = POFile.id""" % query_parameters)
+    logger.info("Filtering out inert POMsgSets")
     cur.execute("""
         DELETE FROM %(pomsgset_holding_table)s AS holding
         USING POMsgSet
@@ -579,6 +583,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     # will block if a vacuum runs at the same time, but better to have the
     # pain now than while writing to the source tables.
     for holding_table in holding_tables.values():
+        logger.info("Updating statistics on %s." % holding_table)
         cur.execute("ANALYZE %s" % holding_table)
 
     # Pour copied rows back to source tables.  Contrary to appearances, this
@@ -657,6 +662,7 @@ def copy_active_translations_as_update(child, transaction, logger):
 
     # Update review information on existing incomplete POMsgSets that may
     # have become complete.
+    logger.info("Updating review information")
     updater = UpdateReviewInfo(holding_tables['pomsgset'], transaction)
     LoopTuner(updater, 2, 500).run()
 
@@ -744,12 +750,6 @@ def copy_active_translations_as_update(child, transaction, logger):
             else:
                 self.last_seen_id = highest_id
 
-    # Update review information on existing incomplete POMsgSets that may have
-    # become complete.
-    logger.info("Updating review information on POMsgSets")
-    updater = UpdateReviewInfo(holding_tables['pomsgset'], transaction)
-    LoopTuner(updater, 2).run()
-
     # Update other POMsgSet flags.  This uses SQLObject, not raw SQL.
     logger.info("Updating status flags on POMsgSets")
     updater = UpdatePOMsgSetFlags(holding_tables['pomsgset'], transaction)
@@ -764,6 +764,7 @@ def copy_active_translations_as_update(child, transaction, logger):
         'temp_equiv_template', 'temp_equiv_potmsgset',
         'temp_inert_pomsgsets', 'temp_changed_pofiles'])
 
+    flush_database_updates()
     transaction.commit()
 
 
