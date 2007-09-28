@@ -49,12 +49,16 @@ class BranchToMirrorMixin:
         self.test_dir = tempfile.mkdtemp()
         # Change the HOME environment variable in order to ignore existing
         # user config files.
+        self._home = os.environ.get('HOME', None)
         os.environ.update({'HOME': self.test_dir})
 
     def tearDown(self):
+        if self._home is not None:
+            os.environ['HOME'] = self._home
         shutil.rmtree(self.test_dir)
 
-    def makeBranchToMirror(self, src_dir=None, dest_dir=None, client=None):
+    def makeBranchToMirror(self, src_dir=None, dest_dir=None, client=None,
+                           branch_type=None):
         """Anonymous creation method for BranchToMirror."""
         if src_dir is None:
             src_dir = os.path.join(self.test_dir, 'source_dir')
@@ -62,9 +66,11 @@ class BranchToMirrorMixin:
             dest_dir = os.path.join(self.test_dir, 'dest_dir')
         if client is None:
             client = BranchStatusClient()
+        protocol = PullerWorkerProtocol(
+            StringIO(), StringIO(), logging.getLogger(), client)
         return BranchToMirror(
-            src_dir, dest_dir, client, branch_id=1, unique_name=None,
-            branch_type=None, logger=logging.getLogger())
+            src_dir, dest_dir, branch_id=1, unique_name='foo/bar/baz',
+            branch_type=branch_type, protocol=protocol)
 
 
 class TestBranchToMirror(unittest.TestCase, BranchToMirrorMixin):
@@ -221,12 +227,14 @@ class TestBranchToMirrorFormats(TestCaseWithRepository, BranchToMirrorMixin):
             mirrored_branch.bzrdir._format.get_format_description())
 
 
-class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
+class TestBranchToMirror_SourceProblems(TestCaseInTempDir,
+                                        BranchToMirrorMixin):
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         TestCaseInTempDir.setUp(self)
+        BranchToMirrorMixin.setUp(self)
         self.authserver = AuthserverTacTestSetup()
         self.authserver.setUp()
         # We set the log level to CRITICAL so that the log messages
@@ -235,29 +243,27 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
 
     def tearDown(self):
         self.authserver.tearDown()
+        BranchToMirrorMixin.tearDown(self)
         TestCaseInTempDir.tearDown(self)
 
     def testUnopenableSourceDoesNotCreateMirror(self):
         non_existent_source = os.path.abspath('nonsensedir')
         dest_dir = 'dest-dir'
-        client = BranchStatusClient()
-        mybranch = BranchToMirror(
-            non_existent_source, dest_dir, client, branch_id=1,
-            unique_name='foo/bar/baz', branch_type=None,
-            logger=logging.getLogger())
-        mybranch.mirror()
+        my_branch = self.makeBranchToMirror(
+            src_dir=non_existent_source, dest_dir=dest_dir)
+        my_branch.mirror()
         self.failIf(os.path.exists(dest_dir), 'dest-dir should not exist')
 
     def testMissingSourceWhines(self):
         non_existent_source = os.path.abspath('nonsensedir')
-        client = BranchStatusClient()
-        # ensure that we have no errors muddying up the test
-        client.mirrorComplete(1, NULL_REVISION)
-        mybranch = BranchToMirror(
-            non_existent_source, "non-existent-destination",
-            client, branch_id=1, unique_name='foo/bar/baz', branch_type=None,
-            logger=logging.getLogger())
-        mybranch.mirror()
+        my_branch = self.makeBranchToMirror(
+            src_dir=non_existent_source, dest_dir="non-existent-destination")
+        # Ensure that we have no errors muddying up the test by sneaking
+        # around the back of the interface and recording a false success.
+        my_branch.protocol.branch_status_client.startMirroring(1)
+        my_branch.protocol.branch_status_client.mirrorComplete(
+            1, NULL_REVISION)
+        my_branch.mirror()
         transaction.abort()
         branch = database.Branch.get(1)
         self.assertEqual(1, branch.mirror_failures)
@@ -280,11 +286,9 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         # clear the error status
         client.mirrorComplete(1, NULL_REVISION)
         source_url = os.path.abspath('missingrevision')
-        mybranch = BranchToMirror(
-            source_url, "non-existent-destination", client, branch_id=1,
-            unique_name='foo/bar/baz', branch_type=None,
-            logger=logging.getLogger())
-        mybranch.mirror()
+        my_branch = self.makeBranchToMirror(
+            src_dir=source_url, dest_dir="non-existent-destination")
+        my_branch.mirror()
         transaction.abort()
         branch = database.Branch.get(1)
         self.assertEqual(1, branch.mirror_failures)
@@ -361,10 +365,11 @@ class ErrorHandlingTestCase(unittest.TestCase):
         twice.
         """
         client = StubbedBranchStatusClient()
+        protocol = StubbedPullerWorkerProtocol()
         self.branch = StubbedBranchToMirror(
-            src='foo', dest='bar', branch_status_client=client, branch_id=1,
+            src='foo', dest='bar', branch_id=1,
             unique_name='owner/product/foo', branch_type=None,
-            logger=logging.getLogger())
+            protocol=protocol)
         self.errors = []
         self.open_call_count = 0
         self.branch.testcase = self
@@ -555,18 +560,19 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
         self.assertEqual(self.open_call_count, 0)
 
 
-class TestCanTraverseReferences(unittest.TestCase):
+class TestCanTraverseReferences(unittest.TestCase, BranchToMirrorMixin):
     """Unit tests for BranchToMirror._canTraverseReferences."""
 
     def setUp(self):
+        BranchToMirrorMixin.setUp(self)
         self.client = BranchStatusClient()
+
+    def tearDown(self):
+        BranchToMirrorMixin.setUp(self)
 
     def makeBranch(self, branch_type):
         """Helper to create a BranchToMirror with a specified branch_type."""
-        return BranchToMirror(
-            src='foo', dest='bar', branch_status_client=self.client,
-            branch_id=1, unique_name='owner/product/foo',
-            branch_type=branch_type, logger=logging.getLogger())
+        return self.makeBranchToMirror(branch_type=branch_type)
 
     def testTrueForMirrored(self):
         """We can traverse branch references when pulling mirror branches."""
@@ -618,8 +624,7 @@ class TestCheckBranchReference(unittest.TestCase):
     def setUp(self):
         client = BranchStatusClient()
         self.branch = StubbedBranchToMirrorForCheckBranchReference(
-            'foo', 'bar', client, 1, 'owner/product/foo', None,
-            logging.getLogger())
+            'foo', 'bar', 1, 'owner/product/foo', None, None)
         self.branch.testcase = self
         self.get_branch_reference_calls = []
         self.reference_values = {}
@@ -818,19 +823,23 @@ class TestErrorHandling(ErrorHandlingTestCase):
         self.runMirrorAndAssertErrorEquals(expected_msg)
 
 
-class TestWorkerProtocol(unittest.TestCase):
+class TestWorkerProtocol(unittest.TestCase, BranchToMirrorMixin):
     """Tests for the client-side implementation of the protocol used to
     communicate to the master process.
     """
 
     def setUp(self):
+        BranchToMirrorMixin.setUp(self)
         self.test_dir = tempfile.mkdtemp()
         self.resetBuffers()
         logger = logging.getLogger()
         client = StubbedBranchStatusClient()
         self.protocol = PullerWorkerProtocol(
             self.output, self.error, logger, client)
-        self.branch_to_mirror = self._makeBranchToMirror()
+        self.branch_to_mirror = self.makeBranchToMirror()
+
+    def tearDown(self):
+        BranchToMirrorMixin.tearDown(self)
 
     def assertNoError(self):
         self.assertEqual('', self.error.getvalue())
@@ -839,20 +848,6 @@ class TestWorkerProtocol(unittest.TestCase):
         """Empty the test output and error buffers."""
         self.output = StringIO()
         self.error = StringIO()
-
-    def _getBranchDir(self, branch_name):
-        # XXX: Copied from test case at the top of the file. Refactor to base.
-        return os.path.join(self.test_dir, branch_name)
-
-    def _makeBranchToMirror(self):
-        """Create a BranchToMirror object to be used in tests."""
-        # XXX: Copied from test case at the top of the file. Refactor to base.
-        src_branch_dir = self._getBranchDir("branchtomirror-testmirror-src")
-        dest_branch_dir = self._getBranchDir("branchtomirror-testmirror-dest")
-        client = BranchStatusClient()
-        return BranchToMirror(
-            src_branch_dir, dest_branch_dir, client, branch_id=1,
-            unique_name=None, branch_type=None, logger=logging.getLogger())
 
     def test_nothingSentOnConstruction(self):
         """The protocol sends nothing until it receives an event."""

@@ -15,8 +15,6 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 import canonical
 from canonical.codehosting import branch_id_to_path
 from canonical.config import config
-from canonical.launchpad.scripts.supermirror.branchtomirror import (
-    BranchToMirror)
 
 
 MAXIMUM_PROCESSES = 5

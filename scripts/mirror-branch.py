@@ -10,7 +10,8 @@ from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts import logger_options, logger
-from canonical.launchpad.scripts.supermirror.branchtomirror import BranchToMirror
+from canonical.launchpad.scripts.supermirror.branchtomirror import (
+    BranchToMirror, PullerWorkerProtocol)
 
 
 import bzrlib.repository
@@ -73,6 +74,8 @@ if __name__ == '__main__':
     shut_up_deprecation_warning()
     force_bzr_to_use_urllib()
 
+    protocol = PullerWorkerProtocol(
+        sys.stdout, sys.stderr, log, branch_status_client)
     BranchToMirror(
-        source_url, destination_url, branch_status_client, int(branch_id),
-        unique_name, branch_type, log).mirror()
+        source_url, destination_url, int(branch_id), unique_name, branch_type,
+        protocol).mirror()

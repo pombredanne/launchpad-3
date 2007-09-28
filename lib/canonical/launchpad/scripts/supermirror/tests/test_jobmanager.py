@@ -1,18 +1,19 @@
 import logging
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 
 import bzrlib
 
-from twisted.trial.unittest import TestCase as TrialTestCase 
+from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting import branch_id_to_path
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
-    BranchToMirror)
+    BranchToMirror, PullerWorkerProtocol)
 from canonical.launchpad.scripts.supermirror.tests import createbranch
 from canonical.launchpad.scripts.supermirror import jobmanager
 from canonical.authserver.client.branchstatus import BranchStatusClient
@@ -147,9 +148,11 @@ class TestJobManagerInLaunchpad(TrialTestCase):
             targetdir = None
         else:
             targetdir = os.path.join(self.testdir, branch_id_to_path(target))
+        protocol = PullerWorkerProtocol(
+            sys.stdout, sys.stderr, logging.getLogger(), branch_status_client)
         return BranchToMirror(
-                branchdir, targetdir, branch_status_client, target,
-                unique_name, branch_type=None, logger=logging.getLogger())
+                branchdir, targetdir, target, unique_name, branch_type=None,
+                protocol=protocol)
 
 
 class FakeBranchStatusClient:
