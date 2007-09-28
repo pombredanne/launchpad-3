@@ -95,13 +95,7 @@ release too.
   >>> print tomcat.owner.name
   ubuntu-team
 
-We'll change the trunk series owner to be no_priv to ensure we test the
-permissions:
-
-  >>> no_priv = Person.selectOneBy(name="no-priv")
-  >>> tomcat.getSeries('trunk').owner = no_priv
-
-Let's add a release as Daniel:
+Let's add a release as Jeff:
 
   >>> from zope.testbrowser.testing import Browser
   >>> browser = Browser()
@@ -120,24 +114,30 @@ Celso is a member of ubuntu-team, so he can edit this release too:
 
   >>> browser = Browser()
   >>> browser.addHeader('Authorization',
-  ...                   'Basic celso.providelo@canonical.com:test')
+  ...                   'Basic celso.providelo@canonical.com:cprov')
   >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
   >>> browser.getLink('Change details').click()
 
   >>> browser.getControl('Summary').value = 'Fixes 3 bugs.'
   >>> browser.getControl('Change').click()
 
-And no-priv owns the series, so he can add releases:
+And if no-priv owns the series...
+
+  >>> no_priv = Person.selectOneBy(name="no-priv")
+  >>> tomcat.getSeries('trunk').owner = no_priv
+  >>> from canonical.database.sqlbase import flush_database_updates
+  >>> flush_database_updates()
+
+... he can edit existing releases as well, even if they are owned by
+others:
 
   >>> browser = Browser()
   >>> browser.addHeader('Authorization',
-  ...                   "Basic no-priv@canonical.com:test")
-  >>> browser.open('http://launchpad.dev/tomcat/trunk')
-  >>> browser.getLink('Register a release').click()
-
-But he can edit existing series as well, even if they are owned by
-others:
+  ...                   'Basic no-priv@canonical.com:test')
 
   >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
   >>> browser.getLink('Change details').click()
+
+  >>> browser.getControl('Summary').value = 'Fixes 4 bugs.'
+  >>> browser.getControl('Change').click()
 
