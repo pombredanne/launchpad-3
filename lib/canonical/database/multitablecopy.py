@@ -444,7 +444,8 @@ class MultiTableCopy:
                 SELECT DISTINCT ON (%(main)s.id)
                     %(columns)s, %(id_sequence)s AS new_id
                 FROM %(source_tables)s
-                %(where)s''' % table_creation_parameters)
+                %(where)s
+                ORDER BY id''' % table_creation_parameters)
         else:
             # Some of the rows may have to have null new_ids.  To avoid
             # wasting "address space" on the sequence, we populate the entire
@@ -455,7 +456,8 @@ class MultiTableCopy:
                 SELECT DISTINCT ON (%(main)s.id)
                     %(columns)s, NULL::integer AS new_id
                 FROM %(source_tables)s
-                %(where)s''' % table_creation_parameters)
+                %(where)s
+                ORDER BY id''' % table_creation_parameters)
             cur.execute('''
                 UPDATE %(holding_table)s AS holding
                 SET new_id = %(id_sequence)s

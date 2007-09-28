@@ -198,7 +198,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     # come in handy later.
     cur = cursor()
     cur.execute("""
-        CREATE TEMP TABLE temp_equiv_template AS
+        CREATE TABLE temp_equiv_template AS
         SELECT DISTINCT pt1.id AS id, pt2.id AS new_id
         FROM POTemplate pt1, POTemplate pt2
         WHERE
@@ -216,7 +216,7 @@ def copy_active_translations_as_update(child, transaction, logger):
 
     # Map parent POTMsgSets to corresponding POTMsgSets in child.
     cur.execute("""
-        CREATE TEMP TABLE temp_equiv_potmsgset AS
+        CREATE TABLE temp_equiv_potmsgset AS
         SELECT DISTINCT ptms1.id AS id, ptms2.id AS new_id
         FROM POTMsgSet ptms1, POTMsgSet ptms2, temp_equiv_template
         WHERE
@@ -235,6 +235,8 @@ def copy_active_translations_as_update(child, transaction, logger):
     cur.execute(
         "CREATE UNIQUE INDEX temp_equiv_potmsgset_new_id "
         "ON temp_equiv_potmsgset(new_id)")
+    transaction.commit()
+    transaction.begin()
 
     holding_tables = {
         'pofile': copier.getHoldingTableName('POFile'),
@@ -298,6 +300,8 @@ def copy_active_translations_as_update(child, transaction, logger):
         inert_where=pofiles_inert_where,
         batch_pouring_callback=prepare_pofile_batch,
         external_joins=['temp_equiv_template'])
+    transaction.commit()
+    transaction.begin()
     cur = cursor()
 
     # The new POFiles have their unreviewed_count set to zero.  Also, we're
@@ -334,6 +338,8 @@ def copy_active_translations_as_update(child, transaction, logger):
                 COALESCE(pf.variant, ''::text) AND
             holding.new_id IS NULL
         """ % query_parameters)
+    transaction.commit()
+    transaction.begin()
 
     # ### POMsgSet ###
 
@@ -394,6 +400,8 @@ def copy_active_translations_as_update(child, transaction, logger):
         'POMsgSet', joins=['POFile'], inert_where=pomsgset_inert_where,
         pre_pouring_callback=prepare_pomsgset_pouring,
         batch_pouring_callback=prepare_pomsgset_batch)
+    transaction.commit()
+    transaction.begin()
     cur = cursor()
     # Make sure we can do fast joins on (potmsgset, pofile) to speed up the
     # delete statement that protects uniqueness of POMsgSets in the POMsgSet
@@ -430,7 +438,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     # but we can still recognize each of these by the fact that its new_id
     # will refer to an already existing POMsgSet.
     cur.execute("""
-        CREATE TEMP TABLE temp_inert_pomsgsets AS
+        CREATE TABLE temp_inert_pomsgsets AS
         SELECT
             holding.id,
             holding.new_id,
@@ -446,6 +454,8 @@ def copy_active_translations_as_update(child, transaction, logger):
     cur.execute(
         "CREATE UNIQUE INDEX inert_pomsgset_newid_idx "
         "ON temp_inert_pomsgsets(new_id)")
+    transaction.commit()
+    transaction.begin()
 
     # ### POSubmission ###
 
@@ -528,6 +538,8 @@ def copy_active_translations_as_update(child, transaction, logger):
         pre_pouring_callback=prepare_posubmission_pouring,
         batch_pouring_callback=prepare_posubmission_batch,
         inert_where=have_better)
+    transaction.commit()
+    transaction.begin()
     cur = cursor()
 
     # Make sure we can do fast joins on (potranslation, pomsgset, pluralform)
@@ -541,7 +553,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     # Remember which POFiles we will affect, so we can update their stats
     # later.
     cur.execute(
-        "CREATE TEMP TABLE temp_changed_pofiles "
+        "CREATE TABLE temp_changed_pofiles "
         "AS SELECT new_id AS id FROM %s" % holding_tables['pofile'])
     cur.execute(
         "CREATE UNIQUE INDEX temp_changed_pofiles_pkey "
@@ -557,6 +569,17 @@ def copy_active_translations_as_update(child, transaction, logger):
         DELETE FROM %(pomsgset_holding_table)s AS holding
         USING POMsgSet
         WHERE holding.new_id = POMsgSet.id""" % query_parameters)
+    transaction.commit()
+    transaction.begin()
+    cur = cursor()
+
+    # We're about to pour.  If the database doesn't have current statistics,
+    # it may botch the optimization.  So we make it refresh its information.
+    # This isn't something we're supposed to do in regular situations, and it
+    # will block if a vacuum runs at the same time, but better to have the
+    # pain now than while writing to the source tables.
+    for holding_table in holding_tables.values():
+        cur.execute("ANALYZE %s" % holding_table)
 
     # Pour copied rows back to source tables.  Contrary to appearances, this
     # is where the heavy lifting is done.
