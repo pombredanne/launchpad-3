@@ -32,7 +32,7 @@ Also, any anonymous POST submission should fail:
 
 Let's log in.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
 
 Now, we are going to test common parts of the navigation.
 

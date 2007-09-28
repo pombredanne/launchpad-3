@@ -3,8 +3,6 @@ Uploading templates
 
 An upstream maintainer can use Launchpad to submit their initial template uploads.
 
-    >>> from zope.testbrowser.testing import Browser
-
     >>> ff_owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> ff_owner_browser.open(
     ...     'http://translations.launchpad.dev/firefox/1.0/+translations-upload')

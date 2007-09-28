@@ -3,7 +3,7 @@ product owners, Rosetta Experts or a Launchpad admin are able to use it.
 
 Check to be sure that an unpriviledged user cannot reach this page
 
-  >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
   >>> browser.open(
   ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
   ...     'evolution-2.2/+edit')

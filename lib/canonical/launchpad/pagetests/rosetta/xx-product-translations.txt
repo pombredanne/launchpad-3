@@ -26,8 +26,6 @@ If a product is not set up for translations in Launchpad, and you are its
 registrant or an admin, the Translations page suggests that you set it up for
 translation, or link the product to a translatable package.
 
-    >>> from zope.testbrowser.testing import Browser
-
     >>> registrant = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> registrant.open(
     ...     'http://translations.launchpad.dev/gnomebaker')
