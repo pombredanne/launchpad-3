@@ -7,6 +7,7 @@ __metaclass__ = type
 import httplib
 import logging
 import os
+import re
 import shutil
 import socket
 from StringIO import StringIO
@@ -843,6 +844,16 @@ class TestWorkerProtocol(unittest.TestCase, BranchToMirrorMixin):
     def tearDown(self):
         BranchToMirrorMixin.tearDown(self)
 
+    def getNetstrings(self, line):
+        strings = []
+        while len(line) > 0:
+            colon_index = line.find(':')
+            length = int(line[:colon_index])
+            strings.append(line[colon_index+1:colon_index+1+length])
+            self.assertEqual(',', line[colon_index+1+length])
+            line = line[colon_index+length+2:]
+        return strings
+
     def assertNoError(self):
         self.assertEqual('', self.error.getvalue())
 
@@ -861,9 +872,8 @@ class TestWorkerProtocol(unittest.TestCase, BranchToMirrorMixin):
     def test_startMirror(self):
         """Calling startMirroring sends 'startMirroring' as a netstring."""
         self.protocol.startMirroring(self.branch_to_mirror)
-        command, remainder = getNS(self.output.getvalue())
+        [command] = self.getNetstrings(self.output.getvalue())
         self.assertEqual('startMirroring', command)
-        self.assertEqual('', remainder)
         self.assertNoError()
 
     def test_mirrorSucceeded(self):
@@ -871,10 +881,9 @@ class TestWorkerProtocol(unittest.TestCase, BranchToMirrorMixin):
         self.protocol.startMirroring(self.branch_to_mirror)
         self.resetBuffers()
         self.protocol.mirrorSucceeded(self.branch_to_mirror, 1234)
-        command, revno, remainder = getNS(self.output.getvalue(), 2)
+        [command, revno] = self.getNetstrings(self.output.getvalue())
         self.assertEqual('mirrorSucceeded', command)
         self.assertEqual('1234', revno)
-        self.assertEqual('', remainder)
         self.assertNoError()
 
     def test_mirrorFailed(self):
@@ -882,10 +891,9 @@ class TestWorkerProtocol(unittest.TestCase, BranchToMirrorMixin):
         self.protocol.startMirroring(self.branch_to_mirror)
         self.resetBuffers()
         self.protocol.mirrorFailed(self.branch_to_mirror, 'Error Message')
-        command, message, remainder = getNS(self.output.getvalue(), 2)
+        [command, message] = self.getNetstrings(self.output.getvalue())
         self.assertEqual('mirrorFailed', command)
         self.assertEqual('Error Message', message)
-        self.assertEqual('', remainder)
         self.assertNoError()
 
 

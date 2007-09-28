@@ -97,6 +97,9 @@ class PullerWorkerProtocol:
         self.logger = logger
         self.branch_status_client = branch_status_client
 
+    def sendNetstring(self, string):
+        self.output.write('%d:%s,' % (len(string), string))
+
     def _record_oops(self, branch_to_mirror, message=None):
         """Record an oops for the current exception.
 
@@ -116,7 +119,7 @@ class PullerWorkerProtocol:
         self.logger.info('Recorded %s', request.oopsid)
 
     def startMirroring(self, branch_to_mirror):
-        self.output.write(NS('startMirroring'))
+        self.sendNetstring('startMirroring')
         self.logger.info(
             'Mirroring branch %d: %s to %s',
             branch_to_mirror.branch_id, branch_to_mirror.source,
@@ -124,13 +127,15 @@ class PullerWorkerProtocol:
         self.branch_status_client.startMirroring(branch_to_mirror.branch_id)
 
     def mirrorSucceeded(self, branch_to_mirror, last_revision):
-        self.output.write(NS('mirrorSucceeded') + NS(str(last_revision)))
+        self.sendNetstring('mirrorSucceeded')
+        self.sendNetstring(str(last_revision))
         self.branch_status_client.mirrorComplete(
             branch_to_mirror.branch_id, last_revision)
         self.logger.info('Successfully mirrored to rev %s', last_revision)
 
     def mirrorFailed(self, branch_to_mirror, message):
-        self.output.write(NS('mirrorFailed') + NS(str(message)))
+        self.sendNetstring('mirrorFailed')
+        self.sendNetstring(str(message))
         self._record_oops(branch_to_mirror, message)
         self.branch_status_client.mirrorFailed(
             branch_to_mirror.branch_id, str(message))
