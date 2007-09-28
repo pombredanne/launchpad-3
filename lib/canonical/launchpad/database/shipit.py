@@ -1287,7 +1287,7 @@ class StandardShipItRequest(SQLBase):
             description = "%d %s CDs" % (self.totalCDs, self.flavour.title)
         else:
             description = "%d %s CD" % (self.totalCDs, self.flavour.title)
-        return "%s (%s)" % (description, quantities_description)
+        return u"%s (%s)" % (description, quantities_description)
 
     @property
     def quantities(self):
