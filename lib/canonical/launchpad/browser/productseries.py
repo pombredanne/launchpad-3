@@ -648,7 +648,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
         # all such actions the same though, so we ignore it.
         return check_permission('launchpad.Admin', self.context)
 
-    @action(_('Update RCS Details'), name='update')
+    @action(_('Update Details'), name='update')
     def update_action(self, action, data):
         old_rcstype = self.context.rcstype
         self.updateContextFromData(data)
@@ -659,7 +659,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                                       self.context.rcstype is not None):
                 self.context.importstatus = ImportStatus.TESTING
         self.request.response.addInfoNotification(
-            'Upstream RCS details updated.')
+            'Upstream source details updated.')
 
     def allowResetToAutotest(self, action):
         return self.isAdmin() and self.context.autoTestFailed()
