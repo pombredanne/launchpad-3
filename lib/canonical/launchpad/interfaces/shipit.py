@@ -651,7 +651,6 @@ class IStandardShipItRequest(Interface):
         _('A dictionary mapping architectures to their quantities.'))
     totalCDs = Attribute(_('Total number of CDs in this request.'))
     description = Attribute(_('Description'))
-    description_without_flavour = Attribute(_('Description without Flavour'))
 
     def destroySelf():
         """Delete this object from the database."""

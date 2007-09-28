@@ -1265,15 +1265,6 @@ class StandardShipItRequest(SQLBase):
     flavour = EnumCol(enum=ShipItFlavour, notNull=True)
 
     @property
-    def description_without_flavour(self):
-        """See IStandardShipItRequest"""
-        if self.totalCDs > 1:
-            description = "%d CDs" % self.totalCDs
-        else:
-            description = "%d CD" % self.totalCDs
-        return "%s (%s)" % (description, self._detailed_description())
-
-    @property
     def description(self):
         """See IStandardShipItRequest"""
         if self.totalCDs > 1:
