@@ -697,7 +697,8 @@ First, Carlos does not have any completed specifications assigned to him:
 
     >>> from canonical.launchpad.interfaces import SpecificationFilter
     >>> carlos.specifications(filter=[
-    ...     SpecificationFilter.ASSIGNEE, SpecificationFilter.COMPLETE]).count()
+    ...     SpecificationFilter.ASSIGNEE,
+    ...     SpecificationFilter.COMPLETE]).count()
     0
 
 Next, Carlos has three incomplete specs *related* to him:

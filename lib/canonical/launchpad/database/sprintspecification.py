@@ -22,7 +22,7 @@ class SprintSpecification(SQLBase):
 
     implements(ISprintSpecification)
 
-    _table='SprintSpecification'
+    _table = 'SprintSpecification'
 
     sprint = ForeignKey(dbName='sprint', foreignKey='Sprint',
         notNull=True)

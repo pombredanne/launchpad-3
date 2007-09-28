@@ -33,8 +33,8 @@ from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.interfaces import (
-    ISprint, ISprintSet, SpecificationFilter, SpecificationPriority,
-    SpecificationSort, SpecificationDefinitionStatus)
+    ISprint, ISprintSet, SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationPriority, SpecificationSort)
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation,

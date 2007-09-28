@@ -541,7 +541,7 @@ class SpecificationRetargetingView(LaunchpadFormView):
 
     schema = ISpecification
     field_names = ['target']
-    label =_('Move this blueprint to a different project')
+    label = _('Move this blueprint to a different project')
 
     def validate(self, data):
         """Ensure that the target is valid and that there is not

@@ -16,8 +16,8 @@ IMilestoneSet can be accessed as a utility.
 To create a new Specification, use ISpecificationSet.new:
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IProductSet, SpecificationPriority, SpecificationDefinitionStatus,
-    ...     SpecificationImplementationStatus)
+    ...     IProductSet, SpecificationDefinitionStatus, 
+    ...     SpecificationImplementationStatus, SpecificationPriority)
     >>> productset = getUtility(IProductSet)
     >>> upstream_firefox = productset.get(4)
     >>> from canonical.launchpad.database import Person

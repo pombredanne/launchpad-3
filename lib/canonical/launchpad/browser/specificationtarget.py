@@ -106,7 +106,6 @@ class HasSpecificationsView(LaunchpadView):
         """Quick hack for mdz, to get csv dump of specs."""
         import csv
         from StringIO import StringIO
-        from canonical.launchpad.webapp import canonical_url
         output = StringIO()
         writer = csv.writer(output)
         headings = [

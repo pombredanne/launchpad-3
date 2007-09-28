@@ -45,33 +45,34 @@ from canonical.lazr import (
 
 
 class SpecificationImplementationStatus(DBEnumeratedType):
-    # Note that some of the states associated with this schema correlate to
-    # a "not started" definition. See Specification.started_clause for
-    # further information, and make sure that it is updated (together with
-    # the relevant database checks) if additional states are added that are
-    # also "not started".
-    """Specification Delivery Status
+    """The Specification Delivery Status
 
     This tracks the implementation or delivery of the feature being
-    specified. The status values indicate the progress that is being made in
-    the actual coding or configuration that is needed to realise the
+    specified. The status values indicate the progress that is being made
+    in the actual coding or configuration that is needed to realise the
     feature.
+
+    Note that some of the states associated with this schema correlate
+    to a "not started" definition. See Specification.started_clause for
+    further information, and make sure that it is updated (together with
+    the relevant database checks) if additional states are added that
+    are also "not started".
     """
-    # NB this state is considered "not started"
+    # The `UNKNOWN` state is considered "not started"
     UNKNOWN = DBItem(0, """
         Unknown
 
         We have no information on the implementation of this feature.
         """)
 
-    # NB this state is considered "not started"
+    # The `NOTSTARTED` state is considered "not started"
     NOTSTARTED = DBItem(5, """
         Not started
 
         No work has yet been done on the implementation of this feature.
         """)
 
-    # NB this state is considered "not started"
+    # The `DEFERRED` state is considered "not started"
     DEFERRED = DBItem(10, """
         Deferred
 
@@ -161,8 +162,9 @@ class SpecificationImplementationStatus(DBEnumeratedType):
 
 
 class SpecificationLifecycleStatus(DBEnumeratedType):
-    """The current "lifecycle" status of a specification. Specs go from
-    NOTSTARTED, to STARTED, to COMPLETE.
+    """The current "lifecycle" status of a specification.
+
+    Specs go from NOTSTARTED, to STARTED, to COMPLETE.
     """
 
     NOTSTARTED = DBItem(10, """
@@ -246,8 +248,7 @@ class SpecificationPriority(DBEnumeratedType):
 
 
 class SpecificationFilter(DBEnumeratedType):
-    """An indicator of the kinds of specifications that should be returned
-    for a listing of specifications.
+    """The kinds of specifications that a listing should include.
 
     This is used by browser classes that are generating a list of
     specifications for a person, or product, or project, to indicate what
@@ -358,8 +359,7 @@ class SpecificationFilter(DBEnumeratedType):
 
 
 class SpecificationSort(EnumeratedType):
-    """A preferred sorting scheme for the results of a query about
-    specifications.
+    """The scheme to sort the results of a specifications query.
 
     This is usually used in interfaces which ask for a filtered list of
     specifications, so that you can tell which specifications you would
@@ -382,7 +382,7 @@ class SpecificationSort(EnumeratedType):
 
 
 class SpecificationDefinitionStatus(DBEnumeratedType):
-    """The current status of a Specification
+    """The current status of a Specification.
 
     This enum tells us whether or not a specification is approved, or still
     being drafted, or implemented, or obsolete in some way. The ordinality
@@ -453,11 +453,11 @@ class SpecificationDefinitionStatus(DBEnumeratedType):
 
 
 class SpecificationGoalStatus(DBEnumeratedType):
-    """The target status for this specification
+    """The target status for this specification.
 
     This enum allows us to show whether or not the specification has been
-    approved or declined as a target for the given product series or distro
-    release.
+    approved or declined as a target for the given productseries or
+    distroseries.
     """
 
     ACCEPTED = DBItem(10, """
@@ -566,8 +566,10 @@ class INewSpecification(Interface):
             "A single-paragraph description of the feature. "
             "This will also be displayed in most feature listings."))
     definition_status = Choice(
-        title=_('Definition Status'), vocabulary=SpecificationDefinitionStatus,
-        default=SpecificationDefinitionStatus.NEW, description=_(
+        title=_('Definition Status'),
+        vocabulary=SpecificationDefinitionStatus,
+        default=SpecificationDefinitionStatus.NEW,
+        description=_(
             "The current status of the process to define the "
             "feature and get approval for the implementation plan."))
     assignee = Choice(title=_('Assignee'), required=False,
@@ -700,9 +702,9 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
         "in the number."))
     implementation_status = Choice(title=_("Implementation Status"),
         required=True, default=SpecificationImplementationStatus.UNKNOWN,
-        vocabulary=SpecificationImplementationStatus, description=_("The state of "
-        "progress being made on the actual implementation or delivery "
-        "of this feature."))
+        vocabulary=SpecificationImplementationStatus, description=_(
+        "The state of progress being made on the actual implementation or "
+        "delivery of this feature."))
     superseded_by = Choice(title=_("Superseded by"),
         required=False, default=None,
         vocabulary='Specification', description=_("The specification "

@@ -113,7 +113,7 @@ spec there using a badge:
 
 === Viewing all blueprints ===
 
-From time to time it's useful to review the complete list of all blueprints 
+From time to time it's useful to review the complete list of all blueprints
 associated with a blueprint target, including those blueprints that have
 already been implemented.
 
@@ -139,8 +139,8 @@ distribution:
     >>> browser.getControl('Register').click()
     >>> browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/blueprint-2'
-  
-To begin with, we can see ''both'' blueprints by visiting the distribution's 
+
+To begin with, we can see ''both'' blueprints by visiting the distribution's
 blueprints page:
 
     >>> browser.getLink('Blueprints').click()
@@ -162,7 +162,7 @@ Let's mark the ''second'' blueprint as ''implemented'':
     >>> browser.getControl('Implementation Status').value = ['IMPLEMENTED']
     >>> browser.getControl('Change').click()
     >>> browser.url
-    'http://blueprints.launchpad.dev/ubuntu/+spec/blueprint-2'  
+    'http://blueprints.launchpad.dev/ubuntu/+spec/blueprint-2'
 
 By default, implemented blueprints are ''not'' listed on a target's blueprint
 listing pages. So now when we visit the distribution's blueprints page, the
@@ -189,7 +189,7 @@ the "List all blueprints" link:
     >>> browser.getLink('blueprint-2')
     <Link...
 
-It's also possible to access views of all blueprints for the following 
+It's also possible to access views of all blueprints for the following
 blueprint targets:
 
  * distribution series:
@@ -200,21 +200,21 @@ blueprint targets:
     'http://blueprints.launchpad.dev/ubuntu/hoary/+specs?show=all'
 
  * project groups:
- 
+
     >>> browser.open('http://blueprints.launchpad.dev/mozilla')
     >>> browser.getLink('List all blueprints').click()
     >>> browser.url
     'http://blueprints.launchpad.dev/mozilla/+specs?show=all'
- 
+
  * projects:
- 
+
     >>> browser.open('http://blueprints.launchpad.dev/firefox')
     >>> browser.getLink('List all blueprints').click()
     >>> browser.url
     'http://blueprints.launchpad.dev/firefox/+specs?show=all'
 
  * project series:
- 
+
     >>> browser.open('http://blueprints.launchpad.dev/firefox/1.0')
     >>> browser.getLink('List all blueprints').click()
     >>> browser.url

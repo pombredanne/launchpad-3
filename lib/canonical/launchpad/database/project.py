@@ -20,9 +20,9 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     ICalendarOwner, IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct,
     IProject, IProjectSet, ISearchableByQuestionOwner, NotFoundError,
-    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationSort, SpecificationFilter,
-    SprintSpecificationStatus, SpecificationImplementationStatus,
-    TranslationPermission)
+    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
+    SprintSpecificationStatus, TranslationPermission)
 
 from canonical.lp.dbschema import ImportStatus
 

@@ -11,8 +11,8 @@ from canonical.config import config
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchType, CannotDeleteBranch,
-    CreateBugParams, IBugSet, ILaunchpadCelebrities, IPersonSet,
-    InvalidBranchMergeProposal, IProductSet, ISpecificationSet,
+    CreateBugParams, IBugSet, ILaunchpadCelebrities,
+    InvalidBranchMergeProposal, IPersonSet, IProductSet, ISpecificationSet,
     SpecificationDefinitionStatus, RevisionControlSystems)
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.database.codeimport import CodeImportSet

@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError, PackagingType, RevisionControlSystems, SpecificationSort,
     SpecificationGoalStatus, SpecificationFilter,
     SpecificationDefinitionStatus, SpecificationImplementationStatus)
-from canonical.lp.dbschema import ImportStatus, PackagingType
+from canonical.lp.dbschema import ImportStatus
 
 
 class NoImportBranchError(Exception):

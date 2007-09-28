@@ -42,16 +42,17 @@ from canonical.lp.dbschema import BugTaskImportance
 
 from canonical.launchpad.interfaces import (
     AccountStatus, BugTaskSearchParams, BugTaskStatus, EmailAddressStatus,
-    IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet, IEmailAddress,
-    IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo, IHasMugshot, IIrcID,
-    IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
-    ILaunchpadStatisticSet, ILoginTokenSet, IPasswordEncryptor, IPerson,
-    IPersonSet, IPillarNameSet, IProduct, ISignedCodeOfConductSet,
-    ISourcePackageNameSet, ISSHKey, ISSHKeySet, ITeam, ITranslationGroupSet,
-    IWikiName, IWikiNameSet, JoinNotAllowed, LoginTokenType,
-    PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants,
-    ShippingRequestStatus, SpecificationFilter, SpecificationDefinitionStatus,
-    SpecificationImplementationStatus, SpecificationSort, SSHKeyType,
+    IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
+    IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo,
+    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
+    ILaunchpadCelebrities, ILaunchpadStatisticSet, ILoginTokenSet,
+    IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet, IProduct, ISSHKey,
+    ISSHKeySet, ISignedCodeOfConductSet, ISourcePackageNameSet, ITeam,
+    ITranslationGroupSet, IWikiName, IWikiNameSet, JoinNotAllowed,
+    LoginTokenType, PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH,
+    SSHKeyType, ShipItConstants, ShippingRequestStatus,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 

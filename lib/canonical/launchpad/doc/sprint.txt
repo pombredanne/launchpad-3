@@ -72,7 +72,7 @@ then check the coming sprints and all sprints.
     >>> from canonical.launchpad.interfaces import SprintSpecificationStatus
 
 We're directly using the database classes here, bypassing the security
-proxies becuase this is just set-up for the next step, it's not the exact
+proxies because this is just set-up for the next step, it's not the exact
 functionality we're testing.
 
     >>> from canonical.launchpad.database import SprintSet

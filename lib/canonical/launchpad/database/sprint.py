@@ -16,8 +16,9 @@ from sqlobject import (
 
 from canonical.launchpad.interfaces import (
     IHasLogo, IHasMugshot, IHasIcon, ILaunchpadCelebrities,
-    ISprint, ISprintSet, SprintSpecificationStatus, SpecificationFilter,
-    SpecificationSort, SpecificationImplementationStatus)
+    ISprint, ISprintSet, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
+    SprintSpecificationStatus)
 
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote)

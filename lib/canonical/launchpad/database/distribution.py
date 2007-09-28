@@ -1038,7 +1038,7 @@ class DistributionSet:
         displayed.
         """
         distroset = Distribution.select()
-        return iter(sorted(shortlist(distroset,100),
+        return iter(sorted(shortlist(distroset, 100),
                         key=lambda distro: distro._sort_key))
 
     def __getitem__(self, name):
