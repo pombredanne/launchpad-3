@@ -2,7 +2,7 @@
 
 The page to add a product release works:
 
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox/trunk')
   >>> browser.getLink('Register a release').click()
   >>> browser.url
@@ -97,10 +97,7 @@ release too.
 
 Let's add a release as Jeff:
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> browser = Browser()
-  >>> browser.addHeader('Authorization',
-  ...                   'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
   >>> browser.open('http://launchpad.dev/tomcat/trunk')
   >>> browser.getLink('Register a release').click()
   >>> browser.getControl('Version').value = '0.6.6.6'
@@ -112,9 +109,7 @@ Let's add a release as Jeff:
 
 Celso is a member of ubuntu-team, so he can edit this release too:
 
-  >>> browser = Browser()
-  >>> browser.addHeader('Authorization',
-  ...                   'Basic celso.providelo@canonical.com:cprov')
+  >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
   >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
   >>> browser.getLink('Change details').click()
 
@@ -131,10 +126,7 @@ And if no-priv owns the series...
 ... he can edit existing releases as well, even if they are owned by
 others:
 
-  >>> browser = Browser()
-  >>> browser.addHeader('Authorization',
-  ...                   'Basic no-priv@canonical.com:test')
-
+  >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
   >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
   >>> browser.getLink('Change details').click()
 
