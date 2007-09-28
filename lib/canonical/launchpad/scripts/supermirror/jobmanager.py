@@ -7,6 +7,7 @@ import sys
 
 from twisted.internet import defer, error, reactor
 from twisted.internet.protocol import ProcessProtocol
+from twisted.protocols.basic import NetstringReceiver
 from twisted.protocols.policies import TimeoutMixin
 from twisted.python import failure
 
@@ -23,27 +24,38 @@ MAXIMUM_PROCESSES = 5
 INACTIVITY_TIMEOUT = 5
 
 
-class FireOnExit(ProcessProtocol, TimeoutMixin):
+class FireOnExit(ProcessProtocol, NetstringReceiver):
 
-    def __init__(self, deferred, timeout_period):
+    def __init__(self, deferred, timeout_period, listener):
         self.deferred = deferred
-        self._output = ''
-        self._error = ''
-        self.setTimeout(timeout_period)
+        self.listener = listener
+        self._state = None
+
+    def stringReceived(self, line):
+        if line == 'startMirroring':
+            self.listener.startMirroring()
+        elif line == 'mirrorSucceeded':
+            self._state = 'mirrorSucceeded'
+        elif line == 'mirrorFailed':
+            self._state = 'mirrorFailed'
+        else:
+            if self._state == 'mirrorSucceeded':
+                self.listener.mirrorSucceeded(line)
+                self._state = None
+            elif self._state == 'mirrorFailed':
+                self.listener.mirrorFailed(line)
+                self._state = None
+            else:
+                # XXX: Don't let this be merged.
+                raise "Unrecognized: %r" % (line,)
 
     def outReceived(self, data):
-        ProcessProtocol.outReceived(self, data)
-        self.resetTimeout()
-        self._output += data
-
-    def errReceived(self, data):
-        ProcessProtocol.errReceived(self, data)
-        self.resetTimeout()
-        self._error += data
+        # Modified version of NetstringReceiver.dataReceived that disconnects
+        # the child process
+        NetstringReceiver.dataReceived(self, data)
 
     def processEnded(self, reason):
         ProcessProtocol.processEnded(self, reason)
-        self.setTimeout(None)
         self.deferred, deferred = None, self.deferred
         if reason.check(error.ConnectionDone):
             deferred.callback(None)
@@ -89,7 +101,7 @@ class JobManager:
                 os.path.dirname(os.path.dirname(canonical.__file__))),
             'scripts/mirror-branch.py')
         deferred = defer.Deferred()
-        protocol = FireOnExit(deferred, INACTIVITY_TIMEOUT)
+        protocol = FireOnExit(deferred, INACTIVITY_TIMEOUT, self)
         command = [sys.executable, path_to_script] + branch_to_mirror
         reactor.spawnProcess(protocol, sys.executable, command)
         return deferred

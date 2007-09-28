@@ -7,6 +7,7 @@ import unittest
 
 import bzrlib
 
+from twisted.conch.ssh.common import NS
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting import branch_id_to_path
@@ -163,6 +164,60 @@ class FakeBranchStatusClient:
 
     def getBranchPullQueue(self, branch_type):
         return self.branch_queues[branch_type]
+
+
+class TestPullerMasterProtocol(unittest.TestCase):
+
+    class PullerListener:
+
+        def __init__(self):
+            self.calls = []
+
+        def startMirroring(self):
+            self.calls.append('startMirroring')
+
+        def mirrorSucceeded(self, last_revision):
+            self.calls.append(('mirrorSucceeded', last_revision))
+
+        def mirrorFailed(self, message):
+            self.calls.append(('mirrorFailed', message))
+
+
+    class FakeTransport:
+        def loseConnection(self):
+            pass
+
+
+    def setUp(self):
+        arbitrary_timeout_period = 20
+        self.listener = TestPullerMasterProtocol.PullerListener()
+        self.protocol = jobmanager.FireOnExit(
+            None, arbitrary_timeout_period, self.listener)
+        self.protocol.transport = TestPullerMasterProtocol.FakeTransport()
+
+    def convertToNetstring(self, string):
+        return '%d:%s,' % (len(string), string)
+
+    def test_startMirroring(self):
+        """Receiving a startMirroring message notifies the listener."""
+        self.protocol.outReceived(self.convertToNetstring('startMirroring'))
+        self.assertEqual(['startMirroring'], self.listener.calls)
+
+    def test_mirrorSucceeded(self):
+        """Receiving a mirrorSucceeded message notifies the listener."""
+        self.protocol.outReceived(
+            self.convertToNetstring('mirrorSucceeded'))
+        self.protocol.outReceived(self.convertToNetstring('1234'))
+        self.assertEqual(
+            [('mirrorSucceeded', '1234')], self.listener.calls)
+
+    def test_mirrorFailed(self):
+        """Receiving a mirrorFailed message notifies the listener."""
+        self.protocol.outReceived(
+            self.convertToNetstring('mirrorFailed'))
+        self.protocol.outReceived(self.convertToNetstring('Error Message'))
+        self.assertEqual(
+            [('mirrorFailed', 'Error Message')], self.listener.calls)
 
 
 def test_suite():
