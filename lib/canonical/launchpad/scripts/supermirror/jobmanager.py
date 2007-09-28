@@ -10,6 +10,7 @@ from twisted.internet.protocol import ProcessProtocol
 from twisted.protocols.basic import NetstringReceiver
 from twisted.protocols.policies import TimeoutMixin
 from twisted.python import failure
+from twisted.web.xmlrpc import Proxy
 
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
@@ -24,26 +25,47 @@ MAXIMUM_PROCESSES = 5
 INACTIVITY_TIMEOUT = 5
 
 
+class BranchStatusClient:
+    """Twisted client for the branch status methods on the authserver."""
+
+    def __init__(self):
+        self.proxy = Proxy(config.supermirror.authserver_url)
+
+    def getBranchPullQueue(self, branch_type):
+        return self.proxy.callRemote('getBranchPullQueue', branch_type)
+
+    def startMirroring(self, branch_id):
+        return self.proxy.callRemote('startMirroring', branch_id)
+
+    def mirrorComplete(self, branch_id, last_revision_id):
+        return self.proxy.callRemote(
+            'mirrorComplete', branch_id, last_revision_id)
+
+    def mirrorFailed(self, branch_id, reason):
+        return self.proxy.callRemote('mirrorFailed', branch_id, reason)
+
+
 class FireOnExit(ProcessProtocol, NetstringReceiver):
 
-    def __init__(self, deferred, timeout_period, listener):
+    def __init__(self, branch_id, deferred, timeout_period, listener):
+        self.branch_id = branch_id
         self.deferred = deferred
         self.listener = listener
         self._state = None
 
     def stringReceived(self, line):
         if line == 'startMirroring':
-            self.listener.startMirroring()
+            self.listener.startMirroring(self.branch_id)
         elif line == 'mirrorSucceeded':
             self._state = 'mirrorSucceeded'
         elif line == 'mirrorFailed':
             self._state = 'mirrorFailed'
         else:
             if self._state == 'mirrorSucceeded':
-                self.listener.mirrorSucceeded(line)
+                self.listener.mirrorSucceeded(self.branch_id, line)
                 self._state = None
             elif self._state == 'mirrorFailed':
-                self.listener.mirrorFailed(line)
+                self.listener.mirrorFailed(self.branch_id, line)
                 self._state = None
             else:
                 # XXX: Don't let this be merged.
@@ -72,27 +94,34 @@ class JobManager:
 
     def __init__(self, branch_status_client, branch_type):
         self.branch_status_client = branch_status_client
-        self.branches_to_mirror = []
         self.actualLock = None
         self.branch_type = branch_type
         self.name = 'branch-puller-%s' % branch_type.name.lower()
         self.lockfilename = '/var/lock/launchpad-%s.lock' % self.name
-        self._addBranches(
-            branch_status_client.getBranchPullQueue(branch_type.name))
 
-    def run(self, logger):
+    def _run(self, branches_to_pull, logger):
         """Run all branches_to_mirror registered with the JobManager"""
-        logger.info('%d branches to mirror', len(self.branches_to_mirror))
+        branches_to_pull = [
+            self.getBranchToMirror(*branch) for branch in branches_to_pull]
+        logger.info('%d branches to mirror', len(branches_to_pull))
         semaphore = defer.DeferredSemaphore(MAXIMUM_PROCESSES)
         deferreds = [
             semaphore.run(self.mirror, branch_to_mirror, logger)
-            for branch_to_mirror in self.branches_to_mirror]
+            for branch_to_mirror in branches_to_pull]
         deferred = defer.gatherResults(deferreds)
         deferred.addCallback(self._finishedRunning, logger)
         return deferred
 
+    def run(self, logger):
+        deferred = self.branch_status_client.getBranchPullQueue(
+            self.branch_type.name)
+        deferred.addCallback(self._run, logger)
+        return deferred
+
+    def startMirroring(self, branch_id):
+        return self.branch_status_client.startMirroring(branch_id)
+
     def _finishedRunning(self, ignored, logger):
-        self.branches_to_mirror = []
         logger.info('Mirroring complete')
 
     def mirror(self, branch_to_mirror, logger):
@@ -101,15 +130,12 @@ class JobManager:
                 os.path.dirname(os.path.dirname(canonical.__file__))),
             'scripts/mirror-branch.py')
         deferred = defer.Deferred()
-        protocol = FireOnExit(deferred, INACTIVITY_TIMEOUT, self)
+        # XXX: EGREGIOUS
+        protocol = FireOnExit(
+            int(branch_to_mirror[2]), deferred, INACTIVITY_TIMEOUT, self)
         command = [sys.executable, path_to_script] + branch_to_mirror
         reactor.spawnProcess(protocol, sys.executable, command)
         return deferred
-
-    def _addBranches(self, branches_to_pull):
-        for branch_id, branch_src, unique_name in branches_to_pull:
-            self.branches_to_mirror.append(
-                self.getBranchToMirror(branch_id, branch_src, unique_name))
 
     def getBranchToMirror(self, branch_id, branch_src, unique_name):
         branch_src = branch_src.strip()

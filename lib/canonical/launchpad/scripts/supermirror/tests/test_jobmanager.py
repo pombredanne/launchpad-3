@@ -48,10 +48,6 @@ class TestJobManager(unittest.TestCase):
             self.fail("Unknown branch type: %r" % (branch_type,))
         return jobmanager.JobManager(client, branch_type)
 
-    def testEmptyAddBranches(self):
-        manager = self.makeJobManager(BranchType.HOSTED, [])
-        self.assertEqual([], manager.branches_to_mirror)
-
     def testManagerCreatesLocks(self):
         try:
             manager = self.makeJobManager(BranchType.HOSTED, [])
@@ -112,7 +108,7 @@ class TestJobManagerInLaunchpad(TrialTestCase):
                          dest_branch.last_revision())
 
     def testJobRunner(self):
-        client = BranchStatusClient()
+        client = jobmanager.BranchStatusClient()
         manager = jobmanager.JobManager(client, BranchType.HOSTED)
 
         branches = [
@@ -167,32 +163,41 @@ class FakeBranchStatusClient:
 
 
 class TestPullerMasterProtocol(unittest.TestCase):
+    """Tests for the process protocol used by the job manager."""
 
     class PullerListener:
+        """Fake listener object that records calls."""
 
         def __init__(self):
             self.calls = []
 
-        def startMirroring(self):
-            self.calls.append('startMirroring')
+        def startMirroring(self, branch_id):
+            self.calls.append(('startMirroring', branch_id))
 
-        def mirrorSucceeded(self, last_revision):
-            self.calls.append(('mirrorSucceeded', last_revision))
+        def mirrorSucceeded(self, branch_id, last_revision):
+            self.calls.append(('mirrorSucceeded', branch_id, last_revision))
 
-        def mirrorFailed(self, message):
-            self.calls.append(('mirrorFailed', message))
+        def mirrorFailed(self, branch_id, message):
+            self.calls.append(('mirrorFailed', branch_id, message))
 
 
     class FakeTransport:
+        """Fake transport that only implements loseConnection.
+
+        We're manually feeding data to the protocol, so we don't need a real
+        transport.
+        """
         def loseConnection(self):
             pass
 
 
     def setUp(self):
         arbitrary_timeout_period = 20
+        self.arbitrary_branch_id = 1
         self.listener = TestPullerMasterProtocol.PullerListener()
         self.protocol = jobmanager.FireOnExit(
-            None, arbitrary_timeout_period, self.listener)
+            self.arbitrary_branch_id, None, arbitrary_timeout_period,
+            self.listener)
         self.protocol.transport = TestPullerMasterProtocol.FakeTransport()
 
     def convertToNetstring(self, string):
@@ -201,7 +206,9 @@ class TestPullerMasterProtocol(unittest.TestCase):
     def test_startMirroring(self):
         """Receiving a startMirroring message notifies the listener."""
         self.protocol.outReceived(self.convertToNetstring('startMirroring'))
-        self.assertEqual(['startMirroring'], self.listener.calls)
+        self.assertEqual(
+            [('startMirroring', self.arbitrary_branch_id)],
+            self.listener.calls)
 
     def test_mirrorSucceeded(self):
         """Receiving a mirrorSucceeded message notifies the listener."""
@@ -209,7 +216,8 @@ class TestPullerMasterProtocol(unittest.TestCase):
             self.convertToNetstring('mirrorSucceeded'))
         self.protocol.outReceived(self.convertToNetstring('1234'))
         self.assertEqual(
-            [('mirrorSucceeded', '1234')], self.listener.calls)
+            [('mirrorSucceeded', self.arbitrary_branch_id, '1234')],
+            self.listener.calls)
 
     def test_mirrorFailed(self):
         """Receiving a mirrorFailed message notifies the listener."""
@@ -217,7 +225,26 @@ class TestPullerMasterProtocol(unittest.TestCase):
             self.convertToNetstring('mirrorFailed'))
         self.protocol.outReceived(self.convertToNetstring('Error Message'))
         self.assertEqual(
-            [('mirrorFailed', 'Error Message')], self.listener.calls)
+            [('mirrorFailed', self.arbitrary_branch_id, 'Error Message')],
+            self.listener.calls)
+
+
+class TestMirroringEvents(TrialTestCase):
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        self.authserver = AuthserverTacTestSetup()
+        self.authserver.setUp()
+        self.status_client = jobmanager.BranchStatusClient()
+        self.eventHandler = jobmanager.JobManager(
+            self.status_client, BranchType.HOSTED)
+
+    def tearDown(self):
+        self.authserver.tearDown()
+
+    def test_startMirroring(self):
+        arbitrary_branch_id = 1
+        self.eventHandler.startMirroring(arbitrary_branch_id)
 
 
 def test_suite():
