@@ -123,13 +123,12 @@ class POSubmissionSet:
         # Intermediate results are kept in a temporary table.
         # This is not a good thing, and if it's any faster than a single big
         # query, that's pure coincidence.
-        # XXX: JeroenVermeulen 2007-09-02 bug=30602: Evaluate performance with
-        # this change on staging, and roll back if necessary.
         parameters['temp_table'] = 'temp_suggestion_pomsgset'
         postgresql.drop_tables(cur, [parameters['temp_table']])
         cur.execute("""
-            CREATE TEMP TABLE %(temp_table)s AS
-            SELECT DISTINCT POMsgSet.id, POTMsgSet.primemsgid
+            CREATE TEMP TABLE %(temp_table)s
+            ON COMMIT DROP
+            AS SELECT DISTINCT POMsgSet.id, POTMsgSet.primemsgid
             FROM POMsgSet
             JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
             JOIN POFile ON POMsgSet.pofile = POFile.id
@@ -138,7 +137,6 @@ class POSubmissionSet:
                 POTMsgSet.primemsgid IN %(wanted_primemsgids)s AND
                 NOT POMsgSet.isfuzzy AND
                 NOT %(one_of_ours)s
-            ON COMMIT DROP
             """ % parameters)
         cur.execute(
             "CREATE INDEX %(temp_table)s_idx ON %(temp_table)s(id)"
