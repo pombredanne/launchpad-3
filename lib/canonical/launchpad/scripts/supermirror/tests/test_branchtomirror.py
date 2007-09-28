@@ -831,6 +831,8 @@ class TestWorkerProtocol(unittest.TestCase, BranchToMirrorMixin):
     def setUp(self):
         BranchToMirrorMixin.setUp(self)
         self.test_dir = tempfile.mkdtemp()
+        self.output = StringIO()
+        self.error = StringIO()
         self.resetBuffers()
         logger = logging.getLogger()
         client = StubbedBranchStatusClient()
@@ -846,8 +848,10 @@ class TestWorkerProtocol(unittest.TestCase, BranchToMirrorMixin):
 
     def resetBuffers(self):
         """Empty the test output and error buffers."""
-        self.output = StringIO()
-        self.error = StringIO()
+        self.output.truncate(0)
+        self.error.truncate(0)
+        self.assertEqual('', self.output.getvalue())
+        self.assertNoError()
 
     def test_nothingSentOnConstruction(self):
         """The protocol sends nothing until it receives an event."""
@@ -870,6 +874,17 @@ class TestWorkerProtocol(unittest.TestCase, BranchToMirrorMixin):
         command, revno, remainder = getNS(self.output.getvalue(), 2)
         self.assertEqual('mirrorSucceeded', command)
         self.assertEqual('1234', revno)
+        self.assertEqual('', remainder)
+        self.assertNoError()
+
+    def test_mirrorFailed(self):
+        """Calling 'mirrorFailed' sends the error message."""
+        self.protocol.startMirroring(self.branch_to_mirror)
+        self.resetBuffers()
+        self.protocol.mirrorFailed(self.branch_to_mirror, 'Error Message')
+        command, message, remainder = getNS(self.output.getvalue(), 2)
+        self.assertEqual('mirrorFailed', command)
+        self.assertEqual('Error Message', message)
         self.assertEqual('', remainder)
         self.assertNoError()
 
