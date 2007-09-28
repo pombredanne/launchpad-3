@@ -19,6 +19,6 @@
         </tal:name>
     </author>
     <content tal:condition="entry/content"
-             tal:content="entry/content/content"
+             tal:content="structure entry/content/content"
              tal:attributes="type entry/content/content_type" />
 </metal:entry>

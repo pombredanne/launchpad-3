@@ -14,7 +14,6 @@
     <updated tal:condition="view/getUpdated"
              tal:content="view/getUpdated">2007-05-26T12:45:01Z</updated>
     <entry tal:repeat="entry view/getItems">
-       <p tal:content="entry/title/content" />
        <metal:entry metal:use-macro="entry/@@feed-entry/feed-entry" />
     </entry>
 </feed>

@@ -5,6 +5,8 @@
     i18n_domain="launchpad">
 
     <!-- Feed -->
+
+    <!-- Macros -->
     <browser:page
         for="*"
         name="feed-entry"
@@ -12,11 +14,18 @@
 	template="../../lazr/feed/feed-entry.pt"
         />
 
+    <!-- Pages -->
     <browser:page
-        for="*"
+        for="canonical.launchpad.interfaces.IProduct"
         name="latest-bugs.atom"
         permission="zope.Public"
         class="canonical.launchpad.feed.ProductBugsFeed"
+        />
+    <browser:page
+        for="canonical.launchpad.interfaces.IPerson"
+        name="latest-bugs.atom"
+        permission="zope.Public"
+        class="canonical.launchpad.feed.PersonBugsFeed"
         />
 
 </configure>

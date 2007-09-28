@@ -68,7 +68,7 @@ class FeedBase(LaunchpadView):
         raise NotImplementedError
 
     def getSiteURL(self):
-        raise NotImplementedError
+        return self.request.getApplicationURL()
 
     def getItems(self):
         raise NotImplementedError
