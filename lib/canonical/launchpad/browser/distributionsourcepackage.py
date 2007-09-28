@@ -308,7 +308,7 @@ class DistributionSourcePackageView(LaunchpadView):
                         'sourcepackage': sourcepackage
                         })
             for row in range(len(series_result)-1, 0, -1):
-                for column in ['series', 'pocket', 'version', 'upstream',
+                for column in ['series', 'pocket', 'package', 'packaging',
                                'sourcepackage']:
                     if series_result[row][column] == \
                        series_result[row-1][column]:
