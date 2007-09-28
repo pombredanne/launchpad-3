@@ -40,16 +40,17 @@ from canonical.testing import LaunchpadFunctionalLayer, reset_logging
 
 
 class TestBranchToMirror(unittest.TestCase):
+    """Test the mirroring functionality of BranchToMirror."""
 
     layer = LaunchpadFunctionalLayer
 
-    testdir = None
+    test_dir = None
 
     def setUp(self):
-        self.testdir = tempfile.mkdtemp()
+        self.test_dir = tempfile.mkdtemp()
         # Change the HOME environment variable in order to ignore existing
         # user config files.
-        os.environ.update({'HOME': self.testdir})
+        os.environ.update({'HOME': self.test_dir})
         self.authserver = AuthserverTacTestSetup()
         self.authserver.setUp()
         # We set the log level to CRITICAL so that the log messages
@@ -57,50 +58,54 @@ class TestBranchToMirror(unittest.TestCase):
         logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):
-        shutil.rmtree(self.testdir)
+        transaction.abort()
+        shutil.rmtree(self.test_dir)
         self.authserver.tearDown()
 
-    def _getBranchDir(self, branchname):
-        return os.path.join(self.testdir, branchname)
+    def _getBranchDir(self, branch_name):
+        return os.path.join(self.test_dir, branch_name)
 
-    def testMirror(self):
-        # Create a branch
-        srcbranchdir = self._getBranchDir("branchtomirror-testmirror-src")
-        destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
-
+    def _makeBranchToMirror(self):
+        """Create a BranchToMirror object to be used in tests."""
+        src_branch_dir = self._getBranchDir("branchtomirror-testmirror-src")
+        dest_branch_dir = self._getBranchDir("branchtomirror-testmirror-dest")
         client = BranchStatusClient()
-        to_mirror = BranchToMirror(
-            srcbranchdir, destbranchdir, client, branch_id=1, unique_name=None,
-            branch_type=None, logger=logging.getLogger())
-        tree = createbranch(srcbranchdir)
+        return BranchToMirror(
+            src_branch_dir, dest_branch_dir, client, branch_id=1,
+            unique_name=None, branch_type=None, logger=logging.getLogger())
+
+    def testMirrorActuallyMirrors(self):
+        # Check that mirror() will mirror the Bazaar branch.
+        to_mirror = self._makeBranchToMirror()
+        tree = createbranch(to_mirror.source)
         to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
-        self.assertEqual(tree.last_revision(),
-                         mirrored_branch.last_revision())
+        self.assertEqual(
+            tree.last_revision(), mirrored_branch.last_revision())
 
-        # make sure that the last mirrored revision is recorded
+    def testMirrorRecordsRevisionInDatabase(self):
+        # Check that mirror() records the latest mirrored revision in the
+        # database.
+        to_mirror = self._makeBranchToMirror()
+        createbranch(to_mirror.source)
+        to_mirror.mirror()
         transaction.abort()
         branch = database.Branch.get(1)
-        self.assertEqual(branch.last_mirrored_id,
-                         mirrored_branch.last_revision())
+        mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
+        self.assertEqual(
+            branch.last_mirrored_id, mirrored_branch.last_revision())
 
     def testMirrorEmptyBranch(self):
         # Check that we can mirror an empty branch, and that the
-        # last_mirrored_id for an empty branch can be distinguished
-        # from an unmirrored branch.
+        # last_mirrored_id for an empty branch can be distinguished from an
+        # unmirrored branch.
 
         # Create a branch
-        srcbranchdir = self._getBranchDir("branchtomirror-testmirror-src")
-        destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
-
-        client = BranchStatusClient()
-        to_mirror = BranchToMirror(
-            srcbranchdir, destbranchdir, client, branch_id=1, unique_name=None,
-            branch_type=None, logger=logging.getLogger())
+        to_mirror = self._makeBranchToMirror()
 
         # create empty source branch
-        os.makedirs(srcbranchdir)
-        tree = bzrdir.BzrDir.create_standalone_workingtree(srcbranchdir)
+        os.makedirs(to_mirror.source)
+        tree = bzrdir.BzrDir.create_standalone_workingtree(to_mirror.source)
 
         to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
