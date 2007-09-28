@@ -52,7 +52,7 @@ Now Sample Person can't change the owner anymore.
     
 But cprov can.
 
-    >>> browser = setupBrowser(auth="Basic celso.providelo@canonical.com:cprov')
+    >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> browser.getLink('Change owner').click()
     >>> browser.url
