@@ -466,6 +466,7 @@ We have several ways to copy translations between distro series.  We bring a
 transaction manager (in this case a fake one) to make these work.
 
     >>> class FakeTransactionManager:
+    ...     reset_after_transaction = True
     ...     def begin(self):
     ...         pass
     ...     def commit(self):

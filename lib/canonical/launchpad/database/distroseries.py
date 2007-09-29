@@ -12,6 +12,7 @@ __all__ = [
 import logging
 from cStringIO import StringIO
 
+from psycopg import ProgrammingError
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -185,9 +186,17 @@ def copy_active_translations_to_new_series(child, transaction, copier, logger):
 
 def copy_active_translations_as_update(child, transaction, logger):
     """Update child distroseries with translations from parent."""
+    # This function makes exhaustive use of temporary tables.  Testing with
+    # regular persistent tables revealed frequent lockups as the algorithm
+    # waited for autovacuum to go over the holding tables.  Using temporary
+    # tables means that we cannot let our connection be reset at the end of
+    # every transaction.
+    original_reset_setting = transaction.reset_after_transaction
+    transaction.reset_after_transaction = False
     full_name = "%s_%s" % (child.distribution.name, child.name)
     tables = ['POFile', 'POMsgSet', 'POSubmission']
-    copier = MultiTableCopy(full_name, tables, logger=logger)
+    copier = MultiTableCopy(
+        full_name, tables, restartable=False, logger=logger)
 
     copier.dropHoldingTables()
     drop_tables(cursor(), [
@@ -198,7 +207,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     # come in handy later.
     cur = cursor()
     cur.execute("""
-        CREATE TABLE temp_equiv_template AS
+        CREATE TEMP TABLE temp_equiv_template AS
         SELECT DISTINCT pt1.id AS id, pt2.id AS new_id
         FROM POTemplate pt1, POTemplate pt2
         WHERE
@@ -216,7 +225,7 @@ def copy_active_translations_as_update(child, transaction, logger):
 
     # Map parent POTMsgSets to corresponding POTMsgSets in child.
     cur.execute("""
-        CREATE TABLE temp_equiv_potmsgset AS
+        CREATE TEMP TABLE temp_equiv_potmsgset AS
         SELECT DISTINCT ptms1.id AS id, ptms2.id AS new_id
         FROM POTMsgSet ptms1, POTMsgSet ptms2, temp_equiv_template
         WHERE
@@ -438,7 +447,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     # but we can still recognize each of these by the fact that its new_id
     # will refer to an already existing POMsgSet.
     cur.execute("""
-        CREATE TABLE temp_inert_pomsgsets AS
+        CREATE TEMP TABLE temp_inert_pomsgsets AS
         SELECT
             holding.id,
             holding.new_id,
@@ -555,7 +564,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     # later.
     logger.info("Recording affected POFiles")
     cur.execute(
-        "CREATE TABLE temp_changed_pofiles "
+        "CREATE TEMP TABLE temp_changed_pofiles "
         "AS SELECT new_id AS id FROM %s" % holding_tables['pofile'])
     cur.execute(
         "CREATE UNIQUE INDEX temp_changed_pofiles_pkey "
@@ -578,13 +587,25 @@ def copy_active_translations_as_update(child, transaction, logger):
     cur = cursor()
 
     # We're about to pour.  If the database doesn't have current statistics,
-    # it may botch the optimization.  So we make it refresh its information.
+    # it may botch the optimization.  So we try to make it refresh its
+    # information.
     # This isn't something we're supposed to do in regular situations, and it
-    # will block if a vacuum runs at the same time, but better to have the
-    # pain now than while writing to the source tables.
+    # will block (possibly even deadlock) if a vacuum runs at the same time.
+    # To minimize the pain, we try to analyze but move on if we can't acquire
+    # the necessary locks.
     for holding_table in holding_tables.values():
         logger.info("Updating statistics on %s." % holding_table)
-        cur.execute("ANALYZE %s" % holding_table)
+        try:
+            cur.execute("LOCK TABLE %s IN SHARE UPDATE EXCLUSIVE MODE NOWAIT"
+                % holding_table)
+        except ProgrammingError, message:
+            logger.info(message)
+            transaction.abort()
+        else:
+            cur.execute("ANALYZE %s" % holding_table)
+            transaction.commit()
+        transaction.begin()
+        cur = cursor()
 
     # Pour copied rows back to source tables.  Contrary to appearances, this
     # is where the heavy lifting is done.
@@ -766,6 +787,7 @@ def copy_active_translations_as_update(child, transaction, logger):
 
     flush_database_updates()
     transaction.commit()
+    transaction.reset_after_transaction = original_reset_setting
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,

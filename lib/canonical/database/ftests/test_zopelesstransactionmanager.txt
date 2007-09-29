@@ -90,6 +90,84 @@ UPDATE Person SET name = 'sabdfl' WHERE id = 7
 >>> ztm.begin()
 >>> ztm.abort()
 
+By default, our connection is reset at the end of every transaction.  That
+means that any session state, such as temporary tables, is lost when we
+commit.
+
+>>> from canonical.database.sqlbase import cursor
+>>> test_table = "anothertesttable"
+>>> cursor().execute("SELECT count(*) FROM %s" % test_table)
+Traceback (most recent call last):
+...
+ProgrammingError: ERROR: relation "..." does not exist
+...
+
+>>> ztm.abort()
+>>> ztm.begin()
+>>> cur = cursor()
+>>> cur.execute("CREATE TEMP TABLE %s (col integer)" % test_table)
+>>> cur.execute("SELECT count(*) FROM %s" % test_table)
+>>> print cur.fetchone()
+(0L,)
+
+>>> ztm.commit()
+>>> ztm.begin()
+>>> cur = cursor()
+>>> cur.execute("SELECT count(*) FROM %s" % test_table)
+Traceback (most recent call last):
+...
+ProgrammingError: ERROR: relation "..." does not exist
+...
+
+The same hapens when a transaction is aborted.
+
+>>> ztm.abort()
+>>> ztm.begin()
+>>> cur = cursor()
+>>> cur.execute("CREATE TEMP TABLE %s (col integer)" % test_table)
+>>> cur.execute("SELECT count(*) FROM %s" % test_table)
+>>> print cur.fetchone()
+(0L,)
+
+>>> ztm.abort()
+>>> ztm.begin()
+>>> cur = cursor()
+>>> cur.execute("SELECT count(*) FROM %s" % test_table)
+Traceback (most recent call last):
+...
+ProgrammingError: ERROR: relation "..." does not exist
+...
+
+The automatic resetting of connections is controlled by a Boolean field called
+reset_after_transaction.
+
+>>> ztm.reset_after_transaction
+True
+
+When we disable the automatic resetting of connections, the connection remains
+active across transactions.  We don't normally do this because resetting the
+transaction doesn't cost much and guards us against leaks and such.
+
+>>> ztm.reset_after_transaction = False
+>>> ztm.abort()
+>>> ztm.begin()
+>>> cur = cursor()
+>>> cur.execute("CREATE TEMP TABLE %s (col integer)" % test_table)
+>>> cur.execute("SELECT count(*) FROM %s" % test_table)
+>>> print cur.fetchone()
+(0L,)
+>>> ztm.commit()
+>>> ztm.begin()
+>>> cur.execute("SELECT count(*) FROM %s" % test_table)
+>>> print cur.fetchone()
+(0L,)
+
+>>> ztm.begin()
+>>> ztm.abort()
+>>> cur.execute("SELECT count(*) FROM %s" % test_table)
+>>> print cur.fetchone()
+(0L,)
+
 Cleanup -- make sure this doctest leaves things in the same state it found
 them.
 
