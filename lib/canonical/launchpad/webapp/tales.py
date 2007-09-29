@@ -1,9 +1,8 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0613,E0201,R0911
+# pylint: disable-msg=C0103,W0613,R0911
 #
-"""Implementation of the lp: htmlform: fmt: namespaces in TALES.
+"""Implementation of the lp: htmlform: fmt: namespaces in TALES."""
 
-"""
 __metaclass__ = type
 
 import bisect

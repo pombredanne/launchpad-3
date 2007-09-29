@@ -1,8 +1,9 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0103
 
 """
-You probably don't want to import stuff from here. See __init__.py
-for details
+You probably don't want to import stuff from here.
+See __init__.py for details
 """
 
 __metaclass__ = type
