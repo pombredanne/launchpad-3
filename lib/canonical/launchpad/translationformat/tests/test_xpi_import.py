@@ -14,10 +14,9 @@ import canonical.launchpad
 from canonical.database.sqlbase import commit, flush_database_caches
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, IPOTemplateNameSet, IPOTemplateSet,
-    ITranslationImportQueue)
+    ITranslationImportQueue, RosettaImportStatus)
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     MozillaXpiImporter)
-from canonical.lp.dbschema import RosettaImportStatus
 from canonical.testing import LaunchpadZopelessLayer
 
 def get_en_US_xpi_file_to_import():

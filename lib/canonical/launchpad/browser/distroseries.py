@@ -511,13 +511,13 @@ class DistroSeriesFullLanguagePackRequestView(LaunchpadEditFormView):
             # There are changes.
             if self.context.language_pack_full_export_requested:
                 self.request.response.addInfoNotification('''
-Your request has been noted, next language pack export will include a full
-export.
+Your request has been noted. Next language pack export will include all
+available translations.
 ''')
             else:
                 self.request.response.addInfoNotification('''
-Your request has been noted, next language pack export will be an export
-relative to current base language pack.
+Your request has been noted. Next language pack export will be made relative
+to the current base language pack.
 ''')
         else:
             self.request.response.addInfoNotification(
