@@ -1,4 +1,9 @@
-<div class="portlet" id="portlet-details">
+<div
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-details">
 
   <h2>Package "<span tal:replace="context/name">apache2</span>"
   (<span tal:replace="context/distroarchseries/architecturetag">i386</span>)

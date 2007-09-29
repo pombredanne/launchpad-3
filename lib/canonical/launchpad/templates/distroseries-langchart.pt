@@ -1,3 +1,8 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <tal:hide-translations condition="context/hide_all_translations">
   <p>
     Translation status for <tal:distroseries replace="context/displayname" />
@@ -73,3 +78,4 @@
     </tbody>
   </table>
 </tal:no-hide-translations>
+</tal:root>
