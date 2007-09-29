@@ -1,4 +1,6 @@
-<div class="portlet" id="portlet-recommends">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  class="portlet" id="portlet-recommends">
 
   <h2>Recommends</h2>
 

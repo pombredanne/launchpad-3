@@ -1,4 +1,6 @@
-<div class="portlet" id="portlet-details">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  class="portlet" id="portlet-details">
   <h2><span tal:replace="context/name" /> details</h2>
 
   <div class="portletBody portletContent">
