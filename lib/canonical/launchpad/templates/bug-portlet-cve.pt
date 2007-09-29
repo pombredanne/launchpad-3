@@ -1,6 +1,9 @@
-<div class="portlet" id="portlet-cve" tal:condition="context/cves"
-     tal:define="current_task view/currentBugTask;
-                 url current_task/fmt:url">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  class="portlet" id="portlet-cve" tal:condition="context/cves"
+  tal:define="current_task view/currentBugTask;
+              url current_task/fmt:url"
+>
   <h2>
     <abbr title="Common Vulnerabilities and Exposures index">CVE</abbr>
     references

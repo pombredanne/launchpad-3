@@ -1,5 +1,7 @@
-<div class="portlet" id="portlet-blueprints"
-     tal:condition="context/spec_links">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  class="portlet" id="portlet-blueprints"
+  tal:condition="context/spec_links">
   <h2>Blueprints</h2>
   <div class="portletBody portletContent">
     <ul class="blueprint">

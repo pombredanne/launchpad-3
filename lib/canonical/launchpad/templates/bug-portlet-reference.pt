@@ -1,7 +1,10 @@
-<div class="portlet" id="portlet-web-links"
-     tal:condition="context/externalrefs"
-     tal:define="current_task view/currentBugTask;
-                 url current_task/fmt:url">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  class="portlet" id="portlet-web-links"
+  tal:condition="context/externalrefs"
+  tal:define="current_task view/currentBugTask;
+              url current_task/fmt:url"
+>
 
   <h2>Web links</h2>
 

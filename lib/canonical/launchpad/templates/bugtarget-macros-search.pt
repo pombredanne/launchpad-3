@@ -1,3 +1,7 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  omit-tag="">
 <metal:block define-macro="sortwidget_label">
   <label for="orderby">Sorted by:</label>
 </metal:block>
@@ -68,3 +72,4 @@
     -->
 </script>
 </metal:block>
+</tal:root>

@@ -1,4 +1,6 @@
-<div class="portlet" id="portlet-tags">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  class="portlet" id="portlet-tags">
 
   <h2>Tags</h2>
 

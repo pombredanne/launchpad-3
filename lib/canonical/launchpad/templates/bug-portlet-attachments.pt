@@ -1,7 +1,10 @@
-<div class="portlet" id="portlet-attachments"
-     tal:condition="context/attachments"
-     tal:define="current_task view/currentBugTask;
-                 url current_task/fmt:url">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  class="portlet" id="portlet-attachments"
+  tal:condition="context/attachments"
+  tal:define="current_task view/currentBugTask;
+              url current_task/fmt:url"
+>
 
   <h2>Bug attachments</h2>
 

@@ -1,7 +1,9 @@
-<div class="portlet" id="portlet-watches"
-     tal:condition="context/watches"
-     tal:define="current_task view/currentBugTask;
-                 url current_task/fmt:url">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  class="portlet" id="portlet-watches"
+  tal:condition="context/watches"
+  tal:define="current_task view/currentBugTask;
+              url current_task/fmt:url">
   <h2>Remote bug watches</h2>
   <div class="portletBody portletContent">
 

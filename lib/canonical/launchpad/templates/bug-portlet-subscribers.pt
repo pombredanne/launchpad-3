@@ -1,4 +1,6 @@
-<div class="portlet" id="portlet-subscribers">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  class="portlet" id="portlet-subscribers">
   <h2>Subscribers</h2>
   <div class="portletBody"
        tal:define="from_dupes_subscribers context/getSubscribersFromDuplicates;
@@ -40,4 +42,5 @@
       </ul>
 
     </div>
+  </div>
 </div>

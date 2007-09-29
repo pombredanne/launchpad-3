@@ -1,4 +1,5 @@
-<div>
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal">
   <tal:no-results condition="not: context/batch">
     <tal:search-performed condition="request/search|nothing">
       <p>No results for search 

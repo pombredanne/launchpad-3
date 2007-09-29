@@ -1,4 +1,8 @@
-<div class="portlet" id="portlet-questions" tal:condition="context/questions">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  class="portlet" id="portlet-questions"
+  tal:condition="context/questions"
+>
 
   <h2>Related questions</h2>
 

@@ -1,4 +1,6 @@
-<div class="portlet" id="portlet-filters">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  class="portlet" id="portlet-filters">
   <h2>Filters</h2>
   <div class="portletBody portletContent">
  
