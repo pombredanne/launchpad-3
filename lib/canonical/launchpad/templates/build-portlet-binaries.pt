@@ -1,4 +1,6 @@
-<div class="portlet" id="portlet-binaries">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  class="portlet" id="portlet-binaries">
 
   <h2>Resulting binaries</h2>
 
