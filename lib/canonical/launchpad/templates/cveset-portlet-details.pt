@@ -1,4 +1,7 @@
-<div class="portlet" id="portlet-details">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  class="portlet" id="portlet-details">
   <h2>About the CVE system</h2>
   <div class="portletBody portletContent">
     Launchpad includes full support for
