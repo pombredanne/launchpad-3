@@ -415,6 +415,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     # Make sure we can do fast joins on (potmsgset, pofile) to speed up the
     # delete statement that protects uniqueness of POMsgSets in the POMsgSet
     # batch pouring callback.
+    logger.info("Indexing POMsgSet holding table: (potmsgset, pofile)")
     cur.execute(
         "CREATE UNIQUE INDEX pomsgset_holding_potmsgset_pofile "
         "ON %s (potmsgset, pofile)" % holding_tables['pomsgset'])
@@ -422,6 +423,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     # Set potmsgset to point to equivalent POTMsgSet in copy's POFile.  This
     # is similar to what MultiTableCopy would have done for us had we included
     # POTMsgSet in the copy operation.
+    logger.info("Redirecting potmsgset")
     cur.execute("""
         UPDATE %(pomsgset_holding_table)s AS holding
         SET potmsgset = temp_equiv_potmsgset.new_id
@@ -431,6 +433,7 @@ def copy_active_translations_as_update(child, transaction, logger):
 
     # Map new_ids in holding to those of child distroseries' corresponding
     # POMsgSets.
+    logger.info("Re-keying inert POMsgSets")
     cur.execute("""
         UPDATE %(pomsgset_holding_table)s AS holding
         SET new_id = pms.id
@@ -446,6 +449,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     # be needed.  We've just messed with the inert POMsgSets' new_id fields,
     # but we can still recognize each of these by the fact that its new_id
     # will refer to an already existing POMsgSet.
+    logger.info("Noting inert POMsgSets")
     cur.execute("""
         CREATE TEMP TABLE temp_inert_pomsgsets AS
         SELECT
@@ -457,9 +461,11 @@ def copy_active_translations_as_update(child, transaction, logger):
         FROM %(pomsgset_holding_table)s holding, POMsgSet source
         WHERE holding.new_id = source.id
         """ % query_parameters)
+    logger.info("Indexing inert POMsgSets")
     cur.execute(
         "CREATE UNIQUE INDEX inert_pomsgset_idx "
         "ON temp_inert_pomsgsets(id)")
+    logger.info("Indexing inert POMsgSets: new_id")
     cur.execute(
         "CREATE UNIQUE INDEX inert_pomsgset_newid_idx "
         "ON temp_inert_pomsgsets(new_id)")
@@ -554,7 +560,8 @@ def copy_active_translations_as_update(child, transaction, logger):
     # Make sure we can do fast joins on (potranslation, pomsgset, pluralform)
     # to speed up the delete statement that protects uniqueness of active
     # submissions in the POSubmission batch pouring callback.
-    logger.info("Indexing POSUbmission(potranslation, pomsgset, pluralform)")
+    logger.info("Indexing POSUbmission holding table: "
+        "(potranslation, pomsgset, pluralform)")
     cur.execute(
         "CREATE UNIQUE INDEX posubmission_holding_triplet "
         "ON %s (potranslation, pomsgset, pluralform)"
