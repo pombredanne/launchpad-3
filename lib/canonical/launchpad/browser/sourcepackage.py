@@ -142,7 +142,12 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
 
     def translationdownload(self):
         text = 'Download translations'
-        return Link('+export', text, icon='download')
+        enabled = False
+        for template in self.context.potemplates:
+            if template.iscurrent:
+                enabled = True
+                break
+        return Link('+export', text, icon='download', enabled=enabled)
 
     def help(self):
         return Link('+translate', 'How you can help', icon='info')
@@ -158,12 +163,13 @@ class SourcePackageTranslationsExportView(BaseExportView):
 
     def processForm(self):
         """Process form submission requesting translations export."""
-        templates = []
+        templates = [
+            template
+            for template in self.context.potemplates
+            if template.iscurrent]
         pofiles = []
-        for template in self.context.potemplates:
-            if template.iscurrent:
-                templates.append(template)
-                pofiles += list(template.pofiles)
+        for template in templates:
+            pofiles += list(template.pofiles)
         return (templates, pofiles)
 
     def getDefaultFormat(self):
