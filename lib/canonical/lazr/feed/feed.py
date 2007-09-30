@@ -24,13 +24,14 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 # canonical.launchpad, but we're doing it here as an expediency to get a
 # working prototype.
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import LaunchpadFormView
 from canonical.launchpad.webapp.publisher import LaunchpadView
 
 
 MINUTES = 60
 
 
-class FeedBase(LaunchpadView):
+class FeedBase(LaunchpadFormView):
     """Base class for feeds.
 
     - context

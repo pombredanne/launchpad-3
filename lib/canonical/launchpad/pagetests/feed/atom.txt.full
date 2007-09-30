@@ -1,0 +1,105 @@
+= Atom Feeds =
+
+Feeds produce XML not HTML.  Therefore we must parse the output as XML
+using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
+
+    >>> from BeautifulSoup import BeautifulStoneSoup as BSS
+    >>> from BeautifulSoup import SoupStrainer
+
+== Latest bugs for a product ==
+
+    >>> browser.open('http://launchpad.dev/jokosher/latest-bugs.atom')
+    >>> browser.title
+    'Bugs in Jokosher'
+    >>> browser.url
+    'http://launchpad.dev/jokosher/latest-bugs.atom'
+
+    >>> soup = BSS(browser.contents)
+    >>> print extract_text(soup.find('id'))
+    http://launchpad.dev/jokosher/latest-bugs.atom
+    >>> entries = soup.findAll('entry')
+    >>> print len(entries)
+    2
+    >>> entry = entries[0]
+    >>> print extract_text(entry.title)
+    [12] Copy, Cut and Delete operations should work on selections
+    >>> print extract_text(entry.author('name'))
+    Foo Bar
+    >>> print extract_text(entry.author('uri'))
+    http://launchpad.dev/~name16
+    >>> entry = entries[1]
+    >>> print extract_text(entry.author('name'))
+    Foo Bar
+    >>> print extract_text(entry.author('uri'))
+    http://launchpad.dev/~name16
+
+    >>> print extract_text(entry.title)
+    [11] Make Jokosher use autoaudiosink
+    >>> print browser.contents
+    <?xml version="1.0" encoding="UTF-8"?>
+    <BLANKLINE>
+    <feed xmlns="http://www.w3.org/2005/Atom"
+          xmlns:lp="http://api.launchpad.net/schema">
+    <BLANKLINE>
+    <title>Bugs in Jokosher</title>
+    <BLANKLINE>
+        <id>http://launchpad.dev/jokosher/latest-bugs.atom</id>
+        <link rel="self"
+              href="http://launchpad.dev/jokosher/latest-bugs.atom"/>
+        <link rel="alternate" href="http://launchpad.dev"/>
+        <logo>http://launchpad.dev/+icing/app-bugs.gif</logo>
+        <updated>2007-03-15 20:46:49.909153+00:00</updated>
+        <entry>
+    <BLANKLINE>
+        <title type="text">[12] Copy, Cut and Delete operations should work on selections</title>
+        <link rel="alternate"
+              href="http://bugs.launchpad.dev/jokosher/+bug/12"/>
+        <published>2007-03-15 20:41:18.635493+00:00</published>
+        <updated>2007-03-15 20:46:49.909153+00:00</updated>
+        <id>http://bugs.launchpad.dev/jokosher/+bug/12</id>
+        <author>
+    <BLANKLINE>
+                <name>Foo Bar</name>
+    <BLANKLINE>
+        <uri>http://launchpad.dev/~name16</uri>
+    <BLANKLINE>
+        </author>
+        <content type="html">&lt;p&gt;When trying to copy, cut or delete just a selected portion of an event, the operations affect the event completely. That is, you can't select a portion and cut that piece. The whole event will be cut. Same goes for the other 2 operations.&lt;/p&gt;</content>
+    <BLANKLINE> 
+        </entry>
+        <entry>
+    <BLANKLINE>
+        <title type="text">[11] Make Jokosher use autoaudiosink</title>
+        <link rel="alternate"
+              href="http://bugs.launchpad.dev/jokosher/+bug/11"/>
+        <published>2007-03-15 20:33:56.678930+00:00</published>
+        <updated>2007-03-15 20:37:51.603369+00:00</updated>
+        <id>http://bugs.launchpad.dev/jokosher/+bug/11</id>
+        <author>
+    <BLANKLINE>
+                <name>Foo Bar</name>
+    <BLANKLINE>
+                <uri>http://launchpad.dev/~name16</uri>
+    <BLANKLINE>
+        </author>
+        <content type="html">&lt;p&gt;I've had problems when switching from Jokosher to Totem to play an Ogg.&lt;/p&gt;
+    &lt;p&gt;Totem appears to be playing normally but does not produce any sound.&lt;br /&gt;
+    If I close Jokosher then you can hear totem.&lt;/p&gt;
+    &lt;p&gt;I've also had a problem when trying to playback sound within jokosher&lt;br /&gt;
+    after switch from another app (I think it was xmms). I get a dialog&lt;br /&gt;
+    with the following text:&lt;/p&gt;
+    &lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Argh! Something went wrong and a serious error occurred:&lt;/p&gt;
+    &lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Resource busy or not available.&lt;/p&gt;
+    &lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;gstalsasin&lt;wbr&gt;&lt;/wbr&gt;k.c(636)&lt;wbr&gt;&lt;/wbr&gt;: gst_alsasink_open (): /timeline/&lt;wbr&gt;&lt;/wbr&gt;playbackbin/&lt;br /&gt;
+    &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;alsasink0:&lt;br /&gt;
+    &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Device 'hw:0' is busy&lt;/p&gt;
+    &lt;p&gt;After closing and reopening Jokosher, i got the same error again.&lt;br /&gt;
+    After logging out of gnome and logging in again - I still got the same&lt;br /&gt;
+    error message.&lt;/p&gt;
+    &lt;p&gt;I had to restart!&lt;/p&gt;
+    &lt;p&gt;Is there some way to reset alsa or the device driver - with out having&lt;br /&gt;
+    to restart?&lt;/p&gt;
+    &lt;p&gt;Running on Ubuntu - with Jokosher 0.2 runscript.&lt;/p&gt;</content>
+    <BLANKLINE>
+        </entry>
+    </feed>

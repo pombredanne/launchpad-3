@@ -149,7 +149,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             "that can be used to identify this project group. The icon will be "
             "displayed in Launchpad everywhere that we link to this "
             "project group. For example in listings or tables of active "
-	    "project groups."))
+            "project groups."))
 
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
@@ -169,7 +169,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     active = Bool(title=_('Active'), required=False,
         description=_(
-	    "Whether or not this project group is considered active."))
+            "Whether or not this project group is considered active."))
 
     reviewed = Bool(title=_('Reviewed'), required=False,
         description=_("Whether or not this project group has been reviewed."))
@@ -180,7 +180,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     bugtracker = Choice(title=_('Bug Tracker'), required=False,
         vocabulary='BugTracker',
         description=_(
-	    "The bug tracker the products in this project group use."))
+            "The bug tracker the products in this project group use."))
 
     products = Attribute(
         _("An iterator over the active Products for this project group."))
@@ -202,6 +202,9 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         """Returns True if a project has products associated with it, False
         otherwise.
         """
+    def getLatestBugTasks(quantity=5):
+        """Latest <quantity> bug tasks for this product."""
+
 
 
 # Interfaces for set

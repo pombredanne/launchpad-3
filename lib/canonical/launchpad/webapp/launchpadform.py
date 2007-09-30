@@ -204,14 +204,15 @@ class LaunchpadFormView(LaunchpadView):
         # getWidgetsData().  Reported as:
         #     http://www.zope.org/Collectors/Zope3-dev/717
         widgets = []
-        for input, widget in self.widgets.__iter_input_and_widget__():
-            if (input and IInputWidget.providedBy(widget) and
-                not widget.hasInput()):
-                if widget.context.required:
-                    self.setFieldError(widget.context.__name__,
-                                       'Required field is missing')
-            else:
-                widgets.append((input, widget))
+        if self.widgets:
+            for input, widget in self.widgets.__iter_input_and_widget__():
+                if (input and IInputWidget.providedBy(widget) and
+                    not widget.hasInput()):
+                    if widget.context.required:
+                        self.setFieldError(widget.context.__name__,
+                                           'Required field is missing')
+                else:
+                    widgets.append((input, widget))
         widgets = form.Widgets(widgets, len(self.prefix)+1)
         for error in form.getWidgetsData(widgets, self.prefix, data):
             self.errors.append(error)
