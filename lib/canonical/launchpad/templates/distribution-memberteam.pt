@@ -11,10 +11,6 @@
       <h1>Select distribution members team
     </metal:heading>
 
-<metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
     <div metal:fill-slot="main">
 
       <div metal:use-macro="context/@@launchpad_editform/editform">
