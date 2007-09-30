@@ -8,6 +8,7 @@ __all__ = [
     'SourcePackageNavigation',
     'SourcePackageSOP',
     'SourcePackageFacets',
+    'SourcePackageTranslationsExportView',
     'SourcePackageView',
     ]
 
@@ -22,6 +23,7 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
+from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 from canonical.launchpad.browser.translations import TranslationsMixin
@@ -132,11 +134,15 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'translations'
-    links = ['help', 'templates', 'imports']
+    links = ['help', 'templates', 'imports', 'translationdownload']
 
     def imports(self):
         text = 'See import queue'
         return Link('+imports', text)
+
+    def translationdownload(self):
+        text = 'Download translations'
+        return Link('+export', text, icon='download')
 
     def help(self):
         return Link('+translate', 'How you can help', icon='info')
@@ -144,6 +150,27 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def templates(self):
         return Link('+potemplatenames', 'Edit template names', icon='edit')
+
+
+class SourcePackageTranslationsExportView(BaseExportView):
+    """Request tarball export of all translations for source package.
+    """
+
+    def processForm(self):
+        """Process form submission requesting translations export."""
+        templates = []
+        pofiles = []
+        for template in self.context.potemplates:
+            if template.iscurrent:
+                templates.append(template)
+                pofiles += list(template.pofiles)
+        return (templates, pofiles)
+
+    def getDefaultFormat(self):
+        for template in self.context.potemplates:
+            if template.iscurrent:
+                return template.source_file_format
+        return None
 
 
 class SourcePackageView(BuildRecordsView, TranslationsMixin):
