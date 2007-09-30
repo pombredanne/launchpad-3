@@ -27,7 +27,7 @@ from canonical.launchpad.browser import (
     PersonRelatedBugsView, BugTasksAndNominationsView, PersonRelatedBugsView)
 
 class BugFeedContentView(LaunchpadView):
-    template = ViewPageTemplateFile('bug-feed-content.pt')
+    template = ViewPageTemplateFile('templates/bug.pt')
 
     def getBugCommentsForDisplay(self):
         bug_task_view = BugTaskView(self.context.bugtasks[0], self.request)

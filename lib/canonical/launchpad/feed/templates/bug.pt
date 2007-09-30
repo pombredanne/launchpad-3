@@ -1,4 +1,8 @@
-<div xmlns="http://www.w3.org/1999/xhtml">
+<div xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:lp="http://api.launchpad.net/schema"
+    xmlns:metal="http://xml.zope.org/namespaces/metal">
+
     <style type="text/css">
         table {
             border: 1px solid black;
@@ -20,73 +24,97 @@
             <th>Importance</th>
             <th>Assigned to</th>
         </tr>
-        <tr tal:repeat="bugtask view/getBugTasksAndNominations">
-            <!--<td tal:content="view/getSeriesTargetName" />-->
-            <td tal:content="bugtask/status/title" />
-            <td tal:define="importance bugtask/importance/title | string:x"
-                tal:content="importance" />
-            <!--<td tal:content="bugtask/assignee/browsername" />-->
-        </tr>
 
+        <!-- Bugtask -->
+        <tr tal:repeat="bugtask context/bugtasks">
+            <td tal:condition="bugtask/product">
+                <img src="http://bugs.launchpad.net/@@/product" />
+                <span tal:replace="bugtask/target/name">Fake BugTask Name</span>
+            </td>
+
+            <td style="padding: 0.3em 0em 0.3em 1.5em"
+                tal:condition="not:bugtask/product">
+                <img src="http://bugs.launchpad.net/@@/milestone" />
+                <span tal:replace="bugtask/target/name">Fake BugTask Name</span>
+            </td>
+            <td tal:content="bugtask/status/title">Won't Fix</td>
+            <td tal:content="bugtask/importance/title">Unknown</td>
+            <td tal:content="bugtask/assignee/displayname|string:-">Person</td>
+            <td tal:condition="bugtask/bugwatch">
+            <a tal:attributes="href bugtask/bugwatch/url" 
+               tal:content="bugtask/bugwatch/title">bugwatch</a>
+            </td>
+        </tr>
 
         <!-- Nomination for series in above bugtask -->
-        <tr>
-            <td colspan="4" style="padding-left: 3em">Nominated for Trunk by
-                <a href="http://launchpad.dev/~edwin-grubbs">Edwin Grubbs</a>
+        <tr tal:repeat="nomination context/getNominations">
+            <td colspan="4" style="padding-left: 3em">Nominated for 
+                <span tal:replace="nomination/target/title">Trunk</span> by 
+                <a tal:replace="structure nomination/owner/fmt:link">
+                Edwin Grubbs</a>
             </td>
         </tr>
 
-        <!-- Targetted to release -->
-        <tr>
-            <td style="padding-left: 3em">
-                <img src="https://bugs.launchpad.net/@@/milestone" />
-                <a href="http://launchpad.net/ubuntu/grumpy/+source/mozilla-firefox">
-                Grumpy
-                </a>
-            </td>
-            <td>New</td>
-            <td>Undecided</td>
-            <td>-</td>
-        </tr>
     </table>
-    <br/>
+    <br/> 
     <table style="border: 1px solid black">
         <tr><th>Duplicate of:</th>
-            <td><a href="http://bugs.launchpad.net/bugs/300">Bug #300</a></td>
-        </tr>
-
-        <tr><th>Private:</th><td>True</td></tr>
-
-        <tr><th>Security Related:</th><td>False</td></tr>
-
-        <tr><th>Date made private:</th><td>2007-05-22</td></tr>
-
-        <tr><th>Who made private:</th>
-            <td><a href="https://bugs.launchpad.net/~suvarin">
-                        Petri Pennanen</a>
+            <td tal:condition="context/duplicateof">
+                <a href="#"
+                   tal:attributes="href context/duplicateof/fmt:url">
+                        bug #
+                    <span tal:replace="context/duplicateof/id">42</span></a>
             </td>
+            <td tal:condition="not:context/duplicateof">-</td>
         </tr>
 
-        <tr><th>CVE:</th><td><a href="https://bugs.launchpad.net/bugs/cve/2007-2242"><img border="0" src="https://launchpad.net/@@/cve" />1999-2345</a></td></tr>
+
+        <tr><th>Private:</th><td tal:content="context/private">True</td></tr>
+
+        <tr><th>Security Related:</th>
+            <td tal:content="context/security_related">True</td>
+        </tr>
+
+        <tr><th>CVE:</th>
+            <td><span tal:repeat="cve context/cves">
+                    <img border="0" src="https://launchpad.net/@@/cve" />
+                    <a tal:attributes="href cve/url" 
+                       tal:content="cve/sequence">cve</a>
+                    <br/>
+                </span>
+            </td>
 
         <tr><th>Blueprints:</th>
-            <td><a href="https://blueprints.launchpad.net/ubuntu/+spec/free-flash">
-                Free Flash
-                </a>
+            <td tal:condition="context/specifications">
+                <span tal:repeat="spec context/specifications">
+                    <span tal:replace="structure spec/@@+listing-compact">
+                        Ubuntu
+                    </span>
+                </span>
             </td>
+            <td tal:condition="not:context/specifications">-</td>
         </tr>
 
         <tr><th>Questions:</th>
-            <td>Ubuntu:
-            <a href="https://answers.launchpad.net/ubuntu/+question/12933">
-            Firefox Bus Error</a>
+            <td tal:condition="context/questions">
+                <span tal:repeat="q context/questions">
+                    <img src="http://launchpad.net/@@/question" />
+                    <span tal:replace="q/target/displayname"></span>:
+                    <a tal:attributes="href q/fmt:url" tal:content="q/title">Question</a><br/>
+                </span>
             </td>
+            <td tal:condition="not:context/questions">-</td>
         </tr>
 
-        <!-- This is duplicated here in addition to the Atom category,
-             since not all feed readers display categories.
+        <!-- This is duplicated here in addition to the Atom category, 
+                since not all feed readers display categories.
         -->
-        <tr><th>Bug Tags:</th><td>oops security</td></tr>
+        <tr><th>Bug Tags:</th>
+        <td><span tal:repeat="tag context/tags">
+                <span tal:content="tag">oops</span>
+            </span>
+            <span tal:condition="not:context/tags">-</span>
+        </td>
     </table>
 
     <!-- recent activity log entries -->
@@ -101,55 +129,61 @@
             <th>New value</th>
             <th>Message</th>
         </tr>
-        <tr>
-            <td>17 Sep 07 14:31</td>
-            <td><a href="http://launchpad.net/~edwin-grubbs">Edwin Grubbs</a></td>
-            <td>bug</td>
-            <td></td>
-            <td></td>
-            <td>added bug</td>
-        </tr>
-        <tr>
-            <td>17 Sep 07 15:11</td>
-            <td><a href="http://launchpad.net/~edwin-grubbs">Edwin Grubbs</a></td>
-            <td>firefox: status</td>
-            <td>Unconfirmed</td>
-            <td>Needs Info</td>
-            <td></td>
+        <tr tal:repeat="log context/activity">
+            <td tal:content="python:log.datechanged.strftime('%d %b %y %H:%M')">
+                17 Sep 07 14:31
+            </td>
+            <td tal:content="structure log/person/fmt:link">person</td>
+            <td tal:content="log/whatchanged">what changed</td>
+            <td tal:content="log/oldvalue">old value</td>
+            <td tal:content="log/newvalue">new value</td>
+            <td tal:content="log/message">message</td>
         </tr>
     </table>
 
     <!-- bug description. Duplicated here because several feed readers do not show
-         the <entry><summary>
+            the <entry><summary>
     -->
     <br/>
     <b>Description:</b>
-    <hr/>
-    <pre>When trying to copy, cut or delete just a selected portion
-an e the operations affect the event completely. That is,
- canlect a portion and cut that piece. The whole event will
-cut. goes for the other 2 operations.</pre>
-    <hr/>
-    <br/>
+      <hr/>
+        <div tal:content="structure context/description/fmt:text-to-html" />
+      <hr/>
+      <br/>
     <b>Recent Comments:</b>
     <hr/>
-    <div style="background: lightgray">
+        <div tal:repeat="comment view/getBugCommentsForDisplay">
+            <tal:comment_has_owner>
+                <tal:comment_owner replace="structure comment/owner/fmt:link" />
+            </tal:comment_has_owner>
+            wrote
+            <span
+            tal:attributes="title comment/datecreated/fmt:datetime"
+            tal:content="comment/datecreated/fmt:displaydate">
+            7 minutes ago
+            </span>:
+            <a tal:attributes="href comment/fmt:url">
+            <strong tal:condition="comment/display_title"
+                    tal:content="comment/title" />
+            (permalink)
+            </a>
 
-        <a href="https://bugs.launchpad.net/~suvarin">Petri Pennanen</a> wrote
-        <span title="2005-02-23 16:19:04 UTC">on 2005-02-23</span>:
-        <a href="http://bugs.launchpad.net/firefox/+bug/13206/comments/1"> (permalink) </a>
-    </div>
-
-    <div style="font-family: monospace">
-        <ul style="margin-bottom: 1em">
-            <li class="download">
-                <a href="http://launchpadlibrarian.net/1509048/firefox-window-overflow.png">Window contents overflow page info window</a> (52.6 KiB, image/png)
+        <div>
+            <ul tal:condition="comment/bugattachments" style="margin-bottom: 1em">
+            <li tal:repeat="attachment comment/bugattachments">
+                <a tal:attributes="href attachment/libraryfile/http_url"
+                tal:content="attachment/title">foo.txt</a>
+                (<span
+                tal:replace="attachment/libraryfile/content/filesize/fmt:bytes" />,
+                <span tal:replace="attachment/libraryfile/mimetype" />)
             </li>
-        </ul>
+            </ul>
 
-        <div style="font-family: monospace;"><p>Created an attachment (id=1439)<br />
-            Window contents overflow page info window</p>
-        </div>
-    </div>
+            <div style="font-family: monospace;"
+            tal:content="structure
+                comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">
+            Comment text.
+            </div>
+      </div>
     <hr/>
 </div>
