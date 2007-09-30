@@ -13,6 +13,8 @@ class MockLogger:
         print "log>", ' '.join(args)
 
         if "exc_info" in kwargs:
+            import sys
+            import traceback
             exception = traceback.format_exception(*sys.exc_info())
             for item in exception:
                 for line in item.splitlines():
