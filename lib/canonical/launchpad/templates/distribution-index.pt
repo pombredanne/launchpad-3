@@ -59,13 +59,13 @@
               <li tal:condition="series/active">
                 <a tal:attributes="href series/fmt:url">
                   <tal:version replace="series/version" />
-                  <tal:codename replace="series/displayname" />
+                  "<tal:codename replace="series/displayname" />"
                 </a>
                 - <tal:status replace="series/status/name/fmt:lower" />
               </li>
             </tal:per_series>
           </ul>
-          <a href="+series">See all...</a>
+          <a href="+series">See all versions...</a>
         </div>
         <div class="portlet" tal:condition="context/currentseries">
           <h2>
