@@ -1,0 +1,37 @@
+= Atom Feeds =
+
+Feeds produce XML not HTML.  Therefore we must parse the output as XML
+using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
+
+    >>> from BeautifulSoup import BeautifulStoneSoup as BSS
+    >>> from BeautifulSoup import SoupStrainer
+
+== Latest bugs for a product ==
+
+    >>> browser.open('http://launchpad.dev/jokosher/latest-bugs.atom')
+    >>> browser.title
+    'Bugs in Jokosher'
+    >>> browser.url
+    'http://launchpad.dev/jokosher/latest-bugs.atom'
+
+    >>> soup = BSS(browser.contents)
+    >>> print extract_text(soup.find('id'))
+    http://launchpad.dev/jokosher/latest-bugs.atom
+    >>> entries = [tag for tag in BSS(browser.contents, parseOnlyThese=SoupStrainer('entry'))]
+    >>> print len(entries)
+    2
+    >>> entry = entries[0]
+    >>> print extract_text(entry.title)
+    [12] Copy, Cut and Delete operations should work on selections
+    >>> print extract_text(entry.author('name')[0])
+    Foo Bar
+    >>> print extract_text(entry.author('uri')[0])
+    http://launchpad.dev/~name16
+    >>> entry = entries[1]
+    >>> print extract_text(entry.author('name')[0])
+    Foo Bar
+    >>> print extract_text(entry.author('uri')[0])
+    http://launchpad.dev/~name16
+
+    >>> print extract_text(entry.title)
+    [11] Make Jokosher use autoaudiosink

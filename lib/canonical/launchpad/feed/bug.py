@@ -13,14 +13,18 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
+
+from canonical.lp import dbschema
+from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPerson, IProduct)
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, LaunchpadFormView
 from canonical.launchpad.webapp.tales import FormattersAPI
 from zope.app.pagetemplate import ViewPageTemplateFile
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.browser.bugtask import BugTaskView
-from canonical.launchpad.browser import PersonRelatedBugsView
+from canonical.launchpad.browser import (
+    PersonRelatedBugsView, BugTasksAndNominationsView, PersonRelatedBugsView)
 
 class BugFeedContentView(LaunchpadView):
     template = ViewPageTemplateFile('bug-feed-content.pt')
@@ -67,35 +71,56 @@ class ProductBugsFeed(FeedBase):
         return "http://launchpad.dev/+icing/app-bugs.gif"
 
     def itemToFeedEntry(self, item):
-
-        def unescape(s):
-            s = s.replace("&lt;", "<")
-            s = s.replace("&gt;", ">")
-            # this has to be last:
-            s = s.replace("&amp;", "&")
-            return s
-
         bugtask = item
         bug = bugtask.bug
         title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
         url = canonical_url(bugtask, rootsite="bugs")
-        formatter = FormattersAPI(bug.description)
-        # XXX bac, The Atom spec says all content is to be escaped.  When it
-        # is escaped Safari and Firefox do not display the HTML correctly.
-        #entry.content = cgi.escape(formatter.text_to_html())
-        content = formatter.text_to_html()
-        template = ViewPageTemplateFile('templates/bug.pt')
-        #import pdb; pdb.set_trace(); # DO NOT COMMIT
-        content = template(self)
+        content_view = BugFeedContentView(bug, self.request)
         entry = FeedEntry(title = title,
                           id_ = url,
                           link_alternate = url,
                           date_updated = bug.date_last_updated,
                           date_published = bugtask.datecreated,
                           authors = [FeedPerson(bug.owner)],
-                          content = FeedTypedData(content, content_type="xhtml"))
+                          content = FeedTypedData(content_view.render(), 
+                                                  content_type="xhtml"))
         return entry
 
+    def getBugTasksAndNominations(self):
+        """Stolen from BugTasksAndNominationsView."""
+        #import pdb; pdb.set_trace(); # DO NOT COMMIT
+        bug = self.bug
+        bugtasks = helpers.shortlist(bug.bugtasks)
+
+        upstream_tasks = [
+            bugtask for bugtask in bugtasks
+            if bugtask.product or bugtask.productseries]
+
+        distro_tasks = [
+            bugtask for bugtask in bugtasks
+            if bugtask.distribution or bugtask.distroseries]
+
+        #upstream_tasks.sort(key=_by_targetname)
+        #distro_tasks.sort(key=_by_targetname)
+
+        all_bugtasks = upstream_tasks + distro_tasks
+
+        # Insert bug nominations in between the appropriate tasks.
+        bugtasks_and_nominations = []
+        for bugtask in all_bugtasks:
+            bugtasks_and_nominations.append(bugtask)
+
+            target = bugtask.product or bugtask.distribution
+            if not target:
+                continue
+
+            bugtasks_and_nominations += [
+                nomination for nomination in bug.getNominations(target)
+                if (nomination.status !=
+                    dbschema.BugNominationStatus.APPROVED)
+                ]
+
+        return bugtasks_and_nominations
 
 class PersonBugsFeed(FeedBase, PersonRelatedBugsView):
 
