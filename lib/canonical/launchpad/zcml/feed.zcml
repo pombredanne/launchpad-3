@@ -16,17 +16,10 @@
 
     <!-- Pages -->
     <browser:page
-        for="canonical.launchpad.interfaces.IProduct"
+        for="canonical.launchpad.interfaces.IBugTarget"
         name="latest-bugs.atom"
         permission="zope.Public"
-        class="canonical.launchpad.feed.ProjectProductBugsFeed"
-        />
-    <!-- Pages -->
-    <browser:page
-        for="canonical.launchpad.interfaces.IProject"
-        name="latest-bugs.atom"
-        permission="zope.Public"
-        class="canonical.launchpad.feed.ProjectProductBugsFeed"
+        class="canonical.launchpad.feed.BugTargetBugsFeed"
         />
     <browser:page
         for="canonical.launchpad.interfaces.IPerson"
@@ -39,7 +32,7 @@
         for="*"
         name="search-bugs.atom"
         permission="zope.Public"
-        class="canonical.launchpad.feed.SearchBugs"
+        class="canonical.launchpad.feed.SearchBugsFeed"
         />
 
 </configure>

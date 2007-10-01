@@ -290,9 +290,6 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         "that applies to translations in this product, based on the "
         "permissions that apply to the product as well as its project.")
 
-    def getLatestBugTasks(quantity=5):
-        """Latest <quantity> bug tasks for this product."""
-
     def getLatestBranches(quantity=5):
         """Latest <quantity> branches registered for this product."""
 

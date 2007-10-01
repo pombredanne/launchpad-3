@@ -18,9 +18,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, ICalendarOwner, IFAQCollection, IHasIcon, IHasLogo,
-    IHasMugshot, IProduct, IProject, IProjectSet, ISearchableByQuestionOwner,
-    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH)
+    ICalendarOwner, IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct,
+    IProject, IProjectSet, ISearchableByQuestionOwner, NotFoundError,
+    QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.lp.dbschema import (
     TranslationPermission, ImportStatus, SpecificationSort,
@@ -278,15 +278,6 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `BugTargetBase`."""
         return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
 
-    def getLatestBugTasks(self, quantity=5):
-        """See `IProject`."""
-        params = BugTaskSearchParams(orderby="-datecreated",
-                                     omit_dupes=True,
-                                     user=None)
-
-        tasklist = self.searchTasks(params)
-        return tasklist[:quantity]
-
     # IQuestionCollection
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
@@ -524,3 +515,4 @@ class ProjectSet:
 
         query = " AND ".join(queries)
         return Project.select(query, distinct=True, clauseTables=clauseTables)
+
