@@ -129,6 +129,11 @@ class NascentUpload:
 
         self.run_and_collect_errors(self.changes.processFiles)
 
+        if self.is_rejected:
+            # Exit early, further error reporting will be misleading if
+            # the basic file information is not valid.
+            return
+
         for uploaded_file in self.changes.files:
             self.run_and_check_error(uploaded_file.checkNameIsTaintFree)
             self.run_and_check_error(uploaded_file.checkSizeAndCheckSum)
