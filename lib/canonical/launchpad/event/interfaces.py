@@ -1,5 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Interfaces for events."""
+
 __metaclass__ = type
 
 from zope.app.event.interfaces import (
@@ -22,8 +24,9 @@ class ISQLObjectModifiedEvent(IObjectModifiedEvent):
 
     object_before_modification = Attribute("The object before modification.")
     edited_fields = Attribute(
-        "The list of fields that were edited. A field name may appear in this "
-        "list if it were shown on an edit form, but not actually changed.")
+        "The list of fields that were edited. A field name may appear "
+        "in this list if it were shown on an edit form, but not actually "
+        "changed.")
     user = Attribute("The user who modified the object.")
 
 
@@ -53,3 +56,9 @@ class IKarmaAssignedEvent(IObjectEvent):
 
     karma = Attribute("The Karma object assigned to the person.")
 
+
+class IBugBecameQuestionEvent(Interface):
+    """A bug became a question."""
+
+    bug = Attribute("The bug that was changed to a question.")
+    question = Attribute("The question that the bug became.")

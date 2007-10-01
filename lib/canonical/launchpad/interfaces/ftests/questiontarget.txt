@@ -498,17 +498,25 @@ of the target's questions.
 
 The target knows the pillar (Product or Distribution) it belongs to.
 The target may return itself, or the pillar object that is appropriate.
+In the case of a Product or Distribution, the pillar is the
+QuestionTarget. For SourcePackages and DistributionSourcePackages, the
+pillar is package's Distribution.
 
     >>> from canonical.launchpad.interfaces import IDistribution, IProduct
-    >>> pillar = target.pillar
-    >>> IDistribution.providedBy(pillar) or IProduct.providedBy(pillar)
+    >>> (IDistribution.providedBy(target.pillar)
+    ...     or IProduct.providedBy(target.pillar))
+    True
+    >>> # Verify that the target.pillar is the pillar in test.globs
+    >>> target.pillar.name == pillar.name
     True
 
 
 == Creating a question from a bug ==
 
 The target can create a question from a bug, and link that bug to the
-new question.
+new question. The question owner is the same as the bug owner. The
+question title and description are taken from the bug. The messages on
+the bug are copied to the question.
 
     >>> from canonical.launchpad.interfaces import (
     ...     CreateBugParams, IBugSet, IProductSet)
@@ -518,27 +526,36 @@ new question.
     ...     owner=sample_person)
     >>> bug_params.setBugTarget(product=jokosher)
     >>> jokosher_bug = getUtility(IBugSet).createBug(bug_params)
+    >>> bug_message = jokosher_bug.newMessage(
+    ...     owner=sample_person, subject="Opps, my mistake",
+    ...     content="This is really a question.")
 
-    >>> jokosher_question = target.createQuestionFromBug(jokosher_bug)
+    >>> target_question = target.createQuestionFromBug(jokosher_bug)
 
-    >>> jokosher_question.owner == jokosher_bug.owner
+    >>> target_question.owner == jokosher_bug.owner
     True
-    >>> jokosher_question.title == jokosher_bug.title
+    >>> target_question.title == jokosher_bug.title
     True
-    >>> jokosher_question.description == jokosher_bug.description
+    >>> target_question.description == jokosher_bug.description
+    True
+    >>> question_message = target_question.messages[-1]
+    >>> question_message.text_contents == bug_message.text_contents
     True
     
-    >>> jokosher_question.owner.displayname
+    >>> target_question.owner.displayname
     u'Sample Person'
-    >>> jokosher_question.title
+    >>> target_question.title
     u'Print is broken'
-    >>> jokosher_question.description
+    >>> target_question.description
     u'blah blah blah'
-    >>> [bug_link.bug.title for bug_link in jokosher_question.bug_links]
+    >>> [bug_link.bug.title for bug_link in target_question.bug_links]
     [u'Print is broken']
+    >>> target_question.messages[-1].text_contents
+    u'This is really a question.'
 
 The question language is always English because all bugs in Launchpad
 are written in English.
 
-    >>> question.language.code
+    >>> target_question.language.code
     u'en'
+

@@ -229,7 +229,16 @@ class Question(SQLBase, BugLinkTargetMixin):
         return self._newMessage(
             user, comment, datecreated=datecreated,
             action=QuestionAction.COMMENT, new_status=self.status,
-            update_question_dates=False)
+            update_question_dates=False,
+            notify_subscribers=True)
+
+    def addCommentWithoutNotify(self, user, comment, datecreated=None):
+        """See `IQuestion`."""
+        return self._newMessage(
+            user, comment, datecreated=datecreated,
+            action=QuestionAction.COMMENT, new_status=self.status,
+            update_question_dates=False,
+            notify_subscribers=False)
 
     @property
     def can_request_info(self):
@@ -456,7 +465,8 @@ class Question(SQLBase, BugLinkTargetMixin):
         return subscribers
 
     def _newMessage(self, owner, content, action, new_status, subject=None,
-                    datecreated=None, update_question_dates=True):
+                    datecreated=None, update_question_dates=True,
+                    notify_subscribers=True):
         """Create a new QuestionMessage, link it to this question and update
         the question's status to new_status.
 
@@ -475,6 +485,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         :datecreated: A datetime object which will be used as the Message
                       creation date. Ignored when content is an IMessage.
         :update_question_dates: A bool.
+        :notify_subscribers: A bool. Whether to notify bug subscribers or not.
         """
         if IMessage.providedBy(content):
             assert owner == content.owner, (
@@ -492,7 +503,8 @@ class Question(SQLBase, BugLinkTargetMixin):
 
         tktmsg = QuestionMessage(
             question=self, message=msg, action=action, new_status=new_status)
-        notify(SQLObjectCreatedEvent(tktmsg, user=tktmsg.owner))
+        if notify_subscribers is True:
+            notify(SQLObjectCreatedEvent(tktmsg, user=tktmsg.owner))
         # Make sure we update the relevant date of response or query.
         if update_question_dates:
             if owner == self.owner:
@@ -992,13 +1004,13 @@ class QuestionTargetMixin:
         return self
 
     def newQuestion(self, owner, title, description, language=None,
-                  datecreated=None, do_notify=True):
+                  datecreated=None, notify_subscribers=True):
         """See `IQuestionTarget`."""
         question = QuestionSet.new(
             title=title, description=description, owner=owner,
             datecreated=datecreated, language=language,
             **self.getTargetTypes())
-        if do_notify is True:
+        if notify_subscribers is True:
             notify(SQLObjectCreatedEvent(question))
         return question
 
@@ -1006,6 +1018,10 @@ class QuestionTargetMixin:
         """See `IQuestionTarget`."""
         question = self.newQuestion(bug.owner, bug.title, bug.description)
         question.linkBug(bug)
+        for message in bug.messages:
+            question.addCommentWithoutNotify(
+                message.owner, message.text_contents,
+                datecreated=message.datecreated)
         return question
 
     def getQuestion(self, question_id):

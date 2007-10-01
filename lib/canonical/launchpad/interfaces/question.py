@@ -390,6 +390,20 @@ class IQuestion(IHasOwner):
         :datecreated: Date for the message. Defaults to the current time.
         """
 
+    def addCommentWithoutNotify(user, comment, datecreated=None):
+        """Add a comment on the question without notifying subscribers.
+
+        Create an IQuestionMessage with action COMMENT. It leaves the question
+        status unchanged.
+        
+        This method does not fire any events. Subscribers are not notified
+        that the question what changed or that the message was created.
+
+        :user: The IPerson making the comment.
+        :comment: A string or IMessage containing the comment.
+        :datecreated: Date for the message. Defaults to the current time.
+        """
+
     # subscription-related methods
     def subscribe(person):
         """Subscribe this person to the question."""

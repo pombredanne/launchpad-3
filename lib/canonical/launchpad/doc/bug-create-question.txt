@@ -53,7 +53,7 @@ QuestionTarget and Sample Person as the Person.
 
     >>> login('test@canonical.com')
     >>> question = bug.createQuestionFromBug(
-    ...     target, sample_person, subect, comment)
+    ...     target, sample_person, "This is a question.")
 
     >>> question.target == target
     True
@@ -63,6 +63,8 @@ QuestionTarget and Sample Person as the Person.
     True
     >>> question.description == bug.description
     True
+    >>> question.messages[-1].text_contents == bug.messages[-1].text_contents
+    True
         
     >>> question.owner.displayname
     u'No Privileges Person'
@@ -70,25 +72,24 @@ QuestionTarget and Sample Person as the Person.
     u'Print is broken'
     >>> question.description
     u'blah blah blah'
+    >>> question.messages[-1].text_contents
+    u'This is a question.'
 
-Once converted to a question, the bugtask status is Invalid.
+Once converted to a question, the bugtask status is Invalid. The
+statusexplanation explanation is set to an empty string.
 
     >>> bugtask.status.title
     'Invalid'
     >>> bugtask.statusexplanation
-    None
-    >>> # use bug.newMessage to create a comment and an email message.
-    
+    u''
 
 The question is automatically linked to the original bug.
 
     >>> [bug_link.question.title for bug_link in question.bug_links]
     [u'Print is broken']
 
-Subscribers to the bug are not notified that the bug is now invalid
-because the issue does not, nor did it ever, concern the bug contacts.
-The question owner (the bug owner) is informed by email that he asked
-a question.
+Subscribers to the bug are notified that the bug was made into a
+question and that the bugtasks are Invalid.
 
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
     >>> notifications = pop_notifications()
@@ -103,7 +104,7 @@ a question.
 
 A bug can only be converted to a question once.
 
-    >>> question = bug.createQuestionFromBug(target, sample_person)
+    >>> question = bug.createQuestionFromBug(target, sample_person, "Fail.")
     Traceback (most recent call last):
     ...
     AssertionError: This bug was already converted to question #...    
@@ -134,7 +135,8 @@ location and a bug in another.
 
     >>> login('test@canonical.com')
     
-    >>> question = ubuntu_bug.createQuestionFromBug(ubuntu, sample_person)
+    >>> question = ubuntu_bug.createQuestionFromBug(
+    ...     ubuntu, sample_person, "Many bugtasks are one question")
     >>> question.title
     u'Print is borked'
     >>> question.target.name
@@ -143,5 +145,4 @@ location and a bug in another.
     >>> ['%s: %s' % (bt.target.name, bt.status.title) for bt in bugtasks]
     [u'ubuntu: Invalid', u'evolution: Invalid']
     >>> [bt.statusexplanation for bt in bugtasks]
-    [u'This is not a bug. It is a question.',
-     u'This is not a bug. It is a question.']
+    [u'', u'']

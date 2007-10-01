@@ -1038,6 +1038,19 @@ def notify_bug_cve_deleted(bugcve, event):
     add_bug_change_notifications(bug_delta)
 
 
+def notify_bug_became_question(event):
+    """Notify CC'd list that a bug was made into a question.
+    
+    :bug: The Bug that became a question.
+    :question: The Question the bug became.
+    """
+    bug = event.bug
+    question = event.question
+    # XXX sinzui 2007-09-26
+    # Finish this function! We probably need the old bug for
+    # add_bug_change_notifications(bug_delta)
+
+
 def notify_bug_attachment_added(bugattachment, event):
     """Notify CC'd list that a new attachment has been added.
 

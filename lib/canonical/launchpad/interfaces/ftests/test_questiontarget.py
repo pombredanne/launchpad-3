@@ -24,23 +24,27 @@ from canonical.launchpad.ftests.test_system_documentation import (
 def productSetUp(test):
     setUp(test)
     test.globs['target'] = getUtility(IProductSet).getByName('thunderbird')
+    test.globs['pillar'] = test.globs['target']
 
 
 def distributionSetUp(test):
     setUp(test)
     test.globs['target'] = getUtility(IDistributionSet).getByName('kubuntu')
+    test.globs['pillar'] = test.globs['target']
 
 
 def sourcepackageSetUp(test):
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['target'] = ubuntu.currentseries.getSourcePackage('evolution')
+    test.globs['pillar'] = ubuntu
 
 
 def distributionsourcepackageSetUp(test):
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['target'] = ubuntu.getSourcePackage('evolution')
+    test.globs['pillar'] = ubuntu
 
 
 def test_suite():

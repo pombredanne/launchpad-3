@@ -21,13 +21,13 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    IBug, IBugSet, IBugWatchSet, ICveSet, ILaunchpadCelebrities,
-    IDistroBugTask, IDistroSeriesBugTask, ILibraryFileAliasSet,
-    IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroSeries,
-    IProductSeries, IProductSeriesBugTask, NominationError,
-    NominationSeriesObsoleteError, NotFoundError, IProduct, IDistribution,
-    UNRESOLVED_BUGTASK_STATUSES,
-    IBugBranch, ISourcePackage)
+    BugTaskStatus, IBug, IBugSet, IBugWatchSet, ICveSet,
+    ILaunchpadCelebrities, IDistroBugTask, IDistroSeriesBugTask,
+    ILibraryFileAliasSet, IBugAttachmentSet, IMessage, IBugMessageSet,
+    IUpstreamBugTask, IDistroSeries, IProductSeries, IProductSeriesBugTask,
+    NominationError, NominationSeriesObsoleteError, NotFoundError,
+    IProduct, IDistribution, UNRESOLVED_BUGTASK_STATUSES, IBugBranch,
+    ISourcePackage)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -51,12 +51,13 @@ from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.pillar import pillar_sort_key
+from canonical.launchpad.event.bug import BugBecameQuestionEvent
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import (
-    BugAttachmentType, BugTaskStatus, DistroSeriesStatus)
+    BugAttachmentType, DistroSeriesStatus)
 
 
 _bug_tag_query_template = """
@@ -566,15 +567,22 @@ class Bug(SQLBase):
         assert question is None, (
             'This bug was already converted to question #%s.' % question.id)
 
-        # message = self.newMessage()
+        message = getUtility(IBugMessageSet).createMessage(
+            self.followup_subject(), content=comment, owner=person, bug=self)
+        #self.linkMessage(message)
+
         question = question_target.createQuestionFromBug(self)
+
         for bugtask in self.bugtasks:
             if bugtask.target_uses_malone:
                 bugtask.transitionToStatus(BugTaskStatus.INVALID, person)
+                bugtask.statusexplanation = ""
+
+        #notify(BugBecameQuestionEvent(self, question))
         return question
 
     def getQuestionCreatedFromBug(self):
-        """Return the question created from this Bug, or None."""
+        """See `IBug`."""
         # XXX sinzui 2007-09-06:
         # Checking the questions for the same owner, title, and
         # description is not reliable. A schema change may be required

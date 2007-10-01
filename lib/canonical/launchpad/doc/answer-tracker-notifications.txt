@@ -779,6 +779,34 @@ If the FAQ is unlinked, the notification will look like:
     --...
 
 
+== Notifications for createQuestionFromBug() ==
+
+Answer contacts and the bug owner is notified when questions are
+created from bugs just like when a question is normally created.
+
+    >>> bug_question = ubuntu.createQuestionFromBug(bug)
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
+    2
+
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['no-priv@canonical.com', 'support@ubuntu.com']
+    
+    >>> notifications[1]['Subject']
+    '[Question #...]: Installer fails on a Mac PPC'
+
+    >>> notification_body = notifications[1].get_payload(decode=True)
+    >>> print notification_body
+    New question #... on Ubuntu:
+    http://answers.launchpad.dev/ubuntu/+question/...
+    <BLANKLINE>
+    I insert the install CD in the CD-ROM drive, but it won't boot.
+    <BLANKLINE>
+    It boots straight into MacOS 9.
+    <BLANKLINE>
+    --...
+
+
 == Notifications and Teams ==
 
 When a team is subscribed to a question, there are two cases two consider.
@@ -1021,17 +1049,46 @@ if the team supported languages includes the question language:
     ['foo.bar@canonical.com', 'test@canonical.com']
 
 
-== Preventing new question notification ==
+== Preventing question notifications ==
 
-New question notifications can disabled when the application needs
-to create a question outside the standard workflow. The do_notify
-keyword arg is True by default. Setting it to False will prevent
+There are cases where questions and messages should not generate a
+notification. Sometimes the callsite has additional work to perform
+so it needs to send the notification itself after the work is complete.
+These cases are generally outside the normal workflow.
+
+
+=== New question without notification ===
+
+New question notifications can disabled when the application needs to
+create a question outside the standard workflow. The notify_subscribers
+keyword argument is True by default. Setting it to False will prevent
 the new question from generating a notification.
 
-    >>> ubuntu_question = ubuntu.newQuestion(
+    >>> ubuntu.newQuestion(
     ...     sample_person, "Can't install Ubuntu",
     ...    "I insert the install CD in the CD-ROM drive, but it won't boot.",
-    ...     do_notify=False)
+    ...     notify_subscribers=False)
+    <Question at ...>
+
     >>> notifications = pop_notifications()
     >>> len(notifications)
     0
+
+
+=== addCommentWithoutNotify() ===
+
+Calling addCommentWithoutNotify will add the message without sending a
+notify event. It would then be that callsite's responsibility to to
+send a notification after all the messages are added. For instance,
+when a question is constructed from another kind of object, such as
+a bug, the bug's comments can be added without sending a rapid
+succession of emails.
+
+    >>> ubuntu_question.addCommentWithoutNotify(
+    ...     no_priv, "This problem is not a bug. It is a question.")
+    <QuestionMessage at ...>
+
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
+    0
+
