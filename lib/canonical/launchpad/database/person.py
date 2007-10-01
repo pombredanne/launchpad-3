@@ -1587,7 +1587,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # SQLObject will issue the changes and we can't set the new
             # address to PREFERRED until the old one has been set to VALIDATED
             preferredemail.syncUpdate()
-        else:
+        elif not self.isTeam():
             # This is the first time we're confirming this person's email
             # address, so we now assume this person has a Launchpad account.
             # XXX: This is a hack! In the future we won't have this
@@ -1595,6 +1595,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # will do for now. -- Guilherme Salgado, 2007-07-03
             self.account_status = AccountStatus.ACTIVE
             self.account_status_comment = None
+        else:
+            # This is a team, so we just need to create the new email address
+            # and set it as its preferred one.
+            pass
+
         # Get the non-proxied EmailAddress object, so we can call
         # syncUpdate() on it.
         email = EmailAddress.get(email.id)

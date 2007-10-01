@@ -58,29 +58,27 @@
       <th>Uses Launchpad for:</th>
       <td tal:condition="not:context/full_functionality">Nothing</td>
       <td tal:condition="context/full_functionality">
-        <ul>
-          <li tal:condition="context/official_answers">Answers</li>
-          <li tal:condition="context/official_malone">Bug tracking</li>
-          <li tal:condition="context/official_rosetta">Translations</li>
-        </ul>
-        <tal:XXX condition="nothing">
-          20060109 mpt: the UL shouldn't be there if it contains no LIs.
-        </tal:XXX>
+          <tal:answers condition="context/official_answers">
+            Answers<br />
+          </tal:answers>
+          <tal:malone condition="context/official_malone">
+            Bug tracking<br />
+          </tal:malone>
+          <tal:rosetta condition="context/official_rosetta">
+            Translations<br />
+          </tal:rosetta>
         <tal:neither condition="python:(not context.official_malone and not context.official_rosetta)">&mdash;</tal:neither>
       </td>
     </tr>
     <tr>
       <th>Uploaders:</th>
+    </tr>
+    <tr tal:repeat="dcu context/uploaders">
+      <th><tal:component replace="dcu/component/name" /></th>
       <td>
-        <ul>
-          <li tal:repeat="dcu context/uploaders"
-            ><tal:component replace="dcu/component/name" />:
-            <a
-              tal:attributes="href dcu/uploader/fmt:url"
-              tal:content="dcu/uploader/browsername"
-            />
-          </li>
-        </ul>
+        <a tal:attributes="href dcu/uploader/fmt:url"
+           tal:content="dcu/uploader/browsername"
+           />
       </td>
     </tr>
   </tbody>

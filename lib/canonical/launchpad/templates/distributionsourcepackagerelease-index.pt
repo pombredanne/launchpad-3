@@ -41,26 +41,6 @@
 
   <div tal:replace="structure context/sourcepackagerelease/@@+portlet-builds" />
 
-  <h2>Publishing history</h2>
-  <table class="listing">
-  <thead>
-  <tr>
-    <th>Time</th>
-    <th>Status</th>
-    <th>Target</th>
-    <th>Pocket</th>
-    <th>Component</th>
-    <th>Section</th>
-    <th>Version</th>
-  </tr>
-  </thead>
-  <tbody>
-  <tal:block repeat="publishing context/publishing_history"
-             replace="structure publishing/@@+listing-detailed">
-  </tal:block>
-  </tbody>
-  </table>
-
   <h2>Download</h2>
 
    <div  tal:define="files context/sourcepackagerelease/files">
@@ -74,6 +54,26 @@
      </ul>
      <i tal:condition="not:files">No files available for download.</i>
    </div>
+
+  <h2>Publishing history</h2>
+  <table class="listing">
+    <thead>
+    <tr>
+        <th>When</th>
+        <th>Status</th>
+        <th>Target</th>
+        <th>Pocket</th>
+        <th>Component</th>
+        <th>Section</th>
+        <th>Version</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tal:block repeat="publishing context/publishing_history"
+                 replace="structure publishing/@@+listing-detailed">
+      </tal:block>
+    </tbody>
+  </table>
 
 
 </div>

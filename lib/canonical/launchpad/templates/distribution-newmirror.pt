@@ -6,10 +6,6 @@
 
 <body>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <tal:full-functionality tal:condition="context/full_functionality">
