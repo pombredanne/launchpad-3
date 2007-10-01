@@ -559,7 +559,7 @@ class ProductSeriesSet:
 
     def importcount(self, status=None):
         """See `IProductSeriesSet`."""
-        return self.searchImports(status=status).count()
+        return self.searchImports(importstatus=status).count()
 
     def composeQueryString(self, text=None, importstatus=None):
         """Build SQL "where" clause for `ProductSeries` search.
