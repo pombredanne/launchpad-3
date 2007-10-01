@@ -16,7 +16,7 @@ profile=no
 
 # Add <file or directory> to the black list. It should be a base name, not a
 # path. You may set this option multiple times.
-ignore=CVS
+ignore=sourcecode
 
 # Pickle collected data for later comparisons.
 persistent=yes
@@ -201,7 +201,7 @@ good-names=a,b,c,i,j,k,v,d,f,s,t,l,ex,_,orderBy,getByName,clauseTables
 bad-names=foo,bar,baz,toto,tutu,tata
 
 # List of builtins function names that should not be used, separated by a comma
-bad-functions=map,filter,apply,input
+bad-functions=map,filter,apply,input,reduce
 
 
 # checks for :

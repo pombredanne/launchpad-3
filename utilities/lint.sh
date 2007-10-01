@@ -42,6 +42,21 @@ for file in $files; do
     fi
 done
 
+if which xmllint >/dev/null; then
+    xmlfiles=`echo "$files" | grep -E '(xml|zcml|pt)$'`
+    output=""
+    if [ ! -z "$xmlfiles" ]; then
+        output=`xmllint --noout $xmlfiles 2>&1 | sed -e '/Entity/,+2d'`
+    fi
+    if [ ! -z "$output" ]; then
+        echo "== XmlLint notices =="
+        echo ""
+        echo "$output"
+        echo ""
+        echo ""
+    fi
+fi
+
 pyfiles=`echo "$files" | grep '.py$'`
 if [ -z "$pyfiles" ]; then
     exit
@@ -66,10 +81,6 @@ fi
 
 echo "== Pylint notices =="
 
-# Note that you can disable specific tests by placing pylint instruction
-# in a comment:
-#   # pylint: disable-msg=W0401,W0612
-
 pylint="python2.4 -Wi::DeprecationWarning $PYLINT"
 rcfile="--rcfile=utilities/lp.pylintrc"
 sed_deletes="/^*/d; /Unused import \(action\|_python\)/d; "
@@ -78,6 +89,11 @@ sed_deletes="$sed_deletes /_getByName: Instance/d; "
 sed_deletes="$sed_deletes /Redefining built-in .id/d;"
 
 for file in $pyfiles; do
+    # Messages are disabled by directory or file name.
+    # Note that you can disable specific tests by placing pylint
+    # instruction in a comment:
+    # # pylint: disable-msg=W0401,W0612
+
     opts=""
     if echo $file | grep -qs "/__init__.py"; then
         # :W0401: *Wildcard import %s*
