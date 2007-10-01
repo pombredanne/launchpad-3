@@ -19,14 +19,14 @@
         for="canonical.launchpad.interfaces.IProduct"
         name="latest-bugs.atom"
         permission="zope.Public"
-        class="canonical.launchpad.feed.ProductBugsFeed"
+        class="canonical.launchpad.feed.ProjectProductBugsFeed"
         />
     <!-- Pages -->
     <browser:page
         for="canonical.launchpad.interfaces.IProject"
         name="latest-bugs.atom"
         permission="zope.Public"
-        class="canonical.launchpad.feed.ProductBugsFeed"
+        class="canonical.launchpad.feed.ProjectProductBugsFeed"
         />
     <browser:page
         for="canonical.launchpad.interfaces.IPerson"
