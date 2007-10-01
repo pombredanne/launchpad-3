@@ -13,7 +13,7 @@ that link to load the +edit form for the branch.
     >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev'
     ...     '/~name12/+branch/gnome-terminal/klingon')
     >>> browser.getLink('Change branch details').click()
