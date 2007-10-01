@@ -34,5 +34,12 @@
         permission="zope.Public"
         class="canonical.launchpad.feed.PersonBugsFeed"
         />
+    <!-- Search page -->
+    <browser:page
+        for="*"
+        name="search-bugs.atom"
+        permission="zope.Public"
+        class="canonical.launchpad.feed.SearchBugs"
+        />
 
 </configure>
