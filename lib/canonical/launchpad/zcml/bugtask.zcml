@@ -114,13 +114,17 @@
       name="+activity"
       template="../templates/bug-activity.pt" />
 
-    <browser:page
+    <browser:pages
       for="canonical.launchpad.interfaces.IBugTask"
       class="canonical.launchpad.browser.BugTaskTableRowView"
-      name="+bugtasks-and-nominations-table-row"
-      permission="launchpad.View"
-      template="../templates/bugtask-tasks-and-nominations-table-row.pt" />
-
+      permission="launchpad.View">
+      <browser:page
+        name="+bugtasks-and-nominations-table-row"
+        template="../templates/bugtask-tasks-and-nominations-table-row.pt" />
+      <browser:page
+        name="+cve-tasks-and-nominations-table-row"
+        template="../templates/cve-tasks-and-nominations-table-row.pt" />
+    </browser:pages>
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTask"

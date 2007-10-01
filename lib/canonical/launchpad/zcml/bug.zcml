@@ -86,6 +86,9 @@
       class="canonical.launchpad.browser.BugTasksAndNominationsView"
       permission="launchpad.View">
       <browser:page
+          name="+cve-tasks-and-nominations"
+          template="../templates/cve-tasks-and-nominations.pt" />
+      <browser:page
           name="+bugtasks-and-nominations-table"
           template="../templates/bugtasks-and-nominations-table.pt" />
     </browser:pages>
