@@ -23,10 +23,10 @@
       permission="launchpad.View">
       <browser:page
         name="+bugtasks-and-nominations-table-row"
-        template="../templates/bugtask-tasks-and-nominations-table-row.pt" />
+        template="../templates/bugnomination-tasks-and-nominations-table-row.pt" />
       <browser:page
         name="+cve-tasks-and-nominations-table-row"
-        template="../templates/cve-tasks-and-nominations-table-row.pt" />
+        template="../templates/cve-bugnomination-tasks-and-nominations-table-row.pt" />
     </browser:pages>
 
     <browser:page
