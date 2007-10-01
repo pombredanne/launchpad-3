@@ -78,6 +78,9 @@ check: build
 lint:
 	@bash ./utilities/lint.sh
 
+lint-verbose:
+	@bash ./utilities/lint.sh -v
+
 check-configs:
 	${PYTHON} utilities/check-configs.py 'canonical/pid_dir=/tmp'
 

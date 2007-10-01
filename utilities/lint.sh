@@ -1,12 +1,13 @@
 #!/bin/bash
 #
-# Runs pyflakes and pylint on files changed in tree
-#
-# 2005-07-14 creation (kiko)
-# 2005-07-15 added verbose mode, and fixed up warnings
-# 2005-07-20 added detection of conflict markers
-# 2005-07-21 nicer handling of verbose mode, tweaking of warnings
-# 2005-09-23 tweak more warnings on a dir-specific basis
+# Runs xmlint, pyflakes and pylint on files changed from parent branch.
+# Use -v to run pylint under stricter conditions with additional messages.
+
+VERBOSITY=0
+if [ "$1" == "-v" ]; then
+    shift
+    VERBOSITY=1
+fi
 
 if [ -z "$1" ]; then
     rev=`bzr info | sed '/parent branch:/!d; s, .*file://,-r ancestor:,'`
@@ -18,11 +19,14 @@ fi
 
 echo "= Launchpad lint ="
 echo ""
+echo "Checking for conflicts. Running xmllint, pyflakes, and pylint."
+echo ""
 
 if [ -z "$files" ]; then
     echo "No changed files detected."
     exit
 fi
+echo ""
 
 for file in $files; do
     # NB. Odd syntax on following line to stop lint.sh detecting conflict
@@ -74,19 +78,30 @@ if which pyflakes >/dev/null; then
     fi
 fi
 
-PYLINT=`which pylint`
-if [ -z $PYLINT ]; then
+pylint=`which pylint`
+if [ -z $pylint ]; then
     exit
 fi
 
 echo "== Pylint notices =="
+echo ""
+if [ $VERBOSITY -eq 1 ]; then
+    echo "Using verbose rules."
+else
+    echo "Using normal rules."
+fi
 
-pylint="python2.4 -Wi::DeprecationWarning $PYLINT"
+pylint="python2.4 -Wi::DeprecationWarning $pylint"
 rcfile="--rcfile=utilities/lp.pylintrc"
 sed_deletes="/^*/d; /Unused import \(action\|_python\)/d; "
 sed_deletes="$sed_deletes /_action: Undefined variable/d; "
 sed_deletes="$sed_deletes /_getByName: Instance/d; "
 sed_deletes="$sed_deletes /Redefining built-in .id/d;"
+sed_deletes="$sed_deletes /Redefining built-in 'filter'/d;"
+
+if [ $VERBOSITY -eq 1 ]; then
+    rcfile="--rcfile=utilities/lp-verbose.pylintrc"
+fi
 
 for file in $pyfiles; do
     # Messages are disabled by directory or file name.
@@ -122,7 +137,8 @@ for file in $pyfiles; do
     if [ ! -z "$output" ]; then
         echo ""
         echo ""
-        echo "=== Pylint notices on $file ==="
+        echo "=== $file ==="
+        echo ""
         echo "$output"
     fi
 done

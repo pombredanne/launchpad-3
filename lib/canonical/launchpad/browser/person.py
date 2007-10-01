@@ -626,8 +626,8 @@ class PersonBugsMenu(ApplicationMenu):
 
     def softwarebugs(self):
         text = 'Show package report'
-        summary = 'A summary report for packages where %s is a bug contact.' % \
-            self.context.displayname
+        summary = ('A summary report for packages where %s is a bug '
+            'contact.' %self.context.displayname)
         return Link('+packagebugs', text, summary=summary)
 
     def reportedbugs(self):

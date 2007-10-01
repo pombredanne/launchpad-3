@@ -360,12 +360,6 @@ class IProductSet(Interface):
         A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
         """
 
-    def getProductsWithUserDevelopmentBranches():
-        """Return products that have a user branch for the development series.
-
-        A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
-        """
-
     def createProduct(owner, name, displayname, title, summary,
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
