@@ -19,6 +19,9 @@
 <div metal:fill-slot="main">
 
   <h1>Source package publishing history</h1>
+  <p>
+    <a href=".">&laquo;back</a>
+  </p>
   <table class="listing">
     <thead>
       <tr>
@@ -37,6 +40,9 @@
       </tal:block>
     </tbody>
   </table>
+  <p>
+    <a href=".">&laquo;back</a>
+  </p>
 </div>
 </body>
 </html>

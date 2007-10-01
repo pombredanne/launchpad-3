@@ -65,13 +65,17 @@
         <div class="portlet" tal:condition="context/serieses">
           <h2>Series</h2>
           <ul class="distroseries">
-            <li tal:repeat="series context/serieses">
-              <a tal:attributes="href series/fmt:url">
-                <tal:version replace="series/version" />
-                (<tal:codename replace="series/displayname" />)
-              </a>
-            </li>
+            <tal:per_series repeat="series context/serieses">
+              <li tal:condition="series/active">
+                <a tal:attributes="href series/fmt:url">
+                  <tal:version replace="series/version" />
+                  "<tal:codename replace="series/displayname" />"
+                </a>
+                - <tal:status replace="series/status/name/fmt:lower" />
+              </li>
+            </tal:per_series>
           </ul>
+          <a href="+series">See all versions...</a>
         </div>
         <div class="portlet" tal:condition="context/currentseries">
           <h2>
@@ -90,7 +94,10 @@
               <a
                 tal:attributes="href architecture/fmt:url"
                 tal:content="architecture/displayname"
-              />
+                />
+              <tal:unofficial condition="not: architecture/official">
+                (unofficial)
+              </tal:unofficial>
             </li>
           </ul>
         </div>
@@ -121,4 +128,3 @@
     </div>
   </body>
 </html>
-<!-- 1-0 in-progress Needs list of latest uploads (bug 74342). -->

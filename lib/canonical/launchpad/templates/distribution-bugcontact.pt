@@ -10,13 +10,7 @@
   i18n:domain="launchpad"
 >
   <body>
-<tal:tag condition="view/update"/>
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
+  <tal:tag condition="view/update"/>
 
 <metal:heading fill-slot="pageheading">
   <h1>Change bug contact</h1>

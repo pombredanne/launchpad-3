@@ -11,13 +11,6 @@
 >
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
 <metal:heading fill-slot="pageheading">
   <h1 tal:content="view/heading">Archive Mirrors</h1>
 </metal:heading>

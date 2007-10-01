@@ -17,14 +17,6 @@
       </h1>
     </metal:heading>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-top-contributors" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
 <div metal:fill-slot="main"
      tal:define="batch view/batchnav/currentBatch">
 
