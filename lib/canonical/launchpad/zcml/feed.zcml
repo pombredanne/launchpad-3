@@ -10,14 +10,20 @@
     <browser:page
         for="*"
         name="feed-entry"
-	permission="zope.Public"
-	template="../../lazr/feed/feed-entry.pt"
+        permission="zope.Public"
+        template="../../lazr/feed/feed-entry.pt"
         />
 
     <!-- Pages -->
     <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
         name="latest-bugs.atom"
+        permission="zope.Public"
+        class="canonical.launchpad.feed.BugTargetBugsFeed"
+        />
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugTarget"
+        name="latest-bugs.html"
         permission="zope.Public"
         class="canonical.launchpad.feed.BugTargetBugsFeed"
         />

@@ -31,6 +31,7 @@ class BugFeedContentView(LaunchpadView):
     def __init__(self, context, request, verbose=False):
         super(BugFeedContentView, self).__init__(context, request)
         self.verbose = verbose
+        self.format = None
 
     def getBugCommentsForDisplay(self):
         bug_task_view = BugTaskView(self.context.bugtasks[0], self.request)
@@ -59,6 +60,20 @@ class BugsFeedBase(FeedBase):
             if verbose.lower() in ['1', 't', 'true', 'yes']:
                 self.verbose = True
         quantity = self.request.get('quantity')
+        if quantity is not None:
+            try:
+                self.quantity = int(quantity)
+            except ValueError:
+                pass
+        extension = self.request['PATH_INFO'].split('/')[-1].split('.')[-1]
+        if extension == 'atom':
+            self.format = 'atom'
+        elif extension == 'html':
+            self.format = 'html'
+        else:
+            raise ValueError, ('%s in %s is not atom or html'
+                % (extension, self.request['PATH_INFO']))
+
         if quantity is not None:
             try:
                 self.quantity = int(quantity)
@@ -97,6 +112,12 @@ class BugsFeedBase(FeedBase):
                           content = FeedTypedData(content_view.render(),
                                                   content_type="xhtml"))
         return entry
+
+    def render(self):
+        if self.format == 'atom':
+            return super(BugFeedContentView, self)
+        else:
+            return ViewPageTemplateFile('templates/bug-html-feed.pt')(self)
 
 
 class BugTargetBugsFeed(BugsFeedBase):

@@ -4,6 +4,9 @@
     xmlns:metal="http://xml.zope.org/namespaces/metal">
 
     <style type="text/css">
+        a img {
+            border: none;
+        }
         table {
             border: 1px solid black;
         }
@@ -49,7 +52,7 @@
         <!-- Nomination for series in above bugtask -->
         <tr tal:repeat="nomination context/getNominations">
             <td colspan="4" style="padding-left: 3em">Nominated for 
-                <span tal:replace="nomination/target/title">Trunk</span> by 
+                <span tal:replace="nomination/target/title">Trunk</span> by
                 <a tal:replace="structure nomination/owner/fmt:link">
                 Edwin Grubbs</a>
             </td>
