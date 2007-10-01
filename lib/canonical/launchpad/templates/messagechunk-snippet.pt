@@ -1,3 +1,8 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <tal:block condition="context/content">
     <div class="boardCommentContent"
         tal:content="structure context/content/fmt:nice_pre">
@@ -26,3 +31,4 @@
     <div class="boardCommentContent">Message Attachment stripped</div>
 
 </tal:block>
+</tal:root>

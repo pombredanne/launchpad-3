@@ -5,13 +5,12 @@
 __metaclass__ = type
 __all__ = ['BaseExportView']
 
-import os.path
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IPOExportRequestSet
+from canonical.launchpad.interfaces import (
+    IPOExportRequestSet, ITranslationExporter, TranslationFileFormat)
 from canonical.launchpad.webapp import (canonical_url, LaunchpadView)
-from canonical.lp.dbschema import TranslationFileFormat
 
 
 class BaseExportView(LaunchpadView):
@@ -75,13 +74,14 @@ class BaseExportView(LaunchpadView):
                 self.value = value
                 self.is_default = is_default
 
-        formats = [
-            TranslationFileFormat.PO,
-            TranslationFileFormat.MO,
-        ]
-
         default_format = self.getDefaultFormat()
-        for format in formats:
-            is_default = (format == default_format)
+        translation_exporter = getUtility(ITranslationExporter)
+        exporters = translation_exporter.getExportersForSupportedFileFormat(
+            default_format)
+        for exporter in exporters:
+            format = exporter.format
+            if format == default_format:
+                is_default = True
+            else:
+                is_default = False
             yield BrowserFormat(format.title, format.name, is_default)
-

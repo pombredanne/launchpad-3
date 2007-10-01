@@ -14,9 +14,8 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IProductRelease, IProductReleaseFile, IProductReleaseSet,
-    NotFoundError)
+    NotFoundError, UpstreamFileType)
 
-from canonical.lp.dbschema import UpstreamFileType
 
 class ProductRelease(SQLBase):
     """A release of a product."""
@@ -36,8 +35,6 @@ class ProductRelease(SQLBase):
     owner = ForeignKey(dbName="owner", foreignKey="Person", notNull=True)
     productseries = ForeignKey(dbName='productseries',
                                foreignKey='ProductSeries', notNull=True)
-    manifest = ForeignKey(dbName='manifest', foreignKey='Manifest',
-                          default=None)
 
     files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease',
                             orderBy='-date_uploaded')
@@ -95,7 +92,7 @@ class ProductReleaseFile(SQLBase):
     libraryfile = ForeignKey(dbName='libraryfile',
                              foreignKey='LibraryFileAlias', notNull=True)
 
-    filetype = EnumCol(dbName='filetype', schema=UpstreamFileType,
+    filetype = EnumCol(dbName='filetype', enum=UpstreamFileType,
                        notNull=True, default=UpstreamFileType.CODETARBALL)
 
     description = StringCol(notNull=False, default=None)

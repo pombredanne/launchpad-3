@@ -1,4 +1,5 @@
 <table
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
   tal:define="
     first_page_url context/firstBatchURL;
     prev_page_url context/prevBatchURL;

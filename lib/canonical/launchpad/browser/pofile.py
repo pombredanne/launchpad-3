@@ -176,7 +176,7 @@ class POFileUploadView(POFileView):
         translation_import_queue = getUtility(ITranslationImportQueue)
         root, ext = os.path.splitext(filename)
         translation_importer = getUtility(ITranslationImporter)
-        if (ext not in translation_importer.file_extensions_with_importer):
+        if (ext not in translation_importer.supported_file_extensions):
             self.request.response.addErrorNotification(
                 "Ignored your upload because the file you uploaded was not"
                 " recognised as a file that can be imported.")
@@ -403,4 +403,3 @@ class POExportView(BaseExportView):
 
     def getDefaultFormat(self):
         return self.context.potemplate.source_file_format
-

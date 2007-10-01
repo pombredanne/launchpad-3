@@ -32,13 +32,13 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.productseries import (
     ProductSeriesSOP, ProductSeriesFacets)
-from canonical.launchpad.browser.rosetta import TranslationsMixin
+from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.browser.sourcepackage import (
     SourcePackageSOP, SourcePackageFacets)
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFile, IPOFileSet,
-    IPOExportRequestSet, IPOTemplateSubset, ITranslationImporter,
-    ITranslationImportQueue, IProductSeries, ISourcePackage, NotFoundError)
+    IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, IPOTemplateSubset,
+    ITranslationImporter, ITranslationImportQueue, IProductSeries,
+    ISourcePackage, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
     GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
@@ -319,7 +319,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
         translation_import_queue = getUtility(ITranslationImportQueue)
         root, ext = os.path.splitext(filename)
         translation_importer = getUtility(ITranslationImporter)
-        if (ext in translation_importer.file_extensions_with_importer):
+        if (ext in translation_importer.supported_file_extensions):
             # Add it to the queue.
             translation_import_queue.addOrUpdateEntry(
                 filename, content, True, self.user,

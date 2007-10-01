@@ -6,16 +6,10 @@ the owner to confirm that the answer solved his problem.
 
     # We will use one browser objects for the owner, and one for the user
     # providing support, 'No Privileges Person' here.
-    >>> from zope.testbrowser.testing import Browser
-    >>> owner_browser = Browser()
-    >>> owner_browser.handleErrors = False
-    >>> owner_browser.addHeader(
-    ...     "Authorization", 'Basic test@canonical.com:test')
 
-    >>> support_browser = Browser()
-    >>> support_browser.handleErrors = False
-    >>> support_browser.addHeader(
-    ...     'Authorization', 'Basic no-priv@canonical.com:test')
+    >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> support_browser = setupBrowser(
+    ...     auth='Basic no-priv@canonical.com:test')
 
 When the URL is used when the question isn't in the right state, the user
 will be redirected to the question page and a notification will be

@@ -1,4 +1,14 @@
-<html metal:use-macro="view/macro:page/freeform" i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/freeform"
+  i18n:domain="launchpad"
+>
   <body>
     <metal:heading fill-slot="pageheading">
       <h1>Launchpad FAQ</h1>
@@ -187,26 +197,7 @@
             <a href="http://sqlobject.org/">SQLObject</a>,
             and <a href="http://twistedmatrix.com/trac/">Twisted</a>.
           </p>
-
-        <dt>Launchpad is down for maintenance.  How long before it comes back?</dt>
-            <dd>
-            <p>
-            Normally, Launchpad is updated every Tuesday, generally
-            around 10:00 UTC. This normally results in 30 minutes of
-            downtime as the production servers are upgraded.
-            </p>
-            <p>
-            There are other -- exceptional -- situations in which
-            Launchpad may become unavailable. When it is a planned
-            outage, email is sent to the <a
-            href="https://lists.ubuntu.com/mailman/listinfo/launchpad-users">Launchpad
-            users mailing list</a> notifying when, and how long.
-            Unpredictable outages are unfortunately, well,
-            unpredictable; however, the servers are maintained by a
-            dedicated team that is very responsive, and downtime is
-            normally minimal.
-            </p>
-            </dd>
+        </dd>
 
         <dt>Can I translate Launchpad itself into my language?</dt>
             <dd>
@@ -232,15 +223,21 @@
 
         <dt>How do I contact a Launchpad administrator?</dt>
 
-            <dd>The <a href="/people/admins">Launchpad
-            administrators</a> are a group of people that have
-            special powers inside Launchpad; they are usually able to
-            solve most simple problems related to user accounts.
-            <p>
-            The best way to get prompt attention from an administrator
-            is though IRC, as detailed in our <a
-            href="/feedback">feedback page</a>. You can also resort to
-            emailing them directly.</dd>
+            <dd>
+              <p>
+                The <a href="/people/admins">Launchpad
+                administrators</a> are a group of people that have
+                special powers inside Launchpad; they are usually able to
+                solve most simple problems related to user accounts.
+              </p>
+            
+              <p>
+                The best way to get prompt attention from an administrator
+                is though IRC, as detailed in our <a
+                href="/feedback">feedback page</a>. You can also resort to
+                emailing them directly.
+              </p>
+            </dd>
 
     </dl>
 

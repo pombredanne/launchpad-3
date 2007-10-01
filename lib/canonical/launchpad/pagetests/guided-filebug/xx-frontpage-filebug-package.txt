@@ -39,7 +39,7 @@ A link will be included to take the user back to the +filebug page:
     >>> user_browser.getControl('Summary').value
     ''
 
-If we enter an non-existant source package, we get an error message.
+If we enter an non-existent package, we get an error message.
 
     >>> user_browser.open('http://bugs.launchpad.dev/')
     >>> user_browser.getLink('Report a bug').click()
@@ -47,7 +47,7 @@ If we enter an non-existant source package, we get an error message.
     >>> user_browser.getControl(
     ...     name='field.bugtarget.distribution').value = ['ubuntu']
     >>> user_browser.getControl(
-    ...     name='field.bugtarget.package').value = 'non-existant'
+    ...     name='field.bugtarget.package').value = 'non-existent'
     >>> user_browser.getControl('Summary').value = (
     ...     'SVG causes Firefox to crash')
     >>> user_browser.getControl('Continue').click()
@@ -55,7 +55,7 @@ If we enter an non-existant source package, we get an error message.
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
     There is 1 error.
-    There is no source package name 'non-existant' published in Ubuntu
+    There is no package name 'non-existent' published in Ubuntu
 
 Selecting a valid package will take us to the next filebug step.
 

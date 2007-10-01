@@ -8,7 +8,10 @@ __all__ = [
     'IMailingListApplication',
     'IMailingListSet',
     'IRequestedMailingListAPI',
+    'MailingListAutoSubscribePolicy',
     'MailingListStatus',
+    'PersonalStanding',
+    'PostedMessageStatus',
     ]
 
 
@@ -106,6 +109,105 @@ class MailingListStatus(DBEnumeratedType):
         The mailing list has been flagged for deactivation by the team owner.
         Mailman will be informed of this and will take the necessary actions
         to deactive the list.
+        """)
+
+
+class MailingListAutoSubscribePolicy(DBEnumeratedType):
+    """A person's auto-subscription policy.
+
+    When a person joins a team, or is joined to a team, their
+    auto-subscription policy describes how and whether they will be
+    automatically subscribed to any team mailing list that the team may have.
+
+    This does not describe what happens when a team that already has members
+    gets a new team mailing list.  In that case, its members are never
+    automatically subscribed to the mailing list.
+    """
+
+    NEVER = DBItem(0, """
+        Never subscribe automatically
+
+        The user must explicitly subscribe to a team mailing list for any team
+        that she joins.
+        """)
+
+    ON_REGISTRATION = DBItem(1, """
+        Subscribe on self-registration
+
+        The user is automatically joined to any team mailng list for a team
+        that she joins explicitly.  She is never joined to any team mailing
+        list for a team that someone else joins her to.
+        """)
+
+    ALWAYS = DBItem(2, """
+        Always subscribe automatically
+
+        The user is automatically subscribed to any team mailing list when she
+        is added to the team, regardless of who joins her to the team.
+        """)
+
+
+class PersonalStanding(DBEnumeratedType):
+    """A person's standing.
+
+    Standing is currently (just) used to determine whether a person's posts to
+    a mailing list require first-post moderation or not.  Any person with good
+    or excellent standing may post directly to the mailing list without
+    moderation.  Any person with unknown or poor standing must have their
+    first-posts moderated.
+    """
+
+    UNKNOWN = DBItem(0, """
+        Unknown standing
+
+        Nothing about this person's standing is known.
+        """)
+
+    POOR = DBItem(100, """
+        Poor standing
+
+        This person has poor standing.
+        """)
+
+    GOOD = DBItem(200, """
+        Good standing
+
+        This person has good standing and may post to a mailing list without
+        being subject to first-post moderation rules.
+        """)
+
+    EXCELLENT = DBItem(300, """
+        Excellent standing
+
+        This person has excellent standing and may post to a mailing list
+        without being subject to first-post moderation rules.
+        """)
+
+
+class PostedMessageStatus(DBEnumeratedType):
+    """The status of a posted message.
+
+    When a message posted to a mailing list is subject to first-post
+    moderation, the message gets one of these statuses.
+    """
+
+    NEW = DBItem(0, """
+        New status
+
+        The message has been posted and held for first-post moderation, but no
+        disposition of the message has yet been made.
+        """)
+
+    APPROVED = DBItem(1, """
+        Approved
+
+        A message held for first-post moderation has been approved.
+        """)
+
+    REJECTED = DBItem(2, """
+        Rejected
+
+        A message held for first-post moderation has been rejected.
         """)
 
 
