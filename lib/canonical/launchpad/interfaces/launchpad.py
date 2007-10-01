@@ -38,7 +38,7 @@ __all__ = [
     'IBeforeTraverseEvent',
     'IBreadcrumb',
     'ICrowd',
-    'IFeedsApplication',
+    'IFeedApplication',
     'IHasAppointedDriver',
     'IHasAssignee',
     'IHasBug',
@@ -202,8 +202,8 @@ class IPrivateApplication(ILaunchpadApplication):
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
 
-class IFeedsApplication(ILaunchpadApplication):
-    """Launchpad Feeds application root."""
+class IFeedApplication(ILaunchpadApplication):
+    """Launchpad Feed application root."""
 
 
 class IAuthApplication(Interface):

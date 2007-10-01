@@ -27,7 +27,7 @@ from canonical.config import config
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
-    IFeedsApplication, IPrivateApplication, IOpenIdApplication,
+    IFeedApplication, IPrivateApplication, IOpenIdApplication,
     IShipItApplication)
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
@@ -195,8 +195,8 @@ class LaunchpadRequestPublicationFactory:
                           PublicXMLRPCRequest, PublicXMLRPCPublication))
         vhrps.append(VHRP('xmlrpc_private',
                           PrivateXMLRPCRequest, PrivateXMLRPCPublication))
-        vhrps.append(VHRP('feeds', FeedsBrowserRequest,
-            FeedsPublication))
+        vhrps.append(VHRP('feeds', FeedBrowserRequest,
+            FeedPublication))
         # Done with using the short form of VirtualHostRequestPublication, so
         # clean up, as we won't need to use it again later.
         del VHRP
@@ -255,7 +255,7 @@ class LaunchpadRequestPublicationFactory:
                         config.launchpad.vhosts.xmlrpc_private.hostname)
                     return True
                 if (server.address[1] == port and
-                    server.type == 'FeedsHTTP'):
+                    server.type == 'FeedHTTP'):
                     # This request came over the feeds port.
                     self._thread_local.host = (
                         config.launchpad.vhosts.feeds.hostname)
@@ -827,26 +827,26 @@ class PrivateXMLRPCRequest(PublicXMLRPCRequest):
 
 # ---- feeds
 
-class FeedsPublication(LaunchpadBrowserPublication):
+class FeedPublication(LaunchpadBrowserPublication):
     """The publication used for Launchpad feed requests."""
 
-    root_object_interface = IFeedsApplication
+    root_object_interface = IFeedApplication
 
     def traverseName(self, request, ob, name):
         """Traverse to an end point or let normal traversal do its thing."""
-        assert isinstance(request, FeedsBrowserRequest), (
+        assert isinstance(request, FeedBrowserRequest), (
             'Not a feeds request')
         missing = object()
         end_point = getattr(ob, name, missing)
         if end_point is missing:
-            return super(FeedsPublication, self).traverseName(
+            return super(FeedPublication, self).traverseName(
                 request, ob, name)
         return end_point
 
 
-class FeedsBrowserRequest(LaunchpadBrowserRequest):
+class FeedBrowserRequest(LaunchpadBrowserRequest):
     """Request type for a launchpad feed."""
-    implements(canonical.launchpad.layers.FeedsLayer)
+    implements(canonical.launchpad.layers.FeedLayer)
 
 
 # ---- openid
