@@ -2,7 +2,7 @@
 
 Any administrator of a team can add new members to that team.
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> browser.getLink('Add member').click()
     >>> browser.url
@@ -104,10 +104,7 @@ Any admin of the team which receives an invitation can either accept or deny
 it. Although they get a link to the invitation's page, there's also a page
 listing all open invitation sent to a given team.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-    >>> browser.handleErrors = False
-    >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~launchpad')
     >>> browser.getLink('Show received invitations').click()
     >>> browser.url
@@ -180,10 +177,7 @@ Open the invitations page with one admin browser.
 
 Open the same page with another admin browser.
 
-    >>> second_browser = Browser()
-    >>> second_browser.handleErrors = False
-    >>> second_browser.addHeader(
-    ...     'Authorization', 'Basic foo.bar@canonical.com:test')
+    >>> second_browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
     >>> second_browser.open(
     ...     'http://launchpad.dev/~ubuntu-team/+invitation/name21')
 
@@ -229,9 +223,7 @@ the bug sice we could skip the notification sent to the team in this case.
     ...     TeamMembershipStatus.DEACTIVATED, ubuntu_translators.teamowner)
     >>> carlos_translators_membership.syncUpdate()
 
-    >>> browser = Browser()
-    >>> browser.handleErrors = False
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~landscape-developers/+addmember')
     >>> browser.getControl('New member').value = 'ubuntu-translators'
     >>> browser.getControl('Add Member').click()

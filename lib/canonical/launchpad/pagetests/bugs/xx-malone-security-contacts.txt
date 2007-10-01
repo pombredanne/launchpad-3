@@ -2,8 +2,7 @@ A security contact gets all email about security-related bugs.
 
 A security contact can be set on a distribution.
 
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open("http://localhost:9000/ubuntu/+securitycontact")
     >>> browser.getControl("Security Contact").value = "name16"
     >>> browser.getControl("Change").click()
