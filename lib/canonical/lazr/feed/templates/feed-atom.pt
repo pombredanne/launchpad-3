@@ -5,8 +5,8 @@
 
 <!-- XXX: Edwin: This is not working for some reason.
 <!DOCTYPE feed [
-<!ENTITY % HTMLlat1 PUBLIC 
-    "-//W3C//ENTITIES Latin 1 for XHTML//EN" 
+<!ENTITY % HTMLlat1 PUBLIC
+    "-//W3C//ENTITIES Latin 1 for XHTML//EN"
     "http://www.w3.org/TR/xhtml1/DTD/xhtml-lat1.ent">
 %HTMLlat1;
 ]>
@@ -26,6 +26,6 @@
     <updated tal:condition="view/getUpdated"
              tal:content="view/getUpdated">2007-05-26T12:45:01Z</updated>
     <entry tal:repeat="entry view/getItems">
-       <metal:entry metal:use-macro="entry/@@feed-entry/feed-entry" />
+       <metal:entry metal:use-macro="entry/@@feed-entry-atom/feed-entry" />
     </entry>
 </feed>

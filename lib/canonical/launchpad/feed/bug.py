@@ -20,6 +20,8 @@ from canonical.launchpad.browser.bugtask import BugTaskView
 from canonical.launchpad.browser import (
     BugsBugTaskSearchListingView, BugTargetView,
     PersonRelatedBugsView)
+from canonical.launchpad.interfaces import (
+    IBugTarget, IBugTaskSet, IPerson)
 
 
 class BugFeedContentView(LaunchpadView):
@@ -49,7 +51,7 @@ class BugsFeedBase(FeedBase):
 
     max_age = 30 * MINUTES
     verbose = False
-    quantity = 15
+
     def initialize(self):
         super(BugsFeedBase, self).initialize()
         self.getParameters()
@@ -59,26 +61,15 @@ class BugsFeedBase(FeedBase):
         if verbose is not None:
             if verbose.lower() in ['1', 't', 'true', 'yes']:
                 self.verbose = True
-        quantity = self.request.get('quantity')
-        if quantity is not None:
-            try:
-                self.quantity = int(quantity)
-            except ValueError:
-                pass
         extension = self.request['PATH_INFO'].split('/')[-1].split('.')[-1]
-        if extension == 'atom':
+        path = self.request['PATH_INFO']
+        if path.endswith('.atom'):
             self.format = 'atom'
-        elif extension == 'html':
+        elif path.endswith('.html'):
             self.format = 'html'
         else:
             raise ValueError, ('%s in %s is not atom or html'
                 % (extension, self.request['PATH_INFO']))
-
-        if quantity is not None:
-            try:
-                self.quantity = int(quantity)
-            except ValueError:
-                pass
 
     def getURL(self):
         """Get the identifying URL for the feed."""
@@ -98,6 +89,7 @@ class BugsFeedBase(FeedBase):
         return self.items
 
     def itemToFeedEntry(self, item):
+        """Given a set of items, format them for rendering."""
         bugtask = item
         bug = bugtask.bug
         title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
@@ -113,16 +105,10 @@ class BugsFeedBase(FeedBase):
                                                   content_type="xhtml"))
         return entry
 
-    def render(self):
-        if self.format == 'atom':
-            return super(BugsFeedBase, self).render()
-        else:
-            return ViewPageTemplateFile('templates/bug-html-feed.pt')(self)
-
-
 class BugTargetBugsFeed(BugsFeedBase):
     """Bug feeds for projects and products."""
 
+    usedfor = IBugTarget
     feed_name = "latest-bugs.atom"
 
     def initialize(self):
@@ -142,6 +128,7 @@ class BugTargetBugsFeed(BugsFeedBase):
 class PersonBugsFeed(BugsFeedBase):
     """Bug feeds for a person."""
 
+    usedfor = IPerson
     feed_name = "latest-bugs.atom"
 
     def initialize(self):
@@ -169,6 +156,7 @@ class SearchBugsFeed(BugsFeedBase):
         search=Search+Bug+Reports&field.scope=all&field.scope.target=
     """
 
+    usedfor = IBugTaskSet
     feed_name = "search-bugs.atom"
 
     def initialize(self):
@@ -185,4 +173,8 @@ class SearchBugsFeed(BugsFeedBase):
 
     def getTitle(self):
         """Title for the feed."""
-        return "Bugs from custom search."
+        return "Bugs from custom search"
+
+    def getURL(self):
+        """Get the identifying URL for the feed."""
+        return "%s?%s" % (self.request.getURL(), self.request.get('QUERY_STRING'))

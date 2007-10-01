@@ -50,8 +50,11 @@ class FeedBase(LaunchpadFormView):
     # XXX bac - need caching headers, including expiration, etc.
 
     max_age = 60 * MINUTES
+    # XXX - bac 2-Oct-2007 - this should be in a config file
+    quantity = 25
     items = None
-    template_file = 'feed.pt'
+    template_files = {'atom': 'templates/feed-atom.pt',
+                      'html': 'templates/feed-html.pt'}
 
     def __init__(self, context, request):
         self.context = context
@@ -103,7 +106,11 @@ class FeedBase(LaunchpadFormView):
 
     @property
     def template(self):
-        return ViewPageTemplateFile(self.template_file)
+        template_file = self.template_files.get(self.format)
+        if template_file is not None:
+            return ViewPageTemplateFile(template_file)
+        else:
+            raise NotImplementedError, "Format %s is not implemented" % self.format
 
     def render(self):
         # XXX, bac - This call looks funny, but the callable template must be

@@ -1,28 +1,31 @@
-= Atom Feeds =
+= HTML Feeds =
 
-Feeds produce XML not HTML.  Therefore we must parse the output as XML
-using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
+HTML feeds produce snippets of html for inclusion in user's own web pages.
 
-    >>> from BeautifulSoup import BeautifulStoneSoup as BSS
+    >>> from BeautifulSoup import BeautifulSoup
     >>> from BeautifulSoup import SoupStrainer
 
 Please note that when displaying the results of the feeds in a reader
 the order of entries may not be the same as generated.  Some readers
 will arrange the entries in a different sort order based on the update
-time. 
+time.
+
+Define a helper function for parsing the entries:
+    >>> def parse_entries(contents):
+    ...     entries = [tag for tag in BeautifulSoup(browser.contents,
+    ...                   parseOnlyThese=SoupStrainer('entry'))]
+    ...     return entries
 
 == Latest bugs for a product ==
 
-    >>> browser.open('http://launchpad.dev/jokosher/latest-bugs.atom')
+    >>> browser.open('http://launchpad.dev/jokosher/latest-bugs.html')
     >>> browser.title
     'Bugs in Jokosher'
     >>> browser.url
-    'http://launchpad.dev/jokosher/latest-bugs.atom'
+    'http://launchpad.dev/jokosher/latest-bugs.html'
 
-    >>> soup = BSS(browser.contents)
-    >>> print extract_text(soup.find('id'))
-    http://launchpad.dev/jokosher/latest-bugs.atom
-    >>> entries = [tag for tag in BSS(browser.contents, parseOnlyThese=SoupStrainer('entry'))]
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     2
     >>> entry = entries[0]
@@ -43,16 +46,16 @@ time.
 
 == Latest bugs for a project ==
 
-    >>> browser.open('http://launchpad.dev/mozilla/latest-bugs.atom')
+    >>> browser.open('http://launchpad.dev/mozilla/latest-bugs.html')
     >>> browser.title
     'Bugs in the Mozilla Project'
     >>> browser.url
-    'http://launchpad.dev/mozilla/latest-bugs.atom'
+    'http://launchpad.dev/mozilla/latest-bugs.html'
 
-    >>> soup = BSS(browser.contents)
+    >>> soup = BeautifulSoup(browser.contents)
     >>> print extract_text(soup.find('id'))
-    http://launchpad.dev/mozilla/latest-bugs.atom
-    >>> entries = [tag for tag in BSS(browser.contents, parseOnlyThese=SoupStrainer('entry'))]
+    http://launchpad.dev/mozilla/latest-bugs.html
+    >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     4
 
@@ -74,16 +77,16 @@ time.
 
 == Latest bugs for a person ==
 
-    >>> browser.open('http://launchpad.dev/~name16/latest-bugs.atom')
+    >>> browser.open('http://launchpad.dev/~name16/latest-bugs.html')
     >>> browser.title
     'Bugs for Foo Bar'
     >>> browser.url
-    'http://launchpad.dev/~name16/latest-bugs.atom'
+    'http://launchpad.dev/~name16/latest-bugs.html'
 
-    >>> soup = BSS(browser.contents)
+    >>> soup = BeautifulSoup(browser.contents)
     >>> print extract_text(soup.find('id'))
-    http://launchpad.dev/~name16/latest-bugs.atom
-    >>> entries = [tag for tag in BSS(browser.contents, parseOnlyThese=SoupStrainer('entry'))]
+    http://launchpad.dev/~name16/latest-bugs.html
+    >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     6
 
@@ -103,11 +106,37 @@ time.
     >>> print extract_text(entry.author('uri')[0])
     http://launchpad.dev/~name16
 
-If a quantity parameter is passed in the query string ensure it is
-respected.  As shown above the feed for Foo Bar has 6 entries, but
-here we limit it to 2.
+== General bug search ==
 
-    >>> browser.open('http://launchpad.dev/~name16/latest-bugs.atom?quantity=2')
-    >>> entries = [tag for tag in BSS(browser.contents, parseOnlyThese=SoupStrainer('entry'))]
+    >>> import cgi
+    >>> url = ("http://launchpad.dev/bugs/search-bugs.html?"
+    ...        "field.searchtext=&search=Search+Bug+Reports&"
+    ...        "field.scope=all&field.scope.target=")
+    >>> browser.open(url)
+    >>> browser.title
+    'Bugs from custom search'
+
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> entry_id = extract_text(soup.find('id'))
+    >>> assert entry_id==cgi.escape(url), "Id does match URL (%s)" % entry_id
+
+    >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
-    2
+    20
+
+    >>> entry = entries[0]
+    >>> print extract_text(entry.title)
+    [3] Bug Title Test
+    >>> print extract_text(entry.author('name')[0])
+    Foo Bar
+    >>> print extract_text(entry.author('uri')[0])
+    http://launchpad.dev/~name16
+
+    >>> entry = entries[1]
+    >>> print extract_text(entry.title)
+    [5] Firefox install instructions should be complete
+    >>> print extract_text(entry.author('name')[0])
+    Sample Person
+    >>> print extract_text(entry.author('uri')[0])
+    http://launchpad.dev/~name12
+

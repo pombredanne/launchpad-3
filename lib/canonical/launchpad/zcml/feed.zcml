@@ -9,9 +9,9 @@
     <!-- Macros -->
     <browser:page
         for="*"
-        name="feed-entry"
+        name="feed-entry-atom"
         permission="zope.Public"
-        template="../../lazr/feed/feed-entry.pt"
+        template="../../lazr/feed/templates/feed-entry-atom.pt"
         />
 
     <!-- Pages -->
@@ -33,10 +33,22 @@
         permission="zope.Public"
         class="canonical.launchpad.feed.PersonBugsFeed"
         />
+    <browser:page
+        for="canonical.launchpad.interfaces.IPerson"
+        name="latest-bugs.html"
+        permission="zope.Public"
+        class="canonical.launchpad.feed.PersonBugsFeed"
+        />
     <!-- Search page -->
     <browser:page
         for="*"
         name="search-bugs.atom"
+        permission="zope.Public"
+        class="canonical.launchpad.feed.SearchBugsFeed"
+        />
+    <browser:page
+        for="*"
+        name="search-bugs.html"
         permission="zope.Public"
         class="canonical.launchpad.feed.SearchBugsFeed"
         />
