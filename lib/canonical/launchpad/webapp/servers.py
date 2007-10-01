@@ -27,7 +27,8 @@ from canonical.config import config
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
-    IShipItApplication, IOpenIdApplication, IPrivateApplication)
+    IFeedsApplication, IPrivateApplication, IOpenIdApplication,
+    IShipItApplication)
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
@@ -822,8 +823,9 @@ class PrivateXMLRPCRequest(PublicXMLRPCRequest):
     """Request type for doing private XML-RPC in Launchpad."""
     # For now, the same as public requests.
 
+# ---- feeds
 
-class FeedsPublication(XXX):
+class FeedsPublication(LaunchpadBrowserPublication):
     """The publication used for Launchpad feed requests."""
 
     root_object_interface = IFeedsApplication
@@ -840,8 +842,9 @@ class FeedsPublication(XXX):
         return end_point
 
 
-class FeedsRequest(XXX):
+class FeedsRequest(LaunchpadBrowserRequest):
     """Request type for a launchpad feed."""
+    implements(canonical.launchpad.layers.FeedsLayer)
 
 
 # ---- openid
