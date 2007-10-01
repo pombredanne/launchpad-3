@@ -13,7 +13,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from canonical.codehosting import branch_id_to_path
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
-    BranchToMirror, PullerWorkerProtocol)
+    PullerWorkerProtocol)
 from canonical.launchpad.scripts.supermirror.tests import createbranch
 from canonical.launchpad.scripts.supermirror import jobmanager
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
@@ -44,7 +44,7 @@ class TestJobManager(unittest.TestCase):
             client = self.makeFakeClient([], [], branch_tuples)
         else:
             self.fail("Unknown branch type: %r" % (branch_type,))
-        return jobmanager.JobManager(client, branch_type)
+        return jobmanager.JobManager(client, logging.getLogger(), branch_type)
 
     def testManagerCreatesLocks(self):
         try:
@@ -100,54 +100,42 @@ class TestJobManagerInLaunchpad(TrialTestCase):
 
         :param branch_to_mirror: a BranchToMirror instance.
         """
-        source_branch = bzrlib.branch.Branch.open(branch_to_mirror.source)
-        dest_branch = bzrlib.branch.Branch.open(branch_to_mirror.dest)
-        self.assertEqual(source_branch.last_revision(),
-                         dest_branch.last_revision())
+        source_branch = bzrlib.branch.Branch.open(branch_to_mirror.source_url)
+        dest_branch = bzrlib.branch.Branch.open(
+            branch_to_mirror.destination_url)
+        self.assertEqual(
+            source_branch.last_revision(), dest_branch.last_revision())
 
     def testJobRunner(self):
         client = jobmanager.BranchStatusClient()
-        manager = jobmanager.JobManager(client, BranchType.HOSTED)
+        manager = jobmanager.JobManager(
+            client, logging.getLogger(), BranchType.HOSTED)
 
         branches = [
-            self._makeBranch("brancha", 1, client),
-            self._makeBranch("branchb", 2, client),
-            self._makeBranch("branchc", 3, client),
-            self._makeBranch("branchd", 4, client),
-            self._makeBranch("branche", 5, client)]
-        manager.branches_to_mirror = [
-            [branch.source, branch.dest, str(branch.branch_id),
-             branch.unique_name, 'HOSTED']
-            for branch in branches]
+            self._makeBranch(manager, "brancha", 1),
+            self._makeBranch(manager, "branchb", 2),
+            self._makeBranch(manager, "branchc", 3),
+            self._makeBranch(manager, "branchd", 4),
+            self._makeBranch(manager, "branche", 5)]
 
-        deferred = manager.run(logging.getLogger())
+        deferred = manager._run(branches)
 
         def check_mirrored(ignored):
-            self.assertEqual(len(manager.branches_to_mirror), 0)
             for branch in branches:
                 self.assertMirrored(branch)
 
         return deferred.addCallback(check_mirrored)
 
-    def _makeBranch(self, relativedir, target, branch_status_client):
+    def _makeBranch(self, manager, branch_src, branch_id):
         """Given a relative directory, make a strawman branch and return it.
-
-        @param relativedir - The directory to make the branch
-        @output BranchToMirror - A branch object representing the strawman
-                                    branch
         """
-        unique_name = '~testuser/+junk/' + relativedir
-        branchdir = os.path.join(self.testdir, relativedir)
-        createbranch(branchdir)
-        if target == None:
-            targetdir = None
-        else:
-            targetdir = os.path.join(self.testdir, branch_id_to_path(target))
-        protocol = PullerWorkerProtocol(
-            sys.stdout, sys.stderr, logging.getLogger())
-        return BranchToMirror(
-                branchdir, targetdir, target, unique_name, branch_type=None,
-                protocol=protocol)
+        unique_name = '~testuser/+junk/' + branch_src
+        branch_src = os.path.join(self.testdir, branch_src)
+        createbranch(branch_src)
+        branch = manager.getBranchToMirror(branch_id, branch_src, unique_name)
+        branch.destination_url = os.path.join(
+            self.testdir, branch_id_to_path(branch_id))
+        return branch
 
 
 class FakeBranchStatusClient:
@@ -169,14 +157,14 @@ class TestPullerMasterProtocol(unittest.TestCase):
         def __init__(self):
             self.calls = []
 
-        def startMirroring(self, branch_id):
-            self.calls.append(('startMirroring', branch_id))
+        def startMirroring(self):
+            self.calls.append('startMirroring')
 
-        def mirrorSucceeded(self, branch_id, last_revision):
-            self.calls.append(('mirrorSucceeded', branch_id, last_revision))
+        def mirrorSucceeded(self, last_revision):
+            self.calls.append(('mirrorSucceeded', last_revision))
 
-        def mirrorFailed(self, branch_id, message):
-            self.calls.append(('mirrorFailed', branch_id, message))
+        def mirrorFailed(self, message):
+            self.calls.append(('mirrorFailed', message))
 
 
     class FakeTransport:
@@ -194,8 +182,7 @@ class TestPullerMasterProtocol(unittest.TestCase):
         self.arbitrary_branch_id = 1
         self.listener = TestPullerMasterProtocol.PullerListener()
         self.protocol = jobmanager.FireOnExit(
-            self.arbitrary_branch_id, None, arbitrary_timeout_period,
-            self.listener)
+            None, arbitrary_timeout_period, self.listener)
         self.protocol.transport = TestPullerMasterProtocol.FakeTransport()
 
     def convertToNetstring(self, string):
@@ -204,27 +191,26 @@ class TestPullerMasterProtocol(unittest.TestCase):
     def test_startMirroring(self):
         """Receiving a startMirroring message notifies the listener."""
         self.protocol.outReceived(self.convertToNetstring('startMirroring'))
-        self.assertEqual(
-            [('startMirroring', self.arbitrary_branch_id)],
-            self.listener.calls)
+        self.assertEqual(['startMirroring'], self.listener.calls)
 
     def test_mirrorSucceeded(self):
         """Receiving a mirrorSucceeded message notifies the listener."""
+        self.protocol.outReceived(self.convertToNetstring('startMirroring'))
+        self.listener.calls = []
         self.protocol.outReceived(
             self.convertToNetstring('mirrorSucceeded'))
         self.protocol.outReceived(self.convertToNetstring('1234'))
-        self.assertEqual(
-            [('mirrorSucceeded', self.arbitrary_branch_id, '1234')],
-            self.listener.calls)
+        self.assertEqual([('mirrorSucceeded', '1234')], self.listener.calls)
 
     def test_mirrorFailed(self):
         """Receiving a mirrorFailed message notifies the listener."""
+        self.protocol.outReceived(self.convertToNetstring('startMirroring'))
+        self.listener.calls = []
         self.protocol.outReceived(
             self.convertToNetstring('mirrorFailed'))
         self.protocol.outReceived(self.convertToNetstring('Error Message'))
         self.assertEqual(
-            [('mirrorFailed', self.arbitrary_branch_id, 'Error Message')],
-            self.listener.calls)
+            [('mirrorFailed', 'Error Message')], self.listener.calls)
 
 
 class TestMirroringEvents(TrialTestCase):
@@ -249,12 +235,13 @@ class TestMirroringEvents(TrialTestCase):
 
     def setUp(self):
         self.status_client = TestMirroringEvents.BranchStatusClient()
-        self.eventHandler = jobmanager.JobManager(
-            self.status_client, BranchType.HOSTED)
         self.arbitrary_branch_id = 1
+        self.eventHandler = jobmanager.BranchToMirror(
+            self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
+            BranchType.HOSTED, logging.getLogger(), self.status_client)
 
     def test_startMirroring(self):
-        deferred = self.eventHandler.startMirroring(self.arbitrary_branch_id)
+        deferred = self.eventHandler.startMirroring()
 
         def checkMirrorStarted(ignored):
             self.assertEqual(
@@ -265,12 +252,11 @@ class TestMirroringEvents(TrialTestCase):
 
     def test_mirrorComplete(self):
         arbitrary_revision_id = 'rev1'
-        deferred = self.eventHandler.startMirroring(self.arbitrary_branch_id)
+        deferred = self.eventHandler.startMirroring()
 
         def mirrorSucceeded(ignored):
             self.status_client.calls = []
-            return self.eventHandler.mirrorSucceeded(
-                self.arbitrary_branch_id, arbitrary_revision_id)
+            return self.eventHandler.mirrorSucceeded(arbitrary_revision_id)
         deferred.addCallback(mirrorSucceeded)
 
         def checkMirrorCompleted(ignored):
@@ -283,12 +269,11 @@ class TestMirroringEvents(TrialTestCase):
     def test_mirrorFailed(self):
         arbitrary_error_message = 'failed'
 
-        deferred = self.eventHandler.startMirroring(self.arbitrary_branch_id)
+        deferred = self.eventHandler.startMirroring()
 
         def mirrorFailed(ignored):
             self.status_client.calls = []
-            return self.eventHandler.mirrorFailed(
-                self.arbitrary_branch_id, arbitrary_error_message)
+            return self.eventHandler.mirrorFailed(arbitrary_error_message)
         deferred.addCallback(mirrorFailed)
 
         def checkMirrorFailed(ignored):
