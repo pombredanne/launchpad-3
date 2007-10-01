@@ -7,7 +7,7 @@ in the actions portlet.
   >>> from canonical.launchpad.ftests.bug import (
   ...     print_direct_subscribers, print_indirect_subscribers)
 
-  >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
   >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1'
@@ -165,12 +165,8 @@ For example, Steve Alexander can currently subscribe to bug #3.
 
   >>> from zope.testbrowser.testing import Browser
 
-  >>> stevea_browser = Browser()
-  >>> stevea_browser.handleErrors = False
-
-  >>> stevea_browser.addHeader(
-  ...     "Authorization", "Basic steve.alexander@ubuntulinux.com:test")
-
+  >>> stevea_browser = setupBrowser(
+  ...   auth="Basic steve.alexander@ubuntulinux.com:test")
   >>> stevea_browser.open("http://launchpad.dev/bugs/3")
   >>> subscribe_link = stevea_browser.getLink("Subscribe")
 
@@ -263,11 +259,7 @@ duplicate. For example, let's login as Foo Bar, subscribe ubuntu-team to
 bug #2, and notice how bug #3's indirect subscriptions are update to
 include that team.
 
-  >>> foobar_browser = Browser()
-  >>> foobar_browser.handleErrors = False
-  >>> foobar_browser.addHeader(
-  ...     "Authorization", "Basic foo.bar@canonical.com:test")
-
+  >>> foobar_browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
   >>> foobar_browser.open("http://launchpad.dev/bugs/2")
   >>> foobar_browser.getLink("Subscribe someone else").click()
   >>> foobar_browser.getControl("Person").value = "ubuntu-team"
