@@ -119,21 +119,15 @@ class PullerWorkerProtocol:
 
     def startMirroring(self, branch_to_mirror):
         self.sendNetstring('startMirroring')
-        self.logger.info(
-            'Mirroring branch %d: %s to %s',
-            branch_to_mirror.branch_id, branch_to_mirror.source,
-            branch_to_mirror.dest)
 
     def mirrorSucceeded(self, branch_to_mirror, last_revision):
         self.sendNetstring('mirrorSucceeded')
         self.sendNetstring(str(last_revision))
-        self.logger.info('Successfully mirrored to rev %s', last_revision)
 
     def mirrorFailed(self, branch_to_mirror, message):
         self.sendNetstring('mirrorFailed')
         self.sendNetstring(str(message))
         self._record_oops(branch_to_mirror, message)
-        self.logger.info('Recorded failure: %s', str(message))
 
 
 def identical_formats(branch_one, branch_two):

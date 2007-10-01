@@ -114,12 +114,17 @@ class BranchToMirror:
         return deferred
 
     def startMirroring(self):
+        self.logger.info(
+            'Mirroring branch %d: %s to %s', self.branch_id, self.source_url,
+            self.destination_url)
         return self.branch_status_client.startMirroring(self.branch_id)
 
     def mirrorFailed(self, reason):
+        self.logger.info('Recorded failure: %s', str(reason))
         return self.branch_status_client.mirrorFailed(self.branch_id, reason)
 
     def mirrorSucceeded(self, revision_id):
+        self.logger.info('Successfully mirrored to rev %s', revision_id)
         return self.branch_status_client.mirrorComplete(
             self.branch_id, revision_id)
 
