@@ -15,6 +15,8 @@ from zope.interface import implements
 
 from operator import attrgetter
 
+from canonical.database.sqlbase import cursor, sqlvalues
+
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -28,6 +30,9 @@ from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     MozillaXpiImporter)
+from canonical.launchpad.translationformat.translation_common_format import (
+    TranslationMessage)
+
 from canonical.launchpad.webapp import canonical_url
 
 importers = {
@@ -35,6 +40,136 @@ importers = {
     TranslationFileFormat.PO: GettextPOImporter(),
     TranslationFileFormat.XPI: MozillaXpiImporter(),
     }
+
+class CurrentPOFileInDatabase:
+    """Reduces the amount of DB work done on every PO file import."""
+
+    def __init__(self, pofile, published=False, active=False):
+        self.pofile = pofile
+        self.is_published = published
+        self.is_active = active
+
+        # dict indexed by (msgid, context) containing active
+        # TranslationMessages: doing this for the speed
+        self.messages = {}
+
+        # contains published but inactive translations
+        self.published = {}
+
+        # contains non-published and inactive translations, indexed by
+        # (msgid, context) and then by plural form; eg.
+        # self.suggestions[("blah", "context")][1] is a list of suggestions
+        # for 1st plural form translations for "context"/"blah" message
+        self.suggestions = {}
+
+        # Pre-fill self.messages and self.published with data
+        self._fetchDBRows()
+
+
+    def _fetchDBRows(self):
+        sql = '''
+        SELECT
+            POMsgId.msgid AS msgid,
+            POMsgID_Plural.msgid AS msgid_plural,
+            context,
+            translation,
+            date_reviewed,
+            isfuzzy,
+            publishedfuzzy,
+            posubmission.active,
+            posubmission.published,
+            posubmission.pluralform
+          FROM POFile
+            JOIN POMsgSet ON
+              POMsgSet.pofile=POFile.id
+            JOIN POTMsgSet ON
+              POTMsgSet.id=POMsgSet.potmsgset
+            JOIN POSubmission ON
+              POSubmission.pomsgset=POMsgSet.id
+            JOIN POTranslation ON
+              POTranslation.id=POSubmission.potranslation
+            JOIN POMsgID ON
+              POMsgID.id=POTMsgSet.primemsgid
+            LEFT OUTER JOIN POMsgIDSighting ON
+              POMsgIDSighting.potmsgset=POTMsgSet.id AND
+              POMsgIDSighting.pluralform=1
+            LEFT OUTER JOIN POMsgID AS POMsgID_Plural ON
+              POMsgID_Plural.id=POMsgIDSighting.pomsgid
+          WHERE POFile.id=%s
+          ORDER BY active, pluralform
+          '''
+        cur = cursor()
+        cur.execute(sql % sqlvalues(self.pofile))
+
+        for (msgid, msgid_plural, context, translation, date, isfuzzy,
+             publishedfuzzy, active, published, pluralform) in cur.fetchall():
+
+            if active:
+                look_at = self.messages
+            elif published:
+                look_at = self.published
+            else:
+                look_at = self.suggestions
+
+            if (msgid, context) in look_at:
+                message = look_at[(msgid, context)]
+            else:
+                message = TranslationMessage()
+                look_at[(msgid, context)] = message
+
+                message.msgid = msgid
+                message.context = context
+                message.msgid_plural = msgid_plural
+            message.addTranslation(pluralform, translation)
+            if active:
+                message.fuzzy = isfuzzy
+            elif published:
+                message.fuzzy = publishedfuzzy
+            else:
+                message.fuzzy = False
+
+    def isAlreadyTranslatedTheSame(self, message):
+        """Check whether this message is already translated in exactly
+        the same way.
+        """
+        (msgid, context) = (message.msgid, message.context)
+        if (msgid, context) in self.messages:
+            msg_in_db = self.messages[(msgid, context)]
+            if ((msg_in_db.msgid_plural != message.msgid_plural) or
+                (msg_in_db.fuzzy != ('fuzzy' in message.flags))):
+                return False
+            if len(message.translations) < len(msg_in_db.translations):
+                return False
+            for pluralform, translation in enumerate(message.translations):
+                if translation and len(msg_in_db.translations) <= pluralform:
+                    return False
+                elif translation != message.translations[pluralform]:
+                    return False
+            return True
+        else:
+            return False
+
+    def isAlreadyPublishedTheSame(self, message):
+        """Check whether this translation is already present in DB as
+        'published' translation, and thus needs no changing if we are
+        submitting a published update.
+        """
+        (msgid, context) = (message.msgid, message.context)
+        if ((msgid, context) in self.published) and self.is_published:
+            msg_in_db = self.published[(msgid, context)]
+            if ((msg_in_db.msgid_plural != message.msgid_plural) or
+                (msg_in_db.fuzzy != ('fuzzy' in message.flags))):
+                return False
+            if len(message.translations) < len(msg_in_db.translations):
+                return False
+            for pluralform, translation in enumerate(message.translations):
+                if translation and len(msg_in_db.translations) <= pluralform:
+                    return False
+                elif translation != message.translations[pluralform]:
+                    return False
+            return True
+        else:
+            return False
 
 class TranslationImporter:
     """Handle translation resources imports."""
@@ -55,7 +190,7 @@ class TranslationImporter:
         If the person is unknown in Launchpad, the account will be created but
         it will not have a password and thus, will be disabled.
         """
-        assert self.pofile is not None, 'self.pofile cannot be None'
+        #assert self.pofile is not None, 'self.pofile cannot be None'
 
         if email is None:
             return None
@@ -65,12 +200,13 @@ class TranslationImporter:
 
         if person is None:
             # We create a new user without a password.
-            comment = 'when importing the %s translation of %s' % (
-                self.pofile.language.displayname, self.potemplate.displayname)
+            #comment = 'when importing the %s translation of %s' % (
+            #    self.pofile.language.displayname, self.potemplate.displayname)
+            comment = ''
 
             person, dummy = personset.createPersonAndEmail(
-                email, PersonCreationRationale.POFILEIMPORT, displayname=name,
-                comment=comment)
+                str(email), PersonCreationRationale.POFILEIMPORT,
+                displayname=name, comment=comment)
 
         return person
 
@@ -173,8 +309,6 @@ class TranslationImporter:
                 # while the offline work was done.
                 raise NotExportedFromLaunchpad
 
-            # Expire old messages
-            self.pofile.expireAllMessages()
             # Update the header with the new one.
             self.pofile.updateHeader(translation_file.header)
             # Get last translator that touched this translation file.
@@ -188,12 +322,20 @@ class TranslationImporter:
 
         count = 0
 
+        if self.pofile is not None:
+            pofile_in_db = CurrentPOFileInDatabase(
+                self.pofile,
+                published=translation_import_queue_entry.is_published)
         errors = []
         for message in translation_file.messages:
             if not message.msgid:
                 # The message has no msgid, we ignore it and jump to next
                 # message.
                 continue
+            if self.pofile is not None:
+                if (pofile_in_db.isAlreadyTranslatedTheSame(message) or
+                    pofile_in_db.isAlreadyPublishedTheSame(message)):
+                    continue
 
             # Add the msgid.
             potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
