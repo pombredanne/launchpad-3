@@ -39,7 +39,7 @@
     >#help {top: 47px !important;}</style>
     <!--[if IE 7]>
       <style type="text/css">
-        #container {margin-top: 48px;}
+        #container {margin-top: 28px; position: static;}
         #portlets {left: 20px;}
       </style>
     <![endif]-->
