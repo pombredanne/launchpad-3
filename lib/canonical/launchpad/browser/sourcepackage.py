@@ -142,11 +142,7 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
 
     def translationdownload(self):
         text = 'Download translations'
-        enabled = False
-        for template in self.context.potemplates:
-            if template.iscurrent:
-                enabled = True
-                break
+        enabled = (len(self.context.currentpotemplates) > 0)
         return Link('+export', text, icon='download', enabled=enabled)
 
     def help(self):
@@ -163,19 +159,20 @@ class SourcePackageTranslationsExportView(BaseExportView):
 
     def processForm(self):
         """Process form submission requesting translations export."""
-        templates = [
-            template
-            for template in self.context.potemplates
-            if template.iscurrent]
+        templates = self.context.currentpotemplates
         pofiles = []
         for template in templates:
             pofiles += list(template.pofiles)
         return (templates, pofiles)
 
     def getDefaultFormat(self):
-        for template in self.context.potemplates:
-            if template.iscurrent:
-                return template.source_file_format
+        templates = self.context.currentpotemplates
+        if len(templates) > 0:
+            # We don't support exporting multiple formats for the same
+            # package.  If this package does have multiple current templates
+            # in different formats, we may as well pick the first one as the
+            # default.
+            return templates[0].source_file_format
         return None
 
 
