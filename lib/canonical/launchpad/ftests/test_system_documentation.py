@@ -286,9 +286,9 @@ def mailingListNewPerson(first_name):
     """
     variable_name = first_name.lower()
     full_name = first_name + ' Person'
-    # E.g. firstname.person@example.com will be an alternative address.
+    # E.g. firstname.person@example.com will be the preferred address.
     preferred_address = variable_name + '.person@example.com'
-    # E.g. aperson@example.org will be the preferred address.
+    # E.g. aperson@example.org will be an alternative address.
     alternative_address = variable_name[0] + 'person@example.org'
     person, email = getUtility(IPersonSet).createPersonAndEmail(
         preferred_address,

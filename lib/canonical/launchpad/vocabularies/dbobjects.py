@@ -751,7 +751,7 @@ class PersonActiveMembershipVocabulary:
 class ValidMailingListVocabulary(ValidTeamVocabulary):
     """The set of all active mailing lists."""
 
-    displayname = 'Select a valid (i.e. active) mailing list.'
+    displayname = 'Select an active mailing list.'
 
     def search(self, text=None):
         """Search for active mailing lists.
