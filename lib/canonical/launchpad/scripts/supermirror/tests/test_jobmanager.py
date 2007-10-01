@@ -144,7 +144,7 @@ class TestJobManagerInLaunchpad(TrialTestCase):
         else:
             targetdir = os.path.join(self.testdir, branch_id_to_path(target))
         protocol = PullerWorkerProtocol(
-            sys.stdout, sys.stderr, logging.getLogger(), branch_status_client)
+            sys.stdout, sys.stderr, logging.getLogger())
         return BranchToMirror(
                 branchdir, targetdir, target, unique_name, branch_type=None,
                 protocol=protocol)

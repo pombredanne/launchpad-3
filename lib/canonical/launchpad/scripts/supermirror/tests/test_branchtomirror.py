@@ -68,7 +68,7 @@ class BranchToMirrorMixin:
         if client is None:
             client = BranchStatusClient()
         protocol = PullerWorkerProtocol(
-            StringIO(), StringIO(), logging.getLogger(), client)
+            StringIO(), StringIO(), logging.getLogger())
         return BranchToMirror(
             src_dir, dest_dir, branch_id=1, unique_name='foo/bar/baz',
             branch_type=branch_type, protocol=protocol)
@@ -103,18 +103,6 @@ class TestBranchToMirror(unittest.TestCase, BranchToMirrorMixin):
         self.assertEqual(
             tree.last_revision(), mirrored_branch.last_revision())
 
-    def testMirrorRecordsRevisionInDatabase(self):
-        # Check that mirror() records the latest mirrored revision in the
-        # database.
-        to_mirror = self.makeBranchToMirror()
-        createbranch(to_mirror.source)
-        to_mirror.mirror()
-        transaction.abort()
-        branch = database.Branch.get(1)
-        mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
-        self.assertEqual(
-            branch.last_mirrored_id, mirrored_branch.last_revision())
-
     def testMirrorEmptyBranch(self):
         # Check that we can mirror an empty branch, and that the
         # last_mirrored_id for an empty branch can be distinguished from an
@@ -130,12 +118,6 @@ class TestBranchToMirror(unittest.TestCase, BranchToMirrorMixin):
         to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(None, mirrored_branch.last_revision())
-
-        # make sure that the last mirrored revision is recorded as a string
-        transaction.abort()
-        branch = database.Branch.get(1)
-        self.assertNotEqual(None, branch.last_mirrored_id)
-        self.assertEqual(NULL_REVISION, branch.last_mirrored_id)
 
 
 class TestBranchToMirrorFormats(TestCaseWithRepository, BranchToMirrorMixin):
@@ -259,15 +241,8 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir,
         non_existent_source = os.path.abspath('nonsensedir')
         my_branch = self.makeBranchToMirror(
             src_dir=non_existent_source, dest_dir="non-existent-destination")
-        # Ensure that we have no errors muddying up the test by sneaking
-        # around the back of the interface and recording a false success.
-        my_branch.protocol.branch_status_client.startMirroring(1)
-        my_branch.protocol.branch_status_client.mirrorComplete(
-            1, NULL_REVISION)
         my_branch.mirror()
-        transaction.abort()
-        branch = database.Branch.get(1)
-        self.assertEqual(1, branch.mirror_failures)
+        # XXX - assert this fails
 
     def testMissingFileRevisionData(self):
         self.build_tree(['missingrevision/',
@@ -282,17 +257,11 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir,
         tree.branch.repository.weave_store.put_weave(
             "myid", Weave(weave_name="myid"),
             tree.branch.repository.get_transaction())
-        # now try mirroring this branch.
-        client = BranchStatusClient()
-        # clear the error status
-        client.mirrorComplete(1, NULL_REVISION)
         source_url = os.path.abspath('missingrevision')
         my_branch = self.makeBranchToMirror(
             src_dir=source_url, dest_dir="non-existent-destination")
         my_branch.mirror()
-        transaction.abort()
-        branch = database.Branch.get(1)
-        self.assertEqual(1, branch.mirror_failures)
+        # XXX - assert that it failed.
 
 
 class StubbedBranchStatusClient(BranchStatusClient):
@@ -836,9 +805,7 @@ class TestWorkerProtocol(unittest.TestCase, BranchToMirrorMixin):
         self.error = StringIO()
         self.resetBuffers()
         logger = logging.getLogger()
-        client = StubbedBranchStatusClient()
-        self.protocol = PullerWorkerProtocol(
-            self.output, self.error, logger, client)
+        self.protocol = PullerWorkerProtocol(self.output, self.error, logger)
         self.branch_to_mirror = self.makeBranchToMirror()
 
     def tearDown(self):

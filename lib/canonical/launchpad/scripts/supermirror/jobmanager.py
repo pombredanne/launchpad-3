@@ -33,9 +33,11 @@ class BranchStatusClient:
         return self.proxy.callRemote('getBranchPullQueue', branch_type)
 
     def startMirroring(self, branch_id):
+        print 'startMirroring', branch_id
         return self.proxy.callRemote('startMirroring', branch_id)
 
     def mirrorComplete(self, branch_id, last_revision_id):
+        print 'mirrorComplete', branch_id
         return self.proxy.callRemote(
             'mirrorComplete', branch_id, last_revision_id)
 
@@ -111,6 +113,7 @@ class JobManager:
         return deferred
 
     def run(self, logger):
+        self.logger = logger
         deferred = self.branch_status_client.getBranchPullQueue(
             self.branch_type.name)
         deferred.addCallback(self._run, logger)
@@ -120,10 +123,10 @@ class JobManager:
         return self.branch_status_client.startMirroring(branch_id)
 
     def mirrorFailed(self, branch_id, reason):
-        return self.branch_status_client.mirrorFailed(branch_id, reason)
+         return self.branch_status_client.mirrorFailed(branch_id, reason)
 
     def mirrorSucceeded(self, branch_id, revision_id):
-        return self.branch_status_client.mirrorComplete(
+         return self.branch_status_client.mirrorComplete(
             branch_id, revision_id)
 
     def _finishedRunning(self, ignored, logger):

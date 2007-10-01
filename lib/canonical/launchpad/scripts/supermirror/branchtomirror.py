@@ -91,11 +91,10 @@ def get_canonical_url(unique_name):
 
 class PullerWorkerProtocol:
 
-    def __init__(self, output, error, logger, branch_status_client):
+    def __init__(self, output, error, logger):
         self.output = output
         self.error = error
         self.logger = logger
-        self.branch_status_client = branch_status_client
 
     def sendNetstring(self, string):
         self.output.write('%d:%s,' % (len(string), string))
@@ -124,21 +123,16 @@ class PullerWorkerProtocol:
             'Mirroring branch %d: %s to %s',
             branch_to_mirror.branch_id, branch_to_mirror.source,
             branch_to_mirror.dest)
-        self.branch_status_client.startMirroring(branch_to_mirror.branch_id)
 
     def mirrorSucceeded(self, branch_to_mirror, last_revision):
         self.sendNetstring('mirrorSucceeded')
         self.sendNetstring(str(last_revision))
-        self.branch_status_client.mirrorComplete(
-            branch_to_mirror.branch_id, last_revision)
         self.logger.info('Successfully mirrored to rev %s', last_revision)
 
     def mirrorFailed(self, branch_to_mirror, message):
         self.sendNetstring('mirrorFailed')
         self.sendNetstring(str(message))
         self._record_oops(branch_to_mirror, message)
-        self.branch_status_client.mirrorFailed(
-            branch_to_mirror.branch_id, str(message))
         self.logger.info('Recorded failure: %s', str(message))
 
 

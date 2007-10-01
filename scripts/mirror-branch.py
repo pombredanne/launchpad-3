@@ -6,7 +6,6 @@ import sys
 
 from optparse import OptionParser
 
-from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts import logger_options, logger
@@ -51,7 +50,6 @@ if __name__ == '__main__':
         BranchType.IMPORTED: 'import'
         }
 
-    branch_status_client = BranchStatusClient()
     source_url = arguments[0]
     destination_url = arguments[1]
     branch_id = arguments[2]
@@ -74,8 +72,7 @@ if __name__ == '__main__':
     shut_up_deprecation_warning()
     force_bzr_to_use_urllib()
 
-    protocol = PullerWorkerProtocol(
-        sys.stdout, sys.stderr, log, branch_status_client)
+    protocol = PullerWorkerProtocol(sys.stdout, sys.stderr, log)
     BranchToMirror(
         source_url, destination_url, int(branch_id), unique_name, branch_type,
         protocol).mirror()
