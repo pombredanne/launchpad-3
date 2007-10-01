@@ -163,8 +163,6 @@ this bug that caused us to auto-subscribe them.
 
 For example, Steve Alexander can currently subscribe to bug #3.
 
-  >>> from zope.testbrowser.testing import Browser
-
   >>> stevea_browser = setupBrowser(
   ...   auth="Basic steve.alexander@ubuntulinux.com:test")
   >>> stevea_browser.open("http://launchpad.dev/bugs/3")

@@ -66,8 +66,6 @@ Ubuntu needs a Bug Contact first of all:
 
 The new Bug Contact for Ubuntu can change the status to Won't Fix:
 
-    >>> from zope.testbrowser.testing import Browser
-
     >>> bug_contact_browser = setupBrowser(
     ...     auth='Basic test@canonical.com:test')
 

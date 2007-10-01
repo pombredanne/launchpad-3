@@ -2,7 +2,6 @@ Only the bug contact, or a user with launchpd.Edit on the respective
 product or distro, can edit Importance.
 
     >>> from zope.component import getUtility
-    >>> from zope.testbrowser.testing import Browser
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.ftests import login, logout

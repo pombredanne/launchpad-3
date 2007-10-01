@@ -8,7 +8,6 @@ no-priv cannot approve or decline his nomination, because he does not
 have the launchpad.Driver permission.
 
     >>> from zope.component import getView, getUtility
-    >>> from zope.testbrowser.testing import Browser
 
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (
