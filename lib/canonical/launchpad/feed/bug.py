@@ -1,24 +1,22 @@
-# Copyright Canonical
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+
+"""Bug feed (syndication) views."""
 
 __metaclass__ = type
 
 __all__ = [
     'PersonBugsFeed',
-    'ProductBugsFeed',
+    'ProjectProductBugsFeed',
     'SearchBugs',
     ]
 
 import cgi
 from datetime import datetime
+
 from zope.app.pagetemplate import ViewPageTemplateFile
 
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
-
-from canonical.lp import dbschema
-from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import (
-    IPerson, IProduct)
 from canonical.launchpad.webapp import canonical_url, LaunchpadFormView
 from zope.app.pagetemplate import ViewPageTemplateFile
 from canonical.launchpad.webapp.publisher import LaunchpadView
@@ -28,185 +26,120 @@ from canonical.launchpad.browser import (
     BugTaskSearchListingView,
     PersonRelatedBugsView)
 
+
 class BugFeedContentView(LaunchpadView):
-    template = ViewPageTemplateFile('templates/bug.pt')
+    """View for a bug feed contents."""
+
+    short_template = ViewPageTemplateFile('templates/bug.pt')
+    long_template = ViewPageTemplateFile('templates/bug-verbose.pt')
+
+    def __init__(self, context, request, verbose=False):
+        super(BugFeedContentView, self).__init__(context, request)
+        self.verbose = verbose
+
     def getBugCommentsForDisplay(self):
         bug_task_view = BugTaskView(self.context.bugtasks[0], self.request)
         return bug_task_view.getBugCommentsForDisplay()
 
-class ProductBugsFeed(FeedBase):
+    def render(self):
+        if self.verbose:
+            return self.long_template()
+        else:
+            return self.short_template()
 
-    # XXX, bac - This variable is currently not used.
-    usedfor = IProduct
 
-    # Will be served as:
-    #     $product/latest-bugs.atom, and as
-    # XXX    $product/latest-bugs.html, and as
-    # XXX    $product/latest-bugs.js
-    #feed_name = 'latest-bugs'
-    feed_name = 'latest-bugs.atom'
+class BugsFeedBase(FeedBase):
+    """Abstract class for bug feeds."""
 
     max_age = 30 * MINUTES
+    verbose = False
+
+    def getURL(self):
+        """Get the identifying URL for the feed."""
+        return "%s/%s" % (canonical_url(self.context), self.feed_name)
+
+    def getLogo(self):
+        return "http://launchpad.dev/+icing/app-bugs.gif"
+
+    def getItems(self, quantity=5):
+        """Get the items for the feed, limited by `quantity`.
+
+        The result is assigned to self.items for caching.
+        """
+        if self.items is None:
+            items = self.getRawItems(quantity)
+            self.items = [self.itemToFeedEntry(item) for item in items]
+        return self.items
+
+    def itemToFeedEntry(self, item):
+        bugtask = item
+        bug = bugtask.bug
+        title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
+        url = canonical_url(bugtask, rootsite="bugs")
+        content_view = BugFeedContentView(bug, self.request, self.verbose)
+        entry = FeedEntry(title = title,
+                          id_ = url,
+                          link_alternate = url,
+                          date_updated = bug.date_last_updated,
+                          date_published = bugtask.datecreated,
+                          authors = [FeedPerson(bug.owner)],
+                          content = FeedTypedData(content_view.render(),
+                                                  content_type="xhtml"))
+        return entry
+
+
+class ProjectProductBugsFeed(BugsFeedBase):
+    """Bug feeds for projects and products."""
+
+    feed_name = "latest-bugs.atom"
 
     def getTitle(self):
-        # Title of the whole feed.
+        """Title for the feed."""
         return "Bugs in %s" % self.context.displayname
 
-    def getURL(self):
-        # URL to the homepage of the object represented by the feed.
-        #return canonical_url(self.context, rootsite = "bugs")
-        return "%s/%s" % (canonical_url(self.context), self.feed_name)
-
-    def getItems(self, quantity=5):
-        # Items in the feed.  The number of items is configured separately,
-        # either globally for Launchpad as a whole, or in the ZCML.
-        # If we find we have a requirement for different numbers of items per
-        # feed, we'll include it in the class definition.
-        if self.items is None:
-            items = self.context.getLatestBugTasks(quantity=quantity)
-            self.items = [self.itemToFeedEntry(item) for item in items]
-        return self.items
-
-    def getLogo(self):
-        return "http://launchpad.dev/+icing/app-bugs.gif"
-
-    def itemToFeedEntry(self, item):
-        bugtask = item
-        bug = bugtask.bug
-        title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
-        url = canonical_url(bugtask, rootsite="bugs")
-        content_view = BugFeedContentView(bug, self.request)
-        entry = FeedEntry(title = title,
-                          id_ = url,
-                          link_alternate = url,
-                          date_updated = bug.date_last_updated,
-                          date_published = bugtask.datecreated,
-                          authors = [FeedPerson(bug.owner)],
-                          content = FeedTypedData(content_view.render(),
-                                                  content_type="xhtml"))
-        return entry
+    def getRawItems(self, quantity):
+        """Get the raw set of items for the feed."""
+        return self.context.getLatestBugTasks(quantity=quantity)
 
 
-class PersonBugsFeed(FeedBase, PersonRelatedBugsView):
+class PersonBugsFeed(BugsFeedBase):
+    """Bug feeds for a person."""
 
-    usedfor = IPerson
+    # see PersonRelatedBugsView
+    # XXX, bac: this class is currently broken
 
-    # Will be served as:
-    #     $product/latest-bugs.atom, and as
-    # XXX    $product/latest-bugs.html, and as
-    # XXX    $product/latest-bugs.js
-    #feed_name = 'latest-bugs'
-    feed_name = 'latest-bugs.atom'
-
-    max_age = 30 * MINUTES
+    feed_name = "latest-bugs.atom"
 
     def getTitle(self):
-        # Title of the whole feed.
+        """Title for the feed."""
         return "Bugs for %s" % self.context.displayname
 
-    def getURL(self):
-        # URL to the homepage of the object represented by the feed.
-        #return canonical_url(self.context, rootsite = "bugs")
-        return "%s/%s" % (canonical_url(self.context), self.feed_name)
-
-    def getItems(self, quantity=5):
-        # Items in the feed.  The number of items is configured separately,
-        # either globally for Launchpad as a whole, or in the ZCML.
-        # If we find we have a requirement for different numbers of items per
-        # feed, we'll include it in the class definition.
-        if self.items is None:
-            #items = self.context.getLatestBugs(quantity=quantity)
-            items = self.search()
-            self.items = [self.itemToFeedEntry(item) for item in items]
-        return self.items
-
-    def getLogo(self):
-        return "http://launchpad.dev/+icing/app-bugs.gif"
-
-    def itemToFeedEntry(self, item):
-        bugtask = item
-        bug = bugtask.bug
-        title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
-        url = canonical_url(bugtask, rootsite="bugs")
-        content_view = BugFeedContentView(bug, self.request)
-        entry = FeedEntry(title = title,
-                          id_ = url,
-                          link_alternate = url,
-                          date_updated = bug.date_last_updated,
-                          date_published = bugtask.datecreated,
-                          authors = [FeedPerson(bug.owner)],
-                          content = FeedTypedData(content_view.render(),
-                                                  content_type="xhtml"))
-        return entry
+    def getRawItems(self, quantity=5):
+        """Get the raw set of items for the feed."""
+        return self.search(quantity)
 
 
-class SearchBugs(FeedBase):
+class SearchBugs(BugsFeedBase):
+    """Bug feeds for a generic search.
 
-    # Will be served as:
-    #     $product/latest-bugs.atom, and as
-    # XXX    $product/latest-bugs.html, and as
-    # XXX    $product/latest-bugs.js
-    #feed_name = 'latest-bugs'
-    feed_name = 'search-bugs.atom'
+    Searches are of the form produced by an advanced bug search, e.g.
+    http://bugs.launchpad.dev/bugs/search-bugs.atom?field.searchtext=&
+        search=Search+Bug+Reports&field.scope=all&field.scope.target=
+    """
 
-    max_age = 30 * MINUTES
+    feed_name = "search-bugs.atom"
 
     def initialize(self):
         self.task_search_listing_view = BugsBugTaskSearchListingView(self.context, self.request)
         self.task_search_listing_view.initialize()
-        query_string = self.request.get('QUERY_STRING')
 
-    def search(self, searchtext=None, context=None, extra_params=None):
-        """Return an ITableBatchNavigator for the GET search criteria.
+    def getRawItems(self, quantity):
+        """Perform the search."""
 
-        If :searchtext: is None, the searchtext will be gotten from the
-        request.
-
-        :extra_params: is a dict that provides search params added to the
-        search criteria taken from the request. Params in :extra_params: take
-        precedence over request params.
-        """
-        #search_params = self.task_search_listing_view._getDefaultSearchParams()
-        #tasks =  self.task_search_listing_view.
-        results =  self.task_search_listing_view.search(searchtext, context, extra_params)
+        results =  self.task_search_listing_view.search(searchtext=None, context=None, extra_params=None)
         items = results.getBugListingItems()
-        return items
+        return items[:quantity]
 
     def getTitle(self):
-        # Title of the whole feed.
+        """Title for the feed."""
         return "Bugs from custom search."
-
-    def getURL(self):
-        # URL to the homepage of the object represented by the feed.
-        #return canonical_url(self.context, rootsite = "bugs")
-        return "%s/%s" % (canonical_url(self.context), self.feed_name)
-
-    def getItems(self, quantity=5):
-        # Items in the feed.  The number of items is configured separately,
-        # either globally for Launchpad as a whole, or in the ZCML.
-        # If we find we have a requirement for different numbers of items per
-        # feed, we'll include it in the class definition.
-        if self.items is None:
-            #items = self.context.getLatestBugs(quantity=quantity)
-            items = self.search()
-            self.items = [self.itemToFeedEntry(item) for item in items]
-        return self.items
-
-    def getLogo(self):
-        return "http://launchpad.dev/+icing/app-bugs.gif"
-
-    def itemToFeedEntry(self, item):
-        bugtask = item
-        bug = bugtask.bug
-        title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
-        url = canonical_url(bugtask, rootsite="bugs")
-        content_view = BugFeedContentView(bug, self.request)
-        entry = FeedEntry(title = title,
-                          id_ = url,
-                          link_alternate = url,
-                          date_updated = bug.date_last_updated,
-                          date_published = bugtask.datecreated,
-                          authors = [FeedPerson(bug.owner)],
-                          content = FeedTypedData(content_view.render(),
-                                                  content_type="xhtml"))
-        return entry
