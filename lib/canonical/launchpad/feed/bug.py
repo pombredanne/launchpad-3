@@ -115,7 +115,7 @@ class BugsFeedBase(FeedBase):
 
     def render(self):
         if self.format == 'atom':
-            return super(BugFeedContentView, self)
+            return super(BugsFeedBase, self).render()
         else:
             return ViewPageTemplateFile('templates/bug-html-feed.pt')(self)
 

@@ -17,8 +17,10 @@ __all__ = [
     ]
 
 from datetime import datetime
+import time
 
 from zope.app.pagetemplate import ViewPageTemplateFile
+from zope.app.datetimeutils import rfc1123_date 
 
 # XXX - bac - 20 Sept 2007, modules in canonical.lazr should not import from
 # canonical.launchpad, but we're doing it here as an expediency to get a
@@ -107,6 +109,15 @@ class FeedBase(LaunchpadFormView):
         # XXX, bac - This call looks funny, but the callable template must be
         # passed a reference to the view.  The first use of self is to
         # reference the property.
+        expires = rfc1123_date(time.time() + self.max_age)
+        # self.getUpdated() can't run until after initialize() runs
+        last_modified = rfc1123_date(
+                            time.mktime(self.getUpdated().timetuple()))
+        response = self.request.response
+        response.setHeader('Expires', expires)
+        response.setHeader('Cache-Control', 'max-age=%d' % self.max_age)
+        response.setHeader('X-Cache-Control', 'max-age=%d' % self.max_age)
+        response.setHeader('Last-Modified', last_modified)
         return self.template(self)
 
 class FeedEntry:
