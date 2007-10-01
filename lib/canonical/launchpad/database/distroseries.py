@@ -23,7 +23,7 @@ from sqlobject import (
 from canonical.cachedproperty import cachedproperty
 
 from canonical.database.multitablecopy import MultiTableCopy
-from canonical.database.postgresql import drop_tables
+from canonical.database.postgresql import allow_sequential_scans, drop_tables
 from canonical.database.sqlbase import (cursor, flush_database_caches,
     flush_database_updates, quote_like, quote, SQLBase, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -352,14 +352,46 @@ def copy_active_translations_as_update(child, transaction, logger):
 
     # ### POMsgSet ###
 
-    def prepare_pomsgset_pouring(holding_table, source_table):
-        """Prevent pouring of `POMsgSet`s whose `POFile`s weren't poured."""
-        # POFile has already been poured by the time this gets invoked; we
-        # recognize references to deleted POFiles by the fact that they don't
-        # exist in the POFile source table.
-        cursor().execute(
-            "DELETE FROM %s WHERE pofile NOT IN (SELECT id FROM POFile)"
-            % holding_table)
+    class PreparePOMsgSetPouring:
+        """Prevent pouring of `POMsgSet`s whose `POFile`s weren't poured.
+
+        This is a callback, but it takes the form of a class so it can carry
+        some extra parameters.
+        """
+        def __init__(self, lowest_pofile, highest_pofile):
+            """Accept parameters that help speed up actual cleanup work.
+
+            :param lowest_pofile: lowest POFile id that we'll be copying
+                `POMsgSet`s for.
+            :param highest_pofile: highest POFile id that we'll be copying
+                `POMsgSet`s for.
+            """
+            self.lowest_pofile = quote(lowest_pofile)
+            self.highest_pofile = quote(highest_pofile)
+
+        def __call__(self, holding_table, source_table):
+            cur = cursor()
+            # What we'll be doing here probably requires a sequential scan,
+            # but the MultiTableCopy disallows those because of index
+            # degradation while pouring.  Right now, we want to give the
+            # database server the freedom to choose for itself.
+            allow_sequential_scans(cur, True)
+            # POFile has already been poured by the time this gets invoked; we
+            # recognize references to deleted POFiles by the fact that they
+            # don't exist in the POFile source table.
+            cur.execute("""
+                DELETE FROM %s
+                WHERE
+                    pofile >= %s AND
+                    pofile <= %s AND
+                    pofile NOT IN (
+                        SELECT id
+                        FROM POFile
+                        WHERE id >= %s AND id <= %s)
+                """ % (
+                    holding_table, self.lowest_pofile, self.highest_pofile,
+                    self.lowest_pofile, self.highest_pofile))
+            allow_sequential_scans(cur, False)
 
     def prepare_pomsgset_batch(
         holding_table, source_table, batch_size, start_id, end_id):
@@ -404,6 +436,13 @@ def copy_active_translations_as_update(child, transaction, logger):
                 pfh.new_id = pms.pofile
             )
         """ % query_parameters
+
+    cur = cursor()
+    cur.execute("SELECT min(new_id), max(new_id) FROM %s"
+        % holding_tables['pofile'])
+    lowest_pofile, highest_pofile = cur.fetchone()
+    prepare_pomsgset_pouring = PreparePOMsgSetPouring(
+        lowest_pofile, highest_pofile)
 
     copier.extract(
         'POMsgSet', joins=['POFile'], inert_where=pomsgset_inert_where,
