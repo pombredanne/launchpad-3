@@ -1,0 +1,9 @@
+= Code Import Jobs =
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ICodeImportJob, ICodeImportJobSet)
+
+    >>> job_set = getUtility(ICodeImportJobSet)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(ICodeImportJobSet, job_set)
+    True
