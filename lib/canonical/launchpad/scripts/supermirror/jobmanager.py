@@ -2,13 +2,11 @@
 
 import os
 import socket
-import subprocess
 import sys
 
 from twisted.internet import defer, error, reactor
 from twisted.internet.protocol import ProcessProtocol
 from twisted.protocols.basic import NetstringReceiver
-from twisted.protocols.policies import TimeoutMixin
 from twisted.python import failure
 from twisted.web.xmlrpc import Proxy
 
