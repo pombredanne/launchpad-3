@@ -254,12 +254,6 @@ class LaunchpadRequestPublicationFactory:
                     self._thread_local.host = (
                         config.launchpad.vhosts.xmlrpc_private.hostname)
                     return True
-                if (server.address[1] == port and
-                    server.type == 'FeedHTTP'):
-                    # This request came over the feeds port.
-                    self._thread_local.host = (
-                        config.launchpad.vhosts.feeds.hostname)
-                    return True
 
         host = environment['HTTP_HOST']
         if ":" in host:
