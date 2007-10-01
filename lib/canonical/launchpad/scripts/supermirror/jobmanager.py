@@ -121,6 +121,13 @@ class JobManager:
     def startMirroring(self, branch_id):
         return self.branch_status_client.startMirroring(branch_id)
 
+    def mirrorFailed(self, branch_id, reason):
+        return self.branch_status_client.mirrorFailed(branch_id, reason)
+
+    def mirrorSucceeded(self, branch_id, revision_id):
+        return self.branch_status_client.mirrorComplete(
+            branch_id, revision_id)
+
     def _finishedRunning(self, ignored, logger):
         logger.info('Mirroring complete')
 

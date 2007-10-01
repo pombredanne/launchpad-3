@@ -7,17 +7,15 @@ import unittest
 
 import bzrlib
 
-from twisted.conch.ssh.common import NS
+from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting import branch_id_to_path
-from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror, PullerWorkerProtocol)
 from canonical.launchpad.scripts.supermirror.tests import createbranch
 from canonical.launchpad.scripts.supermirror import jobmanager
-from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.testing import LaunchpadFunctionalLayer, reset_logging
 
@@ -232,19 +230,73 @@ class TestPullerMasterProtocol(unittest.TestCase):
 class TestMirroringEvents(TrialTestCase):
     layer = LaunchpadFunctionalLayer
 
+    class BranchStatusClient:
+
+        def __init__(self):
+            self.calls = []
+
+        def startMirroring(self, branch_id):
+            self.calls.append(('startMirroring', branch_id))
+            return defer.succeed(None)
+
+        def mirrorComplete(self, branch_id, revision_id):
+            self.calls.append(('mirrorComplete', branch_id, revision_id))
+            return defer.succeed(None)
+
+        def mirrorFailed(self, branch_id, revision_id):
+            self.calls.append(('mirrorFailed', branch_id, revision_id))
+            return defer.succeed(None)
+
     def setUp(self):
-        self.authserver = AuthserverTacTestSetup()
-        self.authserver.setUp()
-        self.status_client = jobmanager.BranchStatusClient()
+        self.status_client = TestMirroringEvents.BranchStatusClient()
         self.eventHandler = jobmanager.JobManager(
             self.status_client, BranchType.HOSTED)
-
-    def tearDown(self):
-        self.authserver.tearDown()
+        self.arbitrary_branch_id = 1
 
     def test_startMirroring(self):
-        arbitrary_branch_id = 1
-        self.eventHandler.startMirroring(arbitrary_branch_id)
+        deferred = self.eventHandler.startMirroring(self.arbitrary_branch_id)
+
+        def checkMirrorStarted(ignored):
+            self.assertEqual(
+                [('startMirroring', self.arbitrary_branch_id)],
+                self.status_client.calls)
+
+        return deferred.addCallback(checkMirrorStarted)
+
+    def test_mirrorComplete(self):
+        arbitrary_revision_id = 'rev1'
+        deferred = self.eventHandler.startMirroring(self.arbitrary_branch_id)
+
+        def mirrorSucceeded(ignored):
+            self.status_client.calls = []
+            return self.eventHandler.mirrorSucceeded(
+                self.arbitrary_branch_id, arbitrary_revision_id)
+        deferred.addCallback(mirrorSucceeded)
+
+        def checkMirrorCompleted(ignored):
+            self.assertEqual(
+                [('mirrorComplete', self.arbitrary_branch_id,
+                  arbitrary_revision_id)],
+                self.status_client.calls)
+        return deferred.addCallback(checkMirrorCompleted)
+
+    def test_mirrorFailed(self):
+        arbitrary_error_message = 'failed'
+
+        deferred = self.eventHandler.startMirroring(self.arbitrary_branch_id)
+
+        def mirrorFailed(ignored):
+            self.status_client.calls = []
+            return self.eventHandler.mirrorFailed(
+                self.arbitrary_branch_id, arbitrary_error_message)
+        deferred.addCallback(mirrorFailed)
+
+        def checkMirrorFailed(ignored):
+            self.assertEqual(
+                [('mirrorFailed', self.arbitrary_branch_id,
+                  arbitrary_error_message)],
+                self.status_client.calls)
+        return deferred.addCallback(checkMirrorFailed)
 
 
 def test_suite():
