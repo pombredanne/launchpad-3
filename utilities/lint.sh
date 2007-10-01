@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Runs xmlint, pyflakes and pylint on files changed from parent branch.
-# Use -v to run pylint under stricter conditions with additional messages.
+# Use '-v' to run pylint under stricter conditions with additional messages.
 
 VERBOSITY=0
 if [ "$1" == "-v" ]; then
