@@ -33,12 +33,13 @@ class BaseExportView(LaunchpadView):
 
     def initialize(self):
         self.request_set = getUtility(IPOExportRequestSet)
+
+        # Ask our derived class to figure out the default file format for this
+        # export.  We do that here because the method may issue warnings,
+        # which must be attached to our response early on.
+        self.default_format = self.getDefaultFormat()
+
         if self.request.method != "POST":
-            # Presumably this is a GET.  The only thing we need to do for that
-            # is ask our derived class to figure out the default file format
-            # for this export.  We do that here because the method may issue
-            # warnings, which must be attached to our response early on.
-            self.default_format = self.getDefaultFormat()
             return
 
         bad_format_message = _("Please select a valid format for download.")
