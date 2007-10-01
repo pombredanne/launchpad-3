@@ -1,9 +1,20 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <tal:do-this-first tal:content="view/processForm" />
 
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/freeform" 
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -16,7 +27,7 @@
 
       <p>You&#8217;re trying to merge the Launchpad account named
       <code tal:content="view/dupe/name">foo</code> into the
-      account named <code tal:content="context/requester/name">bar</code>.
+      account named <code tal:content="context/requester/name">bar</code>.</p>
 
       <form name="merge" action="" method="POST">
         <input type="submit" name="VALIDATE" value="Confirm" />
@@ -27,3 +38,4 @@
 
 </body>
 </html>
+</tal:root>

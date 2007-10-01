@@ -148,9 +148,7 @@ Japanese will be a supported language for Thunderbird Questions,
 which allows us to test the supported languages behaviour for
 non-English languages. Dafydd speaks Japanese, so we will use him.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> daf_browser = Browser()
-    >>> daf_browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')
+    >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:daf')
     >>> daf_browser.open('http://launchpad.dev/~daf/+editlanguages')
     >>> daf_browser.title
     "Dafydd Harries's preferred languages"

@@ -217,7 +217,7 @@ owner-product-name is unique for all branches.
 For this example, we will use ~name12/gnome-terminal/main. Check that it
 already exists.
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open(
     ...     'http://launchpad.dev/~name12/+branch/gnome-terminal/main')
 

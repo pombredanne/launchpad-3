@@ -12,8 +12,7 @@ from zope.interface.verify import verifyObject
 from canonical.launchpad.translationformat import (
     TranslationExporter, ExportedTranslationFile)
 from canonical.launchpad.interfaces import (
-    IExportedTranslationFile, ITranslationExporter)
-from canonical.lp.dbschema import TranslationFileFormat
+    IExportedTranslationFile, ITranslationExporter, TranslationFileFormat)
 from canonical.testing import LaunchpadZopelessLayer
 
 

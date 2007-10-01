@@ -63,7 +63,7 @@ Check that this submission is the published one
 
 Test the origin enum column.
 
-    >>> from canonical.lp.dbschema import RosettaTranslationOrigin
+    >>> from canonical.launchpad.interfaces import RosettaTranslationOrigin
     >>> submission.origin == RosettaTranslationOrigin.SCM
     True
 

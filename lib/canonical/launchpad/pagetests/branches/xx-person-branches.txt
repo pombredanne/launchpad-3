@@ -9,7 +9,7 @@ teams that the person is participating in.
 
 First, check that the condensed branch listing page works:
 
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
   >>> browser.open('http://code.launchpad.dev/~name12')
   >>> print browser.contents
   <!DOCTYPE...
