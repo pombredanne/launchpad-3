@@ -14,8 +14,7 @@ from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, ITranslationFormatImporter,
-    ITranslationImportQueue)
-from canonical.lp.dbschema import TranslationFileFormat
+    ITranslationImportQueue, TranslationFileFormat)
 from canonical.testing import LaunchpadZopelessLayer
 
 from canonical.launchpad.translationformat.tests.test_gettext_po_importer \

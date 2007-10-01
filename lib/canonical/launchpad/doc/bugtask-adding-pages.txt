@@ -160,6 +160,44 @@ add one.
     >>> len(add_task_view.request.response.notifications)
     0
 
+XXX: Because of bug 140526, it's possible to have a package linked to a series
+of an inactive upstream. In a case like that we must ask the user to specify
+the upstream, but we also display a warning telling the user there's a
+package linked to an inactive upstream. -- Guilherme Salgado, 2007-09-18
+
+    # Create the view manually just so we can get the correct upstream
+    # easily.
+    >>> from canonical.launchpad.browser.bugalsoaffects import (
+    ...     ChooseProductStep)
+    >>> view = ChooseProductStep(
+    ...     ubuntu_firefox_task, LaunchpadTestRequest(method='GET', form={}))
+    >>> upstream = view._getUpstream(view.context.target)
+    >>> upstream.active
+    True
+
+    # Mark the upstream as inactive.
+    >>> login('foo.bar@canonical.com')
+    >>> upstream.active = False
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(upstream).syncUpdate()
+
+    >>> add_task_view = get_and_setup_view(
+    ...     ubuntu_firefox_task, '+choose-affected-product', form={},
+    ...     method='GET')
+
+    >>> add_task_view.step_name
+    'choose_product'
+    >>> print add_task_view.widgets['product']._getFormInput()
+    None
+    >>> for notification in add_task_view.request.response.notifications:
+    ...     print notification.message.strip()
+    This package is linked to an inactive upstream...
+
+    # Mark the upstream back as active.
+    >>> upstream.active = True
+    >>> removeSecurityProxy(upstream).syncUpdate()
+    >>> login('foo.bar@canonical.com')
+
 Let's take a look at the second step now, where we may enter the URL of
 the remote bug and confirm the bugtask creation.
 In order to show that all the events get fired off, let's create an

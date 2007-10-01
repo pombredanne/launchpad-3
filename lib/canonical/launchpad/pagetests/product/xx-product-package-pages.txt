@@ -1,7 +1,5 @@
 Launchpad can show you a product's packages by distribution, with links to each.
 
-    >>> from zope.testbrowser.testing import Browser
-
     >>> anon_browser.open(
     ...     'http://launchpad.dev/evolution/+distributions')
     >>> anon_browser.url
@@ -22,8 +20,7 @@ It can also show the packages by product series. And if you have permission (for
 example, you're the owner of the product), Launchpad lets you register packages
 for each series. In this case, mark@hbd.com is the owner of Evolution.
 
-    >>> evo_owner = Browser()
-    >>> evo_owner.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> evo_owner = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> evo_owner.open('http://launchpad.dev/evolution/+packages')
     >>> evo_owner.url
     'http://launchpad.dev/evolution/+packages'

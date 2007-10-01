@@ -515,7 +515,8 @@ def copy_active_translations_as_update(child, transaction, logger):
         """
     copier.extract(
         'POSubmission', joins=['POMsgSet'],
-        where_clause="active AND pms.iscomplete",
+        where_clause="""
+            active AND POSubmission.pomsgset = pms.id AND pms.iscomplete""",
         external_joins=['POMsgSet pms'],
         batch_pouring_callback=prepare_posubmission_batch,
         inert_where=have_better)
@@ -871,6 +872,22 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=["SourcePackageName.name"]
             )
         return packagings
+
+    @property
+    def supported(self):
+        return self.status in [
+            DistroSeriesStatus.CURRENT,
+            DistroSeriesStatus.SUPPORTED
+            ]
+
+    @property
+    def active(self):
+        return self.status in [
+            DistroSeriesStatus.DEVELOPMENT,
+            DistroSeriesStatus.FROZEN,
+            DistroSeriesStatus.CURRENT,
+            DistroSeriesStatus.SUPPORTED
+            ]
 
     @property
     def distroserieslanguages(self):

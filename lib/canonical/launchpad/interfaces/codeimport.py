@@ -15,7 +15,7 @@ from zope.schema import Datetime, Choice, Int, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces.productseries import (
-    validate_cvs_module, validate_cvs_root)
+    validate_cvs_module, validate_cvs_root, RevisionControlSystems)
 from canonical.lp.dbschema import CodeImportReviewStatus
 
 
@@ -68,7 +68,7 @@ class ICodeImport(Interface):
             " Only reviewed imports are processed."))
 
     rcs_type = Choice(title=_("Type of RCS"),
-        required=True, vocabulary='RevisionControlSystems',
+        required=True, vocabulary=RevisionControlSystems,
         description=_("The revision control system used by the import source. "
         "Can be CVS or Subversion."))
 

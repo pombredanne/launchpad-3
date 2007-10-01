@@ -5,10 +5,12 @@ import _pythonpath
 
 from optparse import OptionParser
 
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import initZopeless
-from canonical.launchpad.database import Distribution
-from canonical.launchpad.scripts import (execute_zcml_for_scripts,
-                                         logger, logger_options)
 
 from canonical.archivepublisher.deathrow import getDeathRow
 
@@ -24,25 +26,33 @@ def main():
                       help="Specified the distribution name.")
     parser.add_option("-p", "--pool-root", metavar="PATH",
                       help="Override the path to the pool folder")
+    parser.add_option("--ppa", action="store_true",
+                      dest="ppa", metavar="PPA", default=False,
+                      help="Run only over PPA archives.")
 
     logger_options(parser)
     (options, args) = parser.parse_args()
     log = logger(options, "deathrow-distro")
 
     log.debug("Initialising zopeless.")
+
     # XXX kiko 2006-08-23: Change this when we fix up db security
     txn = initZopeless(dbuser='lucille')
     execute_zcml_for_scripts()
 
-    distroname = options.distribution
-    distro = Distribution.byName(distroname)
+    distribution = getUtility(IDistributionSet).getByName(
+        options.distribution)
 
-    for archive in distro.all_distro_archives:
+    if not options.ppa:
+        archives = distribution.all_distro_archives
+    else:
+        archives = distribution.getAllPPAs()
+
+    for archive in archives:
         death_row = getDeathRow(archive, log, options.pool_root)
         try:
             # Unpublish death row
-            log.debug("Unpublishing death row for %s (%s)." % (
-                distroname, archive.purpose.title))
+            log.debug("Unpublishing death row for %s." % archive.title)
             death_row.reap(options.dry_run)
 
             if options.dry_run:

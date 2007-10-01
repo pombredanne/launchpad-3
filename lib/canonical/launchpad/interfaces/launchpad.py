@@ -50,6 +50,7 @@ __all__ = [
     'IHasProduct',
     'IHasProductAndAssignee',
     'IHasSecurityContact',
+    'IHWDBApplication',
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
@@ -220,6 +221,10 @@ class IAuthApplication(Interface):
 
         Returns the long url segment.
         """
+
+class IHWDBApplication(ILaunchpadApplication):
+    """Hardware database application application root."""
+
 
 class IPasswordResets(IPersistent):
     """Interface for PasswordResets"""

@@ -527,6 +527,10 @@ hassprints_sprints = ContextTitle("Events related to %s")
 
 hastranslationimports_index = 'Translation import queue'
 
+hwdb_fingerprint_submissions = "Hardware Database submissions for a fingerprint"
+
+hwdb_submit_hardware_data = 'Submit New Data to the Launchpad Hardware Database'
+
 karmaaction_index = 'Karma actions'
 
 karmaaction_edit = 'Edit karma action'
@@ -773,6 +777,9 @@ person_editwikinames = ContextDisplayName(smartquote("%s's wiki names"))
 
 # person_foaf is an rdf file
 
+person_hwdb_submissions = ContextDisplayName(
+    "Hardware Database submissions by %s")
+
 person_images = ContextDisplayName(smartquote("%s's hackergotchi and emblem"))
 
 def person_index(context, view):
@@ -913,7 +920,8 @@ productseries_index = ContextTitle('Overview of %s')
 
 productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
-productseries_source = 'Import a stable or development branch to Bazaar'
+productseries_source = ContextDisplayName(
+    'Set upstream revision control system for %s')
 
 productseries_translations_upload = 'Request new translations upload'
 
@@ -1035,13 +1043,13 @@ series_bug_nominations = ContextDisplayName('Bugs nominated for %s')
 
 shipit_adminrequest = 'ShipIt admin request'
 
-shipit_index = 'ShipIt'
-
-shipit_index_new = 'ShipIt'
-
 shipit_exports = 'ShipIt exports'
 
 shipit_forbidden = 'Forbidden'
+
+shipit_index = 'ShipIt'
+
+shipit_login = 'ShipIt'
 
 shipit_myrequest = "Your ShipIt order"
 

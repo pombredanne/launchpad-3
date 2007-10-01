@@ -75,6 +75,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    class="canonical.launchpad.browser.DistributionSourcePackageView"
     permission="zope.Public">
     <browser:page
       name="+index"
