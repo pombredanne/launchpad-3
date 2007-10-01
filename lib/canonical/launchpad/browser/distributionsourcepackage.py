@@ -301,7 +301,7 @@ class DistributionSourcePackageView(LaunchpadView):
                 sourcepackage.published_by_pocket.iteritems():
                 for drspr in published[1]:
                     series_result.append({
-                        'series': sourcepackage.distroseries.name,
+                        'series': sourcepackage.distroseries,
                         'pocket': published[0].name.lower(),
                         'package': drspr,
                         'packaging': sourcepackage.direct_packaging,

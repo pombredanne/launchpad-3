@@ -1,3 +1,7 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  omit-tag="">
 <script type="text/javascript">
   function toggleFormVisibility(row_id) {
     row = document.getElementById(row_id)
@@ -51,3 +55,4 @@
   </span>
 
 </div>
+</tal:root>

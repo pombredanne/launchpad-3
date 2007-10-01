@@ -920,7 +920,8 @@ productseries_index = ContextTitle('Overview of %s')
 
 productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
-productseries_source = 'Import a stable or development branch to Bazaar'
+productseries_source = ContextDisplayName(
+    'Set upstream revision control system for %s')
 
 productseries_translations_upload = 'Request new translations upload'
 
