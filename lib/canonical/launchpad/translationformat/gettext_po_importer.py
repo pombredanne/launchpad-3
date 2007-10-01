@@ -9,11 +9,11 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import ITranslationFormatImporter
+from canonical.launchpad.interfaces import (
+    ITranslationFormatImporter, TranslationFileFormat)
 from canonical.launchpad.translationformat.gettext_po_parser import (
     POParser, POHeader)
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.lp.dbschema import TranslationFileFormat
 
 
 class GettextPOImporter:
@@ -28,25 +28,17 @@ class GettextPOImporter:
         self.is_published = False
         self.content = None
 
-    @property
-    def format(self):
+    def getFormat(self, file_contents):
         """See `ITranslationFormatImporter`."""
         return TranslationFileFormat.PO
 
-    @property
-    def content_type(self):
-        """See `ITranslationFormatImporter`."""
-        return 'application/x-po'
+    priority = 0
 
-    @property
-    def file_extensions(self):
-        """See `ITranslationFormatImporter`."""
-        return ['.po', '.pot']
+    content_type = 'application/x-po'
 
-    @property
-    def uses_source_string_msgids(self):
-        """See `ITranslationFormatImporter`."""
-        return False
+    file_extensions = ['.po', '.pot']
+
+    uses_source_string_msgids = False
 
     def parse(self, translation_import_queue_entry):
         """See `ITranslationFormatImporter`."""

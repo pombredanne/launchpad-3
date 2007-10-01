@@ -5,14 +5,13 @@ On this section, we are going to test the view class for an IPOFile.
 First, we need some imports.
 
     >>> from StringIO import StringIO
-    >>> from zope.component import getView
     >>> from zope.publisher.browser import FileUpload
+    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.database import POMsgSet, DummyPOMsgSet
     >>> from canonical.launchpad.interfaces import (
     ...     ITranslationImportQueue, IPOTemplateSet, IDistributionSet,
     ...     ISourcePackageNameSet)
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.layers import TranslationsLayer
 
 All the tests will be submitted as coming from the No Privilege person.
 
@@ -30,8 +29,9 @@ Now it's time to test the initialisation of the view class.
     ...     distroseries=series, sourcepackagename=sourcepackagename)
     >>> potemplate = potemplatesubset['evolution-2.2']
     >>> pofile_es = potemplate.getPOFileByLang('es')
-    >>> request = LaunchpadTestRequest(form={'show': 'all' })
-    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> form = {'show': 'all' }
+    >>> pofile_view = create_view(
+    ...     pofile_es, '+translate', form=form, layer=TranslationsLayer)
     >>> pofile_view.initialize()
 
 An IPOFile knows (or sometimes has to guess) its number of pluralforms.  In
@@ -54,8 +54,9 @@ This time, we are going to see what happens if we get an IPOFile without
 the plural form information.
 
     >>> pofile_tlh = potemplate.getDummyPOFile('tlh')
-    >>> request = LaunchpadTestRequest(form={'show': 'all' })
-    >>> pofile_view = getView(pofile_tlh, '+translate', request)
+    >>> form = {'show': 'all' }
+    >>> pofile_view = create_view(
+    ...     pofile_tlh, '+translate', form=form, layer=TranslationsLayer)
     >>> pofile_view.initialize()
 
 Here we can see that it's lacking that information.
@@ -70,9 +71,9 @@ And the view class detects it correctly.
 
 Check the argument to filter messagesets.
 
-    >>> request = LaunchpadTestRequest(form={
-    ...     'show': 'translated'})
-    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> form = {'show': 'translated'}
+    >>> pofile_view = create_view(
+    ...     pofile_es, '+translate', form=form, layer=TranslationsLayer)
     >>> pofile_view.initialize()
 
 Yeah, it detects it correctly and stores the attribute as it should be.
@@ -84,14 +85,16 @@ Let's move to the navigation URLS testing.
 
 We get a request without any argument.
 
-    >>> request = LaunchpadTestRequest(form={'show': 'all' })
-    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> form = {'show': 'all' }
+    >>> pofile_view = create_view(
+    ...     pofile_es, '+translate', form=form, layer=TranslationsLayer)
     >>> pofile_view.initialize()
 
 It's time to test that we get the right message sets from the submitted form.
 
-    >>> request = LaunchpadTestRequest(form={'show': 'all' })
-    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> form = {'show': 'all' }
+    >>> pofile_view = create_view(
+    ...     pofile_es, '+translate', form=form, layer=TranslationsLayer)
     >>> pofile_view.initialize()
 
 We get the first entry that should be in the form, the one with id == 130.
@@ -161,7 +164,7 @@ Now we do a submission with new translations:
    submitted in its corresponding msgset_*_new variable should be taken in
    consideration (if True) or just ignored (False).
 
-    >>> request = LaunchpadTestRequest(form={
+    >>> form = {
     ...     'batch': '10',
     ...     'start': '0',
     ...     'show': 'all',
@@ -174,9 +177,10 @@ Now we do a submission with new translations:
     ...     'msgset_138_es_translation_0_radiobutton':
     ...         'msgset_138_es_translation_0_new',
     ...     'msgset_138_es_translation_0_new': 'Bar',
-    ...     'submit_translations': 'Save &amp; Continue'})
-    >>> request.method = 'POST'
-    >>> pofile_view = getView(pofile_es, '+translate', request)
+    ...     'submit_translations': 'Save &amp; Continue'}
+    >>> pofile_view = create_view(
+    ...     pofile_es, '+translate', form=form, layer=TranslationsLayer)
+    >>> pofile_view.request.method = 'POST'
     >>> pofile_view.initialize()
 
 And check again.
@@ -239,7 +243,7 @@ their sequence is 0.
     >>> potmsgset = POTMsgSet.get(161)
     >>> potmsgset.sequence
     0
-    >>> request = LaunchpadTestRequest(form={
+    >>> form = {
     ...     'batch': '10',
     ...     'start': '0',
     ...     'show': 'untranslated',
@@ -248,9 +252,10 @@ their sequence is 0.
     ...     'msgset_161_es_translation_0_radiobutton':
     ...         'msgset_161_es_translation_0_new',
     ...     'msgset_161_es_translation_0_new': 'Foo',
-    ...     'submit_translations': 'Save &amp; Continue'})
-    >>> request.method = 'POST'
-    >>> pofile_view = getView(pofile_es, '+translate', request)
+    ...     'submit_translations': 'Save &amp; Continue'}
+    >>> pofile_view = create_view(
+    ...     pofile_es, '+translate', form=form, layer=TranslationsLayer)
+    >>> pofile_view.request.method = 'POST'
     >>> pofile_view.initialize()
 
 And we can see that we didn't get errors.
@@ -325,18 +330,16 @@ exact same results.
     ...     print submission.datecreated.isoformat()
     2005-04-07T...
 
-
-
 Now, we are going to check the alternative language submission.
 
-    >>> request = LaunchpadTestRequest(form={
+    >>> form = {
     ...     'show': 'all',
     ...     'batch': '10',
     ...     'start': '10',
     ...     'field.alternative_language': 'fr',
-    ...     'select_alternate_language': 'Change'})
-    >>> request.method = 'get'
-    >>> pofile_view = getView(pofile_es, '+translate', request)
+    ...     'select_alternate_language': 'Change'}
+    >>> pofile_view = create_view(
+    ...     pofile_es, '+translate', form=form, layer=TranslationsLayer)
     >>> pofile_view.initialize()
     >>> pofile_view.second_lang_code
     'fr'
@@ -366,12 +369,13 @@ headers.
 
 Now, we do the upload.
 
-    >>> request = LaunchpadTestRequest(form={
+    >>> form = {
     ...     'file': FileUpload(FileUploadArgument()),
     ...     'upload_type': 'upstream',
-    ...     'pofile_upload': 'Upload'})
-    >>> request.method = 'POST'
-    >>> pofile_view = getView(pofile_es, '+upload', request)
+    ...     'pofile_upload': 'Upload'}
+    >>> pofile_view = create_view(
+    ...     pofile_es, '+upload', form=form, layer=TranslationsLayer)
+    >>> pofile_view.request.method = 'POST'
     >>> pofile_view.initialize()
 
 As we can see, we have now one entry added to our queue.
@@ -402,6 +406,7 @@ This class is used to traverse from IPOFile objects to IPOMsgSet ones.
 
 First, what happens if we get any method that is not supported?
 
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest(form={'show': 'all' })
     >>> request.method = 'PUT'
     >>> navigation = POFileNavigation(pofile_es, request)
@@ -463,9 +468,10 @@ cached export, the user is redirected to the index page of the IPOFile.
     False
 
     # Request the download.
-    >>> request = LaunchpadTestRequest(form={'format': 'PO' })
-    >>> request.method = 'POST'
-    >>> pofile_view = getView(pofile_es, '+export', request)
+    >>> form = {'format': 'PO' }
+    >>> pofile_view = create_view(
+    ...     pofile_es, '+export', form=form, layer=TranslationsLayer)
+    >>> pofile_view.request.method = 'POST'
     >>> pofile_view.initialize()
 
 And we are redirected to the index page, as expected:
@@ -482,7 +488,9 @@ cache.
 
 The request now redirects directly to the librarian URL.
 
-    >>> pofile_view = getView(pofile_es, '+export', request)
+    >>> pofile_view = create_view(
+    ...     pofile_es, '+export', form=form, layer=TranslationsLayer)
+    >>> pofile_view.request.method = 'POST'
     >>> pofile_view.initialize()
     >>> print pofile_view.request.response.getHeader('Location')
     http://localhost:58000/.../es.po

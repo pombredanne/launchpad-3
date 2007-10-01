@@ -1,0 +1,13 @@
+Rejected:
+%(SUMMARY)s
+
+%(CHANGESFILE)s
+
+===
+
+If you don't understand why your files were rejected please send an email
+to launchpad-users@lists.canonical.com for help.
+
+-- 
+You are receiving this email because you are the uploader of the above
+PPA package.

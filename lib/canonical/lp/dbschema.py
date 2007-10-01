@@ -22,8 +22,6 @@ __all__ = (
 'ArchivePurpose',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
-'BountyDifficulty',
-'BountyStatus',
 'BranchReviewStatus',
 'BugBranchStatus',
 'BugNominationStatus',
@@ -40,9 +38,6 @@ __all__ = (
 'DistroSeriesStatus',
 'ImportTestStatus',
 'ImportStatus',
-'MailingListAutoSubscribePolicy',
-'ManifestEntryType',
-'ManifestEntryHint',
 'MirrorContent',
 'MirrorPulseType',
 'MirrorSpeed',
@@ -50,19 +45,6 @@ __all__ = (
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'PackagePublishingPocket',
-'PackagingType',
-'PersonalStanding',
-'PollAlgorithm',
-'PollSecrecy',
-'PostedMessageStatus',
-'ProjectRelationship',
-'ProjectStatus',
-'RevisionControlSystems',
-'RosettaImportStatus',
-'RosettaTranslationOrigin',
-'ShipItArchitecture',
-'ShipItDistroSeries',
-'ShipItFlavour',
 'ShippingRequestStatus',
 'ShippingService',
 'SourcePackageFileType',
@@ -77,19 +59,9 @@ __all__ = (
 'SpecificationSort',
 'SpecificationDefinitionStatus',
 'SprintSpecificationStatus',
-'TextDirection',
-'TranslationFileFormat',
-'TranslationPriority',
-'TranslationPermission',
-'TranslationValidationStatus',
 'PackageUploadStatus',
 'PackageUploadCustomFormat',
-'UpstreamFileType',
-'UpstreamReleaseVersionStyle',
 )
-
-#from canonical.launchpad.webapp.enum import DBSchema
-#from canonical.launchpad.webapp.enum import DBSchemaItem as Item
 
 from canonical.lazr import DBEnumeratedType as DBSchema
 from canonical.lazr import DBItem as Item
@@ -206,6 +178,7 @@ class BugTrackerType(DBSchema):
         Mantis is a web-based bug tracking system written in PHP.
         """)
 
+
 class CveStatus(DBSchema):
     """The Status of this item in the CVE Database
 
@@ -240,157 +213,6 @@ class CveStatus(DBSchema):
         """)
 
 
-class ProjectStatus(DBSchema):
-    """A Project Status
-
-    This is an enum of the values that Project.status can assume.
-    Essentially it indicates whether or not this project has been reviewed,
-    and if it has whether or not it passed review and should be considered
-    active.
-    """
-
-    NEW = Item(1, """
-        New
-
-        This project is new and has not been reviewed.
-        """)
-
-    ACTIVE = Item(2, """
-        Active
-
-        This Project has been reviewed and is considered active in the
-        launchpad.""")
-
-    DISABLED = Item(3, """
-        Disabled
-
-        This project has been reviewed, and has been disabled. Typically
-        this is because the contents appear to be bogus. Such a project
-        should not show up in searches etc.""")
-
-
-class ManifestEntryType(DBSchema):
-    """A Sourcerer Manifest.
-
-    This is a list of branches that are brought together to make up a source
-    package. Each branch can be included in the package in a number of
-    different ways, and the Manifest Entry Type tells sourcerer how to bring
-    that branch into the package.
-    """
-
-    DIR = Item(1, """
-        A Directory
-
-        This is a special case of Manifest Entry Type, and tells
-        sourcerer simply to create an empty directory with the given name.
-        """)
-
-    COPY = Item(2, """
-        Copied Source code
-
-        This branch will simply be copied into the source package at
-        a specified location. Typically this is used where a source
-        package includes chunks of code such as libraries or reference
-        implementation code, and builds it locally for static linking
-        rather than depending on a system-installed shared library.
-        """)
-
-    FILE = Item(3, """
-        Binary file
-
-        This is another special case of Manifest Entry Type that tells
-        sourcerer to create a branch containing just the file given.
-        """)
-
-    TAR = Item(4, """
-        A Tar File
-
-        This branch will be tarred up and installed in the source
-        package as a tar file. Typically, the package build system
-        will know how to untar that code and use it during the build.
-        """)
-
-    ZIP = Item(5, """
-        A Zip File
-
-        This branch will be zipped up and installed in the source
-        package as a zip file. Typically, the package build system
-        will know how to unzip that code and use it during the build.
-        """)
-
-    PATCH = Item(6, """
-        Patch File
-
-        This branch will be brought into the source file as a patch
-        against another branch. Usually, the patch is stored in the
-        "patches" directory, then applied at build time by the source
-        package build scripts.
-        """)
-
-
-class ManifestEntryHint(DBSchema):
-    """Hint as to purpose of a ManifestEntry.
-
-    Manifests, used by both HCT and Sourcerer, are made up of a collection
-    of Manifest Entries.  Each entry refers to a particular component of
-    the source package built by the manifest, usually each having a different
-    branch or changeset.  A Manifest Entry Hint can be assigned to suggest
-    what the purpose of the entry is.
-    """
-
-    ORIGINAL_SOURCE = Item(1, """
-        Original Source
-
-        This is the original source code of the source package, and in the
-        absence of any Patch Base, the parent of any new patch branches
-        created.
-        """)
-
-    PATCH_BASE = Item(2, """
-        Patch Base
-
-        This is an entry intended to serve as the base for any new patches
-        created and added to the source package.  It is often a patch itself,
-        or a virtual branch.  If not present, the Original Source is used
-        instead.
-        """)
-
-    PACKAGING = Item(3, """
-        Packaging
-
-        This is the packaging meta-data for the source package, usually
-        the entry that becomes the debian/ directory in the case of Debian
-        source packages or the spec file in the case of RPMs.
-        """)
-
-
-class PackagingType(DBSchema):
-    """Source packages.
-
-    Source packages include software from one or more Upstream open source
-    projects. This schema shows the relationship between a source package
-    and the upstream open source products that it might incorporate. This
-    schema is used in the Packaging table.
-    """
-
-    PRIME = Item(1, """
-        Primary Product
-
-        This is the primary product packaged in this source package. For
-        example, a source package "apache2" would have a "prime" Packaging
-        relationship with the "apache2" product from the Apache Project.
-        The product and package don't have to have the same name.
-        """)
-
-    INCLUDES = Item(2, """
-        SourcePackage Includes Product
-
-        This source package includes some part or all of the product. For
-        example, the "cadaver" source package has an "includes" Packaging
-        relationship with the libneon product.
-        """)
-
-
 class BugBranchStatus(DBSchema):
     """The status of a bugfix branch."""
 
@@ -420,32 +242,6 @@ class BugBranchStatus(DBSchema):
         This branch contains a fix agreed upon by the community as
         being the best available branch from which to merge to fix
         this bug.
-        """)
-
-
-class ProjectRelationship(DBSchema):
-    """Project Relationship
-
-    Launchpad tracks different open source projects, and the relationships
-    between them. This schema is used to describe the relationship between
-    two open source projects.
-    """
-
-    AGGREGATES = Item(1, """
-        Subject Project Aggregates Object Project
-
-        Some open source projects are in fact an aggregation of several
-        other projects. For example, the Gnome Project aggregates
-        Gnumeric, Abiword, EOG, and many other open source projects.
-        """)
-
-    SIMILAR = Item(2, """
-        Subject Project is Similar to Object Project
-
-        Often two different groups will start open source projects
-        that are similar to one another. This relationship is used
-        to describe projects that are similar to other projects in
-        the system.
         """)
 
 
@@ -510,56 +306,6 @@ class DistroSeriesStatus(DBSchema):
 
         This distroseries is no longer supported, it is considered
         obsolete and should not be used on production systems.
-        """)
-
-
-class UpstreamFileType(DBSchema):
-    """Upstream File Type
-
-    When upstream open source project release a product they will
-    include several files in the release. All of these files are
-    stored in Launchpad (we throw nothing away ;-). This schema
-    gives the type of files that we know about.
-    """
-
-    CODETARBALL = Item(1, """
-        Code Release Tarball
-
-        This file contains code in a compressed package like
-        a tar.gz or tar.bz or .zip file.
-        """)
-
-    README = Item(2, """
-        README File
-
-        This is a README associated with the upstream
-        release. It might be in .txt or .html format, the
-        filename would be an indicator.
-        """)
-
-    RELEASENOTES = Item(3, """
-        Release Notes
-
-        This file contains the release notes of the new
-        upstream release. Again this could be in .txt or
-        in .html format.
-        """)
-
-    CHANGELOG = Item(4, """
-        ChangeLog File
-
-        This file contains information about changes in this
-        release from the previous release in the series. This
-        is usually not a detailed changelog, but a high-level
-        summary of major new features and fixes.
-        """)
-
-    INSTALLER = Item(5, """
-        Installer file
-
-        This file contains an installer for a product.  It may
-        be a Debian package, an RPM file, an OS X disk image, a
-        Windows installer, or some other type of installer.
         """)
 
 
@@ -1226,89 +972,6 @@ class SourcePackageFileType(DBSchema):
         used in the build process for this source package.  """)
 
 
-class TranslationPriority(DBSchema):
-    """Translation Priority
-
-    Translations in Rosetta can be assigned a priority. This is used in a
-    number of places. The priority stored on the translation itself is set
-    by the upstream project maintainers, and used to identify the
-    translations they care most about. For example, if Apache were nearing a
-    big release milestone they would set the priority on those POTemplates
-    to 'high'. The priority is also used by TranslationEfforts to indicate
-    how important that POTemplate is to the effort. And lastly, an
-    individual translator can set the priority on his personal subscription
-    to a project, to determine where it shows up on his list.  """
-
-    HIGH = Item(1, """
-        High
-
-        This translation should be shown on any summary list of translations
-        in the relevant context. For example, 'high' priority projects show
-        up on the home page of a TranslationEffort or Project in Rosetta.
-        """)
-
-    MEDIUM = Item(2, """
-        Medium
-
-        A medium priority POTemplate should be shown on longer lists and
-        dropdowns lists of POTemplates in the relevant context.  """)
-
-    LOW = Item(3, """
-        Low
-
-        A low priority POTemplate should only show up if a comprehensive
-        search or complete listing is requested by the user.  """)
-
-
-class TranslationPermission(DBSchema):
-    """Translation Permission System
-
-    Projects, products and distributions can all have content that needs to
-    be translated. In this case, Launchpad Translations allows them to decide
-    how open they want that translation process to be. At one extreme, anybody
-    can add or edit any translation, without review. At the other, only the
-    designated translator for that group in that language can add or edit its
-    translation files. This schema enumerates the options.
-    """
-
-    OPEN = Item(1, """
-        Open
-
-        This group allows totally open access to its translations. Any
-        logged-in user can add or edit translations in any language, without
-        any review.""")
-
-    STRUCTURED = Item(20, """
-        Structured
-
-        This group has designated translators for certain languages. In
-        those languages, people who are not designated translators can only
-        make suggestions. However, in languages which do not yet have a
-        designated translator, anybody can edit the translations directly,
-        with no further review.""")
-
-    RESTRICTED = Item(100, """
-        Restricted
-
-        This group allows only designated translators to edit the
-        translations of its files. You can become a designated translator
-        either by joining an existing language translation team for this
-        project, or by getting permission to start a new team for a new
-        language. People who are not designated translators can still make
-        suggestions for new translations, but those suggestions need to be
-        reviewed before being accepted by the designated translator.""")
-
-    CLOSED = Item(200, """
-        Closed
-
-        This group allows only designated translators to edit or add
-        translations. You can become a designated translator either by
-        joining an existing language translation team for this
-        project, or by getting permission to start a new team for a new
-        language. People who are not designated translators will not be able
-        to add suggestions.""")
-
-
 class PackageUploadStatus(DBSchema):
     """Distro Release Queue Status
 
@@ -1599,95 +1262,6 @@ class SourcePackageRelationships(DBSchema):
         source package, but for a different distribution. For example, the
         "apache2" Ubuntu package "correspondsto" the "httpd2" package in Red
         Hat.  """)
-
-
-class BountyDifficulty(DBSchema):
-    """Bounty Difficulty
-
-    An indicator of the difficulty of a particular bounty."""
-
-    TRIVIAL = Item(10, """
-        Trivial
-
-        This bounty requires only very basic skills to complete the task. No
-        real domain knowledge is required, only simple system
-        administration, writing or configuration skills, and the ability to
-        publish the work.""")
-
-    BASIC = Item(20, """
-        Basic
-
-        This bounty requires some basic programming skills, in a high level
-        language like Python or C# or... BASIC. However, the project is
-        being done "standalone" and so no knowledge of existing code is
-        required.""")
-
-    STRAIGHTFORWARD = Item(30, """
-        Straightforward
-
-        This bounty is easy to implement but does require some broader
-        understanding of the framework or application within which the work
-        must be done.""")
-
-    NORMAL = Item(50, """
-        Normal
-
-        This bounty requires a moderate amount of programming skill, in a
-        high level language like HTML, CSS, JavaScript, Python or C#. It is
-        an extension to an existing application or package so the work will
-        need to follow established project coding standards.""")
-
-    CHALLENGING = Item(60, """
-        Challenging
-
-        This bounty requires knowledge of a low-level programming language
-        such as C or C++.""")
-
-    DIFFICULT = Item(70, """
-        Difficult
-
-        This project requires knowledge of a low-level programming language
-        such as C or C++ and, in addition, requires extensive knowledge of
-        an existing codebase into which the work must fit.""")
-
-    VERYDIFFICULT = Item(90, """
-        Very Difficult
-
-        This project requires exceptional programming skill and knowledge of
-        very low level programming environments, such as assembly language.""")
-
-    EXTREME = Item(100, """
-        Extreme
-
-        In order to complete this work, detailed knowledge of an existing
-        project is required, and in addition the work itself must be done in
-        a low-level language like assembler or C on multiple architectures.""")
-
-
-class BountyStatus(DBSchema):
-    """Bounty Status
-
-    An indicator of the status of a particular bounty. This can be edited by
-    the bounty owner or reviewer."""
-
-    OPEN = Item(1, """
-        Open
-
-        This bounty is open. People are still welcome to contact the creator
-        or reviewer of the bounty, and submit their work for consideration
-        for the bounty.""")
-
-    WITHDRAWN = Item(9, """
-        Withdrawn
-
-        This bounty has been withdrawn.
-        """)
-
-    CLOSED = Item(10, """
-        Closed
-
-        This bounty is closed. No further submissions will be considered.
-        """)
 
 
 class BinaryPackageFileType(DBSchema):
@@ -2038,153 +1612,6 @@ class BugAttachmentType(DBSchema):
         """)
 
 
-class UpstreamReleaseVersionStyle(DBSchema):
-    """Upstream Release Version Style
-
-    Sourcerer will actively look for new upstream releases, and it needs
-    to know roughly what version numbering format upstream uses. The
-    release version number schemes understood by Sourcerer are documented
-    in this schema. XXX andrew please fill in!
-    """
-
-    GNU = Item(1, """
-        GNU-style Version Numbers
-
-        XXX Andrew need description here
-        """)
-
-
-class RevisionControlSystems(DBSchema):
-    """Revision Control Systems
-
-    Bazaar brings code from a variety of upstream revision control
-    systems into Arch. This schema documents the known and supported
-    revision control systems.
-    """
-
-    CVS = Item(1, """
-        Concurrent Version System
-
-        The Concurrent Version System is very widely used among
-        older open source projects, it was the first widespread
-        open source version control system in use.
-        """)
-
-    SVN = Item(2, """
-        Subversion
-
-        Subversion aims to address some of the shortcomings in
-        CVS, but retains the central server bottleneck inherent
-        in the CVS design.
-        """)
-
-
-class RosettaTranslationOrigin(DBSchema):
-    """Rosetta Translation Origin
-
-    Translation sightings in Rosetta can come from a variety
-    of sources. We might see a translation for the first time
-    in CVS, or we might get it through the web, for example.
-    This schema documents those options.
-    """
-
-    SCM = Item(1, """
-        Source Control Management Source
-
-        This translation sighting came from a PO File we
-        analysed in a source control managements sytem first.
-        """)
-
-    ROSETTAWEB = Item(2, """
-        Rosetta Web Source
-
-        This translation was presented to Rosetta via
-        the community web site.
-        """)
-
-
-class RosettaImportStatus(DBSchema):
-    """Rosetta Import Status
-
-    Define the status of an import on the Import queue. It could have one
-    of the following states: approved, imported, deleted, failed, needs_review
-    or blocked.
-    """
-
-    APPROVED = Item(1, """
-        Approved
-
-        The entry has been approved by a Rosetta Expert or was able to be
-        approved by our automatic system and is waiting to be imported.
-        """)
-
-    IMPORTED = Item(2, """
-        Imported
-
-        The entry has been imported.
-        """)
-
-    DELETED = Item(3, """
-        Deleted
-
-        The entry has been removed before being imported.
-        """)
-
-    FAILED = Item(4, """
-        Failed
-
-        The entry import failed.
-        """)
-
-    NEEDS_REVIEW = Item(5, """
-        Needs Review
-
-        A Rosetta Expert needs to review this entry to decide whether it will
-        be imported and where it should be imported.
-        """)
-
-    BLOCKED = Item(6, """
-        Blocked
-
-        The entry has been blocked to be imported by a Rosetta Expert.
-        """)
-
-
-class MailingListAutoSubscribePolicy(DBSchema):
-    """A person's auto-subscription policy.
-
-    When a person joins a team, or is joined to a team, their
-    auto-subscription policy describes how and whether they will be
-    automatically subscribed to any team mailing list that the team may have.
-
-    This does not describe what happens when a team that already has members
-    gets a new team mailing list.  In that case, its members are never
-    automatically subscribed to the mailing list.
-    """
-
-    NEVER = Item(0, """
-        Never subscribe automatically
-
-        The user must explicitly subscribe to a team mailing list for any team
-        that she joins.
-        """)
-
-    ON_REGISTRATION = Item(1, """
-        Subscribe on self-registration
-
-        The user is automatically joined to any team mailng list for a team
-        that she joins explicitly.  She is never joined to any team mailing
-        list for a team that someone else joins her to.
-        """)
-
-    ALWAYS = Item(2, """
-        Always subscribe automatically
-
-        The user is automatically subscribed to any team mailing list when she
-        is added to the team, regardless of who joins her to the team.
-        """)
-
-
 class BuildStatus(DBSchema):
     """Build status type
 
@@ -2265,178 +1692,6 @@ class BuildStatus(DBSchema):
         """)
 
 
-class PersonalStanding(DBSchema):
-    """A person's standing.
-
-    Standing is currently (just) used to determine whether a person's posts to
-    a mailing list require first-post moderation or not.  Any person with good
-    or excellent standing may post directly to the mailing list without
-    moderation.  Any person with unknown or poor standing must have their
-    first-posts moderated.
-    """
-
-    UNKNOWN = Item(0, """
-        Unknown standing
-
-        Nothing about this person's standing is known.
-        """)
-
-    POOR = Item(100, """
-        Poor standing
-
-        This person has poor standing.
-        """)
-
-    GOOD = Item(200, """
-        Good standing
-
-        This person has good standing and may post to a mailing list without
-        being subject to first-post moderation rules.
-        """)
-
-    EXCELLENT = Item(300, """
-        Excellent standing
-
-        This person has excellent standing and may post to a mailing list
-        without being subject to first-post moderation rules.
-        """)
-
-
-class PollSecrecy(DBSchema):
-    """The secrecy of a given Poll."""
-
-    OPEN = Item(1, """
-        Public Votes (Anyone can see a person's vote)
-
-        Everyone who wants will be able to see a person's vote.
-        """)
-
-    ADMIN = Item(2, """
-        Semi-secret Votes (Only team administrators can see a person's vote)
-
-        All team owners and administrators will be able to see a person's vote.
-        """)
-
-    SECRET = Item(3, """
-        Secret Votes (It's impossible to track a person's vote)
-
-        We don't store the option a person voted in our database,
-        """)
-
-
-class PollAlgorithm(DBSchema):
-    """The algorithm used to accept and calculate the results."""
-
-    SIMPLE = Item(1, """
-        Simple Voting
-
-        The most simple method for voting; you just choose a single option.
-        """)
-
-    CONDORCET = Item(2, """
-        Condorcet Voting
-
-        One of various methods used for calculating preferential votes. See
-        http://www.electionmethods.org/CondorcetEx.htm for more information.
-        """)
-
-
-class PostedMessageStatus(DBSchema):
-    """The status of a posted message.
-
-    When a message posted to a mailing list is subject to first-post
-    moderation, the message gets one of these statuses.
-    """
-
-    NEW = Item(0, """
-        New status
-
-        The message has been posted and held for first-post moderation, but no
-        disposition of the message has yet been made.
-        """)
-
-    APPROVED = Item(1, """
-        Approved
-
-        A message held for first-post moderation has been approved.
-        """)
-
-    REJECTED = Item(2, """
-        Rejected
-
-        A message held for first-post moderation has been rejected.
-        """)
-
-
-class TranslationFileFormat(DBSchema):
-    """Translation File Format
-
-    This is an enumeration of the different sorts of file that Launchpad
-    Translations knows about.
-    """
-
-    PO = Item(1, """
-        PO format
-
-        Gettext's standard text file format.
-        """)
-
-    MO = Item(2, """
-        MO format
-
-        Gettext's standard binary file format.
-        """)
-
-    XPI = Item(3, """
-        Mozilla XPI format
-
-        The .xpi format as used by programs from Mozilla foundation.
-        """)
-
-
-class TranslationValidationStatus(DBSchema):
-    """Translation Validation Status
-
-    Every time a translation is added to Rosetta we should checked that
-    follows all rules to be a valid translation inside a .po file.
-    This schema documents the status of that validation.
-    """
-
-    UNKNOWN = Item(0, """
-        Unknown
-
-        This translation has not been validated yet.
-        """)
-
-    OK = Item(1, """
-        Ok
-
-        This translation has been validated and no errors were discovered.
-        """)
-
-    UNKNOWNERROR = Item(2, """
-        Unknown Error
-
-        This translation has an unknown error.
-        """)
-
-
-class TextDirection(DBSchema):
-    """The base text direction for a language."""
-
-    LTR = Item(0, """
-        Left to Right
-
-        Text is normally written from left to right in this language.
-        """)
-
-    RTL = Item(1, """
-        Right to Left
-
-        Text is normally written from left to right in this language.
-        """)
-
-
 class ArchivePurpose(DBSchema):
     """The purpose, or type, of an archive.
 
@@ -2447,31 +1702,31 @@ class ArchivePurpose(DBSchema):
     """
 
     PRIMARY = Item(1, """
-        Primary Archive.
+        Primary Archive
 
         This is the primary Ubuntu archive.
         """)
 
     PPA = Item(2, """
-        PPA Archive.
+        PPA Archive
 
         This is a Personal Package Archive.
         """)
 
     EMBARGOED = Item(3, """
-        Embargoed Archive.
+        Embargoed Archive
 
         This is the archive for embargoed packages.
         """)
 
-    COMMERCIAL = Item(4, """
-        Commercial Archive.
+    PARTNER = Item(4, """
+        Partner Archive
 
-        This is the archive for commercial packages.
+        This is the archive for partner packages.
         """)
 
     OBSOLETE = Item(5, """
-        Obsolete Archive.
+        Obsolete Archive
 
         This is the archive for obsolete packages.
         """)

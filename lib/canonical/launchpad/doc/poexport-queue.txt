@@ -159,7 +159,7 @@ First, fill the export queue with entries to be exported.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.database import POTemplate
     >>> from canonical.launchpad.interfaces import IPOExportRequestSet
-    >>> from canonical.lp.dbschema import TranslationFileFormat
+    >>> from canonical.launchpad.interfaces import TranslationFileFormat
     >>> potemplate = POTemplate.get(1)
     >>> export_request_set = getUtility(IPOExportRequestSet)
 

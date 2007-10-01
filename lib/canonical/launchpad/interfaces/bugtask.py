@@ -5,28 +5,29 @@
 __metaclass__ = type
 
 __all__ = [
+    'BUG_CONTACT_BUGTASK_STATUSES',
     'BugTaskSearchParams',
     'BugTaskStatus',
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
     'ConjoinedBugTaskEditError',
-    'IBugTask',
-    'INullBugTask',
-    'IBugTaskSearch',
     'IAddBugTaskForm',
-    'IPersonBugTaskSearch',
-    'IFrontPageBugTaskSearch',
+    'IBugTask',
     'IBugTaskDelta',
-    'IUpstreamBugTask',
+    'IBugTaskSearch',
+    'IBugTaskSet',
     'IDistroBugTask',
     'IDistroSeriesBugTask',
+    'IFrontPageBugTaskSearch',
+    'INominationsReviewTableBatchNavigator',
+    'INullBugTask',
+    'IPersonBugTaskSearch',
     'IProductSeriesBugTask',
     'ISelectResultsSlicable',
-    'IBugTaskSet',
-    'INominationsReviewTableBatchNavigator',
+    'IUpstreamBugTask',
+    'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
-    'UNRESOLVED_BUGTASK_STATUSES',
-    'BUG_CONTACT_BUGTASK_STATUSES']
+    'UNRESOLVED_BUGTASK_STATUSES']
 
 from zope.component import getUtility
 from zope.interface import Attribute, Interface
@@ -239,7 +240,8 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     bugtargetdisplayname = Text(
         title=_("The short, descriptive name of the target"), readonly=True)
     bugtargetname = Text(
-        title=_("The target as presented in mail notifications"), readonly=True)
+        title=_(
+            "The target as presented in mail notifications"), readonly=True)
     bugwatch = Choice(title=_("Remote Bug Details"), required=False,
         vocabulary='BugWatch', description=_("Select the bug watch that "
         "represents this task in the relevant bug tracker. If none of the "
@@ -271,8 +273,8 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
             "datecreated and now."))
     owner = Int()
     target = Attribute("The software in which this bug should be fixed")
-    target_uses_malone = Bool(title=_("Whether the bugtask's target uses Launchpad"
-                              "officially"))
+    target_uses_malone = Bool(
+        title=_("Whether the bugtask's target uses Launchpad officially"))
     title = Text(title=_("The title of the bug related to this bugtask"),
                          readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "
@@ -286,13 +288,14 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         "with this particular bug.")
     # This property does various database queries. It is a property so a
     # "snapshot" of its value will be taken when a bugtask is modified, which
-    # allows us to compare it to the current value and see if there are any new
-    # bugcontacts that should get an email containing full bug details (rather
-    # than just the standard change mail.) It is a property on IBugTask because
-    # we currently only ever need this value for events handled on IBugTask.
+    # allows us to compare it to the current value and see if there are any
+    # new bugcontacts that should get an email containing full bug details
+    # (rather than just the standard change mail.) It is a property on
+    # IBugTask because we currently only ever need this value for events
+    # handled on IBugTask.
     bug_subscribers = Field(
-        title=_("A list of IPersons subscribed to the bug, whether directly or "
-        "indirectly."), readonly=True)
+        title=_("A list of IPersons subscribed to the bug, whether directly "
+                "or indirectly."), readonly=True)
 
     conjoined_master = Attribute(
         "The series-specific bugtask in a conjoined relationship")
@@ -407,11 +410,17 @@ class INullBugTask(IBugTask):
     have tasks reported in your context.
     """
 
+PENDING_BUGWATCH_VOCABUARY = SimpleVocabulary(
+    [SimpleTerm(
+        "pending_bugwatch",
+        title="Show only bugs that need to be forwarded to an upstream bug "
+              "tracker")])
+
 UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
     [SimpleTerm(
         "pending_bugwatch",
-        title="Show bugs that need to be forwarded to an upstream bug"
-        "tracker"),
+        title="Show bugs that need to be forwarded to an upstream "
+              "bug tracker"),
     SimpleTerm(
         "hide_upstream",
         title="Show bugs that are not known to affect upstream"),
@@ -467,7 +476,8 @@ class IBugTaskSearchBase(Interface):
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
     bug_contact = Choice(
-        title=_('Bug contact'), vocabulary='ValidPersonOrTeam', required=False)
+        title=_('Bug contact'), vocabulary='ValidPersonOrTeam',
+        required=False)
     bug_commenter = Choice(
         title=_('Bug commenter'), vocabulary='ValidPersonOrTeam',
         required=False)
@@ -501,8 +511,20 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
         title=_("Distribution"), required=False, vocabulary='Distribution')
 
 
-class IFrontPageBugTaskSearch(IBugTaskSearchBase):
+class IUpstreamProductBugTaskSearch(IBugTaskSearch):
+    """The schema used by the bug task search form for upstream products.
+    
+    This schema is the same as IBugTaskSearch, except that it has only
+    one choice for Status Upstream.
+    """
+    status_upstream = List(
+        title=_('Status Upstream'),
+        value_type=Choice(vocabulary=PENDING_BUGWATCH_VOCABUARY),
+        required=False)
 
+
+class IFrontPageBugTaskSearch(IBugTaskSearchBase):
+    """Additional search options for the front page of bugs."""
     scope = Choice(
         title=u"Search Scope", required=False,
         vocabulary="DistributionOrProductOrProject")
@@ -548,8 +570,8 @@ class IBugTaskDelta(Interface):
         """The change made to the importance of this task.
 
         The value is a dict like
-        {'old' : BugTaskImportance.FOO, 'new' : BugTaskImportance.BAR}, or None,
-        if no change was made to the importance.
+        {'old' : BugTaskImportance.FOO, 'new' : BugTaskImportance.BAR},
+        or None, if no change was made to the importance.
         """)
     assignee = Attribute(
         """The change made to the assignee of this task.
@@ -580,7 +602,7 @@ class IDistroBugTask(IBugTask):
 
 
 class IDistroSeriesBugTask(IBugTask):
-    """A bug needing fixing in a distrorealease, possibly a specific package."""
+    """A bug needing fixing in a distrorealease, or a specific package."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=True,
         vocabulary='SourcePackageName')
@@ -600,6 +622,10 @@ class IProductSeriesBugTask(IBugTask):
 # This interface should be removed when spiv pushes a fix upstream for
 # the bug that makes this hackery necessary.
 class ISelectResultsSlicable(ISelectResults):
+    """ISelectResults (from SQLOS) should be specifying __getslice__.
+    
+    This interface defines the missing __getslice__ method.
+    """
     def __getslice__(i, j):
         """Called to implement evaluation of self[i:j]."""
 
@@ -717,7 +743,7 @@ class BugTaskSearchParams:
 
 
 class IBugTaskSet(Interface):
-
+    """A utility to retrieving BugTasks."""
     title = Attribute('Title')
 
     def get(task_id):
@@ -755,7 +781,8 @@ class IBugTaskSet(Interface):
 
     def createTask(bug, product=None, productseries=None, distribution=None,
                    distroseries=None, sourcepackagename=None, status=None,
-                   importance=None, assignee=None, owner=None, milestone=None):
+                   importance=None, assignee=None, owner=None,
+                   milestone=None):
         """Create a bug task on a bug and return it.
 
         If the bug is public, bug contacts will be automatically
@@ -765,6 +792,13 @@ class IBugTaskSet(Interface):
         distribution, series tasks will be created for them.
 
         Exactly one of product, distribution or distroseries must be provided.
+        """
+
+    def findExpirableBugTasks(min_days_old):
+        """Return a list of bugtasks that are at least min_days_old.
+        
+        An Expirable bug task is unassigned, in the INCOMPLETE status,
+        and belongs to a Product or Distribtion that uses Malone.
         """
 
     def maintainedBugTasks(person, minimportance=None,

@@ -667,9 +667,11 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
+        celebrities = getUtility(ILaunchpadCelebrities)
         if (user.inTeam(self.pillar.bugcontact) or
             user.inTeam(self.pillar.owner) or
-            user == getUtility(ILaunchpadCelebrities).bug_watch_updater):
+            user.id == celebrities.bug_watch_updater.id or
+            user.id == celebrities.bug_importer.id):
             return True
         else:
             return new_status not in BUG_CONTACT_BUGTASK_STATUSES
@@ -1043,23 +1045,22 @@ class BugTaskSet:
                 status == BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
             if with_response or without_response:
                 status_clause = (
-                    '(BugTask.status = %s ' %
+                    '(BugTask.status = %s) ' %
                     sqlvalues(BugTaskStatus.INCOMPLETE))
-                status_clause += 'AND BugTask.date_incomplete '
                 if with_response:
-                    status_clause += '<='
+                    status_clause += ("""
+                        AND (Bug.date_last_message IS NOT NULL
+                             AND BugTask.date_incomplete <=
+                                 Bug.date_last_message)
+                        """)
                 elif without_response:
-                    status_clause += '>'
+                    status_clause += ("""
+                        AND (Bug.date_last_message IS NULL
+                             OR BugTask.date_incomplete >
+                                Bug.date_last_message)
+                        """)
                 else:
                     assert with_response != without_response
-                status_clause += """ (
-                    SELECT Message.datecreated
-                    FROM BugMessage, Message
-                    WHERE Message.id = BugMessage.message
-                    AND BugMessage.bug = Bug.id
-                    ORDER BY Message.datecreated DESC
-                    LIMIT 1))
-                    """
                 return status_clause
             else:
                 return '(BugTask.status = %s)' % sqlvalues(status)
@@ -1301,26 +1302,42 @@ class BugTaskSet:
         """
         upstream_clauses = []
         if params.pending_bugwatch_elsewhere:
-            # Include only bugtasks that have other bugtasks on targets
-            # not using Malone, which are not Invalid, and have no bug
-            # watch.
-            pending_bugwatch_elsewhere_clause = """
-                EXISTS (
-                    SELECT TRUE FROM BugTask AS RelatedBugTask
-                    LEFT OUTER JOIN Distribution AS OtherDistribution
-                        ON RelatedBugTask.distribution = OtherDistribution.id
-                    LEFT OUTER JOIN Product AS OtherProduct
-                        ON RelatedBugTask.product = OtherProduct.id
-                    WHERE RelatedBugTask.bug = BugTask.bug
-                        AND RelatedBugTask.id != BugTask.id
-                        AND RelatedBugTask.bugwatch IS NULL
-                        AND (
-                            OtherDistribution.official_malone IS FALSE
-                            OR OtherProduct.official_malone IS FALSE
-                            )
-                        AND RelatedBugTask.status != %s
-                    )
-                """ % sqlvalues(BugTaskStatus.INVALID)
+            if params.product:
+                # Include only bugtasks that do no have bug watches that
+                # belong to a product that does not use Malone.
+                pending_bugwatch_elsewhere_clause = """
+                    EXISTS (
+                        SELECT TRUE 
+                        FROM BugTask AS RelatedBugTask
+                            LEFT OUTER JOIN Product AS OtherProduct
+                                ON RelatedBugTask.product = OtherProduct.id
+                        WHERE RelatedBugTask.bug = BugTask.bug
+                            AND RelatedBugTask.id = BugTask.id
+                            AND RelatedBugTask.bugwatch IS NULL
+                            AND OtherProduct.official_malone IS FALSE
+                            AND RelatedBugTask.status != %s)
+                    """ % sqlvalues(BugTaskStatus.INVALID)
+            else:
+                # Include only bugtasks that have other bugtasks on targets
+                # not using Malone, which are not Invalid, and have no bug
+                # watch.
+                pending_bugwatch_elsewhere_clause = """
+                    EXISTS (
+                        SELECT TRUE 
+                        FROM BugTask AS RelatedBugTask
+                            LEFT OUTER JOIN Distribution AS OtherDistribution
+                                ON RelatedBugTask.distribution = 
+                                    OtherDistribution.id
+                            LEFT OUTER JOIN Product AS OtherProduct
+                                ON RelatedBugTask.product = OtherProduct.id
+                        WHERE RelatedBugTask.bug = BugTask.bug
+                            AND RelatedBugTask.id != BugTask.id
+                            AND RelatedBugTask.bugwatch IS NULL
+                            AND (
+                                OtherDistribution.official_malone IS FALSE
+                                OR OtherProduct.official_malone IS FALSE)
+                            AND RelatedBugTask.status != %s)
+                    """ % sqlvalues(BugTaskStatus.INVALID)
 
             upstream_clauses.append(pending_bugwatch_elsewhere_clause)
 
@@ -1527,6 +1544,50 @@ class BugTaskSet:
             bugtask._syncFromConjoinedSlave()
 
         return bugtask
+
+    def findExpirableBugTasks(self, min_days_old):
+        """See `IBugTaskSet`.
+        
+        This implementation returns the master of the master-slave conjoined
+        pairs of bugtasks. Slave conjoined bugtasks are not included in the
+        list because they can only be expired by calling the master bugtask's
+        transitionToStatus() method.
+        """
+        all_bugtasks = BugTask.select("""
+            BugTask.id IN (
+                SELECT BugTask.id
+                FROM BugTask
+                LEFT OUTER JOIN Distribution
+                    ON distribution = Distribution.id
+                    AND Distribution.official_malone IS TRUE
+                LEFT OUTER JOIN DistroRelease
+                    ON distrorelease = Distrorelease.id
+                    AND DistroRelease.distribution IN (
+                        SELECT id FROM Distribution
+                        WHERE official_malone IS TRUE)
+                LEFT OUTER JOIN Product
+                    ON product = Product.id
+                    AND Product.official_malone IS TRUE
+                LEFT OUTER JOIN ProductSeries
+                    ON productseries = ProductSeries.id
+                    AND ProductSeries.product IN (
+                        SELECT id FROM Product WHERE official_malone IS TRUE)
+                WHERE
+                    (Distribution.id IS NOT NULL
+                     OR DistroRelease.id IS NOT NULL
+                     OR Product.id IS NOT NULL
+                     OR ProductSeries.id IS NOT NULL)
+                    AND BugTask.status = %s
+                    AND BugTask.assignee IS NULL
+                    AND BugTask.bugwatch IS NULL
+                    AND BugTask.date_incomplete < CURRENT_TIMESTAMP
+                        AT TIME ZONE 'UTC' - interval '%s days'
+            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old))
+        bugtasks = []
+        for bugtask in all_bugtasks:
+            if bugtask.conjoined_master is None:
+                bugtasks.append(bugtask)
+        return bugtasks
 
     def maintainedBugTasks(self, person, minimportance=None,
                            showclosed=False, orderBy=None, user=None):

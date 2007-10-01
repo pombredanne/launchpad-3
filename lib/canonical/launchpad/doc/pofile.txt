@@ -165,9 +165,9 @@ Do some needed imports.
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> from canonical.launchpad.interfaces import ITranslationGroupSet
+    >>> from canonical.launchpad.interfaces import TranslationPermission
     >>> from canonical.launchpad.database import POFile
     >>> from canonical.launchpad.ftests import login
-    >>> from canonical.lp.dbschema import TranslationPermission
     >>> person_set = getUtility(IPersonSet)
 
 Need extra permissions to change the values.
@@ -866,7 +866,6 @@ Lets get Evolution Spanish translation in distribution Hoary.
     >>> editor = person_set.getByName('carlos')
 
     # Make sure the translation permission mode is restricted
-    >>> from canonical.lp.dbschema import TranslationPermission
     >>> product.translationpermission = TranslationPermission.RESTRICTED
 
 Non-editor can only submit a new suggestion on untranslated message.
@@ -989,7 +988,7 @@ In automatically generated credits, alsa_translation.owner is now
 credited as well.
 
     >>> alsa_translation.prepareTranslationCredits(translation_credits.potmsgset)
-    u'Happy translator\n\nLaunchpad Contributions:\n  Carlos Perell\xf3 Mar\xedn <http://launchpad.dev/~carlos>'
+    u'Happy translator\n\nLaunchpad Contributions:\n  Carlos Perell\xf3 Mar\xedn http://launchpad.dev/~carlos'
 
 Emails of translators is translated already.
 
@@ -998,11 +997,14 @@ Emails of translators is translated already.
     >>> print emails_of_translators.active_texts
     [u'danilo@canonical.com']
 
-But now credits Carlos when prepared automatically.
+But now credits Carlos when prepared automatically.  Two empty emails are
+added to make formatting nicer (first one is used as a separation
+between package and Launchpad contributors, and second is empty email
+for 'Launchpad Contributions' title; see bug #133817 for details).
 
     >>> alsa_translation.prepareTranslationCredits(
     ...     emails_of_translators.potmsgset)
-    u'danilo@canonical.com,carlos@canonical.com'
+    u'danilo@canonical.com,,,carlos@canonical.com'
 
 Names of translators are untranslated and there is no message set for them yet.
 
@@ -1017,11 +1019,32 @@ Names of translators are untranslated and there is no message set for them yet.
     >>> names_of_translators.active_texts
     [None]
 
-But now names credit Carlos when prepared automatically.
+But now names credit Carlos when prepared automatically.  As above, an
+empty name is added first to serve as a separator, and "Launchpad
+Contributions:" is used as a header for the added credits.
 
     >>> alsa_translation.prepareTranslationCredits(
     ...     names_of_translators.potmsgset)
-    u'Carlos Perell\xf3 Mar\xedn'
+    u',Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
+
+Lets add a newly supported KDE context message with credit strings
+split into two: context and message, instead of a single message with
+embedded context.
+
+    >>> new_kde_name_credits = alsa_template.createMessageSetFromText(
+    ...     text=u"Your names", context=u"NAME OF TRANSLATORS")
+
+prepareTranslationCredits works on such messages as well:
+
+    >>> alsa_translation.prepareTranslationCredits(new_kde_name_credits)
+    u',Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
+
+Similar happens for email credits as with name credits.
+
+    >>> new_kde_email_credits = alsa_template.createMessageSetFromText(
+    ...     text=u"Your emails", context=u"EMAIL OF TRANSLATORS")
+    >>> alsa_translation.prepareTranslationCredits(new_kde_email_credits)
+    u',,carlos@canonical.com'
 
 
 = POFile Security tests =

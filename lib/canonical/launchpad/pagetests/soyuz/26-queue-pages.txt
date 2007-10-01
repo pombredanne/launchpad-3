@@ -1,15 +1,7 @@
 Queue pages were designed to offer the ability to perform
 control and visualisation over the current uploads queue.
 Currently the queue page is only available for DistroSeriess.
-
-  >>> from zope.testbrowser.testing import Browser
-
 Setup a browser as the upload manager:
-
-  >>> upload_manager_browser = Browser()
-  >>> upload_manager_browser.handleErrors = False
-  >>> upload_manager_browser.addHeader(
-  ...     "Authorization", "Basic carlos@canonical.com:test")
 
 Change ubuntu's upload manager to be carlos:
 
@@ -88,6 +80,8 @@ Page access denied also for empty queues (bug #74965):
 
 Allow access from upload managers and admins:
 
+  >>> upload_manager_browser = setupBrowser(
+  ...       auth="Basic carlos@canonical.com:test")
   >>> upload_manager_browser.open(
   ...     "http://localhost/ubuntu/breezy-autotest/+queue")
   >>> upload_manager_browser.getControl(

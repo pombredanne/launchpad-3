@@ -211,7 +211,7 @@ class Publisher(object):
                                    (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        self.archive.purpose != ArchivePurpose.PPA):
+                        not self.archive.allowUpdatesToReleasePocket):
                         # We're not doing a full run and the
                         # distroseries is now 'stable': if we try to
                         # write a release file for it, we're doing
@@ -239,7 +239,7 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        self.archive.purpose != ArchivePurpose.PPA):
+                        not self.archive.allowUpdatesToReleasePocket):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
                             "Oops, indexing stable distroseries.")
@@ -269,7 +269,7 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        self.archive.purpose != ArchivePurpose.PPA):
+                        not self.archive.allowUpdatesToReleasePocket):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
                             "Oops, indexing stable distroseries.")
@@ -280,6 +280,11 @@ class Publisher(object):
         if not (distroseries.name, pocket) in self.dirty_pockets:
             return False
         return True
+
+    def _makeFileGroupWriteableAndWorldReadable(self, file_path):
+        """Make the file group writable and world readable."""
+        mode = stat.S_IMODE(os.stat(file_path).st_mode)
+        os.chmod(file_path, mode | stat.S_IWGRP | stat.S_IROTH)
 
     def _writeComponentIndexes(self, distroseries, pocket, component):
         """Write Index files for single distroseries + pocket + component.
@@ -320,11 +325,8 @@ class Publisher(object):
         os.rename(temp_index, source_index_path)
         os.rename(temp_index_gz, source_index_gz_path)
 
-        # Make the files group writable.
-        mode = stat.S_IMODE(os.stat(source_index_path).st_mode)
-        os.chmod(source_index_path, mode | stat.S_IWGRP)
-        mode = stat.S_IMODE(os.stat(source_index_gz_path).st_mode)
-        os.chmod(source_index_gz_path, mode | stat.S_IWGRP)
+        self._makeFileGroupWriteableAndWorldReadable(source_index_path)
+        self._makeFileGroupWriteableAndWorldReadable(source_index_gz_path)
 
         for arch in distroseries.architectures:
             arch_path = 'binary-%s' % arch.architecturetag
@@ -359,11 +361,9 @@ class Publisher(object):
             os.rename(temp_index, package_index_path)
             os.rename(temp_index_gz, package_index_gz_path)
 
-            # Make the files group writable.
-            mode = stat.S_IMODE(os.stat(package_index_path).st_mode)
-            os.chmod(package_index_path, mode | stat.S_IWGRP)
-            mode = stat.S_IMODE(os.stat(package_index_gz_path).st_mode)
-            os.chmod(package_index_gz_path, mode | stat.S_IWGRP)
+            # Make the files group writable and world readable.
+            self._makeFileGroupWriteableAndWorldReadable(package_index_path)
+            self._makeFileGroupWriteableAndWorldReadable(package_index_gz_path)
 
         # Inject static requests for Release files into self.apt_handler
         # in a way which works for NoMoreAptFtpArchive without changing
@@ -461,8 +461,8 @@ class Publisher(object):
         # Only the primary archive has uncompressed and bz2 archives.
         if self.archive.purpose == ArchivePurpose.PRIMARY:
             index_suffixes = ('', '.gz', '.bz2')
-        elif self.archive.purpose == ArchivePurpose.COMMERCIAL:
-            # The commercial archive needs uncompressed files for
+        elif self.archive.purpose == ArchivePurpose.PARTNER:
+            # The partner archive needs uncompressed files for
             # compatibility with signed Release files.
             index_suffixes = ('', '.gz')
         else:

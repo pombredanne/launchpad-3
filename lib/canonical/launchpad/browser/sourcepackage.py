@@ -24,7 +24,7 @@ from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
-from canonical.launchpad.browser.rosetta import TranslationsMixin
+from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
 from canonical.launchpad.webapp import (
@@ -244,3 +244,11 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
     def searchName(self):
         return False
 
+    def defaultBuildState(self):
+        """Default build state for sourcepackage builds.
+
+        This overrides the default that is set on BuildRecordsView."""
+        # None maps to "all states". The reason we display all states on
+        # this page is because it's unlikely that there will be so
+        # many builds that the listing will be overwhelming.
+        return None

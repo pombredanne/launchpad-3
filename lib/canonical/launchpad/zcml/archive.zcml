@@ -54,6 +54,11 @@
       facet="overview"
       name="+ppa-row"
       />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="launchpad.Edit">
     <browser:page
       template="../templates/archive-view-tos.pt"
       facet="overview"

@@ -8,8 +8,8 @@ from zope.interface.verify import verifyObject
 
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     MozillaXpiImporter)
-from canonical.launchpad.interfaces import ITranslationFormatImporter
-from canonical.lp.dbschema import TranslationFileFormat
+from canonical.launchpad.interfaces import (
+    ITranslationFormatImporter, TranslationFileFormat)
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -28,10 +28,10 @@ class MozillaXpiImporterTestCase(unittest.TestCase):
 
     def testFormat(self):
         """Check that MozillaXpiImporter handles the XPI file format."""
+        format = self.importer.getFormat(u'')
         self.failUnless(
-            self.importer.format == TranslationFileFormat.XPI,
-            'MozillaXpiImporter format expected XPI but got %s' % (
-                self.importer.format.name))
+            format == TranslationFileFormat.XPI,
+            'MozillaXpiImporter format expected XPI but got %s' % format.name)
 
     def testHasAlternativeMsgID(self):
         """Check that MozillaXpiImporter has an alternative msgid."""

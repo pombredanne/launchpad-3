@@ -3,15 +3,8 @@ page.
 
 The approve/decline links and buttons aren't visible to unprivileged users.
 
-    >>> from zope.testbrowser.testing import Browser
-
-    >>> no_priv_browser = Browser()
-    >>> no_priv_browser.handleErrors = False
-    >>> no_priv_browser.addHeader(
-    ...     "Authorization", "Basic no-priv@canonical.com:test")
-
+    >>> no_priv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> no_priv_browser.open("http://launchpad.dev/bugs/1")
-
     >>> no_priv_browser.getLink(
     ...     url="http://launchpad.dev/firefox/+bug/1/nominations/"
     ...         "1/+editstatus")
