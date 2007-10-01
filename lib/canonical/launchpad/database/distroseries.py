@@ -381,16 +381,10 @@ def copy_active_translations_as_update(child, transaction, logger):
             # don't exist in the POFile source table.
             cur.execute("""
                 DELETE FROM %s
-                WHERE
-                    pofile >= %s AND
-                    pofile <= %s AND
-                    pofile NOT IN (
-                        SELECT id
-                        FROM POFile
-                        WHERE id >= %s AND id <= %s)
+                WHERE pofile NOT IN (
+                    SELECT id FROM POFile WHERE id >= %s AND id <= %s)
                 """ % (
-                    holding_table, self.lowest_pofile, self.highest_pofile,
-                    self.lowest_pofile, self.highest_pofile))
+                    holding_table, self.lowest_pofile, self.highest_pofile))
             allow_sequential_scans(cur, False)
 
     def prepare_pomsgset_batch(
@@ -527,16 +521,10 @@ def copy_active_translations_as_update(child, transaction, logger):
             allow_sequential_scans(cur, True)
             cur.execute("""
                 DELETE FROM %s AS holding
-                WHERE
-                    pomsgset >= %s AND
-                    pomsgset <= %s AND
-                    pomsgset NOT IN (
-                        SELECT id
-                        FROM POMsgSet
-                        WHERE id >= %s AND id <= %s)
+                WHERE pomsgset NOT IN (
+                    SELECT id FROM POMsgSet WHERE id >= %s AND id <= %s)
                 """ % (
-                holding_table, self.lowest_pomsgset, self.highest_pomsgset,
-                self.lowest_pomsgset, self.highest_pomsgset))
+                holding_table, self.lowest_pomsgset, self.highest_pomsgset))
             allow_sequential_scans(cur, False)
 
     def prepare_posubmission_batch(
