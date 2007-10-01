@@ -27,10 +27,7 @@ translations and its associated project, GNOME.
 Now, we test that a member of a translation team is able to translate
 directly, in this example, we are using 'tsukimi' account.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> tsukimi_browser = Browser()
-    >>> tsukimi_browser.addHeader(
-    ...     'Authorization', 'Basic tsukimi@quaqua.net:test')
+    >>> tsukimi_browser = setupBrowser(auth='Basic tsukimi@quaqua.net:test')
     >>> tsukimi_browser.open(
     ...     'http://translations.launchpad.dev/netapplet/trunk/+pots/' +
     ...         'netapplet/es/+translate')
@@ -43,9 +40,7 @@ directly, in this example, we are using 'tsukimi' account.
 Next test is with a non member of that translation team, the 'No Privileges'
 account. We check that we get the warning that we are not members of the team.
 
-    >>> no_priv_browser = Browser()
-    >>> no_priv_browser.addHeader(
-    ...     'Authorization', 'Basic no-priv@canonical.com:test')
+    >>> no_priv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> no_priv_browser.open(
     ...     'http://translations.launchpad.dev/netapplet/trunk/+pots/' +
     ...         'netapplet/es/+translate')
