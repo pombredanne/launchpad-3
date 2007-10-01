@@ -10,21 +10,14 @@ __all__ = [
     'SearchBugs',
     ]
 
-import cgi
-from datetime import datetime
-
 from zope.app.pagetemplate import ViewPageTemplateFile
 
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
-from canonical.launchpad.webapp import canonical_url, LaunchpadFormView
-from zope.app.pagetemplate import ViewPageTemplateFile
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.browser.bugtask import BugTaskView
-from canonical.launchpad.browser import (
-    BugTasksAndNominationsView, BugsBugTaskSearchListingView,
-    BugTaskSearchListingView,
-    PersonRelatedBugsView)
+from canonical.launchpad.browser import BugsBugTaskSearchListingView
 
 
 class BugFeedContentView(LaunchpadView):
