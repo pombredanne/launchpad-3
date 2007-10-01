@@ -46,7 +46,7 @@ class ILanguagePack(Interface):
         required=True)
 
     distroseries = Choice(
-        title=_('The distribution series from where it was exported.'),
+        title=_('The distribution series from which it was exported.'),
         required=True, vocabulary='FilteredDistroSeries')
 
     type = Choice(

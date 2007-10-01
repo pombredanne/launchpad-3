@@ -1,4 +1,8 @@
-<metal:top-contributors define-macro="top-contributors-table-body">
+<metal:top-contributors
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  define-macro="top-contributors-table-body">
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
       :contributors: A list of KarmaContextContributors to be listed

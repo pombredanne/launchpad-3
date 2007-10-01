@@ -1,19 +1,27 @@
-<metal:page define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
+<metal:page
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <metal:block define-slot="top_slot" />
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lpm="http://ns.launchpad.net/lpm" xml:lang="en" lang="en" dir="ltr"
-    tal:attributes="lang view/lang|default_language|default;
-                    xml:lang view/lang|default_language|default;
-                    dir view/dir|string:ltr"
-    tal:define="
-        rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-        revno modules/canonical.launchpad.versioninfo/revno;
-        icingroot string:${rooturl}+icing/rev${revno};
-        site_message modules/canonical.config/config/launchpad/site_message;
-        devmode modules/canonical.config/config/devmode;
-        is_demo modules/canonical.config/config/launchpad/is_demo"
-    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-    xmlns:metal="http://xml.zope.org/namespaces/metal"
-    xmlns:tal="http://xml.zope.org/namespaces/tal"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:lpm="http://ns.launchpad.net/lpm"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  tal:attributes="lang view/lang|default_language|default;
+                  xml:lang view/lang|default_language|default;
+                  dir view/dir|string:ltr"
+  tal:define="
+      rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
+      revno modules/canonical.launchpad.versioninfo/revno;
+      icingroot string:${rooturl}+icing/rev${revno};
+      site_message modules/canonical.config/config/launchpad/site_message;
+      devmode modules/canonical.config/config/devmode;
+      is_demo modules/canonical.config/config/launchpad/is_demo"
 >
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
@@ -342,11 +350,12 @@
         <li class="item"><a href="/distros">Distributions</a></li>
         <li class="item"><a href="/people">People</a></li>
         <li class="item"><a href="/sprints">Meetings</a></li>
+      </ul>
     </div>
   </body>
 </html>
 <tal:requestlog
     define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
-    replace="structure string:<!-- at least ${log} -->" />
+    replace="structure string:&lt;!-- at least ${log} --&gt;" />
 </metal:page>
 <!-- 1-0 inprogress portlets wrong in IE/Mac -->

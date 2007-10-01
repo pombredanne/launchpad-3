@@ -50,6 +50,9 @@ class FakeLogger:
     def warning(self, *stuff, **kw):
         self.message('WARNING', *stuff, **kw)
 
+    def error(self, *stuff, **kw):
+        self.message('ERROR', *stuff, **kw)
+
     def info(self, *stuff, **kw):
         self.message('INFO', *stuff, **kw)
 

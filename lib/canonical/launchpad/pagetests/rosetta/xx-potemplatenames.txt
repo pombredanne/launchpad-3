@@ -11,7 +11,7 @@ Regular users are unable to access listing of PO Template Names.
 Carlos, one of Rosetta Admins, is able to access list of PO Template
 Names and searches for evolution template in there.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
   >>> browser.open('http://translations.launchpad.dev/potemplatenames')
   >>> browser.getControl("Search PO template names:").value = 'evo'
   >>> browser.getControl('Search Names').click()
