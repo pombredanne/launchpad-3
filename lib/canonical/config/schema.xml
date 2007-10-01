@@ -93,6 +93,7 @@
     <sectiontype name="shipitedubuntu" extends="virtual_host" />
     <sectiontype name="xmlrpc" extends="virtual_host" />
     <sectiontype name="xmlrpc-private" extends="virtual_host" />
+    <sectiontype name="feeds" extends="virtual_host" />
 
     <sectiontype name="virtual_hosts">
         <key name="use_https" datatype="boolean" required="yes">
@@ -114,6 +115,7 @@
         <section name="*" type="xmlrpc" attribute="xmlrpc" required="yes" />
         <section name="*" type="xmlrpc-private" attribute="xmlrpc_private"
                           required="yes" />
+        <section name="*" type="feeds" attribute="feeds" required="yes" />
     </sectiontype>
 
     <sectiontype name="launchpad_errorreports">

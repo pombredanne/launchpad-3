@@ -195,6 +195,8 @@ class LaunchpadRequestPublicationFactory:
                           PublicXMLRPCRequest, PublicXMLRPCPublication))
         vhrps.append(VHRP('xmlrpc_private',
                           PrivateXMLRPCRequest, PrivateXMLRPCPublication))
+        vhrps.append(VHRP('feeds', FeedsBrowserRequest,
+            FeedsPublication))
         # Done with using the short form of VirtualHostRequestPublication, so
         # clean up, as we won't need to use it again later.
         del VHRP
@@ -842,7 +844,7 @@ class FeedsPublication(LaunchpadBrowserPublication):
         return end_point
 
 
-class FeedsRequest(LaunchpadBrowserRequest):
+class FeedsBrowserRequest(LaunchpadBrowserRequest):
     """Request type for a launchpad feed."""
     implements(canonical.launchpad.layers.FeedsLayer)
 
