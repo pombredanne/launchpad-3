@@ -513,14 +513,31 @@ def copy_active_translations_as_update(child, transaction, logger):
 
     # ### POSubmission ###
 
-    def prepare_posubmission_pouring(holding_table, source_table):
+    class PreparePOSubmissionPouring:
         """Prevent pouring of `POSubmission`s without `POMsgSet`s."""
-        # POMsgSet has already been poured.  Delete from POSubmission holding
-        # table any rows referring to nonexistent POMsgSets.
-        cursor().execute("""
-            DELETE FROM %s AS holding
-            WHERE holding.pomsgset NOT IN (SELECT id FROM POMsgSet)
-            """ % holding_table)
+
+        def __init__(self, lowest_pomsgset, highest_pomsgset):
+            self.lowest_pomsgset = quote(lowest_pomsgset)
+            self.highest_pomsgset = quote(highest_pomsgset)
+
+        def __call__(self, holding_table, source_table):
+            # POMsgSet has already been poured.  Delete from POSubmission
+            # holding table any rows referring to nonexistent POMsgSets.
+            cur = cursor()
+            allow_sequential_scans(cur, True)
+            cur.execute("""
+                DELETE FROM %s AS holding
+                WHERE
+                    pomsgset >= %s AND
+                    pomsgset <= %s AND
+                    pomsgset NOT IN (
+                        SELECT id
+                        FROM POMsgSet
+                        WHERE id >= %s AND id <= %s)
+                """ % (
+                holding_table, self.lowest_pomsgset, self.highest_pomsgset,
+                self.lowest_pomsgset, self.highest_pomsgset))
+            allow_sequential_scans(cur, False)
 
     def prepare_posubmission_batch(
         holding_table, source_table, batch_size, start_id, end_id):
@@ -584,6 +601,14 @@ def copy_active_translations_as_update(child, transaction, logger):
                  better.datecreated >= holding.datecreated)
         )
         """
+
+    cur = cursor()
+    cur.execute("SELECT min(new_id), max(new_id) FROM %s"
+        % holding_tables['pomsgset'])
+    lowest_pomsgset, highest_pomsgset = cur.fetchone()
+    prepare_posubmission_pouring = PreparePOSubmissionPouring(
+        lowest_pomsgset, highest_pomsgset)
+
     copier.extract(
         'POSubmission', joins=['POMsgSet'],
         where_clause="""
