@@ -47,6 +47,7 @@ class ExportResult:
         self.name = name
         self.url = None
         self.failure = None
+        self.templates = []
 
     def _getFailureEmailBody(self, person):
         """Send an email notification about the export failing."""
@@ -100,7 +101,16 @@ class ExportResult:
             # There are no errors, so nothing else to do here.
             return
 
-        # The export process had errors that we should notify to admins.
+        # The export process had errors that we should notify admins about.
+        if self.templates:
+            template_names = ', '.join(self.templates)
+            template_sentence = """
+
+                The failed request involved these templates: %s.
+                """ % template_names
+        else:
+            template_sentence = ""
+
         try:
             admins_email_body = textwrap.dedent('''
                 Hello admins,
@@ -111,14 +121,19 @@ class ExportResult:
                 this export. You can see the list of failed files with the
                 error we got:
 
-                %s''') % (person.browsername, self.failure)
+                %s%s''') % (
+                    person.browsername, self.failure, template_sentence)
         except UnicodeDecodeError:
+            # Unfortunately this happens sometimes: invalidly-encoded data
+            # makes it into the exception description, possibly from error
+            # messages printed by msgfmt.  Before we can fix that, we need to
+            # know what exports suffer from this problem.
             admins_email_body = textwrap.dedent('''
                 Hello admins,
 
                 A UnicodeDecodeError occurred while trying to notify you of a
-                failure during translation export "%s" requested by %s.
-                ''' % (self.name, person.browsername))
+                failure during a translation export requested by %s.
+                %s''' % (person.browsername, template_sentence))
 
         simple_sendmail(
             from_addr=config.rosetta.rosettaadmin.email,
@@ -157,6 +172,7 @@ def process_request(person, objects, format, logger):
             logger.debug(
                 'Exporting objects for %s, related to template %s'
                 % (person.displayname, template_name))
+            result.templates.append(template_name)
             last_template_name = template_name
         translation_file_list.append(ITranslationFile(obj))
 
