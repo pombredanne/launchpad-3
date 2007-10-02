@@ -39,14 +39,7 @@ if __name__ == '__main__':
             'Expected one of %s, but got: %r'
             % (branch_type_map.keys(), which))
 
-    errorreports = getattr(config.supermirror, '%s_errorreports' % (which,))
     manager = jobmanager.JobManager(BranchStatusClient(), branch_type)
-
-    # Customize the oops reporting config.
-    config.launchpad.errorreports.oops_prefix = errorreports.oops_prefix
-    config.launchpad.errorreports.errordir = errorreports.errordir
-    config.launchpad.errorreports.copy_to_zlog = errorreports.copy_to_zlog
-
     log = logger(options, 'branch-puller')
 
     reactor.callWhenRunning(run_mirror, log, manager)
