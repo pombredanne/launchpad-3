@@ -1,0 +1,145 @@
+= Atom Feeds =
+
+Feeds produce XML not HTML.  Therefore we must parse the output as XML
+using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
+
+    >>> from BeautifulSoup import BeautifulStoneSoup as BSS
+    >>> from BeautifulSoup import SoupStrainer
+
+Please note that when displaying the results of the feeds in a reader
+the order of entries may not be the same as generated.  Some readers
+will arrange the entries in a different sort order based on the update
+time. 
+
+Define a helper function for parsing the entries:
+    >>> def parse_entries(contents):
+    ...     entries = [tag for tag in BSS(browser.contents,
+    ...                   parseOnlyThese=SoupStrainer('entry'))]
+    ...     return entries
+
+== Latest bugs for a product ==
+
+    >>> browser.open('http://launchpad.dev/jokosher/latest-bugs.atom')
+    >>> browser.title
+    'Bugs in Jokosher'
+    >>> browser.url
+    'http://launchpad.dev/jokosher/latest-bugs.atom'
+
+    >>> soup = BSS(browser.contents)
+    >>> print extract_text(soup.find('id'))
+    http://launchpad.dev/jokosher/latest-bugs.atom
+    >>> entries = parse_entries(browser.contents)
+    >>> print len(entries)
+    2
+    >>> entry = entries[0]
+    >>> print extract_text(entry.title)
+    [12] Copy, Cut and Delete operations should work on selections
+    >>> print extract_text(entry.author('name')[0])
+    Foo Bar
+    >>> print extract_text(entry.author('uri')[0])
+    http://launchpad.dev/~name16
+    >>> entry = entries[1]
+    >>> print extract_text(entry.author('name')[0])
+    Foo Bar
+    >>> print extract_text(entry.author('uri')[0])
+    http://launchpad.dev/~name16
+
+    >>> print extract_text(entry.title)
+    [11] Make Jokosher use autoaudiosink
+
+== Latest bugs for a project ==
+
+    >>> browser.open('http://launchpad.dev/mozilla/latest-bugs.atom')
+    >>> browser.title
+    'Bugs in the Mozilla Project'
+    >>> browser.url
+    'http://launchpad.dev/mozilla/latest-bugs.atom'
+
+    >>> soup = BSS(browser.contents)
+    >>> print extract_text(soup.find('id'))
+    http://launchpad.dev/mozilla/latest-bugs.atom
+    >>> entries = parse_entries(browser.contents)
+    >>> print len(entries)
+    4
+
+    >>> entry = entries[0]
+    >>> print extract_text(entry.title)
+    [9] Thunderbird crashes
+    >>> print extract_text(entry.author('name')[0])
+    Foo Bar
+    >>> print extract_text(entry.author('uri')[0])
+    http://launchpad.dev/~name16
+
+    >>> entry = entries[1]
+    >>> print extract_text(entry.title)
+    [5] Firefox install instructions should be complete
+    >>> print extract_text(entry.author('name')[0])
+    Sample Person
+    >>> print extract_text(entry.author('uri')[0])
+    http://launchpad.dev/~name12
+
+== Latest bugs for a person ==
+
+    >>> browser.open('http://launchpad.dev/~name16/latest-bugs.atom')
+    >>> browser.title
+    'Bugs for Foo Bar'
+    >>> browser.url
+    'http://launchpad.dev/~name16/latest-bugs.atom'
+
+    >>> soup = BSS(browser.contents)
+    >>> print extract_text(soup.find('id'))
+    http://launchpad.dev/~name16/latest-bugs.atom
+    >>> entries = parse_entries(browser.contents)
+    >>> print len(entries)
+    6
+
+    >>> entry = entries[0]
+    >>> print extract_text(entry.title)
+    [3] Bug Title Test
+    >>> print extract_text(entry.author('name')[0])
+    Foo Bar
+    >>> print extract_text(entry.author('uri')[0])
+    http://launchpad.dev/~name16
+
+    >>> entry = entries[1]
+    >>> print extract_text(entry.title)
+    [12] Copy, Cut and Delete operations should work on selections
+    >>> print extract_text(entry.author('name')[0])
+    Foo Bar
+    >>> print extract_text(entry.author('uri')[0])
+    http://launchpad.dev/~name16
+
+== General bug search ==
+
+    >>> import cgi
+    >>> url = ("http://launchpad.dev/bugs/search-bugs.atom?"
+    ...        "field.searchtext=&search=Search+Bug+Reports&"
+    ...        "field.scope=all&field.scope.target=")
+    >>> browser.open(url)
+    >>> browser.title
+    'Bugs from custom search'
+
+    >>> soup = BSS(browser.contents)
+    >>> entry_id = extract_text(soup.find('id'))
+    >>> assert entry_id==cgi.escape(url), "Id does match URL (%s)" % entry_id
+
+    >>> entries = parse_entries(browser.contents)
+    >>> print len(entries)
+    20
+
+    >>> entry = entries[0]
+    >>> print extract_text(entry.title)
+    [3] Bug Title Test
+    >>> print extract_text(entry.author('name')[0])
+    Foo Bar
+    >>> print extract_text(entry.author('uri')[0])
+    http://launchpad.dev/~name16
+
+    >>> entry = entries[1]
+    >>> print extract_text(entry.title)
+    [5] Firefox install instructions should be complete
+    >>> print extract_text(entry.author('name')[0])
+    Sample Person
+    >>> print extract_text(entry.author('uri')[0])
+    http://launchpad.dev/~name12
+
