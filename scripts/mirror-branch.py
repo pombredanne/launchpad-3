@@ -8,7 +8,6 @@ from optparse import OptionParser
 
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
-from canonical.launchpad.scripts import logger_options, logger
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror, PullerWorkerProtocol)
 
@@ -41,7 +40,6 @@ def force_bzr_to_use_urllib():
 
 if __name__ == '__main__':
     parser = OptionParser()
-    logger_options(parser)
     (options, arguments) = parser.parse_args()
 
     branch_type_map = {
@@ -67,12 +65,10 @@ if __name__ == '__main__':
     config.launchpad.errorreports.errordir = errorreports.errordir
     config.launchpad.errorreports.copy_to_zlog = errorreports.copy_to_zlog
 
-    log = logger(options, 'branch-puller')
-
     shut_up_deprecation_warning()
     force_bzr_to_use_urllib()
 
-    protocol = PullerWorkerProtocol(sys.stdout, sys.stderr, log)
+    protocol = PullerWorkerProtocol(sys.stdout, sys.stderr)
     BranchToMirror(
         source_url, destination_url, int(branch_id), unique_name, branch_type,
         protocol).mirror()

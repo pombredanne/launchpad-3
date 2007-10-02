@@ -63,8 +63,7 @@ class BranchToMirrorMixin:
             dest_dir = os.path.join(self.test_dir, 'dest_dir')
         if client is None:
             client = BranchStatusClient()
-        protocol = PullerWorkerProtocol(
-            StringIO(), StringIO(), logging.getLogger())
+        protocol = PullerWorkerProtocol(StringIO(), StringIO())
         return BranchToMirror(
             src_dir, dest_dir, branch_id=1, unique_name='foo/bar/baz',
             branch_type=branch_type, protocol=protocol)
@@ -800,8 +799,7 @@ class TestWorkerProtocol(unittest.TestCase, BranchToMirrorMixin):
         self.output = StringIO()
         self.error = StringIO()
         self.resetBuffers()
-        logger = logging.getLogger()
-        self.protocol = PullerWorkerProtocol(self.output, self.error, logger)
+        self.protocol = PullerWorkerProtocol(self.output, self.error)
         self.branch_to_mirror = self.makeBranchToMirror()
 
     def tearDown(self):

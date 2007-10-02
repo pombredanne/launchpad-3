@@ -88,10 +88,9 @@ def get_canonical_url(unique_name):
 
 class PullerWorkerProtocol:
 
-    def __init__(self, output, error, logger):
+    def __init__(self, output, error):
         self.output = output
         self.error = error
-        self.logger = logger
 
     def sendNetstring(self, string):
         self.output.write('%d:%s,' % (len(string), string))
@@ -112,7 +111,6 @@ class PullerWorkerProtocol:
             ('error-explanation', str(message))])
         request.URL = get_canonical_url(branch_to_mirror.unique_name)
         errorlog.globalErrorUtility.raising(sys.exc_info(), request)
-        self.logger.info('Recorded %s', request.oopsid)
         return request.oopsid
 
     def startMirroring(self, branch_to_mirror):

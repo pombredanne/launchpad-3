@@ -133,6 +133,7 @@ class BranchToMirror:
         return self.branch_status_client.startMirroring(self.branch_id)
 
     def mirrorFailed(self, reason, oops):
+        self.logger.info('Recorded %s', oops)
         self.logger.info('Recorded failure: %s', str(reason))
         return self.branch_status_client.mirrorFailed(self.branch_id, reason)
 
