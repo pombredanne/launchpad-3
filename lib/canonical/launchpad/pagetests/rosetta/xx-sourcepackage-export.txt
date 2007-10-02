@@ -44,3 +44,31 @@ export format, and request the download.
     ...     print message
     Your request has been received. Expect to receive an email shortly.
 
+== Mixed formats ==
+
+We only support exports in a single, chosen file format.  If the source
+package has templates in different formats, the request page shows a warning
+about this.
+
+Evolution/Hoary has three templates (4,7,9), all with source_file_format=1.
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.database.potemplate import POTemplateSubset
+    >>> from canonical.launchpad.database.distribution import DistributionSet
+    >>> from canonical.launchpad.interfaces.translationfileformat import (
+    ...     TranslationFileFormat)
+    >>> ubuntu = DistributionSet().getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> hoary_subset = POTemplateSubset(distroseries=hoary)
+    >>> an_evolution_template = hoary_subset.getPOTemplateByPath(
+    ...     'po/evolution-2.2.pot')
+    >>> an_evolution_template.source_file_format = TranslationFileFormat.MO
+    >>> flush_database_updates()
+
+    >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+export')
+    >>> for message in get_feedback_messages(user_browser):
+    ...     print message
+    This package has templates with different native file formats.  If you
+    proceed, all translations will be exported in the single format you
+    specify.
+
