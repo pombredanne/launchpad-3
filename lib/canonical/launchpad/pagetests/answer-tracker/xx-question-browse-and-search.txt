@@ -364,10 +364,8 @@ He needs to login to access that page:
       ...
     Unauthorized...
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> sample_person_browser = Browser()
-    >>> sample_person_browser.addHeader(
-    ...     'Authorization', 'Basic test@canonical.com:test')
+    >>> sample_person_browser = setupBrowser(
+    ...     auth='Basic test@canonical.com:test')
     >>> sample_person_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
     ...     '+questions')

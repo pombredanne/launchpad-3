@@ -30,7 +30,7 @@ In order to subscribe to a branch, the user must be logged in.
 Let us subscribe to one of the branches. First, let's make sure we can see the
 link "Subscribe" from a branch's page.
 
-    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
 
 Initially there should be no subscribers.
@@ -187,10 +187,7 @@ The user can only subscribe teams that they are members of.
 
 Sample Person is a member of Landscape Developers.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-    >>> browser.addHeader(
-    ...     'Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> browser.getLink('Subscribe someone else').click()

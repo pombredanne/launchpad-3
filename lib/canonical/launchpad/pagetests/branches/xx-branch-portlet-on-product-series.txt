@@ -16,7 +16,7 @@ revision control portlet should show 'None given'
 
 Now if the registrant associates a branch it should be there:
 
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox/trunk')
   >>> browser.getLink('Change details').click()
   >>> browser.url
