@@ -41,14 +41,11 @@
               href string:https://launchpad.net/+login?origin=${view/origin}"
           >create a new account</a> if you don't have one already.</p>
 
-          <tal:removed condition="nothing">
-            <!-- XXX: Guilherme Salgado 2007-04-19:
-                 Removed until we recover the faq that has disappeared.-->
-
-            <p>If you have questions about shipments and dates please
-            refer to the <a href="http://www.ubuntu.com/support/faq#head-7eef2db63e0a75424cdd663ee6f7b8eedcf19607">Ubuntu FAQ</a>.</p>
-            <br />
-          </tal:removed>
+          <p>
+            If you have questions about shipments and dates please refer to the
+            <a href="http://www.ubuntu.com/getubuntu/shipit-faq">ShipIt FAQ</a>.
+          </p>
+          <br />
 
           </tal:is-open>
 
