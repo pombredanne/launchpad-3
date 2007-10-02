@@ -62,7 +62,7 @@ class BaseExportView(LaunchpadView):
             self.request.response.addErrorNotification(
                 "Please select at least one translation or template.")
         else:
-            self.request_set.addRequest( self.user, templates, pofiles, format)
+            self.request_set.addRequest(self.user, templates, pofiles, format)
             self.nextURL()
 
     def nextURL(self):
