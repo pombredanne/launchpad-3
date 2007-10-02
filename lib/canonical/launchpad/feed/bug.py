@@ -115,7 +115,6 @@ class ProjectProductBugsFeed(BugsFeedBase):
 
     def getRawItems(self):
         """Get the raw set of items for the feed."""
-        #return self.context.getLatestBugTasks(quantity=self.quantity)
         return self.delegate_view.latestBugTasks(quantity=self.quantity)
 
 
