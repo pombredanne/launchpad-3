@@ -80,15 +80,23 @@
             tal:condition="context/currentseries/architectures"
             class="architecture"
           >
-            <li tal:repeat="architecture context/currentseries/architectures">
-              <a
-                tal:attributes="href architecture/fmt:url"
-                tal:content="architecture/displayname"
-                />
-              <tal:unofficial condition="not: architecture/official">
-                (unofficial)
-              </tal:unofficial>
+            <tal:official
+                 repeat="architecture context/currentseries/architectures">
+              <li tal:condition="architecture/official">
+                <a tal:attributes="href architecture/fmt:url"
+                   tal:content="architecture/displayname"
+                   />
             </li>
+            </tal:official>
+            <tal:unofficial
+                 repeat="architecture context/currentseries/architectures">
+              <li tal:condition="not: architecture/official">
+                <a tal:attributes="href architecture/fmt:url"
+                   tal:content="architecture/displayname"
+                   />
+                (unofficial)
+            </li>
+            </tal:unofficial>
           </ul>
         </div>
         <div tal:content="structure context/@@+portlet-latestbugs" />
