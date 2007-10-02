@@ -46,15 +46,13 @@ from canonical.launchpad.interfaces import (
     IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo,
     IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
     ILaunchpadCelebrities, ILaunchpadStatisticSet, ILoginTokenSet,
-    IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet, IProduct, ISSHKey,
-    ISSHKeySet, ISignedCodeOfConductSet, ISourcePackageNameSet, ITeam,
-    ITranslationGroupSet, IWikiName, IWikiNameSet, JoinNotAllowed,
-    LoginTokenType, PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH,
-    SSHKeyType, ShipItConstants, ShippingRequestStatus,
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
-    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
+    INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
+    IPillarNameSet, IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet,
+    ISSHKey, ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
+    JoinNotAllowed, LoginTokenType, PersonCreationRationale,
+    QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants, ShippingRequestStatus,
+    SSHKeyType, TeamMembershipRenewalPolicy, TeamMembershipStatus,
+    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar
@@ -1903,25 +1901,34 @@ class PersonSet:
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
+        base_query = ("Person.account_status not in (%s)"
+                      % ','.join(sqlvalues(*INACTIVE_ACCOUNT_STATUSES)))
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between two queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
-        email_query = """
-            EmailAddress.person = Person.id AND
-            lower(EmailAddress.email) LIKE %s || '%%'
+        email_query = base_query + """
+            AND EmailAddress.person = Person.id
+            AND lower(EmailAddress.email) LIKE %s || '%%'
             """ % quote_like(text)
         results = Person.select(email_query, clauseTables=['EmailAddress'])
         name_query = "fti @@ ftq(%s) AND merged is NULL" % quote(text)
+        name_query += " AND " + base_query
         return results.union(Person.select(name_query), orderBy=orderBy)
 
-    def findPerson(self, text="", orderBy=None):
+    def findPerson(
+            self, text="", orderBy=None, exclude_inactive_accounts=True):
         """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
-        base_query = (
-            'Person.teamowner IS NULL AND Person.merged IS NULL '
-            'AND EmailAddress.person = Person.id')
+        base_query = """
+            Person.teamowner IS NULL
+            AND Person.merged IS NULL
+            AND EmailAddress.person = Person.id
+            """
+        if exclude_inactive_accounts:
+            base_query += (" AND Person.account_status not in (%s)"
+                           % ','.join(sqlvalues(*INACTIVE_ACCOUNT_STATUSES)))
         clauseTables = ['EmailAddress']
         if text:
             # We use a UNION here because this makes things *a lot* faster

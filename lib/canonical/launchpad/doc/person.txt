@@ -457,50 +457,61 @@ addresses that belongs to a person using the methods provided by IPersonSet.
 While we don't have Full Text Indexes in the emailaddress table, we'll be
 trying to match the text only against the beginning of an email address:
 
-    >>> results = personset.find('ubuntu')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'Mirror Administrators', u'ubuntu-mirror-admins', [])
-    (u'Sigurd Gartmann', u'sigurd-ubuntu', [u'sigurd-ubuntu@brogar.org'])
-    (u'Ubuntu Gnome Team', u'name18', [])
-    (u'Ubuntu Team', u'ubuntu-team', [u'support@ubuntu.com'])
-    (u'Ubuntu Translators', u'ubuntu-translators', [])
+    # First we'll define a utility function to help us displaying the results.
+    >>> emailset = getUtility(IEmailAddressSet)
+    >>> def print_people(results):
+    ...     for person in results:
+    ...         emails = [email.email for email in emailset.getByPerson(person)]
+    ...         print (
+    ...             "%s (%s): %s" % (person.displayname, person.name, emails))
 
-    >>> results = personset.find('steve.alexander')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'Steve Alexander', u'stevea', [u'steve.alexander@ubuntulinux.com'])
+    >>> print_people(personset.find('ubuntu'))
+    Mirror Administrators (ubuntu-mirror-admins): []
+    Sigurd Gartmann (sigurd-ubuntu): [u'sigurd-ubuntu@brogar.org']
+    Ubuntu Gnome Team (name18): []
+    Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
+    Ubuntu Translators (ubuntu-translators): []
+
+    >>> print_people(personset.find('steve.alexander'))
+    Steve Alexander (stevea): [u'steve.alexander@ubuntulinux.com']
 
 Searching only for People based on their names or email addresses:
 
-    >>> results = personset.findPerson('james.blackwell')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'James Blackwell', u'jblack', [u'james.blackwell@ubuntulinux.com'])
+    >>> print_people(personset.findPerson('james.blackwell'))
+    James Blackwell (jblack): [u'james.blackwell@ubuntulinux.com']
 
-    >>> results = personset.findPerson('dave')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'Dave Miller', u'justdave', [u'dave.miller@ubuntulinux.com', u'justdave@bugzilla.org'])
+    >>> print_people(personset.findPerson('dave'))
+    Dave Miller (justdave): [u'dave.miller@ubuntulinux.com',
+                             u'justdave@bugzilla.org']
+
+By default, when searching only for people, any person whose account is
+inactive is not included in the list, but we can tell findPerson to include
+them as well.
+    
+    >>> from canonical.launchpad.interfaces import AccountStatus
+    >>> dave = personset.getByName('justdave')
+    >>> login('dave.miller@ubuntulinux.com')
+    >>> dave.account_status = AccountStatus.DEACTIVATED
+    >>> flush_database_updates()
+    >>> list(personset.findPerson('dave'))
+    []
+
+    >>> print_people(
+    ...     personset.findPerson('dave', exclude_inactive_accounts=False))
+    Dave Miller (justdave): [u'dave.miller@ubuntulinux.com',
+                             u'justdave@bugzilla.org']
+
+    >>> dave.account_status = AccountStatus.ACTIVE
+    >>> flush_database_updates()
+    >>> login(ANONYMOUS)
 
 Searching only for Teams based on their names or email addresses:
 
-    >>> results = personset.findTeam('support')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'Ubuntu Team', u'ubuntu-team', [u'support@ubuntu.com'])
+    >>> print_people(personset.findTeam('support'))
+    Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
 
-    >>> results = personset.findTeam('translators')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'Ubuntu Translators', u'ubuntu-translators', [])
-
+    >>> print_people(personset.findTeam('translators'))
+    Ubuntu Translators (ubuntu-translators): []
 
 == Packages related to a person ==
 
