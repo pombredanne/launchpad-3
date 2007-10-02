@@ -230,6 +230,13 @@
     />
 
   <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
+    />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     name="+translations"
     facet="translations"

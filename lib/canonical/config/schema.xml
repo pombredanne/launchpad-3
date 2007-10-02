@@ -571,6 +571,8 @@ k            </description>
             Shipit-specific configuration options.
         </description>
         <key name="dbuser" datatype="string" default="shipit" />
+        <key name="max_cds_for_auto_approval" datatype="integer"
+             required="no" default="39" />
         <key name="admins_email_address" datatype="string"
              default="info@shipit.ubuntu.com"/>
         <key name="ubuntu_from_email_address" datatype="string"

@@ -1,8 +1,15 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="rosetta"
 >
+
 <body>
 
 <metal:rightportlets fill-slot="portlets_one">
@@ -40,6 +47,8 @@
           <th>Length</th>
           <th>Status</th>
           <th>Untranslated</th>
+          <th>Need review</th>
+          <th>Changed</th>
           <th>Last Edited</th>
           <th>By</th>
         </tr>
@@ -66,15 +75,45 @@
               tal:content="entry/untranslatedCount">
               0
             </span>
-            <span
+            <tal:count
               tal:condition="entry/untranslatedCount"
               tal:replace="entry/untranslatedCount"
               >
               0
-            </span>
-            <tal:block condition="not: entry/untranslatedCount">
+            </tal:count>
+            <tal:count tal:condition="not: entry/untranslatedCount">
                 &mdash;
-            </tal:block>
+            </tal:count>
+          </td>
+          <td>
+            <span class="sortkey"
+              tal:content="entry/unreviewedCount">
+              0
+            </span>
+            <tal:count
+              tal:condition="entry/unreviewedCount"
+              tal:replace="entry/unreviewedCount"
+              >
+              0
+            </tal:count>
+            <tal:count tal:condition="not: entry/unreviewedCount">
+                &mdash;
+            </tal:count>
+          </td>
+          <td>
+            <span class="sortkey"
+              tal:content="entry/updatesCount">
+              0
+            </span>
+            <tal:count
+              tal:condition="entry/updatesCount"
+              tal:replace="entry/updatesCount"
+              >
+              0
+            </tal:count>
+            <tal:count condition="not: entry/updatesCount">
+                &mdash;
+            </tal:count>
           </td>
           <td tal:attributes="id string:${entry/potemplate/name}-time">
             <span class="sortkey"

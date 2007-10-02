@@ -492,7 +492,6 @@ ubuntutest/breezy.
   ...                          title='PowerPC G3/G4', description='G3/G4')
   >>> powerpc_dar = breezy.newArch('powerpc', powerpc_pf, True, breezy.owner)
 
-
 After having the respective DistroArchSeries in place we will submit a
 binary upload for the last source in BACKPORTS. The ancestry should be
 found in i386/RELEASE, because it's the only one available.

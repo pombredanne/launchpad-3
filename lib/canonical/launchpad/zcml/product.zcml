@@ -172,6 +172,13 @@
     permission="zope.Public"
     />
 
+  <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IProduct"
     permission="zope.Public"
