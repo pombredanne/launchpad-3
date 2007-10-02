@@ -10,4 +10,18 @@
         <allow
             interface="canonical.launchpad.interfaces.IFeedsApplication" />
     </securedutility>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IFeedsApplication"
+        name="+dims"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.BrowserWindowDimensions"
+        attribute="__call__"
+        />
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="FeedsNavigation"
+        />
+
 </configure>
