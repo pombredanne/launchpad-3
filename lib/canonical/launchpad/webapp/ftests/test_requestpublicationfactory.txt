@@ -164,22 +164,22 @@ chosen.
     >>> requestfactory.requestfactory is PublicXMLRPCRequest
     True
 
-If we pass the Feed host name, FeedPublication will be chosen.
+If we pass the Feeds host name, FeedsPublication will be chosen.
 
     >>> environment = {'HTTP_HOST': 'feeds.launchpad.dev'}
     >>> factory = LaunchpadRequestPublicationFactory()
     >>> factory.canHandle(environment)
     True
 
-    >>> from canonical.launchpad.webapp.servers import FeedPublication
+    >>> from canonical.launchpad.webapp.servers import FeedsPublication
     >>> from canonical.launchpad.webapp.servers import (
-    ...     FeedBrowserRequest, ApplicationServerSettingRequestFactory)
+    ...     FeedsBrowserRequest, ApplicationServerSettingRequestFactory)
     >>> requestfactory, publicationfactory = factory()
     >>> type(requestfactory) is ApplicationServerSettingRequestFactory
     True
-    >>> requestfactory.requestfactory is FeedBrowserRequest
+    >>> requestfactory.requestfactory is FeedsBrowserRequest
     True
-    >>> publicationfactory is FeedPublication
+    >>> publicationfactory is FeedsPublication
     True
 
 If the given host name isn't one of the configured host names,

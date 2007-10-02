@@ -5,9 +5,9 @@
     i18n_domain="launchpad">
 
     <securedutility
-        class="canonical.launchpad.systemhomes.FeedApplication"
-        provides="canonical.launchpad.interfaces.IFeedApplication">
+        class="canonical.launchpad.systemhomes.FeedsApplication"
+        provides="canonical.launchpad.interfaces.IFeedsApplication">
         <allow
-            interface="canonical.launchpad.interfaces.IFeedApplication" />
+            interface="canonical.launchpad.interfaces.IFeedsApplication" />
     </securedutility>
 </configure>

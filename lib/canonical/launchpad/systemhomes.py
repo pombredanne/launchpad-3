@@ -4,7 +4,7 @@
 
 __all__ = [
     'BazaarApplication',
-    'FeedApplication',
+    'FeedsApplication',
     'MailingListApplication',
     'MaloneApplication',
     'RegistryApplication',
@@ -20,7 +20,7 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBazaarApplication, IBugExternalRefSet,
     IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet, IDistroSeriesSet,
-    IFeedApplication, IHWDBApplication, ILanguageSet, ILaunchBag,
+    IFeedsApplication, IHWDBApplication, ILanguageSet, ILaunchBag,
     ILaunchpadStatisticSet, IMailingListApplication, IMaloneApplication,
     IOpenIdApplication, IProductSet, IRegistryApplication,
     IRosettaApplication, IShipItApplication, ITranslationGroupSet)
@@ -37,8 +37,8 @@ class ShipItApplication:
 class MailingListApplication:
     implements(IMailingListApplication)
 
-class FeedApplication:
-    implements(IFeedApplication)
+class FeedsApplication:
+    implements(IFeedsApplication)
 
 class MaloneApplication:
     implements(IMaloneApplication)
