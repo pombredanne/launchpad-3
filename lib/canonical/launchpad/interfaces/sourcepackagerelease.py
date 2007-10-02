@@ -129,8 +129,8 @@ class ISourcePackageRelease(Interface):
     def getBuildByArch(distroarchseries, archive):
         """Return build for the given distroarchseries/archive.
 
-        It looks for a build in any state registered *directly* for the given
-        distroarchseries and archive (no magic lookups anymore).
+        It looks for a build in any state registered *directly* for the
+        given distroarchseries and archive.
 
         Returns None if a suitable build could not be found.
         """

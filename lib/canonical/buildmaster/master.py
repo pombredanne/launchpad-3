@@ -253,7 +253,7 @@ class BuilddMaster:
         """Create new Build record for the requested archseries.
 
         It verifies if the requested build is already inserted before
-        create a new one.
+        creating a new one.
         The Build record is created for the archseries 'default_processor'.
         """
         header = ("build record %s-%s for '%s' " %
@@ -263,14 +263,14 @@ class BuilddMaster:
 
         for archseries in build_archs:
             # Dismiss if there is no processor available for the
-            # archseries in question
+            # archseries in question.
             if not archseries.processors:
                 self._logger.debug(
                     "No processors defined for %s: skipping %s"
                     % (archseries.title, header))
                 continue
             # Dismiss if build is already present for this
-            # distroarchseries
+            # distroarchseries.
             if pubrec.sourcepackagerelease.getBuildByArch(
                 archseries, pubrec.archive):
                 continue

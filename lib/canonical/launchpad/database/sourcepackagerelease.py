@@ -291,12 +291,12 @@ class SourcePackageRelease(SQLBase):
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""
         # XXX cprov 20070720: this code belongs to IDistroSeries content
-        # class as 'parent_serieses' property. Other parts of the system
+        # class as 'parent_series' property. Other parts of the system
         # can benefit of this, like SP.packagings, for instance.
-        parent_serieses = []
+        parent_series = []
         candidate = distroarchseries.distroseries
         while candidate is not None:
-            parent_serieses.append(candidate)
+            parent_series.append(candidate)
             candidate = candidate.parentseries
 
         queries = ["Build.sourcepackagerelease = %s" % sqlvalues(self)]
@@ -305,7 +305,7 @@ class SourcePackageRelease(SQLBase):
         # a build could be issued (then inherited).
         parent_architectures = []
         archtag = distroarchseries.architecturetag
-        for series in parent_serieses:
+        for series in parent_series:
             try:
                 candidate = series[archtag]
             except NotFoundError:
@@ -322,7 +322,7 @@ class SourcePackageRelease(SQLBase):
         # guadalinex/foobar was initialised from ubuntu/dapper
         if archive.purpose != ArchivePurpose.PPA:
             parent_archives = set()
-            for series in parent_serieses:
+            for series in parent_series:
                 parent_archives.add(series.main_archive)
             archives = [archive.id for archive in parent_archives]
         else:
@@ -343,6 +343,7 @@ class SourcePackageRelease(SQLBase):
         # we should use SelectOne (and, obviously, remove the orderBy).
         # One detail that might influence in this strategy is automatic-rebuild
         # when we may have to consider rebuild_index in the constraint.
+        # See more information on bug #148195.
         return Build.selectFirst(query, orderBy=['-datecreated'])
 
     def override(self, component=None, section=None, urgency=None):

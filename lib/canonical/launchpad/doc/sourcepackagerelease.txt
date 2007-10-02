@@ -240,8 +240,8 @@ Build.buildstate, by default is set to NEEDSBUILD.
     >>> evo_build_i386.distroarchseries.architecturetag
     u'i386'
 
-    >>> evo_build_i386.archive.id == ubuntu.main_archive.id
-    True
+    >>> print evo_build_i386.archive.title
+    Primary Archive for Ubuntu Linux
 
 Optionally you can pass also another status:
 
@@ -253,8 +253,8 @@ Optionally you can pass also another status:
     >>> evo_build_i386_ppa.buildstate.name
     'SUPERSEDED'
 
-    >>> evo_build_i386_ppa.archive.id == cprov.archive.id
-    True
+    >>> print evo_build_i386_ppa.archive.title
+    Personal Package Archive for Celso Providelo
 
 Successfully Build lookups on the just created Build records:
 
@@ -280,8 +280,9 @@ Failed Build lookups for evolution on hoary/hppa in both archives:
     >>> test_build_hppa_ppa is None
     True
 
-Let's check if the Build lookup can be deluded by the presence of
-architeture-independent publication (see bug #65712 for further
+Even if the source package builds a architecture-independent package,
+no Build record will be returned by getBuildByArch() if arch-specific
+binary packages were not built (see bug #65712 for further
 information).
 
 Let's create and publish and architecture-independent binary for
@@ -295,15 +296,15 @@ evolution_1.0:
     >>> from canonical.launchpad.database import (
     ...    SecureBinaryPackagePublishingHistory)
 
-    >>> evo_component = getUtility(IComponentSet)['main']
-    >>> evo_section = getUtility(ISectionSet)['mail']
+    >>> main_component = getUtility(IComponentSet)['main']
+    >>> mail_section = getUtility(ISectionSet)['mail']
     >>> binarypackageformat = BinaryPackageFormat.DEB
-    >>> evo_priority = PackagePublishingPriority.EXTRA
+    >>> extra_priority = PackagePublishingPriority.EXTRA
     >>> evo_bin_name = getUtility(IBinaryPackageNameSet).ensure('evolution')
 
     >>> evo_bin = evo_build_i386.createBinaryPackageRelease(
     ...      evo_bin_name, '1.0', 'no sum', 'no desc',
-    ...      binarypackageformat, evo_component, evo_section, evo_priority,
+    ...      binarypackageformat, main_component, mail_section, extra_priority,
     ...      '', '', '', '', '', '', '', False, 1, False)
 
 Publish 'evo_bin' in all supported architectures (as expected for
@@ -314,9 +315,9 @@ arch-indep binaries).
     ...     pub = SecureBinaryPackagePublishingHistory(
     ...         binarypackagerelease=evo_bin,
     ...         distroarchseries=arch,
-    ...         component=evo_component,
-    ...         section=evo_section,
-    ...         priority=evo_priority,
+    ...         component=main_component,
+    ...         section=mail_section,
+    ...         priority=extra_priority,
     ...         status=PackagePublishingStatus.PUBLISHED,
     ...         pocket=pocket_release,
     ...         archive=ubuntu.main_archive)
@@ -327,8 +328,45 @@ lookup for the HPPA build correctly returns 'None'.
 
     >>> test_build_hppa = evo_spr.getBuildByArch(
     ...     hoary_hppa, ubuntu.main_archive)
-    >>> test_build_hppa is None
+    >>> print test_build_hppa
+    None
+
+And the original build record is still reachable.
+
+    >>> test_build_i386 = evo_spr.getBuildByArch(
+    ...     hoary_i386, ubuntu.main_archive)
+    >>> print test_build_i386.title
+    i386 build of evolution 1.0 in ubuntu hoary RELEASE
+
+We will copy the evolution source to ubuntu/breezy-autotest as if it
+was inherited in the initialization.
+
+    >>> breezy_autotest = ubuntu['breezy-autotest']
+    >>> breezy_autotest_i386 = breezy_autotest['i386']
+
+    >>> print breezy_autotest.parentseries.title
+    The Hoary Hedgehog Release
+
+    >>> hoary_evo_dsspr = hoary_evo_sp['1.0']
+    >>> c = hoary_evo_dsspr.copyTo(breezy_autotest, pocket_release)
+
+    >>> bt_evo_sp = breezy_autotest.getSourcePackage('evolution')
+    >>> bt_evo_dsspr = bt_evo_sp['1.0']
+    >>> hoary_evo_dsspr.sourcepackagerelease == \
+    ...      bt_evo_dsspr.sourcepackagerelease
     True
+
+Since evolution source was already built on ubuntu/hoary/i386, the
+parent series, it should be found by a build lookup happening on
+ubuntu/breezy-autotest/i386.
+
+In practical terms it means that another build is not necessary in
+this context. 
+
+    >>> bt_build = bt_evo_dsspr.sourcepackagerelease.getBuildByArch(
+    ...     breezy_autotest_i386, ubuntu.main_archive)
+    >>> print bt_build.title
+    i386 build of evolution 1.0 in ubuntu hoary RELEASE    
 
 
 == Counting bugs ==
