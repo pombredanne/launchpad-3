@@ -1,0 +1,9 @@
+= Code Import Results =
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ICodeImportResult, ICodeImportResultSet)
+
+    >>> result_set = getUtility(ICodeImportResultSet)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(ICodeImportResultSet, result_set)
+    True

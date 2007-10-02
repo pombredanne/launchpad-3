@@ -3,6 +3,7 @@
 from canonical.launchpad.database.codeimport import *
 from canonical.launchpad.database.codeimportjob import *
 from canonical.launchpad.database.codeimportmachine import *
+from canonical.launchpad.database.codeimportresult import *
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.pillar import *
