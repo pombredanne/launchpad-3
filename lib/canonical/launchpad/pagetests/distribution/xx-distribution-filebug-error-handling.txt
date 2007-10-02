@@ -2,7 +2,7 @@ When filing a distribution bug, an error is raised if you enter a
 package name that doesn't exist in the distribution. We'll demonstrate
 using the advanced filebug workflow, to skip searching for dupes.
 
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open("http://launchpad.dev/ubuntu/+filebug-advanced")
 
     >>> browser.getControl(name="field.title").value = "test"

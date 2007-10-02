@@ -1,4 +1,8 @@
-<div tal:condition="python: context.distributions or context.products or context.projects" class="portlet" id="portlet-related">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  tal:condition="python: context.distributions or context.products or context.projects" class="portlet" id="portlet-related">
 
     <h2 tal:condition="context/distributions">Related distributions</h2>
 

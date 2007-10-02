@@ -821,6 +821,12 @@ class EditProductRelease(EditByOwnersOrAdmins):
     permission = 'launchpad.Edit'
     usedfor = IProductRelease
 
+    def checkAuthenticated(self, user):
+        if (user.inTeam(self.obj.productseries.owner) or
+            user.inTeam(self.obj.productseries.product.owner)):
+            return True
+        return EditByOwnersOrAdmins.checkAuthenticated(self, user)
+
 class EditTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Edit'
     usedfor = ITranslationImportQueueEntry

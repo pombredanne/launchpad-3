@@ -55,7 +55,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.dynmenu import DynMenu
 
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
 
 from canonical.launchpad import _
 
@@ -561,7 +561,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
     custom_widget('cvsroot', StrippedTextWidget, displayWidth=50)
     custom_widget('cvsmodule', StrippedTextWidget, displayWidth=20)
     custom_widget('cvsbranch', StrippedTextWidget, displayWidth=20)
-    custom_widget('svnrepository', StrippedTextWidget, displayWidth=50)
+    custom_widget('svnrepository', URIWidget, displayWidth=50)
 
     def setUpWidgets(self):
         LaunchpadEditFormView.setUpWidgets(self)
@@ -650,7 +650,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
         # all such actions the same though, so we ignore it.
         return check_permission('launchpad.Admin', self.context)
 
-    @action(_('Update RCS Details'), name='update')
+    @action(_('Update Details'), name='update')
     def update_action(self, action, data):
         old_rcstype = self.context.rcstype
         self.updateContextFromData(data)
@@ -661,7 +661,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                                       self.context.rcstype is not None):
                 self.context.importstatus = ImportStatus.TESTING
         self.request.response.addInfoNotification(
-            'Upstream RCS details updated.')
+            'Upstream source details updated.')
 
     def allowResetToAutotest(self, action):
         return self.isAdmin() and self.context.autoTestFailed()
@@ -766,7 +766,6 @@ class ProductSeriesSourceSetView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.ready = request.form.get('ready', None)
         self.text = request.form.get('text', None)
         try:
             self.importstatus = int(request.form.get('state', None))
@@ -774,15 +773,11 @@ class ProductSeriesSourceSetView:
             self.importstatus = None
         # setup the initial values if there was no form submitted
         if request.form.get('search', None) is None:
-            self.ready = 'on'
             self.importstatus = ImportStatus.TESTING.value
 
-        self.batchnav = BatchNavigator(self.search(), request)
-
-    def search(self):
-        return self.context.search(ready=self.ready, text=self.text,
-                                   forimport=True,
-                                   importstatus=self.importstatus)
+        results = self.context.searchImports(
+            text=self.text, importstatus=self.importstatus)
+        self.batchnav = BatchNavigator(results, request)
 
     def sourcestateselector(self):
         html = '<select name="state">\n'
@@ -797,30 +792,6 @@ class ProductSeriesSourceSetView:
             html += '>' + str(enum.title) + '</option>\n'
         html += '</select>\n'
         return html
-        html += '  <option value="DONTSYNC"'
-        if self.importstatus == 'DONTSYNC':
-            html += ' selected'
-        html += '>Do Not Sync</option>\n'
-        html += '  <option value="TESTING"'
-        if self.importstatus == 'TESTING':
-            html += ' selected'
-        html += '>Testing</option>\n'
-        html += '  <option value="AUTOTESTED"'
-        if self.importstatus == 'AUTOTESTED':
-            html += ' selected'
-        html += '>Auto-Tested</option>\n'
-        html += '  <option value="PROCESSING"'
-        if self.importstatus == 'PROCESSING':
-            html += ' selected'
-        html += '>Processing</option>\n'
-        html += '  <option value="SYNCING"'
-        if self.importstatus == 'SYNCING':
-            html += ' selected'
-        html += '>Syncing</option>\n'
-        html += '  <option value="STOPPED"'
-        if self.importstatus == 'STOPPED':
-            html += ' selected'
-        html += '>Stopped</option>\n'
 
 
 class ProductSeriesShortLink(DefaultShortLink):

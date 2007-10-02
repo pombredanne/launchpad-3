@@ -15,7 +15,7 @@ Sample person tries to change the bug's nickname to a existing one and gets a ni
 
 And now we show that any logged-in user can edit public bugs. 
 
-  >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
   >>> browser.open(
   ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3')
   >>> browser.getLink(text="Edit description").click()

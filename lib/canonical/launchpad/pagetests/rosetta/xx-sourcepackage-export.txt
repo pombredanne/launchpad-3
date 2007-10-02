@@ -1,0 +1,46 @@
+= Downloading Source Package Translations =
+
+Launchpad lets you request a downloadable tarball of all current templates and
+translations for a source package.
+
+
+== Where to request ==
+
+The option is shown in the Translations action bar for a source package.  The
+link is called "Download translations."
+
+    >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/')
+    >>> user_browser.getLink('Download translations').click()
+    >>> print user_browser.url
+    http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/+export
+
+
+== Anonymous access ==
+
+In order to request a download, a user must be logged in.  This protects us
+from overload by spambots.
+
+    >>> anon_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/')
+    >>> anon_browser.getLink('Download translations').click()
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+
+== Making the request ==
+
+The "Download translations" link leads to a page that lets the user select an
+export format, and request the download.
+
+    >>> print user_browser.title
+    Download translations for "mozilla in Ubuntu Hoary"
+
+    >>> user_browser.getControl('Request Download').click()
+
+    >>> print user_browser.url
+    http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla
+
+    >>> for message in get_feedback_messages(user_browser):
+    ...     print message
+    Your request has been received. Expect to receive an email shortly.
+

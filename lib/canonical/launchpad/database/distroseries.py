@@ -872,6 +872,22 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return packagings
 
     @property
+    def supported(self):
+        return self.status in [
+            DistroSeriesStatus.CURRENT,
+            DistroSeriesStatus.SUPPORTED
+            ]
+
+    @property
+    def active(self):
+        return self.status in [
+            DistroSeriesStatus.DEVELOPMENT,
+            DistroSeriesStatus.FROZEN,
+            DistroSeriesStatus.CURRENT,
+            DistroSeriesStatus.SUPPORTED
+            ]
+
+    @property
     def distroserieslanguages(self):
         result = DistroSeriesLanguage.select(
             "DistroReleaseLanguage.language = Language.id AND "

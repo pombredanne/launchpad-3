@@ -920,7 +920,8 @@ productseries_index = ContextTitle('Overview of %s')
 
 productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
-productseries_source = 'Import a stable or development branch to Bazaar'
+productseries_source = ContextDisplayName(
+    'Set upstream revision control system for %s')
 
 productseries_translations_upload = 'Request new translations upload'
 
@@ -1089,6 +1090,8 @@ sourcepackage_filebug = ContextTitle("Report a bug about %s")
 sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
 sourcepackage_packaging = ContextTitle('%s upstream links')
+
+sourcepackage_export = ContextTitle('Download translations for "%s"')
 
 def sourcepackage_index(context, view):
     return '%s source packages' % context.distroseries.title
