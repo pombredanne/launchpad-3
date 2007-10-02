@@ -34,7 +34,8 @@ from canonical.config import config
 from canonical.lp import decorates
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
-from canonical.launchpad.browser.person import ObjectReassignmentView
+from canonical.launchpad.browser.objectreassignment import (
+    ObjectReassignmentView)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
@@ -74,10 +75,10 @@ class BranchBadges(BadgeMethodDelegator):
     def __init__(self, branch):
         self.branch = branch
 
-    def isPrivateBadgeVisibleByUser(self, user):
+    def isPrivateBadgeVisible(self):
         return self.branch.private
 
-    def isBugBadgeVisibleByUser(self, user):
+    def isBugBadgeVisible(self):
         # Only show the badge if the bugs are visible by the user.
         for bug in self.branch.related_bugs:
             # Stop on the first visible one.
@@ -85,7 +86,7 @@ class BranchBadges(BadgeMethodDelegator):
                 return True
         return False
 
-    def isSpecBadgeVisibleByUser(self, user):
+    def isSpecBadgeVisible(self):
         # When specs get privacy, this will need to be adjusted.
         return self.branch.spec_links.count() > 0
 

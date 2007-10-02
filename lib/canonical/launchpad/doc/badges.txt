@@ -98,9 +98,9 @@ be in the content class itself.
     ...     badges = "bug", "blueprint"
     ...     def __init__(self, context):
     ...         self.context = context
-    ...     def bugBadgeVisibleByUser(self, user):
+    ...     def bugBadgeVisible(self):
     ...         return len(self.context.bugs) > 0
-    ...     def blueprintBadgeVisibleByUser(self, user):
+    ...     def blueprintBadgeVisible(self):
     ...         return len(self.context.blueprint) > 0
 
     >>> from canonical.lp import decorates
@@ -109,8 +109,8 @@ be in the content class itself.
     ...     decorates(IFoo, 'foo')
     ...     def __init__(self, foo):
     ...         self.foo = foo
-    ...     def bugBadgeVisibleByUser(self, user):
+    ...     def bugBadgeVisible(self):
     ...         return True
-    ...     def blueprintBadgeVisibleByUser(self, user):
+    ...     def blueprintBadgeVisible(self):
     ...         return False
 

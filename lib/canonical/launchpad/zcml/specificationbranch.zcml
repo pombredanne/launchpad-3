@@ -32,4 +32,15 @@
 
   </facet>
 
+  <!-- SpecificationBranchSet -->
+  <content class="canonical.launchpad.database.SpecificationBranchSet">
+    <allow interface="canonical.launchpad.interfaces.ISpecificationBranchSet" />
+  </content>
+
+  <securedutility
+    class="canonical.launchpad.database.SpecificationBranchSet"
+    provides="canonical.launchpad.interfaces.ISpecificationBranchSet" >
+      <allow interface="canonical.launchpad.interfaces.ISpecificationBranchSet" />
+  </securedutility>
+
 </configure>

@@ -54,11 +54,11 @@ class IHasBadges(Interface):
 
     badges = Attribute('A list of badge names that could be visible.')
 
-    def badgesVisibleByUser(user):
-        """Return a list of `Badge` objects that user can see."""
+    def getVisibleBadges():
+        """Return a list of `Badge` objects that the logged in user can see."""
 
-    def isBadgeVisibleByUser(user, badge_name):
-        """Is the badge specifed by the badge_name visible for the user?"""
+    def isBadgeVisible(badge_name):
+        """Is the badge_name badge visible for the logged in user?"""
 
     def getBadge(badge_name):
         """Return the badge instance for the name specified."""
@@ -68,15 +68,15 @@ class HasBadgeBase:
     """A base implementation"""
     implements(IHasBadges)
 
-    def badgesVisibleByUser(self, user):
+    def getVisibleBadges(self):
         """See `IHasBadges`."""
         result = []
         for badge_name in self.badges:
-            if self.isBadgeVisibleByUser(user, badge_name):
+            if self.isBadgeVisible(badge_name):
                 result.append(self.getBadge(badge_name))
         return result
 
-    def isBadgeVisibleByUser(self, user, badge_name):
+    def isBadgeVisible(self, badge_name):
         """See `IHasBadges`."""
         return False
 
@@ -89,11 +89,10 @@ class HasBadgeBase:
 class BadgeMethodDelegator(HasBadgeBase):
     """Delegates the visibility check of badges to specific methods."""
 
-    def isBadgeVisibleByUser(self, user, badge_name):
+    def isBadgeVisible(self, badge_name):
         """Translate into a method name, and call that."""
-        method_name = "is%sBadgeVisibleByUser" % badge_name.capitalize()
+        method_name = "is%sBadgeVisible" % badge_name.capitalize()
         if hasattr(self, method_name):
-            return getattr(self, method_name)(user)
+            return getattr(self, method_name)()
         else:
             raise NotImplementedError(method_name)
-

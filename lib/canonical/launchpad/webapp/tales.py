@@ -652,13 +652,11 @@ class BadgeDisplayAPI:
         self.context = IHasBadges(context)
 
     def small(self):
-        user = getUtility(ILaunchBag).user
-        badges = self.context.badgesVisibleByUser(user)
+        badges = self.context.getVisibleBadges()
         return ''.join([badge.icon() for badge in badges])
 
     def large(self):
-        user = getUtility(ILaunchBag).user
-        badges = self.context.badgesVisibleByUser(user)
+        badges = self.context.getVisibleBadges()
         return ''.join([badge.logo() for badge in badges])
 
 

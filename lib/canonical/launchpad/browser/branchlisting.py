@@ -24,7 +24,8 @@ from canonical.launchpad.browser.branch import BranchBadges
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchLifecycleStatusFilter,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchSet, IBugBranchSet, IBranchBatchNavigator, IBranchLifecycleFilter)
+    IBranchSet, IBugBranchSet, IBranchBatchNavigator, IBranchLifecycleFilter,
+    ISpecificationBranchSet)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
@@ -39,10 +40,12 @@ class BranchListingItem(BranchBadges):
     """
     decorates(IBranch, 'branch')
 
-    def __init__(self, branch, last_commit, now, bugbranches, role=None):
+    def __init__(self, branch, last_commit, now, bug_branches, role,
+                 spec_branches):
         BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
-        self.bugbranches = bugbranches
+        self.bug_branches = bug_branches
+        self.spec_branches = spec_branches
         self.role = role
         self._now = now
 
@@ -58,17 +61,13 @@ class BranchListingItem(BranchBadges):
         unaware_date = self.branch.date_created.replace(tzinfo=None)
         return self._now - unaware_date
 
-    def isBugBadgeVisibleByUser(self, user):
+    def isBugBadgeVisible(self):
         # Only show the badge if the bugs are visible by the user.
-        for bug in self.branch.related_bugs:
-            # Stop on the first visible one.
-            if check_permission('launchpad.View', bug):
-                return True
-        return False
+        return len(self.bug_branches) > 0
 
-    def isSpecBadgeVisibleByUser(self, user):
+    def isSpecBadgeVisible(self):
         # When specs get privacy, this will need to be adjusted.
-        return self.branch.spec_links.count() > 0
+        return len(self.spec_branches) > 0
 
 
 class BranchListingBatchNavigator(TableBatchNavigator):
@@ -94,7 +93,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
     def branch_bug_links(self):
         """Get all bugs associated the with current batch."""
         bugbranches = getUtility(IBugBranchSet).getBugBranchesForBranches(
-            self.batch)
+            self.batch, self.view.user)
         result = {}
         for bugbranch in bugbranches:
             result.setdefault(
@@ -104,14 +103,22 @@ class BranchListingBatchNavigator(TableBatchNavigator):
     @cachedproperty
     def branch_spec_links(self):
         """Get all the specs associated with the current batch."""
-        
+        spec_branches = getUtility(
+            ISpecificationBranchSet).getSpecificationBranchesForBranches(
+            self.batch, self.view.user)
+        result = {}
+        for spec_branch in spec_branches:
+            result.setdefault(
+                spec_branch.branch.id, []).append(spec_branch)
+        return result
 
     def _createItem(self, branch):
         last_commit = self.last_commit[branch]
         bug_branches = self.branch_bug_links.get(branch.id)
+        spec_branches = self.branch_spec_links.get(branch.id)
         role = self.view.roleForBranch(branch)
         return BranchListingItem(
-            branch, last_commit, self._now, bug_branches, role)
+            branch, last_commit, self._now, bug_branches, role, spec_branches)
 
     def branches(self):
         "Return a list of BranchListingItems"
