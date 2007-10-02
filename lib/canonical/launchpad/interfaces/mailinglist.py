@@ -502,7 +502,7 @@ class IMailingListSubscription(Interface):
     mailing_list = Choice(
         title=_('Mailing list'),
         description=_('The mailing list for this subscription.'),
-        vocabulary='ValidMailingList',
+        vocabulary='ActiveMailingList',
         required=True, readonly=True)
 
     date_joined = Datetime(

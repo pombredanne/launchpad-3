@@ -49,6 +49,155 @@ vocabulary registry.
 
 == Enumerable Vocabularies ==
 
+== ActiveMailingList ==
+
+The active mailing lists vocabulary matches and returns only those mailing
+lists which are active.
+
+    >>> list_vocabulary = vocabulary_registry.get(None, 'ActiveMailingList')
+    >>> list_vocabulary.displayname
+    'Select an active mailing list.'
+
+At first, there are no active mailing lists.
+
+    >>> list(list_vocabulary)
+    []
+    >>> len(list_vocabulary)
+    0
+    >>> list(list_vocabulary.search())
+    []
+
+Mailing lists are not active when they are first registered.
+
+    >>> # These are the convoluted steps to create some mailing lists.  We
+    >>> # can't use the shortcuts in other tests because those leave the list
+    >>> # in the ACTIVE state and we want to check things before they get to
+    >>> # that state.
+    >>> personset = getUtility(IPersonSet)
+    >>> ddaa = personset.getByName('ddaa')
+    >>> carlos = personset.getByName('carlos')
+    >>> from canonical.launchpad.interfaces import (
+    ...     IMailingListSet, MailingListStatus, TeamSubscriptionPolicy)
+    >>> team_one = personset.newTeam(
+    ...     ddaa, 'bass-players', 'Bass Players',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> team_two = personset.newTeam(
+    ...     ddaa, 'guitar-players', 'Guitar Players',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> team_three = personset.newTeam(
+    ...     ddaa, 'drummers', 'Drummers',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> listset = getUtility(IMailingListSet)
+    >>> list_one = listset.new(team_one)
+    >>> list_two = listset.new(team_two)
+    >>> list_three = listset.new(team_three)
+    >>> list(list_vocabulary)
+    []
+    >>> len(list_vocabulary)
+    0
+    >>> list(list_vocabulary.search())
+    []
+
+Even when the mailing lists are approved, they are not yet active.
+
+    >>> list_one.review(carlos, MailingListStatus.APPROVED)
+    >>> list_two.review(carlos, MailingListStatus.APPROVED)
+    >>> list_three.review(carlos, MailingListStatus.APPROVED)
+    >>> list(list_vocabulary)
+    []
+    >>> len(list_vocabulary)
+    0
+    >>> list(list_vocabulary.search())
+    []
+
+Mailing lists become active once they have been constructed by Mailman (which
+indicates so by transitioning the state to ACTIVE).
+
+    >>> list_one.startConstructing()
+    >>> list_two.startConstructing()
+    >>> list_three.startConstructing()
+    >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> list_two.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> list_three.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> flush_database_updates()
+    >>> sorted(mailing_list.team.displayname
+    ...        for mailing_list in list_vocabulary)
+    [u'Bass Players', u'Drummers', u'Guitar Players']
+    >>> len(list_vocabulary)
+    3
+
+Searching for active lists is done through the vocabulary as well.  With a
+search term of None, all active lists are returned.
+
+    >>> sorted(mailing_list.team.displayname
+    ...        for mailing_list in list_vocabulary.search(None))
+    [u'Bass Players', u'Drummers', u'Guitar Players']
+
+If given, the search term matches the team name.
+
+    >>> sorted(mailing_list.team.displayname
+    ...        for mailing_list in list_vocabulary.search('player'))
+    [u'Bass Players', u'Guitar Players']
+
+The vocabulary supports accessing mailing lists by 'term', where the term can
+be either a team or a mailing list.  The returned term's value is the mailing
+list object, the token is the team name and the title is the team's display
+name.
+
+    >>> term_1 = list_vocabulary.getTerm(team_one)
+    >>> term_1.value.team.displayname
+    u'Bass Players'
+    >>> term_1.token
+    'bass-players'
+    >>> term_1.title
+    u'Bass Players'
+
+We can also get a term by mailing list.
+
+    >>> term_2 = list_vocabulary.getTerm(list_two)
+    >>> term_2.value.team.displayname
+    u'Guitar Players'
+    >>> term_2.token
+    'guitar-players'
+    >>> term_2.title
+    u'Guitar Players'
+
+Given a token, we can get back the term.
+
+    >>> term_3 = list_vocabulary.getTermByToken(term_1.token)
+    >>> term_3.value.team.displayname
+    u'Bass Players'
+    >>> term_4 = list_vocabulary.getTermByToken(term_2.token)
+    >>> term_4.value.team.displayname
+    u'Guitar Players'
+
+You can also ask whether a team or mailing list is contained in the
+vocabulary.
+
+    >>> team_three in list_vocabulary
+    True
+    >>> list_three in list_vocabulary
+    True
+
+But non-ACTIVE mailing lists (and their teams) are not in the vocabulary.
+
+    >>> team_four = personset.newTeam(
+    ...     ddaa, 'flautists', 'Flautists',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> list_four = listset.new(team_four)
+    >>> team_four in list_vocabulary
+    False
+    >>> list_four in list_vocabulary
+    False
+
+Sometimes, the vocabulary search doesn't return any active lists.
+
+    >>> list(list_vocabulary.search('flautists'))
+    []
+    >>> list(list_vocabulary.search('cellists'))
+    []
+
+
 === DistroSeriesVocabulary ===
 
 Reflects the available distribution serieses.  Results are ordered by
@@ -1124,7 +1273,11 @@ returned.
     'Select a Team'
     >>> sorted((team.displayname, team.teamowner.displayname)
     ...        for team in vocab.search(None))
-    [(u'GuadaMen', u'Foo Bar'),
+    [(u'Bass Players', u'David Allouche'),
+     (u'Drummers', u'David Allouche'),
+     (u'Flautists', u'David Allouche'),
+     (u'GuadaMen', u'Foo Bar'),
+     (u'Guitar Players', u'David Allouche'),
      (u'Hoary Gnome Team', u'Mark Shuttleworth'),
      (u'Landscape Developers', u'Sample Person'),
      (u'Launchpad Administrators', u'Mark Shuttleworth'),
@@ -1255,53 +1408,6 @@ ValidTeamOwner's context must be a team.
     True
     >>> [person.name for person in vocab.search('foo.bar')]
     [u'name16']
-
-
-== ValidMailingList ==
-
-Valid mailing lists include all those that are currently active.  There are no
-active mailing lists yet.
-
-    >>> list_vocabulary = vocabulary_registry.get(None, 'ValidMailingList')
-    >>> list_vocabulary.displayname
-    'Select a valid (i.e. active) mailing list.'
-    >>> list_vocabulary.search()
-    []
-    >>> personset = getUtility(IPersonSet)
-    >>> ddaa = personset.getByName('ddaa')
-    >>> carlos = personset.getByName('carlos')
-    >>> from canonical.launchpad.interfaces import (
-    ...     IMailingListSet, MailingListStatus, TeamSubscriptionPolicy)
-    >>> team_one = personset.newTeam(
-    ...     ddaa, 'team-one', 'Team One',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
-    >>> team_two = personset.newTeam(
-    ...     ddaa, 'team-two', 'Team Two',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
-    >>> bass_team = personset.newTeam(
-    ...     ddaa, 'basses', 'All Your Bass Are Belong To Geddy',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
-    >>> listset = getUtility(IMailingListSet)
-    >>> list_one = listset.new(team_one)
-    >>> list_two = listset.new(team_two)
-    >>> list_three = listset.new(bass_team)
-    >>> list_one.review(carlos, MailingListStatus.APPROVED)
-    >>> list_two.review(carlos, MailingListStatus.APPROVED)
-    >>> list_three.review(carlos, MailingListStatus.APPROVED)
-    >>> list_one.startConstructing()
-    >>> list_two.startConstructing()
-    >>> list_three.startConstructing()
-    >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
-    >>> list_two.transitionToStatus(MailingListStatus.ACTIVE)
-    >>> list_three.transitionToStatus(MailingListStatus.ACTIVE)
-    >>> flush_database_updates()
-
-    >>> sorted(mailing_list.team.displayname
-    ...        for mailing_list in list_vocabulary.search(None))
-    [u'All Your Bass Are Belong To Geddy', u'Team One', u'Team Two']
-    >>> sorted(mailing_list.team.displayname
-    ...        for mailing_list in list_vocabulary.search('team'))
-    [u'Team One', u'Team Two']
 
 
 === Processor ===
