@@ -1,10 +1,3 @@
-Check if the Distribution Members page is not broken.
-
-  >>> anon_browser.open("http://localhost/ubuntu")
-  >>> anon_browser.getLink(
-  ...     url="/ubuntu/+members").click()
-  >>> anon_browser.url
-  'http://localhost/ubuntu/+members'
 
 Check there's no link to change the members team without authorization,
 and that going to the page anyway redirects to login.
