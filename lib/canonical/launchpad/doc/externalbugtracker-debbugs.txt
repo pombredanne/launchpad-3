@@ -71,7 +71,6 @@ Bug 563 resides in the archive. It is also fetchable:
 
 Log in and kick off the update:
 
-    >>> login('foo.bar@canonical.com')
     >>> external_debbugs.updateBugWatches(bug_watches)
     >>> for bug_watch in bug_watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
