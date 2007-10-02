@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'IProduct',
     'IProductSet',
-    'IProductNonfreeRegistration',
     ]
 
 from zope.schema import Bool, Choice, Int, Text, TextLine
@@ -440,11 +439,3 @@ class IProductSet(Interface):
         """Return the number of projects that have branches associated with
         them.
         """
-
-class IProductNonfreeRegistration(Interface):
-    """The schema used by IProduct's +nonfree-registration form."""
-
-    description = Text(title=_('Description'), required=True)
-    license = TextLine(title=_('License'), required=True)
-    urls = Text(title=_('URLs'), required=True)
-

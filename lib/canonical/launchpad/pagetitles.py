@@ -892,8 +892,6 @@ product_index = ContextTitle('%s in Launchpad')
 
 product_new = 'Register a project in Launchpad'
 
-product_nonfree_registration = 'Request project registration'
-
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
 product_files = ContextDisplayName('%s project files')

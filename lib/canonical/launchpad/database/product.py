@@ -8,7 +8,7 @@ __all__ = ['Product', 'ProductSet']
 
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound, IntCol, AND)
+    SQLObjectNotFound, AND)
 from zope.interface import implements
 from zope.component import getUtility
 

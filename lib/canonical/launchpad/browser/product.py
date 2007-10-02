@@ -15,7 +15,6 @@ __all__ = [
     'ProductSpecificationsMenu',
     'ProductBountiesMenu',
     'ProductBranchesMenu',
-    'ProductNonfreeRegistration',
     'ProductTranslationsMenu',
     'ProductView',
     'ProductDownloadFilesView',
@@ -53,9 +52,8 @@ from zope.interface import alsoProvides, implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IProductNonfreeRegistration,
+    ILaunchBag, 
     ILaunchpadCelebrities, IProduct,
     ICountry, IProductSet, IProductSeries, IProject, ISourcePackage,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
@@ -871,32 +869,6 @@ class ProductSetView(LaunchpadView):
     def tooManyResultsFound(self):
         return self.matches > self.max_results_to_display
 
-class ProductNonfreeRegistration(LaunchpadFormView):
-    """Emails the Launchpad team with info regarding the project"""
-
-    schema = IProductNonfreeRegistration
-
-    @action(_("E-mail Launchpad Team"), name="confirm")
-    def confirm_action(self, action, data):
-        user = getUtility(ILaunchBag).user
-
-        subject = 'Project Registration Request'
-        fromaddress = format_address("Launchpad", config.noreply_from_address)
-        message = ('User: %s (%s)\n\n' % (user.browsername, user.name)
-            + 'Project Description:\n%s\n\n' % data['description']
-            + 'License:\n%s\n\n' % data['license']
-            + 'URLs:\n%s\n\n' % data['urls'])
-
-        simple_sendmail(fromaddress, config.launchpad.launchpad_team_address,
-                        subject, message)
-
-        self.request.response.addInfoNotification(_(
-            "Your request has been sent. The Launchpad team will be in "
-            "contact with you soon."))
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
 
 class ProductAddViewBase(LaunchpadFormView):
     schema = IProduct

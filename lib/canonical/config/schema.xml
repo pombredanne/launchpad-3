@@ -173,8 +173,6 @@ k            </description>
         </key>
         <key name="errors_address" datatype="string" required="no"
             default="launchpad-error-reports@lists.canonical.com" />
-        <key name="launchpad_team_address" datatype="string" required="no"
-            default="launchpad@lists.canonical.com" />
         <key name="bugs_domain" datatype="string" required="no"
             default="bugs.launchpad.net" />
         <key name="specs_domain" datatype="string" required="no"
