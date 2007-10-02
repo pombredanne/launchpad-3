@@ -9,6 +9,7 @@ docstring in __init__.py for details.
 __metaclass__ = type
 
 __all__ = [
+    'ActiveMailingListVocabulary',
     'BountyVocabulary',
     'BranchVocabulary',
     'BugNominatableSeriesesVocabulary',
@@ -54,7 +55,6 @@ __all__ = [
     'TranslatableLanguageVocabulary',
     'TranslationGroupVocabulary',
     'UserTeamsParticipationVocabulary',
-    'ValidMailingListVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidTeamVocabulary',
     'ValidTeamMemberVocabulary',
@@ -74,17 +74,18 @@ from zope.security.proxy import isinstance as zisinstance
 from canonical.launchpad.database import (
     Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component, Country,
     Distribution, DistroArchSeries, DistroSeries, KarmaCategory, Language,
-    LanguagePack, Milestone, Person, PillarName, POTemplateName, Processor,
-    ProcessorFamily, Product, ProductRelease, ProductSeries, Project,
-    SourcePackageRelease, Specification, Sprint, TranslationGroup)
+    LanguagePack, MailingList, Milestone, Person, PillarName, POTemplateName,
+    Processor, ProcessorFamily, Product, ProductRelease, ProductSeries,
+    Project, SourcePackageRelease, Specification, Sprint, TranslationGroup)
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IBugTask, IDistribution, IDistributionSourcePackage,
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
-    IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet,
-    IPerson, IPersonSet, IPillarName, IProduct, IProject, ISourcePackage,
-    ISpecification, ITeam, IUpstreamBugTask, LanguagePackType)
+    IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMailingList, IMailingListSet,
+    IMilestoneSet, IPerson, IPersonSet, IPillarName, IProduct, IProject,
+    ISourcePackage, ISpecification, ITeam, IUpstreamBugTask, LanguagePackType,
+    MailingListStatus)
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
@@ -748,10 +749,53 @@ class PersonActiveMembershipVocabulary:
             raise LookupError(token)
 
 
-class ValidMailingListVocabulary(ValidTeamVocabulary):
+class ActiveMailingListVocabulary:
     """The set of all active mailing lists."""
 
-    displayname = 'Select a valid (i.e. active) mailing list.'
+    implements(IHugeVocabulary)
+
+    displayname = 'Select an active mailing list.'
+
+    def __init__(self, context):
+        assert context is None, (
+            'Unexpected context for ActiveMailingListVocabulary')
+
+    def __iter__(self):
+        """See `IIterableVocabulary`."""
+        return iter(getUtility(IMailingListSet).active_lists)
+
+    def __len__(self):
+        """See `IIterableVocabulary`."""
+        return getUtility(IMailingListSet).active_lists.count()
+
+    def _getTeamList(self, team_or_list):
+        """Return the IMailingList for `team_or_list`."""
+        if IMailingList.providedBy(team_or_list):
+            return team_or_list
+        elif ITeam.providedBy(team_or_list):
+            return getUtility(IMailingListSet).get(team_or_list.name)
+        else:
+            return None
+
+    def __contains__(self, obj):
+        """See `ISource`."""
+        team_list = self._getTeamList(obj)
+        return (team_list is not None and
+                team_list.status == MailingListStatus.ACTIVE)
+
+    def getTerm(self, obj):
+        """See `IBaseVocabulary`."""
+        team_list = self._getTeamList(obj)
+        if team_list is None or team_list.status != MailingListStatus.ACTIVE:
+            raise LookupError(obj)
+        return SimpleTerm(team_list, team_list.team.name,
+                          team_list.team.displayname)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        # token.token should be the team name as a string.
+        team_list = getUtility(IMailingListSet).get(token)
+        return self.getTerm(team_list)
 
     def search(self, text=None):
         """Search for active mailing lists.
@@ -760,12 +804,24 @@ class ValidMailingListVocabulary(ValidTeamVocabulary):
             name.  This actually matches against the name of the team to which
             the mailing list is linked.  If None (the default), all active
             mailing lists are returned.
-        :return: The list of active mailing lists.
+        :return: The list of active mailing lists matching the query.
         """
-        teams = set(super(ValidMailingListVocabulary, self).search(text))
-        active_lists = set(getUtility(IMailingListSet).active_lists)
-        return list(mailing_list for mailing_list in active_lists
-                    if mailing_list.team in teams)
+        if text is None:
+            return getUtility(IMailingListSet).active_lists
+        # Implementation largely stolen from ValidPersonOrTeamVocabulary and
+        # ValidTeamVocabulary, except that this only searches on name (not
+        # email address or IRC nickname).  Note that because there is no FTI
+        # on mailing lists, we search for matching teams and then map that
+        # back to active mailing lists.  This seems reasonable given that
+        # every mailing list is mapped to exactly one team.
+        name_matches = MailingList.select("""
+            MailingList.team = Person.id
+            AND Person.fti @@ ftq(%s)
+            AND Person.teamowner IS NOT NULL
+            AND MailingList.status = %s
+            """ % sqlvalues(text, MailingListStatus.ACTIVE),
+            clauseTables=['Person'])
+        return name_matches
 
 
 def person_team_participations_vocabulary_factory(context):

@@ -1,4 +1,8 @@
-<div class="portlet" id="portlet-series">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-series">
   <h2>Releases of <span tal:replace="context/displayname">Ubuntu</span></h2>
   <div class="portletBody portletContent">
 

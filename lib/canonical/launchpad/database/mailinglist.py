@@ -8,13 +8,11 @@ __all__ = [
     'MailingListSubscription',
     ]
 
-import pytz
-
-from datetime import datetime
 from sqlobject import ForeignKey, StringCol
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -74,7 +72,7 @@ class MailingList(SQLBase):
             'Reviewer must be a Launchpad administrator')
         self.reviewer = reviewer
         self.status = status
-        self.date_reviewed = datetime.now(pytz.timezone('UTC'))
+        self.date_reviewed = UTC_NOW
 
     def startConstructing(self):
         """See `IMailingList`."""
@@ -158,10 +156,10 @@ class MailingList(SQLBase):
         if subscription is not None:
             raise CannotSubscribe('%s is already subscribed to list %s' %
                                   (person.displayname, self.team.displayname))
-        subscription = MailingListSubscription(
+        # Add the subscription for this person to this mailing list.
+        MailingListSubscription(
             person=person,
             mailing_list=self,
-            date_joined=datetime.now(pytz.timezone('UTC')),
             email_address=address)
 
     def unsubscribe(self, person):
@@ -174,7 +172,7 @@ class MailingList(SQLBase):
                 (person.displayname, self.team.displayname))
         subscription.destroySelf()
 
-    def changeAddress(self, person, address=None):
+    def changeAddress(self, person, address):
         """See `IMailingList`."""
         subscription = MailingListSubscription.selectOneBy(
             person=person, mailing_list=self)
@@ -202,12 +200,7 @@ class MailingList(SQLBase):
                     WHERE team = %d)
             """ % (self.id, self.team.id))
         for subscription in subscriptions:
-            if subscription.email_address is None:
-                # Use the person's preferred email address.
-                yield subscription.person.preferredemail.email
-            else:
-                # Use the subscribed email address.
-                yield subscription.email_address.email
+            yield subscription.email
 
 
 class MailingListSet:
@@ -236,7 +229,7 @@ class MailingListSet:
                 raise AssertionError(
                     'registrant is not a team owner or administrator')
         return MailingList(team=team, registrant=registrant,
-                           date_registered=datetime.now(pytz.timezone('UTC')))
+                           date_registered=UTC_NOW)
 
     def get(self, team_name):
         """See `IMailingListSet`."""
@@ -284,7 +277,17 @@ class MailingListSubscription(SQLBase):
 
     mailing_list = ForeignKey(dbName='mailing_list', foreignKey='MailingList')
 
-    date_joined = UtcDateTimeCol(notNull=True, default=None)
+    date_joined = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     email_address = ForeignKey(dbName='email_address',
                                foreignKey='EmailAddress')
+
+    @property
+    def email(self):
+        """See `IMailingListSubscription`."""
+        if self.email_address is None:
+            # Use the person's preferred email address.
+            return self.person.preferredemail.email
+        else:
+            # Use the subscribed email address.
+            return self.email_address.email

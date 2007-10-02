@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -24,7 +31,7 @@
   <table class="listing">
     <thead>
       <tr>
-        <th colspan="3">
+        <th colspan="4">
           <span tal:replace="context/distribution/displayname" /> version
         </th>
         <th>Upstream version</th>
@@ -32,7 +39,10 @@
     </thead>
     <tbody>
       <tr tal:repeat="row view/version_listing">
-        <td tal:content="row/series">hoary</td>
+        <td><span tal:condition="row/series"
+                  tal:content="row/series/name">hoary</span></td>
+        <td><span tal:condition="row/series"
+                  tal:content="row/series/status/name/fmt:lower" /></td>
         <td tal:content="row/pocket">release</td>
         <td><a tal:content="row/package/version"
                tal:attributes="href row/package/fmt:url">2.2.1-1</a>
@@ -54,6 +64,9 @@
       </tr>
     </tbody>
   </table>
+  <p style="text-align: right">
+    <a href="+publishinghistory">See full publishing history...</a>
+  </p>
 
   <h2>Version history</h2>
 

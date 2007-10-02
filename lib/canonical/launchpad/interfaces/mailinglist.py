@@ -19,8 +19,8 @@ __all__ = [
     ]
 
 
-from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Object, Set, Text
+from zope.interface import Interface
+from zope.schema import Choice, Datetime, Object, Set, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IEmailAddress
@@ -338,14 +338,16 @@ class IMailingList(Interface):
         :param person: The person to subscribe to the mailing list.  The
             person must be a member (either direct or indirect) of the team
             linked to this mailing list.
-        :param address: The address to use for the subscription.  The address
-            must be owned by `person`.  If None (the default), then the
-            person's preferred email address is used.  If the person's
+        :param address: The IEmailAddress to use for the subscription.  The
+            address must be owned by `person`.  If None (the default), then
+            the person's preferred email address is used.  If the person's
             preferred address changes, their subscription address will change
             as well.
-        :raises CannotSubscribe: Raised when the person is not a member of the
-            team linked to this mailing list, or `person` is a Team or other
-            non-person.
+        :raises CannotSubscribe: Raised when the person is not allowed to
+            subscribe to the mailing list with the given address.  For
+            example, this is raised when the person is not a member of the
+            team linked to this mailing list, when `person` is a team, or when
+            `person` does not own the given email address.
         """
 
     def unsubscribe(person):
@@ -356,17 +358,19 @@ class IMailingList(Interface):
             the mailing list.
         """
 
-    def changeAddress(person, address=None):
+    def changeAddress(person, address):
         """Change the address a person is subscribed with.
 
         :param person: The mailing list subscriber.
-        :param address: The new address to use for the subscription.  The
-            address must be owned by `person`.  If None (the default), then
-            the person's preferred email address is used.  If the person's
-            preferred address changes, their subscription address will change
-            as well.
+        :param address: The new IEmailAddress to use for the subscription.
+            The address must be owned by `person`.  If None, the person's
+            preferred email address is used.  If the person's preferred
+            address changes, their subscription address will change as well.
         :raises CannotChangeSubscription: Raised when the person is not a
-            member of the mailing list.
+            allowed to change their subscription address.  For example, this
+            is raised when the person is not a member of the team linked to
+            this mailing list, when `person` is a team, or when `person` does
+            not own the given email address.
         """
 
     addresses = Set(
@@ -522,7 +526,7 @@ class IMailingListSubscription(Interface):
     mailing_list = Choice(
         title=_('Mailing list'),
         description=_('The mailing list for this subscription.'),
-        vocabulary='ValidMailingList',
+        vocabulary='ActiveMailingList',
         required=True, readonly=True)
 
     date_joined = Datetime(
@@ -530,29 +534,41 @@ class IMailingListSubscription(Interface):
         description=_("The date this person joined the team's mailing list."),
         required=True, readonly=True)
 
-    email_address = Attribute(
-        "Subscribed email address or None, meaning use the person's preferred "
-        'email address, even if that changes.')
+    email_address = Object(
+        schema=IEmailAddress,
+        title=_('Email address'),
+        description=_(
+            "The subscribed email address or None, meaning use the person's "
+            'preferred email address, even if that changes.'),
+        required=True)
+
+    email = TextLine(
+        title=_('Email Address'),
+        description=_('The text address this person is subscribed with.'),
+        readonly=True)
 
 
 class CannotSubscribe(Exception):
-    """The subscribee is not allowed to subscribe to the mailing list.
+    """The subscriber is not allowed to subscribe to the mailing list.
 
-    This can be raised when a Team instead of a Person attempts to subscribe
-    to the mailing list, or when the Person is not a member of the team linked
-    to this mailing list.
+    This is raised when the person is not allowed to subscribe to the mailing
+    list with the given address.  For example, this is raised when the person
+    is not a member of the team linked to this mailing list, when `person` is
+    a team, or when `person` does not own the given email address.
     """
 
 class CannotUnsubscribe(Exception):
     """The person cannot unsubscribe from the mailing list.
 
-    This can be raised when Person who is not a member of the mailing list
-    tries to unsubscribe from the mailing list.
+    This is raised when Person who is not a member of the mailing list tries
+    to unsubscribe from the mailing list.
     """
 
 class CannotChangeSubscription(Exception):
     """The subscription change cannot be fulfilled.
 
-    This can be raised when a change of subscription is requested for a person
-    who is not subscribed to the mailing list.
+    This is raised when the person is not a allowed to change their
+    subscription address.  For example, this is raised when the person is not
+    a member of the team linked to this mailing list, when `person` is a team,
+    or when `person` does not own the given email address.
     """

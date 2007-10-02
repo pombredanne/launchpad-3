@@ -55,7 +55,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.dynmenu import DynMenu
 
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
 
 from canonical.launchpad import _
 
@@ -560,7 +560,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
     custom_widget('cvsroot', StrippedTextWidget, displayWidth=50)
     custom_widget('cvsmodule', StrippedTextWidget, displayWidth=20)
     custom_widget('cvsbranch', StrippedTextWidget, displayWidth=20)
-    custom_widget('svnrepository', StrippedTextWidget, displayWidth=50)
+    custom_widget('svnrepository', URIWidget, displayWidth=50)
 
     def setUpWidgets(self):
         LaunchpadEditFormView.setUpWidgets(self)
@@ -649,7 +649,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
         # all such actions the same though, so we ignore it.
         return check_permission('launchpad.Admin', self.context)
 
-    @action(_('Update RCS Details'), name='update')
+    @action(_('Update Details'), name='update')
     def update_action(self, action, data):
         old_rcstype = self.context.rcstype
         self.updateContextFromData(data)
@@ -660,7 +660,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                                       self.context.rcstype is not None):
                 self.context.importstatus = ImportStatus.TESTING
         self.request.response.addInfoNotification(
-            'Upstream RCS details updated.')
+            'Upstream source details updated.')
 
     def allowResetToAutotest(self, action):
         return self.isAdmin() and self.context.autoTestFailed()
