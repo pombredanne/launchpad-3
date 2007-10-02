@@ -348,12 +348,11 @@ was inherited in the initialization.
     The Hoary Hedgehog Release
 
     >>> hoary_evo_dsspr = hoary_evo_sp['1.0']
-    >>> c = hoary_evo_dsspr.copyTo(breezy_autotest, pocket_release)
+    >>> copied_pub = hoary_evo_dsspr.copyTo(breezy_autotest, pocket_release)
 
-    >>> bt_evo_sp = breezy_autotest.getSourcePackage('evolution')
-    >>> bt_evo_dsspr = bt_evo_sp['1.0']
-    >>> hoary_evo_dsspr.sourcepackagerelease == \
-    ...      bt_evo_dsspr.sourcepackagerelease
+    >>> breezy_autotest_evo_sp = breezy_autotest.getSourcePackage('evolution')
+    >>> breezy_autotest_evo_dsspr = breezy_autotest_evo_sp['1.0']
+    >>> evo_spr == breezy_autotest_evo_dsspr.sourcepackagerelease
     True
 
 Since evolution source was already built on ubuntu/hoary/i386, the
@@ -363,9 +362,9 @@ ubuntu/breezy-autotest/i386.
 In practical terms it means that another build is not necessary in
 this context. 
 
-    >>> bt_build = bt_evo_dsspr.sourcepackagerelease.getBuildByArch(
+    >>> breezy_autotest_build = evo_spr.getBuildByArch(
     ...     breezy_autotest_i386, ubuntu.main_archive)
-    >>> print bt_build.title
+    >>> print breezy_autotest_build.title
     i386 build of evolution 1.0 in ubuntu hoary RELEASE    
 
 
