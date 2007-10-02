@@ -163,8 +163,8 @@ class TestPullerMasterProtocol(unittest.TestCase):
         def mirrorSucceeded(self, last_revision):
             self.calls.append(('mirrorSucceeded', last_revision))
 
-        def mirrorFailed(self, message):
-            self.calls.append(('mirrorFailed', message))
+        def mirrorFailed(self, message, oops):
+            self.calls.append(('mirrorFailed', message, oops))
 
 
     class FakeTransport:
@@ -211,7 +211,7 @@ class TestPullerMasterProtocol(unittest.TestCase):
         self.protocol.outReceived(self.convertToNetstring('Error Message'))
         self.protocol.outReceived(self.convertToNetstring('OOPS'))
         self.assertEqual(
-            [('mirrorFailed', 'Error Message')], self.listener.calls)
+            [('mirrorFailed', 'Error Message', 'OOPS')], self.listener.calls)
 
 
 class TestMirroringEvents(TrialTestCase):
@@ -274,7 +274,8 @@ class TestMirroringEvents(TrialTestCase):
 
         def mirrorFailed(ignored):
             self.status_client.calls = []
-            return self.eventHandler.mirrorFailed(arbitrary_error_message)
+            return self.eventHandler.mirrorFailed(
+                arbitrary_error_message, 'oops')
         deferred.addCallback(mirrorFailed)
 
         def checkMirrorFailed(ignored):

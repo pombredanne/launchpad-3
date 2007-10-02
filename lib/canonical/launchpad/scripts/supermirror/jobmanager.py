@@ -82,7 +82,7 @@ class FireOnExit(ProcessProtocol, NetstringReceiver):
 
     def do_mirrorFailed(self, reason, oops):
         self._deferred.addCallback(
-            lambda ignored: self.listener.mirrorFailed(reason))
+            lambda ignored: self.listener.mirrorFailed(reason, oops))
 
     def outReceived(self, data):
         # Modified version of NetstringReceiver.dataReceived that disconnects
@@ -132,7 +132,7 @@ class BranchToMirror:
             self.destination_url)
         return self.branch_status_client.startMirroring(self.branch_id)
 
-    def mirrorFailed(self, reason):
+    def mirrorFailed(self, reason, oops):
         self.logger.info('Recorded failure: %s', str(reason))
         return self.branch_status_client.mirrorFailed(self.branch_id, reason)
 
