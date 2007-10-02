@@ -5,9 +5,9 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugTargetBugsFeed',
     'PersonBugsFeed',
-    'ProjectProductBugsFeed',
-    'SearchBugs',
+    'SearchBugsFeed',
     ]
 
 from zope.app.pagetemplate import ViewPageTemplateFile
@@ -99,13 +99,13 @@ class BugsFeedBase(FeedBase):
         return entry
 
 
-class ProjectProductBugsFeed(BugsFeedBase):
+class BugTargetBugsFeed(BugsFeedBase):
     """Bug feeds for projects and products."""
 
     feed_name = "latest-bugs.atom"
 
     def initialize(self):
-        super(ProjectProductBugsFeed, self).initialize()
+        super(BugTargetBugsFeed, self).initialize()
         self.delegate_view = BugTargetView(self.context, self.request)
         self.delegate_view.initialize()
 
@@ -120,9 +120,6 @@ class ProjectProductBugsFeed(BugsFeedBase):
 
 class PersonBugsFeed(BugsFeedBase):
     """Bug feeds for a person."""
-
-    # see PersonRelatedBugsView
-    # XXX, bac: this class is currently broken
 
     feed_name = "latest-bugs.atom"
 
@@ -143,7 +140,7 @@ class PersonBugsFeed(BugsFeedBase):
         return items[:self.quantity]
 
 
-class SearchBugs(BugsFeedBase):
+class SearchBugsFeed(BugsFeedBase):
     """Bug feeds for a generic search.
 
     Searches are of the form produced by an advanced bug search, e.g.
@@ -154,7 +151,7 @@ class SearchBugs(BugsFeedBase):
     feed_name = "search-bugs.atom"
 
     def initialize(self):
-        super(SearchBugs, self).initialize()
+        super(SearchBugsFeed, self).initialize()
         self.delegate_view = BugsBugTaskSearchListingView(self.context, self.request)
         self.delegate_view.initialize()
 
