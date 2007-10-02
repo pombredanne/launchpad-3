@@ -17,6 +17,38 @@ from zope.schema import Choice, Datetime, Int, TextLine, Text
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces import IHasBug
+from canonical.lazr import (
+    DBEnumeratedType, DBItem, use_template)
+
+class BugWatchErrorType(DBEnumeratedType):
+    """An enumeration of possible BugWatch errors."""
+
+    TIMEOUT = DBItem(1, """
+        Timeout
+
+        Launchpad encountered a timeout when trying to connect to the
+        remote server and was unable to retrieve the bug's status.
+        """)
+
+    BUGNOTFOUND = DBItem(2, """
+        Bug not Found
+
+        Launchpad could not find the specified bug on the remote server.
+        """)
+
+    INVALIDBUGID = DBItem(3, """
+        Invalid Bug ID
+
+        The specified bug ID is not valid.
+        """)
+
+    UNPARSABLEBUG = DBItem(4, """
+        Unparsable Bug
+
+        Launchpad could not extract a status from the data it received
+        from the remote server.
+        """)
+
 
 class IBugWatch(IHasBug):
     """A bug on a remote system."""
@@ -35,6 +67,9 @@ class IBugWatch(IHasBug):
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True)
     owner = Int(title=_('Owner'), required=True, readonly=True)
+    lasterror = Choice(
+        title=_('Last Error'),
+        vocabulary="BugWatchErrorType")
 
     # useful joins
     bugtasks = Attribute('The tasks which this watch will affect. '
