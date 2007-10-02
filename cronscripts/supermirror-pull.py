@@ -39,8 +39,8 @@ if __name__ == '__main__':
             'Expected one of %s, but got: %r'
             % (branch_type_map.keys(), which))
 
-    manager = jobmanager.JobManager(BranchStatusClient(), branch_type)
     log = logger(options, 'branch-puller')
+    manager = jobmanager.JobManager(BranchStatusClient(), log, branch_type)
 
     reactor.callWhenRunning(run_mirror, log, manager)
     reactor.run()
