@@ -209,6 +209,7 @@ class TestPullerMasterProtocol(unittest.TestCase):
         self.protocol.outReceived(
             self.convertToNetstring('mirrorFailed'))
         self.protocol.outReceived(self.convertToNetstring('Error Message'))
+        self.protocol.outReceived(self.convertToNetstring('OOPS'))
         self.assertEqual(
             [('mirrorFailed', 'Error Message')], self.listener.calls)
 

@@ -854,9 +854,10 @@ class TestWorkerProtocol(unittest.TestCase, BranchToMirrorMixin):
         self.protocol.startMirroring(self.branch_to_mirror)
         self.resetBuffers()
         self.protocol.mirrorFailed(self.branch_to_mirror, 'Error Message')
-        [command, message] = self.getNetstrings(self.output.getvalue())
+        [command, message, oops] = self.getNetstrings(self.output.getvalue())
         self.assertEqual('mirrorFailed', command)
         self.assertEqual('Error Message', message)
+        self.failUnless(oops.startswith('OOPS'))
         self.assertNoError()
 
 

@@ -50,7 +50,7 @@ class FireOnExit(ProcessProtocol, NetstringReceiver):
         self.listener = listener
         self._deferred = None
         self._commands = {
-            'startMirroring': 0, 'mirrorSucceeded': 1, 'mirrorFailed': 1}
+            'startMirroring': 0, 'mirrorSucceeded': 1, 'mirrorFailed': 2}
         self._resetState()
 
     def _resetState(self):
@@ -80,7 +80,7 @@ class FireOnExit(ProcessProtocol, NetstringReceiver):
         self._deferred.addCallback(
             lambda ignored: self.listener.mirrorSucceeded(latest_revision))
 
-    def do_mirrorFailed(self, reason):
+    def do_mirrorFailed(self, reason, oops):
         self._deferred.addCallback(
             lambda ignored: self.listener.mirrorFailed(reason))
 
