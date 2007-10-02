@@ -75,7 +75,6 @@ def tearDown(test):
 
 def checkwatchesSetUp(test):
     setUp(test)
-    #login('bugwatch@bugs.launchpad.net')
     LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
 def poExportSetUp(test):
