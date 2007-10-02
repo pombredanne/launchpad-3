@@ -829,7 +829,7 @@ class FeedsPublication(LaunchpadBrowserPublication):
 
 class FeedsBrowserRequest(LaunchpadBrowserRequest):
     """Request type for a launchpad feed."""
-    implements(canonical.launchpad.layers.FeedLayer)
+    implements(canonical.launchpad.layers.FeedsLayer)
 
 
 # ---- openid
