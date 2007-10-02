@@ -111,3 +111,38 @@ here we limit it to 2.
     >>> entries = [tag for tag in BSS(browser.contents, parseOnlyThese=SoupStrainer('entry'))]
     >>> print len(entries)
     2
+
+== General bug search ==
+
+    >>> import cgi
+    >>> url = ("http://launchpad.dev/bugs/search-bugs.atom?"
+    ...        "field.searchtext=&search=Search+Bug+Reports&"
+    ...        "field.scope=all&field.scope.target=")
+    >>> browser.open(url)
+    >>> browser.title
+    'Bugs from custom search'
+
+    >>> soup = BSS(browser.contents)
+    >>> entry_id = extract_text(soup.find('id'))
+    >>> assert entry_id==cgi.escape(url), "Id does match URL (%s)" % entry_id
+
+    >>> entries = [tag for tag in BSS(browser.contents, parseOnlyThese=SoupStrainer('entry'))]
+    >>> print len(entries)
+    15
+
+    >>> entry = entries[0]
+    >>> print extract_text(entry.title)
+    [3] Bug Title Test
+    >>> print extract_text(entry.author('name')[0])
+    Foo Bar
+    >>> print extract_text(entry.author('uri')[0])
+    http://launchpad.dev/~name16
+
+    >>> entry = entries[1]
+    >>> print extract_text(entry.title)
+    [5] Firefox install instructions should be complete
+    >>> print extract_text(entry.author('name')[0])
+    Sample Person
+    >>> print extract_text(entry.author('uri')[0])
+    http://launchpad.dev/~name12
+

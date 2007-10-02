@@ -20,7 +20,8 @@ from canonical.launchpad.browser.bugtask import BugTaskView
 from canonical.launchpad.browser import (
     BugsBugTaskSearchListingView, BugTargetView,
     PersonRelatedBugsView)
-
+from canonical.launchpad.interfaces import (
+    IBugTarget, IBugTaskSet, IPerson)
 
 class BugFeedContentView(LaunchpadView):
     """View for a bug feed contents."""
@@ -61,7 +62,7 @@ class BugsFeedBase(FeedBase):
         quantity = self.request.get('quantity')
         if quantity is not None:
             try:
-                self.quantity = int(quantity)
+                self.quantity = min(int(quantity), self.max_quantity)
             except ValueError:
                 pass
 
@@ -102,6 +103,7 @@ class BugsFeedBase(FeedBase):
 class BugTargetBugsFeed(BugsFeedBase):
     """Bug feeds for projects and products."""
 
+    usedfor = IBugTarget
     feed_name = "latest-bugs.atom"
 
     def initialize(self):
@@ -121,6 +123,7 @@ class BugTargetBugsFeed(BugsFeedBase):
 class PersonBugsFeed(BugsFeedBase):
     """Bug feeds for a person."""
 
+    usedfor = IPerson
     feed_name = "latest-bugs.atom"
 
     def initialize(self):
@@ -148,6 +151,7 @@ class SearchBugsFeed(BugsFeedBase):
         search=Search+Bug+Reports&field.scope=all&field.scope.target=
     """
 
+    usedfor = IBugTaskSet
     feed_name = "search-bugs.atom"
 
     def initialize(self):
@@ -164,4 +168,8 @@ class SearchBugsFeed(BugsFeedBase):
 
     def getTitle(self):
         """Title for the feed."""
-        return "Bugs from custom search."
+        return "Bugs from custom search"
+
+    def getURL(self):
+        """Get the identifying URL for the feed."""
+        return "%s?%s" % (self.request.getURL(), self.request.get('QUERY_STRING'))

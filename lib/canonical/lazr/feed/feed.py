@@ -48,6 +48,7 @@ class FeedBase(LaunchpadFormView):
     # XXX bac - need caching headers, including expiration, etc.
 
     max_age = 60 * MINUTES
+    max_quantity = 100
     items = None
     template_file = 'feed.pt'
 
