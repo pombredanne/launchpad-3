@@ -1569,8 +1569,9 @@ class PackageRemover(SoyuzScript):
         # Removal information options.
         self.parser.add_option("-u", "--user", dest="user",
                                help="Launchpad user name.")
-        self.parser.add_option("-m", "--reason", dest="reason",
-                               help="reason for removal")
+        self.parser.add_option("-m", "--removal_comment",
+                               dest="removal_comment",
+                               help="Removal comment")
 
     def mainTask(self):
         """Execute package removal task.
@@ -1587,8 +1588,8 @@ class PackageRemover(SoyuzScript):
         if self.options.user is None:
             raise SoyuzScriptError("Launchpad username must be given.")
 
-        if self.options.reason is None:
-            raise SoyuzScriptError("'reason' must be given.")
+        if self.options.removal_comment is None:
+            raise SoyuzScriptError("Removal comment must be given.")
 
         removed_by = getUtility(IPersonSet).getByName(self.options.user)
         if removed_by is None:
@@ -1611,12 +1612,13 @@ class PackageRemover(SoyuzScript):
             self.logger.info('\t%s' % removable.title)
 
         self.logger.info("Removed-by: %s" % removed_by.displayname)
-        self.logger.info("Comment: %s" % self.options.reason)
+        self.logger.info("Comment: %s" % self.options.removal_comment)
 
         removals = []
         for removable in removables:
             removed = removable.delete(
-                removed_by=removed_by, removal_comment=self.options.reason)
+                removed_by=removed_by,
+                removal_comment=self.options.removal_comment)
             removals.append(removed)
 
         if len(removals) == 1:
