@@ -1,6 +1,7 @@
 #!/usr/bin/python2.4
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
+import _pythonpath
 from optparse import OptionParser
 
 from twisted.internet import reactor

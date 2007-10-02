@@ -48,28 +48,41 @@ class FireOnExit(ProcessProtocol, NetstringReceiver):
     def __init__(self, deferred, timeout_period, listener):
         self.deferred = deferred
         self.listener = listener
-        self._state = None
         self._deferred = None
+        self._commands = {
+            'startMirroring': 0, 'mirrorSucceeded': 1, 'mirrorFailed': 1}
+        self._resetState()
+
+    def _resetState(self):
+        self._current_command = None
+        self._current_args = []
 
     def stringReceived(self, line):
-        if line == 'startMirroring':
-            self._deferred = defer.maybeDeferred(self.listener.startMirroring)
-        elif line == 'mirrorSucceeded':
-            self._state = 'mirrorSucceeded'
-        elif line == 'mirrorFailed':
-            self._state = 'mirrorFailed'
+        if line in self._commands:
+            self._current_command = line
+        elif self._current_command is not None:
+            self._current_args.append(line)
         else:
-            if self._state == 'mirrorSucceeded':
-                self._deferred.addCallback(
-                    lambda ignored: self.listener.mirrorSucceeded(line))
-                self._state = None
-            elif self._state == 'mirrorFailed':
-                self._deferred.addCallback(
-                    lambda ignored: self.listener.mirrorFailed(line))
-                self._state = None
-            else:
-                # XXX: Don't let this be merged.
-                raise "Unrecognized: %r" % (line,)
+            # XXX: Don't let this be merged.
+            raise "Unrecognized: %r" % (line,)
+
+        if len(self._current_args) == self._commands[self._current_command]:
+            method = getattr(self, 'do_%s' % self._current_command)
+            try:
+                method(*self._current_args)
+            finally:
+                self._resetState()
+
+    def do_startMirroring(self):
+        self._deferred = defer.maybeDeferred(self.listener.startMirroring)
+
+    def do_mirrorSucceeded(self, latest_revision):
+        self._deferred.addCallback(
+            lambda ignored: self.listener.mirrorSucceeded(latest_revision))
+
+    def do_mirrorFailed(self, reason):
+        self._deferred.addCallback(
+            lambda ignored: self.listener.mirrorFailed(reason))
 
     def outReceived(self, data):
         # Modified version of NetstringReceiver.dataReceived that disconnects
@@ -82,7 +95,7 @@ class FireOnExit(ProcessProtocol, NetstringReceiver):
         if reason.check(error.ConnectionDone):
             deferred.callback(None)
         else:
-            deferred.errback(failure.Failure(Exception(self._error)))
+            deferred.errback(failure.Failure(Exception(reason)))
 
 
 class BranchToMirror:
