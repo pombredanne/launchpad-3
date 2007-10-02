@@ -2,6 +2,7 @@
 Check there's no link to change the members team without authorization,
 and that going to the page anyway redirects to login.
 
+  >>> anon_browser.open("http://localhost/ubuntu/")
   >>> anon_browser.getLink("Change members")
   Traceback (most recent call last):
   ...
