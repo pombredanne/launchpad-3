@@ -15,7 +15,6 @@ from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.scripts.ftpmaster import (
     SoyuzScriptError, PackageRemover)
 from canonical.lp.dbschema import PackagePublishingStatus
@@ -84,8 +83,11 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
     removal_comment = 'fooooooo'
 
     class QuietLogger:
-        """A logger that doesn't log anything.  Useful where you need to
-        provide a logger object but don't actually want any output."""
+        """A logger that doesn't log anything.
+
+        Useful where you need to provide a logger object but don't actually
+        want any output.
+        """
         def debug(self, args):
             self.log(args)
         def info(self, args):
@@ -144,6 +146,7 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
 
         remover = PackageRemover(name='lp-remove-package', test_args=test_args)
         remover.logger = self.QuietLogger()
+        remover.setupLocation()
         return remover
 
     def _getPubIDs(self):
@@ -346,6 +349,11 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
         remover.options.removal_comment = None
         self.assertRaises(SoyuzScriptError, remover.mainTask)
 
+    def testPackageNameNotGiven(self):
+        """Check if the script raises if package name is not passed"""
+        remover = self.getRemover()
+        remover.args = []
+        self.assertRaises(SoyuzScriptError, remover.mainTask)
 
 
 def test_suite():

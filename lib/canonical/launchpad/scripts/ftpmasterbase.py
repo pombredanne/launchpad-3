@@ -139,7 +139,7 @@ class SoyuzScript(LaunchpadScript):
 
         Similar to `LaunchpadScript.add_my_options`.
         """
-        raise NotImplementedError
+        pass
 
     def _probePublishing(self, currently_published):
         """Probe the given publishing record.
@@ -268,8 +268,11 @@ class SoyuzScript(LaunchpadScript):
         """Setup `PackageLocation` for context distribution and suite."""
         # These can raise PackageLocationError, but we're happy to pass
         # it upwards.
-        self.location = PackageLocation(
-            self.options.distribution_name, self.options.suite)
+        try:
+            self.location = PackageLocation(
+                self.options.distribution_name, self.options.suite)
+        except PackageLocationError, err:
+            raise SoyuzScriptError(err)
 
     def _finishProcedure(self):
         """Script finalization procedure.
@@ -297,13 +300,10 @@ class SoyuzScript(LaunchpadScript):
         """
         self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
 
-        if len(self.args) != 1:
-            raise LaunchpadScriptFailure(
-                "At least one non-option argument must be given, "
-                "the packagename.")
         try:
+            self.setupLocation()
             self.mainTask()
-        except (SoyuzScriptError, PackageLocationError), err:
+        except SoyuzScriptError, err:
             raise LaunchpadScriptFailure(err)
 
         self._finishProcedure()

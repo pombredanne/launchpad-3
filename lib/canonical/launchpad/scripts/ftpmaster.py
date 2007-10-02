@@ -1580,8 +1580,10 @@ class PackageRemover(SoyuzScript):
 
         Can raise SoyuzScriptError.
         """
-        # Uses SoyuzScript.setupLocation() to parse the locations options.
-        self.setupLocation()
+        if len(self.args) != 1:
+            raise SoyuzScriptError(
+                "At least one non-option argument must be given, "
+                "the packagename.")
 
         packagename = self.args[0]
 
