@@ -104,18 +104,8 @@ class FeedBase(LaunchpadFormView):
         #return "%sZ" % datetime.utcnow().isoformat()
         return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    @property
-    def template(self):
-        template_file = self.template_files.get(self.format)
-        if template_file is not None:
-            return ViewPageTemplateFile(template_file)
-        else:
-            raise NotImplementedError, "Format %s is not implemented" % self.format
 
     def render(self):
-        # XXX, bac - This call looks funny, but the callable template must be
-        # passed a reference to the view.  The first use of self is to
-        # reference the property.
         expires = rfc1123_date(time.time() + self.max_age)
         # self.getUpdated() can't run until after initialize() runs
         last_modified = rfc1123_date(
@@ -125,7 +115,29 @@ class FeedBase(LaunchpadFormView):
         response.setHeader('Cache-Control', 'max-age=%d' % self.max_age)
         response.setHeader('X-Cache-Control', 'max-age=%d' % self.max_age)
         response.setHeader('Last-Modified', last_modified)
-        return self.template(self)
+
+        if self.format == 'atom':
+            return self.renderAtom()
+        elif self.format == 'html':
+            return self.renderHTML()
+        else:
+            raise NotImplementedError, "Format %s is not implemented" % self.format
+
+    def renderAtom(self):
+        '''Render the object as an Atom feed.
+        Override this as opposed to overriding render().'''
+        # XXX, bac - This call looks funny, but the callable template must be
+        # passed a reference to the view.  The first use of self is to
+        # reference the property.
+        return ViewPageTemplateFile(self.template_files['atom'])(self)
+
+    def renderHTML(self):
+        '''Render the object as an html feed.
+        Override this as opposed to overriding render().'''
+        # XXX, bac - This call looks funny, but the callable template must be
+        # passed a reference to the view.  The first use of self is to
+        # reference the property.
+        return ViewPageTemplateFile(self.template_files['html'])(self)
 
 class FeedEntry:
     """An entry for a feed.

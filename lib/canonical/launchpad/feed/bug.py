@@ -55,6 +55,34 @@ class BugsFeedBase(FeedBase):
     def initialize(self):
         super(BugsFeedBase, self).initialize()
         self.getParameters()
+        self.__show_column = None
+
+    @property
+    def show_column(self):
+        if self.__show_column is not None:
+            return self.__show_column
+        self.__show_column = dict(
+            id = True,
+            title = True,
+            bugtargetdisplayname = True,
+            importance = True,
+            status = True)
+        if IBugTarget.providedBy(self.context):
+            self.__show_column['bugtargetdisplayname'] = False
+        override = self.request.get('show_column')
+        if override:
+            for column in override.split(','):
+                if len(column) == 0:
+                    continue
+                elif column[0] == '-':
+                    value = False
+                    column = column[1:]
+                    if len(column) == 0:
+                        continue
+                else:
+                    value = True
+                self.__show_column[column] = value
+        return self.__show_column
 
     def getParameters(self):
         verbose = self.request.get('verbose')
@@ -78,13 +106,18 @@ class BugsFeedBase(FeedBase):
     def getLogo(self):
         return "http://launchpad.dev/+icing/app-bugs.gif"
 
+    def getPublicRawItems(self):
+        return [ bugtask 
+                 for bugtask in self.getRawItems() 
+                 if not bugtask.bug.private ]
+
     def getItems(self):
         """Get the items for the feed.
 
         The result is assigned to self.items for caching.
         """
         if self.items is None:
-            items = self.getRawItems()
+            items = self.getPublicRawItems()
             self.items = [self.itemToFeedEntry(item) for item in items]
         return self.items
 
@@ -104,6 +137,9 @@ class BugsFeedBase(FeedBase):
                           content = FeedTypedData(content_view.render(),
                                                   content_type="xhtml"))
         return entry
+
+    def renderHTML(self):
+        return ViewPageTemplateFile('templates/bug-html.pt')(self)
 
 class BugTargetBugsFeed(BugsFeedBase):
     """Bug feeds for projects and products."""

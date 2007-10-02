@@ -13,67 +13,65 @@ time.
 Define a helper function for parsing the entries:
     >>> def parse_entries(contents):
     ...     entries = [tag for tag in BeautifulSoup(browser.contents,
-    ...                   parseOnlyThese=SoupStrainer('entry'))]
+    ...                   parseOnlyThese=SoupStrainer('tr'))]
     ...     return entries
 
 == Latest bugs for a product ==
 
-    >>> browser.open('http://launchpad.dev/jokosher/latest-bugs.html')
+    >>> browser.open('http://launchpad.dev/jokosher/latest-bugs.html?'
+    ...              'show_column=bugtargetdisplayname')
     >>> browser.title
     'Bugs in Jokosher'
     >>> browser.url
-    'http://launchpad.dev/jokosher/latest-bugs.html'
+    'http://launchpad.dev/jokosher/latest-bugs.html?show_column=bugtargetdisplayname'
 
     >>> soup = BeautifulSoup(browser.contents)
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
-    2
-    >>> entry = entries[0]
-    >>> print extract_text(entry.title)
-    [12] Copy, Cut and Delete operations should work on selections
-    >>> print extract_text(entry.author('name')[0])
-    Foo Bar
-    >>> print extract_text(entry.author('uri')[0])
-    http://launchpad.dev/~name16
+    3
     >>> entry = entries[1]
-    >>> print extract_text(entry.author('name')[0])
-    Foo Bar
-    >>> print extract_text(entry.author('uri')[0])
-    http://launchpad.dev/~name16
-
-    >>> print extract_text(entry.title)
-    [11] Make Jokosher use autoaudiosink
+    >>> print extract_text(entry('td')[1])
+    12
+    >>> print entry('td')[1].a['href']
+    http://bugs.launchpad.dev/jokosher/+bug/12
+    >>> print extract_text(entry('td')[2])
+    Copy, Cut and Delete operations should work on selections
+    >>> print entry('td')[2].a['href']
+    http://bugs.launchpad.dev/jokosher/+bug/12
+    >>> print extract_text(entry('td')[3])
+    Jokosher 
+    >>> print extract_text(entry('td')[4])
+    Critical
+    >>> print extract_text(entry('td')[5])
+    Confirmed
 
 == Latest bugs for a project ==
 
-    >>> browser.open('http://launchpad.dev/mozilla/latest-bugs.html')
+    >>> browser.open('http://launchpad.dev/mozilla/latest-bugs.html?'
+    ...              'show_column=bugtargetdisplayname')
     >>> browser.title
     'Bugs in the Mozilla Project'
     >>> browser.url
-    'http://launchpad.dev/mozilla/latest-bugs.html'
+    'http://launchpad.dev/mozilla/latest-bugs.html?show_column=bugtargetdisplayname'
 
     >>> soup = BeautifulSoup(browser.contents)
-    >>> print extract_text(soup.find('id'))
-    http://launchpad.dev/mozilla/latest-bugs.html
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
-    4
-
-    >>> entry = entries[0]
-    >>> print extract_text(entry.title)
-    [9] Thunderbird crashes
-    >>> print extract_text(entry.author('name')[0])
-    Foo Bar
-    >>> print extract_text(entry.author('uri')[0])
-    http://launchpad.dev/~name16
+    10
 
     >>> entry = entries[1]
-    >>> print extract_text(entry.title)
-    [5] Firefox install instructions should be complete
-    >>> print extract_text(entry.author('name')[0])
-    Sample Person
-    >>> print extract_text(entry.author('uri')[0])
-    http://launchpad.dev/~name12
+    >>> print extract_text(entry('td')[1])
+    9
+    >>> print entry('td')[1].a['href']
+    http://bugs.launchpad.dev/thunderbird/+bug/9
+    >>> print extract_text(entry('td')[2])
+    Thunderbird crashes
+    >>> print extract_text(entry('td')[3])
+    Mozilla Thunderbird
+    >>> print extract_text(entry('td')[4])
+    Unknown
+    >>> print extract_text(entry('td')[5])
+    Unknown
 
 == Latest bugs for a person ==
 
@@ -84,27 +82,25 @@ Define a helper function for parsing the entries:
     'http://launchpad.dev/~name16/latest-bugs.html'
 
     >>> soup = BeautifulSoup(browser.contents)
-    >>> print extract_text(soup.find('id'))
-    http://launchpad.dev/~name16/latest-bugs.html
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
-    6
-
-    >>> entry = entries[0]
-    >>> print extract_text(entry.title)
-    [3] Bug Title Test
-    >>> print extract_text(entry.author('name')[0])
-    Foo Bar
-    >>> print extract_text(entry.author('uri')[0])
-    http://launchpad.dev/~name16
+    11
 
     >>> entry = entries[1]
-    >>> print extract_text(entry.title)
-    [12] Copy, Cut and Delete operations should work on selections
-    >>> print extract_text(entry.author('name')[0])
-    Foo Bar
-    >>> print extract_text(entry.author('uri')[0])
-    http://launchpad.dev/~name16
+    >>> print extract_text(entry('td')[1])
+    3
+    >>> print entry('td')[1].a['href']
+    http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3
+    >>> print extract_text(entry('td')[2])
+    Bug Title Test
+    >>> print entry('td')[2].a['href']
+    http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3
+    >>> print extract_text(entry('td')[3])
+    mozilla-firefox (Debian)
+    >>> print extract_text(entry('td')[4])
+    Unknown
+    >>> print extract_text(entry('td')[5])
+    New
 
 == General bug search ==
 
@@ -117,26 +113,24 @@ Define a helper function for parsing the entries:
     'Bugs from custom search'
 
     >>> soup = BeautifulSoup(browser.contents)
-    >>> entry_id = extract_text(soup.find('id'))
-    >>> assert entry_id==cgi.escape(url), "Id does match URL (%s)" % entry_id
 
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
-    20
+    61
 
-    >>> entry = entries[0]
-    >>> print extract_text(entry.title)
-    [3] Bug Title Test
-    >>> print extract_text(entry.author('name')[0])
-    Foo Bar
-    >>> print extract_text(entry.author('uri')[0])
-    http://launchpad.dev/~name16
 
     >>> entry = entries[1]
-    >>> print extract_text(entry.title)
-    [5] Firefox install instructions should be complete
-    >>> print extract_text(entry.author('name')[0])
-    Sample Person
-    >>> print extract_text(entry.author('uri')[0])
-    http://launchpad.dev/~name12
-
+    >>> print extract_text(entry('td')[1])
+    3
+    >>> print entry('td')[1].a['href']
+    http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3
+    >>> print extract_text(entry('td')[2])
+    Bug Title Test
+    >>> print entry('td')[2].a['href']
+    http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3
+    >>> print extract_text(entry('td')[3])
+    mozilla-firefox (Debian)
+    >>> print extract_text(entry('td')[4])
+    Unknown
+    >>> print extract_text(entry('td')[5])
+    New
