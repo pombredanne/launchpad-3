@@ -341,7 +341,7 @@ if [ $? -ne 0 ]; then
   branchloc=$(eval echo "~/canonical/lp-branches")
   echo "
 [${branchloc}]
-pqm_email = Canonical PQM <pqm@pqm.ubuntu.com>
+pqm_email = Launchpad PQM <launchpad@pqm.canonical.com>
 pqm_branch = sftp://devpad.canonical.com/code/rocketfuel/launchpad/devel
 public_branch = bzr+ssh://devpad.canonical.com/code/${whoami}/launchpad
 public_branch:policy = appendpath
