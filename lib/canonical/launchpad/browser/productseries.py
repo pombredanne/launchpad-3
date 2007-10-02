@@ -772,9 +772,8 @@ class ProductSeriesSourceSetView:
             self.importstatus = None
         # setup the initial values if there was no form submitted
         if request.form.get('search', None) is None:
-            self.importstatus = ImportStatus.TESTING
+            self.importstatus = ImportStatus.TESTING.value
 
-        print 'ProductSeriesSourceSetView.__init__', repr(self.text)
         results = self.context.searchImports(
             text=self.text, importstatus=self.importstatus)
         self.batchnav = BatchNavigator(results, request)
