@@ -18,15 +18,13 @@ Define a helper function for parsing the entries:
 
 == Latest bugs for a product ==
 
-    >>> browser.open('http://launchpad.dev/jokosher/latest-bugs.atom')
+    >>> browser.open('http://launchpad.dev/jokosher/latest-bugs.html')
     >>> browser.title
     'Bugs in Jokosher'
     >>> browser.url
-    'http://launchpad.dev/jokosher/latest-bugs.atom'
+    'http://launchpad.dev/jokosher/latest-bugs.html'
 
     >>> soup = BeautifulSoup(browser.contents)
-    >>> print extract_text(soup.find('id'))
-    http://launchpad.dev/jokosher/latest-bugs.atom
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     2
@@ -48,15 +46,15 @@ Define a helper function for parsing the entries:
 
 == Latest bugs for a project ==
 
-    >>> browser.open('http://launchpad.dev/mozilla/latest-bugs.atom')
+    >>> browser.open('http://launchpad.dev/mozilla/latest-bugs.html')
     >>> browser.title
     'Bugs in the Mozilla Project'
     >>> browser.url
-    'http://launchpad.dev/mozilla/latest-bugs.atom'
+    'http://launchpad.dev/mozilla/latest-bugs.html'
 
     >>> soup = BeautifulSoup(browser.contents)
     >>> print extract_text(soup.find('id'))
-    http://launchpad.dev/mozilla/latest-bugs.atom
+    http://launchpad.dev/mozilla/latest-bugs.html
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     4
@@ -79,15 +77,15 @@ Define a helper function for parsing the entries:
 
 == Latest bugs for a person ==
 
-    >>> browser.open('http://launchpad.dev/~name16/latest-bugs.atom')
+    >>> browser.open('http://launchpad.dev/~name16/latest-bugs.html')
     >>> browser.title
     'Bugs for Foo Bar'
     >>> browser.url
-    'http://launchpad.dev/~name16/latest-bugs.atom'
+    'http://launchpad.dev/~name16/latest-bugs.html'
 
     >>> soup = BeautifulSoup(browser.contents)
     >>> print extract_text(soup.find('id'))
-    http://launchpad.dev/~name16/latest-bugs.atom
+    http://launchpad.dev/~name16/latest-bugs.html
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     6
@@ -111,7 +109,7 @@ Define a helper function for parsing the entries:
 == General bug search ==
 
     >>> import cgi
-    >>> url = ("http://launchpad.dev/bugs/search-bugs.atom?"
+    >>> url = ("http://launchpad.dev/bugs/search-bugs.html?"
     ...        "field.searchtext=&search=Search+Bug+Reports&"
     ...        "field.scope=all&field.scope.target=")
     >>> browser.open(url)
