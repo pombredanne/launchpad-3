@@ -17,7 +17,9 @@ from canonical.lazr.feed import (
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.browser.bugtask import BugTaskView
-from canonical.launchpad.browser import BugsBugTaskSearchListingView
+from canonical.launchpad.browser import (
+    BugsBugTaskSearchListingView, BugTargetView,
+    PersonRelatedBugsView)
 
 
 class BugFeedContentView(LaunchpadView):
@@ -46,6 +48,22 @@ class BugsFeedBase(FeedBase):
 
     max_age = 30 * MINUTES
     verbose = False
+    quantity = 15
+    def initialize(self):
+        super(BugsFeedBase, self).initialize()
+        self.getParameters()
+
+    def getParameters(self):
+        verbose = self.request.get('verbose')
+        if verbose is not None:
+            if verbose.lower() in ['1', 't', 'true', 'yes']:
+                self.verbose = True
+        quantity = self.request.get('quantity')
+        if quantity is not None:
+            try:
+                self.quantity = int(quantity)
+            except ValueError:
+                pass
 
     def getURL(self):
         """Get the identifying URL for the feed."""
@@ -54,13 +72,13 @@ class BugsFeedBase(FeedBase):
     def getLogo(self):
         return "http://launchpad.dev/+icing/app-bugs.gif"
 
-    def getItems(self, quantity=5):
-        """Get the items for the feed, limited by `quantity`.
+    def getItems(self):
+        """Get the items for the feed.
 
         The result is assigned to self.items for caching.
         """
         if self.items is None:
-            items = self.getRawItems(quantity)
+            items = self.getRawItems()
             self.items = [self.itemToFeedEntry(item) for item in items]
         return self.items
 
@@ -86,13 +104,19 @@ class ProjectProductBugsFeed(BugsFeedBase):
 
     feed_name = "latest-bugs.atom"
 
+    def initialize(self):
+        super(ProjectProductBugsFeed, self).initialize()
+        self.delegate_view = BugTargetView(self.context, self.request)
+        self.delegate_view.initialize()
+
     def getTitle(self):
         """Title for the feed."""
         return "Bugs in %s" % self.context.displayname
 
-    def getRawItems(self, quantity):
+    def getRawItems(self):
         """Get the raw set of items for the feed."""
-        return self.context.getLatestBugTasks(quantity=quantity)
+        #return self.context.getLatestBugTasks(quantity=self.quantity)
+        return self.delegate_view.latestBugTasks(quantity=self.quantity)
 
 
 class PersonBugsFeed(BugsFeedBase):
@@ -103,13 +127,21 @@ class PersonBugsFeed(BugsFeedBase):
 
     feed_name = "latest-bugs.atom"
 
+    def initialize(self):
+        super(PersonBugsFeed, self).initialize()
+        self.delegate_view = PersonRelatedBugsView(self.context, self.request)
+        self.delegate_view.initialize()
+
     def getTitle(self):
         """Title for the feed."""
         return "Bugs for %s" % self.context.displayname
 
-    def getRawItems(self, quantity=5):
-        """Get the raw set of items for the feed."""
-        return self.search(quantity)
+    def getRawItems(self):
+        """Perform the search."""
+
+        results =  self.delegate_view.search()
+        items = results.getBugListingItems()
+        return items[:self.quantity]
 
 
 class SearchBugs(BugsFeedBase):
@@ -123,15 +155,16 @@ class SearchBugs(BugsFeedBase):
     feed_name = "search-bugs.atom"
 
     def initialize(self):
-        self.task_search_listing_view = BugsBugTaskSearchListingView(self.context, self.request)
-        self.task_search_listing_view.initialize()
+        super(SearchBugs, self).initialize()
+        self.delegate_view = BugsBugTaskSearchListingView(self.context, self.request)
+        self.delegate_view.initialize()
 
-    def getRawItems(self, quantity):
+    def getRawItems(self):
         """Perform the search."""
 
-        results =  self.task_search_listing_view.search(searchtext=None, context=None, extra_params=None)
+        results =  self.delegate_view.search(searchtext=None, context=None, extra_params=None)
         items = results.getBugListingItems()
-        return items[:quantity]
+        return items[:self.quantity]
 
     def getTitle(self):
         """Title for the feed."""

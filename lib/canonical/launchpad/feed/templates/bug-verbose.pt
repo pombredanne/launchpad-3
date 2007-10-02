@@ -17,6 +17,7 @@
             background: #99cc00;
         }
     </style>
+    <h1>VERBOSE</h1>
     <table>
         <tr>
             <th>Affects</th>
@@ -41,22 +42,22 @@
             <td tal:content="bugtask/importance/title">Unknown</td>
             <td tal:content="bugtask/assignee/displayname|string:-">Person</td>
             <td tal:condition="bugtask/bugwatch">
-            <a tal:attributes="href bugtask/bugwatch/url" 
+            <a tal:attributes="href bugtask/bugwatch/url"
                tal:content="bugtask/bugwatch/title">bugwatch</a>
             </td>
         </tr>
 
         <!-- Nomination for series in above bugtask -->
         <tr tal:repeat="nomination context/getNominations">
-            <td colspan="4" style="padding-left: 3em">Nominated for 
-                <span tal:replace="nomination/target/title">Trunk</span> by 
+            <td colspan="4" style="padding-left: 3em">Nominated for
+                <span tal:replace="nomination/target/title">Trunk</span> by
                 <a tal:replace="structure nomination/owner/fmt:link">
                 Edwin Grubbs</a>
             </td>
         </tr>
 
     </table>
-    <br/> 
+    <br/>
     <table style="border: 1px solid black">
         <tr><th>Duplicate of:</th>
             <td tal:condition="context/duplicateof">
@@ -78,7 +79,7 @@
         <tr><th>CVE:</th>
             <td><span tal:repeat="cve context/cves">
                     <img border="0" src="https://launchpad.net/@@/cve" />
-                    <a tal:attributes="href cve/url" 
+                    <a tal:attributes="href cve/url"
                        tal:content="cve/sequence">cve</a>
                     <br/>
                 </span>
@@ -106,7 +107,7 @@
             <td tal:condition="not:context/questions">-</td>
         </tr>
 
-        <!-- This is duplicated here in addition to the Atom category, 
+        <!-- This is duplicated here in addition to the Atom category,
                 since not all feed readers display categories.
         -->
         <tr><th>Bug Tags:</th>
