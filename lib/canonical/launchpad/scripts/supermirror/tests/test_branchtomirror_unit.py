@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 
-import logging
 import unittest
 
 from canonical.launchpad.scripts.supermirror import branchtomirror

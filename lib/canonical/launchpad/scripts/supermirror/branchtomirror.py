@@ -16,8 +16,6 @@ from bzrlib.errors import (
     UnknownFormatError, UnsupportedFormatError)
 from bzrlib.revision import NULL_REVISION
 
-from twisted.conch.ssh.common import NS
-
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import errorlog
@@ -86,7 +84,6 @@ def get_canonical_url(unique_name):
         scheme = 'http'
     hostname = config.launchpad.vhosts.code.hostname
     return scheme + '://' + hostname + '/~' + unique_name
-
 
 
 class PullerWorkerProtocol:

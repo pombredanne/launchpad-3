@@ -1,7 +1,5 @@
 #!/usr/bin/python2.4
-# Copyright 2006 Canonical Ltd.  All rights reserved.
-
-import _pythonpath
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 from optparse import OptionParser
 

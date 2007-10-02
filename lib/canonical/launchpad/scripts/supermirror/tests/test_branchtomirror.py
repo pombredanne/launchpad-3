@@ -7,7 +7,6 @@ __metaclass__ = type
 import httplib
 import logging
 import os
-import re
 import shutil
 import socket
 from StringIO import StringIO
@@ -18,7 +17,6 @@ import urllib2
 import bzrlib.branch
 from bzrlib import bzrdir
 from bzrlib.branch import BranchReferenceFormat
-from bzrlib.revision import NULL_REVISION
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
@@ -29,9 +27,7 @@ from bzrlib.errors import (
     NotBranchError)
 
 import transaction
-from twisted.conch.ssh.common import getNS
 
-from canonical.launchpad import database
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.scripts.supermirror.tests import createbranch
