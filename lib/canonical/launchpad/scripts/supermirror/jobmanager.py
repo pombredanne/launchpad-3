@@ -1,6 +1,7 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
 import os
+from StringIO import StringIO
 import socket
 import sys
 
@@ -52,6 +53,7 @@ class FireOnExit(ProcessProtocol, NetstringReceiver):
         self._commands = {
             'startMirroring': 0, 'mirrorSucceeded': 1, 'mirrorFailed': 2}
         self._resetState()
+        self._stderr = StringIO()
 
     def _resetState(self):
         self._current_command = None
@@ -89,13 +91,18 @@ class FireOnExit(ProcessProtocol, NetstringReceiver):
         # the child process
         NetstringReceiver.dataReceived(self, data)
 
+    def errReceived(self, data):
+        self._stderr.write(data)
+
     def processEnded(self, reason):
         ProcessProtocol.processEnded(self, reason)
         self.deferred, deferred = None, self.deferred
         if reason.check(error.ConnectionDone):
             deferred.callback(None)
         else:
-            deferred.errback(failure.Failure(Exception(reason)))
+            reason.error = self._stderr.getvalue()
+            self._stderr.truncate(0)
+            deferred.errback(reason)
 
 
 class BranchToMirror:

@@ -7,7 +7,8 @@ import unittest
 
 import bzrlib
 
-from twisted.internet import defer
+from twisted.internet import defer, error
+from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting import branch_id_to_path
@@ -148,7 +149,7 @@ class FakeBranchStatusClient:
         return self.branch_queues[branch_type]
 
 
-class TestPullerMasterProtocol(unittest.TestCase):
+class TestPullerMasterProtocol(TrialTestCase):
     """Tests for the process protocol used by the job manager."""
 
     class PullerListener:
@@ -181,8 +182,10 @@ class TestPullerMasterProtocol(unittest.TestCase):
         arbitrary_timeout_period = 20
         self.arbitrary_branch_id = 1
         self.listener = TestPullerMasterProtocol.PullerListener()
+        self.termination_deferred = defer.Deferred()
         self.protocol = jobmanager.FireOnExit(
-            None, arbitrary_timeout_period, self.listener)
+            self.termination_deferred, arbitrary_timeout_period,
+            self.listener)
         self.protocol.transport = TestPullerMasterProtocol.FakeTransport()
 
     def convertToNetstring(self, string):
@@ -212,6 +215,78 @@ class TestPullerMasterProtocol(unittest.TestCase):
         self.protocol.outReceived(self.convertToNetstring('OOPS'))
         self.assertEqual(
             [('mirrorFailed', 'Error Message', 'OOPS')], self.listener.calls)
+
+    def test_processTermination(self):
+        """The protocol fires a Deferred when it is terminated."""
+        self.protocol.processEnded(failure.Failure(error.ProcessDone(None)))
+        return self.termination_deferred
+
+    def test_unexpectedError(self):
+        """When the child process terminates with an unexpected error, raise
+        an error that includes the contents of stderr and the exit condition.
+        """
+
+        def check_failure(failure):
+            self.assertEqual('error message', failure.error)
+            return failure
+
+        self.termination_deferred.addErrback(check_failure)
+        deferred = self.assertFailure(
+            self.termination_deferred, error.ProcessTerminated)
+
+        self.protocol.errReceived('error ')
+        self.protocol.errReceived('message')
+        self.protocol.processEnded(
+            failure.Failure(error.ProcessTerminated(exitCode=1)))
+
+        return deferred
+
+    def test_stderrFailsProcess(self):
+        """If the process prints to stderr, then the Deferred fires an
+        errback, even if it terminated successfully.
+        """
+
+        def check_failure(failure):
+            self.assertEqual('error message', failure.error)
+            return failure
+
+        self.termination_deferred.addErrback(check_failure)
+
+        self.protocol.errReceived('error ')
+        self.protocol.errReceived('message')
+        self.protocol.processEnded(failure.Failure(error.ProcessDone(None)))
+
+        return self.termination_deferred
+
+    def test_unrecognizedMessage(self):
+        """The protocol notifies the listener when it receives an unrecognized
+        message.
+        """
+        # XXX: How do we best deal with the aberrant child process?
+        self.protocol.outReceived(self.convertToNetstring('foo'))
+
+        def check_failure(exception):
+            self.assertTrue('foo' in str(exception))
+
+        deferred = self.assertFailure(
+            self.termination_deferred, jobmanager.BadMessage)
+
+        return deferred.addCallback(check_failure)
+
+    def test_invalidNetstring(self):
+        """The protocol terminates the session if it receives an unparsable
+        netstring.
+        """
+        # XXX: How do we best deal with the aberrant child process?
+        self.protocol.outReceived('foo')
+
+        def check_failure(exception):
+            self.assertTrue('foo' in str(exception))
+
+        deferred = self.assertFailure(
+            self.termination_deferred, jobmanager.BadMessage)
+
+        return deferred.addCallback(check_failure)
 
 
 class TestMirroringEvents(TrialTestCase):
