@@ -22,17 +22,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.mail import simple_sendmail
 
 
-def get_template(obj):
-    """Determine translation template that obj relates to.
-
-    :param obj: a translation file or translation template object.  If obj is
-        a template, then obj itself is returned.
-    """
-    if IPOTemplate.providedBy(obj):
-        return obj
-    return obj.potemplate
-
-
 class ExportResult:
     """The results of a translation export request.
 
@@ -47,7 +36,7 @@ class ExportResult:
         self.name = name
         self.url = None
         self.failure = None
-        self.templates = []
+        self.object_names = []
 
     def _getFailureEmailBody(self, person):
         """Send an email notification about the export failing."""
@@ -102,12 +91,10 @@ class ExportResult:
             return
 
         # The export process had errors that we should notify admins about.
-        if self.templates:
-            template_names = ', '.join(self.templates)
-            template_sentence = """
-
-                The failed request involved these templates: %s.
-                """ % template_names
+        if self.object_names:
+            names = '\n'.join(self.object_names)
+            template_sentence = "\n" + textwrap.dedent(
+                "The failed request involved these objects:\n%s" % names)
         else:
             template_sentence = ""
 
@@ -167,12 +154,17 @@ def process_request(person, objects, format, logger):
     translation_file_list = []
     last_template_name = None
     for obj in objects:
-        template_name = get_template(obj).displayname
+        if IPOTemplate.providedBy(obj):
+            template_name = obj.displayname
+            object_name = template_name
+        else:
+            template_name = obj.potemplate.displayname
+            object_name = obj.title
+        result.object_names.append(object_name)
         if template_name != last_template_name:
             logger.debug(
                 'Exporting objects for %s, related to template %s'
                 % (person.displayname, template_name))
-            result.templates.append(template_name)
             last_template_name = template_name
         translation_file_list.append(ITranslationFile(obj))
 
