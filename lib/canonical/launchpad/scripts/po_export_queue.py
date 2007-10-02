@@ -101,16 +101,24 @@ class ExportResult:
             return
 
         # The export process had errors that we should notify to admins.
-        admins_email_body = textwrap.dedent('''
-            Hello admins,
+        try:
+            admins_email_body = textwrap.dedent('''
+                Hello admins,
 
-            Rosetta encountered problems exporting some files requested by
-            %s. This means we have a bug in
-            Launchpad that needs to be fixed to be able to proceed with
-            this export. You can see the list of failed files with the
-            error we got:
+                Rosetta encountered problems exporting some files requested by
+                %s. This means we have a bug in
+                Launchpad that needs to be fixed to be able to proceed with
+                this export. You can see the list of failed files with the
+                error we got:
 
-            %s''') % (person.browsername, self.failure)
+                %s''') % (person.browsername, self.failure)
+        except UnicodeDecodeError:
+            admins_email_body = textwrap.dedent('''
+                Hello admins,
+
+                A UnicodeDecodeError occurred while trying to notify you of a
+                failure during translation export "%s" requested by %s.
+                ''' % (self.name, person.browsername))
 
         simple_sendmail(
             from_addr=config.rosetta.rosettaadmin.email,
