@@ -32,7 +32,7 @@ Also, any anonymous POST submission should fail:
 
 Let's log in.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
 
 Now, we are going to test common parts of the navigation.
 
@@ -278,18 +278,18 @@ Check for the translator note:
 
 Also check that the alternative language selection is working:
 
-  >>> browser.getControl(name='field.alternative_language').value = ['ja']
+  >>> browser.getControl(name='field.alternative_language').value = ['ca']
   >>> browser.getControl(name='select_alternate_language').click()
   >>> browser.url
-  'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate?field.alternative_language=ja&field.alternative_language-empty-marker=1&select_alternate_language=Change'
+  'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate?field.alternative_language=ca&field.alternative_language-empty-marker=1&select_alternate_language=Change'
 
 If we specify more than one alternative language in the URL, we get an
 UnexpectedFormData exception:
 
   >>> browser.open(
   ...  'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
-  ...  '+pots/evolution-2.2/es/14/+translate?field.alternative_language=ja&'
-  ...  'field.alternative_language=aj')
+  ...  '+pots/evolution-2.2/es/14/+translate?field.alternative_language=ca&'
+  ...  'field.alternative_language=es')
   Traceback (most recent call last):
   ...
   UnexpectedFormData: You specified...
@@ -300,10 +300,7 @@ than the review date for current translation.
 First, we get a browser instance that will be the last one submitting the
 changes.
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> slow_submission = Browser()
-  >>> slow_submission.addHeader(
-  ...     'Authorization', 'Basic carlos@canonical.com:test')
+  >>> slow_submission = setupBrowser(auth='Basic carlos@canonical.com:test')
   >>> slow_submission.open(
   ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/14/+translate')
@@ -312,9 +309,7 @@ changes.
 
 Now, we get another instance that will be submitted before 'slow_submission'.
 
-  >>> fast_submission = Browser()
-  >>> fast_submission.addHeader(
-  ...     'Authorization', 'Basic carlos@canonical.com:test')
+  >>> fast_submission = setupBrowser(auth='Basic carlos@canonical.com:test')
   >>> fast_submission.open(
   ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/14/+translate')

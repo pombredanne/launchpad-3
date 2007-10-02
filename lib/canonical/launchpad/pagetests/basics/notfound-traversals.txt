@@ -55,7 +55,7 @@ status is returned.
 
 >>> check("/")
 >>> check("/rdf")
->>> check("/legal")
+>>> check_redirect("/legal", status=301)
 >>> check("/feedback")
 >>> check("/+graphics")
 
@@ -104,6 +104,7 @@ status is returned.
 >>> check("/mozilla")
 >>> check("/mozilla/firefox")
 >>> check("/mozilla/+branches")
+>>> check_redirect("/mozilla/+translations", status=301)
 >>> check("/mozilla/+translations", host='translations.launchpad.dev')
 
 >>> check_redirect("/products", status=301)
@@ -118,6 +119,7 @@ status is returned.
 >>> check("/firefox/1.0/+edit", auth=True)
 >>> check("/firefox/1.0/+specs")
 >>> check("/firefox/1.0/+addrelease", auth=True)
+>>> check_redirect("/firefox/1.0/+translations", status=301)
 >>> check("/firefox/1.0/+translations", host='translations.launchpad.dev')
 >>> check("/firefox/1.0/+imports", host='translations.launchpad.dev')
 >>> check("/firefox/1.0/1.0.0")
@@ -129,6 +131,7 @@ status is returned.
 >>> check("/firefox/1.0/+rdf")
 >>> check("/firefox/+bugs")
 >>> check("/firefox/+cve")
+>>> check_redirect("/firefox/+translations", status=301)
 >>> check("/firefox/+translations", host='translations.launchpad.dev')
 >>> check_redirect("/projects/firefox", status=301)
 
@@ -144,6 +147,7 @@ status is returned.
 >>> check("/ubuntu/+specs")
 >>> check("/ubuntu/+cve")
 >>> check("/ubuntu/+roadmap")
+>>> check_redirect("/ubuntu/+translations", status=301)
 >>> check("/ubuntu/+translations", host='translations.launchpad.dev')
 >>> check("/ubuntu/+edit", auth=True)
 >>> check("/ubuntu/+reassign", auth=True)
@@ -160,7 +164,10 @@ status is returned.
 >>> check_redirect("/ubuntu/+source/evolution/+editbugcontact")
 
 >>> check("/ubuntu/hoary/+cve")
+>>> check_redirect("/ubuntu/hoary/+translations", status=301)
 >>> check("/ubuntu/hoary/+translations", host='translations.launchpad.dev')
+>>> check_redirect("/ubuntu/hoary/+latest-full-language-pack",
+...       host="translations.launchpad.dev")
 >>> check("/ubuntu/hoary/+imports", host='translations.launchpad.dev')
 >>> check("/ubuntu/hoary/+source/pmount")
 >>> check("/ubuntu/hoary/+source/pmount/+imports",
@@ -201,12 +208,15 @@ is still pointing to this old URL (see bug #138090).
 ...     host="launchpad.dev", status=301)
 >>> check("/ubuntu/hoary/+source/evolution/+translate",
 ...       host='translations.launchpad.dev' )
+>>> check_redirect("/ubuntu/hoary/+source/evolution/+translations", status=301)
 >>> check("/ubuntu/hoary/+source/evolution/+translations",
 ...       host='translations.launchpad.dev')
 >>> check_redirect("/ubuntu/hoary/+source/mozilla-firefox/+pots",
 ...                host='translations.launchpad.dev')
 >>> check("/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export",
 ...       host='translations.launchpad.dev', auth=True)
+>>> check_redirect("/ubuntu/hoary/+source/pmount/+pots/pmount/apa/+translate",
+...                status=301)
 >>> check("/ubuntu/hoary/+source/pmount/+pots/pmount/apa/+translate",
 ...       host='translations.launchpad.dev', auth=True)
 >>> check_not_found("/ubuntu/hoary/+source/evolution/+buildlog")
@@ -383,6 +393,7 @@ This is for a team:
 >>> check("/~name18/+specs")
 >>> check_not_found("/~name18/+calendar")
 >>> check("/~name18/+bounties")
+>>> check_redirect("/~name18/+translations", status=301)
 >>> check("/~name18/+translations", host='translations.launchpad.dev')
 >>> check("/~name18/+imports", host='translations.launchpad.dev')
 >>> check("/~name18/+teamlist")

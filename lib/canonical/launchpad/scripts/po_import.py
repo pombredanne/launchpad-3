@@ -9,8 +9,8 @@ import time
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ITranslationImportQueue
-from canonical.lp.dbschema import RosettaImportStatus
+from canonical.launchpad.interfaces import (
+    ITranslationImportQueue, RosettaImportStatus)
 
 class ImportProcess:
     """Import .po and .pot files attached to Rosetta."""

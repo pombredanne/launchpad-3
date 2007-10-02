@@ -1477,7 +1477,7 @@ class FormattersAPI:
     # '> > ' are valid quoting sequences.
     # The dpkg version is used for exceptional cases where it
     # is better to not assume '|' is a start of a quoted passage.
-    _re_quoted = re.compile('^(([|] ?)+ |(&gt; ?)+ )')
+    _re_quoted = re.compile('^(([|] ?)+|(&gt; ?)+)')
     _re_dpkg_quoted = re.compile('^(&gt; ?)+ ')
 
     # Match blocks that start as signatures or PGP inclusions.

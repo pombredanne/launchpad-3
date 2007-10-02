@@ -2,7 +2,7 @@
 
 The owner of a branch can be changed in the $branch/+reassign form.
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
 
 == Successful reassignation ==
 

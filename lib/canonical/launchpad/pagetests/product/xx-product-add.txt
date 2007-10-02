@@ -142,8 +142,7 @@ And now, test with the David Allouche user, who is a member of the
 vcs-imports team. This should fail suggesting an invalid owner, and
 the reviewed value should be on.
 
-  >>> browser.addHeader('Authorization',
-  ...                   'Basic david.allouche@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic david.allouche@canonical.com:test')
   >>> browser.open('http://launchpad.dev/projects/+new')
   >>> browser.getControl('Name', index=0).value = 'warpage'
   >>> browser.getControl('Owner').value = 'XXX'

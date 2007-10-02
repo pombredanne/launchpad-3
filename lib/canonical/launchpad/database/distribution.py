@@ -63,13 +63,13 @@ from canonical.launchpad.webapp.url import urlparse
 from canonical.lp.dbschema import (
     ArchivePurpose, DistroSeriesStatus, PackagePublishingStatus,
     PackageUploadStatus, SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort, TranslationPermission)
+    SpecificationImplementationStatus, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
     BugTaskStatus, IArchiveSet, IBuildSet, IDistribution, IDistributionSet,
     IFAQTarget, IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
     ILaunchpadCelebrities, IQuestionTarget, ISourcePackageName, MirrorContent,
-    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH)
+    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH, TranslationPermission)
 
 from canonical.archivepublisher.debversion import Version
 
@@ -142,6 +142,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+    language_pack_admin = ForeignKey(dbName='language_pack_admin',
+        foreignKey='Person', notNull=False, default=None)
 
     @cachedproperty
     def main_archive(self):

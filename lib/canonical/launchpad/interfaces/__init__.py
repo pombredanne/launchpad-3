@@ -81,6 +81,7 @@ from canonical.launchpad.interfaces.irc import *
 from canonical.launchpad.interfaces.jabber import *
 from canonical.launchpad.interfaces.karma import *
 from canonical.launchpad.interfaces.language import *
+from canonical.launchpad.interfaces.languagepack import *
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.launchpadstatistic import *
 from canonical.launchpad.interfaces.librarian import *
@@ -143,6 +144,7 @@ from canonical.launchpad.interfaces.temporaryblobstorage import *
 from canonical.launchpad.interfaces.translationcommonformat import *
 from canonical.launchpad.interfaces.translationexporter import *
 from canonical.launchpad.interfaces.translationimporter import *
+from canonical.launchpad.interfaces.translationfileformat import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *
 from canonical.launchpad.interfaces.questioncollection import *

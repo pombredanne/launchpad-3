@@ -50,6 +50,7 @@ __all__ = [
     'IHasProduct',
     'IHasProductAndAssignee',
     'IHasSecurityContact',
+    'IHWDBApplication',
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
@@ -60,6 +61,7 @@ __all__ = [
     'IPasswordChangeApp',
     'IPasswordEncryptor',
     'IPasswordResets',
+    'IPrivateApplication',
     'IReadZODBAnnotation',
     'IRegistryApplication',
     'IRosettaApplication',
@@ -193,6 +195,12 @@ class IOpenIdApplication(ILaunchpadApplication):
     """Launchpad Login Service application root."""
 
 
+class IPrivateApplication(ILaunchpadApplication):
+    """Launchpad private XML-RPC application root."""
+
+    mailinglists = Attribute("""Mailing list XML-RPC end point.""")
+
+
 class IAuthApplication(Interface):
     """Interface for AuthApplication."""
 
@@ -213,6 +221,10 @@ class IAuthApplication(Interface):
 
         Returns the long url segment.
         """
+
+class IHWDBApplication(ILaunchpadApplication):
+    """Hardware database application application root."""
+
 
 class IPasswordResets(IPersistent):
     """Interface for PasswordResets"""

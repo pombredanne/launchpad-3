@@ -1,7 +1,8 @@
 <tal:nomination
-    tal:define="user_is_driver view/userCanMakeDecisionForNomination;
-                nomination_form_id string:nomination${context/id};
-                nomination_person view/getNominationPerson">
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  tal:define="user_is_driver view/userCanMakeDecisionForNomination;
+              nomination_form_id string:nomination${context/id};
+              nomination_person view/getNominationPerson">
   <tr class="secondary">
     <td style="padding: 0.3em 0em 0.3em 1.5em" colspan="4">
     <span class="discreet lesser" style="font-size: 100%">

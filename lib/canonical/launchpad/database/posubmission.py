@@ -16,10 +16,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import (RosettaTranslationOrigin,
+from canonical.launchpad.interfaces.posubmission import (
+    IPOSubmission, IPOSubmissionSet, RosettaTranslationOrigin,
     TranslationValidationStatus)
-
-from canonical.launchpad.interfaces import IPOSubmission, IPOSubmissionSet
 
 
 class POSubmissionSet:
@@ -124,13 +123,12 @@ class POSubmissionSet:
         # Intermediate results are kept in a temporary table.
         # This is not a good thing, and if it's any faster than a single big
         # query, that's pure coincidence.
-        # XXX: JeroenVermeulen 2007-09-02 bug=30602: Evaluate performance with
-        # this change on staging, and roll back if necessary.
         parameters['temp_table'] = 'temp_suggestion_pomsgset'
         postgresql.drop_tables(cur, [parameters['temp_table']])
         cur.execute("""
-            CREATE TEMP TABLE %(temp_table)s AS
-            SELECT DISTINCT POMsgSet.id, POTMsgSet.primemsgid
+            CREATE TEMP TABLE %(temp_table)s
+            ON COMMIT DROP
+            AS SELECT DISTINCT POMsgSet.id, POTMsgSet.primemsgid
             FROM POMsgSet
             JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
             JOIN POFile ON POMsgSet.pofile = POFile.id

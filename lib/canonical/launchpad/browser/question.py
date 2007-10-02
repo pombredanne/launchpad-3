@@ -106,10 +106,16 @@ class QuestionSetView(LaunchpadFormView):
     @action('Find Answers', name="search")
     def search_action(self, action, data):
         """Redirect to the proper search page based on the scope widget."""
-        scope = data['scope']
-        if scope is None:
+        # For the scope to be absent from the form, the user must
+        # build the query string themselves - most likely because they
+        # are a bot. In that case we just assume they want to search
+        # all projects.
+        scope = self.widgets['scope'].getScope()
+        if scope is None or scope == 'all':
             # Use 'All projects' scope.
             scope = self.context
+        else:
+            scope = self.widgets['scope'].getInputValue()
         self.next_url = "%s/+tickets?%s" % (
             canonical_url(scope), self.request['QUERY_STRING'])
 

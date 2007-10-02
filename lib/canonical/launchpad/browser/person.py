@@ -458,7 +458,8 @@ class PersonSetContextMenu(ContextMenu):
     usedfor = IPersonSet
 
     links = ['products', 'distributions', 'people', 'meetings', 'peoplelist',
-             'teamlist', 'ubunterolist', 'newteam', 'adminrequestmerge', ]
+             'teamlist', 'ubunterolist', 'newteam', 'adminrequestmerge',
+             'mergeaccounts']
 
     def products(self):
         return Link('/projects/', 'View projects')
@@ -487,6 +488,10 @@ class PersonSetContextMenu(ContextMenu):
     def newteam(self):
         text = 'Register a team'
         return Link('+newteam', text, icon='add')
+
+    def mergeaccounts(self):
+        text = 'Merge accounts'
+        return Link('+requestmerge', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def adminrequestmerge(self):
