@@ -205,14 +205,15 @@ class DistributionSourcePackage(BugTargetBase,
             return None
         return cache.binpkgnames
 
-    # XXX kiko 2006-08-16: Bad method name, no need to be a property.
-    @property
-    def by_distroseriess(self):
+    def get_distroseries_packages(self, active_only=True):
         """See IDistributionSourcePackage."""
         result = []
         for series in self.distribution.serieses:
+            if active_only:
+                if not series.active:
+                    continue
             candidate = SourcePackage(self.sourcepackagename, series)
-            if candidate.currentrelease:
+            if candidate.currentrelease is not None:
                 result.append(candidate)
         return result
 

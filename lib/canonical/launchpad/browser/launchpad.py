@@ -16,7 +16,6 @@ __all__ = [
     'OneZeroTemplateStatus',
     'IcingFolder',
     'StructuralHeaderPresentationView',
-    'StructuralFooterPresentationView',
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
     'ApplicationButtons',
@@ -43,7 +42,6 @@ from zope.app.publisher.browser.fileresource import setCacheControl
 from zope.app.datetimeutils import rfc1123_date
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
-from zope.security.proxy import isinstance as zope_isinstance
 
 from BeautifulSoup import BeautifulStoneSoup, Comment
 
@@ -62,6 +60,7 @@ from canonical.launchpad.interfaces import (
     ICodeOfConductSet,
     ICveSet,
     IDistributionSet,
+    IHWDBApplication,
     IKarmaActionSet,
     ILanguageSet,
     ILaunchBag,
@@ -69,7 +68,6 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot,
     ILaunchpadStatisticSet,
     ILoginTokenSet,
-    IMailingListApplication,
     IMaloneApplication,
     IMentoringOfferSet,
     IPersonSet,
@@ -94,6 +92,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
     LaunchpadFormView, Navigation, stepto, canonical_url, custom_widget)
 from canonical.launchpad.webapp.publisher import RedirectionView
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
@@ -141,7 +140,11 @@ class MaloneApplicationNavigation(Navigation):
     def traverse(self, name):
         # Make /bugs/$bug.id, /bugs/$bug.name /malone/$bug.name and
         # /malone/$bug.id Just Work
-        return getUtility(IBugSet).getByNameOrID(name)
+        bug = getUtility(IBugSet).getByNameOrID(name)
+        if not check_permission("launchpad.View", bug):
+            raise Unauthorized("Bug %s is private" % name)
+        return bug
+
 
 
 class MenuBox(LaunchpadView):
@@ -401,6 +404,12 @@ class LaunchpadRootNavigation(Navigation):
             getUtility(ILaunchpadRoot), rootsite='answers')
         return self.redirectSubTree(target_url + 'questions', status=301)
 
+    @stepto('legal')
+    def redirect_legal(self):
+        """Redirect /legal to help.launchpad.net/Legal site."""
+        return self.redirectSubTree(
+            'https://help.launchpad.net/Legal', status=301)
+
     stepto_utilities = {
         'binarypackagenames': IBinaryPackageNameSet,
         'bounties': IBountySet,
@@ -410,10 +419,10 @@ class LaunchpadRootNavigation(Navigation):
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
         'distros': IDistributionSet,
+        'hwdb': IHWDBApplication,
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
-        'mailinglists': IMailingListApplication,
         '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,
         'potemplatenames': IPOTemplateNameSet,
@@ -757,53 +766,6 @@ class StructuralHeaderPresentationView(LaunchpadView):
         return self.headerpresentation.getMainHeading()
 
 
-class StructuralFooterPresentationView(LaunchpadView):
-
-    # Object attributes used by the page template:
-    #   num_lists: 0, 1 or 2
-    #   children: []
-    #   has_more_children: True/False
-    #   alt_children: []
-    #   has_more_altchildren: True/False
-
-    def initialize(self):
-        self.structuralpresentation = IStructuralObjectPresentation(
-            self.context)
-        sop = self.structuralpresentation
-
-        max_alt_children_to_present = 4
-
-        # First, see if listAltChildren returns None.  If so, we have
-        # just children.  If not, we have both alt-children and children.
-        alt_children = sop.listAltChildren(max_alt_children_to_present + 1)
-        if alt_children is None:
-            max_children_to_present = 8
-
-            # Note that self.has_more_alt_children and self.alt_children is
-            # undefined when we have no alt_children.
-            # The page template needs to check num_lists is 2 before reading
-            # these attributes.
-        else:
-            max_children_to_present = 4
-
-            assert zope_isinstance(alt_children, list)
-            self.has_more_alt_children = len(alt_children) > max_alt_children_to_present
-            self.alt_children = children[:max_alt_children_to_present]
-
-        children = sop.listChildren(max_children_to_present + 1)
-        assert zope_isinstance(children, list)
-
-        self.has_more_children = len(children) > max_children_to_present
-        self.children = children[:max_children_to_present]
-
-        if alt_children is None:
-            if not children:
-                self.num_lists = 0
-            else:
-                self.num_lists = 1
-        else:
-            self.num_lists = 2
-
 class StructuralHeaderPresentation:
     """Base class for StructuralHeaderPresentation adapters."""
 
@@ -1007,4 +969,3 @@ class BrowserWindowDimensions(LaunchpadView):
 
     def render(self):
         return u'Thanks.'
-

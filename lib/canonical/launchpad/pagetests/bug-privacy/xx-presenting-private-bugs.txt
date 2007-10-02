@@ -2,7 +2,7 @@
 
 When a bug report is public, it appears like any other Launchpad page.
 
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open("http://launchpad.dev/bugs/4")
     >>> print find_tag_by_id(browser.contents, 'privatestyle')
     None
@@ -21,3 +21,28 @@ private things.
     <style.../style>
     >>> print find_tag_by_id(browser.contents, 'privatebadge')
     <img...>
+
+If you visit the private bugs page through its shortcut URL, we don't
+redirect you unless you are actually able to see the bug. The reason for
+this is that redirecting you already discloses what product or distro
+the private bug is in.
+
+Of course, Foo Bar gets redirected:
+
+    >>> browser.open('http://bugs.launchpad.dev/bugs/4')
+    >>> browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/4'
+
+But poor old no privs does not, and neither do anonymous users:
+
+    >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+    >>> browser.open('http://bugs.launchpad.dev/bugs/4')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Bug 4 is private
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/bugs/4')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Bug 4 is private
+

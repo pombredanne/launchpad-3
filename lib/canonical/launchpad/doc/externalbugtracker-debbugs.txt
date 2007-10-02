@@ -216,7 +216,7 @@ If we pass in a malformed status string, we map it to 'Unknown' and
 log an error.
 
     >>> print external_debbugs.convertRemoteStatus('open').title
-    ERROR:...:Malformed debbugs status: 'open'
+    ERROR:...:Malformed debbugs status: 'open'.
     Unknown
 
 UNKNOWN_REMOTE_STATUS maps to Unknown.

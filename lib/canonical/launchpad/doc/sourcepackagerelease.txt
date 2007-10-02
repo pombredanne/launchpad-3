@@ -1,5 +1,4 @@
-Source Package Release
-======================
+= Source Package Release =
 
 The SourcePackageRelease table represents a particular release of a
 SourcePackageName, but isn't tied to any particular DistroSeries
@@ -11,8 +10,7 @@ uploaded DSC (Debian Source Control) file.
 This model allow us to have more granular control of the fields,
 enabling faster searches, faster readings and model constraints.
 
-Basic attributes
-----------------
+== Basic attributes ==
 
 Let's get one from the database:
 
@@ -50,6 +48,26 @@ if the 'age' result looks sane:
    >>> spr.dateuploaded = (local_now - datetime.timedelta(days=10))
    >>> spr.age.days == 10
    True
+
+Mozilla-firefox 0.9 has got some builds. including a PPA build.  The 'builds'
+property only returns the non-PPA builds.
+
+   >>> from canonical.launchpad.interfaces import IPersonSet
+   >>> from canonical.launchpad.database.build import Build
+   >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
+   >>> ff_ppa_build = Build.selectBy(
+   ...     archive=cprov_ppa, sourcepackagerelease=spr)
+   >>> ff_ppa_build.count()
+   1
+   >>> ff_ppa_build[0].archive.purpose.name
+   'PPA'
+   >>> spr.builds.count()
+   4
+
+All the builds returned are for non-PPA archives:
+
+   >>> set(build.archive.purpose.name for build in spr.builds)
+   set(['PRIMARY'])
 
 We can use the magic productrelease property to map this to a ProductRelease:
 
@@ -138,10 +156,6 @@ Some of the 20 required arguments are foreign keys or DB contants:
   >>> arg_creator = hoary.owner
   >>> arg_urgency = SourcePackageUrgency.LOW
 
-'manifest' is the only nullable FK:
-
-  >>> arg_manifest = None
-
 The other argurments are strings:
 
   >>> version = '0.0.99'
@@ -164,7 +178,7 @@ ISourcePackageRelease, it will automatically set the
   >>> new_spr = hoary.createUploadedSourcePackageRelease(
   ...     arg_name, version, arg_maintainer,
   ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
-  ...     arg_urgency, changelog, dsc, arg_key, arg_sect, arg_manifest,
+  ...     arg_urgency, changelog, dsc, arg_key, arg_sect,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
   ...     dsc_binaries, archive, copyright=copyright)
 
@@ -233,8 +247,7 @@ Optionally you can pass also status & archive:
    True
 
 
-Counting bugs
--------------
+== Counting bugs ==
 
 The SourcePackageRelease offers a convenient way of checking how many
 bugs are open against this package in the distribution to which it was
@@ -248,8 +261,8 @@ uploaded. Because of bug privacy, this method needs a user supplied.
    >>> print spr.countOpenBugsInUploadedDistro(no_priv)
    1
 
-Uploading translations
-----------------------
+
+== Uploading translations ==
 
 It's time to check the translation upload function.
 

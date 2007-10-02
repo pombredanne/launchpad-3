@@ -8,7 +8,7 @@ __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'SOFT_MAX_SHIPPINGRUN_SIZE', 'ShipItConstants',
            'IShippingRequestUser', 'MAX_CDS_FOR_UNTRUSTED_PEOPLE',
            'ShipItDistroSeries', 'ShipItArchitecture', 'ShipItFlavour',
-           'ShippingService', 'ShippingRequestStatus']
+           'ShippingService', 'ShippingRequestStatus', 'ShippingRequestType']
 
 from zope.schema import Bool, Choice, Int, Datetime, TextLine
 from zope.interface import Interface, Attribute, implements
@@ -17,6 +17,7 @@ from zope.app.form.browser.itemswidgets import DropdownWidget
 
 from canonical.lazr import DBEnumeratedType, DBItem
 
+from canonical.config import config
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.validation import (
     validate_shipit_recipientdisplayname, validate_shipit_phone,
@@ -143,6 +144,23 @@ class ShipItArchitecture(DBEnumeratedType):
         """)
 
 
+class ShippingRequestType(DBEnumeratedType):
+    """The type of a ShippingRequest."""
+
+    CUSTOM = DBItem(1, """
+        Custom
+
+        A request in which the recipient specified how many CDs they want.
+        """)
+
+    STANDARD = DBItem(2, """
+        Standard
+
+        A request in which the recipient chose the number of CDs from one of
+        our predefined options.
+        """)
+
+
 class ShipItDistroSeries(DBEnumeratedType):
     """The Distro Release, used only to link with ShippingRequest."""
 
@@ -195,8 +213,8 @@ class ShipItConstants:
     ubuntu_url = 'https://shipit.ubuntu.com'
     kubuntu_url = 'https://shipit.kubuntu.com'
     edubuntu_url = 'https://shipit.edubuntu.com'
-    current_distroseries = ShipItDistroSeries.FEISTY
-    max_size_for_auto_approval = 16
+    current_distroseries = ShipItDistroSeries.GUTSY
+    max_size_for_auto_approval = config.shipit.max_cds_for_auto_approval
 
 
 class IEmptyDefaultChoice(IChoice):
@@ -207,7 +225,7 @@ class EmptyDefaultChoice(Choice):
     implements(IEmptyDefaultChoice)
 
 
-# XXX Guilherme Salgado 2005-10-03: 
+# XXX Guilherme Salgado 2005-10-03:
 # This sould probably be moved somewhere else, but as I need to get this
 # in production ASAP I'm leaving it here for now.
 class EmptyDefaultDropdownWidget(DropdownWidget):
@@ -340,11 +358,6 @@ class IShippingRequest(Interface):
         requested CDs of that flavour on this request is greater than 0.
         """
 
-    def isCustom():
-        """Return True if this order contains custom quantities of CDs of any
-        flavour.
-        """
-
     def getAllRequestedCDs():
         """Return all RequestedCDs of this ShippingRequest."""
 
@@ -354,7 +367,7 @@ class IShippingRequest(Interface):
         """
 
     def getQuantitiesOfFlavour(flavour):
-        """Return a dictionary mapping architectures to the quantity of 
+        """Return a dictionary mapping architectures to the quantity of
         requested CDs of the given flavour.
         """
 
@@ -424,13 +437,13 @@ class IShippingRequest(Interface):
 
     def canBeApproved():
         """Can this request be approved?
-        
+
         Only PENDING, PENDINGSPECIAL and DENIED requests can be denied.
         """
 
     def canBeDenied():
         """Can this request be denied?
-        
+
         Only APPROVED, PENDING and PENDINGSPECIAL requests can be denied.
         """
 
@@ -467,10 +480,10 @@ class IShippingRequest(Interface):
 
     def cancel(whocancelled):
         """Cancel this request.
-        
+
         This is done by setting cancelled=True and whocancelled=whocancelled
         on this request.
-        This method will also set quantityx86approved, quantityppcapproved, 
+        This method will also set quantityx86approved, quantityppcapproved,
         quantityamd64approved, approved and whoapproved to None.
         """
 
@@ -493,7 +506,7 @@ class IShippingRequestSet(Interface):
             organization=None, reason=None):
         """Create and return a new ShippingRequest.
 
-        You must not create a new request for a recipient that already has a 
+        You must not create a new request for a recipient that already has a
         currentShipItRequest, unless the recipient is the shipit_admin
         celebrity. Refer to IPerson.currentShipItRequest() for more
         information about what is a current request.
@@ -512,21 +525,21 @@ class IShippingRequestSet(Interface):
         """Export all approved, unshipped and non-cancelled into CSV files.
 
         Group approved, unshipped and non-cancelled requests into one or more
-        ShippingRuns with at most SOFT_MAX_SHIPPINGRUN_SIZE requests each 
-        and for each ShippingRun export it into a CSV file and upload it to 
+        ShippingRuns with at most SOFT_MAX_SHIPPINGRUN_SIZE requests each
+        and for each ShippingRun export it into a CSV file and upload it to
         the Librarian.
         """
 
     def getOldestPending():
         """Return the oldest request with status PENDING.
-        
+
         Return None if there's no requests with status PENDING.
         """
 
     def getTotalsForRequests(requests):
         """Return the requested and approved totals of the given requests.
 
-        The return value is a dictionary of the form 
+        The return value is a dictionary of the form
         {request.id: (total_requested, total_approved)}.
 
         This method is meant to be used when listing a large numbers of
@@ -543,7 +556,7 @@ class IShippingRequestSet(Interface):
 
     def get(id, default=None):
         """Return the ShippingRequest with the given id.
-        
+
         Return the default value if there's no ShippingRequest with this id.
         """
 
@@ -664,12 +677,12 @@ class IStandardShipItRequestSet(Interface):
 
     def get(id, default=None):
         """Return the StandardShipItRequest with the given id.
-        
+
         Return the default value if nothing's found.
         """
 
     def getAllGroupedByFlavour():
-        """Return a dictionary mapping ShipItFlavours to the 
+        """Return a dictionary mapping ShipItFlavours to the
         StandardShipItRequests of that flavour.
 
         This is used in the admin interface to show all StandardShipItRequests
@@ -707,7 +720,7 @@ class IShipmentSet(Interface):
         """Create a new Shipment object with the given arguments."""
 
     def getByToken(token):
-        """Return the Shipment with the given token or None if it doesn't 
+        """Return the Shipment with the given token or None if it doesn't
         exist.
         """
 
@@ -852,8 +865,8 @@ class IShippingRequestEdit(Interface):
         title=_('Mac'), description=_('Quantity of Ubuntu PPC Approved CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
     ubuntu_quantityamd64approved = ShipItQuantity(
-        title=_('64-bit PC'), 
-        description=_('Quantity of Ubuntu AMD64 Approved CDs'), required=False, 
+        title=_('64-bit PC'),
+        description=_('Quantity of Ubuntu AMD64 Approved CDs'), required=False,
         readonly=False, constraint=_validate_positive_int)
 
     kubuntu_quantityx86approved = ShipItQuantity(

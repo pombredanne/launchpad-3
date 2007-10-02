@@ -29,7 +29,8 @@ from canonical.archiveuploader.nascentuploadfile import (
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
     NotFoundError, IDistributionSet, QueueInconsistentStateError)
-from canonical.launchpad.scripts.processaccepted import closeBugsForQueueItem
+from canonical.launchpad.scripts.processaccepted import (
+    close_bugs_for_queue_item)
 from canonical.lp.dbschema import PackagePublishingPocket, ArchivePurpose
 
 
@@ -931,7 +932,7 @@ class NascentUpload:
                     self.queue_root.realiseUpload()
                     # Closing bugs.
                     changesfile_object = open(self.changes.filepath, 'r')
-                    closeBugsForQueueItem(
+                    close_bugs_for_queue_item(
                         self.queue_root, changesfile_object=changesfile_object)
                     changesfile_object.close()
             else:
@@ -943,40 +944,40 @@ class NascentUpload:
 
         In some circumstances we may wish to change the archive that the
         uploaded package is placed into based on various criteria.  This
-        includes decisions such as moving the package to the commercial
-        archive if the package's component is 'commercial'.
+        includes decisions such as moving the package to the partner
+        archive if the package's component is 'partner'.
 
-        PPA uploads with commercial files and normal uploads with a mixture 
-        of commercial and non-commercial files will be rejected.
+        PPA uploads with partner files and normal uploads with a mixture
+        of partner and non-partner files will be rejected.
         """
 
         # Get a set of the components used in this upload:
         components = set(file.component_name for file in self.changes.files)
 
-        commercial_component_name = 'commercial'
-        if commercial_component_name in components:
-            # Reject commercial uploads to PPAs.
+        partner_component_name = 'partner'
+        if partner_component_name in components:
+            # Reject partner uploads to PPAs.
             if self.is_ppa:
-                self.reject("PPA does not support commercial uploads.")
+                self.reject("PPA does not support partner uploads.")
 
-            # All files in the upload must be commercial if any one of them is.
+            # All files in the upload must be partner if any one of them is.
             if len(components) != 1:
-                self.reject("Cannot mix commercial files with non-commercial.")
+                self.reject("Cannot mix partner files with non-partner.")
                 return
 
             # See if there is an archive to override with.
             distribution = self.policy.distroseries.distribution
             archive = distribution.getArchiveByComponent(
-                commercial_component_name
+                partner_component_name
                 )
 
             # Check for data problems:
             if not archive:
                 # Don't override the archive to None here or the rest of the
                 # processing will throw exceptions.
-                self.reject("Commercial archive for distro '%s' not found" % 
+                self.reject("Partner archive for distro '%s' not found" %
                     self.policy.distroseries.distribution.name)
             else:
-                # Reset the archive in the policy to the commercial archive.
+                # Reset the archive in the policy to the partner archive.
                 self.policy.archive = archive
 

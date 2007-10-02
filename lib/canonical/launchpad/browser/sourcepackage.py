@@ -8,6 +8,7 @@ __all__ = [
     'SourcePackageNavigation',
     'SourcePackageSOP',
     'SourcePackageFacets',
+    'SourcePackageTranslationsExportView',
     'SourcePackageView',
     ]
 
@@ -22,9 +23,10 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
+from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
-from canonical.launchpad.browser.rosetta import TranslationsMixin
+from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
 from canonical.launchpad.webapp import (
@@ -132,11 +134,16 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'translations'
-    links = ['help', 'templates', 'imports']
+    links = ['help', 'templates', 'imports', 'translationdownload']
 
     def imports(self):
         text = 'See import queue'
         return Link('+imports', text)
+
+    def translationdownload(self):
+        text = 'Download translations'
+        enabled = (len(self.context.currentpotemplates) > 0)
+        return Link('+export', text, icon='download', enabled=enabled)
 
     def help(self):
         return Link('+translate', 'How you can help', icon='info')
@@ -144,6 +151,29 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def templates(self):
         return Link('+potemplatenames', 'Edit template names', icon='edit')
+
+
+class SourcePackageTranslationsExportView(BaseExportView):
+    """Request tarball export of all translations for source package.
+    """
+
+    def processForm(self):
+        """Process form submission requesting translations export."""
+        templates = self.context.currentpotemplates
+        pofiles = []
+        for template in templates:
+            pofiles += list(template.pofiles)
+        return (templates, pofiles)
+
+    def getDefaultFormat(self):
+        templates = self.context.currentpotemplates
+        if len(templates) > 0:
+            # We don't support exporting multiple formats for the same
+            # package.  If this package does have multiple current templates
+            # in different formats, we may as well pick the first one as the
+            # default.
+            return templates[0].source_file_format
+        return None
 
 
 class SourcePackageView(BuildRecordsView, TranslationsMixin):
@@ -244,3 +274,11 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
     def searchName(self):
         return False
 
+    def defaultBuildState(self):
+        """Default build state for sourcepackage builds.
+
+        This overrides the default that is set on BuildRecordsView."""
+        # None maps to "all states". The reason we display all states on
+        # this page is because it's unlikely that there will be so
+        # many builds that the listing will be overwhelming.
+        return None

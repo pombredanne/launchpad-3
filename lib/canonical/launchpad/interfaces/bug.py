@@ -174,6 +174,8 @@ class IBug(IMessageTarget, ICanBeMentored):
         "True or False depending on whether this bug is considered "
         "completely addressed. A bug is Launchpad is completely addressed "
         "when there are no tasks that are still open for the bug.")
+    date_last_message = Datetime(
+        title=_('Date of last bug message'), required=False, readonly=True)
 
 
     def followup_subject():
@@ -263,7 +265,7 @@ class IBug(IMessageTarget, ICanBeMentored):
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 
-    def addBranch(branch, whiteboard=None):
+    def addBranch(branch, whiteboard=None, status=None):
         """Associate a branch with this bug.
 
         Returns an IBugBranch.

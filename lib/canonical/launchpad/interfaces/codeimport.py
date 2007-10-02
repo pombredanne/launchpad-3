@@ -15,7 +15,7 @@ from zope.schema import Datetime, Choice, Int, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces.productseries import (
-    validate_cvs_module, validate_cvs_root)
+    validate_cvs_module, validate_cvs_root, RevisionControlSystems)
 from canonical.lp.dbschema import CodeImportReviewStatus
 
 
@@ -26,7 +26,7 @@ class ICodeImport(Interface):
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
 
-    # XXX DavidAllouche 2007-07-04: 
+    # XXX DavidAllouche 2007-07-04:
     # Branch should really be readonly, but there is a corner case of the
     # code-import-sync script where we have a need to change it. The readonly
     # parameter should be set back to True after the transition to the new
@@ -68,7 +68,7 @@ class ICodeImport(Interface):
             " Only reviewed imports are processed."))
 
     rcs_type = Choice(title=_("Type of RCS"),
-        required=True, vocabulary='RevisionControlSystems',
+        required=True, vocabulary=RevisionControlSystems,
         description=_("The revision control system used by the import source. "
         "Can be CVS or Subversion."))
 
@@ -105,7 +105,7 @@ class ICodeImportSet(Interface):
             cvs_root=None, cvs_module=None):
         """Create a new CodeImport."""
 
-    # XXX DavidAllouche 2007-07-05: 
+    # XXX DavidAllouche 2007-07-05:
     # newWithId is only needed for code-import-sync-script. This method
     # should be removed after the transition to the new code import system is
     # complete.

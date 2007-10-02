@@ -58,6 +58,16 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IArchive"
+    permission="launchpad.Edit">
+    <browser:page
+      template="../templates/archive-view-tos.pt"
+      facet="overview"
+      name="+view-tos"
+      />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
     permission="zope.Public"
     class="canonical.launchpad.browser.ArchiveBuildsView">
     <browser:page

@@ -10,15 +10,15 @@ from zope.interface import implements
 
 from sqlobject import (BoolCol, ForeignKey, IntCol, SQLObjectNotFound)
 
+from canonical.database import postgresql
 from canonical.database.sqlbase import (cursor, quote, SQLBase, sqlvalues)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import (RosettaTranslationOrigin,
+from canonical.launchpad.interfaces.posubmission import (
+    IPOSubmission, IPOSubmissionSet, RosettaTranslationOrigin,
     TranslationValidationStatus)
-
-from canonical.launchpad.interfaces import IPOSubmission, IPOSubmissionSet
 
 
 class POSubmissionSet:
@@ -103,6 +103,8 @@ class POSubmissionSet:
 
             cur.execute(query)
             available.update(dict(cur.fetchall()))
+        else:
+            parameters['one_of_ours'] = 'false'
 
         # Fetch suggestions for our POMsgSets.  We don't separate suggestions
         # from submissions attached to our own POMsgSets at this point,
@@ -114,40 +116,51 @@ class POSubmissionSet:
         # POTranslation for a given primemsgid.  We also leave out any
         # suggestions that offer the same POTranslation that is already the
         # active translation for a given POMsgSet.
-        # There might be some overlap between this result set and the one for
-        # POSubmissions that are attached to our POMsgSets (see query above).
-        # I tried adding a "where" condition to filter these out, but on
-        # several large queries that had timed out on production, I found that
-        # this condition caught no duplications and slowed the query down by
-        # 5-20%.
-        query = """
-            SELECT DISTINCT id, primemsgid FROM (
-            SELECT DISTINCT ON (potranslation, primemsgid)
-                pos.id,
-                pos.potranslation,
-                POTMsgSet.primemsgid
-            FROM POSubmission pos
-            JOIN POMsgSet ON pos.pomsgset = POMsgSet.id
+        # A join between POMsgSet and POSubmission is very expensive in this
+        # query.  Here we force the optimizer's hand by breaking up the query
+        # into one that selects POMsgSets whose translations would be valid
+        # suggestions, and another retrieving the associated POSubmissions.
+        # Intermediate results are kept in a temporary table.
+        # This is not a good thing, and if it's any faster than a single big
+        # query, that's pure coincidence.
+        parameters['temp_table'] = 'temp_suggestion_pomsgset'
+        postgresql.drop_tables(cur, [parameters['temp_table']])
+        cur.execute("""
+            CREATE TEMP TABLE %(temp_table)s
+            ON COMMIT DROP
+            AS SELECT DISTINCT POMsgSet.id, POTMsgSet.primemsgid
+            FROM POMsgSet
             JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
             JOIN POFile ON POMsgSet.pofile = POFile.id
             WHERE
                 POFile.language = %(language)s AND
                 POTMsgSet.primemsgid IN %(wanted_primemsgids)s AND
                 NOT POMsgSet.isfuzzy AND
-                NOT EXISTS (
-                    SELECT *
-                    FROM POSubmission better
-                    WHERE
-                        better.pomsgset = pos.pomsgset AND
-                        better.pluralform = pos.pluralform AND
-                        better.potranslation = pos.potranslation AND
-                        better.active
-                )
+                NOT %(one_of_ours)s
+            """ % parameters)
+        cur.execute(
+            "CREATE INDEX %(temp_table)s_idx ON %(temp_table)s(id)"
+            % parameters)
+        cur.execute("""
+            SELECT DISTINCT id, primemsgid FROM (
+            SELECT DISTINCT ON (potranslation, primemsgid)
+                pos.id,
+                pos.potranslation,
+                primemsgid
+            FROM POSubmission pos
+            JOIN %(temp_table)s ON pos.pomsgset = %(temp_table)s.id
+            WHERE NOT EXISTS (
+                SELECT * FROM POSubmission better
+                WHERE
+                    better.pomsgset = %(temp_table)s.id AND
+                    better.pluralform = pos.pluralform AND
+                    better.potranslation = pos.potranslation AND
+                    better.active)
             ORDER BY potranslation, primemsgid, pos.datecreated DESC
             ) AS suggestions
-            """ % parameters
-        cur.execute(query)
+            """ % parameters)
         available.update(dict(cur.fetchall()))
+        postgresql.drop_tables(cur, [parameters['temp_table']])
 
         if not available:
             return result
@@ -202,12 +215,6 @@ class POSubmissionSet:
                 # Any other POSubmission we see here has to be non-fuzzy, and
                 # so it's relevant to any POMsgSets that refer to the same
                 # primemsgid, including the POMsgSet it itself is attached to.
-
-                # XXX: JeroenVermeulen 2007-08-02 bug=132660: this assertion
-                # may still trigger the unnecessary queries.  Remove it after
-                # testing with production data!
-                assert not submission.pomsgset.isfuzzy, (
-                        "Fuzzy POMsgSet submission fetched as a suggestion.")
                 for recipient in takers_for_primemsgid[primemsgid]:
                     result[recipient].append(submission)
 

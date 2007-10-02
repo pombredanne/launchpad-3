@@ -29,6 +29,9 @@ class ISourcePackageRelease(Interface):
     component = Attribute("Source Package Component")
     format = Attribute("The Source Package Format")
     changelog = Attribute("Source Package Change Log")
+    change_summary = Attribute(
+        "The message on the latest change in this release. This is usually "
+        "a snippet from the changelog")
     builddepends = Attribute(
         "A comma-separated list of packages on which this package "
         "depends to build")
@@ -63,13 +66,13 @@ class ISourcePackageRelease(Interface):
     copyright = Attribute(
         "Copyright information for this SourcePackageRelease, if available.")
     section = Attribute("Section this Source Package Release belongs to")
-    builds = Attribute("Builds for this sourcepackagerelease")
+    builds = Attribute("Builds for this sourcepackagerelease excluding PPA "
+        "archives.")
     files = Attribute("IBinaryPackageFile entries for this "
         "sourcepackagerelease")
     sourcepackagename = Attribute("SourcePackageName table reference")
     uploaddistroseries = Attribute("The distroseries in which this package "
         "was first uploaded in Launchpad")
-    manifest = Attribute("Manifest of branches imported for this release")
     publishings = Attribute("MultipleJoin on SourcepackagePublishing")
 
 
@@ -102,7 +105,7 @@ class ISourcePackageRelease(Interface):
         "The archive for which this package was first uploaded in Launchpad")
 
 
-    # XXX Steve Alexander 2004-12-10: 
+    # XXX Steve Alexander 2004-12-10:
     #     What do the following methods and attributes do?
     #     These were missing from the interfaces, but being used
     #     in application code.

@@ -36,7 +36,7 @@
         />
 
     <browser:pages
-        for="canonical.launchpad.database.DistroArchSeries" 
+        for="canonical.launchpad.database.DistroArchSeries"
         permission="zope.Public"
         class="canonical.launchpad.browser.DistroArchSeriesView">
       <browser:page
@@ -59,7 +59,7 @@
     </browser:pages>
 
     <browser:page
-      for="canonical.launchpad.database.DistroArchSeries" 
+      for="canonical.launchpad.database.DistroArchSeries"
       permission="zope.Public"
       name="+search"
       class="canonical.launchpad.browser.DistroArchSeriesBinariesView"

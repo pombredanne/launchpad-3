@@ -3,12 +3,67 @@
 from zope.interface import Interface, Attribute
 from zope.schema import Bool
 from canonical.launchpad import _
+from canonical.lazr import DBEnumeratedType, DBItem
 
 __metaclass__ = type
 __all__ = [
     'IPOSubmission',
-    'IPOSubmissionSet'
+    'IPOSubmissionSet',
+    'RosettaTranslationOrigin',
+    'TranslationValidationStatus'
     ]
+
+
+class RosettaTranslationOrigin(DBEnumeratedType):
+    """Rosetta Translation Origin
+
+    Translation sightings in Rosetta can come from a variety
+    of sources. We might see a translation for the first time
+    in CVS, or we might get it through the web, for example.
+    This schema documents those options.
+    """
+
+    SCM = DBItem(1, """
+        Source Control Management Source
+
+        This translation sighting came from a PO File we
+        analysed in a source control managements sytem first.
+        """)
+
+    ROSETTAWEB = DBItem(2, """
+        Rosetta Web Source
+
+        This translation was presented to Rosetta via
+        the community web site.
+        """)
+
+
+class TranslationValidationStatus(DBEnumeratedType):
+    """Translation Validation Status
+
+    Every time a translation is added to Rosetta we should checked that
+    follows all rules to be a valid translation inside a .po file.
+    This schema documents the status of that validation.
+    """
+
+    UNKNOWN = DBItem(0, """
+        Unknown
+
+        This translation has not been validated yet.
+        """)
+
+    OK = DBItem(1, """
+        Ok
+
+        This translation has been validated and no errors were discovered.
+        """)
+
+    UNKNOWNERROR = DBItem(2, """
+        Unknown Error
+
+        This translation has an unknown error.
+        """)
+
 
 class IPOSubmissionSet(Interface):
     """The set of submissions we have in our database."""
@@ -37,7 +92,7 @@ class IPOSubmissionSet(Interface):
         :return: a dict mapping each of the `POMsgSet`s to a list of
             applicable `POSubmission`s.
         """
- 
+
 
 class IPOSubmission(Interface):
     """A submission of a translation to a PO file."""

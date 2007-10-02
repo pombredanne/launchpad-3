@@ -3,7 +3,7 @@
 The general +filebug allows bugs to be filed on any product or package,
 and to help with this, the LaunchpadTargetWidget is used.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IFrontPageBugAddForm, IMaloneApplication)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -22,7 +22,7 @@ The widget complies to both IInputWidget and IBrowserWidget.
     >>> verifyObject(IBrowserWidget, widget)
     True
 
-When the request is empty, the widet doesn't have any input:
+When the request is empty, the widget doesn't have any input:
 
     >>> widget.hasInput()
     False
@@ -32,7 +32,7 @@ When the request is empty, the widet doesn't have any input:
     ''
 
 It's a radio widget, so it assumes that it always will have input, so if
-it doesn't it raises UnexpectedFormData
+it doesn't it raises UnexpectedFormData:
 
     >>> widget.getInputValue()
     Traceback (most recent call last):
@@ -74,7 +74,7 @@ by getInputValue().
     >>> selected_distribution.name
     u'ubuntu'
 
-If an non-existant distribution name is provided, a widget error is
+If a non-existent distribution name is provided, a widget error is
 raised.
 
     >>> form['field.bugtarget.distribution'] = 'invalid'
@@ -106,7 +106,7 @@ If no distribution name is given at all, a MissingInput error is raised.
 
 == Selecting a package ==
 
-If both a distribution and a package name is selected, a distribution
+If both a distribution and a source package are specified, a distribution
 source package is returned.
 
     >>> from canonical.launchpad.interfaces import IDistributionSourcePackage
@@ -127,9 +127,37 @@ source package is returned.
     >>> selected_package.name
     u'evolution'
 
-If a non-existant package is selected, a widget error is raised.
+If both a distribution and a binary package are specified, the distribution
+source package from which the given binary package is built is returned.
 
-    >>> form['field.bugtarget.package'] = 'non-existant'
+    >>> binary_package_name = 'linux-2.6.12'
+    >>> form = {'field.bugtarget': 'package',
+    ...         'field.bugtarget.distribution': 'ubuntu',
+    ...         'field.bugtarget.package': binary_package_name}
+    >>> widget = LaunchpadTargetWidget(
+    ...     IFrontPageBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
+    >>> widget.hasInput()
+    True
+    >>> widget.error()
+    ''
+    >>> selected_package = widget.getInputValue()
+    >>> IDistributionSourcePackage.providedBy(selected_package)
+    True
+    >>> selected_package.distribution.name
+    u'ubuntu'
+    >>> selected_package.name
+    u'linux-source-2.6.15'
+    
+The distribution source package corresponds to the specified binary package
+name:
+    
+    >>> print [package.name for release in selected_package.releases 
+    ...                     for package in release.binary_package_names]
+    [...'linux-2.6.12'...]
+    
+If a non-existent package is selected, a widget error is raised.
+
+    >>> form['field.bugtarget.package'] = 'non-existent'
     >>> widget = LaunchpadTargetWidget(
     ...     IFrontPageBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
@@ -137,12 +165,12 @@ If a non-existant package is selected, a widget error is raised.
     >>> selected_package = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: There is no source package name 'non-existant'
+    LaunchpadValidationError: There is no package name 'non-existent'
                               published in Ubuntu
     >>> print widget.error()
-    There is no source package name 'non-existant' published in Ubuntu
+    There is no package name 'non-existent' published in Ubuntu
 
-The same error is displayed when an existing source package name that
+The same error is displayed when an existing package name that
 isn't published is selected.
 
     >>> form['field.bugtarget.package'] = 'thunderbird'
@@ -153,10 +181,10 @@ isn't published is selected.
     >>> selected_package = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: There is no source package name 'thunderbird'
+    LaunchpadValidationError: There is no package name 'thunderbird'
                               published in Ubuntu
     >>> print widget.error()
-    There is no source package name 'thunderbird' published in Ubuntu
+    There is no package name 'thunderbird' published in Ubuntu
 
 == Selecting a product ==
 
@@ -177,9 +205,9 @@ If a product is selected, the product with the given name is returned.
     >>> selected_product.name
     u'firefox'
 
-If a non-existant product name is entered, a widget error is raised.
+If a non-existent product name is entered, a widget error is raised.
 
-    >>> form['field.bugtarget.product'] = u'non-existant'
+    >>> form['field.bugtarget.product'] = u'non-existent'
     >>> widget = LaunchpadTargetWidget(
     ...     IFrontPageBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
@@ -187,10 +215,10 @@ If a non-existant product name is entered, a widget error is raised.
     >>> selected_product = widget.getInputValue()
     Traceback (most recent call last):
     ...
-    LaunchpadValidationError: There is no project named 'non-existant'
+    LaunchpadValidationError: There is no project named 'non-existent'
                               registered in Launchpad
     >>> print widget.error()
-    There is no project named 'non-existant' registered in Launchpad
+    There is no project named 'non-existent' registered in Launchpad
 
 If no product name is given at all, a widget error is raised.
 
@@ -260,7 +288,7 @@ the distribution in the drop-down list.
              name="field.bugtarget" type="radio" value="product" />
     ...
 
-Passing in a distribuiton source packagage will select the 'package'
+Passing in a distribution package will select the 'package'
 radio button, select the distribution in the drop-down list, and set the
 package widget to the package name.
 

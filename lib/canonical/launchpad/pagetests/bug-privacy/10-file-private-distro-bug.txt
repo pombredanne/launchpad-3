@@ -2,7 +2,7 @@ Foo Bar files a security (private) bug on Ubuntu Linux. He gets
 redirected to the bug page. (Note that only the advanced bug
 filing page, not the simple one, supports filing security bugs.)
 
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+    >>> browser = setupBrowser("Basic foo.bar@canonical.com:test")
     >>> browser.open("http://launchpad.dev/ubuntu/+filebug-advanced")
 
 Ubuntu has no security contact, so the Ubuntu maintainer, Ubuntu Team,
@@ -21,8 +21,9 @@ will be subscribed instead.
     ...     "This bug is a security vulnerability").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
-    >>> print browser.url
-    http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/13
+    >>> bug_id = browser.url.split("/")[-1]
+    >>> print browser.url.replace(bug_id, "BUG-ID")
+    http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/BUG-ID
 
     >>> print browser.contents
     <!DOCTYPE...
@@ -31,11 +32,11 @@ will be subscribed instead.
 Foo Bar sees the private bug he filed.
 
     >>> browser.open("http://launchpad.dev/ubuntu/+bugs")
-    >>> print browser.contents
+    >>> print browser.contents.replace(bug_id, "BUG-ID")
     <!DOCTYPE...
     ...
     ...Ubuntu Linux...
-    ...<a...>...13...</a>...
+    ...<a...>...BUG-ID...</a>...
 
 Foo Bar and the Ubuntu Team are subscribed to the bug.
 
@@ -45,7 +46,7 @@ Foo Bar and the Ubuntu Team are subscribed to the bug.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> bug = getUtility(IBugSet).get(13)
+    >>> bug = getUtility(IBugSet).get(bug_id)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
     [u'name16', u'ubuntu-team']
@@ -74,16 +75,19 @@ subscriptions differ.
     ...     "This bug is a security vulnerability").selected = True
     >>> browser.getControl("Submit Bug Report").click()
 
-    >>> print browser.url
-    http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/14
+    >>> other_bug_id = browser.url.split("/")[-1]
+    >>> print browser.url.replace(other_bug_id, "BUG-ID")
+    http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/BUG-ID
+
 
 Now only the reporter and /security contact/ are subscribed.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> bug = getUtility(IBugSet).get(14)
+    >>> bug = getUtility(IBugSet).get(other_bug_id)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
     [u'name12', u'name16']
 
     >>> logout()
+

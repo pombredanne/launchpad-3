@@ -58,8 +58,14 @@ requested by the clients:
 It recursively creates directories:
 
     >>> ufs.mkdir("anything/something/whatever")
-    >>> os.path.exists(os.path.join(rootpath, "anything/something/whatever"))
+
+    >>> wanted_path = os.path.join(rootpath, "anything/something/whatever")
+
+    >>> os.path.exists(wanted_path)
     True
+
+    >>> oct(os.stat(wanted_path).st_mode)
+    '040775'
 
     >>> shutil.rmtree(os.path.join(rootpath, "anything"))
 

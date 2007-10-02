@@ -37,11 +37,6 @@ class IDistributionSourcePackage(IBugTarget):
     # XXX sabdfl 2005-10-16:
     distro = Attribute("The distribution.")
 
-    by_distroseries = Attribute(
-        "Return a list of DistroSeriesSourcePackage objects, each "
-        "representing this same source package in the serieses of this "
-        "distribution.")
-
     subscribers = Attribute("The subscribers to this package.")
 
     currentrelease = Attribute(
@@ -81,6 +76,17 @@ class IDistributionSourcePackage(IBugTarget):
         """Return the a DistributionSourcePackageRelease with the given
         version, or None if there has never been a release with that
         version in this distribution.
+        """
+
+    def get_distroseries_packages(active_only=True):
+        """Return a list of DistroSeriesSourcePackage objects, each 
+        representing this same source package in the serieses of this
+        distribution.
+
+        By default, this will return SourcePackage's in active
+        distroseries only. You can set only_active=False to return a
+        source package for EVERY series where this source package was
+        published.
         """
 
     def bugtasks(quantity=None):
@@ -128,4 +134,4 @@ class IDistributionSourcePackageManageBugcontacts(Interface):
         title=u"I want to receive all bugmail for this source package",
         required=False)
 
-        
+

@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -9,22 +9,21 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.librarian.ftests.harness import LibrarianTestSetup
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
-from canonical.launchpad.ftests import login
-from canonical.launchpad.mail import stub
-
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     IDistributionSet, IDistributionMirrorSet, ILibraryFileAliasSet,
     MirrorStatus)
+from canonical.launchpad.mail import stub
 from canonical.lp.dbschema import PackagePublishingPocket
 
+from canonical.testing import LaunchpadFunctionalLayer
 
-class TestDistributionMirror(LaunchpadFunctionalTestCase):
 
+class TestDistributionMirror(unittest.TestCase):
+    layer = LaunchpadFunctionalLayer
+    
     def setUp(self):
-        LaunchpadFunctionalTestCase.setUp(self)
         login('test@canonical.com')
         mirrorset = getUtility(IDistributionMirrorSet)
         self.cdimage_mirror = getUtility(IDistributionMirrorSet).getByName(
@@ -131,7 +130,6 @@ class TestDistributionMirror(LaunchpadFunctionalTestCase):
         proberecord = mirror.newProbeRecord(library_alias)
 
     def test_disabling_mirror_and_notifying_owner(self):
-        LibrarianTestSetup().setUp()
         login('karl@canonical.com')
 
         mirror = self.cdimage_mirror
@@ -170,7 +168,7 @@ class TestDistributionMirror(LaunchpadFunctionalTestCase):
         transaction.commit()
         self.failUnlessEqual(len(stub.test_emails), 1)
         stub.test_emails = []
-        
+
         mirror.enabled = False
         mirror.disable(notify_owner=True)
         # No notifications were sent this time
@@ -178,7 +176,6 @@ class TestDistributionMirror(LaunchpadFunctionalTestCase):
         self.failUnlessEqual(len(stub.test_emails), 0)
         stub.test_emails = []
 
-        LibrarianTestSetup().tearDown()
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

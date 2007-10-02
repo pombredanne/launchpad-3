@@ -88,8 +88,7 @@ The bug title is still provided if the user can view the private bug:
 
 
 For the case where the private bug is the only one watching the given
-remote bug, we still perform a redirect (which will lead to a page
-telling the user they are unauthorised to view the bug):
+remote bug, we don't perform the redirect ahead of time:
 
   >>> anon_browser.handleErrors = True
   >>> anon_browser.open('http://bugs.launchpad.dev/bugs/bugtrackers/mozilla.org/2000')
@@ -97,7 +96,7 @@ telling the user they are unauthorised to view the bug):
   <!DOCTYPE...
   ...To continue, you must log in to Launchpad...
   ...<input type="hidden" name="redirection_url"
-  value="http://bugs.launchpad.dev/firefox/+bug/1/+index" />...
+  value="http://bugs.launchpad.dev/bugs/1" />...
   
 
 Set the bug back to public:

@@ -19,9 +19,8 @@ from canonical.launchpad import helpers
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
 from canonical.launchpad.interfaces import (
-    IPOMsgSet, TranslationConflict, IPOSubmissionSet)
-from canonical.lp.dbschema import (RosettaTranslationOrigin,
-    TranslationValidationStatus)
+    IPOMsgSet, TranslationConflict, IPOSubmissionSet,
+    RosettaTranslationOrigin, TranslationValidationStatus)
 
 
 class POMsgSetMixIn:
@@ -76,7 +75,7 @@ class POMsgSetMixIn:
         return subs[self]
 
     def initializeSubmissionsCaches(self, related_submissions=None):
-        """See `IPOMsgSet`.""" 
+        """See `IPOMsgSet`."""
         if self._hasSubmissionsCaches():
             return
 
@@ -841,7 +840,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         pluralforms = self.pluralforms
 
         # Calculate the number of published plural forms.
-        # XXX: JeroenVermeulen 2007-06-10: Why the cap on pluralform?
+        # Since every POFile may have its own plural expression, it's possible
+        # for submissions to have plural-form numbers that the language itself
+        # does not define.  That's fine, and people have used it for some edge
+        # cases, but they must not count towards the msgset's completeness.
         published_count = 0
         for (plural, published) in self.published_submissions.items():
             if plural < pluralforms and published.id is not None:
@@ -854,7 +856,6 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             self.publishedfuzzy = False
 
         # Calculate the number of active plural forms.
-        # XXX: JeroenVermeulen 2007-06-10: Why the cap on pluralform?
         active_count = 0
         for (plural, active) in self.active_submissions.items():
             if plural < pluralforms and active.id is not None:

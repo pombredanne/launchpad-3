@@ -1,8 +1,16 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Poll', 'PollSet', 'PollOption', 'PollOptionSet',
-           'VoteCast', 'Vote', 'VoteSet', 'VoteCastSet']
+__all__ = [
+    'Poll',
+    'PollOption',
+    'PollOptionSet',
+    'PollSet',
+    'VoteCast',
+    'Vote',
+    'VoteSet',
+    'VoteCastSet',
+    ]
 
 import pytz
 import random
@@ -14,15 +22,14 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND)
 
-from canonical.lp.dbschema import PollSecrecy, PollAlgorithm
-
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IPoll, IPollSet, IPollOption, IPollOptionSet, IVote, IVoteCast,
-    PollStatus, IVoteCastSet, IVoteSet, OptionIsNotFromSimplePoll)
+    PollStatus, IVoteCastSet, IVoteSet, PollAlgorithm, PollSecrecy,
+    OptionIsNotFromSimplePoll)
 
 
 class Poll(SQLBase):
@@ -45,12 +52,12 @@ class Poll(SQLBase):
 
     proposition = StringCol(dbName='proposition',  notNull=True)
 
-    type = EnumCol(dbName='type', schema=PollAlgorithm,
+    type = EnumCol(dbName='type', enum=PollAlgorithm,
                    default=PollAlgorithm.SIMPLE)
 
     allowspoilt = BoolCol(dbName='allowspoilt', default=True, notNull=True)
 
-    secrecy = EnumCol(dbName='secrecy', schema=PollSecrecy,
+    secrecy = EnumCol(dbName='secrecy', enum=PollSecrecy,
                       default=PollSecrecy.SECRET)
 
     def newOption(self, name, title, active=True):
@@ -117,7 +124,7 @@ class Poll(SQLBase):
     def _assertEverythingOkAndGetVoter(self, person, when=None):
         """Use assertions to Make sure all pre-conditions for a person to vote
         are met.
-        
+
         Return the person if this is not a secret poll or None if it's a
         secret one.
         """
@@ -192,7 +199,7 @@ class Poll(SQLBase):
         assert self.type == PollAlgorithm.SIMPLE
         query = ("SELECT option FROM Vote WHERE poll = %d GROUP BY option "
                  "HAVING COUNT(*) = (SELECT COUNT(*) FROM Vote WHERE poll = %d "
-                 "GROUP BY option ORDER BY COUNT(*) DESC LIMIT 1)" 
+                 "GROUP BY option ORDER BY COUNT(*) DESC LIMIT 1)"
                  % (self.id, self.id))
         results = self._connection.queryAll(query)
         if not results:
@@ -208,12 +215,12 @@ class Poll(SQLBase):
             pairwise_row = []
             for option2 in options:
                 points_query = """
-                    SELECT COUNT(*) FROM Vote as v1, Vote as v2 WHERE 
+                    SELECT COUNT(*) FROM Vote as v1, Vote as v2 WHERE
                         v1.token = v2.token AND
                         v1.option = %s AND v2.option = %s AND
                         (
                          (
-                          v1.preference IS NOT NULL AND 
+                          v1.preference IS NOT NULL AND
                           v2.preference IS NOT NULL AND
                           v1.preference < v2.preference
                          )

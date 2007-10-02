@@ -299,12 +299,12 @@ class LoginOrRegister:
 
     def login_success(self):
         return (self.submitted and
-                self.request.form.get(self.submit_login) and 
+                self.request.form.get(self.submit_login) and
                 not self.login_error)
 
     def registration_success(self):
-        return (self.submitted and 
-                self.request.form.get(self.submit_registration) and 
+        return (self.submitted and
+                self.request.form.get(self.submit_registration) and
                 not self.registration_error)
 
     def redirectMinusLogin(self):
