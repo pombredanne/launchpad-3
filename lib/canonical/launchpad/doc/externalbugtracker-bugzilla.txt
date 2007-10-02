@@ -156,7 +156,6 @@ updated:
 Now let's take a look at what happens when a bug watch is linked to
 from a bug task.
 
-    >>> login('foo.bar@canonical.com')
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> thunderbird_task = bug_nine.bugtasks[0]
     >>> print thunderbird_task.status.title
@@ -195,7 +194,8 @@ status mapping.
 
     >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> thunderbird_task.transitionToStatus(
-    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
+    ...     BugTaskStatus.CONFIRMED,
+    ...     getUtility(IPersonSet).getByName('no-priv'))
     >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
     >>> print thunderbird_task.status.title
     In Progress

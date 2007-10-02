@@ -73,6 +73,11 @@ def setUp(test):
 def tearDown(test):
     logout()
 
+def checkwatchesSetUp(test):
+    setUp(test)
+    #login('bugwatch@bugs.launchpad.net')
+    LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
 def poExportSetUp(test):
     LaunchpadZopelessLayer.switchDbUser('poexport')
     setUp(test)
@@ -593,6 +598,13 @@ special = {
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer,
             ),
+    'externalbugtracker-bugzilla.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-bugzilla.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
     }
 
 
