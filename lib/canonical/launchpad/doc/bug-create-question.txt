@@ -3,9 +3,9 @@ that is the nature of the issue. The bug's target must be adaptable
 to IQuestionTarget and must use Launchpad track bugs.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, IBugSet, IBugTaskSet, IDistributionSet,
-    ...     IDistributionSourcePackage, IDistroSeries, IPersonSet,
-    ...     IProductSet, IProductSeries, IQuestionTarget,
+    ...     CreateBugParams, BugTaskStatus, IBugSet, IBugTaskSet,
+    ...     IDistributionSet, IDistributionSourcePackage, IDistroSeries,
+    ...     IPersonSet, IProductSet, IProductSeries, IQuestionTarget,
     ...     ISourcePackageNameSet)
 
 Some parts of the IQuestionTarget interface are only accessible
@@ -53,7 +53,7 @@ QuestionTarget and Sample Person as the Person.
 
     >>> login('test@canonical.com')
     >>> question = bug.createQuestionFromBug(
-    ...     target, sample_person, "This is a question.")
+    ...     sample_person, "This is a question.")
 
     >>> question.target == target
     True
@@ -65,7 +65,7 @@ QuestionTarget and Sample Person as the Person.
     True
     >>> question.messages[-1].text_contents == bug.messages[-1].text_contents
     True
-        
+
     >>> question.owner.displayname
     u'No Privileges Person'
     >>> question.title
@@ -80,8 +80,8 @@ statusexplanation explanation is set to an empty string.
 
     >>> bugtask.status.title
     'Invalid'
-    >>> bugtask.statusexplanation
-    u''
+    >>> print bugtask.statusexplanation
+    None
 
 The question is automatically linked to the original bug.
 
@@ -95,16 +95,16 @@ question and that the bugtasks are Invalid.
     >>> notifications = pop_notifications()
     >>> len(notifications)
     1
-    
+
     >>> notifications[0]['To']
     'no-priv@canonical.com'
-    
+
     >>> notifications[0]['Subject']
     '[Question #15]: Print is broken'
 
 A bug can only be converted to a question once.
 
-    >>> question = bug.createQuestionFromBug(target, sample_person, "Fail.")
+    >>> question = bug.createQuestionFromBug(sample_person, "Fail.")
     Traceback (most recent call last):
     ...
     AssertionError: This bug was already converted to question #...    
@@ -134,9 +134,15 @@ location and a bug in another.
     [u'ubuntu: New', u'evolution: New']
 
     >>> login('test@canonical.com')
-    
+
+    >>> ubuntu_bug.canBeAQuestion()
+    False
+    >>> evo_bugtask.transitionToStatus(BugTaskStatus.INVALID, sample_person)
+    >>> ubuntu_bug.canBeAQuestion()
+    True
+
     >>> question = ubuntu_bug.createQuestionFromBug(
-    ...     ubuntu, sample_person, "Many bugtasks are one question")
+    ...     sample_person, "Many bugtasks are one question")
     >>> question.title
     u'Print is borked'
     >>> question.target.name
@@ -145,4 +151,4 @@ location and a bug in another.
     >>> ['%s: %s' % (bt.target.name, bt.status.title) for bt in bugtasks]
     [u'ubuntu: Invalid', u'evolution: Invalid']
     >>> [bt.statusexplanation for bt in bugtasks]
-    [u'', u'']
+    [None, None]

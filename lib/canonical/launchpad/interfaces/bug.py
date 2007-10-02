@@ -298,13 +298,23 @@ class IBug(IMessageTarget, ICanBeMentored):
         The user is the one linking to the CVE.
         """
 
+    def canBeAQuestion():
+        """Return True of False if a question can be created from this bug.
+
+        A Question can be created from a bug if:
+        1. There is only one bugtask with a status of New, Incomplete,
+           Confirmed, or Wont Fix. Any other bugtasks must be Invalid.
+        2. The bugtask's target uses Launchpad to track bugs.
+        3. The bug was not made into a question previously.
+        """
+
     def createQuestionFromBug(question_target, person, comment):
         """Create and return a Question from this Bug.
-        
+
         The question_target, or its distribution, must have official_malone
         set to True. All the bug's bugtasks will be set to Invalid status with
         an explaination that the bug is a question in the statusexplanation.
-        
+
         :question_target: An IQuestionTarget.
         :person: The IPerson creating a question from this bug
         :comment: A string. An explaination of why the bug is a question.

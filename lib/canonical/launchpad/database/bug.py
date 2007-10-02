@@ -32,6 +32,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.bugcve import BugCve
 from canonical.launchpad.database.bugnomination import BugNomination
@@ -41,6 +42,7 @@ from canonical.launchpad.database.message import (
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import (
     BugTask,
+    BugTaskDelta,
     BugTaskSet,
     bugtask_sort_key,
     get_bug_privacy_filter,
@@ -559,26 +561,58 @@ class Bug(SQLBase):
     completeness_clause =  """
         BugTask.bug = Bug.id AND """ + BugTask.completeness_clause
 
-    def createQuestionFromBug(self, question_target, person, comment):
+    def canBeAQuestion(self):
         """See `IBug`."""
-        assert question_target.pillar.official_malone, (
-            '%s official_malone must be True.' % question_target.pillar.name)
+        return (self._getQuestionTargetableBugTask() is not None
+            and self.getQuestionCreatedFromBug() is None)
+
+    def _getQuestionTargetableBugTask(self):
+        """Return the only bugtask that can be a QuestionTarget, or None.
+        
+        The bugtask's target must use Launchpad to track bugs
+        (offial_malone == True).  If the bug has more
+        than one bugtask, all must have a status of Invalid,
+        except for the one that will provide the QuestionTarget.
+        The bugtask's status cannot be under consideration for, or
+        in, development.
+        """
+        bugtasks = [bugtask for bugtask in self.bugtasks
+                    if bugtask.status != BugTaskStatus.INVALID]
+        if len(bugtasks) != 1:
+            return None
+        bugtask = bugtasks[0]
+        developed_statuses = [
+                BugTaskStatus.TRIAGED, BugTaskStatus.INPROGRESS,
+                BugTaskStatus.FIXCOMMITTED, BugTaskStatus.FIXRELEASED]
+        if (bugtask.status in developed_statuses
+            or bugtask.pillar.official_malone is False):
+            return None
+        return bugtask
+
+    def createQuestionFromBug(self, person, comment):
+        """See `IBug`."""
         question = self.getQuestionCreatedFromBug()
         assert question is None, (
             'This bug was already converted to question #%s.' % question.id)
+        bugtask = self._getQuestionTargetableBugTask()
+        assert bugtask is not None, (
+            'A question cannot be created from this bug.')
+
+        bugtask_deltas = [
+            BugTaskDelta(bugtask, status=bugtask.status,
+                statusexplanation=bugtask.statusexplanation)]
+        bugtask.transitionToStatus(BugTaskStatus.INVALID, person)
+        bugtask.statusexplanation = None
+        bug_delta = BugDelta(
+            self, None, person, bugtask_deltas=bugtask_deltas)
 
         message = getUtility(IBugMessageSet).createMessage(
             self.followup_subject(), content=comment, owner=person, bug=self)
-        #self.linkMessage(message)
+        #bug_message = self.linkMessage(message)
 
-        question = question_target.createQuestionFromBug(self)
+        question = bugtask.target.createQuestionFromBug(self)
 
-        for bugtask in self.bugtasks:
-            if bugtask.target_uses_malone:
-                bugtask.transitionToStatus(BugTaskStatus.INVALID, person)
-                bugtask.statusexplanation = ""
-
-        #notify(BugBecameQuestionEvent(self, question))
+        #notify(BugBecameQuestionEvent(bug_delta, bug_message, question))
         return question
 
     def getQuestionCreatedFromBug(self):
