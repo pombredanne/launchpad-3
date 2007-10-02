@@ -103,15 +103,6 @@ time.
     >>> print extract_text(entry.author('uri')[0])
     http://launchpad.dev/~name16
 
-If a quantity parameter is passed in the query string ensure it is
-respected.  As shown above the feed for Foo Bar has 6 entries, but
-here we limit it to 2.
-
-    >>> browser.open('http://launchpad.dev/~name16/latest-bugs.atom?quantity=2')
-    >>> entries = [tag for tag in BSS(browser.contents, parseOnlyThese=SoupStrainer('entry'))]
-    >>> print len(entries)
-    2
-
 == General bug search ==
 
     >>> import cgi
@@ -128,7 +119,7 @@ here we limit it to 2.
 
     >>> entries = [tag for tag in BSS(browser.contents, parseOnlyThese=SoupStrainer('entry'))]
     >>> print len(entries)
-    15
+    20
 
     >>> entry = entries[0]
     >>> print extract_text(entry.title)

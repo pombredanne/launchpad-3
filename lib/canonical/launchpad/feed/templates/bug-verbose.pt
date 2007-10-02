@@ -69,9 +69,6 @@
             <td tal:condition="not:context/duplicateof">-</td>
         </tr>
 
-
-        <tr><th>Private:</th><td tal:content="context/private">True</td></tr>
-
         <tr><th>Security Related:</th>
             <td tal:content="context/security_related">True</td>
         </tr>
@@ -101,7 +98,8 @@
                 <span tal:repeat="q context/questions">
                     <img src="http://launchpad.net/@@/question" />
                     <span tal:replace="q/target/displayname"></span>:
-                    <a tal:attributes="href q/fmt:url" tal:content="q/title">Question</a><br/>
+                    <a tal:attributes="href q/fmt:url" tal:content="q/title">
+                        Question</a><br/>
                 </span>
             </td>
             <td tal:condition="not:context/questions">-</td>

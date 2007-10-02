@@ -23,6 +23,7 @@ from canonical.launchpad.browser import (
 from canonical.launchpad.interfaces import (
     IBugTarget, IBugTaskSet, IPerson)
 
+
 class BugFeedContentView(LaunchpadView):
     """View for a bug feed contents."""
 
@@ -32,6 +33,7 @@ class BugFeedContentView(LaunchpadView):
     def __init__(self, context, request, verbose=False):
         super(BugFeedContentView, self).__init__(context, request)
         self.verbose = verbose
+        self.format = None
 
     def getBugCommentsForDisplay(self):
         bug_task_view = BugTaskView(self.context.bugtasks[0], self.request)
@@ -49,7 +51,7 @@ class BugsFeedBase(FeedBase):
 
     max_age = 30 * MINUTES
     verbose = False
-    quantity = 15
+
     def initialize(self):
         super(BugsFeedBase, self).initialize()
         self.getParameters()
@@ -59,12 +61,15 @@ class BugsFeedBase(FeedBase):
         if verbose is not None:
             if verbose.lower() in ['1', 't', 'true', 'yes']:
                 self.verbose = True
-        quantity = self.request.get('quantity')
-        if quantity is not None:
-            try:
-                self.quantity = min(int(quantity), self.max_quantity)
-            except ValueError:
-                pass
+        extension = self.request['PATH_INFO'].split('/')[-1].split('.')[-1]
+        path = self.request['PATH_INFO']
+        if path.endswith('.atom'):
+            self.format = 'atom'
+        elif path.endswith('.html'):
+            self.format = 'html'
+        else:
+            raise ValueError, ('%s in %s is not atom or html'
+                % (extension, self.request['PATH_INFO']))
 
     def getURL(self):
         """Get the identifying URL for the feed."""
@@ -84,6 +89,7 @@ class BugsFeedBase(FeedBase):
         return self.items
 
     def itemToFeedEntry(self, item):
+        """Given a set of items, format them for rendering."""
         bugtask = item
         bug = bugtask.bug
         title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
