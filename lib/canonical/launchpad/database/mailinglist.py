@@ -198,7 +198,7 @@ class MailingList(SQLBase):
             """mailing_list = %s AND
                team = %s AND
                TeamParticipation.person = MailingListSubscription.person
-            """ % (self.id, self.team.id),
+            """ % sqlvalues(self, self.team),
             distinct=True, clauseTables=['TeamParticipation'])
         for subscription in subscriptions:
             yield subscription.subscribed_address.email
