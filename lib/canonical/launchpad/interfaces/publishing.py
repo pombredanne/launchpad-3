@@ -422,7 +422,3 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 
     distroarchseriesbinarypackagerelease = Attribute("The object that "
         "represents this binarypacakgerelease in this distroarchseries.")
-
-    hasRemovalRequested = Bool(
-            title=_('Whether a removal has been requested for this record')
-            )

@@ -1,29 +1,29 @@
-<b>
-  <span tal:replace="context/distroarchseries/distroseries/name">hoary</span>
-  <span tal:replace="context/distroarchseries/architecturetag">i386</span>
-  <span tal:replace="context/pocket/title">pocket</span></b>:
-<span tal:replace="context/status/title">Published</span>
-version <span tal:replace="context/binarypackagerelease/version">1.1-2</span>
-in component <span tal:replace="context/component/name">main</span>
-and section <span tal:replace="context/section/name">x11</span>
-<tal:has_datepublished condition="context/datepublished">
-  <span
-    tal:attributes="title context/datepublished/fmt:datetime"
-    tal:content="context/datepublished/fmt:displaydate" />
-</tal:has_datepublished>
-<tal:removal_requested condition="context/hasRemovalRequested">
-  - removal requested
-  <span
-    tal:attributes="title context/datesuperseded/fmt:datetime"
-    tal:content="context/datesuperseded/fmt:displaydate" />.
-</tal:removal_requested>
-<tal:not_removal_requested condition="not: context/hasRemovalRequested">
-  <tal:has_supersededby condition="context/supersededby">
-    and superseded
-    <span
-      tal:attributes="title context/datesuperseded/fmt:datetime"
-      tal:content="context/datesuperseded/fmt:displaydate"
-      /> by <span tal:replace="context/supersededby/title" />
-  </tal:has_supersededby>
-</tal:not_removal_requested>
-<hr />
+<div class="boardComment">
+
+  <div class="boardCommentDetails">
+    <strong>
+      <a tal:content="context/distroarchseriesbinarypackagerelease/version"
+         tal:attributes="href context/distroarchseriesbinarypackagerelease/fmt:url"
+      >2.0.39</a>
+    </strong>
+    <table>
+      <tbody>
+        <tr>
+         <td>
+           <strong tal:content="context/status/name">PUBLISHED</strong>:
+           <a tal:attributes="href context/distroarchseries/fmt:url"
+              tal:content="context/distroarchseries/displayname">warty i386</a>
+           pocket <strong tal:content="context/pocket/title">Release</strong>
+           in component <strong tal:content="context/component/name">main</strong>
+           and section <strong tal:content="context/section/name">x11</strong>
+         </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="boardCommentBody">
+     <tal:block replace="structure context/@@+record-details" />
+  </div>
+
+</div>

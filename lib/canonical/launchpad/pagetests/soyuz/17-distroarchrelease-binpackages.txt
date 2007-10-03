@@ -22,18 +22,23 @@ URL:
 This page provides the publishing history of this BinaryPackage within
 this architecture:
 
-  >>> print find_tag_by_id(browser.contents, 'publishings')
-  <div id="publishings">
-    <b> warty i386 Release</b>:
-      Published version 1.0 in component main and section base
-        ...on 2006-04-11...
-    <hr />
-    <b> warty i386 Release</b>:
-      Published version 0.9 in component main and section base
-        ...on 2005-06-18...
-    <hr />
-  </div>
-
+  >>> print extract_text(find_tag_by_id(browser.contents, 'publishings'))
+  1.0
+  PUBLISHED:
+  warty i386
+  pocket Release
+  in component main
+  and section base
+  Published
+  on 2006-04-11
+  0.9
+  PUBLISHED:
+  warty i386
+  pocket Release
+  in component main
+  and section base
+  Published
+  on 2005-06-18
 
 It also provides a link to the currently published version:
 
@@ -134,8 +139,14 @@ This page provides the publishing history of this BinaryPackage within
 this architecture:
 
   >>> print extract_text(find_tag_by_id(browser.contents, 'publishings'))
-  breezy-autotest i386 Release:
-  Published version 1.0-1 in component partner and section devel
+  1.0-1
+  PUBLISHED:
+  breezy-autotest i386
+  pocket Release
+  in component partner
+  and section devel
+  Published
+  on 2007-08-09
 
 It also provides a link to the currently published version:
   >>> browser.getLink("1.0-1").click()

@@ -43,11 +43,34 @@ Let's have a look at the firefox DistributionSourcePackage.
   # Let's go to the next batch, where we can see it.
   >>> browser.getLink("Next").click()
   >>> browser.getLink("mozilla-firefox").click()
-
+  >>> print browser.url
+  http://localhost/ubuntu/+source/mozilla-firefox
 
 There we can see the entire publishing history for the source and
-links to the pages with more specific (useful) information. By
-clicking in the 'target' distroseries we will get to the
+links to the pages with more specific (useful) information.
+
+  >>> browser.getLink("Show publishing history").click()
+  >>> print extract_text(find_tag_by_id(browser.contents, 'publishings'))
+  0.9
+  PENDING:
+  WartyII
+  pocket Release
+  in component main
+  and section editors
+  0.9
+  PUBLISHED:
+  WartyII
+  pocket Release
+  in component main
+  and section web
+  Published
+  on 2004-09-27
+
+Jump back to the DistributionSourcePackage page to continue the tests:
+
+  >>> browser.open('http://localhost/ubuntu/+source/mozilla-firefox')
+
+By clicking in the 'target' distroseries we will get to the
 SourcePackage page:
 
   >>> browser.getLink("warty").click()

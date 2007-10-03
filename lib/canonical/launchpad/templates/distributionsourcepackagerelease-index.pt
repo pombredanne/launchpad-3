@@ -42,24 +42,11 @@
   <div tal:replace="structure context/sourcepackagerelease/@@+portlet-builds" />
 
   <h2>Publishing history</h2>
-  <table class="listing">
-  <thead>
-  <tr>
-    <th>Time</th>
-    <th>Status</th>
-    <th>Target</th>
-    <th>Pocket</th>
-    <th>Component</th>
-    <th>Section</th>
-    <th>Version</th>
-  </tr>
-  </thead>
-  <tbody>
-  <tal:block repeat="publishing context/publishing_history"
-             replace="structure publishing/@@+listing-detailed">
-  </tal:block>
-  </tbody>
-  </table>
+  <div id='publishings'>
+    <tal:block repeat="publishing context/publishing_history"
+               replace="structure publishing/@@+listing-detailed">
+    </tal:block>
+  </div>
 
   <h2>Download</h2>
 
