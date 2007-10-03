@@ -354,6 +354,24 @@ isn't lost.
     None
 
 
+=== Reporter already registered in Launchpad ===
+
+Even if the reporter of the bug has an account in Launchpad (and thus a
+valid e-mail address), he still won't be subscribed to the imported bug.
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv.preferredemail is not None
+    True
+    >>> no_priv_bug = TestDebianBug(
+    ...     reporter_email=no_priv.preferredemail.email)
+    >>> external_debbugs = TestDebBugs(debbugs, {'1234': no_priv_bug})
+    >>> bug = external_debbugs.createLaunchpadBug(debian, '1234')
+    >>> bug.owner.name
+    u'no-priv'
+    >>> [person.name for person in bug.getDirectSubscribers()]
+    []
+
+
 == Wrapping up ==
 
 Restore the database path:
