@@ -541,7 +541,8 @@ class PersonAccountToMergeVocabulary(
         return obj in self._select()
 
     def _select(self, text=""):
-        return getUtility(IPersonSet).findPerson(text)
+        return getUtility(IPersonSet).findPerson(
+            text, exclude_inactive_accounts=False)
 
     def search(self, text):
         """Return people whose fti or email address match :text."""

@@ -26,10 +26,8 @@
               }+id/${context/openid_identifier}"
           />
     </tal:valid_person_or_team>
-    <tal:not-team condition="not: context/isTeam">
-      <meta tal:condition="not: context/account_status/enumvalue:ACTIVE"
-            name="robots" content="noindex,nofollow" />
-    </tal:not-team>
+    <meta tal:condition="not: context/is_valid_person_or_team"
+          name="robots" content="noindex,nofollow" />
   </tal:block>
 </head>
 
