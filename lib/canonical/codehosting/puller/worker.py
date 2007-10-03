@@ -355,11 +355,6 @@ class PullerWorker:
             # Do not record OOPS for those exceptions.
             raise
 
-        except:
-            # Any exception not handled specially is recorded as OOPS.
-            self.protocol.mirrorFailed(self, sys.exc_info()[1])
-            raise
-
         else:
             last_rev = self._dest_branch.last_revision()
             if last_rev is None:

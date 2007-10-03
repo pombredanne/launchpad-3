@@ -85,15 +85,6 @@ class TestBranchPuller(BranchTestCase):
         self.assertEqual('', stdout)
         self.assertEqual('', stderr)
 
-    def createTemporaryBazaarBranchAndTree(self, base_directory='.'):
-        """Create a local branch with one revision, return the working tree."""
-        tree = self.make_branch_and_tree(base_directory)
-        self.local_branch = tree.branch
-        self.build_tree([os.path.join(base_directory, 'foo')])
-        tree.add('foo')
-        tree.commit('Added foo', rev_id='rev1')
-        return tree
-
     def getHostedPath(self, branch):
         """Return the path of 'branch' in the upload area."""
         return os.path.join(

@@ -1,20 +1,17 @@
 import logging
 import os
-import shutil
-import tempfile
 import unittest
 
-import bzrlib
+from bzrlib.branch import Branch
+from bzrlib.urlutils import local_path_to_url
 
 from twisted.internet import defer, error
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.codehosting import branch_id_to_path
-from canonical.launchpad.interfaces import BranchType
-from canonical.codehosting.tests.helpers import create_branch
 from canonical.codehosting.puller import scheduler
-from canonical.authserver.tests.harness import AuthserverTacTestSetup
+from canonical.codehosting.tests.helpers import BranchTestCase
+from canonical.launchpad.interfaces import BranchType
 from canonical.testing import LaunchpadZopelessLayer, reset_logging
 
 
@@ -221,7 +218,7 @@ class TestPullerMasterProtocol(TrialTestCase):
 #         return deferred.addCallback(check_failure)
 
 
-class TestMirroringEvents(TrialTestCase):
+class TestPullerMaster(TrialTestCase):
     layer = LaunchpadZopelessLayer
 
     class BranchStatusClient:
@@ -242,7 +239,7 @@ class TestMirroringEvents(TrialTestCase):
             return defer.succeed(None)
 
     def setUp(self):
-        self.status_client = TestMirroringEvents.BranchStatusClient()
+        self.status_client = TestPullerMaster.BranchStatusClient()
         self.arbitrary_branch_id = 1
         self.eventHandler = scheduler.PullerMaster(
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
@@ -292,6 +289,54 @@ class TestMirroringEvents(TrialTestCase):
                 self.status_client.calls)
         return deferred.addCallback(checkMirrorFailed)
 
+
+class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
+    """Tests for the puller master that launch sub-processes."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        BranchTestCase.setUp(self)
+        self.db_branch = self.makeBranch(BranchType.HOSTED)
+        self.bzr_tree = self.createTemporaryBazaarBranchAndTree('src-branch')
+        self.client = TestPullerMaster.BranchStatusClient()
+
+    def run(self, result):
+        # We want to use Trial's run() method so we can return Deferreds.
+        return TrialTestCase.run(self, result)
+
+    def _dumpError(self, failure):
+        # XXX - it would be nice if we didn't have to do this manually, if
+        # instead the test gave us the full error automatically.
+        error = getattr(failure, 'error', 'No stderr stored.')
+        print error
+        return failure
+
+    def test_mirror(self):
+        revision_id = self.bzr_tree.branch.last_revision()
+        puller_master = scheduler.PullerMaster(
+            self.db_branch.id, local_path_to_url('src-branch'),
+            self.db_branch.unique_name, self.db_branch.branch_type,
+            logging.getLogger(), self.client)
+        puller_master.destination_url = os.path.abspath('dest-branch')
+        deferred = puller_master.mirror().addErrback(self._dumpError)
+
+        def check_authserver_called(ignored):
+            self.assertEqual(
+                [('startMirroring', self.db_branch.id),
+                 ('mirrorComplete', self.db_branch.id, revision_id)],
+                self.client.calls)
+            return ignored
+        deferred.addCallback(check_authserver_called)
+
+        def check_branch_mirrored(ignored):
+            self.assertEqual(
+                revision_id,
+                Branch.open(puller_master.destination_url).last_revision())
+            return ignored
+        deferred.addCallback(check_branch_mirrored)
+
+        return deferred
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
