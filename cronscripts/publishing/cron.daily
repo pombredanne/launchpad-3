@@ -139,8 +139,9 @@ for CANDIDATE in $SIGNLIST_PARTNER; do
 done
 
 # Generate the -commercial pocket for backwards compatibility with
-# dapper, edgy and feisty releases.
-commercial-compat.sh
+# dapper, edgy and feisty releases.  Don't fail the whole script if it
+# fails.
+commercial-compat.sh || true
 
 # The Packages and Sources files are very large and would cripple our
 # mirrors, so we remove them now that the uncompressed MD5SUMS are in the
