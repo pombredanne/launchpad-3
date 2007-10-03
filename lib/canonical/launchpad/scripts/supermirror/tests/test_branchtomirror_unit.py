@@ -1,12 +1,12 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""Unit tests for branchtomirror.py."""
+"""Tests for utilities in worker.py"""
 
 __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.scripts.supermirror import branchtomirror
+from canonical.launchpad.scripts.supermirror import worker
 from canonical.launchpad.database import Branch
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing import LaunchpadZopelessLayer
@@ -54,7 +54,7 @@ class IdenticalFormatsTestCase(unittest.TestCase):
         # identical_formats should return True when both branches have the same
         # bzrdir, repository, and branch formats.
         self.failUnless(
-            branchtomirror.identical_formats(
+            worker.identical_formats(
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA()),
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA())))
 
@@ -62,7 +62,7 @@ class IdenticalFormatsTestCase(unittest.TestCase):
         # identical_formats should return False when both branches have the
         # different bzrdir formats.
         self.failIf(
-            branchtomirror.identical_formats(
+            worker.identical_formats(
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA()),
                 StubBranch(BzrDirFormatB(), RepoFormatA(), BranchFormatA())))
 
@@ -70,7 +70,7 @@ class IdenticalFormatsTestCase(unittest.TestCase):
         # identical_formats should return False when both branches have the
         # different repository formats.
         self.failIf(
-            branchtomirror.identical_formats(
+            worker.identical_formats(
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA()),
                 StubBranch(BzrDirFormatA(), RepoFormatB(), BranchFormatA())))
 
@@ -78,7 +78,7 @@ class IdenticalFormatsTestCase(unittest.TestCase):
         # identical_formats should return False when both branches have the
         # different branch formats.
         self.failIf(
-            branchtomirror.identical_formats(
+            worker.identical_formats(
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA()),
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatB())))
 
@@ -100,7 +100,7 @@ class TestCanonicalUrl(unittest.TestCase):
         # the canonical one.
         self.assertEqual(
             canonical_url(branch),
-            branchtomirror.get_canonical_url(unique_name))
+            worker.get_canonical_url(unique_name))
 
 
 def test_suite():

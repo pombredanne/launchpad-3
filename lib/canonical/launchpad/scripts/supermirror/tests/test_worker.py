@@ -1,6 +1,6 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""Functional tests for branchtomirror.py."""
+"""Unit tests for worker.py."""
 
 __metaclass__ = type
 
@@ -26,17 +26,15 @@ from bzrlib.errors import (
     BzrError, UnsupportedFormatError, UnknownFormatError, ParamikoNotPresent,
     NotBranchError)
 
-import transaction
-
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.scripts.supermirror.tests import createbranch
-from canonical.launchpad.scripts.supermirror.branchtomirror import (
+from canonical.launchpad.scripts.supermirror.worker import (
     BranchToMirror, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
     BranchReferenceForbidden, BranchReferenceValueError, PullerWorkerProtocol)
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
-from canonical.testing import LaunchpadFunctionalLayer, reset_logging
+from canonical.testing import LaunchpadZopelessLayer, reset_logging
 
 
 class BranchToMirrorMixin:
@@ -72,7 +70,7 @@ class BranchToMirrorMixin:
 class TestBranchToMirror(unittest.TestCase, BranchToMirrorMixin):
     """Test the mirroring functionality of BranchToMirror."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     test_dir = None
 
@@ -85,7 +83,6 @@ class TestBranchToMirror(unittest.TestCase, BranchToMirrorMixin):
         logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):
-        transaction.abort()
         self.authserver.tearDown()
         BranchToMirrorMixin.tearDown(self)
 
@@ -117,7 +114,7 @@ class TestBranchToMirror(unittest.TestCase, BranchToMirrorMixin):
 
 class TestBranchToMirrorFormats(TestCaseWithRepository, BranchToMirrorMixin):
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(TestBranchToMirrorFormats, self).setUp()
@@ -208,7 +205,7 @@ class TestBranchToMirrorFormats(TestCaseWithRepository, BranchToMirrorMixin):
 class TestBranchToMirror_SourceProblems(TestCaseInTempDir,
                                         BranchToMirrorMixin):
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         TestCaseInTempDir.setUp(self)
