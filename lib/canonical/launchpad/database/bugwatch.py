@@ -27,8 +27,9 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.uri import find_uris_in_text
 
 from canonical.launchpad.interfaces import (
-    IBugWatch, IBugWatchSet, IBugTrackerSet, ILaunchpadCelebrities,
-    NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL)
+    BugWatchErrorType, IBugWatch, IBugWatchSet, IBugTrackerSet,
+    ILaunchpadCelebrities, NoBugTrackerFound, NotFoundError,
+    UnrecognizedBugTrackerURL)
 from canonical.launchpad.database.bugset import BugSetBase
 
 
@@ -45,6 +46,7 @@ class BugWatch(SQLBase):
     lastchecked = UtcDateTimeCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    lasterror = EnumCol(dbName='lasterror', schema=BugWatchErrorType)
 
     # useful joins
     bugtasks = SQLMultipleJoin('BugTask', joinColumn='bugwatch',
