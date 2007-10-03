@@ -1094,6 +1094,8 @@ sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
 sourcepackage_packaging = ContextTitle('%s upstream links')
 
+sourcepackage_export = ContextTitle('Download translations for "%s"')
+
 def sourcepackage_index(context, view):
     return '%s source packages' % context.distroseries.title
 
