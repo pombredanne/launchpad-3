@@ -258,35 +258,35 @@ class TestPullerMasterProtocol(TrialTestCase):
 
         return self.termination_deferred
 
-    def test_unrecognizedMessage(self):
-        """The protocol notifies the listener when it receives an unrecognized
-        message.
-        """
-        # XXX: How do we best deal with the aberrant child process?
-        self.protocol.outReceived(self.convertToNetstring('foo'))
+#     def test_unrecognizedMessage(self):
+#         """The protocol notifies the listener when it receives an unrecognized
+#         message.
+#         """
+#         # XXX: How do we best deal with the aberrant child process?
+#         self.protocol.outReceived(self.convertToNetstring('foo'))
 
-        def check_failure(exception):
-            self.assertTrue('foo' in str(exception))
+#         def check_failure(exception):
+#             self.assertTrue('foo' in str(exception))
 
-        deferred = self.assertFailure(
-            self.termination_deferred, jobmanager.BadMessage)
+#         deferred = self.assertFailure(
+#             self.termination_deferred, jobmanager.BadMessage)
 
-        return deferred.addCallback(check_failure)
+#         return deferred.addCallback(check_failure)
 
-    def test_invalidNetstring(self):
-        """The protocol terminates the session if it receives an unparsable
-        netstring.
-        """
-        # XXX: How do we best deal with the aberrant child process?
-        self.protocol.outReceived('foo')
+#     def test_invalidNetstring(self):
+#         """The protocol terminates the session if it receives an unparsable
+#         netstring.
+#         """
+#         # XXX: How do we best deal with the aberrant child process?
+#         self.protocol.outReceived('foo')
 
-        def check_failure(exception):
-            self.assertTrue('foo' in str(exception))
+#         def check_failure(exception):
+#             self.assertTrue('foo' in str(exception))
 
-        deferred = self.assertFailure(
-            self.termination_deferred, jobmanager.BadMessage)
+#         deferred = self.assertFailure(
+#             self.termination_deferred, jobmanager.BadMessage)
 
-        return deferred.addCallback(check_failure)
+#         return deferred.addCallback(check_failure)
 
 
 class TestMirroringEvents(TrialTestCase):
