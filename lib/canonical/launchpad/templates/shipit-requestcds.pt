@@ -20,7 +20,7 @@
 <table>
 <tbody>
 <tr>
-<td width="75%" style="vertical-align: top;" id="main-content">
+<td width="75%" style="vertical-align: top;" id="maincontent">
 
 <tal:shipit-is-open condition="view/is_open" define="user view/user">
 
