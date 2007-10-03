@@ -17,8 +17,10 @@ __all__ = [
     ]
 
 from datetime import datetime
+import time
 
 from zope.app.pagetemplate import ViewPageTemplateFile
+from zope.app.datetimeutils import rfc1123_date 
 
 # XXX - bac - 20 Sept 2007, modules in canonical.lazr should not import from
 # canonical.launchpad, but we're doing it here as an expediency to get a
@@ -106,19 +108,40 @@ class FeedBase(LaunchpadFormView):
         #return "%sZ" % datetime.utcnow().isoformat()
         return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    @property
-    def template(self):
-        template_file = self.template_files.get(self.format)
-        if template_file is not None:
-            return ViewPageTemplateFile(template_file)
+
+    def render(self):
+        expires = rfc1123_date(time.time() + self.max_age)
+        # self.getUpdated() can't run until after initialize() runs
+        last_modified = rfc1123_date(
+                            time.mktime(self.getUpdated().timetuple()))
+        response = self.request.response
+        response.setHeader('Expires', expires)
+        response.setHeader('Cache-Control', 'max-age=%d' % self.max_age)
+        response.setHeader('X-Cache-Control', 'max-age=%d' % self.max_age)
+        response.setHeader('Last-Modified', last_modified)
+
+        if self.format == 'atom':
+            return self.renderAtom()
+        elif self.format == 'html':
+            return self.renderHTML()
         else:
             raise NotImplementedError, "Format %s is not implemented" % self.format
 
-    def render(self):
+    def renderAtom(self):
+        '''Render the object as an Atom feed.
+        Override this as opposed to overriding render().'''
         # XXX, bac - This call looks funny, but the callable template must be
         # passed a reference to the view.  The first use of self is to
         # reference the property.
-        return self.template(self)
+        return ViewPageTemplateFile(self.template_files['atom'])(self)
+
+    def renderHTML(self):
+        '''Render the object as an html feed.
+        Override this as opposed to overriding render().'''
+        # XXX, bac - This call looks funny, but the callable template must be
+        # passed a reference to the view.  The first use of self is to
+        # reference the property.
+        return ViewPageTemplateFile(self.template_files['html'])(self)
 
 class FeedEntry:
     """An entry for a feed.
