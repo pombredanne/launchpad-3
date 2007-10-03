@@ -86,7 +86,7 @@ class CodeImportSync:
         Series for non-MAIN CVS branches are also ignored because we do not
         support imports from non-MAIN CVS branches.
         """
-        series_iterator = getUtility(IProductSeriesSet).search(forimport=True)
+        series_iterator = getUtility(IProductSeriesSet).searchImports()
         for series in series_iterator:
             if series.importstatus in (ImportStatus.DONTSYNC,
                                        ImportStatus.TESTFAILED):

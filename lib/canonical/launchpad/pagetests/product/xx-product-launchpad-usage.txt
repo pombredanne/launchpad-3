@@ -32,9 +32,8 @@ Only the product registrant and the admins have access to this page.
 
 so let's use Sample Person, the registrant of Firefox..
 
-    >>> registrant_browser = browser
-    >>> registrant_browser.addHeader(
-    ...     'Authorization', 'Basic test@canonical.com:test')
+    >>> registrant_browser = setupBrowser(
+    ...     auth='Basic test@canonical.com:test')
     >>> registrant_browser.open('http://launchpad.dev/firefox')
     >>> registrant_browser.getLink('Change details').click()
     >>> registrant_browser.url
