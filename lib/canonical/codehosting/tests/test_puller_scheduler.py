@@ -338,5 +338,6 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
 
         return deferred
 
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
