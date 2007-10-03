@@ -31,13 +31,6 @@ div.revision p {
 
       <div style="float: right">
         <tal:big-badges replace="structure context/badges:large"/>
-        <img
-          tal:condition="context/private"
-          alt="(Private branch)"
-          id="privatebadge"
-          src="/@@/private-large"
-          title="This branch is private"
-        />
       </div>
 
   <h1>
