@@ -784,13 +784,17 @@ class ActiveMailingListVocabulary:
         return (team_list is not None and
                 team_list.status == MailingListStatus.ACTIVE)
 
+    def toTerm(self, team_list):
+        """Turn the team mailing list into a SimpleTerm."""
+        return SimpleTerm(team_list, team_list.team.name,
+                          team_list.team.displayname)
+
     def getTerm(self, obj):
         """See `IBaseVocabulary`."""
         team_list = self._getTeamList(obj)
         if team_list is None or team_list.status != MailingListStatus.ACTIVE:
             raise LookupError(obj)
-        return SimpleTerm(team_list, team_list.team.name,
-                          team_list.team.displayname)
+        return self.toTerm(team_list)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
@@ -823,6 +827,11 @@ class ActiveMailingListVocabulary:
             """ % sqlvalues(text, MailingListStatus.ACTIVE),
             clauseTables=['Person'])
         return name_matches
+
+    def searchForTerms(self, query=None):
+        """See `IHugeVocabulary`."""
+        results = self.search(query)
+        return CountableIterator(results.count(), results, self.toTerm)
 
 
 def person_team_participations_vocabulary_factory(context):

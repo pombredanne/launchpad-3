@@ -55,6 +55,10 @@ The active mailing lists vocabulary matches and returns only those mailing
 lists which are active.
 
     >>> list_vocabulary = vocabulary_registry.get(None, 'ActiveMailingList')
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+    >>> verifyObject(IHugeVocabulary, list_vocabulary)
+    True
     >>> list_vocabulary.displayname
     'Select an active mailing list.'
 
@@ -138,6 +142,18 @@ If given, the search term matches the team name.
     >>> sorted(mailing_list.team.displayname
     ...        for mailing_list in list_vocabulary.search('player'))
     [u'Bass Players', u'Guitar Players']
+
+The IHugeVocabulary interface also requires a search method that returns a
+CountableIterator.
+
+    >>> iter = list_vocabulary.searchForTerms('player')
+    >>> from canonical.launchpad.webapp.vocabulary import CountableIterator
+    >>> isinstance(iter, CountableIterator)
+    True
+    >>> sorted((term.value.team.name, term.token, term.title)
+    ...         for term in iter)
+    [(u'bass-players', 'bass-players', u'Bass Players'),
+     (u'guitar-players', 'guitar-players', u'Guitar Players')]
 
 The vocabulary supports accessing mailing lists by 'term', where the term can
 be either a team or a mailing list.  The returned term's value is the mailing
