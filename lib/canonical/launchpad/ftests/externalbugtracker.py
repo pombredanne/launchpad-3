@@ -8,7 +8,8 @@ import os
 import re
 
 from canonical.launchpad.components.externalbugtracker import (
-    Bugzilla, ExternalBugTracker, Mantis, Trac, Roundup, SourceForge)
+    Bugzilla, BugTrackerConnectError, ExternalBugTracker, Mantis, Trac,
+    Roundup, SourceForge)
 
 
 def read_test_file(name):
@@ -74,8 +75,9 @@ class TestBrokenExternalBugTracker(ExternalBugTracker):
     """A test version of ExternalBugTracker, designed to break."""
 
     def __init__(self, baseurl):
-        initialize_remote_bugdb_error = None
-        get_remote_status_error = None
+        self.baseurl = baseurl
+        self.initialize_remote_bugdb_error = None
+        self.get_remote_status_error = None
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
@@ -84,7 +86,13 @@ class TestBrokenExternalBugTracker(ExternalBugTracker):
         raised.  If no such error exists, None will be returned.
         """
         if self.initialize_remote_bugdb_error:
-            raise self.initialize_remote_bugdb_error
+            # We have to special case BugTrackerConnectError as it takes
+            # two non-optional arguments.
+            if self.initialize_remote_bugdb_error is BugTrackerConnectError:
+                raise self.initialize_remote_bugdb_error(
+                    "http://example.com", "Testing")
+            else:
+                raise self.initialize_remote_bugdb_error("Testing")
 
     def getRemoteStatus(self, bug_id):
         """See `ExternalBugTracker`.
@@ -93,7 +101,7 @@ class TestBrokenExternalBugTracker(ExternalBugTracker):
         If no such error exists, None will be returned.
         """
         if self.get_remote_status_error:
-            raise self.get_remote_status_error
+            raise self.get_remote_status_error("Testing")
 
 
 class TestBugzilla(Bugzilla):
