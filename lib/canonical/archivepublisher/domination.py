@@ -371,19 +371,26 @@ class Dominator:
             flush_database_updates()
             cur.execute("DROP TABLE PubDomHelper")
 
-        sources = SecureSourcePackagePublishingHistory.selectBy(
-            distroseries=dr, archive=self.archive, pocket=pocket,
-            status=PackagePublishingStatus.SUPERSEDED)
+        dominate_status = [
+            PackagePublishingStatus.SUPERSEDED,
+            PackagePublishingStatus.DELETED,
+            ]
+
+        sources = SecureSourcePackagePublishingHistory.select("""
+            securesourcepackagepublishinghistory.distrorelease = %s AND
+            securesourcepackagepublishinghistory.archive = %s AND
+            securesourcepackagepublishinghistory.pocket = %s AND
+            securesourcepackagepublishinghistory.status IN %s
+            """ % sqlvalues(dr, self.archive, pocket, dominate_status))
 
         binaries = SecureBinaryPackagePublishingHistory.select("""
             securebinarypackagepublishinghistory.distroarchrelease =
                 distroarchrelease.id AND
             distroarchrelease.distrorelease = %s AND
             securebinarypackagepublishinghistory.archive = %s AND
-            securebinarypackagepublishinghistory.status = %s AND
-            securebinarypackagepublishinghistory.pocket = %s""" %
-            sqlvalues(dr, self.archive,
-                      PackagePublishingStatus.SUPERSEDED, pocket),
+            securebinarypackagepublishinghistory.pocket = %s AND
+            securebinarypackagepublishinghistory.status IN %s
+            """ % sqlvalues(dr, self.archive, pocket, dominate_status),
             clauseTables=['DistroArchRelease'])
 
         self._judgeSuperseded(sources, binaries, config)
