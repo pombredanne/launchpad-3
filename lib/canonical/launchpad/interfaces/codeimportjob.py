@@ -94,9 +94,45 @@ class ICodeImportJob(Interface):
         required=False, readonly=False,
         description=_("When the import began to be processed."))
 
+    def assign(machine):
+        """Assign this job to the given machine."""
+
+    def request(requesting_user):
+        """Request that this job be performed immediately.
+
+        """
+
+    def kill(killing_user):
+        """Delete this record and stop the job as soon as possible.
+
+        """
+
+    def start():
+        """Record that this job is starting. """
+
+    def finish(result_status, log_file_alias):
+        """Record that this job jas finished and create a CodeImportResult.
+
+        """
+
+    def beat(logtail):
+        """Update the heartbeat to the current time and record the log tail.
+
+        """
+
 
 class ICodeImportJobSet(Interface):
-    """XXX."""
+    """The set of pending and active code import jobs."""
 
-    def new(code_import):
-        """XXX."""
+    def new(code_import, due_date):
+        """Create a PENDING CodeImportJob scheduled for the given time."""
+
+    def jobForImport(code_import):
+        """Return the job for the given active import.
+
+        """
+
+    def jobsForMachine(self, machine):
+        """Find the jobs for this machine in priority order.
+
+        """

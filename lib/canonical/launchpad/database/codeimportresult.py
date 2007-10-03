@@ -1,6 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Database classes for the CodeImportResult table."""
 
 __metaclass__ = type
 __all__ = ['CodeImportResult', 'CodeImportResultSet']
@@ -42,7 +42,17 @@ class CodeImportResult(SQLBase):
 
     date_started = UtcDateTimeCol(notNull=True)
 
+
 class CodeImportResultSet(object):
     """See `ICodeImportResultSet`."""
 
     implements(ICodeImportResultSet)
+
+    def getAll():
+        """See `ICodeImportResultSet`."""
+
+    def getForImport(code_import):
+        """See `ICodeImportResultSet`."""
+
+    def getForMachine(machine):
+        """See `ICodeImportResultSet`."""

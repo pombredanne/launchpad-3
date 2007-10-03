@@ -1,6 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Database classes for the CodeImportJob table."""
 
 __metaclass__ = type
 __all__ = ['CodeImportJob', 'CodeImportJobSet']
@@ -48,10 +48,38 @@ class CodeImportJob(SQLBase):
 
     date_started = UtcDateTimeCol(notNull=False, default=None)
 
+    def assign(machine):
+        """See `ICodeImportJob`."""
+
+    def request(requesting_user):
+        """See `ICodeImportJob`."""
+
+    def kill(killing_user):
+        """See `ICodeImportJob`."""
+
+    def start():
+        """See `ICodeImportJob`."""
+
+    def finish(result_status, log_file_alias):
+        """See `ICodeImportJob`."""
+
+    def beat(logtail):
+        """See `ICodeImportJob`."""
+
+
 class CodeImportJobSet(object):
     """See `ICodeImportJobSet`."""
 
     implements(ICodeImportJobSet)
 
-    def new(self, code_import):
-        pass
+    def new(self, code_import, due_date):
+        """See `ICodeImportJobSet`."""
+        return CodeImportJob(code_import=code_import,
+                             due_date=due_date)
+
+
+    def jobForImport(code_import):
+        """See `ICodeImportJobSet`."""
+
+    def jobsForMachine(self, machine):
+        """See `ICodeImportJobSet`."""

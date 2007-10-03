@@ -1,6 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Interface classes for CodeImportResults, i.e. completed code import jobs."""
 
 __metaclass__ = type
 __all__ = [
@@ -125,4 +125,13 @@ class ICodeImportResult(Interface):
 
 
 class ICodeImportResultSet(Interface):
-    """XXX."""
+    """The set of all CodeImportResults."""
+
+    def getAll():
+        """Fetch all results, most recent first."""
+
+    def getForImport(code_import):
+        """Fetch the results for the given import, most recent first."""
+
+    def getForMachine(machine):
+        """Fetch the results for the given machine, most recent first."""
