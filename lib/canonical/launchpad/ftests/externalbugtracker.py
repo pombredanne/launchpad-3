@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 
-def new_bugtracker(bugtracker_type):
+def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
     """Create a new bug tracker using the 'launchpad db user.
 
     Before calling this function, the current transaction should be
@@ -31,11 +31,13 @@ def new_bugtracker(bugtracker_type):
     LaunchpadZopelessLayer.switchDbUser('launchpad')
     owner = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
     name = '%s-checkwatches' % (bugtracker_type.name.lower(),)
+    while getUtility(IBugTrackerSet).getByName(name) is not None:
+        name += '-other'
     bugtracker = BugTracker(
         name=name,
         title='%s *TESTING*' % (bugtracker_type.title,),
         bugtrackertype=bugtracker_type,
-        baseurl='http://bugs.some.where/',
+        baseurl=base_url,
         summary='-', contactdetails='-',
         owner=owner)
     commit()

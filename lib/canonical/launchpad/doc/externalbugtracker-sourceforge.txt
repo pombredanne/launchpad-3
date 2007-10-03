@@ -12,11 +12,14 @@ externalbugtracker.SourceForge, which implements IExternalBugTracker.
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     SourceForge)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
     >>> from canonical.launchpad.interfaces.externalbugtracker import (
     ...     IExternalBugtracker)
+    >>> from canonical.lp.dbschema import BugTrackerType
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(IExternalBugtracker,
-    ...     SourceForge('http://sourceforge.net/'))
+    ...     SourceForge(new_bugtracker(BugTrackerType.SOURCEFORGE)))
     True
 
 At present, the SourceForge support is disabled until the
@@ -26,9 +29,6 @@ tracker is passed to it.
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     get_external_bugtracker)
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     new_bugtracker)
-    >>> from canonical.lp.dbschema import BugTrackerType
     >>> from canonical.launchpad.interfaces import IPersonSet
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
@@ -46,7 +46,7 @@ tracker is passed to it.
 The SourceForge bug status/resolution combinations map to Launchpad bug
 statuses. SourceForge.convertRemoteStatus() handles the conversion.
 
-    >>> sourceforge = SourceForge('http://sourceforge.eggs')
+    >>> sourceforge = SourceForge(new_bugtracker(BugTrackerType.SOURCEFORGE))
     >>> sourceforge.convertRemoteStatus('Open').title
     'New'
     >>> sourceforge.convertRemoteStatus('Closed').title
@@ -112,7 +112,8 @@ rely on a working network connection.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestSourceForge, print_bugwatches)
-    >>> sourceforge = TestSourceForge('http://test.sourceforge')
+    >>> sourceforge = TestSourceForge(
+    ...     new_bugtracker(BugTrackerType.SOURCEFORGE))
     >>> sourceforge.initializeRemoteBugDB([1722250])
     >>> sorted(sourceforge.bugs.keys())
     [1722250]
@@ -147,7 +148,7 @@ Launchpad.dev bug #10 is the same bug as reported in example.com bug
 Our SourceForge ExternalBugTracker can now process, and retrieve a
 remote status for, the bug watch that we have created.
 
-    >>> sourceforge = TestSourceForge(example_bug_tracker.baseurl)
+    >>> sourceforge = TestSourceForge(example_bug_tracker)
     >>> sourceforge.updateBugWatches(example_bug_tracker.watches)
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1722250: Open:None
