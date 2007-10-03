@@ -191,8 +191,7 @@ class MailingList(SQLBase):
         for subscription in subscriptions:
             subscription.destroySelf()
 
-    @property
-    def addresses(self):
+    def getAddresses(self):
         """See `IMailingList`."""
         subscriptions = MailingListSubscription.select(
             """mailing_list = %s AND

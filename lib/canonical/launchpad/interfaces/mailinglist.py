@@ -373,11 +373,12 @@ class IMailingList(Interface):
             not own the given email address.
         """
 
-    addresses = Set(
-        title=_('Addresses'),
-        description=_('The set of subscribed email addresses.'),
-        value_type=Object(schema=IEmailAddress),
-        readonly=True)
+    def getAddresses():
+        """Return the set of subscribed email addresses.
+
+        :return: an iterator over the IEmailAddresses for all subscribed
+            members of the mailing list, in no particular order.
+        """
 
 
 class IMailingListSet(Interface):
