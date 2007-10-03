@@ -9,8 +9,10 @@ When a bug report is public, it appears like any other Launchpad page.
     >>> print find_tag_by_id(browser.contents, 'privatebadge')
     None
 
-But when marked private, it gains the standard Launchpad presentation for
-private things.
+But when marked private, it gains the standard Launchpad presentation
+for private things. The date and time at which the bug report was
+marked private and the person who did it is also shown (as a
+title/tooltip):
 
     >>> browser.open("http://bugs.launchpad.dev/firefox/+bug/4/+secrecy")
     >>> browser.getControl("This bug report should be private").selected = True
@@ -20,7 +22,19 @@ private things.
     >>> print find_tag_by_id(browser.contents, 'privatestyle')
     <style.../style>
     >>> print find_tag_by_id(browser.contents, 'privatebadge')
-    <img...>
+    <img... title="This bug report was made private by Foo Bar ... ago"...>
+
+Bugs that are private at the time of their creation (like security
+bugs or where the product requests that bugs are private by default)
+do not record the actor and the date and time the bug was marked
+private because these are the same as the bug owner and creation
+timestamp.
+
+    >>> browser.open("http://launchpad.dev/bugs/14")
+    >>> print find_tag_by_id(browser.contents, 'privatestyle')
+    <style.../style>
+    >>> print find_tag_by_id(browser.contents, 'privatebadge')
+    <img... title="This bug report is private"...>
 
 If you visit the private bugs page through its shortcut URL, we don't
 redirect you unless you are actually able to see the bug. The reason for

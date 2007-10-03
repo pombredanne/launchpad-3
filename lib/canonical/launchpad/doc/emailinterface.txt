@@ -558,6 +558,15 @@ permission to complete the operation will be denied.)
     >>> bug_four.private
     True
 
+A timestamp and the user that sets the bug private is also recorded:
+
+    >>> bug_four.date_made_private
+    datetime.datetime(...)
+    >>> bug_four.who_made_private.name
+    u'name12'
+
+The bug report can also be made public:
+
     >>> submit_commands(bug_four, 'private no')
     >>> bug_four.private
     False
