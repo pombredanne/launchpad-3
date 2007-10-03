@@ -107,7 +107,7 @@ def get_external_bugtracker(bugtracker, version=None):
             bugtracker.name)
 
 def get_bugwatcherrortype_for_error(error):
-    """Return the correct BugWatchErrorType for a given error."""
+    """Return the correct `BugWatchErrorType` for a given error."""
     if isinstance(error, BugTrackerConnectError):
         return BugWatchErrorType.CONNECTIONERROR
     elif isinstance(error, UnparseableBugData):

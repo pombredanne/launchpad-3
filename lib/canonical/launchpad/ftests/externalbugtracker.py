@@ -8,7 +8,7 @@ import os
 import re
 
 from canonical.launchpad.components.externalbugtracker import (
-    Bugzilla, Mantis, Trac, Roundup, SourceForge)
+    Bugzilla, ExternalBugTracker, Mantis, Trac, Roundup, SourceForge)
 
 
 def read_test_file(name):
@@ -68,6 +68,33 @@ def convert_python_status(status, resolution):
     }
 
     return "%s:%s" % (status_map[status], resolution_map[resolution])
+
+
+class TestBrokenExternalBugTracker(ExternalBugTracker):
+    """A test version of ExternalBugTracker, designed to break."""
+
+    def __init__(self, baseurl):
+        initialize_remote_bugdb_error = None
+        get_remote_status_error = None
+
+    def initializeRemoteBugDB(self, bug_ids):
+        """See `ExternalBugTracker`.
+
+        The error specified in initialize_remote_bugdb_error will be
+        raised.  If no such error exists, None will be returned.
+        """
+        if self.initialize_remote_bugdb_error:
+            raise self.initialize_remote_bugdb_error
+
+    def getRemoteStatus(self, bug_id):
+        """See `ExternalBugTracker`.
+
+        The error specified in get_remote_status_error will be raised.
+        If no such error exists, None will be returned.
+        """
+        if self.get_remote_status_error:
+            raise self.get_remote_status_error
+
 
 class TestBugzilla(Bugzilla):
     """Bugzilla ExternalSystem for use in tests.
