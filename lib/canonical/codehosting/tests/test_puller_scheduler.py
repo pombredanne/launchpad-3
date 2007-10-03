@@ -18,7 +18,7 @@ from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.testing import LaunchpadZopelessLayer, reset_logging
 
 
-class TestJobManager(unittest.TestCase):
+class TestJobScheduler(unittest.TestCase):
 
     def setUp(self):
         self.masterlock = 'master.lock'
@@ -33,7 +33,7 @@ class TestJobManager(unittest.TestCase):
         return FakeBranchStatusClient(
             {'HOSTED': hosted, 'MIRRORED': mirrored, 'IMPORTED': imported})
 
-    def makeJobManager(self, branch_type, branch_tuples):
+    def makeJobScheduler(self, branch_type, branch_tuples):
         if branch_type == BranchType.HOSTED:
             client = self.makeFakeClient(branch_tuples, [], [])
         elif branch_type == BranchType.MIRRORED:
@@ -42,11 +42,12 @@ class TestJobManager(unittest.TestCase):
             client = self.makeFakeClient([], [], branch_tuples)
         else:
             self.fail("Unknown branch type: %r" % (branch_type,))
-        return scheduler.JobManager(client, logging.getLogger(), branch_type)
+        return scheduler.JobScheduler(
+            client, logging.getLogger(), branch_type)
 
     def testManagerCreatesLocks(self):
         try:
-            manager = self.makeJobManager(BranchType.HOSTED, [])
+            manager = self.makeJobScheduler(BranchType.HOSTED, [])
             manager.lockfilename = self.masterlock
             manager.lock()
             self.failUnless(os.path.exists(self.masterlock))
@@ -56,10 +57,10 @@ class TestJobManager(unittest.TestCase):
 
     def testManagerEnforcesLocks(self):
         try:
-            manager = self.makeJobManager(BranchType.HOSTED, [])
+            manager = self.makeJobScheduler(BranchType.HOSTED, [])
             manager.lockfilename = self.masterlock
             manager.lock()
-            anothermanager = self.makeJobManager(BranchType.HOSTED, [])
+            anothermanager = self.makeJobScheduler(BranchType.HOSTED, [])
             anothermanager.lockfilename = self.masterlock
             self.assertRaises(scheduler.LockError, anothermanager.lock)
             self.failUnless(os.path.exists(self.masterlock))
@@ -72,7 +73,7 @@ class TestJobManager(unittest.TestCase):
             os.unlink(self.masterlock)
 
 
-class TestJobManagerInLaunchpad(TrialTestCase):
+class TestJobSchedulerInLaunchpad(TrialTestCase):
     layer = LaunchpadZopelessLayer
 
     testdir = None
@@ -92,22 +93,21 @@ class TestJobManagerInLaunchpad(TrialTestCase):
     def _getBranchDir(self, branchname):
         return os.path.join(self.testdir, branchname)
 
-    def assertMirrored(self, branch_to_mirror):
+    def assertMirrored(self, puller_master):
         """Assert that branch_to_mirror's source and destinations have the same
         revisions.
 
-        :param branch_to_mirror: a BranchToMirror instance.
+        :param puller_master: a PullerMaster instance.
         """
-        source_branch = bzrlib.branch.Branch.open(branch_to_mirror.source_url)
-        dest_branch = bzrlib.branch.Branch.open(
-            branch_to_mirror.destination_url)
+        source_branch = bzrlib.branch.Branch.open(puller_master.source_url)
+        dest_branch = bzrlib.branch.Branch.open(puller_master.destination_url)
         self.assertEqual(
             source_branch.last_revision(), dest_branch.last_revision())
 
     def testJobRunner(self):
         return
         client = scheduler.BranchStatusClient()
-        manager = scheduler.JobManager(
+        manager = scheduler.JobScheduler(
             client, logging.getLogger(), BranchType.HOSTED)
 
         branches = [
@@ -131,7 +131,7 @@ class TestJobManagerInLaunchpad(TrialTestCase):
         unique_name = '~testuser/+junk/' + branch_src
         branch_src = os.path.join(self.testdir, branch_src)
         create_branch(branch_src)
-        branch = manager.getBranchToMirror(branch_id, branch_src, unique_name)
+        branch = manager.getPullerMaster(branch_id, branch_src, unique_name)
         branch.destination_url = os.path.join(
             self.testdir, branch_id_to_path(branch_id))
         return branch
@@ -310,7 +310,7 @@ class TestMirroringEvents(TrialTestCase):
     def setUp(self):
         self.status_client = TestMirroringEvents.BranchStatusClient()
         self.arbitrary_branch_id = 1
-        self.eventHandler = scheduler.BranchToMirror(
+        self.eventHandler = scheduler.PullerMaster(
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
             BranchType.HOSTED, logging.getLogger(), self.status_client)
 

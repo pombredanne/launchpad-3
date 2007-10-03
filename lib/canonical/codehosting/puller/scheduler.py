@@ -105,7 +105,7 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
             deferred.errback(reason)
 
 
-class BranchToMirror:
+class PullerMaster:
 
     def __init__(self, branch_id, source_url, unique_name, branch_type,
                  logger, client):
@@ -150,7 +150,7 @@ class BranchToMirror:
             self.branch_id, revision_id)
 
 
-class JobManager:
+class JobScheduler:
     """Schedule and manage the mirroring of branches.
 
     The jobmanager is responsible for organizing the mirroring of all
@@ -165,13 +165,13 @@ class JobManager:
         self.name = 'branch-puller-%s' % branch_type.name.lower()
         self.lockfilename = '/var/lock/launchpad-%s.lock' % self.name
 
-    def _run(self, branches_to_pull):
-        """Run all branches_to_mirror registered with the JobManager"""
+    def _run(self, puller_masters):
+        """Run all branches_to_mirror registered with the JobScheduler."""
         self.logger.info('%d branches to mirror', len(branches_to_pull))
         semaphore = defer.DeferredSemaphore(MAXIMUM_PROCESSES)
         deferreds = [
-            semaphore.run(branch_to_mirror.mirror)
-            for branch_to_mirror in branches_to_pull]
+            semaphore.run(puller_master.mirror)
+            for puller_master in puller_masters]
         deferred = defer.gatherResults(deferreds)
         deferred.addCallback(self._finishedRunning)
         return deferred
@@ -179,7 +179,7 @@ class JobManager:
     def run(self):
         deferred = self.branch_status_client.getBranchPullQueue(
             self.branch_type.name)
-        deferred.addCallback(self.getBranchesToMirror)
+        deferred.addCallback(self.getPullerMasters)
         deferred.addCallback(self._run)
         # XXX: Add an errback to this that records an oops.
         return deferred
@@ -187,15 +187,15 @@ class JobManager:
     def _finishedRunning(self, ignored):
         self.logger.info('Mirroring complete')
 
-    def getBranchToMirror(self, branch_id, branch_src, unique_name):
+    def getPullerMaster(self, branch_id, branch_src, unique_name):
         branch_src = branch_src.strip()
-        return BranchToMirror(
+        return PullerMaster(
             branch_id, branch_src, unique_name, self.branch_type, self.logger,
             self.branch_status_client)
 
-    def getBranchesToMirror(self, branches_to_pull):
+    def getPullerMasters(self, branches_to_pull):
         return [
-            self.getBranchToMirror(*branch) for branch in branches_to_pull]
+            self.getPullerMaster(*branch) for branch in branches_to_pull]
 
     def lock(self):
         self.actualLock = GlobalLock(self.lockfilename)
