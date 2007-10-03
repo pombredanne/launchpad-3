@@ -47,13 +47,26 @@ class BranchStatusClient:
 class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
 
     def __init__(self, deferred, listener):
-        self.deferred = deferred
+        self._termination_deferred = deferred
         self.listener = listener
-        self._deferred = None
+        self._internal_deferred = None
         self._commands = {
             'startMirroring': 0, 'mirrorSucceeded': 1, 'mirrorFailed': 2}
         self._resetState()
         self._stderr = StringIO()
+
+    def _fireTerminationDeferred(self, reason):
+        if self._termination_deferred is None:
+            # We don't want to fire the Deferred twice.
+            return
+        self._termination_deferred, deferred = (
+            None, self._termination_deferred)
+        if reason.check(error.ConnectionDone):
+            deferred.callback(None)
+        else:
+            reason.error = self._stderr.getvalue()
+            self._stderr.truncate(0)
+            deferred.errback(reason)
 
     def _resetState(self):
         self._current_command = None
@@ -76,14 +89,16 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
                 self._resetState()
 
     def do_startMirroring(self):
-        self._deferred = defer.maybeDeferred(self.listener.startMirroring)
+        self._internal_deferred = defer.maybeDeferred(
+            self.listener.startMirroring)
+        self._internal_deferred.addErrback(self.unexpectedError)
 
     def do_mirrorSucceeded(self, latest_revision):
-        self._deferred.addCallback(
+        self._internal_deferred.addCallback(
             lambda ignored: self.listener.mirrorSucceeded(latest_revision))
 
     def do_mirrorFailed(self, reason, oops):
-        self._deferred.addCallback(
+        self._internal_deferred.addCallback(
             lambda ignored: self.listener.mirrorFailed(reason, oops))
 
     def outReceived(self, data):
@@ -94,15 +109,19 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
     def errReceived(self, data):
         self._stderr.write(data)
 
+    def unexpectedError(self, failure):
+        try:
+            self.transport.signalProcess('KILL')
+        except error.ProcessExitedAlready:
+            # The process has already died. Fine.
+            pass
+        print 'GOT UNEXPECTED ERROR', failure
+        failure.printTraceback()
+        self._fireTerminationDeferred(failure)
+
     def processEnded(self, reason):
         ProcessProtocol.processEnded(self, reason)
-        self.deferred, deferred = None, self.deferred
-        if reason.check(error.ConnectionDone):
-            deferred.callback(None)
-        else:
-            reason.error = self._stderr.getvalue()
-            self._stderr.truncate(0)
-            deferred.errback(reason)
+        self._fireTerminationDeferred(reason)
 
 
 class PullerMaster:
@@ -189,6 +208,7 @@ class JobScheduler:
 
     def _finishedRunning(self, ignored):
         self.logger.info('Mirroring complete')
+        return ignored
 
     def getPullerMaster(self, branch_id, branch_src, unique_name):
         branch_src = branch_src.strip()

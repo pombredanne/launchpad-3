@@ -16,13 +16,25 @@ from canonical.testing import LaunchpadZopelessLayer, reset_logging
 
 
 class FakeBranchStatusClient:
-    """A dummy branch status client implementation for testing getBranches()"""
 
-    def __init__(self, branch_queues):
+    def __init__(self, branch_queues=None):
         self.branch_queues = branch_queues
+        self.calls = []
 
     def getBranchPullQueue(self, branch_type):
-        return self.branch_queues[branch_type]
+        return defer.succeed(self.branch_queues[branch_type])
+
+    def startMirroring(self, branch_id):
+        self.calls.append(('startMirroring', branch_id))
+        return defer.succeed(None)
+
+    def mirrorComplete(self, branch_id, revision_id):
+        self.calls.append(('mirrorComplete', branch_id, revision_id))
+        return defer.succeed(None)
+
+    def mirrorFailed(self, branch_id, revision_id):
+        self.calls.append(('mirrorFailed', branch_id, revision_id))
+        return defer.succeed(None)
 
 
 class TestJobScheduler(unittest.TestCase):
@@ -221,25 +233,8 @@ class TestPullerMasterProtocol(TrialTestCase):
 class TestPullerMaster(TrialTestCase):
     layer = LaunchpadZopelessLayer
 
-    class BranchStatusClient:
-
-        def __init__(self):
-            self.calls = []
-
-        def startMirroring(self, branch_id):
-            self.calls.append(('startMirroring', branch_id))
-            return defer.succeed(None)
-
-        def mirrorComplete(self, branch_id, revision_id):
-            self.calls.append(('mirrorComplete', branch_id, revision_id))
-            return defer.succeed(None)
-
-        def mirrorFailed(self, branch_id, revision_id):
-            self.calls.append(('mirrorFailed', branch_id, revision_id))
-            return defer.succeed(None)
-
     def setUp(self):
-        self.status_client = TestPullerMaster.BranchStatusClient()
+        self.status_client = FakeBranchStatusClient()
         self.arbitrary_branch_id = 1
         self.eventHandler = scheduler.PullerMaster(
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
@@ -299,7 +294,7 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         BranchTestCase.setUp(self)
         self.db_branch = self.makeBranch(BranchType.HOSTED)
         self.bzr_tree = self.createTemporaryBazaarBranchAndTree('src-branch')
-        self.client = TestPullerMaster.BranchStatusClient()
+        self.client = FakeBranchStatusClient()
 
     def run(self, result):
         # We want to use Trial's run() method so we can return Deferreds.
