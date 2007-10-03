@@ -28,8 +28,8 @@ __all__ = [
     'BranchReferenceLoopError',
     'BranchReferenceForbidden',
     'BranchReferenceValueError',
-    'BranchToMirror',
     'get_canonical_url',
+    'PullerWorker',
     'PullerWorkerProtocol'
     ]
 
@@ -134,7 +134,7 @@ def identical_formats(branch_one, branch_two):
     )
 
 
-class BranchToMirror:
+class PullerWorker:
     """This class represents a single branch that needs mirroring.
 
     It has a source URL, a destination URL, a database id, a unique name and a
@@ -370,5 +370,5 @@ class BranchToMirror:
         return self.source == other.source and self.dest == other.dest
 
     def __repr__(self):
-        return ("<BranchToMirror source=%s dest=%s at %x>" %
+        return ("<PullerWorker source=%s dest=%s at %x>" %
                 (self.source, self.dest, id(self)))
