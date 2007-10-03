@@ -16,8 +16,8 @@ from zope.event import notify
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IAddBugTaskForm, IBug, IBugTaskSet, IBugTrackerSet, IBugWatchSet,
-    IDistributionSourcePackage, ILaunchBag, ILaunchpadCelebrities,
+    BugTaskStatus, IAddBugTaskForm, IBug, IBugTaskSet, IBugTrackerSet,
+    IBugWatchSet, IDistributionSourcePackage, ILaunchBag, ILaunchpadCelebrities,
     IProductSet, NoBugTrackerFound, validate_new_distrotask,
     valid_upstreamtask)
 from canonical.launchpad.event import SQLObjectCreatedEvent
@@ -26,7 +26,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, LaunchpadFormView, LaunchpadView)
 
-from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
+from canonical.lp.dbschema import BugTaskImportance
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -200,6 +200,24 @@ class ChooseProductStep(AlsoAffectsStep):
         bugtask = self.context
         upstream = self._getUpstream(bugtask.target)
         if upstream is not None:
+            if not upstream.active:
+                # XXX: This is only possible because of bug 140526, which
+                # allows packages to be linked to inactive products.
+                # -- Guilherme Salgado, 2007-09-18
+                series = bugtask.distribution.currentseries
+                assert series is not None, (
+                    "This package is linked to a product series so this "
+                    "package's distribution must have at least one distro "
+                    "series.")
+                sourcepackage = series.getSourcePackage(
+                    bugtask.sourcepackagename)
+                self.request.response.addWarningNotification(_(dedent("""
+                    This package is linked to an inactive upstream.  You
+                    can <a href="%(package_url)s/+edit-packaging">fix it</a>
+                    to avoid this step in the future.""")),
+                    package_url=canonical_url(sourcepackage))
+                return
+
             try:
                 valid_upstreamtask(bugtask.bug, upstream)
             except WidgetsError:

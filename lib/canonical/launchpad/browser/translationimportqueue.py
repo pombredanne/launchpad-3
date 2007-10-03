@@ -23,11 +23,10 @@ from canonical.launchpad.browser.hastranslationimports import (
 from canonical.launchpad.interfaces import (
     IDistroSeries, IEditTranslationImportQueueEntry, ILanguageSet, IPOFileSet,
     IPOTemplateSet, ITranslationImportQueue, ITranslationImportQueueEntry,
-    NotFoundError)
+    NotFoundError, RosettaImportStatus)
 from canonical.launchpad.webapp import (
     GetitemNavigation, canonical_url, LaunchpadFormView, action
     )
-from canonical.lp.dbschema import RosettaImportStatus
 
 class TranslationImportQueueEntryNavigation(GetitemNavigation):
 

@@ -589,61 +589,61 @@ that's what overrides actually do.
     universe
 
 
-=== Commercial archive import ===
+=== Partner archive import ===
 
-Importing the commercial archive requires overriding the component to
-"commercial", which also makes the archive on any publishing records the
-commercial archive.
+Importing the partner archive requires overriding the component to
+"partner", which also makes the archive on any publishing records the
+partner archive.
 
 First get a set of existing publishings for both source and binary:
 
-    >>> comm_archive = ubuntu.getArchiveByComponent('commercial')
+    >>> comm_archive = ubuntu.getArchiveByComponent('partner')
     >>> hoary = ubuntu['hoary']
     >>> hoary_i386 = hoary['i386']
-    >>> commercial_source_set = set(
+    >>> partner_source_set = set(
     ...     SSPPH.select("distrorelease = %s" % sqlvalues(hoary)))
 
-    >>> commercial_binary_set = set(
+    >>> partner_binary_set = set(
     ...     SBPPH.select("distroarchrelease = %s" % sqlvalues(hoary_i386)))
 
-Now run gina to import packages and convert them to commercial:
+Now run gina to import packages and convert them to partner:
 
-    >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q', 'commercial']
+    >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q', 'partner']
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
     >>> proc.wait()
     0
     >>> transaction.commit()
 
-There will now be a number of publishings in the commercial archive:
+There will now be a number of publishings in the partner archive:
 
-    >>> commercial_source_set_after = set(
+    >>> partner_source_set_after = set(
     ...     SSPPH.select("distrorelease = %s" % sqlvalues(hoary)))
 
-    >>> commercial_binary_set_after = set(
+    >>> partner_binary_set_after = set(
     ...     SBPPH.select("distroarchrelease = %s" % sqlvalues(hoary_i386)))
 
-    >>> source_difference = commercial_source_set_after - commercial_source_set
+    >>> source_difference = partner_source_set_after - partner_source_set
     >>> len(source_difference)
     11
 
-    >>> binary_difference = commercial_binary_set_after - commercial_binary_set
+    >>> binary_difference = partner_binary_set_after - partner_binary_set
     >>> len(binary_difference)
     24
 
-All the publishings will also have the 'commercial' component and the
-commercial archive:
+All the publishings will also have the 'partner' component and the
+partner archive:
 
     >>> print set(sspph.component.name for sspph in source_difference)
-    set([u'commercial'])
+    set([u'partner'])
 
     >>> print set(sbpph.component.name for sbpph in binary_difference)
-    set([u'commercial'])
+    set([u'partner'])
 
     >>> print set(sspph.archive.purpose.name for sspph in source_difference)
-    set(['COMMERCIAL'])
+    set(['PARTNER'])
 
     >>> print set(sbpph.archive.purpose.name for sbpph in binary_difference)
-    set(['COMMERCIAL'])
+    set(['PARTNER'])
 
 === Other tests ===
 

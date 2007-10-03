@@ -3,7 +3,7 @@ PO Template Name handling
 
 Regular users are unable to access listing of PO Template Names.
 
-  >>> user_browser.open('http://launchpad.dev/potemplatenames')
+  >>> user_browser.open('http://translations.launchpad.dev/potemplatenames')
   Traceback (most recent call last):
   ...
   Unauthorized:...
@@ -11,14 +11,12 @@ Regular users are unable to access listing of PO Template Names.
 Carlos, one of Rosetta Admins, is able to access list of PO Template
 Names and searches for evolution template in there.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/potemplatenames')
-  >>> print browser.url
-  http://launchpad.dev/potemplatenames
+  >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+  >>> browser.open('http://translations.launchpad.dev/potemplatenames')
   >>> browser.getControl("Search PO template names:").value = 'evo'
   >>> browser.getControl('Search Names').click()
   >>> print browser.url
-  http://launchpad.dev/potemplatenames/+index
+  http://translations.launchpad.dev/potemplatenames/+index
 
 The search results will include evolution-2.2. Lets click on it.
 
@@ -28,16 +26,12 @@ The search results will include evolution-2.2. Lets click on it.
 
 We're now on the page describing 'evolution-2.2' template name.
 
-  >>> print browser.url
-  http://launchpad.dev/potemplatenames/1
   >>> 'Main translation domain for the Evolution 2.2' in browser.contents
   True
 
 Lets edit this PO Template Name.
 
   >>> browser.getLink('Edit template name').click()
-  >>> print browser.url
-  http://launchpad.dev/potemplatenames/1/+edit
   >>> print browser.contents
   <!DOCTYPE...
   ...<title>Edit ...Main translation domain for the Evolution 2.2...
@@ -47,7 +41,7 @@ Submitting PO Template Name edit form returns us to the same page.
   >>> browser.getControl(name='field.translationdomain').value = 'evolution'
   >>> browser.getControl(name='UPDATE_SUBMIT').click()
   >>> print browser.url
-  http://launchpad.dev/potemplatenames/1/+edit
+  http://translations.launchpad.dev/potemplatenames/1/+edit
 
 And the value for translation domain has now changed.
 
@@ -59,9 +53,7 @@ Creating new PO Template Names
 
 Start with PO Template Names creation form.
 
-  >>> browser.open('http://launchpad.dev/potemplatenames/+add')
-  >>> print browser.url
-  http://launchpad.dev/potemplatenames/+add
+  >>> browser.open('http://translations.launchpad.dev/potemplatenames/+add')
 
 Create a new POTemplateName 'foo':
 
@@ -78,7 +70,7 @@ Create a new POTemplateName 'foo':
 And if we try to create a POTemplateName with the same name we get a
 nice error message.
 
-  >>> browser.open('http://launchpad.dev/potemplatenames/+add')
+  >>> browser.open('http://translations.launchpad.dev/potemplatenames/+add')
   >>> browser.getControl(name='field.name').value = 'foo'
   >>> browser.getControl(name='field.title').value = 'foo title'
   >>> browser.getControl(name='field.description').value = 'foo description'
@@ -92,7 +84,7 @@ nice error message.
 If we try to create a POTemplateName with an invalid name (e.g. with an
 underscore) we also get a nice error message.
 
-  >>> browser.open('http://launchpad.dev/potemplatenames/+add')
+  >>> browser.open('http://translations.launchpad.dev/potemplatenames/+add')
   >>> browser.getControl(name='field.name').value = 'foo_bar'
   >>> browser.getControl(name='field.title').value = 'foo title'
   >>> browser.getControl(name='field.description').value = 'foo description'

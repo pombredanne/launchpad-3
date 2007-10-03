@@ -34,7 +34,8 @@
                         hasBranch security_related tags getMessageChunks
                         isSubscribedToDupes getSubscribersFromDuplicates
                         getAlsoNotifiedSubscribers getBugWatch getBugTask
-                        canBeNominatedFor getNominationFor getNominations"
+                        canBeNominatedFor getNominationFor getNominations
+                        date_last_message"
             />
         <require
             permission="launchpad.Edit"

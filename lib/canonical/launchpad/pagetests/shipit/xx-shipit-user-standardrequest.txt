@@ -235,21 +235,25 @@ It's also possible to cancel an existing request.
 
 We have Ubuntu and Kubuntu DVDs on amazon and we'll link to them from shipit.
 
-  >>> browser.open('http://shipit.ubuntu.dev/myrequest')
-  >>> print extract_text(find_tag_by_id(browser.contents, 'amazon-links'))
+  # XXX: Commented out until we get the links to Gutsy DVDs on amazon.com.
+  # -- Guilherme Salgado, 2007-09-24
+  >>> # browser.open('http://shipit.ubuntu.dev/myrequest')
+  >>> # print extract_text(find_tag_by_id(browser.contents, 'amazon-links'))
   Want fast delivery of Ubuntu DVDs?
   If you live in the US, you can order online now!
   Ubuntu 7.04 for PCs
   Ubuntu 7.04 for 64-bit PCs
 
-  >>> browser.open('http://shipit.kubuntu.dev/myrequest')
-  >>> print extract_text(find_tag_by_id(browser.contents, 'amazon-links'))
+  # XXX: Commented out until we get the links to Gutsy DVDs on amazon.com.
+  # -- Guilherme Salgado, 2007-09-24
+  >>> # browser.open('http://shipit.kubuntu.dev/myrequest')
+  >>> # print extract_text(find_tag_by_id(browser.contents, 'amazon-links'))
   Want fast delivery of Kubuntu DVDs?
   If you live in the US, you can order online now!
   Kubuntu 7.04 for PCs
   Kubuntu 7.04 for 64-bit PCs
 
-But we don't yet have Edubuntu DVDs on amason. :-(
+But we don't yet have Edubuntu DVDs on amazon. :-(
 
   >>> browser.open('http://shipit.edubuntu.dev/myrequest')
   >>> print extract_text(find_tag_by_id(browser.contents, 'amazon-links'))

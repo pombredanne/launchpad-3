@@ -33,12 +33,13 @@ from zope.app.content_types import guess_content_type
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
-    IBugSet, IBugActivitySet, IBugAttachmentSet, IBugExternalRefSet,
-    ICveSet, IEmailAddressSet, ILaunchpadCelebrities, PersonCreationRationale,
-    ILibraryFileAliasSet, IMessageSet, IPersonSet, CreateBugParams)
+    BugTaskStatus, CreateBugParams, IBugActivitySet,
+    IBugAttachmentSet, IBugExternalRefSet, IBugSet, IBugTrackerSet,
+    IBugWatchSet, ICveSet, IEmailAddressSet, ILaunchpadCelebrities,
+    ILibraryFileAliasSet, IMessageSet, IPersonSet, NoBugTrackerFound,
+    PersonCreationRationale)
 from canonical.launchpad.scripts.bugexport import BUGS_XMLNS
-from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType)
+from canonical.lp.dbschema import BugTaskImportance, BugAttachmentType
 
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugimport')
@@ -305,6 +306,20 @@ class BugImporter:
         for tagnode in get_all(bugnode, 'tags/tag'):
             tags.append(get_text(tagnode))
         bug.tags = tags
+
+        # Create bugwatches
+        bugwatchset = getUtility(IBugWatchSet)
+        for watchnode in get_all(bugnode, 'bugwatches/bugwatch'):
+            try:
+                bugtracker, remotebug = bugwatchset.extractBugTrackerAndBug(
+                    watchnode.get('href'))
+            except NoBugTrackerFound, exc:
+                logger.debug('Registering bug tracker for %s', exc.base_url)
+                bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
+                    exc.base_url, self.bug_importer, exc.bugtracker_type)
+                remotebug = exc.remote_bug
+            bugwatchset.createBugWatch(
+                bug, self.bug_importer, bugtracker, remotebug)
 
         for subscribernode in get_all(bugnode, 'subscriptions/subscriber'):
             person = self.getPerson(subscribernode)
