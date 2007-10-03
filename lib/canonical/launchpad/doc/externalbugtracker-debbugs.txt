@@ -333,7 +333,26 @@ kept in sync.
     u'322535'
 
 
-XXX: is there a debian bug with non-existent package?
+=== Non-existent source package ===
+
+If a Debian package doesn't exist in Launchpad already, it will be
+filed on Debian itself, with no source package specified. The package is
+always included in the description of Debian bugs, so that information
+isn't lost.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestDebBugs, TestDebianBug)
+    >>> external_debbugs = TestDebBugs(
+    ...     debbugs, {'1234': TestDebianBug(package='not-found')})
+    >>> print debian.getSourcePackage('not-found')
+    None
+    >>> bug = external_debbugs.createLaunchpadBug(debian, '1234')
+    >>> [debian_task] = bug.bugtasks
+    >>> debian_task.distribution.name
+    u'debian'
+    >>> print debian_task.sourcepackagename
+    None
+
 
 == Wrapping up ==
 

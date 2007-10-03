@@ -605,7 +605,9 @@ class DebBugs(ExternalBugTracker):
             reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
             comment='when importing debbugs bug #%s' % remote_bug)
         package = bug_target.getSourcePackage(debian_bug.package)
-        bug = package.createBug(
+        if package is not None:
+            bug_target = package
+        bug = bug_target.createBug(
             CreateBugParams(
                 reporter, debian_bug.subject, debian_bug.description,
                 subscribe_reporter=False))
