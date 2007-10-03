@@ -325,6 +325,10 @@ class Publisher(object):
         os.rename(temp_index, source_index_path)
         os.rename(temp_index_gz, source_index_gz_path)
 
+        # XXX julian 2007-10-03
+        # This is kinda papering over a problem somewhere that causes the
+        # files to get created with permissions that don't allow group/world
+        # read access.  See https://bugs.launchpad.net/soyuz/+bug/148471
         self._makeFileGroupWriteableAndWorldReadable(source_index_path)
         self._makeFileGroupWriteableAndWorldReadable(source_index_gz_path)
 

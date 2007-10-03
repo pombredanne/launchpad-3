@@ -497,7 +497,6 @@ Attempt to retry this build record will fail with an AssertionError:
   ...
   AssertionError: Build 9 can not be retried
 
-
 Partner archive builds are an exception to this rule; they can be retried
 in the release pocket for a released distro.  Let's turn build 9 into a
 partner archive build:

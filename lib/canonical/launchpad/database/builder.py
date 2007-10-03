@@ -300,10 +300,10 @@ class Builder(SQLBase):
                 # required in the primary archive.
                 ubuntu_source_lines = []
                 for pocket in ubuntu_pockets:
-                    if pocket != PackagePublishingPocket.RELEASE:
-                        dist_pocket = dist_name + pocketsuffix[pocket]
-                    else:
+                    if pocket == PackagePublishingPocket.RELEASE:
                         dist_pocket = dist_name
+                    else:
+                        dist_pocket = dist_name + pocketsuffix[pocket]
                     ubuntu_source_lines.append(
                         'deb http://ftpmaster.internal/ubuntu %s %s'
                         % (dist_pocket, ubuntu_components))
