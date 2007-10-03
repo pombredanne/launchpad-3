@@ -40,7 +40,7 @@ if __name__ == '__main__':
             % (branch_type_map.keys(), which))
 
     log = logger(options, 'branch-puller')
-    manager = scheduler.JobManager(BranchStatusClient(), log, branch_type)
+    manager = scheduler.JobScheduler(BranchStatusClient(), log, branch_type)
 
     reactor.callWhenRunning(run_mirror, log, manager)
     reactor.run()

@@ -18,12 +18,6 @@ from canonical.codehosting import branch_id_to_path
 from canonical.config import config
 
 
-MAXIMUM_PROCESSES = 5
-
-# Time in seconds.
-INACTIVITY_TIMEOUT = 5
-
-
 class BranchStatusClient:
     """Twisted client for the branch status methods on the authserver."""
 
@@ -46,7 +40,7 @@ class BranchStatusClient:
 
 class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
 
-    def __init__(self, deferred, timeout_period, listener):
+    def __init__(self, deferred, listener):
         self.deferred = deferred
         self.listener = listener
         self._deferred = None
@@ -125,7 +119,7 @@ class PullerMaster:
                 os.path.dirname(os.path.dirname(canonical.__file__))),
             'scripts/mirror-branch.py')
         deferred = defer.Deferred()
-        protocol = PullerMasterProtocol(deferred, INACTIVITY_TIMEOUT, self)
+        protocol = PullerMasterProtocol(deferred, self)
         command = [
             sys.executable, path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), self.unique_name,
@@ -168,7 +162,8 @@ class JobScheduler:
     def _run(self, puller_masters):
         """Run all branches_to_mirror registered with the JobScheduler."""
         self.logger.info('%d branches to mirror', len(branches_to_pull))
-        semaphore = defer.DeferredSemaphore(MAXIMUM_PROCESSES)
+        semaphore = defer.DeferredSemaphore(
+            config.supermirror.maximum_workers)
         deferreds = [
             semaphore.run(puller_master.mirror)
             for puller_master in puller_masters]

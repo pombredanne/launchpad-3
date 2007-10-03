@@ -9,7 +9,7 @@ from optparse import OptionParser
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.codehosting.puller.worker import (
-    BranchToMirror, PullerWorkerProtocol)
+    PullerWorker, PullerWorkerProtocol)
 
 
 import bzrlib.repository
@@ -69,6 +69,6 @@ if __name__ == '__main__':
     force_bzr_to_use_urllib()
 
     protocol = PullerWorkerProtocol(sys.stdout, sys.stderr)
-    BranchToMirror(
+    PullerWorker(
         source_url, destination_url, int(branch_id), unique_name, branch_type,
         protocol).mirror()
