@@ -56,7 +56,7 @@
     </p>
     
     <div id="chooseLinks">
-      <tal:no-preorder condition="not: view/preorder_mode">
+      <tal:no-prerelease condition="not: view/prerelease_mode">
         <div>
           <a tal:attributes="href view/download_or_buy_link">
             I want to <span>download</span>
@@ -69,20 +69,20 @@
             <span tal:replace="flavour_name">Ubuntu</span>
             <span tal:replace="view/series/title" /></a>
         </div>
-      </tal:no-preorder>
-      <tal:preorder condition="view/preorder_mode">
+      </tal:no-prerelease>
+      <tal:prerelease condition="view/prerelease_mode">
         <div>
           <a tal:attributes="href view/beta_download_link">
             I want to <span>download and test</span> the beta version of
             <span tal:replace="view/series/title" /></a>
         </div>
-        <div tal:condition="view/preorder_mode">
+        <div tal:condition="view/prerelease_mode">
           <a href="login">
-            I want to <span>preorder CDs</span> of
+            I want to <span>pre-order CDs</span> of
             <span tal:replace="flavour_name">Ubuntu</span>
             <span tal:replace="view/series/title" /></a>
         </div>
-      </tal:preorder>
+      </tal:prerelease>
     </div>
   
     <div class="visualClear body">&nbsp;</div>

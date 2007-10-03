@@ -577,7 +577,7 @@ k            </description>
              default="noreply@shipit.edubuntu.com" />
         <key name="kubuntu_from_email_address" datatype="string"
              default="noreply@shipit.kubuntu.com" />
-        <key name="preorder_mode" datatype="boolean" default="true" />
+        <key name="prerelease_mode" datatype="boolean" default="true" />
         <key name="beta_download_link" datatype="string"
              default="http://www.ubuntu.com/testing/gutsybeta" />
     </sectiontype>

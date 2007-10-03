@@ -9,7 +9,7 @@ This is controlled by a config option, which allows us to easily flip the
 switch once the release is out and we move from pre-release to normal mode.
 
     >>> from canonical.config import config
-    >>> config.shipit.preorder_mode
+    >>> config.shipit.prerelease_mode
     False
 
     >>> anon_browser.open('http://shipit.ubuntu.dev')
@@ -17,11 +17,11 @@ switch once the release is out and we move from pre-release to normal mode.
     I want to download...
     I want to request CDs of...
 
-    >>> config.shipit.preorder_mode = True
+    >>> config.shipit.prerelease_mode = True
     >>> anon_browser.reload()
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'chooseLinks'))
     I want to download and test the beta version of...
-    I want to preorder CDs of...
+    I want to pre-order CDs of...
 
     >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
     >>> browser.open('http://shipit.ubuntu.dev/myrequest')

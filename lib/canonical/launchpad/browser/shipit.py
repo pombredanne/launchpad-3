@@ -65,8 +65,8 @@ class ShipitFrontPageView(LaunchpadView):
         self.flavour = _get_flavour_from_layer(self.request)
 
     @property
-    def preorder_mode(self):
-        return config.shipit.preorder_mode
+    def prerelease_mode(self):
+        return config.shipit.prerelease_mode
 
     @property
     def beta_download_link(self):
@@ -217,8 +217,8 @@ class ShipItRequestView(GeneralFormView):
         return shipit_is_open(self.flavour)
 
     @property
-    def preorder_mode(self):
-        return config.shipit.preorder_mode
+    def prerelease_mode(self):
+        return config.shipit.prerelease_mode
 
     @property
     def dvds_section(self):
