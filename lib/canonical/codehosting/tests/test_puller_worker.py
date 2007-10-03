@@ -26,14 +26,17 @@ from bzrlib.errors import (
     BzrError, UnsupportedFormatError, UnknownFormatError, ParamikoNotPresent,
     NotBranchError)
 
-from canonical.launchpad.interfaces import BranchType
-from canonical.codehosting import branch_id_to_path
-from canonical.codehosting.puller.tests import createbranch
-from canonical.codehosting.puller.worker import (
-    BranchToMirror, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
-    BranchReferenceForbidden, BranchReferenceValueError, PullerWorkerProtocol)
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
+from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.puller.worker import (
+    BranchToMirror, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
+    BranchReferenceForbidden, BranchReferenceValueError, get_canonical_url,
+    PullerWorkerProtocol)
+from canonical.codehosting.tests.helpers import create_branch
+from canonical.launchpad.database import Branch
+from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.webapp import canonical_url
 from canonical.testing import LaunchpadZopelessLayer, reset_logging
 
 
@@ -89,7 +92,7 @@ class TestBranchToMirror(unittest.TestCase, BranchToMirrorMixin):
     def testMirrorActuallyMirrors(self):
         # Check that mirror() will mirror the Bazaar branch.
         to_mirror = self.makeBranchToMirror()
-        tree = createbranch(to_mirror.source)
+        tree = create_branch(to_mirror.source)
         to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(
@@ -856,9 +859,24 @@ class TestWorkerProtocol(unittest.TestCase, BranchToMirrorMixin):
         self.assertNoError()
 
 
+class TestCanonicalUrl(unittest.TestCase):
+    """Test cases for rendering the canonical url of a branch."""
+
+    layer = LaunchpadZopelessLayer
+
+    def testCanonicalUrlConsistent(self):
+        # BranchToMirror._canonical_url is consistent with
+        # webapp.canonical_url, if the provided unique_name is correct.
+        branch = Branch.get(15)
+        # Check that the unique_name used in this test is consistent with the
+        # sample data. This is an invariant of the test, so use a plain assert.
+        unique_name = 'name12/gnome-terminal/main'
+        assert branch.unique_name == '~' + unique_name
+        # Now check that our implementation of canonical_url is consistent with
+        # the canonical one.
+        self.assertEqual(
+            canonical_url(branch), get_canonical_url(unique_name))
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')

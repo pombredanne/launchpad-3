@@ -16,6 +16,7 @@ import unittest
 
 import transaction
 
+from bzrlib import bzrdir
 from bzrlib.tests import TestCaseWithTransport
 
 from zope.component import getUtility
@@ -354,3 +355,14 @@ def adapt_suite(adapter, base_suite):
     for test in iter_suite_tests(base_suite):
         suite.addTests(adapter.adapt(test))
     return suite
+
+
+def create_branch(branch_dir):
+    os.makedirs(branch_dir)
+    tree = bzrdir.BzrDir.create_standalone_workingtree(branch_dir)
+    f = open(branch_dir + 'hello', 'w')
+    f.write('foo')
+    f.close()
+    tree.commit('message')
+    return tree
+

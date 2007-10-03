@@ -1,7 +1,6 @@
 import logging
 import os
 import shutil
-import sys
 import tempfile
 import unittest
 
@@ -13,8 +12,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting import branch_id_to_path
 from canonical.launchpad.interfaces import BranchType
-from canonical.codehosting.puller.worker import PullerWorkerProtocol
-from canonical.codehosting.puller.tests import createbranch
+from canonical.codehosting.tests.helpers import create_branch
 from canonical.codehosting.puller import scheduler
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.testing import LaunchpadZopelessLayer, reset_logging
@@ -132,7 +130,7 @@ class TestJobManagerInLaunchpad(TrialTestCase):
         """
         unique_name = '~testuser/+junk/' + branch_src
         branch_src = os.path.join(self.testdir, branch_src)
-        createbranch(branch_src)
+        create_branch(branch_src)
         branch = manager.getBranchToMirror(branch_id, branch_src, unique_name)
         branch.destination_url = os.path.join(
             self.testdir, branch_id_to_path(branch_id))
