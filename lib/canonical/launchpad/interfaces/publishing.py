@@ -144,7 +144,8 @@ class PoolFileOverwriteError(Exception):
 # Source package publishing
 #
 
-class IBaseSourcePackagePublishing(Interface):
+class ISourcePackageFilePublishing(Interface):
+    """Source package release files and their publishing status"""
     distribution = Int(
             title=_('Distribution ID'), required=True, readonly=True,
             )
@@ -166,10 +167,6 @@ class IBaseSourcePackagePublishing(Interface):
     archive = Int(
             title=_('Archive ID'), required=True, readonly=True,
             )
-
-
-class ISourcePackageFilePublishing(IBaseSourcePackagePublishing):
-    """Source package release files and their publishing status"""
     sourcepackagepublishing = Int(
             title=_('Sourcepackage publishing record id'), required=True,
             readonly=True,
@@ -183,8 +180,8 @@ class ISourcePackageFilePublishing(IBaseSourcePackagePublishing):
             )
 
 
-class ISourcePackagePublishingBase(Interface):
-    """Base class for ISourcePackagePublishing, without extra properties."""
+class ISecureSourcePackagePublishingHistory(Interface):
+    """A source package publishing history record."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
@@ -223,10 +220,6 @@ class ISourcePackagePublishingBase(Interface):
     archive = Int(
             title=_('Archive ID'), required=True, readonly=True,
             )
-
-
-class IExtendedSourcePackagePublishing(ISourcePackagePublishingBase):
-    """Base class with extra attributes for ISSPPH."""
     supersededby = Int(
             title=_('The sourcepackagerelease which superseded this one'),
             required=False, readonly=False,
@@ -248,10 +241,6 @@ class IExtendedSourcePackagePublishing(ISourcePackagePublishingBase):
                     'published set'),
             required=False, readonly=False,
             )
-
-
-class ISecureSourcePackagePublishingHistory(IExtendedSourcePackagePublishing):
-    """A source package publishing history record."""
     embargo = Bool(
             title=_('Whether or not this record is under embargo'),
             required=True, readonly=False,
@@ -270,7 +259,7 @@ class ISecureSourcePackagePublishingHistory(IExtendedSourcePackagePublishing):
         )
 
 
-class ISourcePackagePublishingHistory(IExtendedSourcePackagePublishing):
+class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
     """A source package publishing history record."""
     meta_sourcepackage = Attribute(
         "Return an ISourcePackage meta object correspondent to the "
@@ -300,8 +289,8 @@ class ISourcePackagePublishingHistory(IExtendedSourcePackagePublishing):
 # Binary package publishing
 #
 
-
-class IBaseBinaryPackagePublishing(Interface):
+class IBinaryPackageFilePublishing(Interface):
+    """Binary package files and their publishing status"""
     distribution = Int(
             title=_('Distribution ID'), required=True, readonly=True,
             )
@@ -320,10 +309,6 @@ class IBaseBinaryPackagePublishing(Interface):
     archive = Int(
             title=_('Archive ID'), required=True, readonly=True,
             )
-
-
-class IBinaryPackageFilePublishing(IBaseBinaryPackagePublishing):
-    """Binary package files and their publishing status"""
     # Note that it is really /source/ package name below, and not a
     # thinko; at least, that's what Celso tells me the code uses
     #   -- kiko, 2006-03-22
@@ -347,7 +332,8 @@ class IBinaryPackageFilePublishing(IBaseBinaryPackagePublishing):
             )
 
 
-class IExtendedBinaryPackagePublishing(Interface):
+class ISecureBinaryPackagePublishingHistory(Interface):
+    """A binary package publishing record."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
@@ -411,10 +397,6 @@ class IExtendedBinaryPackagePublishing(Interface):
     archive = Int(
             title=_('Archive ID'), required=True, readonly=True,
             )
-
-
-class ISecureBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
-    """A binary package publishing record."""
     embargo = Bool(
             title=_('Whether or not this record is under embargo'),
             required=True, readonly=False,
@@ -434,7 +416,7 @@ class ISecureBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
         )
 
 
-class IBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
+class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
     """A binary package publishing record."""
 
     distroarchseriesbinarypackagerelease = Attribute("The object that "
