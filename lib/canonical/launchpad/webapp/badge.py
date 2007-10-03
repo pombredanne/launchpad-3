@@ -29,6 +29,7 @@ class Badge:
         self.title = title
 
     def small(self):
+        """Render the small image as an HTML img tag."""
         if self.small_image:
             return ('<img alt="%s" width="14" height="14" src="%s"'
                     ' title="%s"/>' % (self.alt, self.small_image, self.title))
@@ -36,6 +37,7 @@ class Badge:
             return ''
 
     def large(self):
+        """Render the large image as an HTML img tag."""
         if self.large_image:
             return ('<img alt="%s" width="32" height="32" src="%s"'
                     ' title="%s"/>' % (self.alt, self.large_image, self.title))
