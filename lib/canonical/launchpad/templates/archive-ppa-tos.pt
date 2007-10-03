@@ -1,3 +1,6 @@
+ <tal:root
+   xmlns:tal="http://xml.zope.org/namespaces/tal"
+   omit-tag="">
  <h2>Personal Package Archive Terms of Service</h2>
     <p>Canonical Ltd. provides the PPA Service to you, subject to
     these Terms of Service ("TOS"), which may be updated periodically
@@ -48,3 +51,4 @@
     <p>For more information about PPA features and usage detail check
     the <a href="https://help.launchpad.net/PPAQuickStart"
     >PPA quick-start guide</a>.</p>
+</tal:root>

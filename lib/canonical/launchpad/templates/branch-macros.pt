@@ -1,3 +1,7 @@
+ <tal:root
+   xmlns:tal="http://xml.zope.org/namespaces/tal"
+   xmlns:metal="http://xml.zope.org/namespaces/metal"
+   omit-tag="">
 <metal:branch-link define-macro="branch-heading-link">
   <div id="branch-back-link">
     <img src="/@@/branch" alt="" />
@@ -104,3 +108,4 @@
   </tal:bug-tasks>
 
 </metal:branch-bug-links>
+</tal:root>

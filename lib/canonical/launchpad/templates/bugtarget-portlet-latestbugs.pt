@@ -1,5 +1,9 @@
-<div class="portlet" id="portlet-latest-bugs"
-     tal:condition="view/latestBugTasks">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-latest-bugs"
+  tal:condition="view/latestBugTasks">
   <h2>Latest bugs reported</h2>
 
     <div class="portletBody portletContent">

@@ -9,11 +9,11 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import ITranslationFormatImporter
+from canonical.launchpad.interfaces import (
+    ITranslationFormatImporter, TranslationFileFormat)
 from canonical.launchpad.translationformat.gettext_po_parser import (
     POParser, POHeader)
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.lp.dbschema import TranslationFileFormat
 
 
 class GettextPOImporter:

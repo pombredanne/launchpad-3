@@ -1,4 +1,10 @@
-<form method="post" tal:attributes="action request/URL" condition="context/batch">
+<form
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  method="post"
+  tal:attributes="action request/URL"
+  condition="context/batch">
   <table class="listing" id="buglisting">
     <thead>
       <tr>

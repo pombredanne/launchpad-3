@@ -301,20 +301,20 @@ class DistributionSourcePackageView(LaunchpadView):
                 sourcepackage.published_by_pocket.iteritems():
                 for drspr in published[1]:
                     series_result.append({
-                        'series': sourcepackage.distroseries.name,
+                        'series': sourcepackage.distroseries,
                         'pocket': published[0].name.lower(),
-                        'version': drspr.sourcepackagerelease.version,
+                        'package': drspr,
                         'packaging': sourcepackage.direct_packaging,
                         'sourcepackage': sourcepackage
                         })
             for row in range(len(series_result)-1, 0, -1):
-                for column in ['series', 'pocket', 'version', 'upstream',
+                for column in ['series', 'pocket', 'package', 'packaging',
                                'sourcepackage']:
                     if series_result[row][column] == \
                        series_result[row-1][column]:
                        series_result[row][column] = None
             for row in series_result:
                 result.append(row)
-            return result
+        return result
 
 

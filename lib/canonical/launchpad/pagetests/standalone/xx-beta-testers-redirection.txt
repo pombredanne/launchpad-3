@@ -11,12 +11,7 @@ For these tests, we will use the user 'launchpad-beta-owner', who is
 on the beta testers team.  First, create a browser object for this
 person:
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> beta_browser = Browser()
-    >>> beta_browser.handleErrors = False
-    >>> beta_browser.addHeader('Authorization',
-    ...                        'Basic beta-admin@launchpad.net:test')
-
+    >>> beta_browser = setupBrowser(auth='Basic beta-admin@launchpad.net:test')
 
 XXX 20070131 jamesh:
 zope.testbrowser does not handle redirects to remote sites, so we
