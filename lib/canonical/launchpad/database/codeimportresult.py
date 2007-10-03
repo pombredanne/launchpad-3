@@ -42,6 +42,11 @@ class CodeImportResult(SQLBase):
 
     date_started = UtcDateTimeCol(notNull=True)
 
+    @property
+    def date_finished(self):
+        """See `ICodeImportResult`."""
+        return self.date_created
+
 
 class CodeImportResultSet(object):
     """See `ICodeImportResultSet`."""

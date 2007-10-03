@@ -120,8 +120,11 @@ class ICodeImportResult(Interface):
 
     date_started = Datetime(
         readonly=True, required=True,
-        description=_("When the job started to run (date_created is when it "
-                      "finished)."))
+        description=_("When the job started running."))
+
+    date_finished = Datetime(
+        readonly=True, required=True,
+        description=_("When the job stopped running."))
 
 
 class ICodeImportResultSet(Interface):
