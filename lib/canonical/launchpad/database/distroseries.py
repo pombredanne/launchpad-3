@@ -518,6 +518,7 @@ def copy_active_translations_as_update(child, transaction, logger):
             # POMsgSet has already been poured.  Delete from POSubmission
             # holding table any rows referring to nonexistent POMsgSets.
             cur = cursor()
+            drop_tables(cur, ['temp_final_pomsgsets'])
             allow_sequential_scans(cur, True)
             cur.execute("""
                 CREATE TEMP TABLE temp_final_pomsgsets
