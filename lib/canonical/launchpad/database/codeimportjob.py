@@ -48,22 +48,22 @@ class CodeImportJob(SQLBase):
 
     date_started = UtcDateTimeCol(notNull=False, default=None)
 
-    def assign(machine):
+    def assign(self, machine):
         """See `ICodeImportJob`."""
 
-    def request(requesting_user):
+    def request(self, requesting_user):
         """See `ICodeImportJob`."""
 
-    def kill(killing_user):
+    def kill(self, killing_user):
         """See `ICodeImportJob`."""
 
-    def start():
+    def start(self):
         """See `ICodeImportJob`."""
 
-    def finish(result_status, log_file_alias):
+    def finish(self, result_status, log_file_alias):
         """See `ICodeImportJob`."""
 
-    def beat(logtail):
+    def beat(self, logtail):
         """See `ICodeImportJob`."""
 
 
@@ -78,7 +78,7 @@ class CodeImportJobSet(object):
                              due_date=due_date)
 
 
-    def jobForImport(code_import):
+    def jobForImport(self, code_import):
         """See `ICodeImportJobSet`."""
 
     def jobsForMachine(self, machine):

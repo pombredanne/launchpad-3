@@ -132,7 +132,7 @@ class ICodeImportJobSet(Interface):
 
         """
 
-    def jobsForMachine(self, machine):
+    def jobsForMachine(machine):
         """Find the jobs for this machine in priority order.
 
         """
