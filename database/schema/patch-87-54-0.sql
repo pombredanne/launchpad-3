@@ -26,15 +26,18 @@ CREATE INDEX securebinarypackagepublishinghistory__removed_by__idx
     WHERE removed_by IS NOT NULL;
 
 
--- Revove-for-editing
+-- Remove-for-editing
 DROP VIEW SourcePackageFilePublishing;
 DROP VIEW BinaryPackageFilePublishing;
 DROP VIEW PublishedPackageView;
 
-
 -- Removing unused views (forever).
 DROP VIEW SourcePackagePublishing;
 DROP VIEW BinaryPackagePublishing;
+
+-- Remove-for-editing
+DROP VIEW SourcePackagePublishingHistory;
+DROP VIEW BinaryPackagePublishingHistory;
 
 
 -- Create new table depending only on SecureSourcePackagePublishingHistory.
@@ -91,7 +94,7 @@ CREATE VIEW binarypackagefilepublishing AS
     WHERE
       securebinarypackagepublishinghistory.dateremoved is NULL;
 
--- Proper name, adding 'archive' colunm, deriving directly from SBPPH.
+-- Proper name, adding 'archive' column, deriving directly from SBPPH.
 CREATE VIEW publishedpackage AS
     SELECT
       securebinarypackagepublishinghistory.id,
@@ -131,6 +134,57 @@ CREATE VIEW publishedpackage AS
       JOIN sourcepackagename ON ((sourcepackagerelease.sourcepackagename = sourcepackagename.id)))
     WHERE
       securebinarypackagepublishinghistory.dateremoved is NULL;
+
+-- Aggregating 'removed_by' & 'removal_comment' to 1st stage publishing views.
+CREATE VIEW sourcepackagepublishinghistory AS
+    SELECT 
+      securesourcepackagepublishinghistory.id,
+      securesourcepackagepublishinghistory.sourcepackagerelease,
+      securesourcepackagepublishinghistory.status,
+      securesourcepackagepublishinghistory.component,
+      securesourcepackagepublishinghistory.section,
+      securesourcepackagepublishinghistory.distrorelease,
+      securesourcepackagepublishinghistory.pocket,
+      securesourcepackagepublishinghistory.archive,
+      securesourcepackagepublishinghistory.datecreated,
+      securesourcepackagepublishinghistory.datepublished,
+      securesourcepackagepublishinghistory.datesuperseded,
+      securesourcepackagepublishinghistory.supersededby,
+      securesourcepackagepublishinghistory.datemadepending,
+      securesourcepackagepublishinghistory.scheduleddeletiondate,
+      securesourcepackagepublishinghistory.dateremoved,
+      securesourcepackagepublishinghistory.removed_by,
+      securesourcepackagepublishinghistory.removal_comment,
+      securesourcepackagepublishinghistory.embargo,
+      securesourcepackagepublishinghistory.embargolifted
+    FROM securesourcepackagepublishinghistory
+    WHERE securesourcepackagepublishinghistory.embargo = false;
+
+CREATE VIEW binarypackagepublishinghistory AS
+    SELECT 
+      securebinarypackagepublishinghistory.id,
+      securebinarypackagepublishinghistory.binarypackagerelease,
+      securebinarypackagepublishinghistory.status,
+      securebinarypackagepublishinghistory.component,
+      securebinarypackagepublishinghistory.section,
+      securebinarypackagepublishinghistory.priority,
+      securebinarypackagepublishinghistory.distroarchrelease,
+      securebinarypackagepublishinghistory.pocket,
+      securebinarypackagepublishinghistory.archive,
+      securebinarypackagepublishinghistory.datecreated,
+      securebinarypackagepublishinghistory.datepublished,
+      securebinarypackagepublishinghistory.datesuperseded,
+      securebinarypackagepublishinghistory.supersededby,
+      securebinarypackagepublishinghistory.datemadepending,
+      securebinarypackagepublishinghistory.scheduleddeletiondate,
+      securebinarypackagepublishinghistory.dateremoved,
+      securebinarypackagepublishinghistory.removed_by,
+      securebinarypackagepublishinghistory.removal_comment,
+      securebinarypackagepublishinghistory.embargo,
+      securebinarypackagepublishinghistory.embargolifted
+    FROM securebinarypackagepublishinghistory
+    WHERE securebinarypackagepublishinghistory.embargo = false;
+
 
 -- Updating old records to match the current state machine:
 -- 6: PENDINGREMOVAL
