@@ -226,18 +226,22 @@ UNKNOWN_REMOTE_STATUS maps to Unknown.
     Unknown
 
 
-== Creating bug watches ==
+== Importing bugs ==
+
+The Debbugs ExternalBugTracker can import a Debian bug into Launchpad.
+It pulls a bug from the Debbugs db, and create a bug in Launchpad with
+the same summary and description.
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> debian.official_malone
     False
 
+The bug reporter doesn't have to have a Launchpad account.
+
     >>> report = email.message_from_file(
     ...     open(os.path.join(
     ...         test_db_location, 'db-h', '35', '322535.report')))
-    >>> print report['Subject']
-    evolution: Multiple format string vulnerabilities in Evolution
     >>> print report['From']
     Moritz Muehlenhoff <jmm@inutil.org>
 
@@ -247,13 +251,20 @@ UNKNOWN_REMOTE_STATUS maps to Unknown.
     >>> print getUtility(IPersonSet).getByEmail(reporter_email)
     None
 
+The createLaunchpadBug method reads the bug report from the debbugs db,
+and creates a Launchpad bug report, using the debbugs subject as the
+summary, and the description as the description.
+
+    >>> print report['Subject']
+    evolution: Multiple format string vulnerabilities in Evolution
+
     >>> print report.get_payload(decode=True)
     Package: evolution
     Severity: grave
     Tags: security
     <BLANKLINE>
     Multiple exploitable format string vulnerabilities have been found in
-    Evolution. Please see 
+    Evolution. Please see
     http://www.securityfocus.com/archive/1/407789/30/0/threaded
     for details. 2.3.7 fixes all these issues.
     ...
@@ -261,14 +272,29 @@ UNKNOWN_REMOTE_STATUS maps to Unknown.
     >>> bug = external_debbugs.createLaunchpadBug(debian, '322535')
     >>> print bug.title
     evolution: Multiple format string vulnerabilities in Evolution
+    >>> print bug.description
+    Package: evolution
+    Severity: grave
+    Tags: security
+    <BLANKLINE>
+    Multiple exploitable format string vulnerabilities have been found in
+    Evolution. Please see
+    http://www.securityfocus.com/archive/1/407789/30/0/threaded
+    for details. 2.3.7 fixes all these issues.
+    ...
 
-    >>> getUtility(IPersonSet).getByEmail(reporter_email) is not None
-    True
 
 The bug reporter got created automatically:
 
+    >>> getUtility(IPersonSet).getByEmail(reporter_email) is not None
+    True
     >>> print bug.owner.displayname
     Moritz Muehlenhoff
+
+
+Since he didn't have a Launchpad account before, he doesn't have a
+preferred e-mail address, and the one that is associated with his
+account is marked as NEW, since we don't know whether it's valid.
 
     >>> from canonical.launchpad.interfaces import IEmailAddressSet
     >>> reporter_email_adresses = getUtility(IEmailAddressSet).getByPerson(
@@ -284,36 +310,24 @@ The bug reporter got created automatically:
     >>> bug.owner.creation_comment
     u'when importing debbugs bug #322535'
 
-    >>> print bug.description
-    Package: evolution
-    Severity: grave
-    Tags: security
-    <BLANKLINE>
-    Multiple exploitable format string vulnerabilities have been found in
-    Evolution. Please see 
-    http://www.securityfocus.com/archive/1/407789/30/0/threaded
-    for details. 2.3.7 fixes all these issues.
-    <BLANKLINE>
-    Cheers,
-            Moritz
-    <BLANKLINE>
-    -- System Information:
-    Debian Release: testing/unstable
-      APT prefers unstable
-      APT policy: (500, 'unstable')
-    Architecture: i386 (i686)
-    Shell:  /bin/sh linked to /bin/bash
-    Kernel: Linux 2.6.12-rc5
-    Locale: LANG=C, LC_CTYPE=de_DE.ISO-8859-15@euro (charmap=ISO-8859-15)
+No one got subscribed to the created bug, since the relevant people
+already get e-mail notifications via Debbugs.
 
     >>> [person.name for person in bug.getDirectSubscribers()]
     []
 
-The bug got filed on evolution (Debian)
+The bug got filed against the evolution package in Debian, and it has a
+bug watch pointing to the original Debian bug, so that the bug report is
+kept in sync.
 
     >>> [debian_task] = bug.bugtasks
     >>> debian_task.bugtargetname
     u'evolution (Debian)'
+
+    >>> debian_task.bugwatch.bugtracker.name
+    u'debbugs'
+    >>> debian_task.bugwatch.remotebug
+    u'322535'
 
 
 XXX: is there a debian bug with non-existent package?

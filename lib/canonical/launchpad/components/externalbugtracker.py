@@ -26,8 +26,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import BugTrackerType
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, CreateBugParams, IDistribution, IExternalBugtracker,
-    IPersonSet, PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
+    BugTaskStatus, CreateBugParams, IBugWatchSet, IDistribution,
+    IExternalBugtracker, ILaunchpadCelebrities, IPersonSet,
+    PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (http://bugs.launchpad.net/)"
@@ -596,19 +597,28 @@ class DebBugs(ExternalBugTracker):
             [debian_bug.status, severity] + debian_bug.tags)
         return new_remote_status
 
-    def createLaunchpadBug(self, bug_target, bug_id):
+    def createLaunchpadBug(self, bug_target, remote_bug):
         assert IDistribution.providedBy(bug_target), (
             'We assume debbugs is used only by a distribution (Debian).')
-        debian_bug = self._findBug(bug_id)
+        debian_bug = self._findBug(remote_bug)
         reporter_name, reporter_email = parseaddr(debian_bug.originator)
         reporter = getUtility(IPersonSet).ensurePerson(
             reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
-            comment='when importing debbugs bug #%s' % bug_id)
+            comment='when importing debbugs bug #%s' % remote_bug)
         package = bug_target.getSourcePackage(debian_bug.package)
         bug = package.createBug(
             CreateBugParams(
                 reporter, debian_bug.subject, debian_bug.description,
                 subscribe_reporter=False))
+
+        [debian_task] = bug.bugtasks
+        bug_watch = getUtility(IBugWatchSet).createBugWatch(
+            bug=bug,
+            owner=getUtility(ILaunchpadCelebrities).bug_watch_updater,
+            bugtracker=getUtility(ILaunchpadCelebrities).debbugs,
+            remotebug=remote_bug)
+        debian_task.bugwatch = bug_watch
+
         return bug
 
 #
