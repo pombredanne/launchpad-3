@@ -22,14 +22,16 @@ def mirror(logger, manager):
 
     date_started = datetime.datetime.now(UTC)
 
-    def recordSuccess(ignored):
+    def recordSuccess(passed_through):
         date_completed = datetime.datetime.now(UTC)
         manager.recordActivity(date_started, date_completed)
+        return passed_through
 
-    def unlock(ignored):
+    def unlock(passed_through):
         manager.unlock()
+        return passed_through
 
-    deferred = manager.run(logger)
+    deferred = manager.run()
     deferred.addCallback(recordSuccess)
     deferred.addBoth(unlock)
     return deferred

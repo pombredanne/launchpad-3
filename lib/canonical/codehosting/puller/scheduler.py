@@ -37,6 +37,12 @@ class BranchStatusClient:
     def mirrorFailed(self, branch_id, reason):
         return self.proxy.callRemote('mirrorFailed', branch_id, reason)
 
+    def recordSuccess(self, name, hostname, date_started, date_completed):
+        started_tuple = tuple(date_started.utctimetuple())
+        completed_tuple = tuple(date_completed.utctimetuple())
+        return self.proxy.callRemote(
+            'recordSuccess', name, hostname, started_tuple, completed_tuple)
+
 
 class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
 
@@ -161,7 +167,9 @@ class JobScheduler:
 
     def _run(self, puller_masters):
         """Run all branches_to_mirror registered with the JobScheduler."""
-        self.logger.info('%d branches to mirror', len(branches_to_pull))
+        self.logger.info('%d branches to mirror', len(puller_masters))
+        assert config.supermirror.maximum_workers is not None, (
+            "config.supermirror.maximum_workers is not defined.")
         semaphore = defer.DeferredSemaphore(
             config.supermirror.maximum_workers)
         deferreds = [
