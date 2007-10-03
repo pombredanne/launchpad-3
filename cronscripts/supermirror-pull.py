@@ -10,7 +10,7 @@ from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts import logger_options, logger
-from canonical.launchpad.scripts.supermirror import mirror, scheduler
+from canonical.codehosting.puller import mirror, scheduler
 
 
 def run_mirror(log, manager):

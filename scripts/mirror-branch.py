@@ -8,7 +8,7 @@ from optparse import OptionParser
 
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
-from canonical.launchpad.scripts.supermirror.worker import (
+from canonical.codehosting.puller.worker import (
     BranchToMirror, PullerWorkerProtocol)
 
 

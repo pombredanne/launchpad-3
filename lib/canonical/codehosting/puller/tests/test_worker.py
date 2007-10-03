@@ -27,9 +27,9 @@ from bzrlib.errors import (
     NotBranchError)
 
 from canonical.launchpad.interfaces import BranchType
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
-from canonical.launchpad.scripts.supermirror.tests import createbranch
-from canonical.launchpad.scripts.supermirror.worker import (
+from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.puller.tests import createbranch
+from canonical.codehosting.puller.worker import (
     BranchToMirror, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
     BranchReferenceForbidden, BranchReferenceValueError, PullerWorkerProtocol)
 from canonical.authserver.client.branchstatus import BranchStatusClient
@@ -749,7 +749,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
         from the database. Instead, the path should be translated to a
         user-visible location.
         """
-        split_id = split_branch_id(self.branch.branch_id)
+        split_id = branch_id_to_path(self.branch.branch_id)
         def stubOpenSourceBranch():
             raise NotBranchError('/srv/sm-ng/push-branches/%s/.bzr/branch/'
                                  % split_id)

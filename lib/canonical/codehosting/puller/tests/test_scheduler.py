@@ -13,10 +13,9 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting import branch_id_to_path
 from canonical.launchpad.interfaces import BranchType
-from canonical.launchpad.scripts.supermirror.worker import (
-    PullerWorkerProtocol)
-from canonical.launchpad.scripts.supermirror.tests import createbranch
-from canonical.launchpad.scripts.supermirror import scheduler
+from canonical.codehosting.puller.worker import PullerWorkerProtocol
+from canonical.codehosting.puller.tests import createbranch
+from canonical.codehosting.puller import scheduler
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.testing import LaunchpadZopelessLayer, reset_logging
 
