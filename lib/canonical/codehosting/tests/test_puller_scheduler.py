@@ -18,6 +18,16 @@ from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.testing import LaunchpadZopelessLayer, reset_logging
 
 
+class FakeBranchStatusClient:
+    """A dummy branch status client implementation for testing getBranches()"""
+
+    def __init__(self, branch_queues):
+        self.branch_queues = branch_queues
+
+    def getBranchPullQueue(self, branch_type):
+        return self.branch_queues[branch_type]
+
+
 class TestJobScheduler(unittest.TestCase):
 
     def setUp(self):
@@ -71,80 +81,6 @@ class TestJobScheduler(unittest.TestCase):
     def _removeLockFile(self):
         if os.path.exists(self.masterlock):
             os.unlink(self.masterlock)
-
-
-class TestJobSchedulerInLaunchpad(TrialTestCase):
-    layer = LaunchpadZopelessLayer
-
-    testdir = None
-
-    def setUp(self):
-        self.testdir = tempfile.mkdtemp()
-        # Change the HOME environment variable in order to ignore existing
-        # user config files.
-        os.environ.update({'HOME': self.testdir})
-        self.authserver = AuthserverTacTestSetup()
-        self.authserver.setUp()
-
-    def tearDown(self):
-        shutil.rmtree(self.testdir)
-        self.authserver.tearDown()
-
-    def _getBranchDir(self, branchname):
-        return os.path.join(self.testdir, branchname)
-
-    def assertMirrored(self, puller_master):
-        """Assert that branch_to_mirror's source and destinations have the same
-        revisions.
-
-        :param puller_master: a PullerMaster instance.
-        """
-        source_branch = bzrlib.branch.Branch.open(puller_master.source_url)
-        dest_branch = bzrlib.branch.Branch.open(puller_master.destination_url)
-        self.assertEqual(
-            source_branch.last_revision(), dest_branch.last_revision())
-
-    def testJobRunner(self):
-        return
-        client = scheduler.BranchStatusClient()
-        manager = scheduler.JobScheduler(
-            client, logging.getLogger(), BranchType.HOSTED)
-
-        branches = [
-            self._makeBranch(manager, "brancha", 1),
-            self._makeBranch(manager, "branchb", 2),
-            self._makeBranch(manager, "branchc", 3),
-            self._makeBranch(manager, "branchd", 4),
-            self._makeBranch(manager, "branche", 5)]
-
-        deferred = manager._run(branches)
-
-        def check_mirrored(ignored):
-            for branch in branches:
-                self.assertMirrored(branch)
-
-        return deferred.addCallback(check_mirrored)
-
-    def _makeBranch(self, manager, branch_src, branch_id):
-        """Given a relative directory, make a strawman branch and return it.
-        """
-        unique_name = '~testuser/+junk/' + branch_src
-        branch_src = os.path.join(self.testdir, branch_src)
-        create_branch(branch_src)
-        branch = manager.getPullerMaster(branch_id, branch_src, unique_name)
-        branch.destination_url = os.path.join(
-            self.testdir, branch_id_to_path(branch_id))
-        return branch
-
-
-class FakeBranchStatusClient:
-    """A dummy branch status client implementation for testing getBranches()"""
-
-    def __init__(self, branch_queues):
-        self.branch_queues = branch_queues
-
-    def getBranchPullQueue(self, branch_type):
-        return self.branch_queues[branch_type]
 
 
 class TestPullerMasterProtocol(TrialTestCase):
