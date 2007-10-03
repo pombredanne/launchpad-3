@@ -1,0 +1,17 @@
+<div tal:define="license nocall:view/widgets/license">
+    <div>
+        <input tal:replace="structure license" />
+        <tal:foo
+            define="license_info nocall:view/widgets/license_info;
+                    field_name license_info/context/__name__;
+                    error python:view.getWidgetError(field_name);
+                    error_class python:error and 'error' or None;">
+        <input tal:replace="structure license_info" />
+        <span tal:attributes="class error_class">
+            <div class="message" tal:condition="error"
+                tal:content="structure error">Error message</div>
+        </span>
+        </tal:foo>
+    </div>
+</div>
+<br />

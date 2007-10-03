@@ -225,6 +225,11 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         required=False,
         vocabulary="License")
 
+    license_info = Description(
+        title=_('License Info'),
+        required=False,
+        description=_("""If other, please explain:"""))
+
     def getExternalBugTracker():
         """Return the external bug tracker used by this bug tracker.
 

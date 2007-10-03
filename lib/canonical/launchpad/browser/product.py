@@ -40,6 +40,7 @@ __all__ = [
 import cgi
 from operator import attrgetter
 from warnings import warn
+import math
 
 import zope.security.interfaces
 from zope.component import getUtility
@@ -48,6 +49,8 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import alsoProvides, implements
+from zope.formlib import form
+from zope.schema import List, Choice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -85,7 +88,42 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import ProductBugTrackerWidget
+from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.launchpad.vocabularies import LicenseVocabulary
+from canonical.lp.dbschema import License
+
+class CheckBoxMatrixWidget(LabeledMultiCheckBoxWidget):
+    def __init__(self, field, vocabulary, request):
+        LabeledMultiCheckBoxWidget.__init__(self, field, vocabulary, request)
+        self.column_count = 1
+
+    def renderValue(self, value):
+        rendered_items = self.renderItems(value)
+        html = ['<table>']
+        if self.orientation == 'horizontal':
+            for i in range(0, len(rendered_items), self.column_count): 
+                html.append('  <tr>')
+                for j in range(0, self.column_count):
+                    index = i + j
+                    if index >= len(rendered_items):
+                        break
+                    html.append('    <td>%s</td>' % rendered_items[index])
+                html.append('  </tr>')
+        else:
+            row_count = int(math.ceil(
+                len(rendered_items) / float(self.column_count)))
+            for i in range(0, row_count):
+                html.append('  <tr>')
+                for j in range(0, self.column_count):
+                    index = i + (j * row_count)
+                    if index >= len(rendered_items):
+                        break
+                    html.append('    <td>%s</td>' % rendered_items[index])
+                html.append('  </tr>')
+
+        html.append('</table>')
+        return '\n'.join(html)
 
 
 class ProductNavigation(
@@ -872,15 +910,52 @@ class ProductSetView(LaunchpadView):
 
 class ProductAddViewBase(LaunchpadFormView):
     schema = IProduct
-    field_names = ['license', 'name', 'displayname', 'title', 'summary', 
+    field_names = ['name', 'displayname', 'title', 'summary', 
                    'description', 'homepageurl', 'sourceforgeproject', 
                    'freshmeatproject', 'wikiurl', 'screenshotsurl', 
-                   'downloadurl', 'programminglang']
+                   'downloadurl', 'programminglang', 'license_info']
+    custom_layout_field_names = ['licenses', 'license_info']
 
+    custom_widget('licenses', CheckBoxMatrixWidget, column_count=3,
+                            orientation='vertical')
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('screenshotsurl', TextWidget, displayWidth=30)
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
+    non_custom_widgets = ()
+
+    def validate(self, data):
+        if not data.get('license_info'):
+            self.setFieldError('license_info', 
+                'Please describe other license.')
+        licenses = data.get('licenses', [])
+        if len(licenses) == 0:
+            self.setFieldError('licenses', 
+                'Select all licenses for this software')
+        elif License.GPL in licenses:
+            self.setFieldError('licenses', 
+                'What????!!!???')
+
+    def _createLicenseField(self):
+        """Create a list of teams the user is an administrator of."""
+        return form.FormFields(
+            List(
+                __name__='licenses',
+                title=_("Licenses"),
+                value_type=Choice(vocabulary="License"),
+                required=True),
+            custom_widget=self.custom_widgets['licenses'])
+
+    def setUpFields(self):
+        LaunchpadFormView.setUpFields(self)
+        self.form_fields = self._createLicenseField() + self.form_fields 
+
+    def setUpWidgets(self):
+        super(ProductAddViewBase, self).setUpWidgets()
+        self.non_custom_widgets = [
+            self.widgets[field_name]
+            for field_name in self.field_names
+            if field_name not in self.custom_layout_field_names]
 
     @property
     def next_url(self):

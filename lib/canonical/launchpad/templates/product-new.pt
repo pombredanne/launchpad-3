@@ -19,8 +19,52 @@
     </div>
 
     <div metal:use-macro="context/@@launchpad_form/form">
-        <tal:block replace="structure context/@@+license-category" 
-                metal:fill-slot="extra_top" />
+        <metal:widgets fill-slot="widgets">
+            <div tal:define="widgets view/non_custom_widgets">
+                <div metal:use-macro="context/@@launchpad_form/widget_rows">
+                </div>
+            </div>
+
+            <tal:foo define="
+                license_info nocall:view/widgets/license_info;
+                licenses nocall:view/widgets/licenses;
+                matrix_name licenses/context/__name__;
+                matrix_error python:view.getWidgetError(matrix_name);
+                matrix_error_class python:matrix_error and 'error' or None;
+                textbox_name license_info/context/__name__;
+                textbox_error python:view.getWidgetError(textbox_name);
+                textbox_error_class python:textbox_error and 'error' or None;">
+                <div>
+                    <!-- Checkbox matrix -->
+                    <label tal:attributes="for matrix_name">
+                        Licenses that this software project falls under:
+                    </label>
+                    <p>
+                    Launchpad.net is free to use for software projects that
+                    fall entirely under approved open source licenses.
+                    </p>
+                    <div tal:attributes="class matrix_error_class">
+                        <div class="message" tal:condition="matrix_error"
+                            tal:content="structure matrix_error">
+                            Error message
+                        </div>
+                        <input tal:replace="structure licenses" />
+                    </div>
+
+                    <!-- Textarea -->
+                    <label tal:attributes="for textbox_name">
+                    Description of other licenses:
+                    </label>
+                    <div tal:attributes="class textbox_error_class">
+                        <div class="message" tal:condition="textbox_error"
+                            tal:content="structure textbox_error">
+                                Error message
+                        </div>
+                        <input tal:replace="structure license_info" />
+                    </div>
+                </div>
+            </tal:foo>
+        </metal:widgets>
     </div>
 
   </div>

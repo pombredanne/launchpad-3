@@ -530,12 +530,12 @@
     attribute="__call__"
     />
 
-    <browser:page
-        for="*"
-        name="+license-category"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
-        permission="zope.Public"
-        template="../templates/license-category.pt"
-        />
+  <browser:page
+    for="*"
+    name="+license"
+    layer="canonical.launchpad.layers.LaunchpadLayer"
+    permission="zope.Public"
+    template="../templates/license.pt"
+    />
 
 </configure>
