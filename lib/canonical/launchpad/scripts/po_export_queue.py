@@ -120,7 +120,7 @@ class ExportResult:
 
                 A UnicodeDecodeError occurred while trying to notify you of a
                 failure during a translation export requested by %s.
-                %s''' % (person.browsername, template_sentence))
+                %s''') % (person.browsername, template_sentence)
 
         simple_sendmail(
             from_addr=config.rosetta.rosettaadmin.email,
