@@ -35,7 +35,7 @@ class SpecificationBranchSet:
 
     implements(ISpecificationBranchSet)
 
-    def getSpecificationBranchesForBranches(branches, user):
+    def getSpecificationBranchesForBranches(self, branches, user):
         """See `ISpecificationBranchSet`."""
         branch_ids = [branch.id for branch in branches]
         if not branch_ids:

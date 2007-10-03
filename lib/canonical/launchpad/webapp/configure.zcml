@@ -167,13 +167,13 @@
         name="image"
         />
 
-    <!-- TALES badge: namespace -->
+    <!-- TALES badges: namespace -->
 
     <adapter
         for="*"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BadgeDisplayAPI"
-        name="badge"
+        name="badges"
         />
 
     <!-- TALES fmt: namespace -->

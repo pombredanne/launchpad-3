@@ -653,11 +653,11 @@ class BadgeDisplayAPI:
 
     def small(self):
         badges = self.context.getVisibleBadges()
-        return ''.join([badge.icon() for badge in badges])
+        return ''.join([badge.small() for badge in badges])
 
     def large(self):
         badges = self.context.getVisibleBadges()
-        return ''.join([badge.logo() for badge in badges])
+        return ''.join([badge.large() for badge in badges])
 
 
 class PersonFormatterAPI(ObjectFormatterAPI):

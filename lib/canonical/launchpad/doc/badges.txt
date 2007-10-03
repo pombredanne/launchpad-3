@@ -27,23 +27,21 @@ Iterating over this collection gives
     blueprint
     branch
     bug
-    mentoring
     private
-    warning
 
 
 == The Badge class ==
 
 The badge class has two methods of interest:
-  * icon - the HTML for the icon sized image
-  * logo - the HTML for the logo sized image
+  * small - the HTML for the icon sized image
+  * large - the HTML for the logo sized image
 
 A badge is constructed with the locations of the images, the default alternate
 text and the default title.
 
     >>> from canonical.launchpad.webapp.badge import Badge
     >>> bug = Badge(
-    ...     icon_image='/@@/bug', logo_image='/@@/bug-logo',
+    ...     small_image='/@@/bug', large_image='/@@/bug-logo',
     ...     alt='bug', title='Linked to a bug')
 
 Both `alt` and `title` default to the empty string.
@@ -51,10 +49,10 @@ Both `alt` and `title` default to the empty string.
 Calling the icon or logo method with no parameters will produce the default
 image HTML.
 
-    >>> print bug.icon()
+    >>> print bug.small()
     <img alt="bug" width="14" height="14" src="/@@/bug" title="Linked to a bug"/>
-    >>> print bug.logo()
-    <img alt="bug" width="64" height="64" src="/@@/bug-logo" title="Linked to a bug"/>
+    >>> print bug.large()
+    <img alt="bug" width="32" height="32" src="/@@/bug-logo" title="Linked to a bug"/>
 
 
 == IHasBadges ==
@@ -83,7 +81,7 @@ be in the content class itself.
     ...     blueprints = Attribute('Some linked blueprints')
 
     >>> from zope.interface import implements
-    >>> class Foo:
+    >>> class Foo(object):
     ...     implements(IFoo)
     ...     @property
     ...     def bugs(self):
@@ -94,23 +92,91 @@ be in the content class itself.
     ...         print "Foo.blueprints"
     ...         return []
 
+    >>> from canonical.launchpad.webapp.badge import BadgeMethodDelegator
     >>> class FooBadges(BadgeMethodDelegator):
     ...     badges = "bug", "blueprint"
     ...     def __init__(self, context):
     ...         self.context = context
-    ...     def bugBadgeVisible(self):
+    ...     def isBugBadgeVisible(self):
     ...         return len(self.context.bugs) > 0
-    ...     def blueprintBadgeVisible(self):
-    ...         return len(self.context.blueprint) > 0
+    ...     def isBlueprintBadgeVisible(self):
+    ...         return len(self.context.blueprints) > 0
+
+Register an aptapter in ZCML from the content type to
+IHasBadges.  Here is the sample from the branch.zcml to illustrate.
+
+  <adapter
+      for="canonical.launchpad.interfaces.IBranch"
+      provides="canonical.launchpad.webapp.badge.IHasBadges"
+      factory="canonical.launchpad.browser.BranchBadges"
+      />
+
+Luckily zope provides a way to do this in doctests:
+
+    >>> from canonical.launchpad.webapp.badge import IHasBadges
+    >>> from zope.app.testing import ztapi
+    >>> ztapi.provideAdapter(Foo, IHasBadges, FooBadges)
+
+Now adapting a Foo to IHasBadges should provide an instance of FooBadges.
+
+    >>> foo = Foo()
+    >>> foo
+    <Foo object at ...>
+
+    >>> badger = IHasBadges(foo)
+    >>> badger
+    <FooBadges object at ...>
+
+Getting the visible badges for foo calls the underlying methods on foo,
+as illustrated by the printed method calls.
+
+    >>> for badge in badger.getVisibleBadges():
+    ...     print badge.small()
+    Foo.bugs
+    Foo.blueprints
+    <img alt="bug" width="14" height="14" src="/@@/bug" title="Linked to a bug"/>
+
+
+When showing listings of Foos, you often want to decorate them with
+`decorates`.  By having the DecoratedFoo inherit from the FooBadges
+class, we provide two things: a default implementation for each of the
+badge methods; and direct implementation of IHasBadges.  This allows
+the decorated class to provide an alternative method to decide on
+badge visibility.  For example, with branches the visibility of the
+bug badge is determined by the users ability to see the bugs for any
+bug branch links, but on listings we don't want to do 100 queries just
+to check bug badges, so the batch handler for branches executes a single
+query for the BugBranch links for the branches in the batch and that is
+used to contruct the DecoratedBranch.
 
     >>> from canonical.lp import decorates
-
     >>> class DecoratedFoo(FooBadges):
     ...     decorates(IFoo, 'foo')
     ...     def __init__(self, foo):
+    ...         FooBadges.__init__(self, foo)
     ...         self.foo = foo
-    ...     def bugBadgeVisible(self):
+    ...     def isBugBadgeVisible(self):
     ...         return True
-    ...     def blueprintBadgeVisible(self):
+    ...     def isBlueprintBadgeVisible(self):
     ...         return False
+
+    >>> decorated_foo = DecoratedFoo(foo)
+    >>> decorated_foo
+    <DecoratedFoo object at ...>
+
+Since the DecoratedFoo implements IHasBadges through the class hierarchy
+FooBadges and then BadgeMethodDelegator, getting an IHasBadges for the
+DecoratedFoo returns the same object.
+
+    >>> badger = IHasBadges(decorated_foo)
+    >>> badger is decorated_foo
+    True
+
+Getting the visible badges for the decorated_foo bypasses the underlying
+method calls, and thus avoiding unnecessary database hits (for normal
+content classes).
+
+    >>> for badge in badger.getVisibleBadges():
+    ...     print badge.small()
+    <img alt="bug" width="14" height="14" src="/@@/bug" title="Linked to a bug"/>
 

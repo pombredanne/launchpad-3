@@ -48,7 +48,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
     LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.badge import BadgeMethodDelegator
+from canonical.launchpad.webapp.badge import Badge, BadgeMethodDelegator
 from canonical.launchpad.webapp.uri import URI
 
 from canonical.widgets import SinglePopupWidget
@@ -70,7 +70,7 @@ class BranchSOP(StructuralObjectPresentation):
 
 
 class BranchBadges(BadgeMethodDelegator):
-    badges = "private", "bug", "spec"
+    badges = "private", "bug", "blueprint", "warning"
 
     def __init__(self, branch):
         self.branch = branch
@@ -86,9 +86,21 @@ class BranchBadges(BadgeMethodDelegator):
                 return True
         return False
 
-    def isSpecBadgeVisible(self):
+    def isBlueprintBadgeVisible(self):
         # When specs get privacy, this will need to be adjusted.
         return self.branch.spec_links.count() > 0
+
+    def isWarningBadgeVisible(self):
+        # When specs get privacy, this will need to be adjusted.
+        return self.branch.mirror_failures > 0
+
+    def getBadge(self, badge_name):
+        """See `IHasBadges`."""
+        if badge_name == "warning":
+            return Badge('/@@/warning', '/@@/warning-large', '',
+                         'Branch has errors')
+        else:
+            return BadgeMethodDelegator.getBadge(self, badge_name)
 
 
 class BranchNavigation(Navigation):

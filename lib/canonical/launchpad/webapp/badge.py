@@ -22,30 +22,36 @@ from zope.interface import Interface, Attribute, implements
 class Badge:
     """A badge renders to an HTML image tag of the appropriate size."""
 
-    def __init__(self, icon_image, logo_image, alt='', title=''):
-        self.icon_image = icon_image
-        self.logo_image = logo_image
+    def __init__(self, small_image, large_image, alt='', title=''):
+        self.small_image = small_image
+        self.large_image = large_image
         self.alt = alt
         self.title = title
 
-    def icon(self):
-        return ('<img alt="%s" width="14" height="14" src="%s", title="%s"/>'
-                % (self.alt, self.icon_image, self.title))
+    def small(self):
+        if self.small_image:
+            return ('<img alt="%s" width="14" height="14" src="%s"'
+                    ' title="%s"/>' % (self.alt, self.small_image, self.title))
+        else:
+            return ''
 
-    def logo(self):
-        return ('<img alt="%s" width="64" height="64" src="%s", title="%s"/>'
-                % (self.alt, self.logo_image, self.title))
+    def large(self):
+        if self.large_image:
+            return ('<img alt="%s" width="32" height="32" src="%s"'
+                    ' title="%s"/>' % (self.alt, self.large_image, self.title))
+        else:
+            return ''
 
 
 STANDARD_BADGES = {
-    'bug': Badge('/@@/bug', '/@@bug-logo',
+    'bug': Badge('/@@/bug', '/@@/bug-large',
                  'bug', 'Linked to a bug'),
-    'spec': Badge('/@@/blueprint', '/@@blueprint-logo',
-                  'blueprint', 'Linked to a blueprint'),
-    'branch': Badge('/@@/branch', '/@@branch-logo',
+    'blueprint': Badge('/@@/blueprint', None, # No big blueprint exists.
+                       'blueprint', 'Linked to a blueprint'),
+    'branch': Badge('/@@/branch', '/@@/branch-large',
                     'branch', 'Linked to a branch'),
-    'private': Badge('/@@/private', '/@@private-logo',
-                    'private', 'Private'),
+    'private': Badge('/@@/private', '/@@/private-large',
+                     'private', 'Private'),
     }
 
 
@@ -73,7 +79,9 @@ class HasBadgeBase:
         result = []
         for badge_name in self.badges:
             if self.isBadgeVisible(badge_name):
-                result.append(self.getBadge(badge_name))
+                badge = self.getBadge(badge_name)
+                if badge:
+                    result.append(badge)
         return result
 
     def isBadgeVisible(self, badge_name):

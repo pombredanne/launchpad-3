@@ -114,8 +114,8 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
     def _createItem(self, branch):
         last_commit = self.last_commit[branch]
-        bug_branches = self.branch_bug_links.get(branch.id)
-        spec_branches = self.branch_spec_links.get(branch.id)
+        bug_branches = self.branch_bug_links.get(branch.id, [])
+        spec_branches = self.branch_spec_links.get(branch.id, [])
         role = self.view.roleForBranch(branch)
         return BranchListingItem(
             branch, last_commit, self._now, bug_branches, role, spec_branches)
