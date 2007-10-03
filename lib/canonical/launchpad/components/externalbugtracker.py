@@ -86,14 +86,6 @@ class InvalidBugId(Exception):
 class BugNotFound(Exception):
     """The bug was not found in the external bug tracker."""
 
-# We map the possible exceptions raised by the externalbugtracker module
-# onto BugWatchErrorTypes so that we can handle them efficiently.
-bugwatch_error_type_map = {
-    BugTrackerConnectError: BugWatchErrorType.CONNECTIONERROR,
-    UnparseableBugData: BugWatchErrorType.UNPARSABLEBUG,
-    UnparseableBugTrackerVersion: BugWatchErrorType.UNPARSABLEBUGTRACKER,
-    UnsupportedBugTrackerVersion: BugWatchErrorType.UNSUPPORTEDBUGTRACKER}
-
 #
 # Helper function
 #
@@ -114,6 +106,20 @@ def get_external_bugtracker(bugtracker, version=None):
         raise UnknownBugTrackerTypeError(bugtrackertype.name,
             bugtracker.name)
 
+def get_bugwatcherrortype_for_error(error):
+    """Return the correct BugWatchErrorType for a given error."""
+    if isinstance(error, BugTrackerConnectError):
+        return BugWatchErrorType.CONNECTIONERROR
+    elif isinstance(error, UnparseableBugData):
+        return BugWatchErrorType.UNPARSABLEBUG
+    elif isinstance(error, UnparseableBugTrackerVersion):
+        return BugWatchErrorType.UNPARSABLEBUGTRACKER
+    elif isinstance(error, UnsupportedBugTrackerVersion):
+        return BugWatchErrorType.UNSUPPORTEDBUGTRACKER
+    elif isinstance(error, socket.timeout):
+        return BugWatchErrorType.TIMEOUT
+    else:
+        return None
 
 class ExternalBugTracker:
     """Base class for an external bug tracker."""
@@ -221,14 +227,15 @@ class ExternalBugTracker:
 
         try:
             self.initializeRemoteBugDB(bug_ids_to_update)
-        except socket.timeout:
-            # We catch socket timeouts here so that we can record them
-            # against all the bug watches that we were going to update.
-            # We then re-raise the error so that it can be handled by
-            # the checkwatches script.
-            for bugwatch in bug_watches:
-                bugwatch.lasterror = BugWatchErrorType.TIMEOUT
-            raise   
+        except Exception, error:
+            # If the error is one recognised by BugWatchErrorType we
+            # record it against all the bugwatches that should have been
+            # updated before re-raising it.
+            errortype = get_bugwatcherrortype_for_error(error)
+            if errortype:
+                for bugwatch in bug_watches:
+                    bugwatch.lasterror = errortype
+            raise
 
         # Again, fixed order here to help with testing.
         for bug_id, bug_watches in sorted(bug_watches_by_remote_bug.items()):
@@ -263,14 +270,12 @@ class ExternalBugTracker:
                 # If something unexpected goes wrong, we shouldn't break the
                 # updating of the other bugs.
 
-                # If we can record this error against the bug watches,
-                # we do so. We record the error against all the bug
-                # watches for a given bug, since that's the level of
-                # granularity we're working at.
-                if type(error) in bugwatch_error_type_map:
-                    for bug_watch in bug_watches:
-                        bug_watch.lasterror = bugwatch_error_type_map(
-                            type(error))
+                # We record errors against the bug watches where
+                # possible.
+                errortype = get_bugwatcherrortype_for_error(error)
+                if errortype:
+                    for bugwatch in bug_watches:
+                        bugwatch.lasterror = errortype
 
                 log.error("Failure updating bug %r on %s (local bugs: %s)." %
                             (bug_id, bug_tracker_url, local_ids),

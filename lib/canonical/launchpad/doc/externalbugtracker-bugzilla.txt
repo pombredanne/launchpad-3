@@ -224,9 +224,16 @@ bug tracker, an error is logged.
 
     >>> external_bugzilla._postPage = (
     ...     lambda self, data: '<invalid xml>')
-    >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    >>> external_bugzilla.updateBugWatches([bug_watch1, bug_watch2])
     Traceback (most recent call last):
     ...
     UnparseableBugData:
     Failed to parse XML description for https://bugzilla.mozilla.org...
 
+The error is also recorded in each bug watch's lasterror field so that
+it can be displayed to the user.
+
+    >>> bug_watch1.lasterror.title
+    'Unparsable Bug'
+    >>> bug_watch2.lasterror.title
+    'Unparsable Bug'
