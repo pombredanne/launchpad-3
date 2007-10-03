@@ -22,11 +22,12 @@ from zope.interface import Interface, Attribute, implements
 class Badge:
     """A badge renders to an HTML image tag of the appropriate size."""
 
-    def __init__(self, small_image, large_image, alt='', title=''):
+    def __init__(self, small_image, large_image, alt='', title='', id=''):
         self.small_image = small_image
         self.large_image = large_image
         self.alt = alt
         self.title = title
+        self.id = id
 
     def small(self):
         """Render the small image as an HTML img tag."""
@@ -39,21 +40,26 @@ class Badge:
     def large(self):
         """Render the large image as an HTML img tag."""
         if self.large_image:
+            if self.id:
+                id_attribute = 'id="%s"' % self.id
+            else:
+                id_attribute = ''
             return ('<img alt="%s" width="32" height="32" src="%s"'
-                    ' title="%s"/>' % (self.alt, self.large_image, self.title))
+                    ' title="%s" %s/>' % (
+                    self.alt, self.large_image, self.title, id_attribute))
         else:
             return ''
 
 
 STANDARD_BADGES = {
     'bug': Badge('/@@/bug', '/@@/bug-large',
-                 'bug', 'Linked to a bug'),
+                 'bug', 'Linked to a bug', 'bugbadge'),
     'blueprint': Badge('/@@/blueprint', None, # No big blueprint exists.
                        'blueprint', 'Linked to a blueprint'),
     'branch': Badge('/@@/branch', '/@@/branch-large',
-                    'branch', 'Linked to a branch'),
+                    'branch', 'Linked to a branch', 'branchbadge'),
     'private': Badge('/@@/private', '/@@/private-large',
-                     'private', 'Private'),
+                     'private', 'Private', 'privatebadge'),
     }
 
 

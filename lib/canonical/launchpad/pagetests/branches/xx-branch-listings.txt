@@ -193,7 +193,7 @@ We display badges for associated bugs.
   ...     for img in first_cell.findAll('img'):
   ...        print img['title']
   /~name12/firefox/main
-    Related to a bug
+    Linked to a bug
   /~name12/gnome-terminal/2.6
   /~name12/gnome-terminal/main
   /~name12/gnome-terminal/klingon
