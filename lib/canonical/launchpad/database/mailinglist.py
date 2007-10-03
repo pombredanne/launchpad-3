@@ -201,7 +201,7 @@ class MailingList(SQLBase):
             """ % (self.id, self.team.id),
             distinct=True, clauseTables=['TeamParticipation'])
         for subscription in subscriptions:
-            yield subscription.email
+            yield subscription.subscribed_address.email
 
 
 class MailingListSet:
@@ -284,11 +284,11 @@ class MailingListSubscription(SQLBase):
                                foreignKey='EmailAddress')
 
     @property
-    def email(self):
+    def subscribed_address(self):
         """See `IMailingListSubscription`."""
         if self.email_address is None:
             # Use the person's preferred email address.
-            return self.person.preferredemail.email
+            return self.person.preferredemail
         else:
             # Use the subscribed email address.
-            return self.email_address.email
+            return self.email_address

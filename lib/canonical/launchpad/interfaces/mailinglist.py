@@ -518,9 +518,9 @@ class IMailingListSubscription(Interface):
             'preferred email address, even if that changes.'),
         required=True)
 
-    email = TextLine(
+    subscribed_address = TextLine(
         title=_('Email Address'),
-        description=_('The text address this person is subscribed with.'),
+        description=_('The IEmailAddress this person is subscribed with.'),
         readonly=True)
 
 
