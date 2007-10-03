@@ -6,7 +6,7 @@ import pytz
 
 from twisted.internet import defer
 
-from canonical.launchpad.scripts.supermirror.jobmanager import LockError
+from canonical.launchpad.scripts.supermirror.scheduler import LockError
 
 
 UTC = pytz.timezone('UTC')

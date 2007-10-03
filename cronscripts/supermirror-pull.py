@@ -10,7 +10,7 @@ from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts import logger_options, logger
-from canonical.launchpad.scripts.supermirror import mirror, jobmanager
+from canonical.launchpad.scripts.supermirror import mirror, scheduler
 
 
 def run_mirror(log, manager):
@@ -40,7 +40,7 @@ if __name__ == '__main__':
             % (branch_type_map.keys(), which))
 
     log = logger(options, 'branch-puller')
-    manager = jobmanager.JobManager(BranchStatusClient(), log, branch_type)
+    manager = scheduler.JobManager(BranchStatusClient(), log, branch_type)
 
     reactor.callWhenRunning(run_mirror, log, manager)
     reactor.run()

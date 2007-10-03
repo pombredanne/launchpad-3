@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     PullerWorkerProtocol)
 from canonical.launchpad.scripts.supermirror.tests import createbranch
-from canonical.launchpad.scripts.supermirror import jobmanager
+from canonical.launchpad.scripts.supermirror import scheduler
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.testing import LaunchpadFunctionalLayer, reset_logging
 
@@ -45,7 +45,7 @@ class TestJobManager(unittest.TestCase):
             client = self.makeFakeClient([], [], branch_tuples)
         else:
             self.fail("Unknown branch type: %r" % (branch_type,))
-        return jobmanager.JobManager(client, logging.getLogger(), branch_type)
+        return scheduler.JobManager(client, logging.getLogger(), branch_type)
 
     def testManagerCreatesLocks(self):
         try:
@@ -64,7 +64,7 @@ class TestJobManager(unittest.TestCase):
             manager.lock()
             anothermanager = self.makeJobManager(BranchType.HOSTED, [])
             anothermanager.lockfilename = self.masterlock
-            self.assertRaises(jobmanager.LockError, anothermanager.lock)
+            self.assertRaises(scheduler.LockError, anothermanager.lock)
             self.failUnless(os.path.exists(self.masterlock))
             manager.unlock()
         finally:
@@ -108,8 +108,8 @@ class TestJobManagerInLaunchpad(TrialTestCase):
             source_branch.last_revision(), dest_branch.last_revision())
 
     def testJobRunner(self):
-        client = jobmanager.BranchStatusClient()
-        manager = jobmanager.JobManager(
+        client = scheduler.BranchStatusClient()
+        manager = scheduler.JobManager(
             client, logging.getLogger(), BranchType.HOSTED)
 
         branches = [
@@ -183,7 +183,7 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.arbitrary_branch_id = 1
         self.listener = TestPullerMasterProtocol.PullerListener()
         self.termination_deferred = defer.Deferred()
-        self.protocol = jobmanager.FireOnExit(
+        self.protocol = scheduler.FireOnExit(
             self.termination_deferred, arbitrary_timeout_period,
             self.listener)
         self.protocol.transport = TestPullerMasterProtocol.FakeTransport()
@@ -312,7 +312,7 @@ class TestMirroringEvents(TrialTestCase):
     def setUp(self):
         self.status_client = TestMirroringEvents.BranchStatusClient()
         self.arbitrary_branch_id = 1
-        self.eventHandler = jobmanager.BranchToMirror(
+        self.eventHandler = scheduler.BranchToMirror(
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
             BranchType.HOSTED, logging.getLogger(), self.status_client)
 
