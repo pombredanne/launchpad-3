@@ -228,7 +228,7 @@ class TestBranchPuller(BranchTestCase):
         branch = self.makeBranch(BranchType.IMPORTED)
         branch.requestMirror()
         transaction.commit()
-        
+
         # Create the Bazaar branch and serve it in the expected location.
         branch_path = '%08x' % branch.id
         os.mkdir(branch_path)
