@@ -73,6 +73,10 @@ def setUp(test):
 def tearDown(test):
     logout()
 
+def checkwatchesSetUp(test):
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
 def poExportSetUp(test):
     LaunchpadZopelessLayer.switchDbUser('poexport')
     setUp(test)
@@ -593,6 +597,76 @@ special = {
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer,
             ),
+    'externalbugtracker-bugzilla.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-bugzilla.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-bugzilla-oddities.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-bugzilla-oddities.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-checkwatches.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-checkwatches.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-debbugs.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-debbugs.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-mantis-csv.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-mantis-csv.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-mantis.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-mantis.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-python.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-python.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-roundup.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-roundup.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-sourceforge.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-sourceforge.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-trac.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-trac.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
     }
 
 
