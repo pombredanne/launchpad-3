@@ -93,11 +93,12 @@ uses the link to see the question page.
 
     >>> question_anchor = content(['div'], {'id' : 'portlet-questions'})[0].a
     >>> question_anchor
-    <a href=".../ubuntu/+question/...">another test bug</a>
+    <a href=".../ubuntu/+source/linux-source-2.6.15/+question/...">another
+    test bug</a>
 
     >>> user_browser.getLink('another test bug').click()
     >>> user_browser.title
-    'Ubuntu question #...: ...another test bug...'
+    'linux-source-2.6.15 in ubuntu question #...: ...another test bug...'
 
 No Privileges Person sees that the question status is Open and
 that is was asked by Foo Bar. Foo Bar is the only subscriber to
@@ -118,10 +119,10 @@ He uses the link to Related bug to return to the bug.
 
     >>> content.h2
     <h2>...Can you help with this problem?...</h2>
-    
+
     >>> user_browser.getControl("Add Answer").type
     'submit'
-    
+
     >>> portlet = find_portlet(user_browser.contents, 'Related bugs')
     >>> portlet.a
     <a href="http://bugs.launchpad.dev/bugs/10">#10: another test bug</a>
@@ -135,7 +136,7 @@ used the link the email to view the page in his browser.
 
     >>> admin_browser.open(question_anchor['href'])
     >>> admin_browser.title
-    'Ubuntu question #...: ...another test bug...'
+    'linux-source-2.6.15 in ubuntu question #...: ...another test bug...'
 
     >>> admin_browser.getControl('Problem Solved').type
     'submit'

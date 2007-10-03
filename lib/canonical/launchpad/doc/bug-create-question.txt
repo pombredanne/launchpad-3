@@ -81,7 +81,7 @@ statusexplanation explanation is set to an empty string.
     >>> bugtask.status.title
     'Invalid'
     >>> print bugtask.statusexplanation
-    None
+    This is a question.
 
 The question is automatically linked to the original bug.
 
@@ -151,4 +151,4 @@ location and a bug in another.
     >>> ['%s: %s' % (bt.target.name, bt.status.title) for bt in bugtasks]
     [u'ubuntu: Invalid', u'evolution: Invalid']
     >>> [bt.statusexplanation for bt in bugtasks]
-    [None, None]
+    [u'Many bugtasks are one question', None]

@@ -722,7 +722,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
             return
 
         question = self.context.bug.createQuestionFromBug(
-            self.context.pillar, self.user)
+            self.user, "This is not a bug. It is a question")
         self.notices.append(
             'A question was created from this bug: Question #%s: %s.'
             % (question.id, question.title))

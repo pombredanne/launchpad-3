@@ -568,13 +568,11 @@ class Bug(SQLBase):
 
     def _getQuestionTargetableBugTask(self):
         """Return the only bugtask that can be a QuestionTarget, or None.
-        
-        The bugtask's target must use Launchpad to track bugs
-        (offial_malone == True).  If the bug has more
-        than one bugtask, all must have a status of Invalid,
-        except for the one that will provide the QuestionTarget.
-        The bugtask's status cannot be under consideration for, or
-        in, development.
+
+        The bugtask is selected by these two rules:
+        1. There is only one bugtask with a status of New, Incomplete,
+           Confirmed, or Wont Fix. Any other bugtasks must be Invalid.
+        2. The bugtask's target uses Launchpad to track bugs.
         """
         bugtasks = [bugtask for bugtask in self.bugtasks
                     if bugtask.status != BugTaskStatus.INVALID]
@@ -602,17 +600,16 @@ class Bug(SQLBase):
             BugTaskDelta(bugtask, status=bugtask.status,
                 statusexplanation=bugtask.statusexplanation)]
         bugtask.transitionToStatus(BugTaskStatus.INVALID, person)
-        bugtask.statusexplanation = None
+        bugtask.statusexplanation = comment
         bug_delta = BugDelta(
             self, None, person, bugtask_deltas=bugtask_deltas)
 
-        message = getUtility(IBugMessageSet).createMessage(
+        bug_message = getUtility(IBugMessageSet).createMessage(
             self.followup_subject(), content=comment, owner=person, bug=self)
-        #bug_message = self.linkMessage(message)
 
         question = bugtask.target.createQuestionFromBug(self)
 
-        #notify(BugBecameQuestionEvent(bug_delta, bug_message, question))
+        notify(BugBecameQuestionEvent(bug_delta, bug_message, question))
         return question
 
     def getQuestionCreatedFromBug(self):

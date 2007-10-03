@@ -14,7 +14,8 @@ class BugBecameQuestionEvent:
 
     implements(IBugBecameQuestionEvent)
 
-    def __init__(self, bug, question):
-        self.bug = bug
+    def __init__(self, bug_delta, bug_message, question):
+        self.bug = bug_delta.bug
+        self.message = bug_message
         self.question = question
 
