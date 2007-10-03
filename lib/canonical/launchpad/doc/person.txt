@@ -311,36 +311,6 @@ each direct member of that team.
     ['david.allouche@canonical.com', 'foo.bar@canonical.com',
      'robertc@robertcollins.net']
 
-A team may also use a launchpad-hosted mailing list as the contact address.
-If that's the case, the mailing list's main address will be set as the
-team's preferred email, once the mailing list is constructed and active.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     IMailingListSet, MailingListStatus)
-    >>> list_set = getUtility(IMailingListSet)
-    >>> ubuntu_team_list = list_set.new(ubuntu_team)
-    >>> ubuntu_team_list.review(foobar, MailingListStatus.APPROVED)
-    >>> ubuntu_team_list.startConstructing()
-    >>> ubuntu_team.preferredemail.email
-    u'support@ubuntu.com'
-    >>> ubuntu_team_list.transitionToStatus(MailingListStatus.ACTIVE)
-    >>> flush_database_updates()
-    >>> ubuntu_team.preferredemail.email
-    u'ubuntu-team@lists.launchpad.net'
-
-If the team owner decides to use an external contact address for the team,
-the mailing list will be marked as deactivated and the team's preferred
-email will be changed to the one provided by the owner.
-
-    >>> email = emailset.new('support@ubuntu.com', ubuntu_team)
-    >>> ubuntu_team.setContactAddress(email)
-    >>> flush_database_updates()
-    >>> ubuntu_team.preferredemail.email
-    u'support@ubuntu.com'
-
-    >>> ubuntu_team_list.status
-    <...MailingListStatus.DEACTIVATING...
-
 == Deactivating user accounts ==
 
 Any user can deactivate his own account, in case they don't want it anymore

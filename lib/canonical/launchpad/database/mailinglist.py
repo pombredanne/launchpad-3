@@ -108,12 +108,17 @@ class MailingList(SQLBase):
                                     MailingListStatus.FAILED), (
                 'target_state result must be inactive or failed')
         else:
-            raise AssertionError('Not a valid state transition')
+            raise AssertionError(
+                'Not a valid state transition: %s -> %s'
+                % (self.status, target_state))
         self.status = target_state
         if target_state == MailingListStatus.ACTIVE:
-            team = self.team
-            email = getUtility(IEmailAddressSet).new(self.address, team)
-            team.setContactAddress(email)
+            email_set = getUtility(IEmailAddressSet)
+            email = email_set.getByEmail(self.address)
+            if email is None:
+                email = email_set.new(self.address, self.team)
+            assert email.person == self.team, (
+                "Email already associated with another team.")
 
     def deactivate(self):
         """See `IMailingList`."""

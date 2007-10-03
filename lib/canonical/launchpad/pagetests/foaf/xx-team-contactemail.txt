@@ -21,12 +21,12 @@ send notifications to that team.  The possible contact methods are:
 As we can see, the landscape-developers team has no contact address.
 
     >>> browser.getControl(name='field.contact_method').displayValue
-    ['\xa0None; Launchpad will contact team members directly']
+    ['\xa0Each member individually']
 
 Changing it to an external address will require the user to go through
 the email address confirmation process.
 
-    >>> browser.getControl('External').selected = True
+    >>> browser.getControl('Another e-mail address').selected = True
     >>> browser.getControl(name='field.contact_address').value = 'foo@baz.com'
     >>> browser.getControl('Change').click()
 
@@ -67,21 +67,26 @@ Follow the token link, to confirm the new email address.
     >>> browser.url
     'http://launchpad.dev/~landscape-developers/+contactaddress'
     >>> browser.getControl(name='field.contact_method').displayValue
-    ['\xa0External contact email']
+    ['\xa0Another e-mail address']
     >>> browser.getControl(name='field.contact_address').value
     'foo@baz.com'
 
-We can change that to a hosted mailing list, but the change won't have
-effect until it's approved by a Launchpad admin.
+To change that to a hosted mailing list, we first need to request the
+mailing list to be activated.
 
-    >>> browser.getControl('Launchpad hosted').selected = True
-    >>> browser.getControl('Change').click()
+    >>> browser.getControl('The Launchpad mailing list').disabled
+    True
+    >>> browser.getControl('The Launchpad mailing list').selected = True
+    Traceback (most recent call last):
+    ...
+    AttributeError: item is disabled
 
+    >>> browser.getControl('Apply for Mailing List').click()
     >>> browser.url
     'http://launchpad.dev/~landscape-developers'
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
-    Mailing list requested and now queued for approval.
+    Mailing list requested and queued for approval.
 
     >>> from canonical.launchpad.database import MailingList, Person
     >>> mailing_list = MailingList.selectOneBy(
@@ -91,11 +96,24 @@ effect until it's approved by a Launchpad admin.
 
     >>> browser.getLink('Change contact address').click()
     >>> browser.getControl(name='field.contact_method').displayValue
-    ['\xa0External contact email']
+    ['\xa0Another e-mail address']
+    >>> browser.getControl('The Launchpad mailing list').disabled
+    True
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    Not available because the application for a mailing list is pending
+    approval.
 
-Once it's approved (but not yet active) the contact method for the team
-that is seen in the UI is the 'Launchpad hosted List', but a notification
-is shown saying that the mailing list is still being created.
+Once the mailing list is requested, the button to request its activation is
+not shown anymore.
+
+    >>> browser.getControl('Apply for Mailing List')
+    Traceback (most recent call last):
+    ...
+    LookupError: ...
+
+The mailing list can be used as the team's contact address only when its
+status is ACTIVE.
 
     >>> from canonical.launchpad.interfaces import MailingListStatus
     >>> from canonical.launchpad.ftests import login, logout
@@ -105,23 +123,32 @@ is shown saying that the mailing list is still being created.
     >>> mailing_list.syncUpdate()
     >>> logout()
     >>> browser.reload()
-    >>> browser.getControl(name='field.contact_method').displayValue
-    [...Launchpad hosted team mailing list...]
+    >>> browser.getControl('The Launchpad mailing list').disabled
+    True
+    >>> browser.getControl('Apply for Mailing List')
+    Traceback (most recent call last):
+    ...
+    LookupError: ...
+
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
-    This team's mailing list has been approved and is being constructed...
+    Not available because mailing list is being constructed.
 
     >>> mailing_list.startConstructing()
     >>> browser.reload()
-    >>> browser.getControl(name='field.contact_method').displayValue
-    [...Launchpad hosted team mailing list...]
+    >>> browser.getControl('The Launchpad mailing list').disabled
+    True
+    >>> browser.getControl('Apply for Mailing List')
+    Traceback (most recent call last):
+    ...
+    LookupError: ...
+
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
-    This team's mailing list has been approved and is being constructed...
+    Not available because mailing list is being constructed.
 
-
-When the mailing list is actually constructed, it's used as the team's
-contact address.
+When the mailing list is constructed and made active, it can be used as
+the team's contact address.
 
     >>> login('foo.bar@canonical.com')
     >>> mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
@@ -129,12 +156,19 @@ contact address.
     >>> logout()
 
     >>> browser.reload()
-    >>> [msg for msg in get_feedback_messages(browser)]
-    []
+    >>> browser.getControl('Apply for Mailing List')
+    Traceback (most recent call last):
+    ...
+    LookupError: ...
 
+    >>> browser.getControl('The Launchpad mailing list').disabled
+    False
+    >>> browser.getControl('The Launchpad mailing list').selected = True
+    >>> browser.getControl('Change').click()
+
+    >>> browser.getLink('Change contact address').click()
     >>> browser.getControl(name='field.contact_method').displayValue
-    [...Launchpad hosted team mailing list...]
-
+    ['\xa0The Launchpad mailing list for this team...]
 
 XXX: We don't really want all this functionality to be visible to users
 when this code lands on mainline, so there's a config variable which
@@ -149,15 +183,15 @@ functionality on production. -- Guilherme Salgado 2007-09-20
 
     >>> radio = browser.getControl(name='field.contact_method')
     >>> radio.displayOptions
-    ['\xa0None; Launchpad will contact team members directly',
-     '\xa0Launchpad hosted team mailing list
-      (i.e. ubuntumembers@teams.launchpad.net)',
-     '\xa0External contact email']
+    ['\xa0Each member individually',
+     '\xa0The Launchpad mailing list for this team -
+      landscape-developers@lists.launchpad.net',
+     '\xa0Another e-mail address']
 
     >>> config.mailman.expose_hosted_mailing_lists = False
     >>> browser.reload()
     >>> radio = browser.getControl(name='field.contact_method')
     >>> radio.displayOptions
-    ['\xa0None; Launchpad will contact team members directly',
-     '\xa0External contact email']
+    ['\xa0Each member individually',
+     '\xa0Another e-mail address']
 

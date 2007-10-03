@@ -44,16 +44,16 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     AccountStatus, BugTaskSearchParams, BugTaskStatus, EmailAddressStatus,
-    IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet, IEmailAddress,
-    IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo, IHasMugshot, IIrcID,
-    IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
-    ILaunchpadStatisticSet, ILoginTokenSet, IMailingListSet,
+    IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
+    IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo,
+    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
+    ILaunchpadCelebrities, ILaunchpadStatisticSet, ILoginTokenSet,
     IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet, IProduct,
     ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey, ISSHKeySet,
     ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet, JoinNotAllowed,
-    LoginTokenType, MailingListStatus, PersonCreationRationale,
-    QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants, ShippingRequestStatus,
-    SSHKeyType, TeamMembershipRenewalPolicy, TeamMembershipStatus,
+    LoginTokenType, PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH,
+    ShipItConstants, ShippingRequestStatus, SSHKeyType,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus,
     TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.archive import Archive
@@ -1577,26 +1577,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def setContactAddress(self, email):
         """See `IPerson`."""
         assert self.isTeam(), "This method must be used only for teams."
-        if self.preferredemail is not None:
-            self.preferredemail.destroySelf()
-        mailing_list = getUtility(IMailingListSet).get(self.name)
-        if (mailing_list is not None
-            and mailing_list.address != email.email
-            and mailing_list.status == MailingListStatus.ACTIVE):
-            mailing_list.deactivate()
         self._setPreferredEmail(email)
 
     def setPreferredEmail(self, email):
         """See `IPerson`."""
         assert not self.isTeam(), "This method must not be used for teams."
-        preferredemail = self.preferredemail
-        if preferredemail is not None:
-            preferredemail.status = EmailAddressStatus.VALIDATED
-            # We need to flush updates, because we don't know what order
-            # SQLObject will issue the changes and we can't set the new
-            # address to PREFERRED until the old one has been set to VALIDATED
-            preferredemail.syncUpdate()
-        elif not self.isTeam():
+        if self.preferredemail is None:
             # This is the first time we're confirming this person's email
             # address, so we now assume this person has a Launchpad account.
             # XXX: This is a hack! In the future we won't have this
@@ -1604,10 +1590,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # will do for now. -- Guilherme Salgado, 2007-07-03
             self.account_status = AccountStatus.ACTIVE
             self.account_status_comment = None
-        else:
-            # This is a team, so we just need to create the new email address
-            # and set it as its preferred one.
-            pass
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):
@@ -1616,6 +1598,13 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
         assert email.person.id == self.id
+
+        if self.preferredemail is not None:
+            self.preferredemail.status = EmailAddressStatus.VALIDATED
+            # We need to flush updates, because we don't know what order
+            # SQLObject will issue the changes and we can't set the new
+            # address to PREFERRED until the old one has been set to VALIDATED
+            self.preferredemail.syncUpdate()
 
         # Get the non-proxied EmailAddress object, so we can call
         # syncUpdate() on it.

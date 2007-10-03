@@ -280,8 +280,15 @@ later.
 
 After Mailman has worked at constructing lists for a while, it reports (again
 through XMLRPC not shown here) on the status of each list construction.  Most,
-if not all will succeed, thus activating the team's mailing list.
+if not all will succeed, thus activating the team's mailing list. Also, once
+a mailing list is made active, its email address is registered in Launchpad
+and associated with the team's mailing list, so that it can be used as the
+team's contact address.
 
+    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> email_set = getUtility(IEmailAddressSet)
+    >>> print email_set.getByEmail(list_one.address)
+    None
     >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
     >>> list_three.transitionToStatus(MailingListStatus.ACTIVE)
     >>> flush_database_updates()
@@ -289,6 +296,8 @@ if not all will succeed, thus activating the team's mailing list.
     'ACTIVE'
     >>> list_three.status.name
     'ACTIVE'
+    >>> email_set.getByEmail(list_one.address)
+    <EmailAddress at ...>
 
 Some list constructions may fail.
 
@@ -398,7 +407,7 @@ MODIFIED is not allowed.
     >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
     Traceback (most recent call last):
     ...
-    AssertionError: Not a valid state transition
+    AssertionError: Not a valid state transition: Modified -> Active
 
 What really happens is that the list's state is first transitioned to
 UPDATING, and then to ACTIVE or FAILED.
