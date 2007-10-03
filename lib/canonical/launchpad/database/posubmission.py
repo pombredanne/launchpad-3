@@ -156,7 +156,7 @@ class POSubmissionSet:
                     better.pluralform = pos.pluralform AND
                     better.potranslation = pos.potranslation AND
                     better.active)
-            ORDER BY potranslation, primemsgid, pos.datecreated DESC
+            ORDER BY potranslation, primemsgid, pos.id DESC
             ) AS suggestions
             """ % parameters)
         available.update(dict(cur.fetchall()))
