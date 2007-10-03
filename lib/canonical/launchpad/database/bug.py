@@ -594,22 +594,26 @@ class Bug(SQLBase):
             'This bug was already converted to question #%s.' % question.id)
         bugtask = self._getQuestionTargetableBugTask()
         assert bugtask is not None, (
-            'A question cannot be created from this bug.')
+            'A question cannot be created from this bug without a '
+            'valid bugtask.')
 
-        bugtask_deltas = [
-            BugTaskDelta(bugtask, status=bugtask.status,
-                statusexplanation=bugtask.statusexplanation)]
+        bugtask_before_modification = Snapshot(
+            bugtask, providing=providedBy(bugtask))
         bugtask.transitionToStatus(BugTaskStatus.INVALID, person)
         bugtask.statusexplanation = comment
-        bug_delta = BugDelta(
-            self, None, person, bugtask_deltas=bugtask_deltas)
+        notify(
+            SQLObjectModifiedEvent(
+                object=bugtask,
+                object_before_modification=bugtask_before_modification,
+                edited_fields=['status', 'statusexplanation'],
+                user=person))
 
-        bug_message = getUtility(IBugMessageSet).createMessage(
-            self.followup_subject(), content=comment, owner=person, bug=self)
+        self.newMessage(
+            owner=person, subject=self.followup_subject(), content=comment)
 
         question = bugtask.target.createQuestionFromBug(self)
 
-        notify(BugBecameQuestionEvent(bug_delta, bug_message, question))
+        notify(BugBecameQuestionEvent(self, question, person))
         return question
 
     def getQuestionCreatedFromBug(self):

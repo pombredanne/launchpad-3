@@ -1041,14 +1041,15 @@ def notify_bug_cve_deleted(bugcve, event):
 def notify_bug_became_question(event):
     """Notify CC'd list that a bug was made into a question.
     
-    :bug: The Bug that became a question.
-    :question: The Question the bug became.
+    The event must contain the bug that became a question, and the question
+    that the bug became.
     """
     bug = event.bug
     question = event.question
-    # XXX sinzui 2007-09-26
-    # Finish this function! We probably need the old bug for
-    # add_bug_change_notifications(bug_delta)
+    change_info = '\n'.join([
+        '** bug changed to question: "%s"\n' % question.title,
+        '   %s' %  canonical_url(question)])
+    bug.addChangeNotification(change_info, person=event.user)
 
 
 def notify_bug_attachment_added(bugattachment, event):
