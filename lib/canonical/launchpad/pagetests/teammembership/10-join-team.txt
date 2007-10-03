@@ -2,7 +2,7 @@
 
 Karl will join the newly created team.
 
-    >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription_policy'))
@@ -45,16 +45,14 @@ the team's home page.
 If this was a moderated team, the membership would not have been automatically
 approved, though.
 
-    >>> from zope.testbrowser.testing import Browser
     >>> from canonical.launchpad.database import Person
     >>> from canonical.launchpad.interfaces import TeamSubscriptionPolicy
     >>> myemail = Person.selectOneBy(name='myemail')
     >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
     >>> myemail.syncUpdate()
 
-    >>> browser = Browser()
-    >>> browser.addHeader(
-    ...     'Authorization', 'Basic james.blackwell@ubuntulinux.com:jblack')
+    >>> browser = setupBrowser(
+    ...     auth='Basic james.blackwell@ubuntulinux.com:jblack')
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subscription_policy'))
@@ -95,9 +93,8 @@ If it was a restricted team, users wouldn't even see a link to join the team.
     >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.RESTRICTED
     >>> myemail.syncUpdate()
 
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization',
-    ...     'Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> browser = setupBrowser(
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> browser.url
     'http://launchpad.dev/~myemail'

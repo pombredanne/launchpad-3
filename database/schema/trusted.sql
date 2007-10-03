@@ -9,7 +9,7 @@ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
     import re
     name = args[0]
-    pat = r"^[a-z0-9][a-z0-9\+\.\-]*$"
+    pat = r"^[a-z0-9][a-z0-9\+\.\-]*\Z"
     if re.match(pat, name):
         return 1
     return 0
@@ -32,7 +32,7 @@ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
     import re
     name = args[0]
-    pat = r"^(?i)[a-z0-9][a-z0-9+\.\-@_]+$"
+    pat = r"^(?i)[a-z0-9][a-z0-9+\.\-@_]*\Z"
     if re.match(pat, name):
         return 1
     return 0
@@ -764,5 +764,33 @@ $$
         "Unable to generate unique openid_identifier. "
         "Need to increase length of tokens.")
 $$;
+
+
+CREATE OR REPLACE FUNCTION set_bug_date_last_message() RETURNS TRIGGER
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+$$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE Bug
+        SET date_last_message = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+        WHERE Bug.id = NEW.bug;
+    ELSE
+        UPDATE Bug
+        SET date_last_message = max_datecreated
+        FROM (
+            SELECT BugMessage.bug, max(Message.datecreated) AS max_datecreated
+            FROM BugMessage, Message
+            WHERE BugMessage.id <> OLD.id
+                AND BugMessage.bug = OLD.bug
+                AND BugMessage.message = Message.id
+            GROUP BY BugMessage.bug
+            ) AS MessageSummary
+        WHERE Bug.id = MessageSummary.bug;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION set_bug_date_last_message() IS 'AFTER INSERT trigger on BugMessage maintaining the Bug.date_last_message column';
 
 

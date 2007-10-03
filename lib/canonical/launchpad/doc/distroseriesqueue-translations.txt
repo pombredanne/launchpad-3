@@ -4,7 +4,7 @@ This test covers the use case when a package includes translations and is
 uploaded into the system.
 
   >>> from canonical.launchpad.database import (
-  ...     ProcessorFamily, Component, GPGKey, Section, Manifest,
+  ...     ProcessorFamily, Component, GPGKey, Section,
   ...     SecureSourcePackagePublishingHistory)
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet)
@@ -48,8 +48,7 @@ queue:
   ...     pmount_sourcepackagename, "0.9.7-2ubuntu2", dapper.owner,
   ...     None, None, 'i386', Component.get(1), dapper.owner,
   ...     SourcePackageUrgency.LOW, None, None, GPGKey.get(1), Section.get(1),
-  ...     Manifest.get(1), None, None, None, None,
-  ...     dapper.main_archive, 'copyright ?!')
+  ...     None, None, None, None, dapper.main_archive, 'copyright ?!')
 
   >>> publishing_history = SecureSourcePackagePublishingHistory(
   ...     distroseries=dapper.id,

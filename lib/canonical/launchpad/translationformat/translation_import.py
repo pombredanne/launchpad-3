@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'TranslationImporter',
+    'importers'
     ]
 
 import gettextpo
@@ -12,21 +13,25 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
+from operator import attrgetter
+
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IPersonSet, ITranslationExporter, ITranslationImporter,
     NotExportedFromLaunchpad, OutdatedTranslationError,
-    PersonCreationRationale, TranslationConflict, TranslationConstants)
+    PersonCreationRationale, RosettaImportStatus, TranslationConflict,
+    TranslationConstants, TranslationFileFormat)
+from canonical.launchpad.translationformat.kde_po_importer import (
+    KdePOImporter)
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPOImporter)
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     MozillaXpiImporter)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import (
-    RosettaImportStatus, TranslationFileFormat)
 
 importers = {
+    TranslationFileFormat.KDEPO: KdePOImporter(),
     TranslationFileFormat.PO: GettextPOImporter(),
     TranslationFileFormat.XPI: MozillaXpiImporter(),
     }
@@ -77,13 +82,15 @@ class TranslationImporter:
         for importer in importers.itervalues():
             file_extensions.extend(importer.file_extensions)
 
-        return sorted(file_extensions)
+        return sorted(set(file_extensions))
 
-    def getTranslationFileFormatByFileExtension(self, file_extension):
+    def getTranslationFileFormat(self, file_extension, file_contents):
         """See `ITranslationImporter`."""
-        for importer in importers.itervalues():
+        all_importers = importers.values()
+        all_importers.sort(key=attrgetter('priority'), reverse=True)
+        for importer in all_importers:
             if file_extension in importer.file_extensions:
-                return importer.format
+                return importer.getFormat(file_contents)
 
         return None
 
@@ -106,7 +113,7 @@ class TranslationImporter:
             translation_import_queue_entry.format)
         exporter = getUtility(ITranslationExporter)
         format_exporter = exporter.getExporterProducingTargetFileFormat(
-            importer.format)
+            translation_import_queue_entry.format)
 
         assert importer is not None, (
             'There is no importer available for %s files' % (

@@ -1,4 +1,7 @@
-<div metal:define-macro="branch-name-from-url">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  metal:define-macro="branch-name-from-url">
 
 <script type="text/javascript">
 

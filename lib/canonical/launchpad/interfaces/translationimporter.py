@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Bool, Choice, List, TextLine
+from zope.schema import Bool, Choice, Int, List, TextLine
 
 from canonical.launchpad.interfaces.translationcommonformat import (
     TranslationImportExportBaseException)
@@ -79,12 +79,13 @@ class ITranslationImporter(Interface):
         title=u'List of file extensions we have imports for.',
         required=True, readonly=True)
 
-    def getTranslationFileFormatByFileExtension(file_extension):
+    def getTranslationFileFormat(file_extension, file_contents):
         """Return the translation file format for the given file extension.
 
         :param file_extension: File extension including the dot.
+        :param file_contents: File contents.
         :return: A `TranslationFileFormat` for the given file extension
-            or None if it's not a known extension.
+            and file contents or None if it's not supported format.
         """
 
     def getTranslationFormatImporter(file_format):
@@ -116,12 +117,28 @@ class ITranslationImporter(Interface):
 class ITranslationFormatImporter(Interface):
     """Translation file format importer."""
 
-    # XXX CarlosPerelloMarin 20070905: This should be moved to use the new
-    # Enum infrastructure. See bug #135853 for more information.
-    format = Choice(
-        title=u'The file format of the import.',
-        vocabulary='TranslationFileFormat',
-        required=True)
+    def getFormat(file_contents):
+        """The file format of the import.
+
+        :param file_contents: A unicode string with the contents of the file
+            being imported.  A returned format may sometimes be different
+            from the base format of the `ITranslationFormatImporter`, and
+            that is determined based on the `contents`.
+        :return: A `TranslationFileFormat` value.
+        """
+
+    priority = Int(
+        title=u'Priority among importers for the same file extension.',
+        description=u'''
+            Priority an `ITranslationFormatImporter` has if there are
+            multiple importers for the same file extension.
+
+            Higher value indicates higher priority, i.e. that importer
+            is tried first.
+            ''',
+        required=True,
+        default=0
+        )
 
     content_type = TextLine(
         title=u'Content type string for this file format.',

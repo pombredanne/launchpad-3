@@ -2,7 +2,7 @@
 
 When a bug report is public, it appears like any other Launchpad page.
 
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open("http://launchpad.dev/bugs/4")
     >>> print find_tag_by_id(browser.contents, 'privatestyle')
     None
@@ -35,13 +35,11 @@ Of course, Foo Bar gets redirected:
 
 But poor old no privs does not, and neither do anonymous users:
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-    >>> browser.addHeader("Authorization", "Basic no-priv@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> browser.open('http://bugs.launchpad.dev/bugs/4')
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 403: Forbidden
+    Unauthorized: Bug 4 is private
 
     >>> anon_browser.open('http://bugs.launchpad.dev/bugs/4')
     Traceback (most recent call last):

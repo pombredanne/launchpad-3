@@ -75,11 +75,13 @@ from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.gpg import *
 from canonical.launchpad.interfaces.gpghandler import *
+from canonical.launchpad.interfaces.hwdb import *
 from canonical.launchpad.interfaces.infestation import *
 from canonical.launchpad.interfaces.irc import *
 from canonical.launchpad.interfaces.jabber import *
 from canonical.launchpad.interfaces.karma import *
 from canonical.launchpad.interfaces.language import *
+from canonical.launchpad.interfaces.languagepack import *
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.launchpadstatistic import *
 from canonical.launchpad.interfaces.librarian import *
@@ -87,9 +89,6 @@ from canonical.launchpad.interfaces.logintoken import *
 from canonical.launchpad.interfaces.mail import *
 from canonical.launchpad.interfaces.mailbox import *
 from canonical.launchpad.interfaces.mailinglist import *
-from canonical.launchpad.interfaces.manifestancestry import *
-from canonical.launchpad.interfaces.manifestentry import *
-from canonical.launchpad.interfaces.manifest import *
 from canonical.launchpad.interfaces.mentoringoffer import *
 from canonical.launchpad.interfaces.message import *
 from canonical.launchpad.interfaces.milestone import *
@@ -145,6 +144,7 @@ from canonical.launchpad.interfaces.temporaryblobstorage import *
 from canonical.launchpad.interfaces.translationcommonformat import *
 from canonical.launchpad.interfaces.translationexporter import *
 from canonical.launchpad.interfaces.translationimporter import *
+from canonical.launchpad.interfaces.translationfileformat import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *
 from canonical.launchpad.interfaces.questioncollection import *
@@ -161,7 +161,6 @@ from canonical.launchpad.interfaces.vpoexport import *
 from canonical.launchpad.interfaces.vpotexport import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
-from canonical.launchpad.interfaces.developmentmanifest import *
 from canonical.launchpad.interfaces.distrocomponentuploader import *
 
 from canonical.launchpad.interfaces.cal import *

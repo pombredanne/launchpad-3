@@ -7,9 +7,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.browser.productseries import ProductSeriesSourceView
 from canonical.launchpad.ftests.harness import login, logout, ANONYMOUS
-from canonical.launchpad.interfaces import IProductSet
+from canonical.launchpad.interfaces import IProductSet, RevisionControlSystems
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.lp.dbschema import RevisionControlSystems
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -37,10 +36,10 @@ class RcsTypeWidgetDisectionTestCase(unittest.TestCase):
             view.rcstype_none, 'radio', 'field.rcstype', '', checked=True)
         self.assertInputElement(
             view.rcstype_cvs, 'radio', 'field.rcstype',
-            RevisionControlSystems.CVS.title, checked=False)
+            RevisionControlSystems.CVS.name, checked=False)
         self.assertInputElement(
             view.rcstype_svn, 'radio', 'field.rcstype',
-            RevisionControlSystems.SVN.title, checked=False)
+            RevisionControlSystems.SVN.name, checked=False)
         self.assertInputElement(
             view.rcstype_emptymarker, 'hidden', 'field.rcstype-empty-marker',
             '1')
@@ -57,7 +56,7 @@ class RcsTypeWidgetDisectionTestCase(unittest.TestCase):
             view.rcstype_none, 'radio', 'field.rcstype', '', checked=False)
         self.assertInputElement(
             view.rcstype_cvs, 'radio', 'field.rcstype',
-            RevisionControlSystems.CVS.title, checked=True)
+            RevisionControlSystems.CVS.name, checked=True)
 
     def assertInputElement(self, data, type, name, value, checked=False):
         soup = BeautifulSoup(data)

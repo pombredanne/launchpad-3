@@ -1,11 +1,9 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 import unittest
 from cStringIO import StringIO
 
 from canonical.testing import LaunchpadFunctionalLayer
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
-from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import UploadFailed
 

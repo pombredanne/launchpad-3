@@ -230,12 +230,20 @@
     />
 
   <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
+    />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     name="+translations"
     facet="translations"
     class="canonical.launchpad.browser.PersonTranslationView"
     permission="zope.Public"
     template="../templates/person-translations.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
   <browser:page
