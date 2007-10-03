@@ -328,7 +328,7 @@ kept in sync.
     u'evolution (Debian)'
 
     >>> debian_task.bugwatch.bugtracker.name
-    u'debbugs'
+    u'debbugs-checkwatches'
     >>> debian_task.bugwatch.remotebug
     u'322535'
 

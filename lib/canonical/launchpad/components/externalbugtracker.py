@@ -614,8 +614,7 @@ class DebBugs(ExternalBugTracker):
         bug_watch = getUtility(IBugWatchSet).createBugWatch(
             bug=bug,
             owner=getUtility(ILaunchpadCelebrities).bug_watch_updater,
-            bugtracker=getUtility(ILaunchpadCelebrities).debbugs,
-            remotebug=remote_bug)
+            bugtracker=self.bugtracker, remotebug=remote_bug)
         debian_task.bugwatch = bug_watch
 
         return bug
