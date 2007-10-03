@@ -520,11 +520,20 @@ def copy_active_translations_as_update(child, transaction, logger):
             cur = cursor()
             allow_sequential_scans(cur, True)
             cur.execute("""
-                DELETE FROM %s AS holding
-                WHERE pomsgset NOT IN (
-                    SELECT id FROM POMsgSet WHERE id >= %s AND id <= %s)
-                """ % (
-                holding_table, self.lowest_pomsgset, self.highest_pomsgset))
+                CREATE TEMP TABLE temp_final_pomsgsets
+                ON COMMIT DROP
+                AS SELECT id FROM POMsgSet
+                WHERE id >= %s AND id <= %s
+                """ % (self.lowest_pomsgset, self.highest_pomsgset))
+            cur.execute("""
+                CREATE UNIQUE INDEX temp_final_pomsgsets_idx
+                ON temp_final_pomsgsets(id)
+                """)
+            cur.execute("ANALYZE temp_final_pomsgsets")
+            cur.execute("""
+                DELETE FROM %s
+                WHERE pomsgset NOT IN (SELECT id FROM temp_final_pomsgsets)
+                """ % holding_table)
             allow_sequential_scans(cur, False)
 
     def prepare_posubmission_batch(
