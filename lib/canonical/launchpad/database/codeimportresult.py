@@ -47,12 +47,3 @@ class CodeImportResultSet(object):
     """See `ICodeImportResultSet`."""
 
     implements(ICodeImportResultSet)
-
-    def getAll(self):
-        """See `ICodeImportResultSet`."""
-
-    def getForImport(self, code_import):
-        """See `ICodeImportResultSet`."""
-
-    def getForMachine(self, machine):
-        """See `ICodeImportResultSet`."""

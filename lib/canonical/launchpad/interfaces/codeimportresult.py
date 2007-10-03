@@ -126,12 +126,3 @@ class ICodeImportResult(Interface):
 
 class ICodeImportResultSet(Interface):
     """The set of all CodeImportResults."""
-
-    def getAll():
-        """Fetch all results, most recent first."""
-
-    def getForCodeImport(code_import):
-        """Fetch the results for the given import, most recent first."""
-
-    def getForMachine(machine):
-        """Fetch the results for the given machine, most recent first."""

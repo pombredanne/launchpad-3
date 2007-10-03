@@ -48,41 +48,8 @@ class CodeImportJob(SQLBase):
 
     date_started = UtcDateTimeCol(notNull=False, default=None)
 
-    def assign(self, machine):
-        """See `ICodeImportJob`."""
-
-    def request(self, requesting_user):
-        """See `ICodeImportJob`."""
-
-    def kill(self, killing_user):
-        """See `ICodeImportJob`."""
-
-    def reclaim(self):
-        """See `ICodeImportJob`."""
-
-    def start(self):
-        """See `ICodeImportJob`."""
-
-    def finish(self, result_status, log_file_alias):
-        """See `ICodeImportJob`."""
-
-    def beat(self, logtail):
-        """See `ICodeImportJob`."""
-
 
 class CodeImportJobSet(object):
     """See `ICodeImportJobSet`."""
 
     implements(ICodeImportJobSet)
-
-    def new(self, code_import, due_date):
-        """See `ICodeImportJobSet`."""
-        return CodeImportJob(code_import=code_import,
-                             due_date=due_date)
-
-
-    def jobForImport(self, code_import):
-        """See `ICodeImportJobSet`."""
-
-    def jobsForMachine(self, machine):
-        """See `ICodeImportJobSet`."""
