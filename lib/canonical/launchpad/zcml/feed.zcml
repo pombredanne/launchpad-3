@@ -39,6 +39,14 @@
         permission="zope.Public"
         class="canonical.launchpad.feed.PersonBugsFeed"
         />
+    <!-- Single bug -->
+    <browser:page
+        for="canonical.launchpad.interfaces.IBug"
+        name="bug.atom"
+        permission="zope.Public"
+        class="canonical.launchpad.feed.BugFeed"
+        />
+
     <!-- Search page -->
     <browser:page
         for="*"

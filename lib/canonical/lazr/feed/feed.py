@@ -84,6 +84,10 @@ class FeedBase(LaunchpadFormView):
         """Get the URL for the feed logo."""
         raise NotImplementedError
 
+    def getIcon(self):
+        """Get the icon for the feed."""
+        return "%s/@@/launchpad" % self.getSiteURL()
+
     def getUpdated(self):
         """Get the update time for the feed.
 

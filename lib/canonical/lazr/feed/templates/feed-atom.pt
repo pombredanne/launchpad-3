@@ -22,7 +22,10 @@
     <id tal:content="view/getURL">http://api.launchpad.net/bugs/</id>
     <link rel="self" tal:attributes="href view/getURL" />
     <link rel="alternate" tal:attributes="href view/getSiteURL" />
-    <logo tal:content="view/getLogo" />
+    <logo tal:condition="view/getLogo"
+          tal:content="view/getLogo" />
+    <icon tal:condition="view/getIcon"
+          tal:content="view/getIcon" />
     <updated tal:condition="view/getUpdated"
              tal:content="view/getUpdated">2007-05-26T12:45:01Z</updated>
     <entry tal:repeat="entry view/getItems">

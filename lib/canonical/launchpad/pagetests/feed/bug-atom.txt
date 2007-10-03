@@ -38,14 +38,15 @@ Define a helper function for parsing the entries:
     Foo Bar
     >>> print extract_text(entry.author('uri')[0])
     http://launchpad.dev/~name16
+
     >>> entry = entries[1]
+    >>> print extract_text(entry.title)
+    [11] Make Jokosher use autoaudiosink
     >>> print extract_text(entry.author('name')[0])
     Foo Bar
     >>> print extract_text(entry.author('uri')[0])
     http://launchpad.dev/~name16
 
-    >>> print extract_text(entry.title)
-    [11] Make Jokosher use autoaudiosink
 
 == Latest bugs for a project ==
 
@@ -109,6 +110,50 @@ Define a helper function for parsing the entries:
     >>> print extract_text(entry.author('uri')[0])
     http://launchpad.dev/~name16
 
+== Latest bugs for a team ==
+
+First, make a team responsible for some bugs.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet)
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> one_mem_browser = setupBrowser(auth='Basic one-membership@test.com:test')
+    >>> personset = getUtility(IPersonSet)
+
+Subscribe simple-team to a number of bugs.
+
+    >>> one_mem_browser.open('http://launchpad.dev/bugs/1')
+    >>> one_mem_browser.getLink('Subscribe someone else').click()
+    >>> one_mem_browser.getControl('Person').value = 'simple-team'
+    >>> one_mem_browser.getControl('Add').click()
+
+    >>> one_mem_browser.open('http://launchpad.dev/bugs/2')
+    >>> one_mem_browser.getLink('Subscribe someone else').click()
+    >>> one_mem_browser.getControl('Person').value = 'simple-team'
+    >>> one_mem_browser.getControl('Add').click()
+
+    >>> one_mem_browser.open('http://launchpad.dev/bugs/3')
+    >>> one_mem_browser.getLink('Subscribe someone else').click()
+    >>> one_mem_browser.getControl('Person').value = 'simple-team'
+    >>> one_mem_browser.getControl('Add').click()
+
+
+Now we can do a query on the lastest bugs for simple team and expect
+some results.
+
+    >>> browser.open('http://launchpad.dev/~simple-team/latest-bugs.atom')
+    >>> browser.title
+    'Bugs for Simple Team'
+
+    >>> soup = BSS(browser.contents)
+    >>> print extract_text(soup.find('id'))
+    http://launchpad.dev/~simple-team/latest-bugs.atom
+
+    >>> entries = parse_entries(browser.contents)
+    >>> print len(entries)
+    3
+
 == General bug search ==
 
     >>> import cgi
@@ -125,7 +170,7 @@ Define a helper function for parsing the entries:
 
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
-    20
+    10
 
     >>> entry = entries[0]
     >>> print extract_text(entry.title)
@@ -142,4 +187,16 @@ Define a helper function for parsing the entries:
     Sample Person
     >>> print extract_text(entry.author('uri')[0])
     http://launchpad.dev/~name12
+
+== Results for a single bug ==
+
+    >>> browser.open('http://launchpad.dev/bugs/1/bug.atom')
+    >>> browser.title
+    'Bug 1'
+    >>> entries = parse_entries(browser.contents)
+    >>> print len(entries)
+    1
+    >>> entry = entries[0]
+    >>> print extract_text(entry.title)
+    [1] Firefox does not support SVG
 

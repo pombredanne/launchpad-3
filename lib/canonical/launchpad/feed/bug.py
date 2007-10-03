@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugFeed',
     'BugTargetBugsFeed',
     'PersonBugsFeed',
     'SearchBugsFeed',
@@ -16,12 +17,24 @@ from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.browser.bug import BugView
 from canonical.launchpad.browser.bugtask import BugTaskView
 from canonical.launchpad.browser import (
     BugsBugTaskSearchListingView, BugTargetView,
     PersonRelatedBugsView)
 from canonical.launchpad.interfaces import (
-    IBugTarget, IBugTaskSet, IPerson)
+    IBug, IBugTarget, IBugTaskSet, IPerson)
+
+
+def get_unique_bug_tasks(items):
+    ids = set()
+    unique_items = []
+    for item in items:
+        if item.bug.id in ids:
+            continue
+        ids.add(item.bug.id)
+        unique_items.append(item)
+    return unique_items
 
 
 class BugFeedContentView(LaunchpadView):
@@ -76,7 +89,8 @@ class BugsFeedBase(FeedBase):
         return "%s/%s" % (canonical_url(self.context), self.feed_name)
 
     def getLogo(self):
-        return "http://launchpad.dev/+icing/app-bugs.gif"
+        """Get the application-specific logo."""
+        return "%s/@@/bug" % self.getSiteURL()
 
     def getItems(self):
         """Get the items for the feed.
@@ -104,6 +118,28 @@ class BugsFeedBase(FeedBase):
                           content = FeedTypedData(content_view.render(),
                                                   content_type="xhtml"))
         return entry
+
+
+class BugFeed(BugsFeedBase):
+    """Bug feeds for single bug."""
+
+    usedfor = IBug
+    feed_name = "bug.atom"
+
+    def initialize(self):
+        super(BugFeed, self).initialize()
+        self.delegate_view = BugView(self.context, self.request)
+        self.delegate_view.initialize()
+
+    def getTitle(self):
+        """Title for the feed."""
+        return "Bug %s" % self.context.id
+
+    def getRawItems(self):
+        """Get the raw set of items for the feed."""
+        bugtasks = list(self.context.bugtasks)
+        # All of the bug tasks are for the same bug
+        return bugtasks[:1]
 
 
 class BugTargetBugsFeed(BugsFeedBase):
@@ -143,10 +179,9 @@ class PersonBugsFeed(BugsFeedBase):
 
     def getRawItems(self):
         """Perform the search."""
-
         results =  self.delegate_view.search()
         items = results.getBugListingItems()
-        return items[:self.quantity]
+        return get_unique_bug_tasks(items)[:self.quantity]
 
 
 class SearchBugsFeed(BugsFeedBase):
@@ -170,7 +205,7 @@ class SearchBugsFeed(BugsFeedBase):
 
         results =  self.delegate_view.search(searchtext=None, context=None, extra_params=None)
         items = results.getBugListingItems()
-        return items[:self.quantity]
+        return get_unique_bug_tasks(items)[:self.quantity]
 
     def getTitle(self):
         """Title for the feed."""
