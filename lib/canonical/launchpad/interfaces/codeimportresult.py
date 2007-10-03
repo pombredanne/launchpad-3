@@ -130,7 +130,7 @@ class ICodeImportResultSet(Interface):
     def getAll():
         """Fetch all results, most recent first."""
 
-    def getForImport(code_import):
+    def getForCodeImport(code_import):
         """Fetch the results for the given import, most recent first."""
 
     def getForMachine(machine):

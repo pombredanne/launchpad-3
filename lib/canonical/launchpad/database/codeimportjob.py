@@ -40,7 +40,7 @@ class CodeImportJob(SQLBase):
         dbName='requesting_user', foreignKey='Person',
         notNull=False, default=None)
 
-    ordering = IntCol(notNull=True, default=0)
+    ordering = IntCol(notNull=False)
 
     heartbeat = UtcDateTimeCol(notNull=False, default=None)
 
@@ -55,6 +55,9 @@ class CodeImportJob(SQLBase):
         """See `ICodeImportJob`."""
 
     def kill(self, killing_user):
+        """See `ICodeImportJob`."""
+
+    def reclaim(self):
         """See `ICodeImportJob`."""
 
     def start(self):

@@ -1,9 +1,32 @@
 = Code Import Results =
 
+A CodeImportResult is a record of a completed code import job.  They
+are accessed via a utility registered for the ICodeImportResultSet
+interface.
+
     >>> from canonical.launchpad.interfaces import (
     ...     ICodeImportResult, ICodeImportResultSet)
-
     >>> result_set = getUtility(ICodeImportResultSet)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(ICodeImportResultSet, result_set)
     True
+
+CodeImportResult objects are usually only created by calling the
+finish() method on an instance of CodeImportJob.  To be able to test
+the methods of CodeImportResultSet without depending on CodeImportJob
+we define a helper to create a CodeImportResult.
+
+    >>> from canonical.launchpad.database import CodeImportResult
+    >>> from datetime import datetime
+    >>> from pytz import timezone
+    >>> def create_result(code_import, machine, status):
+    ...     CodeImportResult(
+    ...         code_import=code_import, machine=machine,
+    ...         status=status,log_excerpt="log excerpt",
+    ...         date_started=datetime.utcnow(timezone("UTC")))
+
+Then we need to create a number of code imports to be found.
+
+    >>> from canonical.launchpad.interface import ICodeImportSet
+    >>> code_import_1 = getUtility(ICodeImportSet).get(1)
+    >>> #machine_1 = arg

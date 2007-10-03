@@ -72,7 +72,7 @@ class ICodeImportJob(Interface):
         description=_("The user who requested the import, if any."))
 
     ordering = Int(
-        required=True, readonly=False,
+        required=False, readonly=False,
         description=_("A measure of how urgent the job is -- queue entries "
                       "with lower 'ordering' should be processed first, or "
                       "in other words 'ORDER BY ordering' returns the most "
@@ -107,6 +107,11 @@ class ICodeImportJob(Interface):
 
         """
 
+    def reclaim(self):
+        """Delete this record, but schedule it to run again.
+
+        """
+
     def start():
         """Record that this job is starting. """
 
@@ -127,12 +132,12 @@ class ICodeImportJobSet(Interface):
     def new(code_import, due_date):
         """Create a PENDING CodeImportJob scheduled for the given time."""
 
-    def jobForImport(code_import):
+    def getForCodeImport(code_import):
         """Return the job for the given active import.
 
         """
 
-    def jobsForMachine(machine):
+    def getForMachine(machine):
         """Find the jobs for this machine in priority order.
 
         """
