@@ -203,6 +203,14 @@ class PrivateEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
+    def execute(self, context, current_event):
+        context, current_event = EditEmailCommand.execute(self, context, current_event)
+        if isinstance(current_event, SQLObjectModifiedEvent):
+            if 'private' in current_event.edited_fields and context.private:
+                context.date_made_private = context.date_last_updated
+                context.who_made_private = getUtility(ILaunchBag).user
+        return context, current_event
+
     def convertArguments(self, context):
         """See EmailCommand."""
         private_arg = self.string_args[0]

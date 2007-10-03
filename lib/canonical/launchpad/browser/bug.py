@@ -41,7 +41,7 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
-    LaunchpadFormView, LaunchpadView,LaunchpadEditFormView, stepthrough,
+    LaunchpadFormView, LaunchpadView, LaunchpadEditFormView, stepthrough,
     Link, Navigation, structured, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -447,7 +447,15 @@ class BugSecrecyEditView(BugEditViewBase):
 
     @action('Change', name='change')
     def change_action(self, action, data):
+        bug = self.context.bug
+        private = bug.private
+
         self.updateBugFromData(data)
+
+        # If the bug has been made private, record who and when.
+        if not private and bug.private:
+            bug.date_made_private = bug.date_last_updated
+            bug.who_made_private = getUtility(ILaunchBag).user
 
 
 class BugRelatedObjectEditView(SQLObjectEditView):
