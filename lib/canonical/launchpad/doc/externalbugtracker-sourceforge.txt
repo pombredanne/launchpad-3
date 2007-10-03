@@ -26,20 +26,14 @@ tracker is passed to it.
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     get_external_bugtracker)
-    >>> from canonical.launchpad.database import BugTracker
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
     >>> from canonical.lp.dbschema import BugTrackerType
     >>> from canonical.launchpad.interfaces import IPersonSet
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
-    >>> example_bug_tracker = BugTracker(
-    ...     name="example-bugs",
-    ...     title="Example.com SourceForge",
-    ...     bugtrackertype=BugTrackerType.SOURCEFORGE,
-    ...     baseurl="http://example.com",
-    ...     summary="Contains bugs for Example.com",
-    ...     contactdetails="foo.bar@example.com",
-    ...     owner=sample_person)
+    >>> example_bug_tracker = new_bugtracker(BugTrackerType.SOURCEFORGE)
 
     >>> get_external_bugtracker(example_bug_tracker)
     Traceback (most recent call last):
@@ -139,7 +133,6 @@ First, we create some bug watches to test with. Example.com hosts a
 SourceForge instance which has several bugs that we wish to watch:
 
     >>> from canonical.launchpad.interfaces import IBugSet
-    >>> login('test@canonical.com')
 
 Launchpad.dev bug #10 is the same bug as reported in example.com bug
 #1722250, so we add a watch against the remote bug.
@@ -147,8 +140,6 @@ Launchpad.dev bug #10 is the same bug as reported in example.com bug
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, 1722250, sample_person)
-
-    >>> login('no-priv@canonical.com')
 
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1722250: None
