@@ -201,4 +201,5 @@ cron.germinate
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     ssh archvsync@syowa
     ssh archvsync@frei
+    ssh archvsync@rockhopper
 fi
