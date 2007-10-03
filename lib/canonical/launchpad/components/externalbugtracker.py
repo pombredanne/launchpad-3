@@ -25,7 +25,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import BugTrackerType
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IExternalBugtracker, UNKNOWN_REMOTE_STATUS)
+    BugTaskStatus, BugWatchErrorType, IExternalBugtracker,
+    UNKNOWN_REMOTE_STATUS)
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (http://bugs.launchpad.net/)"
@@ -85,6 +86,13 @@ class InvalidBugId(Exception):
 class BugNotFound(Exception):
     """The bug was not found in the external bug tracker."""
 
+# We map the possible exceptions raised by the externalbugtracker module
+# onto BugWatchErrorTypes so that we can handle them efficiently.
+bugwatch_error_type_map = {
+    BugTrackerConnectError: BugWatchErrorType.CONNECTIONERROR,
+    UnparseableBugData: BugWatchErrorType.UNPARSABLEBUG,
+    UnparseableBugTrackerVersion: BugWatchErrorType.UNPARSABLEBUGTRACKER,
+    UnsupportedBugTrackerVersion: BugWatchErrorType.UNSUPPORTEDBUGTRACKER}
 
 #
 # Helper function
@@ -210,7 +218,17 @@ class ExternalBugTracker:
 
         # Do things in a fixed order, mainly to help with testing.
         bug_ids_to_update = sorted(bug_watches_by_remote_bug)
-        self.initializeRemoteBugDB(bug_ids_to_update)
+
+        try:
+            self.initializeRemoteBugDB(bug_ids_to_update)
+        except socket.timeout:
+            # We catch socket timeouts here so that we can record them
+            # against all the bug watches that we were going to update.
+            # We then re-raise the error so that it can be handled by
+            # the checkwatches script.
+            for bugwatch in bug_watches:
+                bugwatch.lasterror = BugWatchErrorType.TIMEOUT
+            raise   
 
         # Again, fixed order here to help with testing.
         for bug_id, bug_watches in sorted(bug_watches_by_remote_bug.items()):
@@ -218,26 +236,42 @@ class ExternalBugTracker:
             try:
                 try:
                     new_remote_status = self.getRemoteStatus(bug_id)
-                except InvalidBugId, error:
+                    error = None
+                except InvalidBugId:
+                    lasterror = BugWatchErrorType.INVALIDBUGID
                     log.warn("Invalid bug %r on %s (local bugs: %s)." %
                              (bug_id, self.baseurl, local_ids))
                     new_remote_status = UNKNOWN_REMOTE_STATUS
                 except BugNotFound:
+                    error = BugWatchErrorType.BUGNOTFOUND
                     log.warn("Didn't find bug %r on %s (local bugs: %s)." %
                              (bug_id, self.baseurl, local_ids))
                     new_remote_status = UNKNOWN_REMOTE_STATUS
-                new_malone_status = self.convertRemoteStatus(new_remote_status)
+                new_malone_status = self.convertRemoteStatus(
+                    new_remote_status)
 
                 for bug_watch in bug_watches:
                     bug_watch.lastchecked = UTC_NOW
-                    bug_watch.updateStatus(new_remote_status, new_malone_status)
+                    bug_watch.lasterror = error
+                    bug_watch.updateStatus(new_remote_status,
+                        new_malone_status)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
                 raise
-            except:
+            except Exception, error:
                 # If something unexpected goes wrong, we shouldn't break the
                 # updating of the other bugs.
+
+                # If we can record this error against the bug watches,
+                # we do so. We record the error against all the bug
+                # watches for a given bug, since that's the level of
+                # granularity we're working at.
+                if type(error) in bugwatch_error_type_map:
+                    for bug_watch in bug_watches:
+                        bug_watch.lasterror = bugwatch_error_type_map(
+                            type(error))
+
                 log.error("Failure updating bug %r on %s (local bugs: %s)." %
                             (bug_id, bug_tracker_url, local_ids),
                           exc_info=True)

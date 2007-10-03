@@ -24,17 +24,16 @@ from canonical.lazr import (
 class BugWatchErrorType(DBEnumeratedType):
     """An enumeration of possible BugWatch errors."""
 
-    TIMEOUT = DBItem(1, """
-        Timeout
-
-        Launchpad encountered a timeout when trying to connect to the
-        remote server and was unable to retrieve the bug's status.
-        """)
-
-    BUGNOTFOUND = DBItem(2, """
+    BUGNOTFOUND = DBItem(1, """
         Bug not Found
 
         Launchpad could not find the specified bug on the remote server.
+        """)
+
+    CONNECTIONERROR = DBItem(2, """
+        Connection Error
+
+        Launchpad was unable to connect to the remote server.
         """)
 
     INVALIDBUGID = DBItem(3, """
@@ -43,11 +42,32 @@ class BugWatchErrorType(DBEnumeratedType):
         The specified bug ID is not valid.
         """)
 
-    UNPARSABLEBUG = DBItem(4, """
+    TIMEOUT = DBItem(4, """
+        Timeout
+
+        Launchpad encountered a timeout when trying to connect to the
+        remote server and was unable to retrieve the bug's status.
+        """)
+
+    UNPARSABLEBUG = DBItem(5, """
         Unparsable Bug
 
         Launchpad could not extract a status from the data it received
         from the remote server.
+        """)
+
+    UNPARSABLEBUGTRACKER = DBItem(6, """
+        Unparsable Bug Tracker Version
+
+        Launchpad could not determine the version of the bug tracker 
+        software running on the remote server.
+        """)
+
+    UNSUPPORTEDBUGTRACKER = DBItem(7, """
+        Unsupported Bugtracker Version
+
+        The remote server is using a version of its bug tracker software
+        which Launchpad does not currently support.
         """)
 
 

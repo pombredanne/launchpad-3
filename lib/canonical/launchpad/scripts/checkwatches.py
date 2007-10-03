@@ -108,11 +108,7 @@ class BugWatchUpdater(object):
                 except socket.timeout:
                     # We don't want to die on a timeout, since most likely
                     # it's just a problem for this iteration. Nevertheless
-                    # we log the problem and record it against all the
-                    # bugwatches that we wanted to update.
-                    for bugwatch in bug_watches_to_update:
-                        bugwatch.lasterror = BugWatchErrorType.TIMEOUT
-
+                    # we log the problem.
                     self.log.error(
                         "Connection timed out when updating %s" %
                         bug_tracker.baseurl)
