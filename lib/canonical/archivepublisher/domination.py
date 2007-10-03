@@ -36,6 +36,7 @@ def clear_cache():
 PENDING = PackagePublishingStatus.PENDING
 PUBLISHED = PackagePublishingStatus.PUBLISHED
 SUPERSEDED = PackagePublishingStatus.SUPERSEDED
+DELETED = PackagePublishingStatus.DELETED
 
 # Ugly, but works
 apt_pkg.InitSystem()
@@ -231,7 +232,7 @@ class Dominator:
         # then we can consider them eligible for removal.
         for pub_record in binary_records:
             binpkg_release = pub_record.binarypackagerelease
-            if pub_record.status == SUPERSEDED:
+            if pub_record.status in [SUPERSEDED, DELETED]:
                 self.debug("%s/%s (%s) has been judged eligible for removal" %
                            (binpkg_release.binarypackagename.name,
                             binpkg_release.version,
@@ -244,7 +245,7 @@ class Dominator:
 
         for pub_record in source_records:
             srcpkg_release = pub_record.sourcepackagerelease
-            if pub_record.status == SUPERSEDED:
+            if pub_record.status in [SUPERSEDED, DELETED]:
                 # Attempt to find all binaries of this
                 # SourcePackageReleace which are/have been in this
                 # distroseries...

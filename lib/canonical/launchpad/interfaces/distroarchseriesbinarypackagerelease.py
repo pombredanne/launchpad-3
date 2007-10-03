@@ -8,7 +8,7 @@ __all__ = [
     'IDistroArchSeriesBinaryPackageRelease',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Attribute
 
 from canonical.launchpad.interfaces import IBinaryPackageRelease
 
@@ -76,3 +76,11 @@ class IDistroArchSeriesBinaryPackageRelease(IBinaryPackageRelease):
         Return the modified `IBinaryPackagePublishingHistory` object.
         """
 
+    def delete(removed_by, removal_comment=None):
+        """Delete a DistroSeriesBinaryPackageRelease.
+
+        param removed_by: `IPerson` responsible for the removal.
+        param removal_comment: optional text describing the removal reason.
+
+        Return the modified IBinaryPackagePublishingHistory object.
+        """

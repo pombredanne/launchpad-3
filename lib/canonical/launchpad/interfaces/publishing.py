@@ -72,6 +72,7 @@ class IArchivePublisher(Interface):
 
     files = Attribute("Files included in this publication.")
     secure_record = Attribute("Correspondent secure package history record.")
+    displayname = Attribute("Text representation of the current record.")
 
     def publish(diskpool, log):
         """Publish or ensure contents of this publish record

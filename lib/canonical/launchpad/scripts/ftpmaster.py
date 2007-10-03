@@ -15,11 +15,10 @@ __all__ = [
     'ChrootManagerError',
     'SyncSource',
     'SyncSourceError',
-    'PackageLocationError',
-    'PackageLocation',
     'PackageCopyError',
     'PackageCopier',
-    'LpQueryDistro'
+    'LpQueryDistro',
+    'PackageRemover',
     ]
 
 import apt_pkg
@@ -36,7 +35,7 @@ from canonical.archiveuploader.utils import re_extract_src_version
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, IBinaryPackageReleaseSet,
-    ILaunchpadCelebrities, NotFoundError, ILibraryFileAliasSet)
+    ILaunchpadCelebrities, NotFoundError, ILibraryFileAliasSet, IPersonSet)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.lp import READ_COMMITTED_ISOLATION
@@ -46,6 +45,8 @@ from canonical.lp.dbschema import (
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close
+from canonical.launchpad.scripts.ftpmasterbase import (
+    PackageLocation, PackageLocationError, SoyuzScript, SoyuzScriptError)
 
 
 class ArchiveOverriderError(Exception):
@@ -1096,55 +1097,6 @@ class SyncSource:
                     % (filename, actual_size, expected_size))
 
 
-class PackageLocationError(Exception):
-    """Raised when something went wrong when building PackageLocation."""
-
-
-class PackageLocation:
-    """Object used to model locations when copying publications.
-
-    It groups distribution + distroseries + pocket in a way they
-    can be easily manipulated and compared.
-    """
-    distribution = None
-    distroseries = None
-    pocket = None
-
-    def __init__(self, distribution_name, suite_name):
-        """Store given parameters.
-
-        Build LP objects and expand suite_name into distroseries + pocket.
-        """
-        try:
-            self.distribution = getUtility(IDistributionSet)[distribution_name]
-        except NotFoundError, err:
-            raise PackageLocationError(
-                "Could not find distribution %s" % err)
-
-        if suite_name is not None:
-            try:
-                suite = self.distribution.getDistroSeriesAndPocket(suite_name)
-            except NotFoundError, err:
-                raise PackageLocationError(
-                    "Could not find suite %s" % err)
-            else:
-                self.distroseries, self.pocket = suite
-        else:
-            self.distroseries = self.distribution.currentseries
-            self.pocket = PackagePublishingPocket.RELEASE
-
-    def __eq__(self, other):
-        if (self.distribution.id == other.distribution.id and
-            self.distroseries.id == other.distroseries.id and
-            self.pocket.value == other.pocket.value):
-            return True
-        return False
-
-    def __str__(self):
-        return '%s/%s/%s' % (self.distribution.name, self.distroseries.name,
-                             self.pocket.name)
-
-
 class PackageCopyError(Exception):
     """Raised when a package copy operation failed.  The textual content
     should explain the error.
@@ -1416,7 +1368,7 @@ class PackageCopier(LaunchpadScript):
             binary_copy.binarypackagerelease.name)
         bin_version = binary_copy.binarypackagerelease.version
         binary_copied = darbp[bin_version]
-        
+
         self.logger.info("Copied: %s" % binary_copied.title)
         return binary_copied
 
@@ -1596,3 +1548,89 @@ class LpQueryDistro(LaunchpadScript):
         series = self.location.distroseries
         return series.nominatedarchindep.architecturetag
 
+
+class PackageRemover(SoyuzScript):
+    """SoyuzScript implementation for published package removal.."""
+
+    usage = '%prog -s warty mozilla-firefox'
+    description = 'REMOVE a published package.'
+    success_message = (
+        "The archive will be updated in the next publishing cycle.")
+
+    def addExtraSoyuzOptions(self):
+        # Mode options.
+        self.parser.add_option("-b", "--binary", dest="binaryonly",
+                               default=False, action="store_true",
+                               help="remove binaries only")
+        self.parser.add_option("-S", "--source-only", dest="sourceonly",
+                               default=False, action="store_true",
+                               help="remove source only")
+
+        # Removal information options.
+        self.parser.add_option("-u", "--user", dest="user",
+                               help="Launchpad user name.")
+        self.parser.add_option("-m", "--removal_comment",
+                               dest="removal_comment",
+                               help="Removal comment")
+
+    def mainTask(self):
+        """Execute package removal task.
+
+        Build location and target objects.
+
+        Can raise SoyuzScriptError.
+        """
+        if len(self.args) != 1:
+            raise SoyuzScriptError(
+                "At least one non-option argument must be given, "
+                "the packagename.")
+
+        packagename = self.args[0]
+
+        if self.options.user is None:
+            raise SoyuzScriptError("Launchpad username must be given.")
+
+        if self.options.removal_comment is None:
+            raise SoyuzScriptError("Removal comment must be given.")
+
+        removed_by = getUtility(IPersonSet).getByName(self.options.user)
+        if removed_by is None:
+            raise SoyuzScriptError(
+                "Invalid launchpad usename: %s" % self.options.user)
+
+        removables = []
+        if self.options.binaryonly:
+            removables = self.findBinaries(packagename)
+        elif self.options.sourceonly:
+            removables.append(self.findSource(packagename))
+        else:
+            source = self.findSource(packagename)
+            binaries = source.published_binaries
+            removables.append(source)
+            removables.extend(binaries)
+
+        self.logger.info("Removing candidates:")
+        for removable in removables:
+            self.logger.info('\t%s' % removable.title)
+
+        self.logger.info("Removed-by: %s" % removed_by.displayname)
+        self.logger.info("Comment: %s" % self.options.removal_comment)
+
+        removals = []
+        for removable in removables:
+            removed = removable.delete(
+                removed_by=removed_by,
+                removal_comment=self.options.removal_comment)
+            removals.append(removed)
+
+        if len(removals) == 1:
+            self.logger.info(
+                "%s package successfully removed." % len(removals))
+        elif len(removals) > 1:
+            self.logger.info(
+                "%s packages successfully removed." % len(removals))
+        else:
+            self.logger.info("No package removed (bug ?!?).")
+
+        # Information returned mainly for the benefit of the test harness.
+        return removals
