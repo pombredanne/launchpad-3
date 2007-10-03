@@ -19,6 +19,7 @@ from canonical.lp.dbschema import BugTrackerType, BugTaskImportance
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.event import SQLObjectModifiedEvent
 
@@ -46,7 +47,8 @@ class BugWatch(SQLBase):
     lastchecked = UtcDateTimeCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    lasterror = EnumCol(dbName='lasterror', schema=BugWatchErrorType)
+    lasterror = EnumCol(dbName='lasterror', schema=BugWatchErrorType, 
+        default=None)
 
     # useful joins
     bugtasks = SQLMultipleJoin('BugTask', joinColumn='bugwatch',

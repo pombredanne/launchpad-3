@@ -8,6 +8,7 @@ import cgi
 import csv
 import os.path
 import re
+import socket
 import urllib
 import urllib2
 import urlparse

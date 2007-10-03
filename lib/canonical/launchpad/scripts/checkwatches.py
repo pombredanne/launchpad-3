@@ -14,7 +14,7 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IBugTrackerSet)
+    BugWatchErrorType, ILaunchpadCelebrities, IBugTrackerSet)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
@@ -108,7 +108,11 @@ class BugWatchUpdater(object):
                 except socket.timeout:
                     # We don't want to die on a timeout, since most likely
                     # it's just a problem for this iteration. Nevertheless
-                    # we log the problem.
+                    # we log the problem and record it against all the
+                    # bugwatches that we wanted to update.
+                    for bugwatch in bug_watches_to_update:
+                        bugwatch.lasterror = BugWatchErrorType.TIMEOUT
+
                     self.log.error(
                         "Connection timed out when updating %s" %
                         bug_tracker.baseurl)
