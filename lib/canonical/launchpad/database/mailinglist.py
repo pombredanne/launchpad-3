@@ -195,10 +195,11 @@ class MailingList(SQLBase):
     def addresses(self):
         """See `IMailingList`."""
         subscriptions = MailingListSubscription.select(
-            """mailing_list = %s AND person IN (
-                    SELECT person FROM TeamParticipation
-                    WHERE team = %d)
-            """ % (self.id, self.team.id))
+            """mailing_list = %s AND
+               team = %s AND
+               TeamParticipation.person = MailingListSubscription.person
+            """ % (self.id, self.team.id),
+            distinct=True, clauseTables=['TeamParticipation'])
         for subscription in subscriptions:
             yield subscription.email
 
