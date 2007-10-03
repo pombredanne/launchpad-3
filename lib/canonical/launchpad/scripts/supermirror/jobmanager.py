@@ -181,6 +181,7 @@ class JobManager:
             self.branch_type.name)
         deferred.addCallback(self.getBranchesToMirror)
         deferred.addCallback(self._run)
+        # XXX: Add an errback to this that records an oops.
         return deferred
 
     def _finishedRunning(self, ignored):
