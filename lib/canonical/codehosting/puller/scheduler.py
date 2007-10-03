@@ -44,7 +44,7 @@ class BranchStatusClient:
         return self.proxy.callRemote('mirrorFailed', branch_id, reason)
 
 
-class FireOnExit(ProcessProtocol, NetstringReceiver):
+class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
 
     def __init__(self, deferred, timeout_period, listener):
         self.deferred = deferred
@@ -125,7 +125,7 @@ class BranchToMirror:
                 os.path.dirname(os.path.dirname(canonical.__file__))),
             'scripts/mirror-branch.py')
         deferred = defer.Deferred()
-        protocol = FireOnExit(deferred, INACTIVITY_TIMEOUT, self)
+        protocol = PullerMasterProtocol(deferred, INACTIVITY_TIMEOUT, self)
         command = [
             sys.executable, path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), self.unique_name,

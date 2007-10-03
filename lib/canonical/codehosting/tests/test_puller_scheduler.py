@@ -181,7 +181,7 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.arbitrary_branch_id = 1
         self.listener = TestPullerMasterProtocol.PullerListener()
         self.termination_deferred = defer.Deferred()
-        self.protocol = scheduler.FireOnExit(
+        self.protocol = scheduler.PullerMasterProtocol(
             self.termination_deferred, arbitrary_timeout_period,
             self.listener)
         self.protocol.transport = TestPullerMasterProtocol.FakeTransport()

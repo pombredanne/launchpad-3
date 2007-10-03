@@ -34,25 +34,21 @@ __all__ = [
     ]
 
 
-class MirroringException(Exception):
-    """Generic error that occurred during mirroring."""
-
-
-class BadUrlSsh(MirroringException):
+class BadUrlSsh(Exception):
     """Tried to mirror a branch from sftp or bzr+ssh."""
 
 
-class BadUrlLaunchpad(MirroringException):
+class BadUrlLaunchpad(Exception):
     """Tried to mirror a branch from launchpad.net."""
 
 
-class BranchReferenceForbidden(MirroringException):
+class BranchReferenceForbidden(Exception):
     """Trying to mirror a branch reference and the branch type does not allow
     references.
     """
 
 
-class BranchReferenceValueError(MirroringException):
+class BranchReferenceValueError(Exception):
     """Encountered a branch reference with an unsafe value.
 
     An unsafe value is a local URL, such as a file:// URL or an http:// URL in
