@@ -70,9 +70,9 @@ At first, there are no active mailing lists.
 Mailing lists are not active when they are first registered.
 
     >>> # These are the convoluted steps to create some mailing lists.  We
-    >>> # can't use the shortcuts in other tests because those leave the list
-    >>> # in the ACTIVE state and we want to check things before they get to
-    >>> # that state.
+    >>> # can't use the shortcuts that other related tests use because those
+    >>> # leave the list in the ACTIVE state and we want to check things
+    >>> # before they get to that state.
     >>> personset = getUtility(IPersonSet)
     >>> ddaa = personset.getByName('ddaa')
     >>> carlos = personset.getByName('carlos')

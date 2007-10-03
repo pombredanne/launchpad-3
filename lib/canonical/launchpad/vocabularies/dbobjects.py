@@ -809,12 +809,12 @@ class ActiveMailingListVocabulary:
         """
         if text is None:
             return getUtility(IMailingListSet).active_lists
-        # Implementation largely stolen from ValidPersonOrTeamVocabulary and
-        # ValidTeamVocabulary, except that this only searches on name (not
-        # email address or IRC nickname).  Note that because there is no FTI
-        # on mailing lists, we search for matching teams and then map that
-        # back to active mailing lists.  This seems reasonable given that
-        # every mailing list is mapped to exactly one team.
+        # Search on a person's name and displayname (not email address or IRC
+        # nickname which aren't appropriate for team mailing lists here).
+        # Note that because there is no FTI on mailing lists, we search for
+        # matching teams and then map that back to active mailing lists.  This
+        # seems reasonable given that every mailing list is mapped to exactly
+        # one team.
         name_matches = MailingList.select("""
             MailingList.team = Person.id
             AND Person.fti @@ ftq(%s)
