@@ -26,8 +26,6 @@ from bzrlib.errors import (
     BzrError, UnsupportedFormatError, UnknownFormatError, ParamikoNotPresent,
     NotBranchError)
 
-from canonical.authserver.client.branchstatus import BranchStatusClient
-from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (
     PullerWorker, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
@@ -55,15 +53,12 @@ class PullerWorkerMixin:
             os.environ['HOME'] = self._home
         shutil.rmtree(self.test_dir)
 
-    def makePullerWorker(self, src_dir=None, dest_dir=None, client=None,
-                           branch_type=None):
+    def makePullerWorker(self, src_dir=None, dest_dir=None, branch_type=None):
         """Anonymous creation method for PullerWorker."""
         if src_dir is None:
             src_dir = os.path.join(self.test_dir, 'source_dir')
         if dest_dir is None:
             dest_dir = os.path.join(self.test_dir, 'dest_dir')
-        if client is None:
-            client = BranchStatusClient()
         protocol = PullerWorkerProtocol(StringIO(), StringIO())
         return PullerWorker(
             src_dir, dest_dir, branch_id=1, unique_name='foo/bar/baz',
@@ -79,14 +74,11 @@ class TestPullerWorker(unittest.TestCase, PullerWorkerMixin):
 
     def setUp(self):
         PullerWorkerMixin.setUp(self)
-        self.authserver = AuthserverTacTestSetup()
-        self.authserver.setUp()
         # We set the log level to CRITICAL so that the log messages
         # are suppressed.
         logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):
-        self.authserver.tearDown()
         PullerWorkerMixin.tearDown(self)
 
     def testMirrorActuallyMirrors(self):
@@ -121,14 +113,11 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
 
     def setUp(self):
         super(TestPullerWorkerFormats, self).setUp()
-        self.authserver = AuthserverTacTestSetup()
-        self.authserver.setUp()
         # We set the log level to CRITICAL so that the log messages
         # are suppressed.
         logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):
-        self.authserver.tearDown()
         super(TestPullerWorkerFormats, self).tearDown()
 
     def testMirrorKnitAsKnit(self):
@@ -212,14 +201,11 @@ class TestPullerWorker_SourceProblems(TestCaseInTempDir, PullerWorkerMixin):
     def setUp(self):
         TestCaseInTempDir.setUp(self)
         PullerWorkerMixin.setUp(self)
-        self.authserver = AuthserverTacTestSetup()
-        self.authserver.setUp()
         # We set the log level to CRITICAL so that the log messages
         # are suppressed.
         logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):
-        self.authserver.tearDown()
         PullerWorkerMixin.tearDown(self)
         TestCaseInTempDir.tearDown(self)
 
@@ -256,22 +242,6 @@ class TestPullerWorker_SourceProblems(TestCaseInTempDir, PullerWorkerMixin):
             src_dir=source_url, dest_dir="non-existent-destination")
         my_branch.mirror()
         # XXX - assert that it failed.
-
-
-class StubbedBranchStatusClient(BranchStatusClient):
-    """Partially stubbed subclass of BranchStatusClient, for unit tests."""
-
-    def __init__(self):
-        self.calls = []
-
-    def startMirroring(self, branch_id):
-        self.calls.append(('startMirroring', branch_id))
-
-    def mirrorComplete(self, branch_id, revno):
-        self.calls.append(('mirrorComplete', branch_id, revno))
-
-    def mirrorFailed(self, branch_id, reason):
-        self.calls.append(('mirrorFailed', branch_id, reason))
 
 
 class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
@@ -328,7 +298,6 @@ class ErrorHandlingTestCase(unittest.TestCase):
         class hierarchy and we do not want to end up calling unittest.TestCase
         twice.
         """
-        client = StubbedBranchStatusClient()
         protocol = StubbedPullerWorkerProtocol()
         self.branch = StubbedPullerWorker(
             src='foo', dest='bar', branch_id=1,
@@ -529,7 +498,6 @@ class TestCanTraverseReferences(unittest.TestCase, PullerWorkerMixin):
 
     def setUp(self):
         PullerWorkerMixin.setUp(self)
-        self.client = BranchStatusClient()
 
     def tearDown(self):
         PullerWorkerMixin.setUp(self)
@@ -586,7 +554,6 @@ class TestCheckBranchReference(unittest.TestCase):
     """Unit tests for PullerWorker._checkBranchReference."""
 
     def setUp(self):
-        client = BranchStatusClient()
         self.branch = StubbedPullerWorkerForCheckBranchReference(
             'foo', 'bar', 1, 'owner/product/foo', None, None)
         self.branch.testcase = self

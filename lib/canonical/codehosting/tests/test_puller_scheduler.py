@@ -170,7 +170,10 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.protocol.processEnded(failure.Failure(error.ProcessDone(None)))
         return self.termination_deferred
 
-    def test_unexpectedError(self):
+    def test_deferredWaitsForListener(self):
+        """If the process terminates while we are waiting """
+
+    def test_terminatesWithError(self):
         """When the child process terminates with an unexpected error, raise
         an error that includes the contents of stderr and the exit condition.
         """

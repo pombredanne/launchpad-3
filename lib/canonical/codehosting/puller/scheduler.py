@@ -69,6 +69,14 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
             return
         self._termination_deferred, deferred = (
             None, self._termination_deferred)
+        if self._internal_deferred is not None:
+            self._internal_deferred.addCallback(
+                self._reallyFireTerminationDeferred, deferred, reason)
+            self._internal_deferred.addErrback(deferred.errback)
+        else:
+            self._reallyFireTerminationDeferred(None, deferred, reason)
+
+    def _reallyFireTerminationDeferred(self, ignored, deferred, reason):
         if reason.check(error.ConnectionDone):
             deferred.callback(None)
         else:
