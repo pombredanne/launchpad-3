@@ -28,16 +28,20 @@ class DebianBugImportScript(LaunchpadScript):
                                help="Don't commit the DB transaction.",
                                dest='dry_run', default=False)
 
+    def import_debian_bugs(self, *bugs_to_import):
+        """Import the specified Debian bugs."""
+        external_debbugs = get_external_bugtracker(
+            getUtility(ILaunchpadCelebrities).debbugs)
+        debian = getUtility(ILaunchpadCelebrities).debian
+        for debian_bug in bugs_to_import:
+            external_debbugs.createLaunchpadBug(debian, debian_bug)
+
     def main(self):
         if len(self.args) < 1:
             self.parser.print_help()
             return
 
-        external_debbugs = get_external_bugtracker(
-            getUtility(ILaunchpadCelebrities).debbugs)
-        debian = getUtility(ILaunchpadCelebrities).debian
-        for debian_bug in self.args:
-            external_debbugs.createLaunchpadBug(debian, debian_bug)
+        self.import_debian_bugs(*self.args)
 
         if self.options.dry_run:
             self.logger.info("Rolling back the transaction.")
