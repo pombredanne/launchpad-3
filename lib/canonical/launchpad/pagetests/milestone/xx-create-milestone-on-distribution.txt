@@ -3,158 +3,65 @@ First, let's make sure the sample user (name12) can't view the page to
 add a milestone to the Ubuntu/hoary distroseries, which is owned by the Ubuntu
 Team (ubuntu-team).
 
-  >>> print http(r"""
-  ... GET /ubuntu/hoary/+addmilestone HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 403 Forbidden
-  ...
-
+    >>> name12_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> name12_browser.open('http://launchpad.dev/ubuntu/hoary/+addmilestone')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
 
 Let's make the sample user an owner of Ubuntu for this test. The owner
 of the distribution should be able to add milestones for it, of course!
 
-  >>> print http(r"""
-  ... POST /ubuntu/+reassign HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ...
-  ... field.owner=name12&existing=existing&CHANGE_OWNER=Change+Owner""")
-  HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: .
-  ...
-
+    >>> admin_browser.open('http://launchpad.dev/ubuntu/+reassign')
+    >>> admin_browser.getControl(name='field.owner').value = 'name12'
+    >>> admin_browser.getControl('Change Registrant').click()
 
 Now let's go back and try the add milestone page again. It works:
 
-  >>> print http(r"""
-  ... GET /ubuntu/hoary/+addmilestone HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-
+    >>> name12_browser.open('http://launchpad.dev/ubuntu/hoary/+addmilestone')
 
 Now, if we post to that form, we should see a success, and the page should
-redirect to the Ubuntu page showing the milestone we added.
+redirect to the Ubuntu Hoary page showing the milestone we added.
 
-  >>> print http(r"""
-  ... POST /ubuntu/hoary/+addmilestone HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 434
-  ... Content-Type: multipart/form-data; boundary=---------------------------114216684419655310401202000685
-  ... 
-  ... -----------------------------114216684419655310401202000685
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... sounder01
-  ... -----------------------------114216684419655310401202000685
-  ... Content-Disposition: form-data; name="field.dateexpected"
-  ... 
-  ... 
-  ... -----------------------------114216684419655310401202000685
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------114216684419655310401202000685--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: .
-  ...
+    >>> name12_browser.getControl('Name').value = 'sounder01'
+    >>> name12_browser.getControl('Add').click()
+    >>> name12_browser.url
+    'http://launchpad.dev/ubuntu/hoary/'
+    >>> for tag in find_tags_by_class(name12_browser.contents, 'milestone'):
+    ...     print str(extract_text(tag))
+    sounder01
 
+The milestone must also appear on the Ubuntu distribution page.
 
-Let's see if it does show the sounder01 milestone.
-
-  >>> print http(r"""
-  ... GET /ubuntu/ HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...<li class="milestone">...sounder01...
-
-
+    >>> anon_browser.open('http://launchpad.dev/ubuntu')
+    >>> for tag in find_tags_by_class(name12_browser.contents, 'milestone'):
+    ...     print str(extract_text(tag))
+    sounder01
+    
 Try to target a distribution bug to this milestone.  The form uses the
 database ID for the milestone, so we find the ID:
 
-  >>> from canonical.launchpad.database import Distribution
-  >>> ubuntu = Distribution.byName('ubuntu')
-  >>> for milestone in ubuntu.milestones:
-  ...     if milestone.name == 'sounder01':
-  ...         break
-  ... else:
-  ...     assert False, 'Milestone not found'
+    >>> from canonical.launchpad.database import Distribution
+    >>> ubuntu = Distribution.byName('ubuntu')
+    >>> for milestone in ubuntu.milestones:
+    ...     if milestone.name == 'sounder01':
+    ...         break
+    ... else:
+    ...     assert False, 'Milestone not found'
 
-  >>> print http(r"""
-  ... POST /ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------3354718323763093901439946724
-  ... 
-  ... -----------------------------3354718323763093901439946724
-  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.sourcepackagename"
-  ... 
-  ... mozilla-firefox
-  ... -----------------------------3354718323763093901439946724
-  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.status"
-  ... 
-  ... New
-  ... -----------------------------3354718323763093901439946724
-  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.status-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------3354718323763093901439946724
-  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.importance"
-  ... 
-  ... Medium
-  ... -----------------------------3354718323763093901439946724
-  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.importance-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------3354718323763093901439946724
-  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.milestone"
-  ... 
-  ... %d
-  ... -----------------------------3354718323763093901439946724
-  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.milestone-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------3354718323763093901439946724
-  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.assignee.option"
-  ... 
-  ... ubuntu_mozilla-firefox.assignee.assign_to_nobody
-  ... -----------------------------3354718323763093901439946724
-  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.assignee"
-  ... 
-  ... 
-  ... -----------------------------3354718323763093901439946724
-  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.bugwatch"
-  ... 
-  ... 
-  ... -----------------------------3354718323763093901439946724
-  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.bugwatch-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------3354718323763093901439946724
-  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.actions.save"
-  ... 
-  ... Save Changes
-  ... -----------------------------3354718323763093901439946724--
-  ... """ % milestone.id)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
-
+    >>> name12_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1/'
+    ...     '+editstatus')
+    >>> milestone_control = name12_browser.getControl(
+    ...     name='ubuntu_mozilla-firefox.milestone')
+    >>> milestone_control.value = [str(milestone.id)]
+    >>> name12_browser.getControl('Save Changes').click()
 
 Verify that the bug now has the milestone set on the view page:
 
-  >>> print http(r"""
-  ... GET /ubuntu/+source/mozilla-firefox/+bug/1/+viewstatus HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...<span class="statusNEW">New</span>...
-  ...<span class="importanceMEDIUM">Medium</span>...
-  ...<td>sounder01</td>...
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1/'
+    ...     '+viewstatus')
+    >>> milestone_tag = find_tag_by_id(anon_browser.contents, 'milestone')
+    >>> print str(extract_text(milestone_tag))
+    sounder01
