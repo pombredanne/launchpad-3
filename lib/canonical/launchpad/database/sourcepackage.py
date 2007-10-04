@@ -57,11 +57,6 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return {'distribution': self.distribution,
                 'sourcepackagename': self.sourcepackagename}
 
-    @property
-    def pillar(self):
-        """See `IQuestionTarget`."""
-        return self.distribution
-
     def questionIsForTarget(self, question):
         """See `QuestionTargetMixin`.
 
@@ -94,7 +89,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
     def getAnswerContactsForLanguage(self, language):
         """See `IQuestionTarget`."""
-        # Sourcepackages are supported by their distributions too.
+        # Sourcepackages are supported by their distribtions too.
         persons = self.distribution.getAnswerContactsForLanguage(language)
         persons.update(QuestionTargetMixin.getAnswerContactsForLanguage(
             self, language))

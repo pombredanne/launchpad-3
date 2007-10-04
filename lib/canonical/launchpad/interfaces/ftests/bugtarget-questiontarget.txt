@@ -2,7 +2,7 @@
 
 Bugs can be converted into questions when a person ascertains that
 that is the nature of the issue. The bug's target must be adaptable
-to IQuestionTarget and must use Launchpad track bugs.
+to IQuestionTarget.
 
     >>> from canonical.launchpad.interfaces import (
     ...     BugTaskStatus, IPersonSet, IQuestionTarget)
@@ -11,7 +11,6 @@ to IQuestionTarget and must use Launchpad track bugs.
     >>> question_target = IQuestionTarget(bugtarget)
     >>> IQuestionTarget.providedBy(question_target)
     True
-    >>> question_target.pillar.official_malone = True
 
 Some parts of the IQuestionTarget interface are only accessible
 to a registered user. No Privileges Person will create the bugs,

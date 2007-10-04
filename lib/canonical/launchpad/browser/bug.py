@@ -203,8 +203,7 @@ class BugContextMenu(ContextMenu):
 
     def createquestion(self):
         text= 'Is a question'
-        enabled = (self.context.target_uses_malone
-            and self.context.bug.getQuestionCreatedFromBug() is None)
+        enabled = self.context.bug.canBeAQuestion()
         return Link('+create-question', text, icon='edit', enabled=enabled)
 
     def activitylog(self):

@@ -494,23 +494,6 @@ of the target's questions.
     [u'en', u'fr']
 
 
-== pillar ==
-
-The target knows the pillar (Product or Distribution) it belongs to.
-The target may return itself, or the pillar object that is appropriate.
-In the case of a Product or Distribution, the pillar is the
-QuestionTarget. For SourcePackages and DistributionSourcePackages, the
-pillar is package's Distribution.
-
-    >>> from canonical.launchpad.interfaces import IDistribution, IProduct
-    >>> (IDistribution.providedBy(target.pillar)
-    ...     or IProduct.providedBy(target.pillar))
-    True
-    >>> # Verify that the target.pillar is the pillar in test.globs
-    >>> target.pillar.name == pillar.name
-    True
-
-
 == Creating a question from a bug ==
 
 The target can create a question from a bug, and link that bug to the

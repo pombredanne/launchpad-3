@@ -694,13 +694,9 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
         return bug_branches
 
     @property
-    def target_uses_malone(self):
-        """Return True if the pillar uses malone, otherwise False.
-        
-        The pillar is the Product or Distribution associated with the
-        bugtask's target.
-        """
-        return self.context.target_uses_malone
+    def can_be_a_question(self):
+        """Return True if this bug can become a question, otherwise False."""
+        return self.context.bug.canBeAQuestion()
 
     def handleCreateQuestionRequest(self):
         """Create a question from this bug and set this bug to Invalid.
@@ -717,8 +713,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
             and self.create_question_widget.getInputValue()):
             return
 
-        question = self.context.bug.getQuestionCreatedFromBug()
-        if not self.target_uses_malone or question is not None:
+        if self.context.bug.canBeAQuestion() is False:
             return
 
         question = self.context.bug.createQuestionFromBug(

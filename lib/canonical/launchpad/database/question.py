@@ -374,7 +374,9 @@ class Question(SQLBase, BugLinkTargetMixin):
             if user.inTeam(contact):
                 return True
         admin = getUtility(ILaunchpadCelebrities).admin
-        context = self.target.pillar
+        # self.target can return a source package, we want the
+        # pillar target.
+        context = self.product or self.distribution
         return user.inTeam(context.owner) or user.inTeam(admin)
 
     @notify_question_modified()
@@ -997,11 +999,6 @@ class QuestionTargetMixin:
                  or None.
         """
         return {}
-
-    @property
-    def pillar(self):
-        """See `IQuestionTarget`."""
-        return self
 
     def newQuestion(self, owner, title, description, language=None,
                   datecreated=None, notify_subscribers=True):

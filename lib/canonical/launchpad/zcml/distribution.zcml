@@ -27,12 +27,12 @@
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getSupportedLanguages
       getQuestionLanguages getAnswerContactsForLanguage
-      getAnswerContactRecipients pillar"
+      getAnswerContactRecipients"
       />
     <require
       permission="launchpad.AnyPerson"
       attributes="newQuestion createQuestionFromBug addAnswerContact
-        removeAnswerContact"
+                  removeAnswerContact"
       />
     <!-- IFAQTarget -->
     <allow

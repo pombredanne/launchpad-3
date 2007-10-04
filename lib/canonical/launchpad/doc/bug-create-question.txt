@@ -135,7 +135,7 @@ Distribution does not use Launchpad to track bugs.
     >>> target = firefox_bug.bugtasks[0].target
     >>> IQuestionTarget.providedBy(target)
     True
-    >>> firefox_bug.bugtasks[0].target_uses_malone
+    >>> target.distribution.official_malone
     False
     >>> firefox_bug.canBeAQuestion()
     False

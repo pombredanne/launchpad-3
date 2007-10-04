@@ -121,10 +121,6 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         language is listed as one of his preferred languages.
         """
 
-    pillar = Attribute(
-        "The pillar (product or distribution) associated with this "
-        "QuestionTarget.")
-
     answer_contacts = List(
         title=_("Answer Contacts"),
         description=_(

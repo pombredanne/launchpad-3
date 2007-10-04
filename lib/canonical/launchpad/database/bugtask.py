@@ -315,19 +315,6 @@ class NullBugTask(BugTaskMixin):
         return 'Bug #%s is not in %s: "%s"' % (
             self.bug.id, self.bugtargetdisplayname, self.bug.title)
 
-    def target_uses_malone(self):
-        """See `IBugTask`"""
-        if IUpstreamBugTask.providedBy(self):
-            root_target = self.product
-        elif IProductSeriesBugTask.providedBy(self):
-            root_target = self.productseries.product
-        elif IDistroSeriesBugTask.providedBy(self):
-            root_target = self.distroseries.distribution
-        elif IDistroBugTask.providedBy(self):
-            root_target = self.distribution
-        else:
-            raise AssertionError, "Task %d is floating." % self.id
-        return bool(root_target.official_malone)
 
 def BugTaskToBugAdapter(bugtask):
     """Adapt an IBugTask to an IBug."""
