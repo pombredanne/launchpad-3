@@ -72,18 +72,23 @@ because we're only interested in the bug watch's last error field.
     'Unparsable Bug Tracker Version'
 
 We can run the same test on getRemoteStatus(), which can raise different
-errors.
+errors. We temporarily silence the logging from this function because
+we're not interested in it.
 
-# XXX: We need to squelch the logging here. How?
-
-    >>> external_bugtracker.initialize_remote_bugdb_error = None
-    >>> for error in [BugNotFound, InvalidBugId, UnparseableBugData]:
-    ...     external_bugtracker.get_remote_status_error = error
-    ...     try:
-    ...         external_bugtracker.updateBugWatches([example_bugwatch])
-    ...     except:
-    ...         pass
-    ...     example_bugwatch.lasterror.title
+    >>> from canonical.launchpad.scripts import log
+    >>> loglevel = log._log.level
+    >>> try:
+    ...     log._log.setLevel(100)
+    ...     external_bugtracker.initialize_remote_bugdb_error = None
+    ...     for error in [BugNotFound, InvalidBugId, UnparseableBugData]:
+    ...         external_bugtracker.get_remote_status_error = error
+    ...         try:
+    ...             external_bugtracker.updateBugWatches([example_bugwatch])
+    ...         except:
+    ...             pass
+    ...         example_bugwatch.lasterror.title
+    ... finally:
+    ...     log._log.setLevel(loglevel)
     'Bug Not Found'
     'Invalid Bug ID'
     'Unparsable Bug'
