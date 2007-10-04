@@ -245,7 +245,7 @@ class ExternalBugTracker:
                     new_remote_status = self.getRemoteStatus(bug_id)
                     error = None
                 except InvalidBugId:
-                    lasterror = BugWatchErrorType.INVALIDBUGID
+                    error = BugWatchErrorType.INVALIDBUGID
                     log.warn("Invalid bug %r on %s (local bugs: %s)." %
                              (bug_id, self.baseurl, local_ids))
                     new_remote_status = UNKNOWN_REMOTE_STATUS

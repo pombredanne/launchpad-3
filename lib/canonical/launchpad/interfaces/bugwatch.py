@@ -25,7 +25,7 @@ class BugWatchErrorType(DBEnumeratedType):
     """An enumeration of possible BugWatch errors."""
 
     BUGNOTFOUND = DBItem(1, """
-        Bug not Found
+        Bug Not Found
 
         Launchpad could not find the specified bug on the remote server.
         """)

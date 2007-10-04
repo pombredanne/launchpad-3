@@ -10,6 +10,7 @@ import re
 from canonical.launchpad.components.externalbugtracker import (
     Bugzilla, BugTrackerConnectError, ExternalBugTracker, Mantis, Trac,
     Roundup, SourceForge)
+from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
 
 
 def read_test_file(name):
@@ -102,6 +103,14 @@ class TestBrokenExternalBugTracker(ExternalBugTracker):
         """
         if self.get_remote_status_error:
             raise self.get_remote_status_error("Testing")
+
+    def convertRemoteStatus(self, status):
+        """See `ExternalBugTracker`. 
+
+        Always returns UNKNOWN_REMOTE_STATUS; This method exists to
+        avoid tests from failing with AttributeErrors.
+        """
+        return UNKNOWN_REMOTE_STATUS
 
 
 class TestBugzilla(Bugzilla):
