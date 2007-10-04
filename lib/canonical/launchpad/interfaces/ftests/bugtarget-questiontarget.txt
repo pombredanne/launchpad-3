@@ -1,0 +1,72 @@
+= BugTarget-QuestionTarget compatability =
+
+Bugs can be converted into questions when a person ascertains that
+that is the nature of the issue. The bug's target must be adaptable
+to IQuestionTarget and must use Launchpad track bugs.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskStatus, IPersonSet, IQuestionTarget)
+
+    >>> login('foo.bar@canonical.com')
+    >>> question_target = IQuestionTarget(bugtarget)
+    >>> IQuestionTarget.providedBy(question_target)
+    True
+    >>> question_target.pillar.official_malone = True
+
+Some parts of the IQuestionTarget interface are only accessible
+to a registered user. No Privileges Person will create the bugs,
+Sample Person will play the role of bug contact.
+
+No Privileges Person create a a new bug on the bugtarget.
+
+    >>> login('no-priv@canonical.com')
+    >>> bug = filebug(bugtarget, "Print is broken", status=BugTaskStatus.NEW)
+
+The primary use case for converting a bug into a question is when
+a bug contact recognises a bug is really a question. This happens
+at the UI level. For example, Sample Person would recognise that
+this bug is a question while reviewing bugtarget's bugs, and choose
+to make it into a question.
+
+    >>> login('test@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+
+    >>> print bug.getQuestionCreatedFromBug()
+    None
+
+    >>> question = bug.createQuestionFromBug(
+    ...     sample_person, "This is a question.")
+
+    >>> question.owner == bug.owner
+    True
+    >>> question.title == bug.title
+    True
+    >>> question.description == bug.description
+    True
+    >>> question.messages[-1].text_contents == bug.messages[-1].text_contents
+    True
+
+    >>> question.owner.displayname
+    u'No Privileges Person'
+    >>> question.title
+    u'Print is broken'
+    >>> question.description
+    u'Print is broken'
+    >>> question.messages[-1].text_contents
+    u'This is a question.'
+
+The question is automatically linked to the original bug. The bug
+can also be retrieved using bug.getQuestionCreatedFromBug().
+
+    >>> [bug_link.question.title for bug_link in question.bug_links]
+    [u'Print is broken']
+
+    >>> bug.getQuestionCreatedFromBug() == question
+    True
+
+A bug can only be converted to a question once.
+
+    >>> question = bug.createQuestionFromBug(sample_person, "Fail.")
+    Traceback (most recent call last):
+    ...
+    AssertionError: This bug was already converted to question #...    
