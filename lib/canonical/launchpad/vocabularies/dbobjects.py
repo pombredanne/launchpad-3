@@ -88,20 +88,6 @@ from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
 from canonical.lp.dbschema import DistroSeriesStatus
-from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
-from canonical.launchpad.database import (
-    Distribution, DistroSeries, Person, SourcePackageRelease, Branch,
-    BranchSet, BugWatch, Sprint, DistroArchSeries, KarmaCategory, Language, 
-    Milestone, Product, Project, ProductRelease, ProductSeries,
-    TranslationGroup, BugTracker, POTemplateName, Bounty, Country,
-    Specification, Bug, Processor, ProcessorFamily, Component,
-    PillarName)
-from canonical.launchpad.interfaces import (
-    IBugTask, IDistribution, IDistributionSourcePackage,
-    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IFAQ, IFAQTarget,
-    IEmailAddressSet, ILaunchBag, IMilestoneSet, IPerson, IPersonSet,
-    IPillarName, IProduct, IProject, ISourcePackage, ISpecification, ITeam,
-    IUpstreamBugTask, EmailAddressStatus)
 
 
 class BasePersonVocabulary:
