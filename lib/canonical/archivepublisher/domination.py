@@ -232,76 +232,73 @@ class Dominator:
         # then we can consider them eligible for removal.
         for pub_record in binary_records:
             binpkg_release = pub_record.binarypackagerelease
-            if pub_record.status in [SUPERSEDED, DELETED]:
-                self.debug("%s/%s (%s) has been judged eligible for removal" %
-                           (binpkg_release.binarypackagename.name,
-                            binpkg_release.version,
-                            pub_record.distroarchseries.architecturetag))
-                pub_record.scheduleddeletiondate = (
-                    UTC_NOW + timedelta(days=conf.stayofexecution))
-                # XXX cprov 20070820: it is useless, since it's always equals
-                # to scheduleddeletiondate - quarantine.
-                pub_record.datemadepending = UTC_NOW
+            self.debug("%s/%s (%s) has been judged eligible for removal" %
+                       (binpkg_release.binarypackagename.name,
+                        binpkg_release.version,
+                        pub_record.distroarchseries.architecturetag))
+            pub_record.scheduleddeletiondate = (
+                UTC_NOW + timedelta(days=conf.stayofexecution))
+            # XXX cprov 20070820: it is useless, since it's always equals
+            # to scheduleddeletiondate - quarantine.
+            pub_record.datemadepending = UTC_NOW
 
         for pub_record in source_records:
             srcpkg_release = pub_record.sourcepackagerelease
-            if pub_record.status in [SUPERSEDED, DELETED]:
-                # Attempt to find all binaries of this
-                # SourcePackageReleace which are/have been in this
-                # distroseries...
-                considered_binaries = BinaryPackagePublishingHistory.select('''
-                    (binarypackagepublishinghistory.status = %s OR
-                     binarypackagepublishinghistory.status = %s OR
-                     binarypackagepublishinghistory.status = %s) AND
-                    binarypackagepublishinghistory.distroarchrelease =
-                        distroarchrelease.id AND
-                    binarypackagepublishinghistory.archive = %s AND
-                    distroarchrelease.distrorelease = %s AND
-                    binarypackagepublishinghistory.binarypackagerelease =
-                        binarypackagerelease.id AND
-                    binarypackagerelease.build = build.id AND
-                    build.sourcepackagerelease = %s AND
-                    binarypackagepublishinghistory.pocket = %s''' % sqlvalues(
-                    PENDING, PUBLISHED, SUPERSEDED,
-                    self.archive, pub_record.distroseries, srcpkg_release,
-                    pub_record.pocket),
-                    clauseTables=['DistroArchRelease', 'BinaryPackageRelease',
-                                  'Build'])
-                if considered_binaries.count() > 0:
-                    # There is at least one non-removed binary to consider
+            # Attempt to find all binaries of this
+            # SourcePackageRelease which are/have been in this
+            # distroseries...
+            non_removed_states = [PENDING, PUBLISHED, SUPERSEDED]
+            considered_binaries = BinaryPackagePublishingHistory.select("""
+            binarypackagepublishinghistory.status IN %s AND
+            binarypackagepublishinghistory.distroarchrelease =
+            distroarchrelease.id AND
+            binarypackagepublishinghistory.archive = %s AND
+            build.sourcepackagerelease = %s AND
+            distroarchrelease.distrorelease = %s AND
+            binarypackagepublishinghistory.binarypackagerelease =
+            binarypackagerelease.id AND
+            binarypackagerelease.build = build.id AND
+            binarypackagepublishinghistory.pocket = %s
+            """ % sqlvalues(non_removed_states, self.archive, srcpkg_release,
+                            pub_record.distroseries, pub_record.pocket),
+            clauseTables=['DistroArchRelease', 'BinaryPackageRelease','Build'])
 
-                    # XXX malcc 2006-10-17 bug=57488:
-                    # Want to change to running scripts at info level,
-                    # but for now just shut up this particularly noisy
-                    # debug statement.
-                    #self.debug("%s/%s (source) has at least %d non-removed "
-                    #           "binaries as yet" % (
-                    #    srcpkg_release.sourcepackagename.name,
-                    #    srcpkg_release.version,
-                    #    considered_binaries.count()))
-                    # However we can still remove *this* record if there's
-                    # at least one other PUBLISHED for the spr. This happens
-                    # when a package is moved between components.
-                    if SecureSourcePackagePublishingHistory.selectBy(
-                        distroseries=pub_record.distroseries,
-                        pocket=pub_record.pocket,
-                        status=PackagePublishingStatus.PUBLISHED,
-                        archive=self.archive,
-                        sourcepackagereleaseID=srcpkg_release.id).count() == 0:
-                        # Zero PUBLISHED for this spr, so nothing to take over
-                        # for us, so leave it for consideration next time.
-                        continue
+            # There is at least one non-removed binary to consider
+            if considered_binaries.count() > 0:
+                # XXX malcc 2006-10-17 bug=57488:
+                # Want to change to running scripts at info level,
+                # but for now just shut up this particularly noisy
+                # debug statement.
+                #self.debug("%s/%s (source) has at least %d non-removed "
+                #           "binaries as yet" % (
+                #    srcpkg_release.sourcepackagename.name,
+                #    srcpkg_release.version,
+                #    considered_binaries.count()))
 
-                # Okay, so there's no unremoved binaries, let's go for it...
-                self.debug(
-                    "%s/%s (%s) source has been judged eligible for removal" %
-                           (srcpkg_release.sourcepackagename.name,
-                            srcpkg_release.version, pub_record.id))
-                pub_record.scheduleddeletiondate = (
-                    UTC_NOW + timedelta(days=conf.stayofexecution))
-                # XXX cprov 20070820: it is useless, since it's always equals
-                # to scheduleddeletiondate - quarantine.
-                pub_record.datemadepending = UTC_NOW
+                # However we can still remove *this* record if there's
+                # at least one other PUBLISHED for the spr. This happens
+                # when a package is moved between components.
+                published = SecureSourcePackagePublishingHistory.selectBy(
+                    distroseries=pub_record.distroseries,
+                    pocket=pub_record.pocket,
+                    status=PackagePublishingStatus.PUBLISHED,
+                    archive=self.archive,
+                    sourcepackagereleaseID=srcpkg_release.id)
+                # Zero PUBLISHED for this spr, so nothing to take over
+                # for us, so leave it for consideration next time.
+                if published.count() == 0:
+                    continue
+                
+            # Okay, so there's no unremoved binaries, let's go for it...
+            self.debug(
+                "%s/%s (%s) source has been judged eligible for removal" %
+                (srcpkg_release.sourcepackagename.name,
+                 srcpkg_release.version, pub_record.id))
+            pub_record.scheduleddeletiondate = (
+                UTC_NOW + timedelta(days=conf.stayofexecution))
+            # XXX cprov 20070820: it is useless, since it's always equals
+            # to scheduleddeletiondate - quarantine.
+            pub_record.datemadepending = UTC_NOW
 
     def judgeAndDominate(self, dr, pocket, config, do_clear_cache=True):
         """Perform the domination and superseding calculations
@@ -380,7 +377,8 @@ class Dominator:
             securesourcepackagepublishinghistory.distrorelease = %s AND
             securesourcepackagepublishinghistory.archive = %s AND
             securesourcepackagepublishinghistory.pocket = %s AND
-            securesourcepackagepublishinghistory.status IN %s
+            securesourcepackagepublishinghistory.status IN %s AND
+            securesourcepackagepublishinghistory.scheduleddeletiondate is NULL
             """ % sqlvalues(dr, self.archive, pocket, dominate_status))
 
         binaries = SecureBinaryPackagePublishingHistory.select("""
@@ -389,7 +387,8 @@ class Dominator:
             distroarchrelease.distrorelease = %s AND
             securebinarypackagepublishinghistory.archive = %s AND
             securebinarypackagepublishinghistory.pocket = %s AND
-            securebinarypackagepublishinghistory.status IN %s
+            securebinarypackagepublishinghistory.status IN %s AND
+            securebinarypackagepublishinghistory.scheduleddeletiondate is NULL
             """ % sqlvalues(dr, self.archive, pocket, dominate_status),
             clauseTables=['DistroArchRelease'])
 
