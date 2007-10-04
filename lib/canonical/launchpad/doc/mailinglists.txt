@@ -17,7 +17,6 @@ several teams.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, TeamMembershipStatus, TeamSubscriptionPolicy)
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> login(ANONYMOUS)
     >>> personset = getUtility(IPersonSet)
     >>> ddaa = personset.getByName('ddaa')
@@ -141,6 +140,7 @@ changes.
     >>> flush_database_updates()
     >>> list_one.registrant.name
     u'ddaa'
+    >>> login(ANONYMOUS)
 
 A mailing list cannot be registered more than once.
 
@@ -152,9 +152,9 @@ A mailing list cannot be registered more than once.
 
 == Reviewing a registered mailing list ==
 
-A registered mailing list must then be reviewed by a Launchpad administrator
-before the request to create it can be made.  Use the list set to find all
-currently registered mailing lists.
+A registered mailing list must then be reviewed by a member of
+the Mailing List Experts team before the request to create it can be
+made.  Use the list set to find all currently registered mailing lists.
 
     >>> list_three = list_set.new(team_three)
     >>> list_three
@@ -169,24 +169,39 @@ currently registered mailing lists.
      <MailingList for team "team-three"; status=REGISTERED at ...>,
      <MailingList for team "team-two"; status=REGISTERED at ...>]
 
-A mailing list's registration cannot be reviewed by a non-administrator.
+A mailing list's registration cannot be reviewed by somebody who doesn't
+participate in the Mailing List Experts team.
 
-    >>> from canonical.launchpad.interfaces import MailingListStatus
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, MailingListStatus)
+    >>> mailing_list_experts = getUtility(
+    ...     ILaunchpadCelebrities).mailing_list_experts
     >>> no_priv = personset.getByName('no-priv')
+    >>> no_priv.hasParticipationEntryFor(mailing_list_experts)
+    False
     >>> list_one.review(no_priv, MailingListStatus.APPROVED)
     Traceback (most recent call last):
     ...
-    AssertionError: Reviewer must be a Launchpad administrator
-    >>> list_one.review(ddaa, MailingListStatus.APPROVED)
-    Traceback (most recent call last):
-    ...
-    AssertionError: Reviewer must be a Launchpad administrator
+    AssertionError: Reviewer must be a Mailing List Experts
 
-A Launchpad administer though, may approve the registration.
+A member of the team (like a Launchpad administrator), may approve the
+registration.
 
+    >>> carlos.hasParticipationEntryFor(mailing_list_experts)
+    True
     >>> list_one.review(carlos, MailingListStatus.APPROVED)
-    >>> flush_database_updates()
+    >>> syncUpdate(list_one)
     >>> list_one.status.name
+    'APPROVED'
+
+If no_priv becomes a member of the Mailing List Experts, he'll be
+able to approve a list.
+
+    >>> mailing_list_experts.addMember(no_priv, carlos)
+    >>> list_four.review(no_priv, MailingListStatus.APPROVED)
+    >>> syncUpdate(list_four)
+    >>> list_four.status.name
     'APPROVED'
 
 A mailing list that has already been reviewed, may not be re-reviewed.
@@ -203,7 +218,7 @@ A mailing list that has already been reviewed, may not be re-reviewed.
 A reviewer may also decline a mailing list registration.
 
     >>> list_two.review(carlos, MailingListStatus.DECLINED)
-    >>> flush_database_updates()
+    >>> syncUpdate(list_two)
     >>> list_two.status.name
     'DECLINED'
 
@@ -218,15 +233,13 @@ declined.
 Once approved or declined the lists won't be re-considered for review.
 
     >>> sorted_lists(list_set.registered_lists)
-    [<MailingList for team "team-four"; status=REGISTERED at ...>,
-     <MailingList for team "team-three"; status=REGISTERED at ...>]
+    [<MailingList for team "team-three"; status=REGISTERED at ...>]
 
-Approve a couple of other lists to illustrate some additional outcomes later
+Approve the other list to illustrate some additional outcomes later
 on.
 
     >>> list_three.review(carlos, MailingListStatus.APPROVED)
-    >>> list_four.review(carlos, MailingListStatus.APPROVED)
-    >>> flush_database_updates()
+    >>> syncUpdate(list_three)
     >>> list(list_set.registered_lists)
     []
 

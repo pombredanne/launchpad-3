@@ -66,9 +66,9 @@ class MailingList(SQLBase):
                           MailingListStatus.DECLINED), (
             'Reviewed lists may only be approved or declined')
         # The reviewer must be a Launchpad administrator.
-        assert reviewer is not None and reviewer.inTeam(
-            getUtility(ILaunchpadCelebrities).admin), (
-            'Reviewer must be a Launchpad administrator')
+        assert reviewer is not None and reviewer.hasParticipationEntryFor(
+            getUtility(ILaunchpadCelebrities).mailing_list_experts), (
+            'Reviewer must be a Mailing List Experts')
         self.reviewer = reviewer
         self.status = status
         self.date_reviewed = datetime.now(pytz.timezone('UTC'))
