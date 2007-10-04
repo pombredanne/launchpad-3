@@ -40,7 +40,6 @@ __all__ = [
 import cgi
 from operator import attrgetter
 from warnings import warn
-import math
 
 import zope.security.interfaces
 from zope.component import getUtility
@@ -88,42 +87,10 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import ProductBugTrackerWidget
-from canonical.widgets import LabeledMultiCheckBoxWidget
+from canonical.widgets import CheckBoxMatrixWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 from canonical.launchpad.vocabularies import LicenseVocabulary
 from canonical.lp.dbschema import License
-
-class CheckBoxMatrixWidget(LabeledMultiCheckBoxWidget):
-    def __init__(self, field, vocabulary, request):
-        LabeledMultiCheckBoxWidget.__init__(self, field, vocabulary, request)
-        self.column_count = 1
-
-    def renderValue(self, value):
-        rendered_items = self.renderItems(value)
-        html = ['<table>']
-        if self.orientation == 'horizontal':
-            for i in range(0, len(rendered_items), self.column_count): 
-                html.append('  <tr>')
-                for j in range(0, self.column_count):
-                    index = i + j
-                    if index >= len(rendered_items):
-                        break
-                    html.append('    <td>%s</td>' % rendered_items[index])
-                html.append('  </tr>')
-        else:
-            row_count = int(math.ceil(
-                len(rendered_items) / float(self.column_count)))
-            for i in range(0, row_count):
-                html.append('  <tr>')
-                for j in range(0, self.column_count):
-                    index = i + (j * row_count)
-                    if index >= len(rendered_items):
-                        break
-                    html.append('    <td>%s</td>' % rendered_items[index])
-                html.append('  </tr>')
-
-        html.append('</table>')
-        return '\n'.join(html)
 
 
 class ProductNavigation(
@@ -925,16 +892,21 @@ class ProductAddViewBase(LaunchpadFormView):
     non_custom_widgets = ()
 
     def validate(self, data):
-        if not data.get('license_info'):
-            self.setFieldError('license_info', 
-                'Please describe other license.')
         licenses = data.get('licenses', [])
         if len(licenses) == 0:
             self.setFieldError('licenses', 
-                'Select all licenses for this software')
-        elif License.GPL in licenses:
-            self.setFieldError('licenses', 
-                'What????!!!???')
+                'Select all licenses for this software or select '
+                'Other/Proprietary or Other/Open Source.')
+        elif License.OTHER_PROPRIETARY in licenses:
+            if not data.get('license_info'):
+                self.setFieldError('license_info', 
+                    'A description of the "Other/Proprietary" '
+                    'license you checked is required.')
+        elif License.OTHER_OPEN_SOURCE in licenses:
+            if not data.get('license_info'):
+                self.setFieldError('license_info', 
+                    'A description of the "Other/Open Source" '
+                    'license you checked is required.')
 
     def _createLicenseField(self):
         """Create a list of teams the user is an administrator of."""
