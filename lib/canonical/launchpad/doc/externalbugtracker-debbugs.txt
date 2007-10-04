@@ -371,6 +371,39 @@ valid e-mail address), he still won't be subscribed to the imported bug.
     >>> [person.name for person in bug.getDirectSubscribers()]
     []
 
+=== Script for importing Debian bugs ===
+
+There's a script called `import-debian-bugs.py`, which accepts a list of
+bug numbers to be imported. It will link the bugs to the debbugs bug
+tracker.
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.database.sqlbase import commit
+    >>> debbugs = getUtility(ILaunchpadCelebrities).debbugs
+    >>> [bug.title for bug in debbugs.getBugsWatching('237001')]
+    []
+    >>> [bug.title for bug in debbugs.getBugsWatching('322535')]
+    []
+    >>> commit()
+
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     'scripts/import-debian-bugs.py 237001 322535', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> process.returncode
+    0
+    >>> print err
+    INFO    Committing the transaction.
+
+    >>> commit()
+    >>> debbugs = getUtility(ILaunchpadCelebrities).debbugs
+    >>> [bug.title for bug in debbugs.getBugsWatching('237001')]
+    [u'evolution mail crashes on opening an email with a TIFF attachment']
+    >>> [bug.title for bug in debbugs.getBugsWatching('322535')]
+    [u'evolution: Multiple format string vulnerabilities in Evolution']
+
 
 == Wrapping up ==
 
