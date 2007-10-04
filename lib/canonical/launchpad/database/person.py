@@ -203,6 +203,17 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         if self.teamownerID is not None:
             alsoProvides(self, ITeam)
 
+    def convertToTeam(self, team_owner):
+        """See `IPerson`."""
+        assert not self.isTeam(), "Can't convert a team to a team."
+        assert self.account_status == AccountStatus.NOACCOUNT, (
+            "Only Person entries whose account_status is NOACCOUNT can be "
+            "converted into teams.")
+        self.password = None
+        self.creation_rationale = None
+        self.teamowner = team_owner
+        alsoProvides(self, ITeam)
+
     # specification-related joins
     @property
     def approver_specs(self):
@@ -2038,14 +2049,7 @@ class PersonSet:
 
 
     def merge(self, from_person, to_person):
-        """Merge a person into another.
-
-        The old user (from_person) will be left as an atavism
-
-        We are not yet game to delete the `from_person` entry from the
-        database yet. We will let it roll for a while and see what cruft
-        develops -- StuartBishop 20050812
-        """
+        """See `IPersonSet`."""
         # Sanity checks
         if ITeam.providedBy(from_person):
             raise TypeError('Got a team as from_person.')

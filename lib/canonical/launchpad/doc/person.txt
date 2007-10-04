@@ -177,6 +177,49 @@ account_status will always be NOACCOUNT.
     >>> landscape_devs.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
+=== Turning people into teams ===
+
+Launchpad may create Person entries automatically and it always assumes
+these are actual people.  Sometimes, though, these should actually be teams,
+so we provide an easy way to turn one of these auto created entries into
+teams.
+
+    >>> not_a_person, dummy = personset.createPersonAndEmail(
+    ...     'foo@random.com', PersonCreationRationale.SOURCEPACKAGEIMPORT,
+    ...     comment='when the ed package was imported into Ubuntu Feisty')
+    >>> not_a_person.isTeam()
+    False
+    >>> not_a_person.is_valid_person
+    False
+    >>> not_a_person.account_status
+    <DBItem AccountStatus.NOACCOUNT...
+    >>> not_a_person.convertToTeam(team_owner=ddaa)
+    >>> flush_database_updates()
+    >>> not_a_person.isTeam()
+    True
+    >>> ITeam.providedBy(not_a_person)
+    True
+    >>> verifyObject(ITeam, not_a_person)
+    True
+    >>> print not_a_person.password
+    None
+
+We can even add members to our new team!
+
+    >>> not_a_person.addMember(lifeless, reviewer=ddaa)
+    >>> [member.name for member in not_a_person.activemembers]
+    [u'lifeless']
+
+This functionality is only available for non-team Person entries whose
+account_status is NOACCOUNT, though.
+
+    >>> ddaa.account_status
+    <DBItem AccountStatus.ACTIVE...
+    >>> ddaa.convertToTeam(team_owner=landscape_devs)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only Person entries whose account_status is NOACCOUNT...
+
 === Team members ===
 
 The relationship between a person and a team is stored in TeamMemberships
