@@ -1,0 +1,150 @@
+#!/usr/bin/env python
+
+"""Send a review to the launchpad-reviews mailing list.
+
+The review should live in a text file which you name on the command line.  The
+text file must have the full path of the review branch in the first 10 lines.
+This script will sniff the branch and CC the person whose branch this is.
+"""
+
+from __future__ import with_statement
+
+import os
+import pwd
+import sys
+import time
+import smtplib
+import optparse
+import urlparse
+
+from email.mime.text import MIMEText
+from email.utils import formataddr
+
+
+LAUNCHPAD_REVIEWS = 'Launchpad Reviews <launchpad-reviews@lists.canonical>'
+SLASH = '/'
+COMMASPACE = ', '
+# Hack the urlparse module global because it stupidly hardcodes the scheme
+# identifiers, doesn't know about bzr+ssh, and doesn't provide an API for
+# amending the schemes.
+urlparse.uses_netloc.append('bzr+ssh')
+
+
+def address_callback(option, opt, value, parser):
+    """Return (host, port) parsed from string."""
+    if ':' in value:
+        host, port = value.split(':', 1)
+        if not host:
+            host = 'localhost'
+        if not port:
+            port = 0
+        return host, int(port)
+    else:
+        # No port given.
+        return value, 0
+
+
+def parseargs():
+    parser = optparse.OptionParser(usage='%prog [options] filename')
+    parser.add_option('-a', '--address',
+                      type='string', default=None,
+                      action='callback', callback=address_callback,
+                      help='hostname:port for smtp server; both optional')
+    parser.add_option('-f', '--from',
+                      type='string', default=None, dest='sender',
+                      help='From: header value (also MAIL FROM)')
+    parser.add_option('-t', '--to',
+                      type='string', default=None, dest='to_recipient',
+                      help='To: header value (also RCPT TO)')
+    parser.add_option('-c', '--cc',
+                      type='string', default=[], action='append',
+                      dest='cc_recipients',
+                      help='CC: header (multiple allowed)')
+    parser.add_option('-d', '--debug-mode',
+                      default=0, action='count',
+                      help='Debug mode; SMTP back to yourself, or stdout')
+    opts, args = parser.parse_args()
+    if len(args) < 1:
+        parser.error('Missing review text file name')
+    if len(args) > 1:
+        parser.error('Too many arguments')
+    return parser, opts, args
+
+
+# I always put the branch name in one of the first few lines
+def get_branch_and_user(filename):
+    with open(filename) as fp:
+        for i, line in enumerate(fp):
+            branch = line.strip()
+            parts = urlparse.urlsplit(branch)
+            if not parts.scheme or not parts.netloc.startswith('devpad'):
+                if i < 10:
+                    continue
+                print >> sys.stderr, 'no branch found in first 10 lines'
+                sys.exit(1)
+            path = parts.path.split(SLASH)
+            if path[1] <> 'code' or path[2] == 'launchpad':
+                continue
+            return SLASH.join(path[2:]), path[2]
+
+
+def main():
+    parser, opts, args = parseargs()
+    branch, user = get_branch_and_user(args[0])
+
+    if opts.to_recipient is None:
+        to_recipient = user + '@canonical.com'
+    else:
+        to_recipient = opts.to_recipient
+
+    if len(opts.cc_recipients) > 0:
+        cc_recipients = opts.cc_recipients
+    else:
+        cc_recipients = [LAUNCHPAD_REVIEWS]
+
+    envto = [to_recipient]
+    envto.extend(cc_recipients)
+
+    if opts.sender is None:
+        pw_entry = pwd.getpwuid(os.getuid())
+        real_name = pw_entry.pw_gecos.split(',')[0]
+        # This is probably not generically correct, but it works for me :)
+        canonical_who = pw_entry.pw_name + '@canonical.com'
+        sender = formataddr((real_name, canonical_who))
+    else:
+        sender = opts.sender
+
+    envfrom = sender
+
+    # Craft the email message.
+    with open(args[0]) as fp:
+        msg = MIMEText(fp.read())
+
+    msg['From'] = sender
+    msg['Subject'] = 'REVIEW: ' + branch
+    msg['To'] = to_recipient
+    msg['Cc'] = COMMASPACE.join(cc_recipients)
+
+    # In debug mode 1, we print everything to stdout.
+    if opts.debug_mode == 1:
+        print 'MAIL FROM:', envfrom
+        for recipient in envto:
+            print 'RCPT TO:', recipient
+        print msg.as_string()
+    # In debug mode 2, we mail the message to ourselves.
+    elif opts.debug_mode > 1:
+        envto = [sender]
+    else:
+        # Send the message.
+        s = smtplib.SMTP()
+        if opts.address is None:
+            s.connect()
+        else:
+            host, port = opts.address
+            s.connect(host, port)
+        s.sendmail(envfrom, envto, str(msg))
+        s.quit()
+
+
+if __name__ == '__main__':
+    main()
