@@ -566,6 +566,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -8118,6 +8121,15 @@ ALTER TABLE productcvsmodule DISABLE TRIGGER ALL;
 
 
 ALTER TABLE productcvsmodule ENABLE TRIGGER ALL;
+
+
+ALTER TABLE productlicense DISABLE TRIGGER ALL;
+
+INSERT INTO productlicense (id, product, license) VALUES (1, 1, 1);
+INSERT INTO productlicense (id, product, license) VALUES (2, 1, 2);
+
+
+ALTER TABLE productlicense ENABLE TRIGGER ALL;
 
 
 ALTER TABLE productrelease DISABLE TRIGGER ALL;
