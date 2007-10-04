@@ -999,6 +999,23 @@ k            </description>
             attribute="autotest_errorreports" required="no" />
     </sectiontype>
 
+    <sectiontype name="codeimport">
+        <key name="default_interval_cvs" datatype="integer"
+             required="no" default="43200">
+          <description>
+              The default value of the update interval of a code import from
+              CVS, in seconds.
+          </description>
+        </key>
+        <key name="default_interval_subversion" datatype="integer"
+             required="no" default="21600">
+          <description>
+              The default value of the update interval of a code import from
+              Subversion, in seconds.
+          </description>
+        </key>
+    </sectiontype>
+
     <sectiontype name="personalpackagearchive">
         <key name="root" datatype="string" required="no"
              default="/var/tmp/ppa">
@@ -1100,6 +1117,7 @@ k            </description>
         <section name="*" type="codehosting" attribute="codehosting" />
         <section name="*" type="authserver" attribute="authserver" />
         <section name="*" type="importd" attribute="importd" />
+        <section name="*" type="codeimport" attribute="codeimport" />
         <section name="*" type="personalpackagearchive"
             attribute="personalpackagearchive" />
         <section name="*" type="mailman" attribute="mailman" />
