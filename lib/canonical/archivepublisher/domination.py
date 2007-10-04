@@ -247,11 +247,10 @@ class Dominator:
             # Attempt to find all binaries of this
             # SourcePackageRelease which are/have been in this
             # distroseries...
-            non_removed_states = [PENDING, PUBLISHED, SUPERSEDED]
             considered_binaries = BinaryPackagePublishingHistory.select("""
-            binarypackagepublishinghistory.status IN %s AND
             binarypackagepublishinghistory.distroarchrelease =
-            distroarchrelease.id AND
+                distroarchrelease.id AND
+            binarypackagepublishinghistory.scheduleddeletiondate IS NULL AND
             binarypackagepublishinghistory.archive = %s AND
             build.sourcepackagerelease = %s AND
             distroarchrelease.distrorelease = %s AND
@@ -259,7 +258,7 @@ class Dominator:
             binarypackagerelease.id AND
             binarypackagerelease.build = build.id AND
             binarypackagepublishinghistory.pocket = %s
-            """ % sqlvalues(non_removed_states, self.archive, srcpkg_release,
+            """ % sqlvalues(self.archive, srcpkg_release,
                             pub_record.distroseries, pub_record.pocket),
             clauseTables=['DistroArchRelease', 'BinaryPackageRelease','Build'])
 

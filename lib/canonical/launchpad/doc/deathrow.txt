@@ -65,7 +65,7 @@ And, if we mark some packages to be pending removal. Source publication
   >>> pub = SSPPH.get(15)
   >>> print pub.dateremoved
   None
-  >>> pub.status = PackagePublishingStatus.SUPERSEDED
+  >>> pub.status = PackagePublishingStatus.DELETED
   >>> pub.scheduleddeletiondate = old_date
 
 Source publication 12 includes alsa-utils_1.0.9a-4ubuntu1.dsc:
@@ -103,7 +103,7 @@ Knock off some binaries as well:
   >>> pub = SBPPH.get(19)
   >>> print pub.dateremoved
   None
-  >>> pub.status = PackagePublishingStatus.SUPERSEDED
+  >>> pub.status = PackagePublishingStatus.DELETED
   >>> pub.scheduleddeletiondate = old_date
 
 As above, both 19 and 21 binary publication refer to the same pmount
@@ -146,7 +146,7 @@ and one binary) and the date removed properly set up:
 
   >>> source_pub = SSPPH.get(15)
   >>> source_pub.status.name
-  'SUPERSEDED'
+  'DELETED'
   >>> source_pub.dateremoved
   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
@@ -179,7 +179,7 @@ Test that bytes freed computing is handled correctly:
   ...    return 5
   >>> dr._removeFile = removeFileReturningSize
   >>> pub = SSPPH.get(2)
-  >>> pub.status = PackagePublishingStatus.SUPERSEDED
+  >>> pub.status = PackagePublishingStatus.DELETED
   >>> pub.scheduleddeletiondate = old_date
   >>> pub = SBPPH.get(24)
   >>> pub.status = PackagePublishingStatus.SUPERSEDED
