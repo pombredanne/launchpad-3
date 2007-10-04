@@ -379,12 +379,24 @@ def copy_active_translations_as_update(child, transaction, logger):
             # POFile has already been poured by the time this gets invoked; we
             # recognize references to deleted POFiles by the fact that they
             # don't exist in the POFile source table.
+            drop_tables(cur, ['temp_final_pofiles'])
+            cur.execute("""
+                CREATE TEMP TABLE temp_final_pofiles
+                ON COMMIT DROP
+                AS SELECT id FROM POFile
+                WHERE id >= %s AND id <= %s
+                ORDER BY id
+                """ % (self.lowest_pofile, self.highest_pofile))
+            cur.execute("""
+                CREATE UNIQUE INDEX temp_final_pofiles_idx
+                ON temp_final_pofiles(id)
+                """)
+            cur.execute("ANALYZE %s" % holding_table)
+            cur.execute("ANALYZE temp_final_pofiles_idx")
             cur.execute("""
                 DELETE FROM %s
-                WHERE pofile NOT IN (
-                    SELECT id FROM POFile WHERE id >= %s AND id <= %s)
-                """ % (
-                    holding_table, self.lowest_pofile, self.highest_pofile))
+                WHERE pofile NOT IN (SELECT id FROM temp_final_pofiles)
+                """ % holding_table)
             allow_sequential_scans(cur, False)
 
     def prepare_pomsgset_batch(
@@ -525,11 +537,13 @@ def copy_active_translations_as_update(child, transaction, logger):
                 ON COMMIT DROP
                 AS SELECT id FROM POMsgSet
                 WHERE id >= %s AND id <= %s
+                ORDER BY id
                 """ % (self.lowest_pomsgset, self.highest_pomsgset))
             cur.execute("""
                 CREATE UNIQUE INDEX temp_final_pomsgsets_idx
                 ON temp_final_pomsgsets(id)
                 """)
+            cur.execute("ANALYZE %s" % holding_table)
             cur.execute("ANALYZE temp_final_pomsgsets")
             cur.execute("""
                 DELETE FROM %s
