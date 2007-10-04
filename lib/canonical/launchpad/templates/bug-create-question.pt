@@ -32,7 +32,7 @@
     <div metal:fill-slot="main">
       <p tal:condition="not: view/can_be_a_question">
         A question cannot be created from this bug. Either this bug is
-        valid in more than one location, or 
+        valid in another location, or 
         <tal:target replace="context/target/displayname">Firefox</tal:target>
         does not use Launchpad to track bugs.
       </p>
@@ -63,5 +63,10 @@
       </form>
     </div>
 
+    <metal:help fill-slot="help">
+      <p>
+        XXX sinzui 2007-10-04: write the help.
+      </p>
+    </metal:help>
   </body>
 </html>
