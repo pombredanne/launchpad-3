@@ -34,7 +34,7 @@ from canonical.codehosting.tests.helpers import create_branch
 from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import canonical_url
-from canonical.testing import LaunchpadScriptLayer
+from canonical.testing import LaunchpadScriptLayer, reset_logging
 
 
 class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
@@ -200,6 +200,7 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
 
     def tearDown(self):
         super(TestPullerWorkerFormats, self).tearDown()
+        reset_logging()
 
     def testMirrorKnitAsKnit(self):
         # Create a source branch in knit format, and check that the mirror is in
@@ -284,6 +285,7 @@ class TestPullerWorker_SourceProblems(TestCaseInTempDir, PullerWorkerMixin):
     def tearDown(self):
         PullerWorkerMixin.tearDown(self)
         TestCaseInTempDir.tearDown(self)
+        reset_logging()
 
     def assertMirrorFailed(self, puller_worker, message_substring):
         """Assert that puller_worker failed, and that message_substring is in
@@ -405,6 +407,7 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
 
     def tearDown(self):
         TestCaseWithTransport.tearDown(self)
+        reset_logging()
 
     def testCreateBranchReference(self):
         """Test that our createBranchReference helper works correctly."""
