@@ -31,3 +31,7 @@ switch once the release is out and we move from pre-release to normal mode.
     >>> print get_feedback_messages(browser)[0]
     Ubuntu...has not been released yet, but we'll record your request...
 
+Restore the prerelease_mode config variable so that we don't screw up other
+tests.
+
+    >>> config.shipit.prerelease_mode = False
