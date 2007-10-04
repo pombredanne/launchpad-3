@@ -109,8 +109,6 @@ archive_admin = ContextTitle('Administer %s')
 
 archive_activate = 'Activate Personal Package Archive'
 
-archive_view_tos = 'Personal Package Archive Terms of Service'
-
 archive_builds = ContextTitle('Builds for %s')
 
 archive_edit = ContextTitle('Edit %s')

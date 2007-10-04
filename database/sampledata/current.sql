@@ -1240,6 +1240,7 @@ ALTER TABLE codeimportjob ENABLE TRIGGER ALL;
 
 ALTER TABLE codeimportmachine DISABLE TRIGGER ALL;
 
+INSERT INTO codeimportmachine (id, date_created, hostname, state, heartbeat) VALUES (1, '2007-08-02 16:36:17.817407', 'bazaar-importer', 20, NULL);
 
 
 ALTER TABLE codeimportmachine ENABLE TRIGGER ALL;
