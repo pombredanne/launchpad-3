@@ -2,17 +2,15 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 import _pythonpath
+from optparse import OptionParser
 import sys
 
-from optparse import OptionParser
+import bzrlib.repository
 
-from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
+from canonical.codehosting.puller import configure_oops_reporting
 from canonical.codehosting.puller.worker import (
     PullerWorker, PullerWorkerProtocol)
-
-
-import bzrlib.repository
 
 
 def shut_up_deprecation_warning():
@@ -20,6 +18,7 @@ def shut_up_deprecation_warning():
     # Quick hack to disable the deprecation warning for old repository
     # formats.
     bzrlib.repository._deprecation_warning_done = True
+
 
 def force_bzr_to_use_urllib():
     # These lines prevent bzr from using pycurl to connect to http: urls.  We
@@ -41,30 +40,12 @@ def force_bzr_to_use_urllib():
 if __name__ == '__main__':
     parser = OptionParser()
     (options, arguments) = parser.parse_args()
-
-    branch_type_map = {
-        BranchType.HOSTED: 'upload',
-        BranchType.MIRRORED: 'mirror',
-        BranchType.IMPORTED: 'import'
-        }
-
-    source_url = arguments[0]
-    destination_url = arguments[1]
-    branch_id = arguments[2]
-    unique_name = arguments[3]
-    branch_type_name = arguments[4]
+    (source_url, destination_url, branch_id, unique_name,
+     branch_type_name) = arguments
 
     branch_type = BranchType.items[branch_type_name]
 
-    errorreports = getattr(
-        config.supermirror,
-        '%s_errorreports' % (branch_type_map[branch_type],))
-
-    # Customize the oops reporting config.
-    config.launchpad.errorreports.oops_prefix = errorreports.oops_prefix
-    config.launchpad.errorreports.errordir = errorreports.errordir
-    config.launchpad.errorreports.copy_to_zlog = errorreports.copy_to_zlog
-
+    configure_oops_reporting(branch_type)
     shut_up_deprecation_warning()
     force_bzr_to_use_urllib()
 

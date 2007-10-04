@@ -16,6 +16,7 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 import canonical
 from canonical.codehosting import branch_id_to_path
 from canonical.config import config
+from canonical.launchpad.webapp import errorlog
 
 
 class BadMessage(Exception):
@@ -172,6 +173,11 @@ class PullerMaster:
         reactor.spawnProcess(protocol, sys.executable, command)
         return deferred
 
+    def run(self):
+        deferred = self.mirror()
+        deferred.addErrback(self.unexpectedError)
+        return deferred
+
     def startMirroring(self):
         self.logger.info(
             'Mirroring branch %d: %s to %s', self.branch_id, self.source_url,
@@ -187,6 +193,17 @@ class PullerMaster:
         self.logger.info('Successfully mirrored to rev %s', revision_id)
         return self.branch_status_client.mirrorComplete(
             self.branch_id, revision_id)
+
+    def unexpectedError(self, failure):
+        request = errorlog.ScriptRequest([
+            ('branch_id', self.branch_id),
+            ('source', self.source_url),
+            ('dest', self.destination_url),
+            ('error-explanation', failure.getErrorMessage())])
+        request.URL = get_canonical_url(self.unique_name)
+        errorlog.globalErrorUtility.raising(
+            (failure.value, failure.type, failure.getTraceback()), request)
+        self.logger.info('Recorded %s', request.oopsid)
 
 
 class JobScheduler:
@@ -212,7 +229,7 @@ class JobScheduler:
         semaphore = defer.DeferredSemaphore(
             config.supermirror.maximum_workers)
         deferreds = [
-            semaphore.run(puller_master.mirror)
+            semaphore.run(puller_master.run)
             for puller_master in puller_masters]
         deferred = defer.gatherResults(deferreds)
         deferred.addCallback(self._finishedRunning)
@@ -223,8 +240,16 @@ class JobScheduler:
             self.branch_type.name)
         deferred.addCallback(self.getPullerMasters)
         deferred.addCallback(self._run)
-        # XXX: Add an errback to this that records an oops.
         return deferred
+
+    def _recordOops(self, failure):
+        request = errorlog.ScriptRequest([
+            ('name', self.name),
+            ('error-explanation', failure.getErrorMessage())])
+        errorlog.globalErrorUtility.raising(
+            (failure.value, failure.type, failure.getTraceback()), request)
+        self.logger.info('Recorded %s', request.oopsid)
+        return failure
 
     def _finishedRunning(self, ignored):
         self.logger.info('Mirroring complete')
