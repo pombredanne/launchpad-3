@@ -123,23 +123,22 @@ specially handled and reported.
   ...     raise AssertionError, "Really nasty \xc3 non-ASCII error!"
   ... except AssertionError:
   ...     result.addFailure()
+  >>> result.notify(carlos)
   >>> transaction.commit()
   >>> len(test_emails) == 2
   True
 
+  >>> carlos_body = None
+  >>> admins_body = None
   >>> while len(test_emails) > 0:
   ...     from_addrs, to_addrs, body = test_emails.pop()
   ...     if 'carlos@canonical.com' in to_addrs:
-  ...         carlos_addrs = to_addrs
   ...         carlos_body = body
   ...     else:
-  ...         admins_addrs = to_addrs
   ...         admins_body = body
 
 The user's notification looks no different from that for an ordinary error.
 
-  >>> print carlos_addrs
-  ['carlos@canonical.com']
   >>> print_mail_body(carlos_body)
   > 
   > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
@@ -152,15 +151,12 @@ The user's notification looks no different from that for an ordinary error.
 The one for the administrators, however, does not include the unprintable
 exception text.
 
-  >>> print admins_addrs
-  ['launchpad-error-reports@lists.canonical.com']
   >>> print_mail_body(admins_body)
   > 
   > Hello admins,
   > 
   > A UnicodeDecodeError occurred while trying to notify you of a
-  > failure during a translation export requested by
-  > Carlos Perell=C3=B3 Mar=C3=ADn.
+  > failure during a translation export requested by Carlos ...
   >
   > The failed request involved these objects:
   > evolution-2.2 in Evolution trunk
