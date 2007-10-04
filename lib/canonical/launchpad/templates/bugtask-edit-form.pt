@@ -221,12 +221,16 @@
         <tal:has_bugwatch tal:condition="context/bugwatch">
           <tal:has_been_pulled 
               tal:condition="context/bugwatch/lastchecked">
-            This information was last pulled
-            <b
-              tal:attributes="title context/bugwatch/lastchecked/fmt:datetime"
-              tal:content="context/bugwatch/lastchecked/fmt:displaydate">
-              3 minutes ago
-            </b>.
+              This information was last pulled
+              <b
+                tal:attributes="title context/bugwatch/lastchecked/fmt:datetime"
+                tal:content="context/bugwatch/lastchecked/fmt:displaydate">
+                3 minutes ago
+              </b>.
+            <tal:has_error condition="context/bugwatch/lasterror">
+              The bug's status could not be imported due to an error:
+              <span tal:content="context/bugwatch/lasterror/description" />
+            </tal:has_error>
           </tal:has_been_pulled>
           <tal:has_not_been_pulled 
               tal:condition="not:context/bugwatch/lastchecked">
