@@ -240,7 +240,8 @@ the same summary and description.
     >>> debian.official_malone
     False
 
-The bug reporter doesn't have to have a Launchpad account.
+The bug reporter doesn't have to have a Launchpad account. If a person
+doesn't exist in Launchpad, a new one will be created automatically.
 
     >>> report = email.message_from_file(
     ...     open(os.path.join(
@@ -293,7 +294,6 @@ The bug reporter got created automatically:
     True
     >>> print bug.owner.displayname
     Moritz Muehlenhoff
-
 
 Since he didn't have a Launchpad account before, he doesn't have a
 preferred e-mail address, and the one that is associated with his
