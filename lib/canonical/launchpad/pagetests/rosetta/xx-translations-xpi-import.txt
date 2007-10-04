@@ -5,7 +5,7 @@ file, which is an equivalent of a PO Template.
 
 Lets start with Firefox product inside trunk revision.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
   >>> browser.open('http://translations.launchpad.dev/firefox/trunk')
 
 Since we still don't have any POTemplates assigned, we must use the general

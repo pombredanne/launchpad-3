@@ -13,7 +13,7 @@ Check to be sure that an unpriviledged user cannot reach this page
 Check to be sure that a Rosetta expert (Jordi) can reach the POTemplate admin
 page.
 
-  >>> browser.addHeader('Authorization', 'Basic jordi@ubuntu.com:test')
+  >>> browser = setupBrowser(auth='Basic jordi@ubuntu.com:test')
   >>> browser.open(
   ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
   ...     'evolution-2.2/+admin')

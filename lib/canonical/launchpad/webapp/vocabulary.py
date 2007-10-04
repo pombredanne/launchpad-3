@@ -334,7 +334,7 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
 
 # TODO: Make DBSchema classes provide an interface, so we can directly
 # adapt IDBSchema to IVocabulary
-def vocab_factory(schema, noshow=[]):
+def vocab_factory(schema, noshow=None):
     """Factory for IDBSchema -> IVocabulary adapters.
 
     This function returns a callable object that creates vocabularies
@@ -342,6 +342,8 @@ def vocab_factory(schema, noshow=[]):
 
     The items appear in value order, lowest first.
     """
+    if noshow is None:
+        noshow = []
     def factory(context, schema=schema, noshow=noshow):
         """Adapt IDBSchema to IVocabulary."""
         items = [(item.title, item) for item in schema.items
@@ -349,12 +351,14 @@ def vocab_factory(schema, noshow=[]):
         return SimpleVocabulary.fromItems(items)
     return factory
 
-def sortkey_ordered_vocab_factory(schema, noshow=[]):
+def sortkey_ordered_vocab_factory(schema, noshow=None):
     """Another factory for IDBSchema -> IVocabulary.
 
     This function returns a callable object that creates a vocabulary
     from a dbschema ordered by that schema's sortkey.
     """
+    if noshow is None:
+        noshow = []
     def factory(context, schema=schema, noshow=noshow):
         """Adapt IDBSchema to IVocabulary."""
         items = [(item.title, item)

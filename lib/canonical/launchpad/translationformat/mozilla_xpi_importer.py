@@ -18,11 +18,11 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     ITranslationFormatImporter, ITranslationHeader, TranslationConstants,
-    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
+    TranslationFileFormat, TranslationFormatInvalidInputError,
+    TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.translation_common_format import (
     TranslationFile, TranslationMessage)
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.lp.dbschema import TranslationFileFormat
 
 
 class MozillaHeader:

@@ -282,9 +282,9 @@ class Publisher(object):
         return True
 
     def _makeFileGroupWriteableAndWorldReadable(self, file_path):
-        """Make the file group writable and world readable."""
+        """Make the file group readable/writable and world readable."""
         mode = stat.S_IMODE(os.stat(file_path).st_mode)
-        os.chmod(file_path, mode | stat.S_IWGRP | stat.S_IROTH)
+        os.chmod(file_path, mode | stat.S_IWGRP | stat.S_IRGRP | stat.S_IROTH)
 
     def _writeComponentIndexes(self, distroseries, pocket, component):
         """Write Index files for single distroseries + pocket + component.
@@ -325,6 +325,10 @@ class Publisher(object):
         os.rename(temp_index, source_index_path)
         os.rename(temp_index_gz, source_index_gz_path)
 
+        # XXX julian 2007-10-03
+        # This is kinda papering over a problem somewhere that causes the
+        # files to get created with permissions that don't allow group/world
+        # read access.  See https://bugs.launchpad.net/soyuz/+bug/148471
         self._makeFileGroupWriteableAndWorldReadable(source_index_path)
         self._makeFileGroupWriteableAndWorldReadable(source_index_gz_path)
 
