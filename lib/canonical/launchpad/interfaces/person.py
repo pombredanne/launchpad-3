@@ -914,6 +914,13 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         for each source package name, distribution series combination.
         """
 
+    def latestUploadedPPAPackages():
+        """Return SourcePackageReleases uploaded by this person to any PPA.
+
+        This method will only include the latest source package release
+        for each source package name, distribution series combination.
+        """
+
     def isUploader(distribution):
         """Return whether this person is an uploader for distribution.
 

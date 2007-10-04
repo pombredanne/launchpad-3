@@ -39,8 +39,9 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.lp.dbschema import (
-    BugTaskImportance, SpecificationFilter, SpecificationDefinitionStatus,
-    SpecificationImplementationStatus, SpecificationSort)
+    ArchivePurpose, BugTaskImportance, SpecificationFilter,
+    SpecificationDefinitionStatus, SpecificationImplementationStatus,
+    SpecificationSort)
 
 from canonical.launchpad.interfaces import (
     AccountStatus, BugTaskSearchParams, BugTaskStatus, EmailAddressStatus,
@@ -1681,7 +1682,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         """See `IPerson`."""
         return self._latestSeriesQuery(uploader_only=True)
 
-    def _latestSeriesQuery(self, uploader_only=False):
+    def latestUploadedPPAPackages(self):
+        """See `IPerson`."""
+        return self._latestSeriesQuery(
+            uploader_only=True, ppa_only=True)
+
+    def _latestSeriesQuery(self, uploader_only=False, ppa_only=False):
         # Issues a special query that returns the most recent
         # sourcepackagereleases that were maintained/uploaded to
         # distribution series by this person.
@@ -1691,21 +1697,33 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                        self.id, self.id)
         else:
             extra = "sourcepackagerelease.maintainer = %d" % self.id
+
+        if ppa_only:
+            ppa_clause = (
+                """sourcepackagerelease.upload_archive = archive.id AND
+                   archive.purpose = %s""" % sqlvalues(ArchivePurpose.PPA))
+        else:
+            ppa_clause = (
+                """sourcepackagerelease.upload_archive = archive.id AND
+                   archive.purpose != %s""" % sqlvalues(ArchivePurpose.PPA))
+
         query = """
             SourcePackageRelease.id IN (
                 SELECT DISTINCT ON (uploaddistrorelease,sourcepackagename)
                        sourcepackagerelease.id
                   FROM sourcepackagerelease
-                 WHERE %s
+                 WHERE %s AND
+                       %s
               ORDER BY uploaddistrorelease, sourcepackagename,
                        dateuploaded DESC
               )
-              """ % extra
+              """ % (extra, ppa_clause)
         return SourcePackageRelease.select(
             query,
+            clauseTables=['Archive'],
             orderBy=['-SourcePackageRelease.dateuploaded',
                      'SourcePackageRelease.id'],
-            prejoins=['sourcepackagename', 'maintainer'])
+            prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
 
     def isUploader(self, distribution):
         """See `IPerson`."""
