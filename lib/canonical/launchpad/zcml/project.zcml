@@ -136,12 +136,27 @@
         />
 
     <browser:page
+        name="+translations"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.TranslationsRedirectView"
+        permission="zope.Public"
+        />
+
+    <browser:page
         for="canonical.launchpad.interfaces.IProject"
         permission="zope.Public"
         name="+translations"
         facet="translations"
         template="../templates/project-translations.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+    <browser:page
+        name="+help-translate-button"
+        facet="translations"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.HelpTranslateButtonView"
+        permission="zope.Public"
         />
 
   <browser:pages

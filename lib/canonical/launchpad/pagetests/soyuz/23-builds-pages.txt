@@ -238,6 +238,6 @@ status is shown in parentheses after the build status.
     Builds of mozilla-firefox - 0.9
     warty hppa Successfully built
     hoary i386 Currently building
-    warty i386 Successfully built
     breezy-autotest i386 Successfully built (NEW)
+    warty i386 Successfully built
 

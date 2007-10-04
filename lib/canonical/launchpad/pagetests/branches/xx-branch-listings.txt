@@ -15,7 +15,7 @@ Luckily for us, many is 5 in the tests.
 Sample Person is used as the logged in user in order to show his private
 branches in the listings.
 
-   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+   >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
    >>> browser.open('http://code.launchpad.dev/~name12')
    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
    >>> print links.renderContents()

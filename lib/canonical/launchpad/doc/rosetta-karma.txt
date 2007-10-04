@@ -11,7 +11,7 @@ like SQLObjects are not persistent between transactions.
     ...     IKarmaActionSet, IPersonSet, ITranslationImportQueue,
     ...     ILaunchpadCelebrities)
     >>> from canonical.launchpad.database import POTemplate
-    >>> from canonical.lp.dbschema import RosettaImportStatus
+    >>> from canonical.launchpad.interfaces import RosettaImportStatus
 
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
     >>> karma_action_set = getUtility(IKarmaActionSet)

@@ -683,6 +683,16 @@ class SeeCodeImports(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImport
 
 
+class EditCodeImports(OnlyVcsImportsAndAdmins):
+    """Control who can edit the object view of a CodeImport.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = ICodeImport
+
+
 class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):
     """Control who can see the CodeImportMachine listing page.
 
@@ -803,6 +813,12 @@ class EditBugTracker(EditByOwnersOrAdmins):
 class EditProductRelease(EditByOwnersOrAdmins):
     permission = 'launchpad.Edit'
     usedfor = IProductRelease
+
+    def checkAuthenticated(self, user):
+        if (user.inTeam(self.obj.productseries.owner) or
+            user.inTeam(self.obj.productseries.product.owner)):
+            return True
+        return EditByOwnersOrAdmins.checkAuthenticated(self, user)
 
 class EditTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Edit'
@@ -1141,7 +1157,7 @@ class ViewHWSubmission(AuthorizationBase):
             return True
 
         admins = getUtility(ILaunchpadCelebrities).admin
-        return user == self.obj.owner or user.inTeam(admins)
+        return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
     def checkUnauthenticated(self):
         return not self.obj.private

@@ -199,15 +199,16 @@ class PgTestSetup(object):
         # Create the database from the template. We might need to keep
         # trying for a few seconds in case there are connections to the
         # template database that are slow in dropping off.
-        con = psycopg.connect(self._connectionString(self.template))
-        try:
-            con.set_isolation_level(0)
-            cur = con.cursor()
-            attempts = 60
-            for counter in range(0, attempts):
+        attempts = 60
+        for counter in range(0, attempts):
+            con = psycopg.connect(self._connectionString(self.template))
+            try:
+                con.set_isolation_level(0)
+                cur = con.cursor()
                 try:
                     cur.execute(
-                        "CREATE DATABASE %s TEMPLATE=%s ENCODING='UNICODE'" % (
+                        "CREATE DATABASE %s TEMPLATE=%s "
+                        "ENCODING='UNICODE'" % (
                             self.dbname, self.template))
                     break
                 except psycopg.ProgrammingError, x:
@@ -216,13 +217,13 @@ class PgTestSetup(object):
                     x = str(x)
                     if 'being accessed by other users' not in x:
                         raise
-                time.sleep(0.5)
-            ConnectionWrapper.committed = False
-            ConnectionWrapper.dirty = False
-            PgTestSetup._last_db = (self.template, self.dbname)
-            PgTestSetup._reset_db = False
-        finally:
-            con.close()
+            finally:
+                con.close()
+            time.sleep(1)
+        ConnectionWrapper.committed = False
+        ConnectionWrapper.dirty = False
+        PgTestSetup._last_db = (self.template, self.dbname)
+        PgTestSetup._reset_db = False
 
     def tearDown(self):
         '''Close all outstanding connections and drop the database'''

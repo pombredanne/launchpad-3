@@ -211,11 +211,6 @@
       template="../templates/related-bounties.pt"
       />
     <browser:page
-      name="+members"
-      facet="overview"
-      template="../templates/distribution-members.pt"
-      />
-    <browser:page
       name="+builds"
       facet="overview"
       template="../templates/distribution-builds.pt"
@@ -398,6 +393,13 @@
     />
 
   <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
+    />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IDistribution"
     class="canonical.launchpad.browser.DistributionView"
     permission="zope.Public"
@@ -406,6 +408,14 @@
     template="../templates/distribution-translations.pt"
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
+
+  <browser:page
+      name="+help-translate-button"
+      facet="translations"
+      for="canonical.launchpad.interfaces.IDistribution"
+      class="canonical.launchpad.browser.HelpTranslateButtonView"
+      permission="zope.Public"
+      />
 
   <browser:editform
     name="+changetranslators"
