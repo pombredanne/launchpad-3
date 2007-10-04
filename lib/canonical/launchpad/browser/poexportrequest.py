@@ -9,9 +9,8 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IPOExportRequestSet, ITranslationExporter)
+    IPOExportRequestSet, ITranslationExporter, TranslationFileFormat)
 from canonical.launchpad.webapp import (canonical_url, LaunchpadView)
-from canonical.lp.dbschema import TranslationFileFormat
 
 
 class BaseExportView(LaunchpadView):
@@ -34,6 +33,12 @@ class BaseExportView(LaunchpadView):
 
     def initialize(self):
         self.request_set = getUtility(IPOExportRequestSet)
+
+        # Ask our derived class to figure out the default file format for this
+        # export.  We do that here because the method may issue warnings,
+        # which must be attached to our response early on.
+        self.default_format = self.getDefaultFormat()
+
         if self.request.method != "POST":
             return
 
@@ -57,7 +62,7 @@ class BaseExportView(LaunchpadView):
             self.request.response.addErrorNotification(
                 "Please select at least one translation or template.")
         else:
-            self.request_set.addRequest( self.user, templates, pofiles, format)
+            self.request_set.addRequest(self.user, templates, pofiles, format)
             self.nextURL()
 
     def nextURL(self):
@@ -75,13 +80,12 @@ class BaseExportView(LaunchpadView):
                 self.value = value
                 self.is_default = is_default
 
-        default_format = self.getDefaultFormat()
         translation_exporter = getUtility(ITranslationExporter)
         exporters = translation_exporter.getExportersForSupportedFileFormat(
-            default_format)
+            self.default_format)
         for exporter in exporters:
             format = exporter.format
-            if format == default_format:
+            if format == self.default_format:
                 is_default = True
             else:
                 is_default = False

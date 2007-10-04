@@ -205,10 +205,13 @@ class DistributionSourcePackage(BugTargetBase,
             return None
         return cache.binpkgnames
 
-    def get_distroseries_packages(self):
+    def get_distroseries_packages(self, active_only=True):
         """See IDistributionSourcePackage."""
         result = []
         for series in self.distribution.serieses:
+            if active_only:
+                if not series.active:
+                    continue
             candidate = SourcePackage(self.sourcepackagename, series)
             if candidate.currentrelease is not None:
                 result.append(candidate)

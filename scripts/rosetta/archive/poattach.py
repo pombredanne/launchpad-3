@@ -9,9 +9,7 @@ from canonical.database.constants import UTC_NOW
 import canonical.lp
 from canonical.launchpad.database import Person, POTemplate
 from canonical.launchpad.database import ProductSet
-from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
-
-from canonical.lp.dbschema import RosettaImportStatus
+from canonical.interfaces import RosettaImportStatus
 
 from canonical.rosetta.pofile import POParser
 
