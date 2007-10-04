@@ -89,13 +89,15 @@ class PullerWorkerMixin:
             os.environ['HOME'] = self._home
         shutil.rmtree(self.test_dir)
 
-    def makePullerWorker(self, src_dir=None, dest_dir=None, branch_type=None):
+    def makePullerWorker(self, src_dir=None, dest_dir=None, branch_type=None,
+                         protocol=None):
         """Anonymous creation method for PullerWorker."""
         if src_dir is None:
             src_dir = os.path.join(self.test_dir, 'source_dir')
         if dest_dir is None:
             dest_dir = os.path.join(self.test_dir, 'dest_dir')
-        protocol = PullerWorkerProtocol(StringIO(), StringIO())
+        if protocol is None:
+            protocol = PullerWorkerProtocol(StringIO(), StringIO())
         return PullerWorker(
             src_dir, dest_dir, branch_id=1, unique_name='foo/bar/baz',
             branch_type=branch_type, protocol=protocol)
@@ -283,6 +285,22 @@ class TestPullerWorker_SourceProblems(TestCaseInTempDir, PullerWorkerMixin):
         PullerWorkerMixin.tearDown(self)
         TestCaseInTempDir.tearDown(self)
 
+    def assertMirrorFailed(self, puller_worker, message_substring):
+        """Assert that puller_worker failed, and that message_substring is in
+        the message.
+        """
+        protocol = puller_worker.protocol
+        self.assertEqual(
+            2, len(protocol.calls),
+            "Expected startMirroring and mirrorFailed, got: %r"
+            % (protocol.calls,))
+        startMirroring, mirrorFailed = protocol.calls
+        self.assertEqual(('startMirroring', puller_worker), startMirroring)
+        self.assertEqual(('mirrorFailed', puller_worker), mirrorFailed[:2])
+        self.assertTrue(
+            message_substring in str(mirrorFailed[2]),
+            "%r not in %r" % (message_substring, str(mirrorFailed[2])))
+
     def testUnopenableSourceDoesNotCreateMirror(self):
         non_existent_source = os.path.abspath('nonsensedir')
         dest_dir = 'dest-dir'
@@ -294,9 +312,10 @@ class TestPullerWorker_SourceProblems(TestCaseInTempDir, PullerWorkerMixin):
     def testMissingSourceWhines(self):
         non_existent_source = os.path.abspath('nonsensedir')
         my_branch = self.makePullerWorker(
-            src_dir=non_existent_source, dest_dir="non-existent-destination")
+            src_dir=non_existent_source, dest_dir="non-existent-destination",
+            protocol=StubbedPullerWorkerProtocol())
         my_branch.mirror()
-        # XXX - assert this fails
+        self.assertMirrorFailed(my_branch, 'Not a branch')
 
     def testMissingFileRevisionData(self):
         self.build_tree(['missingrevision/',
@@ -313,9 +332,10 @@ class TestPullerWorker_SourceProblems(TestCaseInTempDir, PullerWorkerMixin):
             tree.branch.repository.get_transaction())
         source_url = os.path.abspath('missingrevision')
         my_branch = self.makePullerWorker(
-            src_dir=source_url, dest_dir="non-existent-destination")
+            src_dir=source_url, dest_dir="non-existent-destination",
+            protocol=StubbedPullerWorkerProtocol())
         my_branch.mirror()
-        # XXX - assert that it failed.
+        self.assertMirrorFailed(my_branch, 'No such file')
 
 
 class TestBadUrl(ErrorHandlingTestCase):
