@@ -22,9 +22,9 @@ from canonical.database.sqlbase import (
 from canonical.functional import FunctionalDocFileSuite, StdoutHandler
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IBugTaskSet, IDistributionSet, IEmailAddressSet,
-    ILanguageSet, ILaunchBag, IMailingListSet, IPersonSet, MailingListStatus,
-    PersonCreationRationale, TeamSubscriptionPolicy)
+    CreateBugParams, EmailAddressStatus, IBugTaskSet, IDistributionSet,
+    IEmailAddressSet, ILanguageSet, ILaunchBag, IMailingListSet, IPersonSet,
+    MailingListStatus, PersonCreationRationale, TeamSubscriptionPolicy)
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -295,7 +295,8 @@ def mailingListNewPerson(first_name):
         PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
         name=variable_name, displayname=full_name)
     person.setPreferredEmail(email)
-    getUtility(IEmailAddressSet).new(alternative_address, person)
+    email = getUtility(IEmailAddressSet).new(alternative_address, person)
+    email.status = EmailAddressStatus.VALIDATED
     return person
 
 

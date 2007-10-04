@@ -172,7 +172,7 @@ You cannot get a term by an other object, such as a team.
     >>> list_vocabulary.getTerm(team_one)
     Traceback (most recent call last):
     ...
-    LookupError: ...
+    ForbiddenAttribute: ...
 
 Given a token, we can get back the term.
 
@@ -197,10 +197,13 @@ You can also ask whether a mailing list is contained in the vocabulary.
     >>> list_three in list_vocabulary
     True
 
-But of course, a team cannot be contained in this vocabulary.
+You are not allowed to ask whether a non-mailing list object is contained in
+this vocabulary.
 
     >>> team_three in list_vocabulary
-    False
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ...
 
 Non-ACTIVE mailing lists are also not contained in the vocabulary.
 

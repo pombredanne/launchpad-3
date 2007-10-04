@@ -771,8 +771,20 @@ class ActiveMailingListVocabulary:
 
     def __contains__(self, team_list):
         """See `ISource`."""
-        return (IMailingList.providedBy(team_list) and
-                team_list.status == MailingListStatus.ACTIVE)
+        # Unlike other __contains__() implementations in this module, and
+        # somewhat contrary to the interface definition, this method does not
+        # return False when team_list is not an IMailingList.  No interface
+        # check of the argument is done here.  Doing the interface check and
+        # returning False when we get an unexpected type would be more
+        # Pythonic, but we deliberately break that rule because it is
+        # considered more helpful to generate an OOPS when the wrong type of
+        # object is used in a containment test.  The __contains__() methods in
+        # this module that type check their arguments is considered incorrect.
+        # This also implies that .getTerm(), contrary to its interface
+        # definition, will not always raise LookupError when the term isn't in
+        # the vocabulary, because an exceptions from the containment test it
+        # does will just be passed on up the call stack.
+        return team_list.status == MailingListStatus.ACTIVE
 
     def toTerm(self, team_list):
         """Turn the team mailing list into a SimpleTerm."""
