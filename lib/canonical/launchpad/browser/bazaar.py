@@ -59,24 +59,6 @@ class BazaarApplicationView(LaunchpadView):
     def import_count(self):
         return self.series_set.importcount()
 
-    def testing_count(self):
-        return self.series_set.importcount(ImportStatus.TESTING.value)
-
-    def autotested_count(self):
-        return self.series_set.importcount(ImportStatus.AUTOTESTED.value)
-
-    def testfailed_count(self):
-        return self.series_set.importcount(ImportStatus.TESTFAILED.value)
-
-    def processing_count(self):
-        return self.series_set.importcount(ImportStatus.PROCESSING.value)
-
-    def syncing_count(self):
-        return self.series_set.importcount(ImportStatus.SYNCING.value)
-
-    def stopped_count(self):
-        return self.series_set.importcount(ImportStatus.STOPPED.value)
-
     @cachedproperty
     def recently_changed_branches(self):
         """Return the five most recently changed branches."""
