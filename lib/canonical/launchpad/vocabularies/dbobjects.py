@@ -769,19 +769,9 @@ class ActiveMailingListVocabulary:
         """See `IIterableVocabulary`."""
         return getUtility(IMailingListSet).active_lists.count()
 
-    def _getTeamList(self, team_or_list):
-        """Return the IMailingList for `team_or_list`."""
-        if IMailingList.providedBy(team_or_list):
-            return team_or_list
-        elif ITeam.providedBy(team_or_list):
-            return getUtility(IMailingListSet).get(team_or_list.name)
-        else:
-            return None
-
-    def __contains__(self, obj):
+    def __contains__(self, team_list):
         """See `ISource`."""
-        team_list = self._getTeamList(obj)
-        return (team_list is not None and
+        return (IMailingList.providedBy(team_list) and
                 team_list.status == MailingListStatus.ACTIVE)
 
     def toTerm(self, team_list):
@@ -789,16 +779,15 @@ class ActiveMailingListVocabulary:
         return SimpleTerm(team_list, team_list.team.name,
                           team_list.team.displayname)
 
-    def getTerm(self, obj):
+    def getTerm(self, team_list):
         """See `IBaseVocabulary`."""
-        team_list = self._getTeamList(obj)
-        if team_list is None or team_list.status != MailingListStatus.ACTIVE:
-            raise LookupError(obj)
+        if team_list not in self:
+            raise LookupError(team_list)
         return self.toTerm(team_list)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        # token.token should be the team name as a string.
+        # token should be the team name as a string.
         team_list = getUtility(IMailingListSet).get(token)
         return self.getTerm(team_list)
 
