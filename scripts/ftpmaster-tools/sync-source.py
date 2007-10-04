@@ -466,7 +466,7 @@ def read_current_binaries(distro_series):
     #                     B[pkg] = [version, component]
 
     # XXX James Troup 2006-02-22: so... let's fall back on raw SQL
-    dar_ids = ", ".join([(str(dar.id)) for dar in distro_series.architectures])
+    das_ids = [das.id for das in distro_series.architectures]
     cur = cursor()
 
     query = """
@@ -478,8 +478,9 @@ def read_current_binaries(distro_series):
              sbpph.binarypackagerelease = bpr.id AND
         sbpph.component = c.id AND
         sbpph.distroarchrelease = dar.id AND
-        sbpph.status = %s AND dar.id in (%s)
-     """ % (dbschema.PackagePublishingStatus.PUBLISHED, dar_ids)
+        sbpph.status = %s AND
+        dar.id IN %s
+     """ % sqlvalues(dbschema.PackagePublishingStatus.PUBLISHED, das_ids)
     cur.execute(query)
 
     print "Getting binaries for %s..." % (distro_series.name)

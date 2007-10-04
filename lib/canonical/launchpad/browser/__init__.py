@@ -53,6 +53,7 @@ from canonical.launchpad.browser.branding import *
 from canonical.launchpad.browser.faq import *
 from canonical.launchpad.browser.faqcollection import *
 from canonical.launchpad.browser.faqtarget import *
+from canonical.launchpad.browser.hwdb import *
 from canonical.launchpad.browser.hastranslationimports import *
 from canonical.launchpad.browser.karma import *
 from canonical.launchpad.browser.language import *
@@ -77,7 +78,6 @@ from canonical.launchpad.browser.productrelease import *
 from canonical.launchpad.browser.productseries import *
 from canonical.launchpad.browser.project import *
 from canonical.launchpad.browser.publishedpackage import *
-from canonical.launchpad.browser.rosetta import *
 from canonical.launchpad.browser.shipit import *
 from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.sourcepackagerelease import *
@@ -94,6 +94,7 @@ from canonical.launchpad.browser.sprintspecification import *
 from canonical.launchpad.browser.team import *
 from canonical.launchpad.browser.teammembership import *
 from canonical.launchpad.browser.temporaryblobstorage import *
+from canonical.launchpad.browser.translations import *
 from canonical.launchpad.browser.question import *
 from canonical.launchpad.browser.questiontarget import *
 from canonical.launchpad.browser.build import *

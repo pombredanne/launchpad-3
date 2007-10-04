@@ -79,14 +79,14 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         self.component_main = getUtility(IComponentSet)['main']
         self.section_base = getUtility(ISectionSet)['base']
 
-        # Allow commercial in warty and hoary.
-        commercial_component = getUtility(IComponentSet)['commercial']
+        # Allow partner in warty and hoary.
+        partner_component = getUtility(IComponentSet)['partner']
         self.ubuntu_warty = self.ubuntu['warty']
         self.ubuntu_hoary = self.ubuntu['hoary']
         ComponentSelection(distroseries=self.ubuntu_warty,
-                           component=commercial_component)
+                           component=partner_component)
         ComponentSelection(distroseries=self.ubuntu_hoary,
-                           component=commercial_component)
+                           component=partner_component)
 
     def test_initialize_success(self):
         """Test ArchiveOverrider initialization process.
@@ -255,13 +255,13 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
     def test_processSourceChange_with_changed_archive(self):
         """Check processSourceChange method call with an archive change.
 
-        Changing the component to 'commercial' will result in the archive
+        Changing the component to 'partner' will result in the archive
         changing on the publishing record.  This is disallowed.
         """
         # Apply the override.
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
-            component_name='commercial', section_name='base',
+            component_name='partner', section_name='base',
             priority_name='extra')
         changer.initialize()
         self.assertRaises(
@@ -310,13 +310,13 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
     def test_processBinaryChange_with_changed_archive(self):
         """Check processBinaryChange method call with an archive change.
 
-        Changing the component to 'commercial' will result in the archive
+        Changing the component to 'partner' will result in the archive
         changing.  This is disallowed.
         """
         # Apply the override.
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
-            component_name='commercial', section_name='base',
+            component_name='partner', section_name='base',
             priority_name='extra')
         changer.initialize()
         self.assertRaises(

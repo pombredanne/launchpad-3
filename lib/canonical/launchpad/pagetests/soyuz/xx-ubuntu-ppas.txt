@@ -104,11 +104,11 @@ properly.
     >>> text = extract_text(results)
     >>> print text
     1 source package
-    (0 bytes)
+    (9.5 MiB)
     1 binary package
     (0 bytes)
     Estimated archive size:
-    2.0 KiB
+    9.5 MiB
 
 The sample data has two packages belonging to Celso. Two table rows
 will be presented to user containing:
@@ -201,9 +201,7 @@ allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
 Team PPA pages contain an extra column showing which team member uploaded
 the package. First we need to set up a team PPA and publish something to it.
 
-    >>> browser.handleErrors = False
-    >>> browser.addHeader(
-    ...     "Authorization", "Basic foo.bar@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open("http://launchpad.dev/~ubuntu-team/+activate-ppa")
     >>> browser.getControl(name="field.accepted").value = True
     >>> browser.getControl('Activate').click()

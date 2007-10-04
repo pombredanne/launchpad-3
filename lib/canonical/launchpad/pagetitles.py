@@ -97,6 +97,12 @@ class ContextBugId(SubstitutionHelper):
         return self.text % context.bug.id
 
 
+class ViewLabel:
+    """Helper to use the view's label as the title."""
+    def __call__(self, context, view):
+        return view.label
+
+
 # Functions and strings used as the titles of pages.
 
 archive_admin = ContextTitle('Administer %s')
@@ -204,8 +210,7 @@ def bug_extref_edit(context, view):
 
 bug_mark_as_duplicate = ContextBugId('Bug #%d - Mark as duplicate')
 
-def bug_nominate_for_series(context, view):
-    return view.label
+bug_nominate_for_series = ViewLabel()
 
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
 
@@ -393,6 +398,9 @@ distribution_cvereport = ContextTitle('CVE reports for %s')
 
 distribution_edit = ContextTitle('Edit %s')
 
+distribution_language_pack_admin = ContextTitle(
+    'Change the language pack administrator for %s')
+
 distribution_members = ContextTitle('%s distribution members')
 
 distribution_memberteam = ContextTitle(
@@ -452,6 +460,11 @@ distroseries_edit = ContextTitle('Edit details of %s')
 
 def distroseries_index(context, view):
     return '%s %s in Launchpad' % (context.distribution.title, context.version)
+
+distroseries_language_packs = ViewLabel()
+
+def distroseries_language_packs_editing(context, view):
+    return view.page_title
 
 distroseries_packaging = ContextDisplayName('Mapping packages to upstream '
     'for %s')
@@ -513,6 +526,10 @@ def hasspecifications_specs(context, view):
 hassprints_sprints = ContextTitle("Events related to %s")
 
 hastranslationimports_index = 'Translation import queue'
+
+hwdb_fingerprint_submissions = "Hardware Database submissions for a fingerprint"
+
+hwdb_submit_hardware_data = 'Submit New Data to the Launchpad Hardware Database'
 
 karmaaction_index = 'Karma actions'
 
@@ -760,6 +777,9 @@ person_editwikinames = ContextDisplayName(smartquote("%s's wiki names"))
 
 # person_foaf is an rdf file
 
+person_hwdb_submissions = ContextDisplayName(
+    "Hardware Database submissions by %s")
+
 person_images = ContextDisplayName(smartquote("%s's hackergotchi and emblem"))
 
 def person_index(context, view):
@@ -900,7 +920,8 @@ productseries_index = ContextTitle('Overview of %s')
 
 productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
-productseries_source = 'Import a stable or development branch to Bazaar'
+productseries_source = ContextDisplayName(
+    'Set upstream revision control system for %s')
 
 productseries_translations_upload = 'Request new translations upload'
 
@@ -1022,13 +1043,13 @@ series_bug_nominations = ContextDisplayName('Bugs nominated for %s')
 
 shipit_adminrequest = 'ShipIt admin request'
 
-shipit_index = 'ShipIt'
-
-shipit_index_new = 'ShipIt'
-
 shipit_exports = 'ShipIt exports'
 
 shipit_forbidden = 'Forbidden'
+
+shipit_index = 'ShipIt'
+
+shipit_login = 'ShipIt'
 
 shipit_myrequest = "Your ShipIt order"
 
@@ -1069,6 +1090,8 @@ sourcepackage_filebug = ContextTitle("Report a bug about %s")
 sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
 sourcepackage_packaging = ContextTitle('%s upstream links')
+
+sourcepackage_export = ContextTitle('Download translations for "%s"')
 
 def sourcepackage_index(context, view):
     return '%s source packages' % context.distroseries.title

@@ -164,6 +164,15 @@ class Build(SQLBase):
             % self.id)
         return self.datebuilt - self.buildduration
 
+    @property
+    def package_upload(self):
+        """See `IBuild`."""
+        packageuploadbuild = PackageUploadBuild.selectOneBy(build=self.id)
+        if packageuploadbuild is None:
+            return None
+        else:
+            return packageuploadbuild.packageupload
+
     def retry(self):
         """See `IBuild`."""
         assert self.can_be_retried, "Build %s can not be retried" % self.id

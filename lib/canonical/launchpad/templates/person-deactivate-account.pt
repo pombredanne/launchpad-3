@@ -13,13 +13,21 @@
         <a href="/+forgottenpassword">reset it</a> first.
       </p>
 
-      <p metal:fill-slot="extra_bottom">
-        By deactivating your account, you give up the ability to log into
-        Launchpad, and you will not receive any further emails from us.
-        <strong>You may want to simply 
-        <a tal:attributes="href string:${context/fmt:url}/+edit">change
-        your account details</a> rather than deactivate it.</strong>
-      </p>
+      <div metal:fill-slot="extra_bottom">
+        <p>
+          <strong>If you have multiple accounts, you should
+            <a href="/people/+requestmerge">merge them instead!</a>
+          </strong>
+        </p>
+
+        <p>
+          By deactivating your account, you give up the ability to log into
+          Launchpad, and you will not receive any further emails from us.
+          <strong>You may want to simply 
+          <a tal:attributes="href string:${context/fmt:url}/+edit">change
+          your account details</a> rather than deactivate it.</strong>
+        </p>
+      </div>
     </div>
   </div>
 

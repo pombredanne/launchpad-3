@@ -64,6 +64,7 @@ COMMENT ON COLUMN Bug.name IS 'A lowercase name uniquely identifying the bug';
 COMMENT ON COLUMN Bug.private IS 'Is this bug private? If so, only explicit subscribers will be able to see it';
 COMMENT ON COLUMN Bug.security_related IS 'Is this bug a security issue?';
 COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initially this will be set to the contents of the initial email or bug filing comment, but later it can be edited to give a more accurate description of the bug itself rather than the symptoms observed by the reporter.';
+COMMENT ON COLUMN Bug.date_last_message IS 'When the last BugMessage was attached to this Bug. Maintained by a trigger on the BugMessage table.';
 
 -- BugBranch
 COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
@@ -726,6 +727,8 @@ COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribut
 COMMENT ON COLUMN Distribution.official_answers IS 'Whether or not this product upstream uses Answers officialy.';
 
 COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroRelease that should get the translation effort focus.';
+COMMENT ON COLUMN Distribution.language_pack_admin IS 'The Person or Team that handle language packs for the distro release.';
+
 
 -- DistroRelease
 
@@ -734,13 +737,16 @@ information which lucille will use when processing uploads and
 generating archives for this distro release';
 COMMENT ON COLUMN DistroRelease.summary IS 'A brief summary of the distro release. This will be displayed in bold at the top of the distrorelease page, above the distrorelease description. It should include any high points that are particularly important to draw to the attention of users.';
 COMMENT ON COLUMN DistroRelease.description IS 'An extensive list of the features in this release of the distribution. This will be displayed on the main distro release page, below the summary.';
-COMMENT ON COLUMN DistroRelease.datelastlangpack IS 'The date we last generated a base language pack for this release. Language update packs for this release will only include translations added after that date.';
 COMMENT ON COLUMN DistroRelease.hide_all_translations IS 'Whether we should hid
 e all available translations for this distro release to non admin users.';
 COMMENT ON COLUMN DistroRelease.messagecount IS 'This is a cached value and may be a few hours out of sync with reality. It should, however, be in sync with the values in DistroReleaseLanguage, and should never be updated separately. The total number of translation messages in this distro release, as per IRosettaStats.';
 COMMENT ON COLUMN DistroRelease.nominatedarchindep IS 'This is the DistroArchRelease nominated to build architecture independent packages within this DistroRelase, it is mandatory for buildable distroreleases, i.e., Auto Build System will avoid to create build jobs for a DistroRelease with no nominatedarchindep, but the database model allow us to do it (for non-buildable DistroReleases). See further info in NominatedArchIndep specification.';
 COMMENT ON COLUMN DistroRelease.binarycount IS 'A cache of the number of distinct binary package names published in this distro release.';
 COMMENT ON COLUMN DistroRelease.sourcecount IS 'A cache of the number of distinct source package names published in this distro release.';
+COMMENT ON COLUMN DistroRelease.language_pack_base IS 'Current full export language pack for this distribution release.';
+COMMENT ON COLUMN DistroRelease.language_pack_delta IS 'Current language pack update based on language_pack_base information.';
+COMMENT ON COLUMN DistroRelease.language_pack_proposed IS 'Either a full or update language pack being tested to be used in language_pack_base or language_pack_delta.';
+COMMENT ON COLUMN DistroRelease.language_pack_full_export_requested IS 'Whether next language pack export should be a full export or an update.';
 
 -- PackageUpload
 COMMENT ON TABLE PackageUpload IS 'An upload. This table stores information pertaining to uploads to a given DistroRelease/Archive.';
@@ -1606,7 +1612,6 @@ COMMENT ON COLUMN Entitlement.whiteboard IS 'A place for administrator notes.';
 COMMENT ON COLUMN Entitlement.state IS 'The state (REQUESTED, ACTIVE, INACTIVE) of the entitlement.';
 COMMENT ON COLUMN Entitlement.is_dirty IS 'This entitlement has been modified and the state needst to be updated on the external system.';
 
-
 -- OpenIdRealmConfig
 COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';
 COMMENT ON COLUMN OpenIdRPConfig.trust_root IS 'The trust root for this RP';
@@ -1620,3 +1625,28 @@ COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation ration
 -- ProductSubscription
 -- COMMENT ON TABLE ProductSubscription IS 'Defines the support contacts for a given product. The support contacts will be automatically subscribed to every support request filed on the product.';
 
+-- LanguagePack
+COMMENT ON TABLE LanguagePack IS 'Store exported language packs for DistroReleases.';
+COMMENT ON COLUMN LanguagePack.file IS 'Librarian file where the language pack is stored.';
+COMMENT ON COLUMN LanguagePack.date_exported IS 'When was exported the language pack.';
+COMMENT ON COLUMN LanguagePack.date_last_used IS 'When did we stop using the language pack. It\'s used to decide whether we can remove it completely from the system. When it\'s being used, its value is NULL';
+COMMENT ON COLUMN LanguagePack.distroseries IS 'The distribution series from where this language pack was exported.';
+COMMENT ON COLUMN LanguagePack.type IS 'Type of language pack. There are two types available, 1: Full export, 2: Update export based on language_pack_that_updates export.';
+COMMENT ON COLUMN LanguagePack.updates IS 'The LanguagePack that this one updates.';
+
+-- HWSubmission
+COMMENT ON TABLE HWSubmission IS 'Raw HWDB submission data';
+COMMENT ON COLUMN HWSubmission.date_created IS 'Date and time of the submission (generated by the client).';
+COMMENT ON COLUMN HWSubmission.date_submitted IS 'Date and time of the submission (generated by the server).';
+COMMENT ON COLUMN HWSubmission.format IS 'The format version of the submitted data, as given by the HWDB client. See HWSubmissionFormat for valid values.';
+COMMENT ON COLUMN HWSubmission.status IS 'The status of the submission. See HWSubmissionProcessingStatus for valid values.';
+COMMENT ON COLUMN HWSubmission.private IS 'If false, the submitter allows public access to the data. If true, the data may be used only for statistical purposes.';
+COMMENT ON COLUMN HWSubmission.contactable IS 'If True, the submitter agrees to be contacted by upstream developers and package maintainers for tests etc.';
+COMMENT ON COLUMN HWSubmission.submission_key IS 'A unique submission ID.';
+COMMENT ON COLUMN HWSubmission.owner IS 'A reference to the Person table: The owner/submitter of the data.';
+COMMENT ON COLUMN HWSubmission.distroarchseries IS 'A reference to the distroarchseries of the submission. This value is null, if the submitted values for distribution, distroseries and architecture do not match an existing entry in the Distroarchseries table.';
+COMMENT ON COLUMN HWSubmission.raw_submission IS 'A reference to a row of LibraryFileAlias. The library file contains the raw submission data.';
+COMMENT ON COLUMN HWSubmission.system_fingerprint IS 'A reference to an entry of the HWDBSystemFingerPrint table. This table stores the system name as returned by HAL (system.vendor, system.product)';
+
+COMMENT ON TABLE HWSystemFingerprint IS 'A distinct list of "fingerprints" (HAL system.name, system.vendor) from raw submission data';
+COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';
