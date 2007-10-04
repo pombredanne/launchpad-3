@@ -379,6 +379,23 @@ But lists which are not inactive may not be reactivated.
     AssertionError: Only inactive mailing lists may be reactivated
 
 
+== Deleting lists ==
+
+Any mailing list in the REGISTERED state can be deleted.  Mailing lists in
+any other state can't, though.
+
+    >>> admins_list = list_set.new(personset.getByName('admins'))
+    >>> admins_list.status
+    <DBItem MailingListStatus.REGISTERED...
+    >>> admins_list.destroySelf()
+    >>> print list_set.get('admins')
+    None
+
+    >>> list_three.destroySelf()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only mailing lists in the REGISTERED state can be deleted.
+
 == Welcome messages ==
 
 Mailing lists have a welcome message text which is sent to new members when

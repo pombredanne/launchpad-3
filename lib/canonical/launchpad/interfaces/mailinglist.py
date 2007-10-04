@@ -338,6 +338,12 @@ class IMailingList(Interface):
             mailing list is not `MailingListStatus.INACTIVE`.
         """
 
+    def destroySelf():
+        """Delete this mailing list from the database.
+
+        Only mailing lists in the REGISTERED state can be deleted.
+        """
+
 
 class IMailingListSet(Interface):
     """A set of mailing lists."""

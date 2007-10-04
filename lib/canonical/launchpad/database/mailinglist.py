@@ -132,6 +132,12 @@ class MailingList(SQLBase):
             'Only inactive mailing lists may be reactivated')
         self.status = MailingListStatus.APPROVED
 
+    def destroySelf(self):
+        """See `IMailingList`."""
+        assert self.status == MailingListStatus.REGISTERED, (
+            "Only mailing lists in the REGISTERED state can be deleted.")
+        super(MailingList, self).destroySelf()
+
     def _get_welcome_message(self):
         return self.welcome_message_text
 
