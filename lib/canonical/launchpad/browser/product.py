@@ -664,8 +664,38 @@ class ProductEditView(LaunchpadEditFormView):
         "bugtracker", "official_rosetta", "official_answers",
         "homepageurl", "sourceforgeproject",
         "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
-        "programminglang", "development_focus"]
+        "programminglang", "development_focus", "license_info"]
+    custom_layout_field_names = ['licenses', 'license_info']
+
+    custom_widget('licenses', CheckBoxMatrixWidget, column_count=3,
+                            orientation='vertical')
     custom_widget('bugtracker', ProductBugTrackerWidget)
+    non_custom_widgets = ()
+
+    def _createLicenseField(self):
+        """Create a list of teams the user is an administrator of."""
+        return form.FormFields(
+            List(
+                __name__='licenses',
+                title=_("Licenses"),
+                value_type=Choice(vocabulary="License"),
+                required=True),
+            custom_widget=self.custom_widgets['licenses'])
+
+    def setUpFields(self):
+        LaunchpadFormView.setUpFields(self)
+        self.form_fields = self._createLicenseField() + self.form_fields 
+
+    def setUpWidgets(self):
+        super(ProductEditView, self).setUpWidgets()
+        self.non_custom_widgets = [
+            self.widgets[field_name]
+            for field_name in self.field_names
+            if field_name not in self.custom_layout_field_names]
+
+    @property
+    def initial_values(self):
+        return dict(licenses=self.context.licenses)
 
     @action("Change", name='change')
     def change_action(self, action, data):
