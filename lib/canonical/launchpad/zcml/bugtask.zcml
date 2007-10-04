@@ -348,7 +348,7 @@
     <browser:page
       for="canonical.launchpad.interfaces.IBugTask"
       name="+create-question"
-      class="canonical.launchpad.browser.BugTaskView"
+      class="canonical.launchpad.browser.BugCreateQuestionView"
       permission="launchpad.Edit"
       template="../templates/bug-create-question.pt" />
 

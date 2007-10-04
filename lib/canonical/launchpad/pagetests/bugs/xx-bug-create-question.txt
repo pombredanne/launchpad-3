@@ -44,25 +44,20 @@ is really a question. He chooses to make a question from it.
 
 The 'Create a question from this bug' page explains what will happen
 if No Privileges Person chooses the 'Create a Question' button at the
-bottom of the page. A single radio button indicates that the only
-option a user can take with this page is to create a question. No
+bottom of the page. There is a required field for a comment. No
 other input is needed. No Privileges Person must choose between the
-'Cancel' button and the 'Create a Question' button. He decides to
-create the question.
+'Cancel' button and the 'Create a Question from this Bug' button.
+He decides to create the question.
 
     >>> find_main_content(user_browser.contents).p
     <p>... this bug's status will be Invalid for all locations it affects...
      The new question will be linked to this bug...
 
-    >>> control = user_browser.getControl(name='field.create_question')
-    >>> # Strip the non-breaking space embedded in the label.
-    >>> [option[1:] for option in control.displayOptions]
-    ['This bug is a question.']
-
     >>> user_browser.getControl('Cancel').type
     'submit'
 
-    >>> user_browser.getControl('Create a Question').click()
+    >>> user_browser.getControl('Comment').value = 'This bug is a question.'
+    >>> user_browser.getControl('Create a Question from this Bug').click()
 
 No Privileges Person is shown the bug page again. There is a notice
 confirming that the question was created. The question has the same
@@ -73,16 +68,16 @@ a question.
     >>> user_browser.title
     'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
 
-    >>> content = find_tag_by_id(user_browser.contents, 'mainarea')
-    >>> content(['p'], {'class' : 'informational message'})
+    >>> get_feedback_messages(user_browser)
     [...A question was created from this bug:
      Question #...: another test bug...]
 
+    >>> content = find_main_content(user_browser.contents)
     >>> print extract_text(content(['table'], {'class' : 'listing'})[0])
     Affects                       Status   Importance  Assigned to
     linux-source-2.6.15 (Ubuntu)  Invalid  Medium      &mdash;...
     Comment on most recent change
-    This is not a bug. It is a question...
+    This bug is a question...
 
 No Privileges Person can see the link to the question in the 'Related
 questions' portlet. After noting that Foo Bar is the bug owner, he
@@ -91,7 +86,8 @@ uses the link to see the question page.
     >>> print extract_text(content(['img'], src='/@@/bug-medium')[0].parent)
     Bug #10, first reported on 2004-01-10 by Foo Bar
 
-    >>> question_anchor = content(['div'], {'id' : 'portlet-questions'})[0].a
+    >>> portlet = find_portlet(user_browser.contents, 'Related questions')
+    >>> question_anchor = portlet.div.a
     >>> question_anchor
     <a href=".../ubuntu/+source/linux-source-2.6.15/+question/...">another
     test bug</a>

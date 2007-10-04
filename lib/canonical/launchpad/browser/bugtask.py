@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'get_comments_for_bugtask',
+    'BugCreateQuestionView',
     'BugTargetTraversalMixin',
     'BugTaskNavigation',
     'BugTaskSetNavigation',
@@ -65,9 +66,10 @@ from canonical.launchpad.interfaces import (
     BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay, IBug,
     IBugAttachmentSet, IBugBranchSet, IBugExternalRefSet,
     IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch, IBugTaskSet,
-    IDistribution, IDistributionSourcePackage, IDistroBugTask,
-    IDistroSeries, IDistroSeriesBugTask, IFrontPageBugTaskSearch,
-    ILaunchBag, INominationsReviewTableBatchNavigator, INullBugTask,
+    ICreateQuestionFromBugForm, IDistribution, IDistributionSourcePackage,
+    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask,
+    IFrontPageBugTaskSearch, ILaunchBag,
+    INominationsReviewTableBatchNavigator, INullBugTask,
     IPerson, IPersonBugTaskSearch, IProduct, IProductSeries,
     IProductSeriesBugTask, IProject, ISourcePackage, IUpstreamBugTask,
     IUpstreamProductBugTaskSearch, NotFoundError,
@@ -390,19 +392,6 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
 
         self.handleSubscriptionRequest()
 
-        # Setup the widget for create-question-from-bug.
-        create_question_vocabulary = SimpleVocabulary(
-            [SimpleTerm(True, 'True', _("This bug is a question."))])
-        create_question_field = Choice(
-            __name__='create_question',
-            vocabulary=create_question_vocabulary,
-            required=True)
-        self.create_question_widget = CustomWidgetFactory(RadioWidget)
-        setUpWidget(
-            self, 'create_question', create_question_field, IInputWidget,
-            value=True)
-        self.handleCreateQuestionRequest()
-
     def userIsSubscribed(self):
         """Is the user subscribed to this bug?"""
         return (
@@ -692,35 +681,6 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
             if check_permission('launchpad.View', bug_branch.branch):
                 bug_branches.append(bug_branch)
         return bug_branches
-
-    @property
-    def can_be_a_question(self):
-        """Return True if this bug can become a question, otherwise False."""
-        return self.context.bug.canBeAQuestion()
-
-    def handleCreateQuestionRequest(self):
-        """Create a question from this bug and set this bug to Invalid.
-        
-        The status of each bugtask will be set to Invalid. The question
-        will be linked to this bug. A question will not be created if a
-        question was already created, or the bugtask's target does not
-        use malone.
-        """
-        if not (self.user is not None
-            and self.request.method == 'POST'
-            and 'cancel' not in self.request.form
-            and self.create_question_widget.hasValidInput()
-            and self.create_question_widget.getInputValue()):
-            return
-
-        if self.context.bug.canBeAQuestion() is False:
-            return
-
-        question = self.context.bug.createQuestionFromBug(
-            self.user, "This is not a bug. It is a question")
-        self.notices.append(
-            'A question was created from this bug: Question #%s: %s.'
-            % (question.id, question.title))
 
 
 class BugTaskPortletView:
@@ -2310,3 +2270,56 @@ class BugTaskSOP(StructuralObjectPresentation):
     def listAltChildren(self, num):
         return None
 
+
+class BugCreateQuestionView(LaunchpadFormView):
+    """View for creating a question from a bug."""
+    schema = ICreateQuestionFromBugForm
+
+    def initialize(self):
+        """Do not process the form when Cancel is the chosen action."""
+        cancel = self.request.form.get('field.actions.cancel', None)
+        if cancel is not None:
+            self.request.response.redirect(self.next_url)
+        super(BugCreateQuestionView, self).initialize()
+
+    @property
+    def next_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    @property
+    def can_be_a_question(self):
+        """Return True if this bug can become a question, otherwise False."""
+        return self.context.bug.canBeAQuestion()
+
+    def validate(self, data):
+        """Verify that a comment was provided."""
+        comment = data.get('comment', '')
+        if comment.strip() == '':
+            self.setFieldError('comment', 'A comment was not provided.')
+
+    @action('Create a Question from this Bug', name='create')
+    def create_action(self, action, data):
+        """Create a question from this bug and set this bug to Invalid.
+        
+        The bugtask's status will be set to Invalid. The question
+        will be linked to this bug.
+        
+        A question will not be created if a question was previously created,
+        the pillar does not use Launchpad to track bugs, or there is more
+        than one valid bugtask.
+        """
+        if self.context.bug.canBeAQuestion() is False:
+            self.request.response.addNotification(
+                'A question could not created from this bug.')
+            return
+
+        question = self.context.bug.createQuestionFromBug(
+            self.user, data['comment'])
+        self.request.response.addNotification(
+            'A question was created from this bug: Question #%s: %s.'
+            % (question.id, question.title))
+
+    @action('Cancel', name='cancel')
+    def cancel_action(self, action, data):
+        """Do nothing, return to the bugtask view."""

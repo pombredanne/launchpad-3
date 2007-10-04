@@ -16,6 +16,7 @@ __all__ = [
     'IBugTaskDelta',
     'IBugTaskSearch',
     'IBugTaskSet',
+    'ICreateQuestionFromBugForm',
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
@@ -881,3 +882,11 @@ class IAddBugTaskForm(Interface):
 
 class INominationsReviewTableBatchNavigator(ITableBatchNavigator):
     """Marker interface to render custom template for the bug nominations."""
+
+
+class ICreateQuestionFromBugForm(Interface):
+    """Form for creating and question from a bug."""
+    comment = Text(
+        title=_('Comment'),
+        description=_('An explaination of why the bug is a question.'),
+        required=True)
