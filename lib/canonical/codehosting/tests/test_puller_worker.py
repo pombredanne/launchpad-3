@@ -38,6 +38,46 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.testing import LaunchpadScriptLayer, reset_logging
 
 
+class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
+
+    def __init__(self):
+        pass
+
+    def startMirroring(self, branch_to_mirror):
+        pass
+
+    def mirrorSucceeded(self, branch_to_mirror, last_revision):
+        pass
+
+    def mirrorFailed(self, branch_to_mirror, message):
+        branch_to_mirror.testcase.errors.append(message)
+
+
+class StubbedPullerWorker(PullerWorker):
+    """Partially stubbed subclass of PullerWorker, for unit tests."""
+
+    enable_checkBranchReference = False
+    enable_checkSourceUrl = True
+
+    def __init__(self, *args, **kwargs):
+        PullerWorker.__init__(self, *args, **kwargs)
+        self.protocol = StubbedPullerWorkerProtocol()
+
+    def _checkSourceUrl(self):
+        if self.enable_checkSourceUrl:
+            PullerWorker._checkSourceUrl(self)
+
+    def _checkBranchReference(self):
+        if self.enable_checkBranchReference:
+            PullerWorker._checkBranchReference(self)
+
+    def _openSourceBranch(self):
+        self.testcase.open_call_count += 1
+
+    def _mirrorToDestBranch(self):
+        pass
+
+
 class PullerWorkerMixin:
     """Mixin for tests that want to make PullerWorker objects."""
 
@@ -236,46 +276,6 @@ class TestPullerWorker_SourceProblems(TestCaseInTempDir, PullerWorkerMixin):
             src_dir=source_url, dest_dir="non-existent-destination")
         my_branch.mirror()
         # XXX - assert that it failed.
-
-
-class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
-
-    def __init__(self):
-        pass
-
-    def startMirroring(self, branch_to_mirror):
-        pass
-
-    def mirrorSucceeded(self, branch_to_mirror, last_revision):
-        pass
-
-    def mirrorFailed(self, branch_to_mirror, message):
-        branch_to_mirror.testcase.errors.append(message)
-
-
-class StubbedPullerWorker(PullerWorker):
-    """Partially stubbed subclass of PullerWorker, for unit tests."""
-
-    enable_checkBranchReference = False
-    enable_checkSourceUrl = True
-
-    def __init__(self, *args, **kwargs):
-        PullerWorker.__init__(self, *args, **kwargs)
-        self.protocol = StubbedPullerWorkerProtocol()
-
-    def _checkSourceUrl(self):
-        if self.enable_checkSourceUrl:
-            PullerWorker._checkSourceUrl(self)
-
-    def _checkBranchReference(self):
-        if self.enable_checkBranchReference:
-            PullerWorker._checkBranchReference(self)
-
-    def _openSourceBranch(self):
-        self.testcase.open_call_count += 1
-
-    def _mirrorToDestBranch(self):
-        pass
 
 
 class ErrorHandlingTestCase(unittest.TestCase):
@@ -531,24 +531,23 @@ class TestCanTraverseReferences(unittest.TestCase, PullerWorkerMixin):
         self.assertRaises(AssertionError, bogus_branch._canTraverseReferences)
 
 
-class StubbedPullerWorkerForCheckBranchReference(PullerWorker):
-    """Partially stubbed PullerWorker for checkBranchReference unit tests.
-    """
-
-    def _getBranchReference(self, url):
-        self.testcase.get_branch_reference_calls.append(url)
-        return self.testcase.reference_values[url]
-
-    def _canTraverseReferences(self):
-        assert self.testcase.can_traverse_references is not None
-        return self.testcase.can_traverse_references
-
-
 class TestCheckBranchReference(unittest.TestCase):
     """Unit tests for PullerWorker._checkBranchReference."""
 
+    class StubbedPullerWorker(PullerWorker):
+        """Partially stubbed PullerWorker for checkBranchReference unit tests.
+        """
+
+        def _getBranchReference(self, url):
+            self.testcase.get_branch_reference_calls.append(url)
+            return self.testcase.reference_values[url]
+
+        def _canTraverseReferences(self):
+            assert self.testcase.can_traverse_references is not None
+            return self.testcase.can_traverse_references
+
     def setUp(self):
-        self.branch = StubbedPullerWorkerForCheckBranchReference(
+        self.branch = TestCheckBranchReference.StubbedPullerWorker(
             'foo', 'bar', 1, 'owner/product/foo', None, None)
         self.branch.testcase = self
         self.get_branch_reference_calls = []
