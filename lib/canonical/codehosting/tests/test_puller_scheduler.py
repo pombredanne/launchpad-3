@@ -6,6 +6,7 @@ from bzrlib.branch import Branch
 from bzrlib.urlutils import local_path_to_url
 
 from twisted.internet import defer, error
+from twisted.protocols.basic import NetstringParseError
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
@@ -112,13 +113,20 @@ class TestPullerMasterProtocol(TrialTestCase):
 
 
     class FakeTransport:
-        """Fake transport that only implements loseConnection.
+        """Fake transport implements the bare minimum.
 
         We're manually feeding data to the protocol, so we don't need a real
         transport.
         """
+
+        def __init__(self):
+            self.calls = []
+
         def loseConnection(self):
-            pass
+            self.calls.append('loseConnection')
+
+        def signalProcess(self, signal_name):
+            self.calls.append(('signalProcess', signal_name))
 
 
     def setUp(self):
@@ -199,35 +207,38 @@ class TestPullerMasterProtocol(TrialTestCase):
 
         return self.termination_deferred
 
-#     def test_unrecognizedMessage(self):
-#         """The protocol notifies the listener when it receives an unrecognized
-#         message.
-#         """
-#         # XXX: How do we best deal with the aberrant child process?
-#         self.protocol.outReceived(self.convertToNetstring('foo'))
+    def test_unrecognizedMessage(self):
+        """The protocol notifies the listener when it receives an unrecognized
+        message.
+        """
+        self.protocol.outReceived(self.convertToNetstring('foo'))
 
-#         def check_failure(exception):
-#             self.assertTrue('foo' in str(exception))
+        def check_failure(exception):
+            self.assertEqual(
+                [('signalProcess', 'KILL')], self.protocol.transport.calls)
+            self.assertTrue('foo' in str(exception))
 
-#         deferred = self.assertFailure(
-#             self.termination_deferred, jobmanager.BadMessage)
+        deferred = self.assertFailure(
+            self.termination_deferred, scheduler.BadMessage)
 
-#         return deferred.addCallback(check_failure)
+        return deferred.addCallback(check_failure)
 
-#     def test_invalidNetstring(self):
-#         """The protocol terminates the session if it receives an unparsable
-#         netstring.
-#         """
-#         # XXX: How do we best deal with the aberrant child process?
-#         self.protocol.outReceived('foo')
+    def test_invalidNetstring(self):
+        """The protocol terminates the session if it receives an unparsable
+        netstring.
+        """
+        self.protocol.outReceived('foo')
 
-#         def check_failure(exception):
-#             self.assertTrue('foo' in str(exception))
+        def check_failure(exception):
+            self.assertEqual(
+                ['loseConnection', ('signalProcess', 'KILL')],
+                self.protocol.transport.calls)
+            self.assertTrue('foo' in str(exception))
 
-#         deferred = self.assertFailure(
-#             self.termination_deferred, jobmanager.BadMessage)
+        deferred = self.assertFailure(
+            self.termination_deferred, NetstringParseError)
 
-#         return deferred.addCallback(check_failure)
+        return deferred.addCallback(check_failure)
 
 
 class TestPullerMaster(TrialTestCase):

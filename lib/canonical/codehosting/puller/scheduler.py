@@ -7,7 +7,7 @@ import sys
 
 from twisted.internet import defer, error, reactor
 from twisted.internet.protocol import ProcessProtocol
-from twisted.protocols.basic import NetstringReceiver
+from twisted.protocols.basic import NetstringReceiver, NetstringParseError
 from twisted.python import failure
 from twisted.web.xmlrpc import Proxy
 
@@ -16,6 +16,14 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 import canonical
 from canonical.codehosting import branch_id_to_path
 from canonical.config import config
+
+
+class BadMessage(Exception):
+    """Raised when the protocol receives a message that we don't recognize."""
+
+    def __init__(self, bad_netstring):
+        Exception.__init__(
+            self, 'Received unrecognized message: %r' % bad_netstring)
 
 
 class BranchStatusClient:
@@ -72,14 +80,22 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
         self._current_command = None
         self._current_args = []
 
+    def dataReceived(self, data):
+        NetstringReceiver.dataReceived(self, data)
+        # There are no hooks in NetstringReceiver to catch a
+        # NetstringParseError. The best we can do is check the value of
+        # brokenPeer.
+        if self.brokenPeer:
+            self.unexpectedError(failure.Failure(NetstringParseError(data)))
+
     def stringReceived(self, line):
         if line in self._commands:
             self._current_command = line
         elif self._current_command is not None:
             self._current_args.append(line)
         else:
-            # XXX: Don't let this be merged.
-            raise "Unrecognized: %r" % (line,)
+            self.unexpectedError(failure.Failure(BadMessage(line)))
+            return
 
         if len(self._current_args) == self._commands[self._current_command]:
             method = getattr(self, 'do_%s' % self._current_command)
@@ -102,9 +118,7 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
             lambda ignored: self.listener.mirrorFailed(reason, oops))
 
     def outReceived(self, data):
-        # Modified version of NetstringReceiver.dataReceived that disconnects
-        # the child process
-        NetstringReceiver.dataReceived(self, data)
+        self.dataReceived(data)
 
     def errReceived(self, data):
         self._stderr.write(data)
@@ -115,8 +129,6 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver):
         except error.ProcessExitedAlready:
             # The process has already died. Fine.
             pass
-        print 'GOT UNEXPECTED ERROR', failure
-        failure.printTraceback()
         self._fireTerminationDeferred(failure)
 
     def processEnded(self, reason):
