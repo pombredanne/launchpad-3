@@ -222,6 +222,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     cur.execute(
         "CREATE UNIQUE INDEX temp_equiv_template_new_id "
         "ON temp_equiv_template(new_id)")
+    cur.execute("ANALYZE temp_equiv_template")
 
     # Map parent POTMsgSets to corresponding POTMsgSets in child.
     cur.execute("""
@@ -244,6 +245,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     cur.execute(
         "CREATE UNIQUE INDEX temp_equiv_potmsgset_new_id "
         "ON temp_equiv_potmsgset(new_id)")
+    cur.execute("ANALYZE temp_equiv_potmsgset")
     transaction.commit()
     transaction.begin()
 
@@ -514,6 +516,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     cur.execute(
         "CREATE UNIQUE INDEX inert_pomsgset_newid_idx "
         "ON temp_inert_pomsgsets(new_id)")
+    cur.execute("ANALYZE temp_inert_pomsgsets")
     transaction.commit()
     transaction.begin()
 
@@ -551,48 +554,63 @@ def copy_active_translations_as_update(child, transaction, logger):
                 """ % holding_table)
             allow_sequential_scans(cur, False)
 
-    def prepare_posubmission_batch(
-        holding_table, source_table, batch_size, start_id, end_id):
-        """Prepare pouring of a batch of `POSubmission`s.
+    class PreparePOSubmissionBatch:
+        """Perform regular in-transaction cleanups before pouring a batch."""
 
-        Deletes any `POSubmission`s in the batch that already have equivalents
-        in the source table (same potranslation, pomsgset, and pluralform; or
-        active and same pomsgset and pluralform).  Any such equivalents must
-        have been added or made active after the `POMsgSet`s were extracted,
-        so we assume they are newer and better than what we have in our
-        holding table.
+        lowest_id = None
+        highest_id = None
 
-        Also deletes `POSubmission`s in the batch that refer to `POMsgSet`s
-        that do not exist.  Any such `POSubmission`s must have been deleted
-        from their holding table after they were extracted.
-        """
-        batch_clause = (
-            "holding.id >= %s AND holding.id < %s"
-            % sqlvalues(start_id, end_id))
-        cur = cursor()
+        def __call__(
+            self, holding_table, source_table, batch_size, start_id, end_id):
+            """Prepare pouring of a batch of `POSubmission`s.
 
-        # Don't pour POSubmissions for which the child already has a better
-        # replacement.
-        cur.execute("""
-            DELETE FROM %s AS holding
-            USING POSubmission better
-            WHERE %s AND
-                holding.pomsgset = better.pomsgset AND
-                holding.pluralform = better.pluralform AND
-                holding.potranslation = better.potranslation
-            """ % (holding_table, batch_clause))
+            Deletes any `POSubmission`s in the batch that already have
+            equivalents in the source table (same potranslation, pomsgset, and
+            pluralform; or active and same pomsgset and pluralform).  Any such
+            equivalents must have been added or made active after the
+            `POMsgSet`s were extracted, so we assume they are newer and better
+            than what we have in our holding table.
 
-        # Deactivate POSubmissions we're about to replace with better ones
-        # from the parent.
-        cur.execute("""
-            UPDATE POSubmission AS ps
-            SET active = false
-            FROM %s holding
-            WHERE %s AND
-                holding.pomsgset = ps.pomsgset AND
-                holding.pluralform = ps.pluralform AND
-                ps.active
-            """ % (holding_table, batch_clause))
+            Also deletes `POSubmission`s in the batch that refer to
+            `POMsgSet`s that do not exist.  Any such `POSubmission`s must have
+            been deleted from their holding table after they were extracted.
+            """
+            cur = cursor()
+
+            # If we've covered about 20% of the total id range, ANALYZE the
+            # holding table to prevent the server from falling back on slower
+            # or badly-chosen algorithms.
+            recently_covered = start_id - self.lowest_id
+            if recently_covered > (self.highest_id - self.lowest_id) / 5:
+                cur.execute("ANALYZE %s" % holding_table)
+                self.lowest_id = start_id
+
+            batch_clause = (
+                "holding.id >= %s AND holding.id < %s"
+                % sqlvalues(start_id, end_id))
+
+            # Don't pour POSubmissions for which the child already has a
+            # better replacement.
+            cur.execute("""
+                DELETE FROM %s AS holding
+                USING POSubmission better
+                WHERE %s AND
+                    holding.pomsgset = better.pomsgset AND
+                    holding.pluralform = better.pluralform AND
+                    holding.potranslation = better.potranslation
+                """ % (holding_table, batch_clause))
+
+            # Deactivate POSubmissions we're about to replace with better ones
+            # from the parent.
+            cur.execute("""
+                UPDATE POSubmission AS ps
+                SET active = false
+                FROM %s holding
+                WHERE %s AND
+                    holding.pomsgset = ps.pomsgset AND
+                    holding.pluralform = ps.pluralform AND
+                    ps.active
+                """ % (holding_table, batch_clause))
 
     # Exclude POSubmissions for which an equivalent (potranslation, pomsgset,
     # pluralform) exists, or we'd be introducing needless duplicates.  Don't
@@ -615,11 +633,14 @@ def copy_active_translations_as_update(child, transaction, logger):
         """
 
     cur = cursor()
+
     cur.execute("SELECT min(new_id), max(new_id) FROM %s"
         % holding_tables['pomsgset'])
     lowest_pomsgset, highest_pomsgset = cur.fetchone()
     prepare_posubmission_pouring = PreparePOSubmissionPouring(
         lowest_pomsgset, highest_pomsgset)
+
+    prepare_posubmission_batch = PreparePOSubmissionBatch()
 
     copier.extract(
         'POSubmission', joins=['POMsgSet'],
@@ -632,6 +653,12 @@ def copy_active_translations_as_update(child, transaction, logger):
     transaction.commit()
     transaction.begin()
     cur = cursor()
+
+    cur.execute("SELECT min(new_id), max(new_id) FROM %s"
+        % holding_tables['posubmission'])
+    lowest_posubmission, highest_posubmission = cur.fetchone()
+    prepare_posubmission_batch.lowest_id = lowest_posubmission
+    prepare_posubmission_batch.highest_id = highest_posubmission
 
     # Make sure we can do fast joins on (potranslation, pomsgset, pluralform)
     # to speed up the delete statement that protects uniqueness of active
@@ -652,6 +679,7 @@ def copy_active_translations_as_update(child, transaction, logger):
     cur.execute(
         "CREATE UNIQUE INDEX temp_changed_pofiles_pkey "
         "ON temp_changed_pofiles(id)")
+    cur.execute("ANALYZE temp_changed_pofiles")
 
     # Now get rid of those inert rows whose new_ids we messed with, or
     # horrible things will happen during pouring.
