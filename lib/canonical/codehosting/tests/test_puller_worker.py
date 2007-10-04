@@ -35,7 +35,7 @@ from canonical.codehosting.tests.helpers import create_branch
 from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import canonical_url
-from canonical.testing import LaunchpadZopelessLayer, reset_logging
+from canonical.testing import LaunchpadScriptLayer, reset_logging
 
 
 class PullerWorkerMixin:
@@ -67,8 +67,6 @@ class PullerWorkerMixin:
 
 class TestPullerWorker(unittest.TestCase, PullerWorkerMixin):
     """Test the mirroring functionality of PullerWorker."""
-
-    layer = LaunchpadZopelessLayer
 
     test_dir = None
 
@@ -108,8 +106,6 @@ class TestPullerWorker(unittest.TestCase, PullerWorkerMixin):
 
 
 class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
-
-    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(TestPullerWorkerFormats, self).setUp()
@@ -195,8 +191,6 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
 
 
 class TestPullerWorker_SourceProblems(TestCaseInTempDir, PullerWorkerMixin):
-
-    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         TestCaseInTempDir.setUp(self)
@@ -828,7 +822,7 @@ class TestWorkerProtocol(unittest.TestCase, PullerWorkerMixin):
 class TestCanonicalUrl(unittest.TestCase):
     """Test cases for rendering the canonical url of a branch."""
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadScriptLayer
 
     def testCanonicalUrlConsistent(self):
         # worker.get_canonical_url is consistent with webapp.canonical_url, if

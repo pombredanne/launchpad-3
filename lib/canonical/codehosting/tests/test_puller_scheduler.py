@@ -13,7 +13,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from canonical.codehosting.puller import scheduler
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.launchpad.interfaces import BranchType
-from canonical.testing import LaunchpadZopelessLayer, reset_logging
+from canonical.testing import LaunchpadScriptLayer, reset_logging
 
 
 class FakeBranchStatusClient:
@@ -245,7 +245,6 @@ class TestPullerMasterProtocol(TrialTestCase):
 
 
 class TestPullerMaster(TrialTestCase):
-    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         self.status_client = FakeBranchStatusClient()
@@ -302,7 +301,7 @@ class TestPullerMaster(TrialTestCase):
 class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
     """Tests for the puller master that launch sub-processes."""
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadScriptLayer
 
     def setUp(self):
         BranchTestCase.setUp(self)
