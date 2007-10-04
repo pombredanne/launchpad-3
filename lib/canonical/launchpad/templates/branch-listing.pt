@@ -7,6 +7,12 @@
     <label tal:attributes="for context/view/widgets/lifecycle/name">
     Show branches with status of</label>
     <div tal:replace="structure context/view/widgets/lifecycle"/>
+    <label tal:attributes="for context/view/widgets/search_criteria/name">
+    matching</label>
+    <div tal:replace="structure context/view/widgets/search_criteria"/>
+    <label tal:attributes="for context/view/widgets/sort_by/name">
+    ordered by</label>
+    <div tal:replace="structure context/view/widgets/sort_by"/>
     <noscript>
       <input type="submit" value="Filter"/>
     </noscript>
@@ -20,6 +26,8 @@ function submit_filter()
 }
 
 var field = document.getElementById('field.lifecycle');
+field.onchange = submit_filter;
+field = document.getElementById('field.sort_by')
 field.onchange = submit_filter;
 </script>
 

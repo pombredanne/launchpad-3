@@ -915,8 +915,25 @@ class BranchLifecycleStatusFilter(EnumeratedType):
         """)
 
 
+class BranchLifecycleSortBy(EnumeratedType):
+    SOMETHING = Item("""
+        Something
+
+        Show all the branches.
+        """)
+
+    NOTHING = Item("""
+        Nothing
+
+        Show all the branches.
+        """)
+
+
+
 class IBranchLifecycleFilter(Interface):
     """A helper interface to render lifecycle filter choice."""
+
+    search_criteria = TextLine()
 
     # Stats and status attributes
     lifecycle = Choice(
@@ -930,3 +947,8 @@ class IBranchLifecycleFilter(Interface):
         " Merged: integrated into mainline, of historical interest only."
         " Abandoned: no longer considered relevant by the author."
         " New: unspecified maturity."))
+
+    sort_by = Choice(
+        title=_('Sort By'), vocabulary=BranchLifecycleSortBy,
+        default=BranchLifecycleSortBy.SOMETHING)
+

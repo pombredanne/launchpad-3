@@ -114,8 +114,9 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 class BranchListingView(LaunchpadFormView):
     """A base class for views of branch listings."""
     schema = IBranchLifecycleFilter
-    field_names = ['lifecycle']
+    field_names = ['search_criteria', 'lifecycle', 'sort_by']
     custom_widget('lifecycle', LaunchpadDropdownWidget)
+    custom_widget('sort_by', LaunchpadDropdownWidget)
     extra_columns = []
     title_prefix = 'Bazaar'
 
