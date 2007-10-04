@@ -11,7 +11,7 @@
 <body>
     <table style="border: 1px dotted black">
     <thead>
-    <tr><th colspan="6" style="background: lightgray" 
+    <tr><th colspan="6" style="background: lightgray"
             tal:content="view/getTitle">
         My Title</th>
     </tr>

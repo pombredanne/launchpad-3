@@ -17,10 +17,11 @@ __all__ = [
     ]
 
 from datetime import datetime
+import operator
 import time
 
 from zope.app.pagetemplate import ViewPageTemplateFile
-from zope.app.datetimeutils import rfc1123_date 
+from zope.app.datetimeutils import rfc1123_date
 
 # XXX - bac - 20 Sept 2007, modules in canonical.lazr should not import from
 # canonical.launchpad, but we're doing it here as an expediency to get a
@@ -59,6 +60,7 @@ class FeedBase(LaunchpadFormView):
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.format = self.getFeedFormat()
 
     def initialize(self):
         """Override this in subclasses.
@@ -82,6 +84,16 @@ class FeedBase(LaunchpadFormView):
     def itemToFeedEntry(self, item):
         raise NotImplementedError
 
+    def getFeedFormat(self):
+        path = self.request['PATH_INFO']
+        if path.endswith('.atom'):
+            return 'atom'
+        elif path.endswith('.html'):
+            return 'html'
+        else:
+            raise ValueError, ('%s in %s is not atom or html'
+                % (extension, self.request['PATH_INFO']))
+
     def getLogo(self):
         """Get the URL for the feed logo."""
         raise NotImplementedError
@@ -96,16 +108,18 @@ class FeedBase(LaunchpadFormView):
         By default this is set to the most recent update of the entries in the
         feed.
         """
-        if self.items is None:
-            items = self.getItems()
-        if len(self.items) == 0:
+        items = self.getItems()
+        if len(items) == 0:
             return None
-        return self.items[0].date_updated
+        sorted_items = sorted(items, key=operator.attrgetter('date_updated'), reverse=True)
+        return sorted_items[0].date_updated
 
     def getNow(self):
-        # isoformat returns the seconds to six decimal places
-        # which confuses Atom readers
-        #return "%sZ" % datetime.utcnow().isoformat()
+        """Return the current time in the correct format.
+
+        Using datetime.isoformat returns the seconds to six decimal places,
+        which confuses some feed readers.
+        """
         return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
@@ -128,25 +142,21 @@ class FeedBase(LaunchpadFormView):
             raise NotImplementedError, "Format %s is not implemented" % self.format
 
     def renderAtom(self):
-        '''Render the object as an Atom feed.
-        Override this as opposed to overriding render().'''
-        # XXX, bac - This call looks funny, but the callable template must be
-        # passed a reference to the view.  The first use of self is to
-        # reference the property.
+        """Render the object as an Atom feed.
+
+        Override this as opposed to overriding render().
+        """
         return ViewPageTemplateFile(self.template_files['atom'])(self)
 
     def renderHTML(self):
-        '''Render the object as an html feed.
-        Override this as opposed to overriding render().'''
-        # XXX, bac - This call looks funny, but the callable template must be
-        # passed a reference to the view.  The first use of self is to
-        # reference the property.
+        """Render the object as an html feed.
+
+        Override this as opposed to overriding render().
+        """
         return ViewPageTemplateFile(self.template_files['html'])(self)
 
 class FeedEntry:
-    """An entry for a feed.
-
-    """
+    """An entry for a feed."""
     def __init__(self,
                  title,
                  id_,
@@ -173,7 +183,7 @@ class FeedEntry:
         self.id = id_
 
 class FeedTypedData:
-
+    """Data for a feed that includes its type."""
     content_types = ['text', 'html', 'xhtml']
     def __init__(self, content, content_type='text'):
         self.content = content
@@ -182,6 +192,11 @@ class FeedTypedData:
         self.content_type = content_type
 
 class FeedPerson:
+    """Data for person in a feed.
+
+    If this class is consistently used we will not accidentally leak email
+    addresses.
+    """
     def __init__(self, person):
         self.name = person.displayname
         # We don't want to disclose email addresses in public feeds.

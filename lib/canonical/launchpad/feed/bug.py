@@ -102,15 +102,6 @@ class BugsFeedBase(FeedBase):
         if verbose is not None:
             if verbose.lower() in ['1', 't', 'true', 'yes']:
                 self.verbose = True
-        extension = self.request['PATH_INFO'].split('/')[-1].split('.')[-1]
-        path = self.request['PATH_INFO']
-        if path.endswith('.atom'):
-            self.format = 'atom'
-        elif path.endswith('.html'):
-            self.format = 'html'
-        else:
-            raise ValueError, ('%s in %s is not atom or html'
-                % (extension, self.request['PATH_INFO']))
 
     def getURL(self):
         """Get the identifying URL for the feed."""
@@ -121,8 +112,8 @@ class BugsFeedBase(FeedBase):
         return "%s/@@/bug" % self.getSiteURL()
 
     def getPublicRawItems(self):
-        return [ bugtask 
-                 for bugtask in self.getRawItems() 
+        return [ bugtask
+                 for bugtask in self.getRawItems()
                  if not bugtask.bug.private ]
 
     def getItems(self):
