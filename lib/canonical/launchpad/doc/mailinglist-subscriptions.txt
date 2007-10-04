@@ -4,8 +4,8 @@ Members of a team, either direct or indirect, may subscribe to that team's
 mailing list, if it has one.  To illustrate, we'll first create a bunch of
 people, a team and its team mailing list.
 
-    >>> # new_person() and new_team() are helpers added by this doctest's
-    >>> # setup.
+    >>> # new_person() and new_team() are helpers added in
+    >>> # test_system_documentation.py by this doctest's setup.
     >>> anne = new_person('Anne')
     >>> bart = new_person('Bart')
     >>> team_one, list_one = new_team('team-one', with_list=True)
