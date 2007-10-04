@@ -13,7 +13,8 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    IEmailAddressSet, IMailingListAPIView, IMailingListSet, MailingListStatus)
+    EmailAddressStatus, IEmailAddressSet, IMailingListAPIView,
+    IMailingListSet, MailingListStatus)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 
@@ -127,6 +128,9 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             response[team_name] = sorted(members, key=itemgetter(0))
         return response
 
-    def isLaunchpadMember(self, address):
+    def isRegisteredInLaunchpad(self, address):
         """See `IMailingListAPIView.`."""
-        return getUtility(IEmailAddressSet).getByEmail(address) is not None
+        email_address = getUtility(IEmailAddressSet).getByEmail(address)
+        return (email_address is not None and
+                email_address.status in (EmailAddressStatus.VALIDATED,
+                                         EmailAddressStatus.PREFERRED))

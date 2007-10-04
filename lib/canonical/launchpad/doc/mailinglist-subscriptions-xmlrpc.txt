@@ -59,7 +59,6 @@ at a time.  Mix things up for the fun of it.
     ...         continue
     ...     person.join(team_two)
     ...     list_two.subscribe(person)
-    >>> flush_database_updates()
     >>> info = mailinglist_api.getMembershipInformation(
     ...     ('team-one', 'team-two'))
     >>> print_info(info)
@@ -87,11 +86,27 @@ registered with Launchpad.  It does this as a simple line-of-defense against
 spam.  Email from addresses not registered with Launchpad are summarily
 discarded.
 
-    >>> mailinglist_api.isLaunchpadMember('dirk.person@example.com')
+    >>> mailinglist_api.isRegisteredInLaunchpad('dirk.person@example.com')
     True
-    >>> mailinglist_api.isLaunchpadMember('dperson@example.org')
+    >>> mailinglist_api.isRegisteredInLaunchpad('dperson@example.org')
     True
-    >>> mailinglist_api.isLaunchpadMember('geddy.lee@canonical.com')
+    >>> mailinglist_api.isRegisteredInLaunchpad('geddy.lee@canonical.com')
+    False
+
+Similarly, email addresses with an unvalidated status are not considered
+registered either.
+
+    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> emailset = getUtility(IEmailAddressSet)
+    >>> new_address = emailset.new('frederick@example.com', fred)
+    >>> new_address.email, new_address.statusname
+    (u'frederick@example.com', 'New Email Address')
+    >>> sorted((email_address.email, email_address.statusname)
+    ...        for email_address in emailset.getByPerson(fred))
+    [(u'fperson@example.org', 'Validated Email Address'),
+     (u'fred.person@example.com', 'Preferred Email Address'),
+     (u'frederick@example.com', 'New Email Address')]
+    >>> mailinglist_api.isRegisteredInLaunchpad('frederick@example.com')
     False
 
 

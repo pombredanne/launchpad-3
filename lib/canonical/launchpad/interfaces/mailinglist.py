@@ -506,11 +506,12 @@ class IMailingListAPIView(Interface):
         to the mailing list linked to the named team.
         """
 
-    def isLaunchpadMember(address):
+    def isRegisteredInLaunchpad(address):
         """Return whether the address is a Launchpad member or not.
 
         :param address: The text email address to check.
-        :return: True if the address is a member, otherwise False.
+        :return: True if the address is a validated or preferred email address
+            owned by a Launchpad member.
         """
 
 
