@@ -5,7 +5,7 @@ and test if the edit link is working.
 
 Open the +addurl page.
 
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2/+addurl')
 
   >>> browser.title

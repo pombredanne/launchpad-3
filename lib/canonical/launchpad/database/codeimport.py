@@ -9,20 +9,22 @@ __all__ = [
     'CodeImportSet',
     ]
 
-from sqlobject import ForeignKey, IntervalCol, StringCol, SQLObjectNotFound
+from datetime import timedelta
 
+from sqlobject import ForeignKey, IntervalCol, StringCol, SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (cursor, SQLBase, sqlvalues)
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
-    ICodeImport, ICodeImportSet, ILaunchpadCelebrities, NotFoundError)
-from canonical.lp.dbschema import (
-    CodeImportReviewStatus, RevisionControlSystems)
+    ICodeImport, ICodeImportSet, ILaunchpadCelebrities, NotFoundError,
+    RevisionControlSystems)
+from canonical.lp.dbschema import CodeImportReviewStatus
 
 
 class CodeImport(SQLBase):
@@ -64,6 +66,19 @@ class CodeImport(SQLBase):
 
     date_last_successful = UtcDateTimeCol(default=None)
     update_interval = IntervalCol(default=None)
+
+    @property
+    def effective_update_interval(self):
+        """See `ICodeImport`."""
+        if self.update_interval is not None:
+            return self.update_interval
+        default_interval_dict = {
+            RevisionControlSystems.CVS:
+                config.codeimport.default_interval_cvs,
+            RevisionControlSystems.SVN:
+                config.codeimport.default_interval_subversion}
+        seconds = default_interval_dict[self.rcs_type]
+        return timedelta(seconds=seconds)
 
 
 class CodeImportSet:

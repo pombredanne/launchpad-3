@@ -192,6 +192,14 @@
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    name="+export"
+    permission="launchpad.AnyPerson"
+    template="../templates/sourcepackage-export.pt"
+    class="canonical.launchpad.browser.SourcePackageTranslationsExportView"
+    />
+
   <browser:pages
     for="canonical.launchpad.interfaces.ISourcePackage"
     permission="launchpad.AnyPerson"

@@ -59,6 +59,8 @@ class ShipItUnauthorizedView(SystemErrorView):
 
 class ShipitFrontPageView(LaunchpadView):
 
+    series = ShipItConstants.current_distroseries
+
     def initialize(self):
         self.flavour = _get_flavour_from_layer(self.request)
 
@@ -89,6 +91,7 @@ def shipit_is_open(flavour):
 class ShipItLoginView(LoginOrRegister):
     """Process the login form and redirect the user to the request page."""
 
+    series = ShipItConstants.current_distroseries
     possible_origins = {
         ShipItFlavour.UBUNTU: 'shipit-ubuntu',
         ShipItFlavour.KUBUNTU: 'shipit-kubuntu',
@@ -208,6 +211,9 @@ class ShipItRequestView(GeneralFormView):
     @property
     def dvds_section(self):
         """Get the HTML containing links to DVD sales for this flavour."""
+        # XXX: Method stubbed out until we get the links to Gutsy DVDs on
+        # amazon.com. -- Guilherme Salgado, 2007-09-24
+        return u''
         if self.flavour == ShipItFlavour.UBUNTU:
             return ViewPageTemplateFile('../templates/shipit-ubuntu-dvds.pt')(
                 self)
@@ -956,13 +962,13 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
              ShipItArchitecture.AMD64: None}
         }
 
+    series = ShipItConstants.current_distroseries
     current_order = None
     shipping_details_fields = [
         'recipientdisplayname', 'country', 'city', 'addressline1', 'phone',
         'addressline2', 'province', 'postcode', 'organization']
 
     def __init__(self, context, request):
-        self.series = ShipItConstants.current_distroseries
         order_id = request.form.get('order')
         if order_id is not None and order_id.isdigit():
             self.current_order = getUtility(IShippingRequestSet).get(
