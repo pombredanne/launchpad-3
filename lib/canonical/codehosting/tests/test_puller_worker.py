@@ -102,46 +102,6 @@ class PullerWorkerMixin:
             branch_type=branch_type, protocol=protocol)
 
 
-class TestPullerWorker(unittest.TestCase, PullerWorkerMixin):
-    """Test the mirroring functionality of PullerWorker."""
-
-    test_dir = None
-
-    def setUp(self):
-        PullerWorkerMixin.setUp(self)
-        # We set the log level to CRITICAL so that the log messages
-        # are suppressed.
-        logging.basicConfig(level=logging.CRITICAL)
-
-    def tearDown(self):
-        PullerWorkerMixin.tearDown(self)
-
-    def testMirrorActuallyMirrors(self):
-        # Check that mirror() will mirror the Bazaar branch.
-        to_mirror = self.makePullerWorker()
-        tree = create_branch(to_mirror.source)
-        to_mirror.mirror()
-        mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
-        self.assertEqual(
-            tree.last_revision(), mirrored_branch.last_revision())
-
-    def testMirrorEmptyBranch(self):
-        # Check that we can mirror an empty branch, and that the
-        # last_mirrored_id for an empty branch can be distinguished from an
-        # unmirrored branch.
-
-        # Create a branch
-        to_mirror = self.makePullerWorker()
-
-        # create empty source branch
-        os.makedirs(to_mirror.source)
-        tree = bzrdir.BzrDir.create_standalone_workingtree(to_mirror.source)
-
-        to_mirror.mirror()
-        mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
-        self.assertEqual(None, mirrored_branch.last_revision())
-
-
 class ErrorHandlingTestCase(unittest.TestCase):
     """Base class to test PullerWorker error reporting."""
 
@@ -204,6 +164,46 @@ class ErrorHandlingTestCase(unittest.TestCase):
         """
         error = self.runMirrorAndGetError()
         self.assertEqual(error, expected_error)
+
+
+class TestPullerWorker(unittest.TestCase, PullerWorkerMixin):
+    """Test the mirroring functionality of PullerWorker."""
+
+    test_dir = None
+
+    def setUp(self):
+        PullerWorkerMixin.setUp(self)
+        # We set the log level to CRITICAL so that the log messages
+        # are suppressed.
+        logging.basicConfig(level=logging.CRITICAL)
+
+    def tearDown(self):
+        PullerWorkerMixin.tearDown(self)
+
+    def testMirrorActuallyMirrors(self):
+        # Check that mirror() will mirror the Bazaar branch.
+        to_mirror = self.makePullerWorker()
+        tree = create_branch(to_mirror.source)
+        to_mirror.mirror()
+        mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
+        self.assertEqual(
+            tree.last_revision(), mirrored_branch.last_revision())
+
+    def testMirrorEmptyBranch(self):
+        # Check that we can mirror an empty branch, and that the
+        # last_mirrored_id for an empty branch can be distinguished from an
+        # unmirrored branch.
+
+        # Create a branch
+        to_mirror = self.makePullerWorker()
+
+        # create empty source branch
+        os.makedirs(to_mirror.source)
+        tree = bzrdir.BzrDir.create_standalone_workingtree(to_mirror.source)
+
+        to_mirror.mirror()
+        mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
+        self.assertEqual(None, mirrored_branch.last_revision())
 
 
 class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
