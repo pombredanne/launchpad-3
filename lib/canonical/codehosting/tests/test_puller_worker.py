@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 import httplib
-import logging
 import os
 import shutil
 import socket
@@ -35,7 +34,7 @@ from canonical.codehosting.tests.helpers import create_branch
 from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import canonical_url
-from canonical.testing import LaunchpadScriptLayer, reset_logging
+from canonical.testing import LaunchpadScriptLayer
 
 
 class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
@@ -123,17 +122,6 @@ class ErrorHandlingTestCase(unittest.TestCase):
             protocol=self.protocol)
         self.open_call_count = 0
         self.branch.testcase = self
-        # We set the log level to CRITICAL so that the log messages
-        # are suppressed.
-        logging.basicConfig(level=logging.CRITICAL)
-
-    def tearDown(self):
-        self._errorHandlingTearDown()
-        unittest.TestCase.tearDown(self)
-
-    def _errorHandlingTearDown(self):
-        """Teardown code that is specific to ErrorHandlingTestCase."""
-        reset_logging()
 
     def runMirrorAndGetError(self):
         """Run mirror, check that we receive exactly one error, and return its
@@ -173,9 +161,6 @@ class TestPullerWorker(unittest.TestCase, PullerWorkerMixin):
 
     def setUp(self):
         PullerWorkerMixin.setUp(self)
-        # We set the log level to CRITICAL so that the log messages
-        # are suppressed.
-        logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):
         PullerWorkerMixin.tearDown(self)
@@ -210,9 +195,6 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
 
     def setUp(self):
         super(TestPullerWorkerFormats, self).setUp()
-        # We set the log level to CRITICAL so that the log messages
-        # are suppressed.
-        logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):
         super(TestPullerWorkerFormats, self).tearDown()
@@ -296,9 +278,6 @@ class TestPullerWorker_SourceProblems(TestCaseInTempDir, PullerWorkerMixin):
     def setUp(self):
         TestCaseInTempDir.setUp(self)
         PullerWorkerMixin.setUp(self)
-        # We set the log level to CRITICAL so that the log messages
-        # are suppressed.
-        logging.basicConfig(level=logging.CRITICAL)
 
     def tearDown(self):
         PullerWorkerMixin.tearDown(self)
@@ -406,10 +385,6 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
 
     def tearDown(self):
         TestCaseWithTransport.tearDown(self)
-        # errorHandlingTearDown must be called after
-        # TestCaseWithTransport.tearDown otherwise the latter fails
-        # when trying to uninstall its log handlers.
-        ErrorHandlingTestCase._errorHandlingTearDown(self)
 
     def testCreateBranchReference(self):
         """Test that our createBranchReference helper works correctly."""
