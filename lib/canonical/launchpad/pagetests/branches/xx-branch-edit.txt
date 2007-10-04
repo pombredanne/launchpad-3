@@ -114,6 +114,7 @@ Set the branch status back to its initial state.
     >>> browser.getControl('Whiteboard').value = ''
     >>> browser.getControl('Change Branch').click()
 
+
 == Changing branch product and name ==
 
 The edit form allows changing the product of a branch.
@@ -163,6 +164,7 @@ reasons given in xx-branch-reassign.txt.
     ...     print msg
     There is 1 error.
     Team-owned branches must be associated with a project.
+
 
 == Name conflicts ==
 
@@ -221,8 +223,6 @@ branch we already own in the same product. So we have tested all the
 combinations of changing name and product that can cause an error.
 
     >>> browser.open('http://launchpad.dev'
-    ...     '/~name12/gnome-terminal/2.6')
-    >>> browser.open('http://launchpad.dev'
     ...     '/~name12/gnome-terminal/main/+edit')
     >>> browser.getControl('Name').value = '2.6'
     >>> browser.getControl('Change Branch').click()
@@ -245,3 +245,21 @@ know if it conflicts or not:
     ...     print msg
     There is 1 error.
     Invalid value
+
+
+== URL validation ==
+
+Edit forms do the same URL validation checks as the add forms.
+
+    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Branch URL').value = (
+    ...     'http://bazaar.launchpad.dev/~foo/bar/baz')
+    >>> browser.getControl('Change Branch').click()
+
+    >>> for message in get_feedback_messages(browser):
+    ...     print message
+    There is 1 error.
+    For Launchpad to mirror a branch, the original branch cannot be
+    on launchpad.dev.
+

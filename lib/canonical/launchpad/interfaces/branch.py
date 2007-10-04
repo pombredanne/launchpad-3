@@ -204,9 +204,7 @@ class BranchURIField(URIField):
         if uri.underDomain(launchpad_domain):
             message = _(
                 "For Launchpad to mirror a branch, the original branch cannot "
-                "be on <code>%s</code>. Did you want to "
-                '<a href="https://help.launchpad.net/CreatingAHostedBranch">'
-                "create a hosted branch</a> instead?" % launchpad_domain)
+                "be on <code>%s</code>." % launchpad_domain)
             raise LaunchpadValidationError(message)
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):

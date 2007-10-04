@@ -524,11 +524,28 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             self.validate_branch_name(self.context.owner,
                                       data['product'],
                                       data['name'])
+
+        # If the branch is a MIRRORED branch, then the url
+        # must be supplied, and if HOSTED the url must *not*
+        # be supplied.
+        url = data.get('url')
         if self.context.branch_type == BranchType.MIRRORED:
-            if data.get('url') is None:
+            if url is None:
+                # If the url is not set due to url validation errors,
+                # there will be an error set for it.
+                error = self.getWidgetError('url')
+                if not error:
+                    self.setFieldError(
+                        'url',
+                        'Branch URLs are required for Mirrored branches.')
+        elif self.context.branch_type == BranchType.HOSTED:
+            if url is not None:
                 self.setFieldError(
                     'url',
-                    'Branch URLs are required for Mirrored branches.')
+                    'Branch URLs cannot be set for Hosted branches.')
+        else:
+            # We don't care about REMOTE or IMPORT branches.
+            pass
 
 
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
