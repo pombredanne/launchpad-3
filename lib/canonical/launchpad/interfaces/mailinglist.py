@@ -338,7 +338,7 @@ class IMailingList(Interface):
         :param person: The person to subscribe to the mailing list.  The
             person must be a member (either direct or indirect) of the team
             linked to this mailing list.
-        :param address: The IEmailAddress to use for the subscription.  The
+        :param address: The `IEmailAddress` to use for the subscription.  The
             address must be owned by `person`.  If None (the default), then
             the person's preferred email address is used.  If the person's
             preferred address changes, their subscription address will change
@@ -519,7 +519,8 @@ class IMailingListSubscription(Interface):
             'preferred email address, even if that changes.'),
         required=True)
 
-    subscribed_address = TextLine(
+    subscribed_address = Object(
+        schema=IEmailAddress,
         title=_('Email Address'),
         description=_('The IEmailAddress this person is subscribed with.'),
         readonly=True)

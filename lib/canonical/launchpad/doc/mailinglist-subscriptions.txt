@@ -4,9 +4,34 @@ Members of a team, either direct or indirect, may subscribe to that team's
 mailing list, if it has one.  To illustrate, we'll first create a bunch of
 people, a team and its team mailing list.
 
+    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> address_set = getUtility(IEmailAddressSet)
+    >>> def get_alternative_email(person):
+    ...     """Return a non-preferred IEmailAddress for a person.
+    ...
+    ...     This assumes and asserts that there is exactly one non-preferred
+    ...     email address for the person.
+    ...     """
+    ...     alternatives = [address
+    ...                     for address in address_set.getByPerson(person)
+    ...                     if address != person.preferredemail]
+    ...     assert len(alternatives) == 1, 'Unexpected email count'
+    ...     return alternatives[0]
+
     >>> # new_person() and new_team() are helpers added by this doctest's
     >>> # setup.
     >>> anne = new_person('Anne')
+
+Anne gets two email addresses.  One is her preferred address...
+
+    >>> anne.preferredemail.email
+    u'anne.person@example.com'
+
+...and the other is her alternative address.
+
+    >>> get_alternative_email(anne).email
+    u'aperson@example.org'
+
     >>> bart = new_person('Bart')
     >>> team_one, list_one = new_team('team-one', with_list=True)
     >>> anne.join(team_one)
@@ -25,20 +50,6 @@ provide an email address when she subscribes, her preferred address is used.
 
 Now Bart also subscribes to the mailing list, but he does so with something
 other than his preferred email address.
-
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
-    >>> address_set = getUtility(IEmailAddressSet)
-    >>> def get_alternative_email(person):
-    ...     """Return a non-preferred IEmailAddress for a person.
-    ...
-    ...     This assumes and asserts that there is exactly one non-preferred
-    ...     email address for the person.
-    ...     """
-    ...     alternatives = [address
-    ...                     for address in address_set.getByPerson(person)
-    ...                     if address != person.preferredemail]
-    ...     assert len(alternatives) == 1, 'Unexpected email count'
-    ...     return alternatives[0]
 
     >>> alternative_email = get_alternative_email(bart)
     >>> alternative_email.email
@@ -88,20 +99,32 @@ member of team-one.
      u'Team Two']
 
 Now, by virtue of her indirect membership in team-one, Cris can subscribe to
-team-one's mailng list.
+team-one's mailing list.
 
     >>> list_one.subscribe(cris)
     >>> sorted(list_one.getAddresses())
     [u'anne.person@example.com', u'bperson@example.org',
      u'cris.person@example.com']
 
-Similarly, a person (Dirk) can have a membership in a superteam (Team One) for
-which he is an indirect member (via Team Two), and a membership in a subteam
-(Team Three) for which he is a direct member.  This person will be able to
-join both the superteam's mailing list (Team One) and the subteam's mailing
-list (Team Three).  For the superteam's list, his address will show up only
-once.
+People can subscribe to both a superteam's mailing list and a subteam's
+mailing list.
 
+    >>> super_team, super_team_list = new_team('super-team', with_list=True)
+    >>> sub_team, sub_team_list = new_team('sub-team', with_list=True)
+    >>> super_team.addMember(sub_team, salgado, force_team_add=True)
+    >>> lars = new_person('Lars')
+    >>> lars.join(super_team)
+    >>> lars.join(sub_team)
+    >>> super_team_list.subscribe(lars)
+    >>> sub_team_list.subscribe(lars)
+    >>> sorted(super_team_list.getAddresses())
+    [u'lars.person@example.com']
+    >>> sorted(sub_team_list.getAddresses())
+    [u'lars.person@example.com']
+
+This is true even if the person's subscription in the superteam's list is
+allowed due to indirect membership in the superteam.
+    
     >>> team_three, list_three = new_team('team-three', with_list=True)
     >>> team_one.addMember(team_three, salgado, force_team_add=True)
     >>> dirk = new_person('Dirk')
@@ -265,9 +288,6 @@ A current subscriber is not even allowed to subscribe multiple times with a
 different email address.
 
     >>> iona_alternative = get_alternative_email(iona)
-    >>> iona_alternative.email
-    u'iperson@example.org'
-
     >>> list_one.subscribe(iona, iona_alternative)
     Traceback (most recent call last):
     ...

@@ -789,6 +789,8 @@ class ActiveMailingListVocabulary:
         """See `IVocabularyTokenized`."""
         # token should be the team name as a string.
         team_list = getUtility(IMailingListSet).get(token)
+        if team_list is None:
+            raise LookupError(token)
         return self.getTerm(team_list)
 
     def search(self, text=None):
@@ -798,24 +800,19 @@ class ActiveMailingListVocabulary:
             name.  This actually matches against the name of the team to which
             the mailing list is linked.  If None (the default), all active
             mailing lists are returned.
-        :return: The list of active mailing lists matching the query.
+        :return: An iterator over the active mailing lists matching the query.
         """
         if text is None:
             return getUtility(IMailingListSet).active_lists
-        # Search on a person's name and displayname (not email address or IRC
-        # nickname which aren't appropriate for team mailing lists here).
-        # Note that because there is no FTI on mailing lists, we search for
-        # matching teams and then map that back to active mailing lists.  This
-        # seems reasonable given that every mailing list is mapped to exactly
-        # one team.
-        name_matches = MailingList.select("""
+        # The mailing list name, such as it has one, is really the name of the
+        # team to which it is linked.
+        return MailingList.select("""
             MailingList.team = Person.id
             AND Person.fti @@ ftq(%s)
             AND Person.teamowner IS NOT NULL
             AND MailingList.status = %s
             """ % sqlvalues(text, MailingListStatus.ACTIVE),
             clauseTables=['Person'])
-        return name_matches
 
     def searchForTerms(self, query=None):
         """See `IHugeVocabulary`."""

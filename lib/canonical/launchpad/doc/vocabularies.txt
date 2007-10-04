@@ -55,7 +55,7 @@ The active mailing lists vocabulary matches and returns only those mailing
 lists which are active.
 
     >>> list_vocabulary = vocabulary_registry.get(None, 'ActiveMailingList')
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
     >>> verifyObject(IHugeVocabulary, list_vocabulary)
     True
@@ -172,7 +172,7 @@ You cannot get a term by an other object, such as a team.
     >>> list_vocabulary.getTerm(team_one)
     Traceback (most recent call last):
     ...
-    LookupError: <security proxied canonical.launchpad.database.person.Person ...
+    LookupError: ...
 
 Given a token, we can get back the term.
 
@@ -184,22 +184,30 @@ Given a token, we can get back the term.
     >>> term_4.value.team.displayname
     u'Bass Players'
 
-You can also ask whether a team or mailing list is contained in the
-vocabulary.
+If you try to get the term by a token not represented in the vocabulary, you
+get an exception.
 
-    >>> team_three in list_vocabulary
-    False
+    >>> list_vocabulary.getTermByToken('turntablists')
+    Traceback (most recent call last):
+    ...
+    LookupError: turntablists
+
+You can also ask whether a mailing list is contained in the vocabulary.
+
     >>> list_three in list_vocabulary
     True
 
-But non-ACTIVE mailing lists (and their teams) are not in the vocabulary.
+But of course, a team cannot be contained in this vocabulary.
+
+    >>> team_three in list_vocabulary
+    False
+
+Non-ACTIVE mailing lists are also not contained in the vocabulary.
 
     >>> team_four = personset.newTeam(
     ...     ddaa, 'flautists', 'Flautists',
     ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
     >>> list_four = listset.new(team_four)
-    >>> team_four in list_vocabulary
-    False
     >>> list_four in list_vocabulary
     False
 
