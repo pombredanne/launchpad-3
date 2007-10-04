@@ -220,15 +220,15 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     private_bugs = Bool(title=_('Private bugs'), description=_("""Whether
         or not bugs reported into this project are private by default"""))
 
-    license = Choice(
-        title=_("License"),
+    licenses = Description(
+        title=_('Licenses'),
         required=False,
-        vocabulary="License")
+        description=_("""Licenses"""))
 
     license_info = Description(
         title=_('License Info'),
         required=False,
-        description=_("""If other, please explain:"""))
+        description=_("""License Info"""))
 
     def getExternalBugTracker():
         """Return the external bug tracker used by this bug tracker.

@@ -1,5 +1,7 @@
 SET client_min_messages=ERROR;
 
+ALTER TABLE Product ADD COLUMN license_info text;
+
 CREATE TABLE ProductLicense (
     id serial PRIMARY KEY,
     product integer NOT NULL REFERENCES Product(id),

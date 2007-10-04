@@ -985,7 +985,8 @@ class ProductAddView(ProductAddViewBase):
             project=data['project'],
             owner=data['owner'],
             reviewed=data['reviewed'],
-            license=data['license'])
+            license_info=data['license_info'])
+        self.product.licenses = data['licenses']
         notify(ObjectCreatedEvent(self.product))
 
 

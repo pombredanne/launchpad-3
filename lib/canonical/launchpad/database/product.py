@@ -3,7 +3,7 @@
 """Database classes including and related to Product."""
 
 __metaclass__ = type
-__all__ = ['Product', 'ProductSet']
+__all__ = ['Product', 'ProductSet', 'ProductLicense']
 
 
 from sqlobject import (
@@ -130,9 +130,34 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         dbName='calendar', foreignKey='Calendar', default=None,
         forceDBName=True)
 
-    license = EnumCol(
-        dbName='license', notNull=False,
-        schema=License, default=None)
+    license_info = StringCol(dbName='license_info')
+
+    def _getLicenses(self):
+        """Get the licenses as a tuple."""
+        licenses = [
+            product_license.license
+            for product_license 
+                in ProductLicense.selectBy(product=self, orderBy='license')
+            ]
+        return tuple(licenses)
+
+    def _setLicenses(self, new_licenses):
+        """Set the licenses from a list of license enums."""
+        new_licenses = set(new_licenses)
+        for license in new_licenses:
+            if license not in License:
+                raise AttributeError, "%s is not a License" % license
+        old_licenses = set(self.licenses)
+
+        for license in old_licenses.difference(new_licenses):
+            product_license = ProductLicense.selectOneBy(product=self, 
+                                                         license=license)
+            product_license.destroySelf()
+
+        for license in new_licenses.difference(old_licenses):
+            ProductLicense(product=self, license=license)
+
+    licenses = property(_getLicenses, _setLicenses)
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
@@ -648,7 +673,7 @@ class ProductSet:
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       reviewed=False, mugshot=None, logo=None,
-                      icon=None, license=None):
+                      icon=None, license_info=None):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         product = Product(
             owner=owner, name=name, displayname=displayname,
@@ -658,7 +683,7 @@ class ProductSet:
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang, reviewed=reviewed,
-            icon=icon, logo=logo, mugshot=mugshot, license=license)
+            icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
@@ -760,3 +785,8 @@ class ProductSet:
         return self.stats.value('products_with_branches')
 
 
+class ProductLicense(SQLBase):
+    """A product's license."""
+
+    product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
+    license = EnumCol(dbName='license', notNull=True, schema=License)

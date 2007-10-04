@@ -404,7 +404,8 @@ class ProjectAddProductView(ProductAddViewBase):
             programminglang=data['programminglang'],
             project=self.context,
             owner=self.user,
-            license=data['license'])
+            license_info=data['license_info'])
+        self.product.licenses = data['licenses']
         notify(ObjectCreatedEvent(self.product))
 
 

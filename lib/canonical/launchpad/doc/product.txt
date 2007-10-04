@@ -211,7 +211,6 @@ Alsa does not use Launchpad to track answers.
 
 We can create new products with the createProduct() method:
 
-    >>> from canonical.lp.dbschema import License
     >>> owner = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> product = productset.createProduct(
     ...     owner=owner,
@@ -219,8 +218,7 @@ We can create new products with the createProduct() method:
     ...     displayname='Test Product',
     ...     title='Test Product',
     ...     summary='A test product',
-    ...     description='A description of the test product',
-    ...     license=License.GPL)
+    ...     description='A description of the test product')
 
 When creating a product, a default product series is created for it:
 
@@ -230,22 +228,16 @@ When creating a product, a default product series is created for it:
     >>> print trunk.name
     trunk
 
-A product's license is now being tracked. Only OSI approved licenses are
-allowed. Previously registered products may not have a license set, so
-None is a valid license.
+A product's licenses is now being tracked. Previously registered products 
+may not have a license set, so an empty tuple is valid.
 
-    >>> product.license == License.GPL
+    >>> product.licenses == ()
     True
-    >>> product.license.title
-    'GNU General Public License (GPL)'
-    >>> p2 = productset.createProduct(
-    ...     owner=owner,
-    ...     name='test-product2',
-    ...     displayname='Test Product2',
-    ...     title='Test Product2',
-    ...     summary='A test product',
-    ...     description='A description of the test product')
-    >>> p2.license is None
+    >>> from canonical.lp.dbschema import License
+    >>> product.licenses = [License.GPL, License.LGPL]
+    >>> print product.licenses[0].title
+    GPL
+    >>> product.licenses[0] == License.GPL
     True
 
 This series is set as the development focus for the product:
