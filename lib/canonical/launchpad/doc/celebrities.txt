@@ -95,6 +95,17 @@ The Launchpad product itself.
     >>> celebs.launchpad == launchpad
     True
 
-# XXX: David Allouche 2005-04-01
-# Add interface verification test.
-# Ask debonzi to add these in general.
+
+== mailing_list_experts ==
+
+There is a 'Mailing List Experts' team that has administrative power
+over mailing lists.
+
+    >>> mailing_list_experts = personset.getByName('mailing-list-experts')
+    >>> celebs.mailing_list_experts == mailing_list_experts
+    True
+
+The Launchpad Administrators team is a member of that team.
+
+    >>> celebs.admin.inTeam(mailing_list_experts)
+    True
