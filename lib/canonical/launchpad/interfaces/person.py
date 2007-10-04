@@ -1410,18 +1410,18 @@ class ITeamCreation(ITeam):
 class TeamContactMethod(EnumeratedType):
     """The method used by Launchpad to contact a given team."""
 
-    NONE = Item("""
-        Each member individually
-
-        Notifications directed to this team will be sent to each of its
-        members.
-        """)
-
     HOSTED_LIST = Item("""
         The Launchpad mailing list for this team
 
         Notifications directed to this team are sent to its Launchpad-hosted
         mailing list.
+        """)
+
+    NONE = Item("""
+        Each member individually
+
+        Notifications directed to this team will be sent to each of its
+        members.
         """)
 
     EXTERNAL_ADDRESS = Item("""

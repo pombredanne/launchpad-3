@@ -229,12 +229,10 @@ class TeamContactAddressView(LaunchpadFormView):
     @action('Cancel Application', name='cancel_list_creation',
             validator=cancel_list_creation_validator)
     def cancel_list_creation(self, action, data):
-        list_set = getUtility(IMailingListSet)
-        mailing_list = list_set.get(self.context.name)
-        assert mailing_list.status == MailingListStatus.REGISTERED, (
-            "Only mailing lists with a REGISTERED status can be deleted.")
-        # XXX: Need to add IMailingList.destroySelf()!
-        mailing_list.destroySelf()
+        getUtility(IMailingListSet).get(self.context.name).destroySelf()
+        self.request.response.addInfoNotification(
+            "Mailing list application cancelled.")
+        self.next_url = canonical_url(self.context)
 
     @action('Apply for Mailing List', name='request_list',
             validator=request_list_creation_validator)
@@ -246,21 +244,14 @@ class TeamContactAddressView(LaunchpadFormView):
             self.request.response.addInfoNotification(
                 "Mailing list requested and queued for approval.")
         else:
-            if mailing_list.status == MailingListStatus.DECLINED:
-                # XXX: This status transition is not allowed.  Either will
-                # need to allow it or destroy the existing ML and create a
-                # new one.
-                mailing_list.transitionToStatus(MailingListStatus.REGISTERED)
-                self.request.response.addInfoNotification(
-                    "Mailing list requested and queued for approval.")
-            elif mailing_list.status == MailingListStatus.INACTIVE:
+            if mailing_list.status == MailingListStatus.INACTIVE:
                 mailing_list.reactivate()
                 self.request.response.addInfoNotification(
                     "This team's Launchpad mailing list is currently "
                     "inactive and will be reactivated shortly.")
             else:
-                raise AssertionError("Only declined and inactive mailing "
-                                     "lists can be re-requested.")
+                raise AssertionError(
+                    "Only inactive mailing lists can be re-requested.")
         self.next_url = canonical_url(self.context)
 
     @action('Change', name='change')

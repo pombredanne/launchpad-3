@@ -3,14 +3,14 @@
 Team admins are allowed to set the contact method used by Launchpad to
 send notifications to that team.  The possible contact methods are:
 
+    - Hosted mailing list:  Notifications are sent to this team's mailing
+                            list hosted on Launchpad.
+
     - None:  There's no way to contact the team as a whole, so any
              notification is sent to every member of the team.
 
-    - External address:  All notifications are sent to the given email
-                         address (stored as the team's preferredemail).
-
-    - Hosted mailing list:  Notifications are sent to this team's mailing
-                            list hosted on Launchpad.
+    - Another address:  All notifications are sent to the given email
+                        address (stored as the team's preferredemail).
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~landscape-developers')
@@ -112,17 +112,35 @@ not shown anymore.
     ...
     LookupError: ...
 
+Any time before the mailing list is approved, the application can be
+cancelled (and then re-requested afterwards).
+
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl('Cancel Application').click()
+    >>> browser.url
+    'http://launchpad.dev/~landscape-developers'
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+    Mailing list application cancelled.
+
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+    >>> browser.url
+    'http://launchpad.dev/~landscape-developers'
+
 The mailing list can be used as the team's contact address only when its
 status is ACTIVE.
 
     >>> from canonical.launchpad.interfaces import MailingListStatus
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
+    >>> mailing_list = MailingList.selectOneBy(
+    ...     team=Person.byName('landscape-developers'))
     >>> mailing_list.review(
     ...     Person.byName('name16'), MailingListStatus.APPROVED)
     >>> mailing_list.syncUpdate()
     >>> logout()
-    >>> browser.reload()
+    >>> browser.getLink('Change contact address').click()
     >>> browser.getControl('The Launchpad mailing list').disabled
     True
     >>> browser.getControl('Apply for Mailing List')
@@ -183,9 +201,9 @@ functionality on production. -- Guilherme Salgado 2007-09-20
 
     >>> radio = browser.getControl(name='field.contact_method')
     >>> radio.displayOptions
-    ['\xa0Each member individually',
-     '\xa0The Launchpad mailing list for this team -
+    ['\xa0The Launchpad mailing list for this team -
       landscape-developers@lists.launchpad.net',
+     '\xa0Each member individually',
      '\xa0Another e-mail address']
 
     >>> config.mailman.expose_hosted_mailing_lists = False
