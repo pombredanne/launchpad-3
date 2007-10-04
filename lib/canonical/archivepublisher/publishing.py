@@ -461,12 +461,13 @@ class Publisher(object):
         # Only the primary archive has uncompressed and bz2 archives.
         if self.archive.purpose == ArchivePurpose.PRIMARY:
             index_suffixes = ('', '.gz', '.bz2')
-        elif self.archive.purpose == ArchivePurpose.PARTNER:
-            # The partner archive needs uncompressed files for
-            # compatibility with signed Release files.
-            index_suffixes = ('', '.gz')
         else:
-            index_suffixes = ('.gz',)
+            # We don't generate bz2 indexes for other archives for
+            # simplicity (they use NoMoreAptFtparchive approach).
+            # The plain index has to be listed in the Release, but not
+            # necessarily has to be on disk, its checksum is used for
+            # verification in client applications like dpkg/apt/smart.
+            index_suffixes = ('', '.gz')
 
         self.log.debug("Writing Release file for %s/%s/%s" % (
             full_name, component, architecture))
