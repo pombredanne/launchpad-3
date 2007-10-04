@@ -18,67 +18,16 @@
       track translations, bugs or specifications for it.
     </div>
 
-    <div metal:use-macro="context/@@launchpad_form/form">
-        <metal:widgets fill-slot="widgets">
-            <div tal:define="widgets view/non_custom_widgets">
-                <div metal:use-macro="context/@@launchpad_form/widget_rows">
-                </div>
-            </div>
+    <tal:block metal:fill-slot="widgets"
+        define="license_info nocall:view/widgets/license_info;
+                licenses nocall:view/widgets/licenses">
 
-            <tal:foo define="
-                license_info nocall:view/widgets/license_info;
-                licenses nocall:view/widgets/licenses;
-                matrix_name licenses/context/__name__;
-                matrix_error python:view.getWidgetError(matrix_name);
-                matrix_error_class python:matrix_error and 'error' or None;
-                textbox_name license_info/context/__name__;
-                textbox_error python:view.getWidgetError(textbox_name);
-                textbox_error_class python:textbox_error and 'error' or None;">
-                <table class="form">
-                  <tr>
-                    <!-- Checkbox matrix -->
-                    <th style="text-align: left">
-                    <label tal:attributes="for matrix_name">
-                        Licenses that this software project falls under:
-                    </label>
-                    </th>
-                  </tr>
-                  <tr>
-                    <td tal:attributes="class matrix_error_class">
-                        <div class="message" tal:condition="matrix_error"
-                            tal:content="structure matrix_error">
-                            Error message
-                        </div>
-                        <div style="color: black">
-                            Launchpad.net is free to use for software projects 
-                            that comply with 
-                            <a href="http://www.ubuntu.com/community/ubuntustory/licensing">
-                            these licensing policies.</a>
-                            <input tal:replace="structure licenses" />
-                        </div>
-                    </td>
-                  </tr>
-                  <tr> 
-                    <th style="text-align: left">
-                    <!-- Textarea -->
-                    <label tal:attributes="for textbox_name">
-                    Description of other licenses:
-                    </label>
-                    </th>
-                  </tr>
-                  <tr>
-                    <td tal:attributes="class textbox_error_class">
-                        <div class="message" tal:condition="textbox_error"
-                            tal:content="structure textbox_error">
-                                Error message
-                        </div>
-                        <input tal:replace="structure license_info" />
-                    </td>
-                  </tr>
-                </table>
-            </tal:foo>
-        </metal:widgets>
-    </div>
+      <div tal:define="widgets view/non_custom_widgets">
+        <div metal:use-macro="context/@@launchpad_form/widget_rows" />
+      </div>
+
+      <metal:block use-macro="context/@@+license/license_matrix" />
+    </tal:block>
 
   </div>
 
