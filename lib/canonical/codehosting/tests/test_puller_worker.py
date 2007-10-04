@@ -41,16 +41,17 @@ from canonical.testing import LaunchpadScriptLayer, reset_logging
 class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
 
     def __init__(self):
-        pass
+        self.calls = []
 
     def startMirroring(self, branch_to_mirror):
-        pass
+        self.calls.append(('startMirroring', branch_to_mirror))
 
     def mirrorSucceeded(self, branch_to_mirror, last_revision):
-        pass
+        self.calls.append(
+            ('mirrorSucceeded', branch_to_mirror, last_revision))
 
     def mirrorFailed(self, branch_to_mirror, message):
-        branch_to_mirror.testcase.errors.append(message)
+        self.calls.append(('mirrorFailed', branch_to_mirror, message))
 
 
 class StubbedPullerWorker(PullerWorker):
@@ -58,10 +59,6 @@ class StubbedPullerWorker(PullerWorker):
 
     enable_checkBranchReference = False
     enable_checkSourceUrl = True
-
-    def __init__(self, *args, **kwargs):
-        PullerWorker.__init__(self, *args, **kwargs)
-        self.protocol = StubbedPullerWorkerProtocol()
 
     def _checkSourceUrl(self):
         if self.enable_checkSourceUrl:
@@ -143,6 +140,70 @@ class TestPullerWorker(unittest.TestCase, PullerWorkerMixin):
         to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(None, mirrored_branch.last_revision())
+
+
+class ErrorHandlingTestCase(unittest.TestCase):
+    """Base class to test PullerWorker error reporting."""
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self._errorHandlingSetUp()
+
+    def _errorHandlingSetUp(self):
+        """Setup code that is specific to ErrorHandlingTestCase.
+
+        This is needed because TestReferenceMirroring uses a diamond-shaped
+        class hierarchy and we do not want to end up calling unittest.TestCase
+        twice.
+        """
+        self.protocol = StubbedPullerWorkerProtocol()
+        self.branch = StubbedPullerWorker(
+            src='foo', dest='bar', branch_id=1,
+            unique_name='owner/product/foo', branch_type=None,
+            protocol=self.protocol)
+        self.open_call_count = 0
+        self.branch.testcase = self
+        # We set the log level to CRITICAL so that the log messages
+        # are suppressed.
+        logging.basicConfig(level=logging.CRITICAL)
+
+    def tearDown(self):
+        self._errorHandlingTearDown()
+        unittest.TestCase.tearDown(self)
+
+    def _errorHandlingTearDown(self):
+        """Teardown code that is specific to ErrorHandlingTestCase."""
+        reset_logging()
+
+    def runMirrorAndGetError(self):
+        """Run mirror, check that we receive exactly one error, and return its
+        str().
+        """
+        self.branch.mirror()
+        self.assertEqual(
+            2, len(self.protocol.calls),
+            "Expected startMirroring and mirrorFailed, got: %r"
+            % (self.protocol.calls,))
+        startMirroring, mirrorFailed = self.protocol.calls
+        self.assertEqual(('startMirroring', self.branch), startMirroring)
+        self.assertEqual(('mirrorFailed', self.branch), mirrorFailed[:2])
+        self.protocol.calls = []
+        return str(mirrorFailed[2])
+
+    def runMirrorAndAssertErrorStartsWith(self, expected_error):
+        """Run mirror and check that we receive exactly one error, the str() of
+        which starts with `expected_error`.
+        """
+        error = self.runMirrorAndGetError()
+        if not error.startswith(expected_error):
+            self.fail('Expected "%s" but got "%s"' % (expected_error, error))
+
+    def runMirrorAndAssertErrorEquals(self, expected_error):
+        """Run mirror and check that we receive exactly one error, the str() of
+        which is equal to `expected_error`.
+        """
+        error = self.runMirrorAndGetError()
+        self.assertEqual(error, expected_error)
 
 
 class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
@@ -276,66 +337,6 @@ class TestPullerWorker_SourceProblems(TestCaseInTempDir, PullerWorkerMixin):
             src_dir=source_url, dest_dir="non-existent-destination")
         my_branch.mirror()
         # XXX - assert that it failed.
-
-
-class ErrorHandlingTestCase(unittest.TestCase):
-    """Base class to test PullerWorker error reporting."""
-
-    def setUp(self):
-        unittest.TestCase.setUp(self)
-        self._errorHandlingSetUp()
-
-    def _errorHandlingSetUp(self):
-        """Setup code that is specific to ErrorHandlingTestCase.
-
-        This is needed because TestReferenceMirroring uses a diamond-shaped
-        class hierarchy and we do not want to end up calling unittest.TestCase
-        twice.
-        """
-        protocol = StubbedPullerWorkerProtocol()
-        self.branch = StubbedPullerWorker(
-            src='foo', dest='bar', branch_id=1,
-            unique_name='owner/product/foo', branch_type=None,
-            protocol=protocol)
-        self.errors = []
-        self.open_call_count = 0
-        self.branch.testcase = self
-        # We set the log level to CRITICAL so that the log messages
-        # are suppressed.
-        logging.basicConfig(level=logging.CRITICAL)
-
-    def tearDown(self):
-        self._errorHandlingTearDown()
-        unittest.TestCase.tearDown(self)
-
-    def _errorHandlingTearDown(self):
-        """Teardown code that is specific to ErrorHandlingTestCase."""
-        reset_logging()
-
-    def runMirrorAndGetError(self):
-        """Run mirror, check that we receive exactly one error, and return its
-        str().
-        """
-        self.branch.mirror()
-        self.assertEqual(len(self.errors), 1)
-        error = str(self.errors[0])
-        self.errors = []
-        return error
-
-    def runMirrorAndAssertErrorStartsWith(self, expected_error):
-        """Run mirror and check that we receive exactly one error, the str() of
-        which starts with `expected_error`.
-        """
-        error = self.runMirrorAndGetError()
-        if not error.startswith(expected_error):
-            self.fail('Expected "%s" but got "%s"' % (expected_error, error))
-
-    def runMirrorAndAssertErrorEquals(self, expected_error):
-        """Run mirror and check that we receive exactly one error, the str() of
-        which is equal to `expected_error`.
-        """
-        error = self.runMirrorAndGetError()
-        self.assertEqual(error, expected_error)
 
 
 class TestBadUrl(ErrorHandlingTestCase):
