@@ -350,8 +350,12 @@ class Bugzilla(ExternalBugTracker):
 
         return malone_status
 
-    def initializeRemoteBugDB(self, bug_ids):
-        """See ExternalBugTracker."""
+    def getRemoteBug(self, bug_id):
+        """See `ExternalBugTracker`."""
+        return (bug_id, self.getRemoteBugBatch([bug_id]))
+
+    def getRemoteBugBatch(self, bug_ids):
+        """See `ExternalBugTracker`."""
         if self.version is None:
             self.version = self._probe_version()
 

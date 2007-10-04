@@ -14,6 +14,7 @@ version we can't parse, UnparseableBugTrackerVersion is raised:
 
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
     >>> external_bugzilla = Bugzilla('http://foo.com/', version='A.B4')
+    >>> external_bugzilla.batch_query_threshold = -1
     >>> external_bugzilla.updateBugWatches([])
     Traceback (most recent call last):
       ...
