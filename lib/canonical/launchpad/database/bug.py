@@ -21,18 +21,17 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IBug, IBugSet, IBugWatchSet, ICveSet,
-    ILaunchpadCelebrities, IDistroBugTask, IDistroSeriesBugTask,
-    ILibraryFileAliasSet, IBugAttachmentSet, IMessage, IBugMessageSet,
-    IUpstreamBugTask, IDistroSeries, IProductSeries, IProductSeriesBugTask,
-    NominationError, NominationSeriesObsoleteError, NotFoundError,
-    IProduct, IDistribution, UNRESOLVED_BUGTASK_STATUSES, IBugBranch,
-    ISourcePackage)
+    BugTaskStatus, IBug, IBugAttachmentSet, IBugBranch,
+    IBugSet, IBugWatchSet, ICveSet, IDistribution, IDistroBugTask,
+    IDistroSeries, IDistroSeriesBugTask, ILaunchpadCelebrities,
+    ILibraryFileAliasSet, IMessage, IProduct, IProductSeries,
+    IProductSeriesBugTask, IQuestionTarget, UNRESOLVED_BUGTASK_STATUSES,
+    ISourcePackage, IUpstreamBugTask, NominationError,
+    NominationSeriesObsoleteError, NotFoundError)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.bugcve import BugCve
 from canonical.launchpad.database.bugnomination import BugNomination
@@ -42,7 +41,6 @@ from canonical.launchpad.database.message import (
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import (
     BugTask,
-    BugTaskDelta,
     BugTaskSet,
     bugtask_sort_key,
     get_bug_privacy_filter,
@@ -569,20 +567,23 @@ class Bug(SQLBase):
     def _getQuestionTargetableBugTask(self):
         """Return the only bugtask that can be a QuestionTarget, or None.
 
-        The bugtask is selected by these two rules:
-        1. There is only one bugtask with a status of New, Incomplete,
-           Confirmed, or Wont Fix. Any other bugtasks must be Invalid.
-        2. The bugtask's target uses Launchpad to track bugs.
+        The bugtask is selected by these rules:
+        1. BugTasks that are Invalid, or are conjoined slaves, are excluded.
+        2. The bugtask must be New, Incomplete, Confirmed, or Wont Fix.
+        3. The bugtask's target uses Launchpad to track bugs.
+        Only one bug task must meet the first condition before the second
+        and third conditions are tested.
         """
         bugtasks = [bugtask for bugtask in self.bugtasks
-                    if bugtask.status != BugTaskStatus.INVALID]
+                    if (bugtask.status != BugTaskStatus.INVALID
+                    and bugtask.conjoined_master is None)]
         if len(bugtasks) != 1:
             return None
         bugtask = bugtasks[0]
-        developed_statuses = [
-                BugTaskStatus.TRIAGED, BugTaskStatus.INPROGRESS,
-                BugTaskStatus.FIXCOMMITTED, BugTaskStatus.FIXRELEASED]
-        if (bugtask.status in developed_statuses
+        undeveloped_statuses = [
+                BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE,
+                BugTaskStatus.CONFIRMED, BugTaskStatus.WONTFIX]
+        if (bugtask.status not in undeveloped_statuses
             or bugtask.pillar.official_malone is False):
             return None
         return bugtask
@@ -611,7 +612,8 @@ class Bug(SQLBase):
         self.newMessage(
             owner=person, subject=self.followup_subject(), content=comment)
 
-        question = bugtask.target.createQuestionFromBug(self)
+        question_target = IQuestionTarget(bugtask.target)
+        question = question_target.createQuestionFromBug(self)
 
         notify(BugBecameQuestionEvent(self, question, person))
         return question

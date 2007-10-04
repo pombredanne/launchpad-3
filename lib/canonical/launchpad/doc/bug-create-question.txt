@@ -1,11 +1,15 @@
+= Create a question from a bug =
+
 Bugs can be converted into questions when a person ascertains that
-that is the nature of the issue. The bug's target must be adaptable
-to IQuestionTarget and must use Launchpad track bugs.
+that is the nature of the issue
+
+The bug's target must be adaptable to IQuestionTarget and must use
+Launchpad track bugs--see bugtarget-questiontarget.txt in
+interfaces/ftests/ for more information on this issue.
 
     >>> from canonical.launchpad.interfaces import (
     ...     CreateBugParams, BugTaskStatus, IBugSet, IBugTaskSet,
-    ...     IDistributionSet, IDistributionSourcePackage, IDistroSeries,
-    ...     IPersonSet, IProductSet, IProductSeries, IQuestionTarget,
+    ...     IDistributionSet, IPersonSet, IProductSet, IQuestionTarget,
     ...     ISourcePackageNameSet)
 
 Some parts of the IQuestionTarget interface are only accessible
@@ -16,16 +20,9 @@ Sample Person will play the role of bug contact.
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
     >>> login('test@canonical.com')
 
-A Firefox bug in Debian cannot be converted to a question because the
-Distribution does not use Launchpad to track bugs.
-
-    >>> firefox_bug = getUtility(IBugSet).get(8)
-    >>> target = firefox_bug.bugtasks[0].target
-    >>> IQuestionTarget.providedBy(target)
-    True
-    >>> firefox_bug.bugtasks[0].target_uses_malone
-    False
-
+The bug selects the only bugtask that can provide a QuestionTarget.
+The bugtask must be in New, Incomplete, Confirmed, or Wont Fix
+status, and the target's pillar must use Launchpad to track bugs.
 Jokosher does use Launchpad to track bugs; its bugs can be converted
 to questions.
 
@@ -83,11 +80,6 @@ statusexplanation explanation is set to an empty string.
     >>> print bugtask.statusexplanation
     This is a question.
 
-The question is automatically linked to the original bug.
-
-    >>> [bug_link.question.title for bug_link in question.bug_links]
-    [u'Print is broken']
-
 Subscribers to the bug are notified that the bug was made into a
 question and that the bugtasks are Invalid.
 
@@ -109,10 +101,52 @@ A bug can only be converted to a question once.
     ...
     AssertionError: This bug was already converted to question #...    
 
-In the rare instance where a bug has more than one bugtask, the status
-for both bugtasks is set to Invalid. When a bug is really a question,
-it is a question for all bugtasks; a bug cannot be a question in one
-location and a bug in another.
+
+== getQuestionCreatedFromBug() ==
+
+The question created from the bug is automatically linked to the
+original bug. A bug can also retrieve all the questions that link
+to it, but QuestionBug links are a many to many relationship. The
+question can also be retrieved using the getQuestionCreatedFromBug()
+method.
+
+    >>> bug.getQuestionCreatedFromBug() == question
+    True
+
+    >>> [bug_link.question.title for bug_link in question.bug_links]
+    [u'Print is broken']
+
+    >>> [question.title for question in bug.questions]
+    [u'Print is broken']
+
+
+== canBeAQuestion() ==
+
+The canBeAQuestion() method can be used to check if a question can be
+created from a bug (but it will not state why).
+
+
+=== The bugtask's target must use Launchpad to track bugs ===
+
+A Firefox bug in Debian cannot be converted to a question because the
+Distribution does not use Launchpad to track bugs.
+
+    >>> firefox_bug = getUtility(IBugSet).get(8)
+    >>> target = firefox_bug.bugtasks[0].target
+    >>> IQuestionTarget.providedBy(target)
+    True
+    >>> firefox_bug.bugtasks[0].target_uses_malone
+    False
+    >>> firefox_bug.canBeAQuestion()
+    False
+
+
+== Only one bugtask must be valid ==
+
+In the rare instance where a bug has more than one bugtask, the only
+one must be have a status in New, Incomplete, Confirmed or Wont Fix,
+and is not a conjoined slave. All other bugtasks must be Invalid or
+a conjoined slave.
 
     >>> login('no-priv@canonical.com')
 
@@ -137,6 +171,10 @@ location and a bug in another.
 
     >>> ubuntu_bug.canBeAQuestion()
     False
+
+The user can choose to Invalidate one or more bugtasks so that only
+one bugtask can provide the QuestionTarget.
+
     >>> evo_bugtask.transitionToStatus(BugTaskStatus.INVALID, sample_person)
     >>> ubuntu_bug.canBeAQuestion()
     True

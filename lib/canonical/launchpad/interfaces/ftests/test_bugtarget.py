@@ -1,6 +1,12 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Test harness for running tests agains IBugTarget implementations."""
+"""Test harness for running tests agains IBugTarget implementations.
+
+This module runs the interface test against the Product, ProductSeries
+Project, DistributionSourcePackage, and DistroSeries implementations
+IBugTarget. It runs the bugtarget-bugcount.txt, and
+bugtarget-questiontarget.txt tests.
+"""
 
 __metaclass__ = type
 
@@ -13,8 +19,8 @@ from zope.component import getUtility
 
 from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IBugTaskSet, IDistributionSet, ILaunchBag, IProductSet,
-    IProjectSet)
+    BugTaskStatus, CreateBugParams, IBugTaskSet, IDistribution,
+    IDistributionSet, ILaunchBag, IProductSet, IProjectSet)
 from canonical.launchpad.ftests.test_system_documentation import (
     default_optionflags, setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
@@ -24,6 +30,18 @@ def bugtarget_filebug(bugtarget, summary, status=None):
     """File a bug as the current user on the bug target and return it."""
     return bugtarget.createBug(CreateBugParams(
         getUtility(ILaunchBag).user, summary, comment=summary, status=status))
+
+
+def invalidate_distribution_bugtask(bugtasks):
+    """Set the Distribution bugtask status to Invalid.
+
+    The Distribution bugtask is often needed to create another bugtask, but
+    it interferes with other tests.
+    """
+    for bugtask in bugtasks:
+        if IDistribution.providedBy(bugtask.target):
+            bugtask.transitionToStatus(
+                BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
 
 
 def productSetUp(test):
@@ -96,6 +114,8 @@ def distroseries_filebug(distroseries, summary, sourcepackagename=None,
     getUtility(IBugTaskSet).createTask(
         bug, getUtility(ILaunchBag).user, distroseries=distroseries,
         sourcepackagename=sourcepackagename, status=status)
+    # The distribution bugtask interferes with bugtarget-questiontarget.txt.
+    invalidate_distribution_bugtask(bug.bugtasks)
     return bug
 
 
@@ -111,6 +131,8 @@ def sourcepackage_filebug(source_package, summary, status=None):
     bug = distroseries_filebug(
         source_package.distroseries, summary,
         sourcepackagename=source_package.sourcepackagename, status=status)
+    # The distribution bugtask interferes with bugtarget-questiontarget.txt.
+    invalidate_distribution_bugtask(bug.bugtasks)
     return bug
 
 
@@ -128,7 +150,6 @@ def test_suite():
     setUpMethods = [
         productSetUp,
         productSeriesSetUp,
-        projectSetUp,
         distributionSetUp,
         distributionSourcePackageSetUp,
         distributionSeriesSetUp,
@@ -136,9 +157,19 @@ def test_suite():
         ]
 
     for setUpMethod in setUpMethods:
+        test = FunctionalDocFileSuite('bugtarget-questiontarget.txt',
+            setUp=setUpMethod, tearDown=tearDown,
+            optionflags=default_optionflags, package=__name__,
+            layer=LaunchpadFunctionalLayer)
+        suite.addTest(test)
+
+    setUpMethods.append(projectSetUp)
+
+    for setUpMethod in setUpMethods:
         test = FunctionalDocFileSuite('bugtarget-bugcount.txt',
             setUp=setUpMethod, tearDown=tearDown,
             optionflags=default_optionflags, package=__name__,
             layer=LaunchpadFunctionalLayer)
         suite.addTest(test)
+
     return suite
