@@ -205,6 +205,7 @@ class PrivateEmailCommand(EditEmailCommand):
     _numberOfArguments = 1
 
     def execute(self, context, current_event):
+        """If the bug is made private we also record who and when."""
         context, current_event = EditEmailCommand.execute(self, context, current_event)
         if isinstance(current_event, SQLObjectModifiedEvent):
             if 'private' in current_event.edited_fields and context.private:

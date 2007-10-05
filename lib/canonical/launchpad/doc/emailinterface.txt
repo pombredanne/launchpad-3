@@ -571,6 +571,13 @@ The bug report can also be made public:
     >>> bug_four.private
     False
 
+The timestamp and user are left as they are:
+
+    >>> bug_four.date_made_private
+    datetime.datetime(...)
+    >>> bug_four.who_made_private.name
+    u'name12'
+
 Specifying something else than 'yes' or 'no' produces an error:
 
     >>> submit_commands(bug_four, 'private whatever')

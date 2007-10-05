@@ -142,7 +142,10 @@ class IBug(IMessageTarget, ICanBeMentored):
         default=False)
     date_made_private = Datetime(
         title=_('Date Made Private'), required=False)
-    who_made_private = Attribute('IPerson who set this bug private')
+    who_made_private = Choice(
+        title=_('Who Made Private'), required=False,
+        vocabulary='ValidPersonOrTeam',
+        description=_("The person who set this bug private."))
     security_related = Bool(
         title=_("This bug is a security vulnerability"), required=False,
         default=False)
