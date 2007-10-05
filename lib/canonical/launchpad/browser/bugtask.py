@@ -2292,6 +2292,13 @@ class BugCreateQuestionView(LaunchpadFormView):
         """Return True if this bug can become a question, otherwise False."""
         return self.context.bug.canBeAQuestion()
 
+    @property
+    def has_valid_bugtasks(self):
+        bugtasks = [bugtask for bugtask in self.context.bug.bugtasks
+                if (bugtask.status != BugTaskStatus.INVALID
+                and bugtask.conjoined_master is None)]
+        return len(bugtasks) > 1
+
     def validate(self, data):
         """Verify that a comment was provided."""
         comment = data.get('comment', '')
@@ -2317,8 +2324,9 @@ class BugCreateQuestionView(LaunchpadFormView):
         question = self.context.bug.createQuestionFromBug(
             self.user, data['comment'])
         self.request.response.addNotification(
-            'A question was created from this bug: Question #%s: %s.'
-            % (question.id, question.title))
+            'A question was created from this bug: Question #%s: '
+            '<a href="%s">%s</a>.' %
+            (question.id, canonical_url(question), question.title))
 
     @action('Cancel', name='cancel')
     def cancel_action(self, action, data):

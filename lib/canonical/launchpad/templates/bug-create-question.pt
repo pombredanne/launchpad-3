@@ -33,16 +33,26 @@
       <metal:form use-macro="context/@@launchpad_form/form">
         <div metal:fill-slot="extra_info">
           <p tal:condition="not: view/can_be_a_question">
-            A question cannot be created from this bug. Either this bug is
-            valid in another location, or 
-            <tal:target replace="context/target/displayname">Firefox</tal:target>
-            does not use Launchpad to track bugs.
+            A question cannot be created from this bug.
+            <tal:question condition="context/bug/getQuestionCreatedFromBug">
+              Question was already created from this bug.
+            </tal:question>
+            <tal:uses-malone
+              condition="not: context/pillar/official_malone">
+              <tal:target 
+                replace="context/target/displayname">Firefox</tal:target>
+              does not use Launchpad to track bugs.
+            </tal:uses-malone>
+            <tal:bugtasks condition="view/has_valid_bugtasks">
+              This bug is valid in other locations.
+            </tal:bugtasks>
           </p>
 
-          <p tal:condition="view/can_be_a_question">
+          <p>
             By creating a question from this bug, this bug's status will be
             Invalid for all locations it affects. The new question will be
-            linked to this bug.
+            linked to this bug. Questions can only be created from bugs which
+            affect projects that use Launchpad to track bugs.
           </p>
         </div>
 
