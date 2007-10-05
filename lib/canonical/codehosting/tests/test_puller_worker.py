@@ -30,7 +30,7 @@ import transaction
 from canonical.launchpad import database
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
-from canonical.codehosting.puller.tests import createbranch
+from canonical.codehosting.tests.helpers import create_branch
 from canonical.codehosting.puller.branchtomirror import (
     BranchToMirror, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
     BranchReferenceForbidden, BranchReferenceValueError)
@@ -72,7 +72,7 @@ class TestBranchToMirror(unittest.TestCase):
         to_mirror = BranchToMirror(
             srcbranchdir, destbranchdir, client, branch_id=1, unique_name=None,
             branch_type=None)
-        tree = createbranch(srcbranchdir)
+        tree = create_branch(srcbranchdir)
         to_mirror.mirror(logging.getLogger())
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(tree.last_revision(),

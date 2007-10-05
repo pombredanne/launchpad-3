@@ -10,7 +10,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.branchtomirror import BranchToMirror
-from canonical.codehosting.puller.tests import createbranch
+from canonical.codehosting.tests.helpers import create_branch
 from canonical.codehosting.puller import jobmanager
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
@@ -189,7 +189,7 @@ class TestJobManagerInLaunchpad(unittest.TestCase):
                                     branch
         """
         branchdir = os.path.join(self.testdir, relativedir)
-        createbranch(branchdir)
+        create_branch(branchdir)
         if target == None:
             targetdir = None
         else:
