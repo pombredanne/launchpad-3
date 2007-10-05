@@ -308,10 +308,10 @@ class Publisher(object):
         else:
             os.makedirs(source_index_basepath)
 
-        fd_gz, temp_index_gz = tempfile.mkstemp(prefix='source-index_',
+        fd_gz, temp_index_gz = tempfile.mkstemp(prefix='.source-index_',
                                                 dir=source_index_basepath)
         source_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, 'wb'))
-        fd, temp_index = tempfile.mkstemp(prefix='source-index_',
+        fd, temp_index = tempfile.mkstemp(prefix='.source-index_',
                                           dir=source_index_basepath)
         source_index = open(temp_index, 'wb')
 
@@ -347,7 +347,7 @@ class Publisher(object):
             else:
                 os.makedirs(package_index_basepath)
 
-            temp_prefix = '%s-index_' % arch_path
+            temp_prefix = '.%s-index_' % arch_path
             fd_gz, temp_index_gz = tempfile.mkstemp(prefix=temp_prefix,
                                                     dir=package_index_basepath)
             fd, temp_index = tempfile.mkstemp(prefix=temp_prefix,
