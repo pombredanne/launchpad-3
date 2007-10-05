@@ -357,6 +357,20 @@ gets notified about it.
     None
 
 
+=== Syncing status ===
+
+    >>> external_debbugs = TestDebBugs(
+    ...     debbugs, {'1234': TestDebianBug(status='done')})
+    >>> expected_status = external_debbugs.convertRemoteStatus(
+    ...     external_debbugs.getRemoteStatus('1234'))
+    >>> expected_status.name
+    'FIXRELEASED'
+    >>> bug = external_debbugs.createLaunchpadBug(debian, '1234')
+    >>> [debian_task] = bug.bugtasks
+    >>> debian_task.status.name
+    'FIXRELEASED'
+
+
 === Reporter already registered in Launchpad ===
 
 Even if the reporter of the bug has an account in Launchpad (and thus a
@@ -416,9 +430,9 @@ it affects Ubuntu.
 
     >>> [imported_bug] = debbugs.getBugsWatching('237001')
     >>> for bugtask in imported_bug.bugtasks:
-    ...     print bugtask.bugtargetname
-    evolution (Ubuntu)
-    evolution (Debian)
+    ...     print "%s: %s" % (bugtask.bugtargetname, bugtask.status.name)
+    evolution (Ubuntu): NEW
+    evolution (Debian): NEW
 
 
 ==== Importing bugs twice ====

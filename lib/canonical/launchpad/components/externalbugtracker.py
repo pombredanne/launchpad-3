@@ -23,6 +23,7 @@ from zope.interface import implements
 from canonical.config import config
 from canonical import encoding
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import flush_database_updates
 from canonical.lp.dbschema import BugTrackerType
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
@@ -623,7 +624,14 @@ class DebBugs(ExternalBugTracker):
             bug=bug,
             owner=getUtility(ILaunchpadCelebrities).bug_watch_updater,
             bugtracker=self.bugtracker, remotebug=remote_bug)
+
         debian_task.bugwatch = bug_watch
+        debian_status = self.getRemoteStatus(remote_bug)
+        launchpad_status = self.convertRemoteStatus(debian_status)
+        # Need to flush databse updates, so that the bug watch knows it
+        # is linked from a bug task.
+        flush_database_updates()
+        bug_watch.updateStatus(debian_status, launchpad_status)
 
         return bug
 
