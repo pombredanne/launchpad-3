@@ -611,6 +611,18 @@ k            </description>
         <key name="dbuser" datatype="string" default="poattach" />
     </sectiontype>
 
+    <sectiontype name="processmail" extends="database_options">
+        <description>
+            Configuration for cronscripts/process-mail.py
+        </description>
+        <key name="dbuser" datatype="string" default="processmail">
+            <description>
+                The database user which will be used to process incoming 
+                emails.
+            </description>
+        </key>
+    </sectiontype>
+
     <sectiontype name="rosetta">
         <description>
             Rosetta-specific configuration options
@@ -1098,6 +1110,7 @@ k            </description>
         <section name="*" type="gpghandler" attribute="gpghandler" />
         <section name="*" type="zeca" attribute="zeca" />
         <section name="*" type="statistician" attribute="statistician" />
+        <section name="*" type="processmail" attribute="processmail" />
         <section name="*" type="productreleasefinder"
                  attribute="productreleasefinder" />
         <section name="*" type="gina" attribute="gina" />
