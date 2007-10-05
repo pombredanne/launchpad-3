@@ -8,7 +8,6 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:heading fill-slot="pageheading">

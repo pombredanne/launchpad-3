@@ -34,13 +34,10 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-emails" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-emails" />
   <div tal:replace="structure context/@@+portlet-latestquestions" />
-</metal:rightportlets>
+</metal:leftportlets>
 
 <div metal:fill-slot="main">
 
@@ -215,7 +212,7 @@
     <div class="portlet" id="membership-summary">
       <h2 tal:condition="not: context/isTeam">Contact details</h2>
       <h2 tal:condition="context/isTeam">Team and membership summary</h2>
-      <table class="summary">
+      <table>
         <tbody>
           <tr tal:condition="context/teamowner">
             <th>Team owner:</th>
@@ -230,8 +227,6 @@
             <th>Membership:</th>
             <td>
               <span tal:replace="context/all_member_count">12</span>
-              (<span
-                tal:replace="context/subscriptionpolicy/title">Moderated</span>)
             </td>
           </tr>
           <tr tal:condition="context/icon">
@@ -292,6 +287,14 @@
                 ><img tal:attributes="src team/icon/getURL;
                                       title string:Icon of ${team/name}"
               /></a>
+            </td>
+          </tr>
+          <tr tal:condition="context/isTeam">
+            <td colspan="2">
+              <strong tal:content="context/subscriptionpolicy/title">
+                Moderated
+              </strong>:
+              <span tal:replace="context/subscriptionpolicy/description" />
             </td>
           </tr>
         </tbody>
