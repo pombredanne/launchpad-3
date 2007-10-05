@@ -8,6 +8,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 
 from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.components.externalbugtracker import (
     get_external_bugtracker)
 
@@ -34,7 +35,10 @@ class DebianBugImportScript(LaunchpadScript):
             getUtility(ILaunchpadCelebrities).debbugs)
         debian = getUtility(ILaunchpadCelebrities).debian
         for debian_bug in bugs_to_import:
-            external_debbugs.createLaunchpadBug(debian, debian_bug)
+            bug = external_debbugs.createLaunchpadBug(debian, debian_bug)
+            log.info(
+                "Imported debbugs #%s as Launchpad bug #%s." % (
+                    debian_bug, bug.id))
 
     def main(self):
         if len(self.args) < 1:
