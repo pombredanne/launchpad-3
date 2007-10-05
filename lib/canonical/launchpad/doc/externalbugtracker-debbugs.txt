@@ -388,7 +388,7 @@ valid e-mail address), he still won't be subscribed to the imported bug.
     >>> [person.name for person in bug.getDirectSubscribers()]
     []
 
-=== Script for importing Debian bugs ===
+=== Script for importing Debian bugs, linking them to Ubutu ===
 
 There's a script called `import-debian-bugs.py`, which accepts a list of
 bug numbers to be imported. It will link the bugs to the debbugs bug
