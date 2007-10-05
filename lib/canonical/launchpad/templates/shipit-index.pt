@@ -1,116 +1,107 @@
-<tal:do-this-first tal:content="view/process_form" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-  <body>
-    <div metal:fill-slot="body">
+<head>
+  <style metal:fill-slot="head_epilogue" type="text/css">
+    #chooseLinks {
+      width:700px;
+      margin:0;
+      padding:0;
+    }
+    #chooseLinks a 
+    {
+      width:35%;
+      display:block;
+      margin:1em;
+      float:right;
+      padding:1em;
+      border: .1em solid #DBA73A;
+      text-align:center;
+      font-size:125%;
+      text-decoration: none;
+      height: 4em;
+    }
+    #chooseLinks div {
+      width:100%;
+      margin: auto 0;
+    }
+    #chooseLinks a:hover {
+      background-color: #FFE8BF;
+    }
+    #chooseLinks a span {
+      font-weight: bold;
+      text-decoration:underline;
+    }
+    #chooseLinks a strong {
+      font-size:120%;
+    }
+    #downloadOptions li {
+      margin: .4em 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div metal:fill-slot="body">
+  <tal:block define="flavour_name view/flavour/title">
+  
+    <h1>Requesting CDs from ShipIt</h1>
+
+    <p>Ubuntu is available free of charge and we can send you CDs of the
+    latest version (<span tal:replace="view/series/title" />) with no extra
+    cost, but the delivery may take up to ten weeks, so you should consider
+    downloading the CD images if you have a fast Internet connection.
+    </p>
     
-      <tal:block condition="not: request/lp:person">
-              
-        <tal:block condition="not: view/login_success">
-
-          <tal:block condition="view/login_error">
-            <h1>Your login was unsuccessful</h1>
-            <p class="error" tal:content="view/login_error" />
-          </tal:block>
-
-          <h1 tal:condition="not: view/login_error">
-            Welcome to ShipIt for <tal:flavor replace="view/flavour/title" />
-          </h1>
-
-          <tal:is-open condition="view/is_open">
-          <p>ShipIt lets you request 
-            <strong><span tal:replace="view/flavour/title" />
-            7.04 (Feisty Fawn)</strong> CDs that will be posted to
-            you free of charge.
-          </p>
-          <p
-            tal:condition="view/announcement|nothing"
-            tal:content="view/announcement"
-            class="informational message"
-          />
-
-          <p>To make requests, or view or change existing requests, first
-          sign in using your <a href="https://launchpad.net">Launchpad</a>
-          account.
-          <br />
-          You can 
-          <a tal:attributes="
-              href string:https://launchpad.net/+login?origin=${view/origin}"
-          >create a new account</a> if you don't have one already.</p>
-
-          <tal:removed condition="nothing">
-            <!-- XXX: Guilherme Salgado 2007-04-19:
-                 Removed until we recover the faq that has disappeared.-->
-
-            <p>If you have questions about shipments and dates please
-            refer to the <a href="http://www.ubuntu.com/support/faq#head-7eef2db63e0a75424cdd663ee6f7b8eedcf19607">Ubuntu FAQ</a>.</p>
-            <br />
-          </tal:removed>
-
-          </tal:is-open>
-
-          <tal:is-closed condition="not: view/is_open">
-          <p class="informational message">
-            ShipIt is currently closed while we prepare for the
-            <span tal:replace="view/flavour/title" /> 7.04 (Feisty Fawn)
-            release. We'll be back in a few days.
-          </p>
-          <p>To view existing requests, first sign in using your
-          <a href="https://launchpad.net">Launchpad</a> account.
-          </tal:is-closed>
-
-          <form name="login" method="POST">
-            <table style="max-width: 20em; margin: 0 auto;">
-              <tr>
-                <th>
-                  <label for="email">E-mail address:</label>
-                </th>
-                <td>
-                  <input type="text"
-                    name="loginpage_email"
-                    id="email"
-                    size="30"
-                    tal:attributes="value request/email | nothing"
-                  />
-                  <script>
-                  <!--
-                      document.forms['login'].loginpage_email.focus();
-                  //-->
-                  </script>
-                </td>
-              </tr>
-              <tr>
-                <th><label for="password">Password:</label></th>
-                <td> <input
-                    type="password"
-                    id="password"
-                    name="loginpage_password"
-                  />
-                </td>
-              </tr>
-              <tr>
-                <th></th>
-                <td>
-                  <div>
-                    <input
-                      type="submit"
-                      name="loginpage_submit_login"
-                      value="Log In" />
-                    (<a href="https://launchpad.net/+forgottenpassword"
-                      >Forgotten your password?</a>)
-                  </div>
-                </td>
-              </tr>
-            </table>
-            <tal:replacement replace="structure view/preserve_query">
-              This preserves extra query parameters as hidden fields.
-            </tal:replacement>
-          </form>
-        </tal:block>
-      </tal:block>
+    <div id="chooseLinks">
+      <tal:no-prerelease condition="not: view/prerelease_mode">
+        <div>
+          <a tal:attributes="href view/download_or_buy_link">
+            I want to <span>download</span>
+            <span tal:replace="flavour_name">Ubuntu</span>
+            <span tal:replace="view/series/title" /></a>
+        </div>
+        <div>
+          <a href="login">
+            I want to <span>request CDs</span> of
+            <span tal:replace="flavour_name">Ubuntu</span>
+            <span tal:replace="view/series/title" /></a>
+        </div>
+      </tal:no-prerelease>
+      <tal:prerelease condition="view/prerelease_mode">
+        <div>
+          <a tal:attributes="href view/beta_download_link">
+            I want to <span>download and test</span> the beta version of
+            <span tal:replace="view/series/title" /></a>
+        </div>
+        <div tal:condition="view/prerelease_mode">
+          <a href="login">
+            I want to <span>pre-order CDs</span> of
+            <span tal:replace="flavour_name">Ubuntu</span>
+            <span tal:replace="view/series/title" /></a>
+        </div>
+      </tal:prerelease>
     </div>
-  </body>
+  
+    <div class="visualClear body">&nbsp;</div>
+
+      <h1>Other ways of getting <span tal:replace="flavour_name">Ubuntu</span></h1>
+
+      <ul id="downloadOptions">
+        <li><a href="http://www.ubuntu.com/getubuntu/purchase#distributor"
+          >Purchase a CD from one of our world-wide distributors</a></li>
+        <li><a href="http://www.ubuntu.com/getubuntu/purchase#bulk"
+          >Buy CDs in large quantities</a></li>
+        <li tal:condition="not: view/flavour/enumvalue:EDUBUNTU">
+          <a href="http://www.ubuntu.com/getubuntu/purchase#buy"
+            >Purchase DVDs from online retailers</a></li>
+      </ul>
+
+    <p><a href="login">Check the status of an existing request</a></p>
+
+  </tal:block>
+  </div>
+</body>
 </html>

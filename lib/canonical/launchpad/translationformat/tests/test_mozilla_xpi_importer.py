@@ -8,8 +8,8 @@ from zope.interface.verify import verifyObject
 
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     MozillaXpiImporter)
-from canonical.launchpad.interfaces import ITranslationFormatImporter
-from canonical.lp.dbschema import TranslationFileFormat
+from canonical.launchpad.interfaces import (
+    ITranslationFormatImporter, TranslationFileFormat)
 from canonical.testing import LaunchpadZopelessLayer
 
 

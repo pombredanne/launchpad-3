@@ -18,12 +18,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
 
 from canonical.lp.dbschema import (
-    PackagingType, PackagePublishingPocket, BuildStatus,
-    PackagePublishingStatus)
+    PackagePublishingPocket, BuildStatus, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords, IQuestionTarget,
-    QUESTION_STATUS_DEFAULT_SEARCH)
+    PackagingType, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.answercontact import AnswerContact
@@ -129,10 +128,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                     HasTranslationImportsMixin):
     """A source package, e.g. apache2, in a distroseries.
 
-    This object implements the MagicSourcePackage specification. It is not a
-    true database object, but rather attempts to represent the concept of a
-    source package in a distro series, with links to the relevant database
-    objects.
+    This object is not a true database object, but rather attempts to
+    represent the concept of a source package in a distro series, with links
+    to the relevant database objects.
     """
 
     implements(ISourcePackage, IHasBuildRecords, IQuestionTarget)

@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -12,6 +19,9 @@
 <div metal:fill-slot="main">
 
   <h1>Source package publishing history</h1>
+  <p>
+    <a href=".">&laquo;back</a>
+  </p>
   <table class="listing">
     <thead>
       <tr>
@@ -30,6 +40,9 @@
       </tal:block>
     </tbody>
   </table>
+  <p>
+    <a href=".">&laquo;back</a>
+  </p>
 </div>
 </body>
 </html>

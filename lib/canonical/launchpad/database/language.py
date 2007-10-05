@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['Language', 'LanguageSet']
@@ -12,9 +12,8 @@ from sqlobject import (
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
-from canonical.lp.dbschema import TextDirection
 from canonical.launchpad.interfaces import (
-    ILanguageSet, ILanguage, IPersonSet, NotFoundError)
+    ILanguageSet, ILanguage, IPersonSet, NotFoundError, TextDirection)
 
 
 class Language(SQLBase):

@@ -136,6 +136,13 @@
         />
 
     <browser:page
+        name="+translations"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.TranslationsRedirectView"
+        permission="zope.Public"
+        />
+
+    <browser:page
         for="canonical.launchpad.interfaces.IProject"
         permission="zope.Public"
         name="+translations"

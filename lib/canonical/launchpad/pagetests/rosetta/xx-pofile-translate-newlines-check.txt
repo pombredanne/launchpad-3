@@ -15,7 +15,7 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=299009
     ...     for tag in soup.findAll(attrs={'id': tags}):
     ...         print "%s\n--\n" % tag.renderContents()
 
-    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
     ...     'evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1')
@@ -83,7 +83,7 @@ Launchpad adds it automatically.
 We were redirected to the next form, the translation was accepted.
 
     >>> print browser.url
-    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?start=0&batch=1
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1&start=0
 
 Get previous page to check that the save translation is the right one.
 
@@ -113,7 +113,7 @@ Now, we do the right submit, with one trailing new line...
 We were redirected to the next form, the translation was accepted.
 
     >>> print browser.url
-    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?start=0&batch=1
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1&start=0
 
 Get previous page to check that the save translation is the right one.
 
@@ -143,7 +143,7 @@ Last check, the user sends two new line chars instead of just one...
 We were redirected to the next form, the translation was accepted.
 
     >>> print browser.url
-    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?start=0&batch=1
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1&start=0
 
 Get previous page to check that the save translation is the right one.
 

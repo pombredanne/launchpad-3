@@ -1,6 +1,6 @@
 Let's change the preferred email from no-priv.
 
-  >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
   >>> browser.open('http://launchpad.dev/~no-priv')
   >>> browser.getLink('Update e-mail addresses').click()
   >>> browser.url
@@ -8,10 +8,7 @@ Let's change the preferred email from no-priv.
   >>> browser.title
   "No Privileges Person's e-mail addresses"
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> second_browser = Browser()
-  >>> second_browser.handleErrors = False
-  >>> second_browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+  >>> second_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
   >>> second_browser.open('http://launchpad.dev/~no-priv/+editemails')
 
 Set foo@baz.com as no-priv's preferred email address.

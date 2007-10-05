@@ -24,8 +24,10 @@ class TestProcessUpload(LaunchpadZopelessTestCase):
         LaunchpadZopelessTestCase.tearDown(self)
         shutil.rmtree(self.queue_location)
 
-    def runProcessUpload(self, extra_args=[]):
+    def runProcessUpload(self, extra_args=None):
         """Run process-upload.py, returning the result and output."""
+        if extra_args is None:
+            extra_args = []
         script = os.path.join(config.root, "scripts", "process-upload.py")
         args = [sys.executable, script, "-vvv", self.queue_location]
         args.extend(extra_args)

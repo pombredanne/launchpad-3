@@ -59,6 +59,8 @@ class IDistroSeriesSourcePackageRelease(ISourcePackageRelease):
     current_published = Attribute("is last SourcePackagePublishing record "
                                   "that is in PUBLISHED status.")
 
+    version = Attribute("The version of the source package release.")
+
     changesfile = Object(
         title=_("Correspondent changesfile."), schema=ILibraryFileAlias,
         readonly=True)
