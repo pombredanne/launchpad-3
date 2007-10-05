@@ -888,5 +888,5 @@ class ICreateQuestionFromBugForm(Interface):
     """Form for creating and question from a bug."""
     comment = Text(
         title=_('Comment'),
-        description=_('An explaination of why the bug is a question.'),
+        description=_('An explanation of why the bug is a question.'),
         required=True)

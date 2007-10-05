@@ -1,4 +1,4 @@
-= BugTarget-QuestionTarget compatability =
+= BugTarget-QuestionTarget compatibility =
 
 Bugs can be converted into questions when a person ascertains that
 that is the nature of the issue. The bug's target must be adaptable

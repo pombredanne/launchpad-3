@@ -313,7 +313,7 @@ class IBug(IMessageTarget, ICanBeMentored):
 
         The question_target, or its distribution, must have official_malone
         set to True. All the bug's bugtasks will be set to Invalid status with
-        an explaination that the bug is a question in the statusexplanation.
+        an explanation that the bug is a question in the statusexplanation.
 
         :question_target: An IQuestionTarget.
         :person: The IPerson creating a question from this bug
