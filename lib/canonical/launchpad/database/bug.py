@@ -567,26 +567,42 @@ class Bug(SQLBase):
     def _getQuestionTargetableBugTask(self):
         """Return the only bugtask that can be a QuestionTarget, or None.
 
+        Bugs that are also in external bug trackers cannot be converted
+        to questions. This is also true for bugs that are being developed.
+        None is returned when either of these conditions are true.
+
         The bugtask is selected by these rules:
-        1. BugTasks that are Invalid, or are conjoined slaves, are excluded.
-        2. The bugtask must be New, Incomplete, Confirmed, or Wont Fix.
-        3. The bugtask's target uses Launchpad to track bugs.
-        Only one bug task must meet the first condition before the second
-        and third conditions are tested.
+        1. It's status is not Invalid.
+        2. It is not a conjoined slave.
+        Only one bugtask must meet both conditions to be return. When
+        zero or many bugtasks match, None is returned.
         """
-        bugtasks = [bugtask for bugtask in self.bugtasks
-                    if (bugtask.status != BugTaskStatus.INVALID
-                    and bugtask.conjoined_master is None)]
+        developed_statuses = [
+            BugTaskStatus.TRIAGED, BugTaskStatus.INPROGRESS,
+            BugTaskStatus.FIXCOMMITTED, BugTaskStatus.FIXRELEASED]
+        bugtasks = []
+        for bugtask in self.bugtasks:
+            if (bugtask.status == BugTaskStatus.UNKNOWN
+                or bugtask.bugwatch is not None
+                or (bugtask.pillar.official_malone is False
+                    and bugtask.status != BugTaskStatus.INVALID)):
+                # The bug exists in another bugtracker.
+                return None
+            elif bugtask.status in developed_statuses:
+                # This bug is legitimate for a BugTarget.
+                return None
+            elif (bugtask.status != BugTaskStatus.INVALID
+                and bugtask.conjoined_master is None):
+                # This bugtask can provide a QuestionTarget.
+                bugtasks.append(bugtask)
+            else:
+                # The bugtask is either Invalid or a conjoined slave.
+                pass
+
         if len(bugtasks) != 1:
+            # These is more than one candidate to provide a QuestionTarget.
             return None
-        bugtask = bugtasks[0]
-        undeveloped_statuses = [
-                BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE,
-                BugTaskStatus.CONFIRMED, BugTaskStatus.WONTFIX]
-        if (bugtask.status not in undeveloped_statuses
-            or bugtask.pillar.official_malone is False):
-            return None
-        return bugtask
+        return bugtasks[0]
 
     def createQuestionFromBug(self, person, comment):
         """See `IBug`."""
