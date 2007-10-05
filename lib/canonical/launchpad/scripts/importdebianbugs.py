@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces import IBugTaskSet, ILaunchpadCelebrities
 
 from canonical.launchpad.scripts.base import LaunchpadScript
 from canonical.launchpad.scripts.logger import log
@@ -28,9 +28,15 @@ def import_debian_bugs(*bugs_to_import):
                     debian_bug, ', '.join(existing_bug_ids)))
             continue
         bug = external_debbugs.createLaunchpadBug(debian, debian_bug)
+        [debian_task] = bug.bugtasks
+        getUtility(IBugTaskSet).createTask(
+            bug, getUtility(ILaunchpadCelebrities).bug_watch_updater,
+            distribution=getUtility(ILaunchpadCelebrities).ubuntu,
+            sourcepackagename=debian_task.sourcepackagename)
         log.info(
             "Imported debbugs #%s as Launchpad bug #%s." % (
                 debian_bug, bug.id))
+
 
 
 class DebianBugImportScript(LaunchpadScript):
