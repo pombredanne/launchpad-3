@@ -7,7 +7,7 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.config import config
 from canonical.codehosting import branch_id_to_path
-from canonical.codehosting.puller.branchtomirror import BranchToMirror
+from canonical.codehosting.puller.worker import PullerWorker
 
 
 class JobManager:
@@ -40,7 +40,7 @@ class JobManager:
             branch_src = branch_src.strip()
             path = branch_id_to_path(branch_id)
             branch_dest = os.path.join(destination, path)
-            branch = BranchToMirror(
+            branch = PullerWorker(
                 branch_src, branch_dest, branch_status_client, branch_id,
                 unique_name, self.branch_type)
             self.branches_to_mirror.append(branch)
