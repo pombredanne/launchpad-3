@@ -231,7 +231,8 @@ def sendmail(message, to_addrs=None):
                 # way similar to mailing list software.
                 smtp.sendmail(config.bounce_address, to_addrs, raw_message)
                 smtp.quit()
-        return message['message-id']
+        # raw_sendmail returns the Message-Id without the angle-brackets.
+        return message['message-id'][1:-1]
     else:
         # The "MAIL FROM" is set to the bounce address, to behave in a way
         # similar to mailing list software.
