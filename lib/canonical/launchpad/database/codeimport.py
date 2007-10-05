@@ -21,7 +21,7 @@ from canonical.database.sqlbase import (cursor, SQLBase, sqlvalues)
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, NotFoundError,
-    RevisionControlSystems, ICodeImportEventSet,
+    ICodeImportEventSet, RevisionControlSystems,
     ICodeImport, ICodeImportSet)
 from canonical.lp.dbschema import CodeImportReviewStatus
 

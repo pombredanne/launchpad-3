@@ -118,23 +118,18 @@ class CodeImportEventDataType(DBEnumeratedType):
     deleted CodeImport objects.
     """)
 
-    BRANCH = DBItem(120, """Branch
-
-    Value of CodeImport.branch. Useful if the CodeImport was deleted.
-    """)
-
-    OWNER = DBItem(130, """Code Import Owner
+    OWNER = DBItem(120, """Code Import Owner
 
     Value of CodeImport.owner. Useful to record ownership changes.
     """)
 
-    REVIEW_STATUS = DBItem(140, """Review Status
+    REVIEW_STATUS = DBItem(130, """Review Status
 
     Value of CodeImport.review_status. Useful to understand the review life
     cycle of a code import.
     """)
 
-    ASSIGNEE = DBItem(150, """Code Import Assignee
+    ASSIGNEE = DBItem(140, """Code Import Assignee
 
     Value of CodeImport.assignee. Useful to understand the review life cycle
     of a code import.

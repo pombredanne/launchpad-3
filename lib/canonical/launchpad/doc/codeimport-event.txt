@@ -41,7 +41,7 @@ database ids.
     ...     if len(event.items()) == 0:
     ...         print '<nothing>'
     ...     for k, v in sorted(event.items()):
-    ...         if k.name in ('BRANCH', 'CODE_IMPORT'):
+    ...         if k.name == 'CODE_IMPORT':
     ...             print k.name, '<muted>'
     ...         else:
     ...             print k.name, repr(v)
@@ -121,23 +121,18 @@ retrieved using the items() method.
 
     >>> print_items(svn_create_event)
     CODE_IMPORT <muted>
-    BRANCH <muted>
     OWNER u'52'
     REVIEW_STATUS u'NEW'
     ASSIGNEE None
     UPDATE_INTERVAL None
     SVN_BRANCH_URL u'svn://svn.example.com/trunk'
 
-The database IDs of the CodeImport and its associated branch are also
-recorded. They are useful to collate events associated to deleted
-CodeImport objects.
+The database IDs of the CodeImport is also recorded. It is useful to
+collate events associated to deleted CodeImport objects.
 
     >>> event_dict = dict(svn_create_event.items())
     >>> event_dict[CodeImportEventDataType.CODE_IMPORT] == (
     ...     unicode(svn_import.id))
-    True
-    >>> event_dict[CodeImportEventDataType.BRANCH] == (
-    ...     unicode(svn_import.branch.id))
     True
 
 Different source details are recorded according to the type of the
@@ -151,7 +146,6 @@ Subversion URL.
     >>> cvs_create_event = event_set.newCreate(cvs_import, nopriv)
     >>> print_items(cvs_create_event)
     CODE_IMPORT <muted>
-    BRANCH <muted>
     OWNER u'52'
     REVIEW_STATUS u'NEW'
     ASSIGNEE None

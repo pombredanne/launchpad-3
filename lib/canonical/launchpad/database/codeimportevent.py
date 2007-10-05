@@ -104,7 +104,6 @@ class CodeImportEventSet:
     def _iterItemsForSnapshot(self, code_import):
         """Yield key-value tuples to save a snapshot of the code import."""
         yield 'CODE_IMPORT', str(code_import.id)
-        yield 'BRANCH', str(code_import.branch.id)
         yield 'REVIEW_STATUS', code_import.review_status.name
         yield 'OWNER', str(code_import.owner.id)
         yield 'UPDATE_INTERVAL', self._getNullableValue(
