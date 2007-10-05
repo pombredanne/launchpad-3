@@ -43,9 +43,8 @@
                 replace="context/target/displayname">Firefox</tal:target>
               does not use Launchpad to track bugs.
             </tal:uses-malone>
-            <tal:bugtasks condition="view/has_valid_bugtasks">
-              This bug is valid in other locations.
-            </tal:bugtasks>
+            This bug may be valid in other locations. Only one location must
+            be valid for a bug to be convertible to a question.
           </p>
 
           <p>

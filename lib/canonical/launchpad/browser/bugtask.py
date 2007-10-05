@@ -2292,13 +2292,6 @@ class BugCreateQuestionView(LaunchpadFormView):
         """Return True if this bug can become a question, otherwise False."""
         return self.context.bug.canBeAQuestion()
 
-    @property
-    def has_valid_bugtasks(self):
-        bugtasks = [bugtask for bugtask in self.context.bug.bugtasks
-                if (bugtask.status != BugTaskStatus.INVALID
-                and bugtask.conjoined_master is None)]
-        return len(bugtasks) > 1
-
     def validate(self, data):
         """Verify that a comment was provided."""
         comment = data.get('comment', '')
