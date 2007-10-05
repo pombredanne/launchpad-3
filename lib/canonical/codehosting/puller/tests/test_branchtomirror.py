@@ -30,8 +30,8 @@ import transaction
 from canonical.launchpad import database
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
-from canonical.launchpad.scripts.supermirror.tests import createbranch
-from canonical.launchpad.scripts.supermirror.branchtomirror import (
+from canonical.codehosting.puller.tests import createbranch
+from canonical.codehosting.puller.branchtomirror import (
     BranchToMirror, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
     BranchReferenceForbidden, BranchReferenceValueError)
 from canonical.authserver.client.branchstatus import BranchStatusClient

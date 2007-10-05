@@ -1,6 +1,6 @@
 import unittest
 
-from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
+from canonical.codehosting.puller.branchtargeter import branchtarget
 
 
 class TestBranchTargeter(unittest.TestCase):

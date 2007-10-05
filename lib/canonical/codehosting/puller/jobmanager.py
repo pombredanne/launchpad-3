@@ -6,9 +6,8 @@ import socket
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.config import config
-from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
-from canonical.launchpad.scripts.supermirror.branchtomirror import (
-    BranchToMirror)
+from canonical.codehosting.puller.branchtargeter import branchtarget
+from canonical.codehosting.puller.branchtomirror import BranchToMirror
 
 
 class JobManager:

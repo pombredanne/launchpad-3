@@ -4,7 +4,7 @@ import datetime
 
 import pytz
 
-from canonical.launchpad.scripts.supermirror.jobmanager import LockError
+from canonical.codehosting.puller.jobmanager import LockError
 from canonical.authserver.client.branchstatus import BranchStatusClient
 
 

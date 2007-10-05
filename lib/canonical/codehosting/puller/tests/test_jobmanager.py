@@ -8,11 +8,10 @@ import bzrlib
 
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
-from canonical.launchpad.scripts.supermirror.branchtomirror import (
-    BranchToMirror)
-from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
-from canonical.launchpad.scripts.supermirror.tests import createbranch
-from canonical.launchpad.scripts.supermirror import jobmanager
+from canonical.codehosting.puller.branchtomirror import BranchToMirror
+from canonical.codehosting.puller.branchtargeter import branchtarget
+from canonical.codehosting.puller.tests import createbranch
+from canonical.codehosting.puller import jobmanager
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.testing import LaunchpadFunctionalLayer, reset_logging
