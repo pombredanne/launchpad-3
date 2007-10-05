@@ -1045,23 +1045,22 @@ class BugTaskSet:
                 status == BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
             if with_response or without_response:
                 status_clause = (
-                    '(BugTask.status = %s ' %
+                    '(BugTask.status = %s) ' %
                     sqlvalues(BugTaskStatus.INCOMPLETE))
-                status_clause += 'AND BugTask.date_incomplete '
                 if with_response:
-                    status_clause += '<='
+                    status_clause += ("""
+                        AND (Bug.date_last_message IS NOT NULL
+                             AND BugTask.date_incomplete <=
+                                 Bug.date_last_message)
+                        """)
                 elif without_response:
-                    status_clause += '>'
+                    status_clause += ("""
+                        AND (Bug.date_last_message IS NULL
+                             OR BugTask.date_incomplete >
+                                Bug.date_last_message)
+                        """)
                 else:
                     assert with_response != without_response
-                status_clause += """ (
-                    SELECT Message.datecreated
-                    FROM BugMessage, Message
-                    WHERE Message.id = BugMessage.message
-                    AND BugMessage.bug = Bug.id
-                    ORDER BY Message.datecreated DESC
-                    LIMIT 1))
-                    """
                 return status_clause
             else:
                 return '(BugTask.status = %s)' % sqlvalues(status)

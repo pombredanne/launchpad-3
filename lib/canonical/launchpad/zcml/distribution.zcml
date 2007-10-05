@@ -211,11 +211,6 @@
       template="../templates/related-bounties.pt"
       />
     <browser:page
-      name="+members"
-      facet="overview"
-      template="../templates/distribution-members.pt"
-      />
-    <browser:page
       name="+builds"
       facet="overview"
       template="../templates/distribution-builds.pt"
@@ -395,6 +390,13 @@
     fields="bugcontact"
     permission="launchpad.Edit"
     template="../templates/distribution-bugcontact.pt"
+    />
+
+  <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
     />
 
   <browser:page

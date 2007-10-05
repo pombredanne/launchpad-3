@@ -67,6 +67,11 @@ class DistroSeriesSourcePackageRelease:
         return pub_hist[0]
 
     @property
+    def version(self):
+        """See IDistroSeriesSourcePackageRelease."""
+        return self.sourcepackagerelease.version
+
+    @property
     def pocket(self):
         """See IDistroSeriesSourcePackageRelease."""
         currpub = self.current_publishing_record

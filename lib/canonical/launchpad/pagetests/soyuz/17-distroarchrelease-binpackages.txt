@@ -168,7 +168,8 @@ It's also reachable in a more natural way, starting from distribution page:
 Then we get to the DistroSeries page:
 
 browser.getLink(url='/ubuntu/breezy-autotest').click()
-  >>> browser.getLink('6.6.6 (Breezy Badger Autotest)').click()
+  >>> browser.getLink('See all versions...').click()
+  >>> browser.getLink('Breezy Badger Autotest').click()
 
 Then the DistroArchSeries page:
 

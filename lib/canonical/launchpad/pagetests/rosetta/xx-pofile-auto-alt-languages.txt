@@ -7,7 +7,7 @@ then you will get 'xx' as your default alternate language.
 We'll start by showing the translation page for Spanish (Mexican), which
 should have the Spanish language selected as its alternate, by default.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
   >>> browser.open(
   ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
   ...     'evolution-2.2/es_MX/+translate')

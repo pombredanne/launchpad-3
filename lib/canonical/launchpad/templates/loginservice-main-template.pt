@@ -1,8 +1,17 @@
-<metal:page define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lpm="http://ns.launchpad.net/lpm" xml:lang="en" lang="en"
-    tal:attributes="lang default_language|default;
-                    xml:lang default_language|default;"
-    tal:define="is_demo modules/canonical.config/config/launchpad/is_demo">
+<metal:page
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:lpm="http://ns.launchpad.net/lpm"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  tal:attributes="lang default_language|default;
+                  xml:lang default_language|default;"
+  tal:define="is_demo modules/canonical.config/config/launchpad/is_demo">
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad Login Service</title>
     <tal:x condition="nothing">Style is inline for maximum reliability.</tal:x>

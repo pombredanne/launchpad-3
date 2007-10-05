@@ -59,6 +59,13 @@
 
     <browser:page
         name="+translate"
+        for="canonical.launchpad.interfaces.IPOMsgSet"
+        class="canonical.launchpad.browser.TranslateRedirectView"
+        permission="zope.Public"
+        />
+
+    <browser:page
+        name="+translate"
         facet="translations"
         for="canonical.launchpad.interfaces.IPOMsgSet"
         permission="zope.Public"
