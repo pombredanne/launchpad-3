@@ -5,7 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'AdminRequestPeopleMergeView',
+    'AdminPeopleMergeView',
+    'AdminTeamMergeView',
     'BaseListView',
     'BugContactPackageBugsSearchListingView',
     'FinishedPeopleMergeRequestView',
@@ -120,7 +121,7 @@ from canonical.launchpad.interfaces import (
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
-    IPerson, ICalendarOwner, ITeam, IPollSet, IAdminRequestPeopleMerge,
+    IPerson, ICalendarOwner, ITeam, IPollSet, IAdminPeopleMergeSchema,
     NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
@@ -128,7 +129,7 @@ from canonical.launchpad.interfaces import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, LoginTokenType, SSHKeyType,
     EmailAddressStatus, TeamMembershipStatus, TeamSubscriptionPolicy,
     PersonCreationRationale, TeamMembershipRenewalPolicy,
-    QuestionParticipation)
+    QuestionParticipation, IAdminTeamMergeSchema, IMailingListSet)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -458,8 +459,8 @@ class PersonSetContextMenu(ContextMenu):
     usedfor = IPersonSet
 
     links = ['products', 'distributions', 'people', 'meetings', 'peoplelist',
-             'teamlist', 'ubunterolist', 'newteam', 'adminrequestmerge',
-             'mergeaccounts']
+             'teamlist', 'ubunterolist', 'newteam', 'adminpeoplemerge',
+             'adminteammerge', 'mergeaccounts']
 
     def products(self):
         return Link('/projects/', 'View projects')
@@ -494,9 +495,14 @@ class PersonSetContextMenu(ContextMenu):
         return Link('+requestmerge', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
-    def adminrequestmerge(self):
-        text = 'Admin merge accounts'
-        return Link('+adminrequestmerge', text, icon='edit')
+    def adminpeoplemerge(self):
+        text = 'Admin merge people'
+        return Link('+adminpeoplemerge', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def adminteammerge(self):
+        text = 'Admin merge teams'
+        return Link('+adminteammerge', text, icon='edit')
 
 
 class PersonSOP(StructuralObjectPresentation):
@@ -2782,71 +2788,61 @@ class RequestPeopleMergeView(AddView):
         self._nextURL = './+mergerequest-sent?dupe=%d' % dupeaccount.id
 
 
-class AdminRequestPeopleMergeView(LaunchpadView):
-    """The view for the page where an admin can merge two accounts."""
+class AdminMergeBaseView(LaunchpadFormView):
+    """Base view for the pages where admins can merge people/teams."""
 
-    def initialize(self):
-        self.errormessages = []
-        self.shouldShowConfirmationPage = False
-        setUpWidgets(self, IAdminRequestPeopleMerge, IInputWidget)
+    should_show_confirmation_message = False
+    dupe_person_emails = ()
+    dupe_person = None
+    target_person = None
 
-    def processForm(self):
-        form = self.request.form
-        if 'continue' in form:
-            # get data from the form
-            self.dupe_account = self._getInputValue(self.dupe_account_widget)
-            self.target_account = self._getInputValue(
-                self.target_account_widget)
-            if self.errormessages:
-                return
+    def validate(self, data):
+        dupe_person = data.get('dupe_person')
+        target_person = data.get('target_person')
+        if dupe_person == target_person and dupe_person is not None:
+            self.addError(
+                _("You can't merge %s into itself." % dupe_person.name))
 
-            if self.dupe_account == self.target_account:
-                self.errormessages.append(_(
-                    "You can't merge %s into itself."
-                    % self.dupe_account.name))
-                return
-
-            emailset = getUtility(IEmailAddressSet)
-            self.emails = emailset.getByPerson(self.dupe_account)
-            # display dupe_account email addresses and confirmation page
-            self.shouldShowConfirmationPage = True
-
-        elif 'merge' in form:
-            self._performMerge()
-            self.request.response.addInfoNotification(_(
-                'Merge completed successfully.'))
-            self.request.response.redirect(canonical_url(self.target_account))
-
-    def _getInputValue(self, widget):
-        name = self.request.get(widget.name)
-        try:
-            account = widget.getInputValue()
-        except WidgetInputError:
-            self.errormessages.append(_("You must choose an account."))
-            return
-        except ConversionError:
-            self.errormessages.append(_("%s is an invalid account." % name))
-            return
-        return account
-
-    def _performMerge(self):
-        personset = getUtility(IPersonSet)
+    @action('Merge', name='merge')
+    def merge_action(self, action, data):
         emailset = getUtility(IEmailAddressSet)
+        self.dupe_person = data['dupe_person']
+        self.target_person = data['target_person']
+        self.dupe_person_emails = emailset.getByPerson(self.dupe_person)
+        if self.dupe_person_emails and 'confirmed' not in self.request.form:
+            self.should_show_confirmation_message = True
+            return
 
-        dupe_name = self.request.form.get('dupe_name')
-        target_name = self.request.form.get('target_name')
+        for email in self.dupe_person_emails:
+            # XXX: Maybe this status change should be done only when merging
+            # people but not when merging teams.
+            email.status = EmailAddressStatus.NEW
+            email.person = self.target_person
+        getUtility(IPersonSet).merge(self.dupe_person, self.target_person)
+        self.request.response.addInfoNotification(_(
+            'Merge completed successfully.'))
+        self.next_url = canonical_url(self.target_person)
 
-        self.dupe_account = personset.getByName(dupe_name)
-        self.target_account = personset.getByName(target_name)
 
-        emails = emailset.getByPerson(self.dupe_account)
-        if emails:
-            for email in emails:
-                # transfer all emails from dupe to targe account
-                email.person = self.target_account
-                email.status = EmailAddressStatus.NEW
+class AdminPeopleMergeView(AdminMergeBaseView):
 
-        getUtility(IPersonSet).merge(self.dupe_account, self.target_account)
+    label = "Merge Launchpad people"
+    schema = IAdminPeopleMergeSchema
+
+
+class AdminTeamMergeView(AdminMergeBaseView):
+
+    label = "Merge Launchpad teams"
+    schema = IAdminTeamMergeSchema
+
+    def validate(self, data):
+        super(AdminTeamMergeView, self).validate(data)
+        mailing_list = getUtility(IMailingListSet).get(
+            data['dupe_person'].name)
+        if mailing_list is not None:
+            self.addError(_(
+                "%s is associated with a Launchpad mailing list; we can't "
+                "merge it." % data['dupe_person'].name))
 
 
 class FinishedPeopleMergeRequestView(LaunchpadView):

@@ -6,7 +6,8 @@ __metaclass__ = type
 
 __all__ = [
     'AccountStatus',
-    'IAdminRequestPeopleMerge',
+    'IAdminPeopleMergeSchema',
+    'IAdminTeamMergeSchema',
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'IObjectReassignment',
@@ -1358,18 +1359,30 @@ class IRequestPeopleMerge(Interface):
         description=_("The duplicated account you found in Launchpad"))
 
 
-class IAdminRequestPeopleMerge(Interface):
-    """The schema used by admin merge accounts page."""
+class IAdminPeopleMergeSchema(Interface):
+    """The schema used by the admin merge people page."""
 
-    dupe_account = Choice(
-        title=_('Duplicated Account'), required=True,
+    dupe_person = Choice(
+        title=_('Duplicated Person'), required=True,
         vocabulary='PersonAccountToMerge',
-        description=_("The duplicated account found in Launchpad"))
+        description=_("The duplicated person found in Launchpad"))
 
-    target_account = Choice(
-        title=_('Account'), required=True,
+    target_person = Choice(
+        title=_('Target Person'), required=True,
         vocabulary='PersonAccountToMerge',
-        description=_("The account to be merged on"))
+        description=_("The person to be merged on"))
+
+
+class IAdminTeamMergeSchema(Interface):
+    """The schema used by the admin merge teams page."""
+
+    dupe_person = Choice(
+        title=_('Duplicated Team'), required=True, vocabulary='ValidTeam',
+        description=_("The duplicated team found in Launchpad"))
+
+    target_person = Choice(
+        title=_('Target Team'), required=True, vocabulary='ValidTeam',
+        description=_("The team to be merged on"))
 
 
 class IObjectReassignment(Interface):
