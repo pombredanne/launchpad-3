@@ -255,7 +255,7 @@ doesn't exist in Launchpad, a new one will be created automatically.
     >>> print getUtility(IPersonSet).getByEmail(reporter_email)
     None
 
-The createLaunchpadBug method reads the bug report from the debbugs db,
+The importBug method reads the bug report from the debbugs db,
 and creates a Launchpad bug report, using the debbugs subject as the
 summary, and the description as the description.
 
@@ -273,7 +273,7 @@ summary, and the description as the description.
     for details. 2.3.7 fixes all these issues.
     ...
 
-    >>> bug = external_debbugs.createLaunchpadBug(debian, '322535')
+    >>> bug = external_debbugs.importBug(debian, '322535')
     >>> print bug.title
     evolution: Multiple format string vulnerabilities in Evolution
     >>> print bug.description
@@ -347,7 +347,7 @@ gets notified about it.
     ...     debbugs, {'1234': TestDebianBug(package='no-such-package')})
     >>> print debian.getSourcePackage('no-such-package')
     None
-    >>> bug = external_debbugs.createLaunchpadBug(debian, '1234')
+    >>> bug = external_debbugs.importBug(debian, '1234')
     WARNING:root:Unknown Debian package (debbugs #1234): no-such-package
 
     >>> [debian_task] = bug.bugtasks
@@ -365,7 +365,7 @@ gets notified about it.
     ...     external_debbugs.getRemoteStatus('1234'))
     >>> expected_status.name
     'FIXRELEASED'
-    >>> bug = external_debbugs.createLaunchpadBug(debian, '1234')
+    >>> bug = external_debbugs.importBug(debian, '1234')
     >>> [debian_task] = bug.bugtasks
     >>> debian_task.status.name
     'FIXRELEASED'
@@ -382,7 +382,7 @@ valid e-mail address), he still won't be subscribed to the imported bug.
     >>> no_priv_bug = TestDebianBug(
     ...     reporter_email=no_priv.preferredemail.email)
     >>> external_debbugs = TestDebBugs(debbugs, {'1234': no_priv_bug})
-    >>> bug = external_debbugs.createLaunchpadBug(debian, '1234')
+    >>> bug = external_debbugs.importBug(debian, '1234')
     >>> bug.owner.name
     u'no-priv'
     >>> [person.name for person in bug.getDirectSubscribers()]

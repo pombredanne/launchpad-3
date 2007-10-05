@@ -27,7 +27,7 @@ def import_debian_bugs(*bugs_to_import):
                 " from LP bug(s) #%s." % (
                     debian_bug, ', '.join(existing_bug_ids)))
             continue
-        bug = external_debbugs.createLaunchpadBug(debian, debian_bug)
+        bug = external_debbugs.importBug(debian, debian_bug)
         [debian_task] = bug.bugtasks
         getUtility(IBugTaskSet).createTask(
             bug, getUtility(ILaunchpadCelebrities).bug_watch_updater,

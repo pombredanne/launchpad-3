@@ -597,7 +597,8 @@ class DebBugs(ExternalBugTracker):
             [debian_bug.status, severity] + debian_bug.tags)
         return new_remote_status
 
-    def createLaunchpadBug(self, bug_target, remote_bug):
+    def importBug(self, bug_target, remote_bug):
+        """Import a remote bug into Launchpad."""
         assert IDistribution.providedBy(bug_target), (
             'We assume debbugs is used only by a distribution (Debian).')
         debian_bug = self._findBug(remote_bug)
