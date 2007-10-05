@@ -8,9 +8,10 @@ __all__ = [
     'CodeImportEventType',
     'ICodeImportEvent',
     'ICodeImportEventSet',
+    'ICodeImportEventToken',
     ]
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Choice, Int
 
 from canonical.launchpad import _
@@ -123,10 +124,21 @@ class CodeImportEventDataType(DBEnumeratedType):
     Value of CodeImport.owner. Useful to record ownership changes.
     """)
 
+    OLD_OWNER = DBItem(121, """Previous Owner
+
+    Previous value of CodeImport.owner, when recording an ownership change.
+    """)
+
     REVIEW_STATUS = DBItem(130, """Review Status
 
     Value of CodeImport.review_status. Useful to understand the review life
     cycle of a code import.
+    """)
+
+    OLD_REVIEW_STATUS = DBItem(131, """Previous Review Status
+
+    Previous value of CodeImport.review_status, when recording a status
+    change.
     """)
 
     ASSIGNEE = DBItem(140, """Code Import Assignee
@@ -135,11 +147,22 @@ class CodeImportEventDataType(DBEnumeratedType):
     of a code import.
     """)
 
+    OLD_ASSIGNEE = DBItem(141, """Previous Assignee
+
+    Previous value of CodeImport.assignee, when recording an assignee change.
+    """)
+
     # CodeImport attributes related to the import source
 
     UPDATE_INTERVAL = DBItem(210, """Update Interval
 
     User-specified interval between updates of the code import.
+    """)
+
+    OLD_UPDATE_INTERVAL = DBItem(211, """Previous Update Interval
+
+    Previous user-specified update interval, when recording an interval
+    change.
     """)
 
     CVS_ROOT = DBItem(220, """CVSROOT
@@ -152,9 +175,24 @@ class CodeImportEventDataType(DBEnumeratedType):
     Path to import within the CVSROOT.
     """)
 
+    OLD_CVS_ROOT = DBItem(222, """Previous CVSROOT
+
+    Previous CVSROOT, when recording an import source change.
+    """)
+
+    OLD_CVS_MODULE = DBItem(223, """Previous CVS module
+
+    Previous CVS module, when recording an import source change.
+    """)
+
     SVN_BRANCH_URL = DBItem(230, """Subversion URL
 
     Location of the Subversion branch to import.
+    """)
+
+    OLD_SVN_BRANCH_URL = DBItem(231, """Previous Subversion URL
+
+    Previous Subversion URL, when recording an import source change.
     """)
 
 
@@ -211,3 +249,33 @@ class ICodeImportEventSet(Interface):
         :param user: User that created the object, usually the view's user.
         :return: `CodeImportEvent` with type CREATE.
         """
+
+    def beginModify(code_import):
+        """Create the token to give to `newModify`.
+
+        Should only be called by CodeImport methods.
+
+        :param code_import: `CodeImport` that will be modified.
+        :return: `CodeImportJournalToken` to give to `newModify`.
+        """
+
+    def newModify(code_import, person, token):
+        """Record a modification to a `CodeImport` object.
+
+        Should only be called by CodeImport methods.
+
+        If no change is found between the code import and the data saved in
+        the token, the modification is considered not-significant and no
+        journal entry is created.
+
+        :param code_import: Modified `CodeImport`.
+        :param person: `Person` who requested the change.
+        :param token: `CodeImportJournalToken` created by `beginModify`.
+        :return: `CodeImportJournalEntry` of MODIFY type, or None.
+        """
+
+
+class ICodeImportEventToken(Interface):
+    """Opaque structure returned by `ICodeImportEventSet.beginModify`."""
+
+    items = Attribute(_("Private data."))

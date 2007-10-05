@@ -155,3 +155,117 @@ Subversion URL.
     CVS_ROOT u':pserver:anonymous@cvs.example.com:/cvsroot'
     CVS_MODULE u'hello'
 
+
+== MODIFY ==
+
+When a code import is modified, the ICodeImportEventSet utility should
+be used to create an event describing the changes.
+
+The ICodeImport interface does not have a set_schema, so all changes
+have to be applied by calling methods which create MODIFY events when
+appropriate. In this document, we are using unproxied CodeImport
+objects, so we are able to modify them directly and illustrate how
+MODIFY events are created.
+
+ICodeImportEventSet defines a protocol so it is able to find changes
+applied to the code import. Before making any change, the beginModify
+method must be called. It returns a token that captures the initial
+state of the the code import.
+
+    >>> assert_raises(AssertionError, event_set.beginModify, None)
+    >>> token = event_set.beginModify(svn_import)
+
+Then changes can be applied. In the simplest case, a single attribute is
+changed.
+
+    >>> from canonical.lp.dbschema import CodeImportReviewStatus
+    >>> svn_import.review_status = CodeImportReviewStatus.REVIEWED
+
+After applying changes, the newModify method can create an event that
+details the changes that have been applied.
+
+    >>> assert_raises(
+    ...     AssertionError, event_set.newModify, None, nopriv, token)
+    >>> assert_raises(
+    ...     AssertionError, event_set.newModify, svn_import, None, token)
+    >>> assert_raises(
+    ...     AssertionError, event_set.newModify, svn_import, nopriv, None)
+    >>> modify_event = event_set.newModify(svn_import, nopriv, token)
+    >>> verify_event(modify_event)
+    MODIFY
+    >>> print modify_event.person.name
+    no-priv
+    >>> modify_event.code_import == svn_import
+    True
+
+The event records all the current values, and the old value of
+attributes which have changed. This produces redundant data that makes
+it possible to validate the historical trail for integrity and to detect
+when changes were made without creating a correponding event.
+
+    >>> print_items(modify_event)
+    CODE_IMPORT <muted>
+    OWNER u'52'
+    REVIEW_STATUS u'REVIEWED'
+    OLD_REVIEW_STATUS u'NEW'
+    ASSIGNEE None
+    UPDATE_INTERVAL None
+    SVN_BRANCH_URL u'svn://svn.example.com/trunk'
+
+If no change of interest were found, no event is created.
+
+    >>> old_event_set_len = len(list(event_set.getAll()))
+    >>> token = event_set.beginModify(svn_import)
+    >>> print event_set.newModify(svn_import, nopriv, token)
+    None
+    >>> len(list(event_set.getAll())) == old_event_set_len
+    True
+
+In most events, only the source details for the selected version control
+system are recorded. If the rcs_type changes, we record old and new
+values for all changed attributes to unambiguously represent transitions
+to None and from None.
+
+    >>> token = event_set.beginModify(cvs_import)
+    >>> cvs_import.rcs_type = RevisionControlSystems.SVN
+    >>> cvs_import.svn_branch_url = u'svn://svn.example.com/from-cvs'
+    >>> cvs_import.cvs_root = None
+    >>> cvs_import.cvs_module = None
+    >>> modify_event = event_set.newModify(cvs_import, nopriv, token)
+    >>> print_items(modify_event)
+    CODE_IMPORT <muted>
+    OWNER u'52'
+    REVIEW_STATUS u'NEW'
+    ASSIGNEE None
+    UPDATE_INTERVAL None
+    CVS_ROOT None
+    CVS_MODULE None
+    OLD_CVS_ROOT u':pserver:anonymous@cvs.example.com:/cvsroot'
+    OLD_CVS_MODULE u'hello'
+    SVN_BRANCH_URL u'svn://svn.example.com/from-cvs'
+    OLD_SVN_BRANCH_URL None
+
+Aside from source details changes, MODIFY events can record changes in
+to the owner, the review_status, the assignee and the update_interval of
+a code import.
+
+    >>> from datetime import timedelta
+    >>> sample_owner = getUtility(IPersonSet).getByName('name12')
+    >>> sample_assignee = getUtility(IPersonSet).getByName('ddaa')
+    >>> token = event_set.beginModify(svn_import)
+    >>> svn_import.owner = sample_owner
+    >>> svn_import.review_status = CodeImportReviewStatus.SUSPENDED
+    >>> svn_import.assignee = sample_assignee
+    >>> svn_import.update_interval = timedelta(hours=1)
+    >>> modify_event = event_set.newModify(svn_import, nopriv, token)
+    >>> print_items(modify_event)
+    CODE_IMPORT <muted>
+    OWNER u'12'
+    OLD_OWNER u'52'
+    REVIEW_STATUS u'SUSPENDED'
+    OLD_REVIEW_STATUS u'REVIEWED'
+    ASSIGNEE u'23'
+    OLD_ASSIGNEE None
+    UPDATE_INTERVAL u'1:00:00'
+    OLD_UPDATE_INTERVAL None
+    SVN_BRANCH_URL u'svn://svn.example.com/trunk'
