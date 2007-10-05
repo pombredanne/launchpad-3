@@ -357,10 +357,10 @@ def adapt_suite(adapter, base_suite):
     return suite
 
 
-def create_branch(branchdir):
-    os.makedirs(branchdir)
-    tree = bzrdir.BzrDir.create_standalone_workingtree(branchdir)
-    f = open(branchdir + 'hello', 'w')
+def create_branch(branch_dir):
+    os.makedirs(branch_dir)
+    tree = bzrdir.BzrDir.create_standalone_workingtree(branch_dir)
+    f = open(branch_dir + 'hello', 'w')
     f.write('foo')
     f.close()
     tree.commit('message')
