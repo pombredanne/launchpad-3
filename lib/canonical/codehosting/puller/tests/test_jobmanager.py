@@ -8,8 +8,8 @@ import bzrlib
 
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
+from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.branchtomirror import BranchToMirror
-from canonical.codehosting.puller.branchtargeter import branchtarget
 from canonical.codehosting.puller.tests import createbranch
 from canonical.codehosting.puller import jobmanager
 from canonical.authserver.client.branchstatus import BranchStatusClient
@@ -193,7 +193,7 @@ class TestJobManagerInLaunchpad(unittest.TestCase):
         if target == None:
             targetdir = None
         else:
-            targetdir = os.path.join(self.testdir, branchtarget(target))
+            targetdir = os.path.join(self.testdir, branch_id_to_path(target))
         return BranchToMirror(
                 branchdir, targetdir, branch_status_client, target,
                 unique_name, branch_type=None)

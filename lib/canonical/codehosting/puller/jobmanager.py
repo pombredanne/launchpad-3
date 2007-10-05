@@ -6,7 +6,7 @@ import socket
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.config import config
-from canonical.codehosting.puller.branchtargeter import branchtarget
+from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.branchtomirror import BranchToMirror
 
 
@@ -38,7 +38,7 @@ class JobManager:
         destination = config.supermirror.branchesdest
         for branch_id, branch_src, unique_name in branches_to_pull:
             branch_src = branch_src.strip()
-            path = branchtarget(branch_id)
+            path = branch_id_to_path(branch_id)
             branch_dest = os.path.join(destination, path)
             branch = BranchToMirror(
                 branch_src, branch_dest, branch_status_client, branch_id,
