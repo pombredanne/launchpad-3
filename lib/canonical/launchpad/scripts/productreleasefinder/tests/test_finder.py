@@ -11,10 +11,9 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.schema import getFields
 
-from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer, reset_logging
-from canonical.launchpad.interfaces import IProductSet, IProductReleaseFile
-from canonical.lp.dbschema import UpstreamFileType
+from canonical.launchpad.interfaces import (
+    IProductSet, IProductReleaseFile, UpstreamFileType)
 from canonical.launchpad.scripts.productreleasefinder.filter import (
     FilterPattern)
 from canonical.launchpad.scripts.productreleasefinder.finder import (

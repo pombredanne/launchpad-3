@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'AccountStatus',
     'IAdminRequestPeopleMerge',
+    'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'IObjectReassignment',
     'IPersonChangePassword',
@@ -78,6 +79,10 @@ class AccountStatus(DBEnumeratedType):
         The account associated with this Person has been suspended by a
         Launchpad admin.
         """)
+
+
+INACTIVE_ACCOUNT_STATUSES = [
+    AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED]
 
 
 class PersonCreationRationale(DBEnumeratedType):
@@ -1278,7 +1283,7 @@ class IPersonSet(Interface):
         address.
         """
 
-    def findPerson(text="", orderBy=None):
+    def findPerson(text="", orderBy=None, exclude_inactive_accounts=True):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
 
@@ -1289,6 +1294,10 @@ class IPersonSet(Interface):
         or a list of column names as strings.
         If no orderBy is specified the results will be ordered using the
         default ordering specified in Person._defaultOrder.
+
+        If exclude_inactive_accounts is True, any accounts whose
+        account_status is any of INACTIVE_ACCOUNT_STATUSES will not be in the
+        returned set.
 
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email

@@ -2,16 +2,17 @@
 
 __metaclass__ = type
 
-__all__ = ['PollContextMenu',
-           'PollNavigation',
-           'BasePollView',
-           'PollView',
-           'PollVoteView',
-           'PollAddView',
-           'PollEditView',
-           'PollOptionAddView',
-           'PollOptionEditView',
-           ]
+__all__ = [
+    'BasePollView',
+    'PollAddView',
+    'PollContextMenu',
+    'PollEditView',
+    'PollNavigation',
+    'PollOptionAddView',
+    'PollOptionEditView',
+    'PollView',
+    'PollVoteView',
+    ]
 
 from zope.event import notify
 from zope.component import getUtility
@@ -24,10 +25,9 @@ from canonical.launchpad.webapp import (
     canonical_url, enabled_with_permission, ContextMenu, GeneralFormView,
     Link, Navigation, stepthrough)
 from canonical.launchpad.interfaces import (
-    IPollSubset, ILaunchBag, IVoteSet, IPollOptionSet, IPoll,
-    validate_date_interval)
+    IPollSubset, ILaunchBag, IVoteSet, IPollOptionSet, IPoll, PollAlgorithm,
+    PollSecrecy, validate_date_interval)
 from canonical.launchpad.helpers import shortlist
-from canonical.lp.dbschema import PollAlgorithm, PollSecrecy
 
 
 class PollContextMenu(ContextMenu):

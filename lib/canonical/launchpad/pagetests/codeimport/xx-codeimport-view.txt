@@ -114,7 +114,7 @@ If we create a lot of imports, the listing view will be batched.
     >>> from canonical.launchpad.interfaces import (
     ...     IBranchSet, ICodeImportSet, ILaunchpadCelebrities,
     ...     IPersonSet, IProductSet, BranchType)
-    >>> from canonical.lp.dbschema import RevisionControlSystems
+    >>> from canonical.launchpad.interfaces import RevisionControlSystems
 
     >>> login('david.allouche@canonical.com')
 
