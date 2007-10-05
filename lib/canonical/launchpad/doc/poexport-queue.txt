@@ -26,7 +26,13 @@ When there is an error, the system will notify it.
 To note error messages with the failure file, it should happen inside an
 exception handling so we can get the exception error:
 
-  >>> result = ExportResult('testing export')
+    >>> from canonical.launchpad.database import POTemplate
+    >>> potemplate = POTemplate.get(1)
+    >>> pofile = potemplate.getPOFileByLang('es')
+
+    >>> result = ExportResult('testing export')
+    >>> result.object_names.append(potemplate.displayname)
+    >>> result.object_names.append(pofile.title)
 
 Record the error.
 
@@ -86,7 +92,8 @@ One is for the user with the error notification.
   > problem. Please reply to this email for further assistance.
   >
 
-And the other to the admins.
+And the other to the admins.  This one lists the files that were being
+exported as context to help tracking down any bugs.
 
   >>> print admins_addrs
   ['launchpad-error-reports@lists.canonical.com']
@@ -103,7 +110,58 @@ And the other to the admins.
   > Traceback (most recent call last):
   ...
   > AssertionError: It's just an error for testing purposes
+  >
+  > The failed request involved these objects:
+  > evolution-2.2 in Evolution trunk
+  > Spanish (es) translation of evolution-2.2 in Evolution trunk
+
+As a special case, some error messages are poisoned with non-ASCII characters
+and can't be reported without triggering an error themselves.  Those are
+specially handled and reported.
+
+  >>> try:
+  ...     raise AssertionError, "Really nasty \xc3 non-ASCII error!"
+  ... except AssertionError:
+  ...     result.addFailure()
+  >>> result.notify(carlos)
+  >>> transaction.commit()
+  >>> len(test_emails) == 2
+  True
+
+  >>> carlos_body = None
+  >>> admins_body = None
+  >>> while len(test_emails) > 0:
+  ...     from_addrs, to_addrs, body = test_emails.pop()
+  ...     if 'carlos@canonical.com' in to_addrs:
+  ...         carlos_body = body
+  ...     else:
+  ...         admins_body = body
+
+The user's notification looks no different from that for an ordinary error.
+
+  >>> print_mail_body(carlos_body)
   > 
+  > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
+  > 
+  > Rosetta encountered problems exporting the files you
+  > requested. The Rosetta team has been notified of this
+  > problem. Please reply to this email for further assistance.
+  >
+
+The one for the administrators, however, does not include the unprintable
+exception text.
+
+  >>> print_mail_body(admins_body)
+  > 
+  > Hello admins,
+  > 
+  > A UnicodeDecodeError occurred while trying to notify you of a
+  > failure during a translation export requested by Carlos ...
+  >
+  > The failed request involved these objects:
+  > evolution-2.2 in Evolution trunk
+  > Spanish (es) translation of evolution-2.2 in Evolution trunk
+
 
 Finally, there is the case when there are no errors at all. This is the usual
 case.
@@ -157,10 +215,8 @@ This method handles entries from the queue of entries to be exported.
 First, fill the export queue with entries to be exported.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.database import POTemplate
     >>> from canonical.launchpad.interfaces import IPOExportRequestSet
     >>> from canonical.launchpad.interfaces import TranslationFileFormat
-    >>> potemplate = POTemplate.get(1)
     >>> export_request_set = getUtility(IPOExportRequestSet)
 
 The queue is empty by default.
