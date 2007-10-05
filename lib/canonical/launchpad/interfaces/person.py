@@ -1331,7 +1331,14 @@ class IPersonSet(Interface):
         """Return the latest teams registered, up to the limit specified."""
 
     def merge(from_person, to_person):
-        """Merge a person into another."""
+        """Merge a person into another.
+
+        The old user (from_person) will be left as an atavism
+
+        We are not yet game to delete the `from_person` entry from the
+        database yet. We will let it roll for a while and see what cruft
+        develops -- StuartBishop 20050812
+        """
 
     def getTranslatorsByLanguage(language):
         """Return the list of translators for the given language.

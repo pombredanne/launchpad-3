@@ -1,5 +1,4 @@
-Merging
-=======
+= Merging =
 
 For many reasons (i.e. a gina run) we could have duplicated accounts in
 Launchpad. Once a duplicated account is identified, we need to allow the user
@@ -20,22 +19,9 @@ different email address.
     >>> marilize = personset.getByName('marilize')
 
 
-Sanity checks
--------------
+== Sanity checks ==
 
-We can't merge teams
-
-    >>> personset.merge(admins, name16)
-    Traceback (most recent call last):
-    ...
-    TypeError: ...
-
-    >>> personset.merge(name16, admins)
-    Traceback (most recent call last):
-    ...
-    TypeError: ...
-
-Nor can we merge an account that still has email addresses attached to it
+We can't merge an account that still has email addresses attached to it
 
     >>> personset.merge(marilize, sample)
     Traceback (most recent call last):
@@ -43,14 +29,13 @@ Nor can we merge an account that still has email addresses attached to it
     ValueError: ...
 
 
-Preparing test person for the merge
------------------------------------
+== Preparing test person for the merge ==
 
 Merging people involves updating the merged person relationships. Let's
 put the person we will merge into some of those.
 
-    (To assign marilize as the ubuntu team owner, we must log on as the
-    previous owner.)
+    # To assign marilize as the ubuntu team owner, we must log on as the
+    # previous owner.
     >>> login('mark@hbd.com')
 
     >>> ubuntu_team = personset.getByName('ubuntu-team')
@@ -108,19 +93,17 @@ active member of that team.
     True
 
 
-Do the merge!
--------------
+== Do the merge! ==
 
-    (Now we remove the only email address marilize had, so that we can merge
-    it)
+    # Now we remove the only email address marilize had, so that we can merge
+    # it.
     >>> marilize.preferredemail.destroySelf()
     >>> flush_database_updates()
 
     >>> personset.merge(marilize, sample)
 
 
-Merge results
--------------
+== Merge results ==
 
 Check that 'Sample Person' has indeed become an active member of 'Ubuntu
 Translators'
@@ -192,4 +175,43 @@ merged accounts from lists etc.
     >>> cur.execute("SELECT merged FROM Person WHERE name='name12'")
     >>> cur.fetchone()[0] is None
     True
+
+== Merging teams ==
+
+Merging of teams is also possible and uses the same API used for merging
+people.  Note, though, that when merging teams, its members and polls will
+not be carried over to the remaining team.  Team memberships, on the other
+hand, are carried over just like when merging people.
+
+    >>> guadamen = personset.getByName('guadamen')
+    >>> guadamen.teamowner.name
+    u'name16'
+    >>> [member.name for member in guadamen.allmembers]
+    [u'name16', u'launchpad-beta-owner', u'launchpad-beta-testers',
+     u'ubuntu-team']
+    >>> landscape = personset.getByName('landscape-developers')
+    >>> landscape.teamowner.name
+    u'name12'
+    >>> [member.name for member in landscape.allmembers]
+    [u'salgado', u'name12']
+
+    >>> personset.merge(guadamen, landscape)
+
+    >>> landscape.teamowner.name
+    u'name12'
+    >>> [member.name for member in landscape.allmembers]
+    [u'salgado', u'name12']
+
+A team can't be merged into another one if it has an associated mailing
+list.  This is for the sole reason that it's very unlikely to happen and
+we don't really want to write code to support things that will probably
+never be needed.
+
+    >>> from canonical.launchpad.interfaces import IMailingListSet
+    >>> mailing_list = getUtility(IMailingListSet).new(landscape)
+    >>> ubuntu_team = personset.getByName('ubuntu-team')
+    >>> personset.merge(landscape, ubuntu_team)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Can't merge teams which have mailing lists...
 
