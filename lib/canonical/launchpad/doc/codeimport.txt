@@ -90,6 +90,7 @@ Creating a CodeImport object creates a corresponding CodeImportEvent.
     >>> [event.event_type.name for event in cvs_events]
     ['CREATE']
 
+
 === Import from Subversion ===
 
 Code imports from Subversion specify the URL used with "svn checkout" to

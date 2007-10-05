@@ -10,6 +10,7 @@ member of the vcs-imports team and can access the objects freely.
 
     >>> login('david.allouche@canonical.com')
 
+
 == Creating Events ==
 
 Events of each type are created by separate methods in the
@@ -65,6 +66,7 @@ message.
     ...             raise
     ...     else:
     ...         print "No exception raised, expected: %s" % (exc_type,)
+
 
 === CREATE ===
 
