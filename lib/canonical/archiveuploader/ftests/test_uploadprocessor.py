@@ -136,10 +136,17 @@ class TestUploadProcessorBase(unittest.TestCase):
         return results
 
     def assertEmail(self, contents=None, recipients=None):
-        """Check email last email content and recipients."""
+        """Check last email content and recipients.
+
+        :param contents: A list of lines; assert that each is in the email.
+        :param recipients: A list of recipients that must be on the email.
+                           Supply an empty list if you don't want them
+                           checked.  Default action is to check that the
+                           recipient is foo.bar@canonical.com.
+        """
         if recipients is None:
             recipients = [self.name16_recipient]
-        if not contents:
+        if contents is None:
             contents = []
 
         self.assertEqual(
