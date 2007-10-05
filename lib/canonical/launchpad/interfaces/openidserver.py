@@ -18,7 +18,7 @@ from zope.interface import Attribute, Interface
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PasswordField
+from canonical.launchpad.fields import PasswordField, BaseImageUpload
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import PersonCreationRationale
 
@@ -67,6 +67,13 @@ class ILaunchpadOpenIdStoreFactory(Interface):
         """Create a LaunchpadOpenIdStore instance."""
 
 
+class RPLogoImageUpload(BaseImageUpload):
+
+    dimensions = (400, 100)
+    exact_dimensions = False
+    max_size = 100*1024
+    default_image_resource = '/@@/nyet-logo'
+
 
 sreg_fields_vocabulary = SimpleVocabulary([
     SimpleTerm('fullname', 'fullname', 'Full name'),
@@ -96,8 +103,8 @@ class IOpenIDRPConfig(Interface):
         title=_('Description'), required=True,
         description=_('A description of the Relying Party, explaining why '
                       'the user should authenticate.'))
-    logo = Object(
-        title=_('Logo'), schema=ILibraryFileAlias, required=False,
+    logo = RPLogoImageUpload(
+        title=_('logo'), required=False,
         description=_('A banner that identifies the Relying Party'))
     allowed_sreg = List(
         title=_('Allowed Sreg Fields'),

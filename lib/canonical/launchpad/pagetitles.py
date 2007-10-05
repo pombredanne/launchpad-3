@@ -718,6 +718,13 @@ openid_index = 'Launchpad OpenID Server'
 def openid_invalid_identity(context, view):
     return 'Invalid OpenID identity %s' % view.openid_request.identity
 
+openidrpconfig_add = 'Add an OpenID Relying Party Configuration'
+
+openidrpconfig_edit = ContextDisplayName(
+    'Edit Relying Party Configuration for %s')
+
+openidrpconfigset_index = 'OpenID Relying Party Configurations'
+
 def package_bugs(context, view):
     return 'Bugs in %s' % context.name
 

@@ -484,6 +484,7 @@ class BaseImageUpload(Bytes):
 
     implements(IBaseImageUpload)
 
+    exact_dimensions = True
     dimensions = ()
     max_size = 0
 
@@ -519,10 +520,17 @@ class BaseImageUpload(Bytes):
                 check it and retry.""")))
         width, height = pil_image.size
         required_width, required_height = self.dimensions
-        if width != required_width or height != required_height:
-            raise LaunchpadValidationError(_(dedent("""
-                This image is not exactly %dx%d pixels in size.""" % (
-                required_width, required_height))))
+        if self.exact_dimensions:
+            if width != required_width or height != required_height:
+                raise LaunchpadValidationError(_(dedent("""
+                    This image is not exactly %dx%d pixels in size.""" % (
+                    required_width, required_height))))
+        else:
+            if width > required_width or height > required_height:
+                raise LaunchpadValidationError(_(dedent("""
+                    This image is larger than %dx%d pixels in size.""" % (
+                    required_width, required_height))))
+
         return True
 
     def validate(self, value):

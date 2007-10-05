@@ -616,6 +616,10 @@ class LoginServiceLoginView(LoginServiceBaseView):
 class OpenIdApplicationNavigation(Navigation):
     usedfor = IOpenIdApplication
 
+    @stepto('+rpconfig')
+    def rpconfig(self):
+        return getUtility(IOpenIDRPConfigSet)
+
     @stepthrough('+id')
     def traverse_id(self, name):
         person = getUtility(IPersonSet).getByOpenIdIdentifier(name)

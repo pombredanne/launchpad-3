@@ -10,8 +10,9 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IOpenIdApplication"
-        path_expression="string:+openid"
+        path_expression="string:"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        rootsite="openid"
         />
 
     <!-- Root navigation -->
@@ -108,6 +109,25 @@
           set_schema="canonical.launchpad.interfaces.IOpenIDRPConfig" />
     </content>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IOpenIDRPConfig"
+        path_expression="string:${id}"
+        parent_utility="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDRPConfig"
+        name="+edit"
+        class="canonical.launchpad.browser.openidrpconfig.OpenIDRPConfigEditView"
+        permission="launchpad.Admin"
+        template="../templates/openidrpconfig-edit.pt"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IOpenIDRPConfig"
+        name="+edit"
+        />
+
     <!-- IOpenIDRPConfigSet -->
 
     <securedutility
@@ -117,6 +137,37 @@
           interface="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
           />
     </securedutility>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
+        path_expression="string:+rpconfig"
+        parent_utility="canonical.launchpad.interfaces.IOpenIdApplication"
+        />
+
+    <browser:navigation
+        module="canonical.launchpad.browser.openidrpconfig"
+        classes="OpenIDRPConfigSetNavigation"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
+        name="+add"
+        class="canonical.launchpad.browser.openidrpconfig.OpenIDRPConfigAddView"
+        permission="launchpad.Admin"
+        template="../templates/openidrpconfig-add.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
+        name="+index"
+        permission="launchpad.Admin"
+        template="../templates/openidrpconfigset-index.pt"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
+        name="+index"
+        />
 
 </configure>
 
