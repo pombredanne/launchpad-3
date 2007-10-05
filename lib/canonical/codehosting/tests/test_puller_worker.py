@@ -42,6 +42,99 @@ from canonical.testing import LaunchpadFunctionalLayer, reset_logging
 from canonical.testing import LaunchpadZopelessLayer
 
 
+class StubbedBranchStatusClient(BranchStatusClient):
+    """Partially stubbed subclass of BranchStatusClient, for unit tests."""
+
+    def startMirroring(self, branch_id):
+        pass
+
+
+class StubbedBranchToMirror(BranchToMirror):
+    """Partially stubbed subclass of BranchToMirror, for unit tests."""
+
+    enable_checkBranchReference = False
+    enable_checkSourceUrl = True
+
+    def _checkSourceUrl(self):
+        if self.enable_checkSourceUrl:
+            BranchToMirror._checkSourceUrl(self)
+
+    def _checkBranchReference(self):
+        if self.enable_checkBranchReference:
+            BranchToMirror._checkBranchReference(self)
+
+    def _openSourceBranch(self):
+        self.testcase.open_call_count += 1
+
+    def _mirrorToDestBranch(self):
+        pass
+
+    def _mirrorSuccessful(self, logger):
+        pass
+
+    def _mirrorFailed(self, logger, error_msg):
+        self.testcase.errors.append(error_msg)
+
+
+class ErrorHandlingTestCase(unittest.TestCase):
+    """Base class to test BranchToMirror error reporting."""
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self._errorHandlingSetUp()
+
+    def _errorHandlingSetUp(self):
+        """Setup code that is specific to ErrorHandlingTestCase.
+
+        This is needed because TestReferenceMirroring uses a diamond-shaped
+        class hierarchy and we do not want to end up calling unittest.TestCase
+        twice.
+        """
+        client = StubbedBranchStatusClient()
+        self.branch = StubbedBranchToMirror(
+            src='foo', dest='bar', branch_status_client=client, branch_id=1,
+            unique_name='owner/product/foo', branch_type=None)
+        self.errors = []
+        self.open_call_count = 0
+        self.branch.testcase = self
+        # We set the log level to CRITICAL so that the log messages
+        # are suppressed.
+        logging.basicConfig(level=logging.CRITICAL)
+
+    def tearDown(self):
+        self._errorHandlingTearDown()
+        unittest.TestCase.tearDown(self)
+
+    def _errorHandlingTearDown(self):
+        """Teardown code that is specific to ErrorHandlingTestCase."""
+        reset_logging()
+
+    def runMirrorAndGetError(self):
+        """Run mirror, check that we receive exactly one error, and return its
+        str().
+        """
+        self.branch.mirror(logging.getLogger())
+        self.assertEqual(len(self.errors), 1)
+        error = str(self.errors[0])
+        self.errors = []
+        return error
+
+    def runMirrorAndAssertErrorStartsWith(self, expected_error):
+        """Run mirror and check that we receive exactly one error, the str() of
+        which starts with `expected_error`.
+        """
+        error = self.runMirrorAndGetError()
+        if not error.startswith(expected_error):
+            self.fail('Expected "%s" but got "%s"' % (expected_error, error))
+
+    def runMirrorAndAssertErrorEquals(self, expected_error):
+        """Run mirror and check that we receive exactly one error, the str() of
+        which is equal to `expected_error`.
+        """
+        error = self.runMirrorAndGetError()
+        self.assertEqual(error, expected_error)
+
+
 class TestBranchToMirror(unittest.TestCase):
 
     layer = LaunchpadFunctionalLayer
@@ -275,99 +368,6 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         self.assertEqual(1, branch.mirror_failures)
 
 
-class StubbedBranchStatusClient(BranchStatusClient):
-    """Partially stubbed subclass of BranchStatusClient, for unit tests."""
-
-    def startMirroring(self, branch_id):
-        pass
-
-
-class StubbedBranchToMirror(BranchToMirror):
-    """Partially stubbed subclass of BranchToMirror, for unit tests."""
-
-    enable_checkBranchReference = False
-    enable_checkSourceUrl = True
-
-    def _checkSourceUrl(self):
-        if self.enable_checkSourceUrl:
-            BranchToMirror._checkSourceUrl(self)
-
-    def _checkBranchReference(self):
-        if self.enable_checkBranchReference:
-            BranchToMirror._checkBranchReference(self)
-
-    def _openSourceBranch(self):
-        self.testcase.open_call_count += 1
-
-    def _mirrorToDestBranch(self):
-        pass
-
-    def _mirrorSuccessful(self, logger):
-        pass
-
-    def _mirrorFailed(self, logger, error_msg):
-        self.testcase.errors.append(error_msg)
-
-
-class ErrorHandlingTestCase(unittest.TestCase):
-    """Base class to test BranchToMirror error reporting."""
-
-    def setUp(self):
-        unittest.TestCase.setUp(self)
-        self._errorHandlingSetUp()
-
-    def _errorHandlingSetUp(self):
-        """Setup code that is specific to ErrorHandlingTestCase.
-
-        This is needed because TestReferenceMirroring uses a diamond-shaped
-        class hierarchy and we do not want to end up calling unittest.TestCase
-        twice.
-        """
-        client = StubbedBranchStatusClient()
-        self.branch = StubbedBranchToMirror(
-            src='foo', dest='bar', branch_status_client=client, branch_id=1,
-            unique_name='owner/product/foo', branch_type=None)
-        self.errors = []
-        self.open_call_count = 0
-        self.branch.testcase = self
-        # We set the log level to CRITICAL so that the log messages
-        # are suppressed.
-        logging.basicConfig(level=logging.CRITICAL)
-
-    def tearDown(self):
-        self._errorHandlingTearDown()
-        unittest.TestCase.tearDown(self)
-
-    def _errorHandlingTearDown(self):
-        """Teardown code that is specific to ErrorHandlingTestCase."""
-        reset_logging()
-
-    def runMirrorAndGetError(self):
-        """Run mirror, check that we receive exactly one error, and return its
-        str().
-        """
-        self.branch.mirror(logging.getLogger())
-        self.assertEqual(len(self.errors), 1)
-        error = str(self.errors[0])
-        self.errors = []
-        return error
-
-    def runMirrorAndAssertErrorStartsWith(self, expected_error):
-        """Run mirror and check that we receive exactly one error, the str() of
-        which starts with `expected_error`.
-        """
-        error = self.runMirrorAndGetError()
-        if not error.startswith(expected_error):
-            self.fail('Expected "%s" but got "%s"' % (expected_error, error))
-
-    def runMirrorAndAssertErrorEquals(self, expected_error):
-        """Run mirror and check that we receive exactly one error, the str() of
-        which is equal to `expected_error`.
-        """
-        error = self.runMirrorAndGetError()
-        self.assertEqual(error, expected_error)
-
-
 class TestBadUrl(ErrorHandlingTestCase):
     """Test that BranchToMirror does not try mirroring from bad URLs.
 
@@ -561,25 +561,24 @@ class TestCanTraverseReferences(unittest.TestCase):
         self.assertRaises(AssertionError, bogus_branch._canTraverseReferences)
 
 
-class StubbedBranchToMirrorForCheckBranchReference(BranchToMirror):
-    """Partially stubbed BranchToMirror for checkBranchReference unit tests.
-    """
-
-    def _getBranchReference(self, url):
-        self.testcase.get_branch_reference_calls.append(url)
-        return self.testcase.reference_values[url]
-
-    def _canTraverseReferences(self):
-        assert self.testcase.can_traverse_references is not None
-        return self.testcase.can_traverse_references
-
-
 class TestCheckBranchReference(unittest.TestCase):
     """Unit tests for BranchToMirror._checkBranchReference."""
 
+    class StubbedBranchToMirror(BranchToMirror):
+        """Partially stubbed BranchToMirror."""
+
+        def _getBranchReference(self, url):
+            self.testcase.get_branch_reference_calls.append(url)
+            return self.testcase.reference_values[url]
+
+        def _canTraverseReferences(self):
+            assert self.testcase.can_traverse_references is not None
+            return self.testcase.can_traverse_references
+
+
     def setUp(self):
         client = BranchStatusClient()
-        self.branch = StubbedBranchToMirrorForCheckBranchReference(
+        self.branch = TestCheckBranchReference.StubbedBranchToMirror(
             'foo', 'bar', client, 1, 'owner/product/foo', None)
         self.branch.testcase = self
         self.get_branch_reference_calls = []
