@@ -374,4 +374,3 @@ def create_branch(branch_dir):
     f.close()
     tree.commit('message')
     return tree
-

@@ -1,6 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
-"""Tests for utilities in worker.py"""
+"""Unit tests for comparing Bazaar formats."""
 
 __metaclass__ = type
 
