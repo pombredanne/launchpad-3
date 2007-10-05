@@ -334,7 +334,7 @@ class TestSourceForge(SourceForge):
 class TestDebianBug:
     """A debbugs bug that doesn't require the debbugs db."""
 
-    def __init__(self, reporter_email='foo@example.com', package='',
+    def __init__(self, reporter_email='foo@example.com', package='evolution',
                  summary='Test Summary', description='Test description.'):
         self.originator = reporter_email
         self.package = package

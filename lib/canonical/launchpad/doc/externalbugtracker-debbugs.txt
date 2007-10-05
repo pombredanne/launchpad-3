@@ -338,15 +338,18 @@ kept in sync.
 If a Debian package doesn't exist in Launchpad already, it will be
 filed on Debian itself, with no source package specified. The package is
 always included in the description of Debian bugs, so that information
-isn't lost.
+isn't lost. A warning is also logged, so that the one running the script
+gets notified about it.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestDebBugs, TestDebianBug)
     >>> external_debbugs = TestDebBugs(
-    ...     debbugs, {'1234': TestDebianBug(package='not-found')})
-    >>> print debian.getSourcePackage('not-found')
+    ...     debbugs, {'1234': TestDebianBug(package='no-such-package')})
+    >>> print debian.getSourcePackage('no-such-package')
     None
     >>> bug = external_debbugs.createLaunchpadBug(debian, '1234')
+    WARNING:root:Unknown Debian package (debbugs #1234): no-such-package
+
     >>> [debian_task] = bug.bugtasks
     >>> debian_task.distribution.name
     u'debian'

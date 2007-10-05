@@ -607,6 +607,12 @@ class DebBugs(ExternalBugTracker):
         package = bug_target.getSourcePackage(debian_bug.package)
         if package is not None:
             bug_target = package
+        else:
+            # Debbugs requires all bugs to be targeted to a package, so
+            # it shouldn't be empty.
+            log.warning(
+                'Unknown Debian package (debbugs #%s): %s' % (
+                    remote_bug, debian_bug.package))
         bug = bug_target.createBug(
             CreateBugParams(
                 reporter, debian_bug.subject, debian_bug.description,
