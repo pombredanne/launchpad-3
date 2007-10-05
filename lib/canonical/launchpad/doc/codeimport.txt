@@ -54,11 +54,11 @@ read.
 
 == CodeImport events ==
 
-Most mutating operations affecting code imports should create CodeImportEvent
-objects in the database to provide an audit trail.
+Most mutating operations affecting code imports should create
+CodeImportEvent objects in the database to provide an audit trail.
 
     >>> from canonical.launchpad.interfaces import ICodeImportEventSet
-    >>> event_set = getUtility(ICodeImportEventSet) 
+    >>> event_set = getUtility(ICodeImportEventSet)
 
 
 == Supported source systems ==

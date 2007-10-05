@@ -46,6 +46,25 @@ database ids.
     ...         else:
     ...             print k.name, repr(v)
 
+We want to concisely check that calling the CodeImportEventSet factory
+methods with required arguments set to None raise an AssertionError.
+
+The assert_raises helper prints nothing if the callable raises an
+exception of the specified type. If the callable raises an exception
+that does not match, it re-raises it. If it does not raises, it prints a
+message.
+
+    >>> import sys
+    >>> def assert_raises(exc_type, callable, *args, **kwargs):
+    ...     try:
+    ...         callable(*args, **kwargs)
+    ...     except:
+    ...         if sys.exc_info()[0] == exc_type:
+    ...             return
+    ...         else:
+    ...             raise
+    ...     else:
+    ...         print "No exception raised, expected: %s" % (exc_type,)
 
 === CREATE ===
 
@@ -84,6 +103,11 @@ First we create a Subversion import.
 CodeImportSet.newCreate creates an event from the new CodeImport object
 and the person that created it. Here, the creator is the nopriv user.
 
+If either the code_import argument or the user argument are None, an
+AssertionError must be raised.
+
+    >>> assert_raises(AssertionError, event_set.newCreate, None, nopriv)
+    >>> assert_raises(AssertionError, event_set.newCreate, svn_import, None)
     >>> svn_create_event = event_set.newCreate(svn_import, nopriv)
     >>> verify_event(svn_create_event)
     CREATE

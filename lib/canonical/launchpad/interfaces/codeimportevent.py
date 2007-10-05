@@ -27,7 +27,7 @@ class CodeImportEventType(DBEnumeratedType):
 
     # Event types are named so that "a FOO event" sounds natural. For example,
     # MODIFY because "a MODIFIED event" sounds confusing and "a MODIFICATION
-    # event" is awkyard.
+    # event" is awkward.
 
     # Code import life cycle.
 
@@ -39,7 +39,7 @@ class CodeImportEventType(DBEnumeratedType):
     MODIFY = DBItem(120, """Import Modified
 
     A code import was modified. Either the CodeImport object, or an associated
-    object was modified.
+    object, was modified.
     """)
 
     DELETE = DBItem(130, """Import Deleted
@@ -86,19 +86,19 @@ class CodeImportEventType(DBEnumeratedType):
 
     ONLINE = DBItem(410, """Machine Online
 
-    A code-import-controller daemon has started and is now accepting jobs.
+    A code-import-controller daemon has started, and is now accepting jobs.
     """)
 
     OFFLINE = DBItem(420, """Machine Offline
 
-    A code-import-controller daemon has finished or crashed is and no longer
+    A code-import-controller daemon has finished, or crashed is and no longer
     running.
     """)
 
     QUIESCE = DBItem(430, """Quiescing Requested
 
     A code-import-controller daemon has been requested to shut down. It will
-    no longer accept jobs and will terminate once the last running job
+    no longer accept jobs, and will terminate once the last running job
     finishes.
     """)
 
@@ -106,8 +106,8 @@ class CodeImportEventType(DBEnumeratedType):
 class CodeImportEventDataType(DBEnumeratedType):
     """CodeImportEventData type.
 
-    CodeImportEvent objects record unstructured additional data. Each data item
-    associated to an event has a type from this enumeration.
+    CodeImportEvent objects record unstructured additional data. Each data
+    item associated to an event has a type from this enumeration.
     """
 
     # CodeImport attributes
@@ -136,8 +136,8 @@ class CodeImportEventDataType(DBEnumeratedType):
 
     ASSIGNEE = DBItem(150, """Code Import Assignee
 
-    Value of CodeImport.assignee. Useful to understand the review life cycle of
-    a code import.
+    Value of CodeImport.assignee. Useful to understand the review life cycle
+    of a code import.
     """)
 
     # CodeImport attributes related to the import source

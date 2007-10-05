@@ -49,7 +49,7 @@ class _CodeImportEventData(SQLBase):
     """Additional data associated to a CodeImportEvent.
 
     This class is for internal use only. This data should be created by
-    CodeImportEventSet event creation methods and should be accessed by
+    CodeImportEventSet event creation methods, and should be accessed by
     CodeImport methods.
     """
 
@@ -109,23 +109,24 @@ class CodeImportEventSet:
         yield 'OWNER', str(code_import.owner.id)
         yield 'UPDATE_INTERVAL', self._getNullableValue(
             code_import.update_interval)
-        yield 'ASSIGNEE', self._getNullableForeignKey(code_import.assignee)
+        yield 'ASSIGNEE', self._getNullableValue(
+            code_import.assignee, use_id=True)
         for detail in self._iterSourceDetails(code_import):
             yield detail
 
-    def _getNullableValue(self, value):
-        """Return the string value for a nullable value."""
+    def _getNullableValue(self, value, use_id=False):
+        """Return the string value for a nullable value.
+
+        :param value: The value to represent as a string.
+        :param use_id: Return the id of the object instead of the object, such
+            as for a foreign key.
+        """
         if value is None:
             return None
+        elif use_id:
+            return str(value.id)
         else:
             return str(value)
-
-    def _getNullableForeignKey(self, fkey):
-        """Return the string value for a nullable foreign key."""
-        if fkey is None:
-            return None
-        else:
-            return str(fkey.id)
 
     def _iterSourceDetails(self, code_import):
         """Yield key-value tuples describing the source of the import."""
