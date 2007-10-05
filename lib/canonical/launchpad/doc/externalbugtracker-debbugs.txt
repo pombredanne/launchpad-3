@@ -409,6 +409,22 @@ tracker.
     >>> [bug.title for bug in debbugs.getBugsWatching('322535')]
     [u'evolution: Multiple format string vulnerabilities in Evolution']
 
+==== Importing bugs twice ====
+
+If a Debian bug already exists in Launchpad (i.e it has a bug watch), it
+won't be imported again. A warning is logged so that the one that runs
+the script gets notified about it.
+
+    >>> from canonical.launchpad.scripts.importdebianbugs import (
+    ...     import_debian_bugs)
+    >>> [bug.id for bug in debbugs.getBugsWatching('304014')]
+    [1]
+    >>> import_debian_bugs('304014')
+    WARNING:root:Not importing debbugs #304014, since it's already
+                 linked from LP bug(s) #1.
+    >>> [bug.id for bug in debbugs.getBugsWatching('304014')]
+    [1]
+
 
 == Wrapping up ==
 

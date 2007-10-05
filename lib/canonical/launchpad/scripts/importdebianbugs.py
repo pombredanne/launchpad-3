@@ -13,6 +13,26 @@ from canonical.launchpad.components.externalbugtracker import (
     get_external_bugtracker)
 
 
+def import_debian_bugs(*bugs_to_import):
+    """Import the specified Debian bugs into Launchpad."""
+    debbugs = getUtility(ILaunchpadCelebrities).debbugs
+    external_debbugs = get_external_bugtracker(debbugs)
+    debian = getUtility(ILaunchpadCelebrities).debian
+    for debian_bug in bugs_to_import:
+        existing_bug_ids = [
+            str(bug.id) for bug in debbugs.getBugsWatching(debian_bug)]
+        if len(existing_bug_ids) > 0:
+            log.warning(
+                "Not importing debbugs #%s, since it's already linked"
+                " from LP bug(s) #%s." % (
+                    debian_bug, ', '.join(existing_bug_ids)))
+            continue
+        bug = external_debbugs.createLaunchpadBug(debian, debian_bug)
+        log.info(
+            "Imported debbugs #%s as Launchpad bug #%s." % (
+                debian_bug, bug.id))
+
+
 class DebianBugImportScript(LaunchpadScript):
     """Import Debian bugs into Launchpad.
 
@@ -29,23 +49,12 @@ class DebianBugImportScript(LaunchpadScript):
                                help="Don't commit the DB transaction.",
                                dest='dry_run', default=False)
 
-    def import_debian_bugs(self, *bugs_to_import):
-        """Import the specified Debian bugs."""
-        external_debbugs = get_external_bugtracker(
-            getUtility(ILaunchpadCelebrities).debbugs)
-        debian = getUtility(ILaunchpadCelebrities).debian
-        for debian_bug in bugs_to_import:
-            bug = external_debbugs.createLaunchpadBug(debian, debian_bug)
-            log.info(
-                "Imported debbugs #%s as Launchpad bug #%s." % (
-                    debian_bug, bug.id))
-
     def main(self):
         if len(self.args) < 1:
             self.parser.print_help()
             return
 
-        self.import_debian_bugs(*self.args)
+        import_debian_bugs(*self.args)
 
         if self.options.dry_run:
             self.logger.info("Rolling back the transaction.")
