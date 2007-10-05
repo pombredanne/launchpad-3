@@ -11,6 +11,7 @@ An Ubuntu task will be created for each imported bug.
 
 import _pythonpath
 
+from canonical.config import config
 from canonical.launchpad.scripts.base import LaunchpadScript
 from canonical.launchpad.scripts.importdebianbugs import import_debian_bugs
 
@@ -43,5 +44,6 @@ class DebianBugImportScript(LaunchpadScript):
 
 if __name__ == '__main__':
     script = DebianBugImportScript(
-        'canonical.launchpad.scripts.importdebianbugs')
+        'canonical.launchpad.scripts.importdebianbugs',
+        dbuser=config.checkwatches.dbuser)
     script.run()

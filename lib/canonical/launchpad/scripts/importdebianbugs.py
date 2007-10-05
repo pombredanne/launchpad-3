@@ -35,6 +35,3 @@ def import_debian_bugs(*bugs_to_import):
         log.info(
             "Imported debbugs #%s as Launchpad bug #%s." % (
                 debian_bug, bug.id))
-
-
-
