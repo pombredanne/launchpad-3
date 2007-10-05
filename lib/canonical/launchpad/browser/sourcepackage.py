@@ -167,13 +167,16 @@ class SourcePackageTranslationsExportView(BaseExportView):
 
     def getDefaultFormat(self):
         templates = self.context.currentpotemplates
-        if len(templates) > 0:
-            # We don't support exporting multiple formats for the same
-            # package.  If this package does have multiple current templates
-            # in different formats, we may as well pick the first one as the
-            # default.
-            return templates[0].source_file_format
-        return None
+        if not templates:
+            return None
+        format = templates[0].source_file_format
+        for template in templates:
+            if template.source_file_format != format:
+                self.request.response.addInfoNotification(
+                    "This package has templates with different native "
+                    "file formats.  If you proceed, all translations will be "
+                    "exported in the single format you specify.")
+        return format
 
 
 class SourcePackageView(BuildRecordsView, TranslationsMixin):

@@ -73,6 +73,7 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
     instance.
     """
     hint_string = pubrec.sourcepackagerelease.architecturehintlist
+
     assert hint_string, 'Missing arch_hint_list'
 
     legal_arch_tags = set(arch.architecturetag
@@ -249,34 +250,39 @@ class BuilddMaster:
         self.commit()
 
     def _createMissingBuildsForPublication(self, pubrec, build_archs):
+        """Create new Build record for the requested archseries.
+
+        It verifies if the requested build is already inserted before
+        creating a new one.
+        The Build record is created for the archseries 'default_processor'.
+        """
         header = ("build record %s-%s for '%s' " %
                   (pubrec.sourcepackagerelease.name,
                    pubrec.sourcepackagerelease.version,
                    pubrec.sourcepackagerelease.architecturehintlist))
-        assert pubrec.sourcepackagerelease.architecturehintlist, (
-            'Empty architecture hint list')
+
         for archseries in build_archs:
+            # Dismiss if there is no processor available for the
+            # archseries in question.
             if not archseries.processors:
                 self._logger.debug(
                     "No processors defined for %s: skipping %s"
                     % (archseries.title, header))
-                return
+                continue
+            # Dismiss if build is already present for this
+            # distroarchseries.
             if pubrec.sourcepackagerelease.getBuildByArch(
                 archseries, pubrec.archive):
-                # verify this build isn't already present for this
-                # distroarchseries
                 continue
-
+            # Create new Build record.
             self._logger.debug(
                 header + "Creating %s (%s)"
                 % (archseries.architecturetag, pubrec.pocket.title))
-
             pubrec.sourcepackagerelease.createBuild(
                 distroarchseries=archseries,
                 pocket=pubrec.pocket,
                 processor=archseries.default_processor,
                 archive=pubrec.archive)
-
 
     def addMissingBuildQueueEntries(self):
         """Create missing Buildd Jobs. """
