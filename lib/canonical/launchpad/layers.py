@@ -1,6 +1,8 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
-"""Module that defines the layers used in launchpad, and also utilities
-to do with manipulating layers.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+
+"""Define the layers used in Launchpad.
+
+Also define utilities that manipulate layers.
 """
 
 __metaclass__ = type
@@ -14,8 +16,10 @@ except ImportError:
 
 from zope.interface import directlyProvides, directlyProvidedBy, Interface
 
+
 def setAdditionalLayer(request, layer):
     directlyProvides(request, directlyProvidedBy(request) + layer)
+
 
 def setFirstLayer(request, layer):
     directlyProvides(request, layer, directlyProvidedBy(request))
@@ -24,22 +28,30 @@ def setFirstLayer(request, layer):
 class LaunchpadLayer(IDefaultBrowserLayer):
     """The `LaunchpadLayer` layer."""
 
-class RosettaLayer(LaunchpadLayer):
-    """The `RosettaLayer` layer."""
-TranslationsLayer = RosettaLayer
+
+class TranslationsLayer(LaunchpadLayer):
+    """The `TranslationsLayer` layer."""
+
 
 class BugsLayer(LaunchpadLayer):
     """The `BugsLayer` layer."""
 
+
 class CodeLayer(LaunchpadLayer):
     """The `CodeLayer` layer."""
+
 
 class BlueprintLayer(LaunchpadLayer):
     """The `BlueprintLayer` layer."""
 BlueprintsLayer = BlueprintLayer
 
+
 class AnswersLayer(LaunchpadLayer):
     """The `AnswersLayer` layer."""
+
+
+class OpenIdLayer(LaunchpadLayer):
+    """The `OpenId` layer."""
 
 
 class DebugLayer(Interface):
@@ -48,6 +60,7 @@ class DebugLayer(Interface):
     This derives from Interface beacuse it is just a marker that this
     is a debug-related request.
     """
+
 
 class PageTestLayer(Interface):
     """The `PageTestLayer` layer. (need to register a 404 view for this and
@@ -79,4 +92,3 @@ class ShipItKUbuntuLayer(ShipItLayer):
 
 class ShipItEdUbuntuLayer(ShipItLayer):
     """The `ShipIt` for EdUbuntu layer."""
-

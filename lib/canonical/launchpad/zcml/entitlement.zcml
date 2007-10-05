@@ -1,0 +1,30 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    i18n_domain="launchpad">
+
+  <content class="canonical.launchpad.database.Entitlement">
+    <require
+        permission="launchpad.View"
+        interface="canonical.launchpad.interfaces.IEntitlement"
+        />
+    <require
+        permission="launchpad.Admin"
+        set_schema="canonical.launchpad.interfaces.IEntitlement"
+        />
+  </content>
+
+  <!-- EntitlementSet -->
+  <content class="canonical.launchpad.database.EntitlementSet">
+    <allow interface="canonical.launchpad.interfaces.IEntitlementSet" />
+  </content>
+
+  <securedutility
+      class="canonical.launchpad.database.EntitlementSet"
+      provides="canonical.launchpad.interfaces.IEntitlementSet" >
+    <allow interface="canonical.launchpad.interfaces.IEntitlementSet" />
+  </securedutility>
+
+</configure>

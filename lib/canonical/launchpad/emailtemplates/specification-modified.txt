@@ -1,8 +1,7 @@
-Specification changed by %(editor)s:
+Blueprint changed by %(editor)s:
 
 %(info_fields)s
 
 -- 
-Specification Details:
   %(spec_title)s
   %(spec_url)s

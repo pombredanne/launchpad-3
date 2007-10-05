@@ -1,18 +1,20 @@
 <html
-    xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1 tal:condition="view/user_is_subscribed">
-        Unsubscribe from &ldquo;<tal:branch replace="context/displayname" />&rdquo;
-      </h1>
-      <h1 tal:condition="not: view/user_is_subscribed">
-        Subscribe to &ldquo;<tal:branch replace="context/displayname" />&rdquo;
-      </h1>
+      <tal:branch-link define="branch context">
+        <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
+      </tal:branch-link>
+      <h1>Subscribe to branch</h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -23,39 +25,34 @@
 <div metal:fill-slot="main">
 
 <tal:not_subscribed condition="not: view/user_is_subscribed">
-  <p class="documentDescription">
-    If you subscribe to a branch it will show up on your
-    personal pages.
-  </p>
-  <p>
-    Choose "Subscribe" to become a subscriber to this branch, or "Cancel" to
-    return to the branch page.
-  </p>
+
+  <div metal:use-macro="context/@@launchpad_form/form" >
+    <metal:extra fill-slot="extra_info">
+      <p class="documentDescription" tal:condition="view/subscribing_self">
+        If you subscribe to a branch it will show up on your
+        personal pages.
+      </p>
+    </metal:extra>
+  </div>
+
 </tal:not_subscribed>
 
 <tal:subscribed condition="view/user_is_subscribed">
+
+  <tal:comment condition="nothing">
+    This occurs if the user is hacking the URLs,
+    and should never be linked to from a valid page.
+
+    It could occur from a stale page as well if the user
+    is using a tabbed browser and hasn't refreshed the page.
+  </tal:comment>
+
+
   <p class="documentDescription">
-    If you unsubscribe from a branch it will no longer show up on your
-    personal pages.
+    You are already subscribed to this branch
   </p>
-  <p>
-    Choose "Unsubscribe" to remove your current subscription to this branch,
-    or "Cancel" to return to the branch page.
-  </p>
+
 </tal:subscribed>
-
-  <form action="." method="POST">
-
-    <div class="actions">
-      <input type="submit"
-             name="cancel"
-             value="Cancel" />
-      <input tal:condition="not: view/user_is_subscribed"
-             type="submit" name="subscribe" value="Subscribe" />
-      <input tal:condition="view/user_is_subscribed"
-             type="submit" name="subscribe" value="Unsubscribe" />
-    </div>
-  </form>
 
 </div>
 

@@ -2,30 +2,28 @@ Because milestones are associated with products or distros, reassigning
 a bugtask to a different product forces the milestone value to None,
 even if the user was trying to set the milestone value.
 
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-    >>> browser.open("http://localhost:9000/firefox/+bug/1/+editstatus")
-    >>> browser.getControl("Product").value = "evolution"
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
+    >>> browser.open("http://bugs.launchpad.dev/firefox/+bug/1/+editstatus")
+    >>> browser.getControl("Project").value = "evolution"
     >>> browser.getControl("Milestone").value = ["1"]
     >>> browser.getControl("Save Changes").click()
 
-    >>> milestone_ignored_message = (
-    ...     "The milestone setting was ignored because you reassigned the bug "
-    ...     "to a new product")
-
-    >>> milestone_ignored_message in browser.contents
-    True
+    >>> for message in find_tags_by_class(browser.contents, 'message'):
+    ...     print message.renderContents()
+    The milestone setting was ignored because you reassigned the bug
+    to...Evolution...
 
 (Revert the change we just made.)
 
-    >>> browser.open("http://localhost:9000/evolution/+bug/1/+editstatus")
-    >>> browser.getControl("Product").value = "firefox"
+    >>> browser.open("http://bugs.launchpad.dev/evolution/+bug/1/+editstatus")
+    >>> browser.getControl("Project").value = "firefox"
     >>> browser.getControl("Save Changes").click()
 
 (The "ignore" message doesn't appear when the user didn't set a
 milestone.)
 
-    >>> milestone_ignored_message not in browser.contents
-    True
+    >>> find_tags_by_class(browser.contents, 'message')
+    []
 
 Likewise, reassigning a bugtask to a different product will clear the
 milestone value, if one was set.
@@ -35,12 +33,10 @@ milestone value, if one was set.
     >>> browser.getControl("Save Changes").click()
 
     >>> browser.open("http://localhost:9000/firefox/+bug/1/+editstatus")
-    >>> browser.getControl("Product").value = "evolution"
+    >>> browser.getControl("Project").value = "evolution"
     >>> browser.getControl("Save Changes").click()
 
-    >>> milestone_cleared_message = (
-    ...     "The bug report for evolution (upstream) was removed from the "
-    ...     "Mozilla Firefox: 1.0 milestone because it was reassigned to a new "
-    ...     "product")
-    >>> milestone_cleared_message in  browser.contents
-    True
+    >>> for message in find_tags_by_class(browser.contents, 'message'):
+    ...     print message.renderContents()
+    The Mozilla Firefox: 1.0 milestone setting has been removed
+    because you reassigned the bug to Evolution.

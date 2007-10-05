@@ -1,12 +1,17 @@
-<div class="portlet">
+<div class="portlet" id="portlet-details">
   <div class="portletBody portletContent">
     <table class="summary">
       <tbody>
         <tr>
-          <th>Project status:</th>
-          <td tal:condition="context/reviewed">Reviewed</td>
-          <td tal:condition="context/active">Active</td>
-          <td tal:condition="not: context/active">Disabled</td>
+          <th>Project group status:</th>
+          <td>
+            <tal:block condition="context/active">Active</tal:block>
+            <tal:block condition="not: context/active">Disabled</tal:block>
+            <tal:block condition="context/reviewed"><br />Reviewed</tal:block>
+            <tal:block condition="context/icon"><br />Branded
+              <tal:icon replace="structure context/image:icon" />
+            </tal:block>
+          </td>
         </tr>
         <tr>
           <th>Maintainer:</th>
@@ -19,7 +24,7 @@
         </tr>
         <tr>
           <th>Driver:</th>
-          <td tal:condition="not:context/driver">Not yet assigned</td>
+          <td tal:condition="not:context/driver">Not yet appointed</td>
           <td tal:condition="context/driver">
             <a
               tal:content="context/driver/browsername"

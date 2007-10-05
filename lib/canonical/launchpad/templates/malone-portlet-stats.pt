@@ -1,6 +1,11 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <div>
-  <strong tal:content="context/bug_count">5</strong> bugs reported in
-  <strong tal:content="context/bugtask_count">5</strong> places
+  <strong tal:content="context/bug_count">5</strong> bugs reported across
+  <strong tal:content="context/projects_with_bugs_count">5</strong> projects
 </div>
 <div>
   including <strong tal:content="context/bugwatch_count">5</strong> links
@@ -8,6 +13,12 @@
   <a href="/bugs/bugtrackers">bug trackers</a>
 </div>
 <div>
-  and <strong tal:content="view/getCveBugLinkCount">5</strong>
-  <a href="/bugs/cve">CVE references</a>
+  <strong tal:content="context/shared_bug_count">7</strong> bugs are
+  <a href="http://help.launchpad.net/CrossProjectBugTracking">shared across
+  multiple projects</a>
 </div>
+<div>
+  and <strong tal:content="view/getCveBugLinkCount">5</strong>
+  bugs are related to <a href="/bugs/cve">CVE entries</a>
+</div>
+</tal:root>

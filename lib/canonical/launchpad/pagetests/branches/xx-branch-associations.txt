@@ -1,0 +1,95 @@
+= Branch Associations =
+
+Branches have connections to many things.  Particularly branches have
+links to bugs and blueprints.  Branches also have badges in listing views
+to show the these associations.
+
+One of the main intentions for the branch associations listing page is to
+have somewhere useful for the badges to hyperlink to.
+
+
+== Getting to the branch associations ==
+
+There is an action item on branches that any user can click on called
+'View branch associations'.  This link takes the user to the page that
+lists all the links or associations the branch has.
+
+    >>> anon_browser.open(
+    ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2')
+    >>> anon_browser.getLink('View branch associations').click()
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Mozilla Firefox 0.9.2 for the Mozilla Firefox project
+    Branch associations
+    Project
+      Mozilla Firefox
+    Bugs
+      Reflow problems with complex page layouts
+    Blueprints
+      This branch is not associated with any blueprints at this time.
+    Subscribers
+      This branch has no subscribers at this time.
+
+Junk branches do not have a section listing the project.
+
+    >>> anon_browser.open('http://code.launchpad.dev/~sabdfl/+junk/testdoc')
+    >>> anon_browser.getLink('View branch associations').click()
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    ~sabdfl/+junk/testdoc
+    Branch associations
+    Bugs
+    ...
+
+
+== Associations are links ==
+
+The items listed in the branch associtaion sections are links.
+
+Firstly make sure that the branch has some blueprint links and subscribers.
+
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://blueprints.launchpad.dev/firefox/+spec/canvas')
+    >>> browser.getLink('Link branch').click()
+    >>> browser.getControl('Branch').value = '~sabdfl/firefox/release-0.9.2'
+    >>> browser.getControl('Link to Specification').click()
+    >>> browser.open('http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2')
+    >>> browser.getLink('Subscribe').click()
+    >>> browser.getControl('Subscribe').click()
+    >>> browser.getLink('View branch associations').click()
+    >>> associations_url = browser.url
+
+The project link, if the branch is not junk, links back to the branch listing
+for the project.
+
+    >>> import re
+    >>> browser.getLink(re.compile('^Mozilla Firefox$')).click()
+    >>> browser.url
+    'http://code.launchpad.dev/firefox'
+    >>> # goBack() and reload() seems to not work with PQM
+    >>> browser.open(associations_url)
+
+The listed bugs link to the main bug page.
+
+    >>> browser.getLink('Reflow problems with complex page layouts').click()
+    >>> browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/4'
+    >>> browser.open(associations_url)
+
+The listed blueprints link to the main blueprint page.
+
+    >>> browser.getLink('Support <canvas> Objects').click()
+    >>> browser.url
+    'http://blueprints.launchpad.dev/firefox/+spec/canvas'
+    >>> browser.open(associations_url)
+
+The listed subscribers link to the code listing pages for the people or teams.
+
+    # Since we are logged in as Sample Person there are two links that
+    # have Sample Person, so checking the link by getting the surrounding
+    # div.
+    >>> div = find_tag_by_id(browser.contents, 'branch-subscribers')
+    >>> print div.renderContents()
+    <div class="indented">
+      <a href="http://code.launchpad.dev/~name12"><img alt=""
+      width="14" height="14" src="/@@/person" />&nbsp;Sample Person</a>
+    </div>
+

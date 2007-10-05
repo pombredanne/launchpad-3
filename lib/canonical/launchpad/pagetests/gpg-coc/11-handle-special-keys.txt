@@ -47,23 +47,36 @@ and looks like this:
 
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> msg = email.message_from_string(raw_msg)
+
+Verify that the instructions are in clear text.
+
   >>> print msg.get_payload(decode=True)
+  Hello,
   <BLANKLINE>
-  ...
-  We received a request from Sample Person using email address
-  test@canonical.com, trying to confirm an OpenPGP key for use in
-  Launchpad.
+  Here are the instructions for confirming the OpenPGP key registration that we
+  received for use in Launchpad.
+  <BLANKLINE>
+  Requester details:
+  <BLANKLINE>
+      User name    : Sample Person
+      Email address: test@canonical.com
   <BLANKLINE>
   Key details:
   <BLANKLINE>
-  447DBF38C4F9C4ED752246B77D88913717B05A8F
-  1024D/17B05A8F
-  sign.only@canonical.com
+      Fingerprint : 447DBF38C4F9C4ED752246B77D88913717B05A8F
+      Key type/ID : 1024D/17B05A8F
   <BLANKLINE>
+  UIDs:
+      sign.only@canonical.com
   <BLANKLINE>
   Please go here to finish adding the key to your Launchpad account:
-  http://.../token/...
-  ...
+  <BLANKLINE>
+      http://.../token/...
+  <BLANKLINE>
+  <BLANKLINE>
+  Thanks,
+  <BLANKLINE>
+  The Launchpad Team
 
 Finally, kill zeca:
 

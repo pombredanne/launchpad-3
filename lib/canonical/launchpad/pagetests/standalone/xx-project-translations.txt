@@ -1,5 +1,5 @@
 There is a list of IProduct objects that have translations and are using
-Rosetta officially from a IProject's translations page.
+Launchpad Translations officially from a IProject's translations page.
 
 GNOME is a good example, it has products with translations.
 
@@ -18,7 +18,7 @@ Evolution being one with translations and being used officially
   http://translations.launchpad.dev/gnome
 
 Netapplet is another product of GNOME project. It has translations, but it's not
-using Rosetta officially, so it's not in this page.
+using Launchpad officially, so it's not in this page.
 
   >>> browser.getLink('Network Applet')
   Traceback (most recent call last):
@@ -38,7 +38,7 @@ Netapplet is in fact a product belonging to GNOME project.
   >>> print browser.url
   http://launchpad.dev/netapplet
 
-It's not using Rosetta officially
+It's not using Launchpad Translations officially
 
   >>> for tag in find_tags_by_class(browser.contents, 'summary'):
   ...     print tag
@@ -58,8 +58,8 @@ And it has translations.
   http://translations.launchpad.dev/netapplet/trunk/+pots/netapplet
 
 alsa-utils is a product that doesn't belong to GNOME project. It has
-translations and is using Rosetta officially, and it shouldn't appear
-in GNOME project translations page.
+translations and is using Launchpad Translations officially, and it 
+shouldn't appear in GNOME project translations page.
 
   >>> browser.open('http://translations.launchpad.dev/gnome')
   >>> browser.getLink('alsa-utils')
@@ -80,7 +80,7 @@ alsa-utils does not belong to GNOME project.
   ...
   LinkNotFoundError
 
-It's using Rosetta officially.
+It's using Launchpad Translations officially.
 
   >>> browser.open('http://launchpad.dev/alsa-utils')
   >>> print browser.url
@@ -111,4 +111,5 @@ whether a product is registered in Launchpad.
   http://translations.launchpad.dev/gnome
   >>> browser.getLink('registered with Launchpad').click()
   >>> print browser.url
-  http://translations.launchpad.dev/products
+  http://translations.launchpad.dev/projects
+

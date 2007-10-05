@@ -1,56 +1,186 @@
+= LanguageSet =
 
-Languages
----------
+  >>> from canonical.launchpad.interfaces import ILanguageSet
+  >>> language_set = getUtility(ILanguageSet)
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
-    >>> language_set = getUtility(ILanguageSet)
+== getLanguageByCode ==
 
 We can get hold of languages by their language code.
 
-    >>> language = language_set['es']
-    >>> language.englishname
-    u'Spanish'
+  >>> language = language_set.getLanguageByCode('es')
+  >>> language.englishname
+  u'Spanish'
+
+Or if it doesn't exist, we return None.
+
+  >>> language_set.getLanguageByCode('not-existing') is None
+  True
+
+== canonicalise_language_code ==
 
 We can convert language codes to standard form.
 
-    >>> language_set.canonicalise_language_code('pt')
-    'pt'
-    >>> language_set.canonicalise_language_code('pt_BR')
-    'pt_BR'
-    >>> language_set.canonicalise_language_code('pt-br')
-    'pt_BR'
+  >>> language_set.canonicalise_language_code('pt')
+  'pt'
+  >>> language_set.canonicalise_language_code('pt_BR')
+  'pt_BR'
+  >>> language_set.canonicalise_language_code('pt-br')
+  'pt_BR'
 
-We can even get hold of many at once. Language codes will be converted to
-standard form and unknown codes will be ignored.
+== codes_to_languages ==
 
-    >>> languages = language_set.codes_to_languages(['es', 'pt_BR', 'zz'])
-    >>> [language.englishname for language in languages]
-    [u'Spanish', u'Portuguese (Brazil)']
+Convert a list of ISO language codes to language objects. If the code is
+unknown, it's ignored.
 
+  # 'zz' code doesn't exist:
+  >>> language_set.getLanguageByCode('zz') is None
+  True
+  >>> languages = language_set.codes_to_languages(['es', 'pt_BR', 'zz'])
+  >>> [language.englishname for language in languages]
+  [u'Spanish', u'Portuguese (Brazil)']
 
-Suggestion Source Languages
----------------------------
+== createLanguage ==
+
+This method creates a new language in Launchpad.
+
+  >>> foos = language_set.createLanguage('foos', 'Foo language')
+  >>> print foos.code
+  foos
+  >>> print foos.englishname
+  Foo language
+
+== search ==
+
+We are able to search languages with this method.
+
+  >>> languages = language_set.search('Spanish')
+  >>> for language in languages:
+  ...     print language.code
+  es
+  es_AR
+  es_BO
+  es_CL
+  es_CO
+  es_CR
+  es_DO
+  es_EC
+  es_SV
+  es_GT
+  es_HN
+  es_MX
+  es_NI
+  es_PA
+  es_PY
+  es_PE
+  es_PR
+  es_ES
+  es_US
+  es_UY
+  es_VE
+
+= Language =
+
+The Language object represents a language in Launchpad.
+
+== alt_suggestion_language ==
 
 In some languages, you could reasonably expect to find good suggestions in a
 second language. They might not be perfect but they are useful nonetheless.
 
 pt_BR is not a descendent of pt:
 
-    >>> pt_BR = language_set['pt_BR']
+    >>> pt_BR = language_set.getLanguageByCode('pt_BR')
     >>> print pt_BR.alt_suggestion_language
     None
 
 However, es_MX would find es useful:
 
-    >>> print language_set['es_MX'].alt_suggestion_language.code
+    >>> language = language_set.getLanguageByCode('es_MX')
+    >>> print language.alt_suggestion_language.code
     es
 
 And Nynorsk and Bokmal have a special relationship:
 
-    >>> print language_set['nn'].alt_suggestion_language.code
+    >>> language = language_set.getLanguageByCode('nn')
+    >>> print language.alt_suggestion_language.code
     nb
-    
-    >>> print language_set['nb'].alt_suggestion_language.code
+
+    >>> language = language_set.getLanguageByCode('nb')
+    >>> print language.alt_suggestion_language.code
     nn
 
+English and non-visible languages are not translatable, so there
+are no suggestions.
 
+    >>> language = language_set.getLanguageByCode('en')
+    >>> language.alt_suggestion_language is None
+    True
+
+    >>> language = language_set.getLanguageByCode('zh')
+    >>> language.visible
+    False
+    >>> language.alt_suggestion_language is None
+    True
+
+
+== dashedcode ==
+
+Although we use underscores to separate language and country codes to
+represent, for instance pt_BR, when used on web pages, it should use
+instead a dash char. This method does it automatically:
+
+  >>> pt_BR = language_set.getLanguageByCode('pt_BR')
+  >>> print pt_BR.dashedcode
+  pt-BR
+
+== translators ==
+
+This attribute has the list of persons that did some translations for this
+language.
+
+  >>> es = language_set.getLanguageByCode('es')
+  >>> for translator in es.translators:
+  ...     print translator.name
+  carlos
+
+== countries ==
+
+Property holding a list of countries a language is spoken in, and allowing
+reading and setting them.
+
+  >>> es = language_set.getLanguageByCode('es')
+  >>> print [country.name for country in es.countries]
+  [u'Argentina', u'Bolivia', u'Chile', u'Colombia', u'Costa Rica',
+   u'Dominican Republic', u'Ecuador', u'El Salvador', u'Guatemala',
+   u'Honduras', u'Mexico', u'Nicaragua', u'Panama', u'Paraguay', u'Peru',
+   u'Puerto Rico', u'Spain', u'United States', u'Uruguay', u'Venezuela']
+
+We can add countries using `ILanguage.addCountry` method.
+
+  >>> from canonical.launchpad.interfaces import ICountrySet
+  >>> country_set = getUtility(ICountrySet)
+  >>> germany = country_set['DE']
+  >>> es.addCountry(germany)
+  >>> print [country.name for country in es.countries]
+  [u'Argentina', u'Bolivia', u'Chile', u'Colombia', u'Costa Rica',
+   u'Dominican Republic', u'Ecuador', u'El Salvador', u'Germany', u'Guatemala',
+   u'Honduras', u'Mexico', u'Nicaragua', u'Panama', u'Paraguay', u'Peru',
+   u'Puerto Rico', u'Spain', u'United States', u'Uruguay', u'Venezuela']
+
+Or, we can remove countries using `ILanguage.removeCountry` method.
+
+  >>> argentina = country_set['AR']
+  >>> es.removeCountry(argentina)
+  >>> print [country.name for country in es.countries]
+  [u'Bolivia', u'Chile', u'Colombia', u'Costa Rica', u'Dominican Republic',
+   u'Ecuador', u'El Salvador', u'Germany', u'Guatemala', u'Honduras',
+   u'Mexico', u'Nicaragua', u'Panama', u'Paraguay', u'Peru', u'Puerto Rico',
+   u'Spain', u'United States', u'Uruguay', u'Venezuela']
+
+We can also assign a complete set of languages directly to `countries`,
+but we need to log in as a translations administrator first.
+
+  >>> login('carlos@canonical.com')
+  >>> es.countries = set([argentina, germany])
+  >>> print [country.name for country in es.countries]
+  [u'Argentina', u'Germany']

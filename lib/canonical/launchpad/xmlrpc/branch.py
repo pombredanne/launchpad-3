@@ -5,16 +5,15 @@
 __metaclass__ = type
 __all__ = ['IBranchSetAPI', 'BranchSetAPI']
 
-import xmlrpclib
-
 from zope.component import getUtility
 from zope.interface import Interface, implements
 
 from canonical.launchpad.interfaces import (
-    IBranchSet, IBugSet, ILaunchBag, IProductSet, IPersonSet, NotFoundError)
+    BranchCreationForbidden, BranchType, IBranch, IBranchSet, IBugSet,
+    ILaunchBag, IPersonSet, IProductSet, NotFoundError)
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
 from canonical.launchpad.xmlrpc import faults
-from canonical.lp.dbschema import BugBranchStatus
 
 
 class IBranchSetAPI(Interface):
@@ -54,6 +53,12 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         if existing_branch is not None:
             return faults.BranchAlreadyRegistered(branch_url)
 
+        try:
+            unicode_branch_url = branch_url.decode('utf-8')
+            url = IBranch['url'].validate(unicode_branch_url)
+        except LaunchpadValidationError, exc:
+            return faults.InvalidBranchUrl(branch_url, exc)
+
         # We want it to be None in the database, not ''.
         if not branch_description:
             branch_description = None
@@ -71,9 +76,27 @@ class BranchSetAPI(LaunchpadXMLRPCView):
             return faults.NoSuchPerson(
                 type="author", email_address=author_email)
 
-        branch = getUtility(IBranchSet).new(
-            name=branch_name, owner=owner, product=product, url=branch_url,
-            title=branch_title, summary=branch_description, author=author)
+        if product is None:
+            unique_name = '~%s/+junk/%s' % (owner.name, branch_name)
+        else:
+            unique_name = '~%s/%s/%s' % (owner.name, product.name, branch_name)
+        if getUtility(IBranchSet).getByUniqueName(unique_name) is not None:
+            return faults.BranchUniqueNameConflict(unique_name)
+
+        try:
+            if branch_url:
+                branch_type = BranchType.MIRRORED
+            else:
+                branch_type = BranchType.HOSTED
+            branch = getUtility(IBranchSet).new(
+                branch_type=branch_type,
+                name=branch_name, creator=owner, owner=owner, product=product,
+                url=branch_url, title=branch_title,
+                summary=branch_description, author=author)
+            if branch_type == BranchType.MIRRORED:
+                branch.requestMirror()
+        except BranchCreationForbidden:
+            return faults.BranchCreationForbidden(product.displayname)
 
         return canonical_url(branch)
 

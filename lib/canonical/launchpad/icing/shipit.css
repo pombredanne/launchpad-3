@@ -1,0 +1,150 @@
+/* === Overall presentation === */
+
+html {
+  position: relative;
+  font-family: sans-serif, "Lucida Grande", "Trebuchet MS";
+  font-size: 12pt;
+  color: black;
+  background-color: #FFFFFF;
+}
+body {margin: 0; padding: 0;}
+
+div.body {padding: 0em 1em;}
+
+.discreet, .lesser {font-size: small;}
+
+/* --- Error, warning, and info messages --- */
+
+.error, .warning, .informational {
+  padding: 0.5em;
+}
+.message {
+  background: 5px 0.5em no-repeat;
+  font-weight: bold;
+  margin: 1em 0 0.5em;
+  padding: 0.5em 1em 0.5em 30px; /* 30px because the image has a pixel size */
+}
+.error .message, .warning .message, .informational .message {
+  margin: 0.25em 0 0;
+  padding: 0 0 0 25px;
+  background: 0 0 no-repeat;
+}
+.error {background-color: #f0cccc; color: black;}
+.error.message, .error .message {
+  background-image: url(/@@/error);
+}
+.warning {background-color: #fcdd99; color: black;}
+.warning.message, .warning .message {
+  background-image: url(/@@/warning);
+}
+.informational {background-color: #fcfc99; color: black;}
+.informational.message, .informational .message {
+  background-image: url(/@@/info);
+}
+.debugging {background-color: #666; color: white;}
+.debugging.message, .debugging .message {
+  background-image: url(/@@/info);
+}
+
+/* --- Form controls --- */
+
+form {border: 0; margin: 0; padding: 0;}
+input, select, textarea {
+  background-color: #fff;
+  color: #656565;
+  font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
+  margin: 0;
+}
+input[type="text"], input[type="submit"], input[type="reset"], textarea {
+  font-size: 1em; /* Forces a readable font size in Safari */
+}
+input.urlTextType {width: 100%;}
+.fieldRequired, .fieldOptional {color: #999;}
+.formHelp {margin-bottom: 1em;}
+textarea {width: 100%;}
+table.form {width: 100%;}
+
+/* === Tables === */
+
+table.latest th, table.latest td {padding-bottom: 2em;}
+table.summary {float: right; margin: 0 0 1em 1em;}
+table.summary caption {font-style: italic; margin-left: 1em;}
+div.right table.summary {float: none; margin: 1em auto;}
+table.summary tr {border: dotted #ccc; border-width: 1px 0;}
+table.summary td {padding-left: 0.5em;}
+table.summary ul, table.summary ul li {
+  list-style-position: inside;
+  margin: 0;
+  padding: 0;
+}
+th, td {padding: 0.25em;}
+th.icon, td.icon {vertical-align: top; white-space: nowrap; width: 1px;}
+th.icon.left, td.icon.left {padding-right: 0;}
+th.icon.right, td.icon.right {padding-left: 0;}
+th.nowrap, td.nowrap {white-space: nowrap;}
+tfoot th, table.contributions th {text-align: left;}
+table.contributions, table.contributions th, table.contributions td {
+  border: 1px solid #e6e6e6;}
+table.contributions tr.odd {background-color: #fff; color: inherit;}
+table.contributions tr.even {background-color: #f6f6f6; color: inherit;}
+table.contributions th, table.contributions td {padding: 0.5em 0.75em;}
+table.contributions td {vertical-align: middle; width: 16px;}
+table.headers-right-aligned th {text-align: right;}
+
+/* --- Listing tables --- */
+
+table.listing {margin: 0; width: 100%;}
+table.listing, table.listing tbody {border-bottom: 1px solid #d2d2d2;}
+table.listing thead, table.listing thead th, table.listing tfoot tr {
+  border: 1px solid #d2d2d2;
+  background-color: #fff;
+}
+table.listing tfoot td {border: 1px solid #d2d2d2;}
+table.listing thead td {border: none;}
+tr.highlight {background-color: #ff9;}
+table.listing tr.note {font-size: smaller;}
+tr.amount, td.amount {text-align: right;}
+table.listing th, table.listing td {padding: 0.25em;}
+table.listing th {font-size: 1.125em; white-space: nowrap;}
+table.listing td {border: 1px #d2d2d2; border-style: dotted none none none;}
+table.listing tr.note td {border-style: none;}
+table.listing img {vertical-align: middle;}
+table.listing tr.secondary th, table.listing tr.secondary td {border-top: none;}
+table.listing table tbody, table.listing table thead,
+table.listing table thead th, table.listing tfoot tr,
+table.listing table tfoot td, table.listing table td {
+  border: none;
+}
+
+
+/* --- Sortable tables --- */
+
+table.sortable a.sortheader {
+  color:#666666;
+  font-weight: bold;
+  text-decoration: none;
+  display: block;
+}
+table.sortable img.sortarrow {
+  padding-left: 2px;
+}
+th.ascending {
+  background-image: url(/@@/arrowDown);
+  background-position: center right;
+  background-repeat: no-repeat;
+}
+th.descending {
+  background-image: url(/@@/arrowUp);
+  background-position: center right;
+  background-repeat: no-repeat;
+}
+/* Used to indicate a value to be used to sort cells in a row */
+.sortkey, .revsortkey {display: none;}
+
+
+:link {
+  color: #660000;
+}
+:visited {
+  color: #993333;
+}

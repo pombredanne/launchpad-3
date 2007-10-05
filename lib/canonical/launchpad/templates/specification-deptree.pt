@@ -13,39 +13,38 @@
   <div tal:replace="structure context/@@+portlet-dependencies" />
 </metal:rightportlets>
 
-<metal:heading fill-slot="pageheading">
-  <h4><span tal:replace="context/target/displayname">Firefox</span>
-      Feature Specification:</h4>
-  <h2 tal:content="context/title">Spec Title</h2>
-</metal:heading>
-
 <div metal:fill-slot="main">
 
-  <h1>Specification dependency tree</h1>
+      <div>
+        <img alt="" src="/@@/blueprint" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+      </div>
+
+  <h1>Blueprint dependency tree</h1>
 
   <p>
-    This is the sequence in which specifications related to this one must be
+    This is the sequence in which blueprints related to this one must be
     implemented.
   </p>
 
-  <h2>Specifications that must be implemented first</h2>
+  <h2>Blueprints that must be implemented first</h2>
 
     <div tal:repeat="spec context/all_deps"
          tal:replace="structure spec/@@+listing-detailed" />
     <p tal:condition="not: context/dependencies">
-      <i>None - this specification does not depend on any others.</i>
+      <i>None - this blueprint does not depend on any others.</i>
     </p>
 
-  <h2>This specification</h2>
+  <h2>This blueprint</h2>
 
     <div tal:replace="structure context/@@+listing-detailed" />
 
-  <h2>Specifications that can then be implemented</h2>
+  <h2>Blueprints that can then be implemented</h2>
 
     <div tal:repeat="spec context/all_blocked"
          tal:replace="structure spec/@@+listing-detailed" />
     <p tal:condition="not: context/blocked_specs">
-      No specifications depend on this one.
+      No blueprints depend on this one.
     </p>
   
 </div>

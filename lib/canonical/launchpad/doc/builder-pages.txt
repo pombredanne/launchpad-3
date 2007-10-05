@@ -1,28 +1,25 @@
-Builder View Classes and Pages
-==============================
+= Builder View Classes and Pages =
 
-  >>> from zope.component import getUtility
-  >>> from zope.component import queryView
-  >>> from zope.publisher.browser import TestRequest
+  >>> from zope.component import getMultiAdapter, getUtility
   >>> from canonical.launchpad.interfaces import IBuilderSet
   >>> from canonical.launchpad.webapp.interfaces import IBatchNavigator
+  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
   >>> builder = getUtility(IBuilderSet).get(1)
 
 Get a "mock" request:
   >>> mock_form = {}
-  >>> request = TestRequest(form=mock_form)
+  >>> request = LaunchpadTestRequest(form=mock_form)
 
 Let's instantiate the view for +index:
 
-  >>> builder_view = queryView(builder, "+index", request)
-
+  >>> builder_view = getMultiAdapter((builder, request), name="+index")
   >>> builder_view.now()
   '...'
 
 A view for +history:
 
-  >>> builder_view = queryView(builder, "+history", request)
+  >>> builder_view = getMultiAdapter((builder, request), name="+history")
 
   setupBuildList, build a batched list of build records and store it
   in view.batch, also store the batch navigator in view.batchnav. it
@@ -38,9 +35,9 @@ mock_form:
 
 Let's instantiate the view for +cancel:
 
-  >>> request = TestRequest(form={'BUILDERID': 1})
+  >>> request = LaunchpadTestRequest(form={'BUILDERID': 1})
 
-  >>> builder_view = queryView(builder, "+cancel", request)
+  >>> builder_view = getMultiAdapter((builder, request), name="+cancel")
 
   >>> builder_view.cancelBuildJob()
   '<p>Cancel (1). Not implemented yet</p>'
@@ -56,12 +53,13 @@ by mark. we nee to log in as mark or any other member of admin team
 
 Build an special request containing the fields we want to change:
 
-  >>> request = TestRequest(form={'field.manual': 'on',
-  ...                             'UPDATE_SUBMIT': 'Change'})
+  >>> request = LaunchpadTestRequest(form={
+  ...     'field.manual': 'on',
+  ...     'UPDATE_SUBMIT': 'Change'})
 
 Instantiate the correspondent view:
 
-  >>> builder_view = queryView(builder, "+mode", request)
+  >>> builder_view = getMultiAdapter((builder, request), name="+mode")
 
 Ensure the previous mode was AUTOMATIC
 
@@ -83,16 +81,17 @@ Let's instantiate the view for +edit:
 
 Build an special request containing the fields we want to change:
 
-  >>> request = TestRequest(form={'field.processor': builder.processor.name,
-  ...                             'field.url': builder.url,
-  ...                             'field.name': u'biscoito',
-  ...                             'field.title': builder.title,
-  ...                             'field.description': builder.description,
-  ...                             'UPDATE_SUBMIT': 'Change'})
+  >>> request = LaunchpadTestRequest(form={
+  ...     'field.processor': builder.processor.name,
+  ...     'field.url': builder.url,
+  ...     'field.name': u'biscoito',
+  ...     'field.title': builder.title,
+  ...     'field.description': builder.description,
+  ...     'UPDATE_SUBMIT': 'Change'})
 
 Instantiate the correspondent view:
 
-  >>> builder_view = queryView(builder, "+edit", request)
+  >>> builder_view = getMultiAdapter((builder, request), name="+edit")
 
 Ensure the previous name
 

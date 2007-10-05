@@ -1,6 +1,6 @@
-<li>
 
-      <a tal:attributes="href context/fmt:url"
-         tal:content="context/title">Spec Title Here</a>
-
-</li>
+<tr>
+  <td tal:content="structure context/image:icon" />
+  <td><a tal:attributes="href context/fmt:url"
+         tal:content="context/title">Spec Title Here</a></td>
+</tr>

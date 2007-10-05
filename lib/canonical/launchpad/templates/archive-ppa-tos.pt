@@ -1,0 +1,54 @@
+ <tal:root
+   xmlns:tal="http://xml.zope.org/namespaces/tal"
+   omit-tag="">
+ <h2>Personal Package Archive Terms of Service</h2>
+    <p>Canonical Ltd. provides the PPA Service to you, subject to
+    these Terms of Service ("TOS"), which may be updated periodically
+    without prior notice. Failure to comply with these TOS may result
+    in account revocation.</p>
+
+    <p>You understand and agree that any content you upload to PPAs
+    must be freely redistributable by Canonical, and licensed under a
+    licenses permitting redistribution free of charge. Acceptable licenses
+    include licenses approved by:</p>
+
+    <ul>
+      <li><a href="http://opensource.org/licenses/category">OSI</a></li>
+      <li><a href="http://www.fsf.org/licensing/licenses/">FSF</a></li>
+      <li><a href="http://www.debian.org/social_contract#guidelines">
+      DFSG</a></li>
+      <li>
+      <a href="http://creativecommons.org/about/licenses/meet-the-licenses">
+      CC</a></li>
+    </ul>
+
+    <p>If you want to upload source under a license not covered by the list
+    above, bring it up on the <a
+    href="https://lists.canonical.com/mailman/listinfo/launchpad-users">
+    Launchpad users mailing list</a> for consideration.</p>
+
+    <p>Canonical reserves the right (but shall have no obligation) to
+    pre-screen, review, flag, filter, modify, refuse, or remove any or
+    all content that does not conform to the Terms of Service.</p>
+
+    <p>Canonical reserves the right to enforce quotas on the
+    Service, including (but not limited to) disk space, CPU time, and
+    bandwidth usage.</p>
+
+    <p>You agree to indemnify and hold Canonical Ltd, and its
+    subsidiaries, affiliates, officers, agents, partners, and
+    employees, harmless from any alleged claim or demand, including
+    reasonable attorney fees, made by any third party due to or
+    arising out of your Content, your use of the service, your
+    connection to the service, your violation of the TOS, or your
+    violation of the rights of another, whether you are a registered
+    user or not. The user is solely responsible for his or her actions
+    when using the service.</p>
+
+    <p>You agree not to sell, resell, or exploit any portion of the
+    Service, use of the Service, or access to the Service.</p>
+
+    <p>For more information about PPA features and usage detail check
+    the <a href="https://help.launchpad.net/PPAQuickStart"
+    >PPA quick-start guide</a>.</p>
+</tal:root>

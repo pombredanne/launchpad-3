@@ -2,7 +2,10 @@
 
 __metaclass__ = type
 
-__all__ = ['TeamMembershipEditView']
+__all__ = [
+    'TeamMembershipEditView',
+    'TeamMembershipSHP',
+    ]
 
 import pytz
 import datetime
@@ -11,9 +14,21 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import TeamMembershipStatus
 
-from canonical.launchpad.interfaces import ILaunchBag, ILaunchpadCelebrities
+from canonical.launchpad.interfaces import (
+    ILaunchBag, ILaunchpadCelebrities, TeamMembershipStatus,
+    UnexpectedFormData)
+from canonical.launchpad.browser.launchpad import (
+    StructuralHeaderPresentation)
+
+
+class TeamMembershipSHP(StructuralHeaderPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.team.title
 
 
 class TeamMembershipEditView:
@@ -93,15 +108,12 @@ class TeamMembershipEditView:
 
     def canChangeExpirationDate(self):
         """Return True if the logged in user can change the expiration date of
-        this membership. Team administrators can't change the expiration date
-        of their own membership."""
-        if self.userIsTeamOwnerOrLPAdmin():
-            return True
+        this membership.
 
-        if self.user.id == self.context.person.id:
-            return False
-        else:
-            return True
+        Team administrators can't change the expiration date of their own
+        membership.
+        """
+        return self.context.canChangeExpirationDate(self.user)
 
     def membershipExpires(self):
         """Return True if this membership is scheduled to expire one day."""
@@ -128,51 +140,60 @@ class TeamMembershipEditView:
     def processActiveMember(self):
         # This method checks the current status to ensure that we don't
         # crash because of users reposting a form.
-        if self.request.form.get('editactive') == 'Deactivate':
+        form = self.request.form
+        context = self.context
+        if form.get('deactivate'):
             if self.context.status == TeamMembershipStatus.DEACTIVATED:
                 # This branch and redirect is necessary because
                 # TeamMembership.setStatus() does not allow us to set an
                 # already-deactivated account to deactivated, causing
                 # double form posts to crash there. We instead manually
                 # ensure that the double-post is harmless.
-                self.request.response.redirect('%s/+members' %
-                                               canonical_url(self.context.team))
+                self.request.response.redirect(
+                    '%s/+members' % canonical_url(context.team))
                 return
             new_status = TeamMembershipStatus.DEACTIVATED
-        elif (self.request.form.get('admin') == 'no' and
-              self.context.status == TeamMembershipStatus.ADMIN):
-            new_status = TeamMembershipStatus.APPROVED
-        elif (self.request.form.get('admin') == 'yes' and
-              self.context.status == TeamMembershipStatus.APPROVED
-              # XXX: salgado, 2005-03-15: The clause below is a hack
-              # to make sure only the teamowner can promote a given
-              # member to admin, while we don't have a specific
-              # permission setup for this.
-              and self.userIsTeamOwnerOrLPAdmin()):
-            new_status = TeamMembershipStatus.ADMIN
+        elif form.get('change'):
+            if (form.get('admin') == "no" and
+                context.status == TeamMembershipStatus.ADMIN):
+                new_status = TeamMembershipStatus.APPROVED
+            elif (form.get('admin') == "yes" and
+                  context.status == TeamMembershipStatus.APPROVED
+                  # XXX: salgado 2005-03-15: The clause below is a hack
+                  # to make sure only the teamowner can promote a given
+                  # member to admin, while we don't have a specific
+                  # permission setup for this.
+                  and self.userIsTeamOwnerOrLPAdmin()):
+                new_status = TeamMembershipStatus.ADMIN
+            else:
+                # No status change will happen
+                new_status = self.context.status
         else:
-            # No status change will happen
-            new_status = self.context.status
+            raise UnexpectedFormData(
+                "None of the expected actions were found.")
 
         if self._setMembershipData(new_status):
-            self.request.response.redirect('%s/+members' %
-                                           canonical_url(self.context.team))
+            self.request.response.redirect(
+                '%s/+members' % canonical_url(context.team))
 
     def processProposedMember(self):
         if self.context.status != TeamMembershipStatus.PROPOSED:
             # Catch a double-form-post.
             self.errormessage = _(
-                'The membership request for %s has already been processed.' % 
+                'The membership request for %s has already been processed.' %
                     self.context.person.displayname)
             return
 
         assert self.context.status == TeamMembershipStatus.PROPOSED
 
         action = self.request.form.get('editproposed')
-        if action == 'Decline':
+        if self.request.form.get('decline'):
             status = TeamMembershipStatus.DECLINED
-        else:
+        elif self.request.form.get('approve'):
             status = TeamMembershipStatus.APPROVED
+        else:
+            raise UnexpectedFormData(
+                "None of the expected actions were found.")
         if self._setMembershipData(status):
             self.request.response.redirect(
                 '%s/+members' % canonical_url(self.context.team))
@@ -182,7 +203,7 @@ class TeamMembershipEditView:
                                        TeamMembershipStatus.DEACTIVATED):
             # Catch a double-form-post.
             self.errormessage = _(
-                'The membership request for %s has already been processed.' % 
+                'The membership request for %s has already been processed.' %
                     self.context.person.displayname)
             return
 
@@ -213,11 +234,9 @@ class TeamMembershipEditView:
         else:
             expires = self.context.dateexpires
 
-        team = self.context.team
-        member = self.context.person
-        comment = self.request.form.get('comment')
-        team.setMembershipData(member, status, reviewer=self.user,
-                               expires=expires, comment=comment)
+        self.context.setExpirationDate(expires, self.user)
+        self.context.setStatus(
+            status, self.user, self.request.form_ng.getOne('comment'))
         return True
 
     def _getExpirationDate(self):
@@ -259,10 +278,10 @@ class TeamMembershipEditView:
     def dateChooserWithCurrentExpirationSelected(self):
         return self._buildDateChooser(self.context.dateexpires)
 
-    # XXX: salgado, 2005-03-15: This will be replaced as soon as we have
+    # XXX: salgado 2005-03-15: This will be replaced as soon as we have
     # browser:form.
     def _buildDateChooser(self, selected=None):
-        # XXX: get form values and use them as the selected value
+        # Get form values and use them as the selected value.
         html = '<select name="day">'
         html += '<option value="0"></option>'
         for day in range(1, 32):
@@ -277,14 +296,14 @@ class TeamMembershipEditView:
         for month in range(1, 13):
             monthname = self.monthnames[month]
             if selected and month == selected.month:
-                html += ('<option selected value="%d">%s</option>' % 
+                html += ('<option selected value="%d">%s</option>' %
                          (month, monthname))
             else:
-                html += ('<option value="%d">%s</option>' % 
+                html += ('<option value="%d">%s</option>' %
                          (month, monthname))
         html += '</select>'
 
-        # XXX: salgado, 2005-03-16: We need to define it somewhere else, but
+        # XXX: salgado 2005-03-16: We need to define it somewhere else, but
         # it's not that urgent, so I'll leave it here for now.
         max_year = 2050
         html += '<select name="year">'

@@ -4,14 +4,107 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+<facet facet="translations">
+
+    <!-- Language -->
     <content class="canonical.launchpad.database.Language">
         <allow interface="canonical.launchpad.interfaces.ILanguage"/>
+        <require
+            permission="launchpad.Admin"
+            set_schema="canonical.launchpad.interfaces.ILanguage" />
     </content>
 
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="LanguageSetNavigation"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ILanguage"
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="LanguageSetContextMenu LanguageContextMenu"
+        />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.ILanguage"
+        path_expression="code"
+        parent_utility="canonical.launchpad.interfaces.ILanguageSet"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILanguage"
+        class="canonical.launchpad.browser.LanguageView"
+        permission="zope.Public"
+        template="../templates/language-index.pt"
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+    <browser:page
+        for="canonical.launchpad.interfaces.ILanguage"
+        class="canonical.launchpad.browser.LanguageAdminView"
+        permission="launchpad.Admin"
+        template="../templates/language-admin.pt"
+        name="+admin"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+    <!-- Language portlets -->
+    <browser:pages
+        for="canonical.launchpad.interfaces.ILanguage"
+        class="canonical.launchpad.browser.LanguageView"
+        permission="zope.Public"
+        layer="canonical.launchpad.layers.TranslationsLayer" >
+        <browser:page
+            name="+portlet-details"
+            template="../templates/language-portlet-details.pt"
+            />
+        <browser:page
+            name="+portlet-top-contributors"
+            template="../templates/language-portlet-top-contributors.pt"
+            />
+    </browser:pages>
+
+    <!-- LanguageSet -->
     <securedutility
         class="canonical.launchpad.database.LanguageSet"
         provides="canonical.launchpad.interfaces.ILanguageSet">
         <allow interface="canonical.launchpad.interfaces.ILanguageSet" />
     </securedutility>
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ILanguageSet"
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.ILanguageSet"
+        path_expression="string:+languages"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILanguageSet"
+        class="canonical.launchpad.browser.LanguageSetView"
+        permission="zope.Public"
+        template="../templates/languageset-index.pt"
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILanguageSet"
+        class="canonical.launchpad.browser.LanguageAddView"
+        permission="launchpad.Admin"
+        template="../templates/language-add.pt"
+        name="+add"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+</facet>
 </configure>

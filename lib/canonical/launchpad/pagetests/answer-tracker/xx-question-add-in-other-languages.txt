@@ -4,7 +4,7 @@ It is possible to ask questions in a language other than English. The
 'Ask a question' page has a pop-up where the user can select the language
 of the question. By default, the question language is 'English'.
 
-    >>> user_browser.open('http://launchpad.dev/ubuntu/+tickets')
+    >>> user_browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> user_browser.getLink('Ask a question').click()
     >>> user_browser.getControl('Language').value
     ['en']
@@ -18,13 +18,18 @@ link to enable to change his preferred languages:
     >>> user_browser.url
     '.../~no-priv/+editlanguages'
 
+The languages that are supported are displayed with an asterisk.
+
+    >>> browser.addHeader('Authorization', 'Basic salgado@ubuntu.com:zeca')
+    >>> browser.open('http://launchpad.dev/ubuntu/+addquestion')
+    
+    >>> browser.getControl('Language').displayOptions
+    ['English (en) *', 'Portuguese (Brazil) (pt_BR)']
+
 Although it's possible to ask questions in any of the user's preferred
 languages, we need to do some checks to warn the user in case he's using
 a language that is not spoken/understood by any of the context's answer
 contacts.
-
-    >>> browser.addHeader('Authorization', 'Basic salgado@ubuntu.com:zeca')
-    >>> browser.open('http://launchpad.dev/ubuntu/+addticket')
 
     >>> browser.getControl('Language').value = ['pt_BR']
     >>> browser.getControl('Summary').value = (
@@ -41,6 +46,7 @@ understood by any member of the support community.
     'Installation of Java Runtime Environment for Mozilla'
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
     'mailto: problem in webpage'
+    '\xd8\xb9\xd9\x83\xd8\xb3 ...'
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
@@ -70,22 +76,29 @@ from asking a question in the language of his choice.
     ...     ).encode('utf-8')
     >>> browser.getControl('Add').click()
     >>> browser.url
-    '.../ubuntu/+ticket/...'
+    '.../ubuntu/+question/...'
     >>> browser.title
     'Ubuntu question #...Abrir uma pagina que requer...'
 
+The page reports the question language both in the content and in the
+markup. Search engine robots and browsers will use the lang and dir
+attributes for indexing and rendering respectively. Users will find
+the language in the question details portlet.
+
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
+    >>> print soup.html['lang']
+    pt-BR
+    >>> print soup.html['dir']
+    ltr
     >>> print soup.find('b', text='Language:').next.strip()
     Portuguese (Brazil)
 
 It's also possible that the user chose English in the first page but
 then changed his mind on the second page.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')
-    >>> browser.open('http://launchpad.dev/ubuntu/+addticket')
+    >>> browser = setupBrowser(auth='Basic daf@canonical.com:daf')
+    >>> browser.open('http://launchpad.dev/ubuntu/+addquestion')
 
     >>> browser.getControl('Language').value = ['en']
     >>> browser.getControl('Summary').value = 'some random words'
@@ -107,7 +120,7 @@ Welsh, we'll have to warn him.
     >>> browser.getControl('Add').click()
 
     >>> browser.url
-    'http://launchpad.dev/ubuntu/+addticket'
+    'http://launchpad.dev/ubuntu/+addquestion'
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
@@ -140,7 +153,7 @@ new question.
 
     >>> browser.getControl('Add').click()
     >>> browser.url
-    '.../ubuntu/+ticket/...'
+    '.../ubuntu/+question/...'
     >>> browser.title.decode('utf-8')
     u'Ubuntu question #...\u52a9\u3051\u306e\u8981\u6c42...'
     >>> soup = BeautifulSoup(browser.contents)

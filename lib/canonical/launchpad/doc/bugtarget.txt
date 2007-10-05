@@ -10,31 +10,41 @@ Bug Tasks on Bug Targets
 An IBugTarget provides various attributes for manipulating its
 bugtasks. Here are some examples, using Debian mozilla-firefox:
 
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.launchpad.interfaces import IBugTarget, IDistributionSet
 
     >>> distroset = getUtility(IDistributionSet)
     >>> debian = distroset.getByName("debian")
     >>> debian_firefox = debian.getSourcePackage("mozilla-firefox")
+    >>> verifyObject(IBugTarget, debian_firefox)
+    True
 
 Open bugtasks:
 
     >>> [bugtask.bug.id for bugtask in debian_firefox.open_bugtasks]
     [1, 2, 3]
 
+Closed bugtasks:
+
+    >>> [bugtask.bug.id for bugtask in debian_firefox.closed_bugtasks]
+    [8]
+
 For the next couple of examples, we'll temporarily modify some bugtask
 values to have some sample data for examples following.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> from canonical.launchpad.interfaces import BugTaskStatus, IBugTaskSet
 
     >>> bug_one_in_debian_firefox = getUtility(IBugTaskSet).get(4)
     >>> bug_two_in_debian_firefox = getUtility(IBugTaskSet).get(5)
     >>> bug_one_in_debian_firefox.importance = BugTaskImportance.CRITICAL
-    >>> bug_one_in_debian_firefox.transitionToStatus(BugTaskStatus.INPROGRESS)
-    >>> bug_two_in_debian_firefox.transitionToStatus(BugTaskStatus.INPROGRESS)
+    >>> bug_one_in_debian_firefox.transitionToStatus(
+    ...     BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
+    >>> bug_two_in_debian_firefox.transitionToStatus(
+    ...     BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
@@ -59,14 +69,16 @@ All bugtasks ever reported:
     >>> [bugtask.bug.id for bugtask in debian_firefox.all_bugtasks]
     [1, 2, 3, 8]
 
-Bug targets have a bugtargetname attribute, which returns a value suitable for
-display in bug-related pages.
+Bug targets have a bugtargetdisplayname attribute, which returns a value
+tailored for human reading (e.g. display in Web pages); and a bugtargetname
+attribute, which returns a value tailored for unique identification of the
+target (such as in filterable e-mail messages).
 
     >>> from canonical.launchpad.interfaces import IProductSet, IBugTarget
 
     >>> firefox = getUtility(IProductSet).getByName("firefox")
     >>> firefox_1_0 = firefox.getSeries("1.0")
-    >>> debian_woody = debian.getRelease("woody")
+    >>> debian_woody = debian.getSeries("woody")
     >>> debian_woody_firefox = debian_woody.getSourcePackage("mozilla-firefox")
 
     >>> IBugTarget.providedBy(firefox)
@@ -82,15 +94,25 @@ display in bug-related pages.
     >>> IBugTarget.providedBy(debian_woody_firefox)
     True
 
+    >>> print firefox.bugtargetdisplayname
+    Mozilla Firefox
     >>> print firefox.bugtargetname
-    firefox (upstream)
+    firefox
+    >>> print firefox_1_0.bugtargetdisplayname
+    Mozilla Firefox 1.0
     >>> print firefox_1_0.bugtargetname
-    firefox 1.0 (upstream)
-    >>> print debian.bugtargetname
+    firefox/1.0
+    >>> print debian.bugtargetdisplayname
     Debian
+    >>> print debian.bugtargetname
+    debian
+    >>> print debian_firefox.bugtargetdisplayname
+    mozilla-firefox (Debian)
     >>> print debian_firefox.bugtargetname
     mozilla-firefox (Debian)
-    >>> print debian_woody.bugtargetname
+    >>> print debian_woody.bugtargetdisplayname
     Debian Woody
+    >>> print debian_woody_firefox.bugtargetdisplayname
+    mozilla-firefox (Debian Woody)
     >>> print debian_woody_firefox.bugtargetname
     mozilla-firefox (Debian Woody)

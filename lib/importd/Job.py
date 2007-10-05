@@ -8,8 +8,9 @@ import shutil
 
 from twisted.spread import pb
 
-from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
+from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.interfaces import RevisionControlSystems
 from importd import JobStrategy
 from importd.bzrmanager import BzrManager
 
@@ -53,41 +54,41 @@ class Job:
         self.__jobTrigger = None
         self.logger = None
 
-    def from_sourcepackagerelease(self, sourcepackagerelease, distrorelease):
-        # we need the distrorelease as a hint for branch names etc, and
+    def from_sourcepackagerelease(self, sourcepackagerelease, distroseries):
+        # we need the distroseries as a hint for branch names etc, and
         # as a way of verifying distro-specific import policy
         # first construct a sourcepackage for this import
         sp = SourcePackage(
                 sourcepackagename=sourcepackagerelease.sourcepackagename,
-                distrorelease=distrorelease)
+                distroseries=distroseries)
         assert sp.shouldimport, ('%s %s %s should not be imported' %
-                                (distrorelease.distribution.name,
-                                 distrorelease.name,
+                                (distroseries.distribution.name,
+                                 distroseries.name,
                                  sourcepackagerelease.name))
         self.name = 'pkg'
-        self.name += '-' + distrorelease.distribution.name
-        self.name += '-' + distrorelease.name
+        self.name += '-' + distroseries.distribution.name
+        self.name += '-' + distroseries.name
         self.name += '-' + sourcepackagerelease.name
         self.name += '-' + sourcepackagerelease.version
         self.sourcepackagerelease = sourcepackagerelease
-        self.distrorelease = distrorelease
+        self.distroseries = distroseries
         self.RCS = 'package'
         self.TYPE = 'sourcerer'
         self.product_id = sp.product.id
-        # XXX sabdfl 12/04/05 these are commented out until the Packaging
+        # XXX sabdfl 2005-04-12: these are commented out until the Packaging
         # table has been fixed to support series-level granularity
         #assert sp.productseries is not None, ("Attempt to import %s %s %s "
         #        "which is not mapped to an upstream "
         #        "product series" %
-        #        (distrorelease.distribution.name,
-        #         distrorelease.name,
+        #        (distroseries.distribution.name,
+        #         distroseries.name,
         #         sourcepackagerelease.name))
         #self.series_id = sp.productseries.id
         #self.series_branch = sp.productseries.branch
         #assert self.series_branch is not None, ("Attempt to import %s %s %s"
         #    " which has no upstream branch" %
-        #        (distrorelease.distribution.name,
-        #         distrorelease.name,
+        #        (distroseries.distribution.name,
+        #         distroseries.name,
         #         sourcepackagerelease.name))
         return self
 

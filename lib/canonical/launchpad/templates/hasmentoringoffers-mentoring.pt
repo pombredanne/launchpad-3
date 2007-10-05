@@ -1,0 +1,142 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<div metal:fill-slot="help">
+  <p>
+    Launchpad lets you keep track of offers of mentorship from members of
+    your community. Anybody who is a member of a team can offer to mentor
+    work on a bug or a blueprint. Launchpad then keeps track of those
+    offers, and you can use its listings as a convenient starting place for
+    new contributors.
+  </p>
+
+  <p>
+    Read the
+    <a href="https://help.launchpad.net/MentoringManagement/">mentoring
+    management documentation</a> for more detailed information.
+  </p>
+</div>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h1>Offers of help and mentoring</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
+<tal:def_batch define="batch view/batched_offers;
+                        total batch/batch/total">
+
+<tal:mentoring_available condition="total">
+
+  <p tal:condition="view/is_pillar">
+    This list describes bugs and blueprints in
+    <span tal:replace="context/displayname">Mozilla</span>
+    that someone has offered to mentor. If you are a new contributor to
+    <span tal:replace="context/displayname">Mozilla</span>
+    and would like to know how to help, then this is a good place to start.
+    Each of these items is likely to be a bite-sized piece of work which
+    would be well-received by the community, and for which you know you will
+    get good assistance and review.
+  </p>
+  <p tal:condition="view/is_person">
+    This list describes bugs and blueprints that
+    <span tal:replace="context/browsername">Foo Bar</span>
+    has offered to mentor.
+  </p>
+  <p tal:condition="view/is_team">
+    This list describes bugs and blueprints which people have offered to
+    mentor. If you would like to join "<span
+    tal:replace="context/title">Foo Bar</span>" then these would be
+    good items to work on - they are likely to be bite-sized and you know
+    who you can approach to discuss the implementation.
+  </p>
+  <p tal:condition="view/is_manager">
+    This is an overview of all mentorship offers currently outstanding in
+    Launchpad. It shows only offers on incomplete work. You can also see a
+    list of <a href="+success">recent successes</a> - items that are just
+    recently completed and for which mentorship had been offered.
+  </p>
+
+  <tal:navigation replace="structure batch/@@+navigation-links-upper" />
+  <table class="listing" id="mentorships">
+    <thead>
+      <tr>
+        <th tal:condition="view/show_date">When</th>
+        <th tal:condition="view/show_team">For</th>
+        <th tal:condition="view/show_person">By</th>
+        <th tal:condition="view/show_work">What</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="offer batch/currentBatch">
+        <td tal:condition="view/show_date">
+          <span tal:content="offer/date_created/fmt:approximatedate"
+                tal:attributes="title offer/date_created/fmt:datetime">
+            2007-15-13
+          </span>
+        </td>
+        <td tal:condition="view/show_team">
+          <a tal:replace="structure offer/team/fmt:link">foobar</a>
+        </td>
+        <td tal:condition="view/show_person">
+          <a tal:replace="structure offer/owner/fmt:link">foobar</a>
+        </td>
+        <td tal:condition="view/show_work">
+          <div tal:replace="structure offer/target/@@+listing-column" />
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <tal:navigation replace="structure batch/@@+navigation-links-lower" />
+
+</tal:mentoring_available>
+
+<tal:no_mentoring condition="not: total">
+  <p tal:condition="not:view/is_person">
+    Nobody has yet offered to mentor work for
+    <span tal:replace="context/displayname">Mozilla</span>.
+  </p>
+  <p tal:condition="view/is_person">
+    <span tal:replace="context/title" /> has not offered to mentor work on
+    any bugs or blueprints.
+  </p>
+
+  <p>
+    You can <a href="https://help.launchpad.net/MentoringManagement">learn
+    more about this capability in Launchpad</a>, which allows you to
+    create an "onramp" of
+    bite-sized chunks of work for new people who want to contribute or to
+    prove their worth.
+  </p>
+
+  <p>
+    In summary, you can encourage members of your teams to offer mentoring
+    on bugs and blueprints that they know how to fix or implement, but which
+    they don't have time to get to personally. This list then makes a good
+    starting point for new community members who want to make a contribution
+    but don't know where to start.
+  </p>
+
+</tal:no_mentoring>
+
+</tal:def_batch>
+</div>
+
+</body>
+</html>

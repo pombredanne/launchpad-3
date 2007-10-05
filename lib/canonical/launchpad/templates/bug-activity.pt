@@ -1,28 +1,33 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="malone"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone"
 >
   <body>
     <metal:heading fill-slot="pageheading">
       <div tal:define="bugtask view/currentBugTask">
         <img alt="" src="/@@/bug" />
         <a tal:attributes="href bugtask/fmt:url"
-        >Bug #<tal:bug replace="context/id">3252543</tal:bug></a>:
-        <tal:title replace="context/title">Something doesn't work</tal:title>
+        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
+        <tal:title replace="context/bug/title">Something doesn't work</tal:title>
       </div>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-subscribers" />
+  <div tal:replace="structure context/bug/@@+portlet-subscribers" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-search" />
-  <div tal:replace="structure context/@@+portlet-cve" />
-  <div tal:replace="structure context/@@+portlet-reference" />
-  <div tal:replace="structure context/@@+portlet-watch" />
+  <div tal:replace="structure context/bug/@@+portlet-cve" />
+  <div tal:replace="structure context/bug/@@+portlet-reference" />
+  <div tal:replace="structure context/bug/@@+portlet-watch" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -41,7 +46,7 @@
     </tr>
     </thead>
     <tbody>
-    <tr tal:repeat="log context/activity">
+    <tr tal:repeat="log context/bug/activity">
       <td tal:content="python:log.datechanged.strftime('%d %b %y %H:%M')">
         13 Sep 04 14:15
       </td>

@@ -17,7 +17,7 @@ defaultResource = static.Data("""
         http://librarian.launchpad.net/ is a
         file repository used by <a href="https://launchpad.net/">Launchpad</a>.
         </p>
-        <p><small>Copyright 2004-2006 Canonical Ltd.</small></p>
+        <p><small>Copyright 2004-2007 Canonical Ltd.</small></p>
         <!-- kthxbye. -->
         </body></html>
         """, type='text/html')
@@ -42,7 +42,7 @@ class LibraryFileResource(resource.Resource):
             aliasID = int(name)
         except ValueError:
             return fourOhFour
-            
+
         return LibraryFileAliasResource(self.storage, aliasID,
                 self.upstreamHost, self.upstreamPort)
 
@@ -90,7 +90,7 @@ class LibraryFileAliasResource(resource.Resource):
     def _eb_getFileAlias(self, failure):
         failure.trap(NotFound)
         return fourOhFour
-        
+
     def _cb_getFileAlias(
             self, (dbcontentID, dbfilename, mimetype),
             filename, request

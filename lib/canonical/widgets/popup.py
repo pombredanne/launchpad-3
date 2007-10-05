@@ -115,7 +115,7 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     def chooseLink(self):
         return """(<a href="%s">Choose&hellip;</a>)
 
-            <iframe style="display: none" 
+            <iframe style="display: none"
                     id="popup_iframe_%s"
                     name="popup_iframe_%s"></iframe>
         """ % (self.popupHref(), self.name, self.name)
@@ -129,10 +129,10 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
             ''''%s','300','420')'''
             ) % (self.context.vocabularyName, self.name, self.name, self.name)
         if self.onKeyPress:
-            # XXX: I suspect onkeypress() here is non-standard, but it
-            # works for me, and enough researching for tonight. It may
-            # be better to use dispatchEvent or a compatibility function
-            # -- kiko, 2005-09-27
+            # XXX kiko 2005-09-27: I suspect onkeypress() here is
+            # non-standard, but it works for me, and enough researching for
+            # tonight. It may be better to use dispatchEvent or a
+            # compatibility function
             template += ("; document.getElementById('%s').onkeypress()" %
                          self.name)
         return template
@@ -175,21 +175,19 @@ class SinglePopupView(object):
 
     def vocabulary(self):
         """See ISinglePopupView"""
-        if not self.request.form['vocabulary']:
+        vocabulary_name = self.request.form_ng.getOne('vocabulary')
+        if not vocabulary_name:
             raise UnexpectedFormData('No vocabulary specified')
         try:
-            factory = zapi.getUtility(IVocabularyFactory,
-                self.request.form['vocabulary'])
+            factory = zapi.getUtility(IVocabularyFactory, vocabulary_name)
         except ComponentLookupError:
             # Couldn't find the vocabulary? Adios!
-            raise UnexpectedFormData('Unknown vocabulary %s' % 
-                                     self.request.form['vocabulary'])
+            raise UnexpectedFormData('Unknown vocabulary %s' % vocabulary_name)
 
         vocabulary = factory(self.context)
 
         if not IHugeVocabulary.providedBy(vocabulary):
-            raise UnexpectedFormData('Non-huge vocabulary %s' % 
-                                     self.request.form['vocabulary'])
+            raise UnexpectedFormData('Non-huge vocabulary %s' % vocabulary_name)
 
         return vocabulary
 

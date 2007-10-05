@@ -1,8 +1,8 @@
-<div class="portlet">
-  <h2 tal:content="context/title">Product series details</h2>
+<div class="portlet" id="portlet-details">
+  <h2 tal:content="context/title">Release series details</h2>
 
   <div class="portletBody portletContent">
-    <b>Product:</b>
+    <b>Project:</b>
     <a tal:attributes="href context/product/fmt:url"
        tal:content="context/product/displayname">product</a><br />
 

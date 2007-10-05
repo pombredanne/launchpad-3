@@ -1,4 +1,4 @@
-Check if the DistroRelease Page is not Broken.
+Check if the DistroSeries Page is not Broken.
 
   >>> anon_browser.open("http://localhost/ubuntu/warty/i386")
   >>> anon_browser.contents

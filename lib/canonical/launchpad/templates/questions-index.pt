@@ -1,28 +1,8 @@
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta"
->
+<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="rosetta">
   <body>
+    <h1 metal:fill-slot="heading">Questions and answers</h1>
     <div metal:fill-slot="main">
-      <table id="applications">
-        <tbody>
-          <tr>
-            <th><h1>Questions and answers</h1></th>
-            <td tal:content="structure context/@@+applicationbuttons/answers" />
-          </tr>
-        </tbody>
-      </table>
-      <div id="mainarea" class="tab-translations">
-        <div class="t">
-          <div class="u">
-            <div class="v">
-              <div class="w">
-                <div class="x">
-                  <div class="y">
-                    <div class="z">
-                      <div id="container">
+
                         <ul class="rollover buttons">
                           <li>
                             <a href="/+tour">
@@ -80,49 +60,77 @@
                           <div>
                         </form>
                         <p id="application-summary">
-                          Launchpad&rsquo;s Answers system lets people
-                          ask questions about projects,
-                          and lets anyone help answer those questions.
-                          <a href="/+tour">Learn more&#8230;</a>
+                          Launchpad Answers helps you build a
+                          community support network and knowledge base for
+                          your project. Encourage new users to ask questions
+                          rather than file bugs!
+                          <a href="/+about">Learn more&#8230;</a>
                         </p>
-                        <div id="latest-questions-asked" class="left">
 
-      <h2 i18n:translate="">Latest questions asked</h2>
-      <table>
-        <tal:question
-          repeat="question view/latest_questions_asked"
-          content="structure question/@@+listing-detailed"
-        />
-      </table>
+      <div class="columns">
+        <div id="most-active-projects" class="three column left">
+          <h2 i18n:translate="">Most active projects</h2>
 
+          <ul tal:define="projects view/most_active_projects"
+              tal:condition="projects"
+              style="list-style: none;">
+            <li tal:repeat="project projects">
+              <a href="#"
+                 tal:attributes="href project/fmt:url">
+                <img alt="" tal:replace="structure project/image:icon" />
+                <span tal:replace="project/displayname" />
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div id="latest-questions-asked" class="three column middle">
+          <h2 i18n:translate="">Latest questions asked</h2>
+          <table>
+            <tal:question
+              repeat="question view/latest_questions_asked"
+              content="structure question/@@+listing-detailed"
+            />
+          </table>
+        </div>
+      
+        <div id="latest-questions-solved" class="three column right">
+          <h2 i18n:translate="">Latest questions solved</h2>
+          <table>
+            <tal:question
+              repeat="question view/latest_questions_solved"
+              content="structure question/@@+listing-detailed"
+            />
+          </table>
+        </div>
+      </div>
+                        <div id="application-footer" i18n:translate="">
+                          <div>
+                            <strong
+                              i18n:name="answered_question_count"
+                              tal:content="view/answered_question_count"
+                            >52</strong>
+                            questions answered and
+                            <strong
+                              i18n:name="solved_question_count"
+                              tal:content="view/solved_question_count"
+                            >52</strong>
+                            questions solved out of
+                          </div>
+                          <div>
+                            <strong
+                              i18n:name="question_count"
+                              tal:content="view/question_count"
+                            >318</strong>
+                            questions asked across
+                            <strong
+                              i18n:name="projects_with_questions_count"
+                              tal:content="view/projects_with_questions_count"
+                            >28</strong>
+                            projects
+                          </div>
                         </div>
-                        <div id="latest-questions-solved" class="right">
 
-      <h2 i18n:translate="">Latest questions solved</h2>
-      <table>
-        <tal:question
-          repeat="question view/latest_questions_solved"
-          content="structure question/@@+listing-detailed"
-        />
-      </table>
-
-                        </div>
-                        <p id="application-footer" i18n:translate="">
-                          <tal:count
-                            i18n:name="count"
-                            tal:content="view/questions_count"
-                          >318</tal:count>
-                          questions asked
-                        </p>
-                      </div><!--container-->
-                    </div><!--z-->
-                  </div><!--y-->
-                </div><!--x-->
-              </div><!--w-->
-            </div><!--v-->
-          </div><!--u-->
-        </div><!--t-->
-      </div><!--mainarea-->
     </div><!--main-->
 
   <metal:help fill-slot="help">
@@ -133,6 +141,9 @@
       you are having a problem with and use the <emph>Ask a Question</emph>
       button.
     </p>
+    <p>You can enter a question id in the search text field to quickly
+      navigate to the question.
+    </p>
     <p><a href="https://help.launchpad.net/AnswerTrackerDocumentation">Extensive
         documention</a> for the Answer Tracker application is available in the
       Help wiki.</p>
@@ -140,5 +151,4 @@
 
   </body>
 </html>
-</tal:layout>
 <!-- 1-0 inprogress needs search of all answers -->

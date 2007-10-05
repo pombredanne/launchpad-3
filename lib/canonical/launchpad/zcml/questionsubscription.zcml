@@ -7,7 +7,8 @@
   <!-- QuestionSubscription -->
   <content class="canonical.launchpad.database.QuestionSubscription">
     <allow
-      interface="canonical.launchpad.interfaces.IQuestionSubscription" />
+      interface="canonical.launchpad.interfaces.IQuestionSubscription"
+      />
     <require
       permission="zope.Public"
       set_schema="canonical.launchpad.interfaces.IQuestionSubscription"

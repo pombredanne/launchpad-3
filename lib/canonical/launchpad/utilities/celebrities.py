@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+"""Classes that implement ICelebrity interfaces."""
 
 __metaclass__ = type
 __all__ = ['LaunchpadCelebrities']
@@ -78,7 +79,7 @@ class CelebrityDescriptor:
 
 
 class LaunchpadCelebrities:
-    """See ILaunchpadCelebrities"""
+    """See `ILaunchpadCelebrities`."""
     implements(ILaunchpadCelebrities)
 
     admin = CelebrityDescriptor(IPersonSet, 'admins')
@@ -96,17 +97,14 @@ class LaunchpadCelebrities:
     registry = CelebrityDescriptor(IPersonSet, 'registry')
     bug_watch_updater = CelebrityDescriptor(IPersonSet, 'bug-watch-updater')
     bug_importer = CelebrityDescriptor(IPersonSet, 'bug-importer')
-    landscape = CelebrityDescriptor(IProductSet, 'landscape')
     launchpad = CelebrityDescriptor(IProductSet, 'launchpad')
-    answer_tracker_janitor = CelebrityDescriptor(
-        IPersonSet, 'support-tracker-janitor')
-    team_membership_janitor = CelebrityDescriptor(
-        IPersonSet, 'team-membership-janitor')
     launchpad_beta_testers = CelebrityDescriptor(
         IPersonSet, 'launchpad-beta-testers')
+    janitor = CelebrityDescriptor(IPersonSet, 'janitor')
 
     @property
     def ubuntu_archive_mirror(self):
+        """See `ILaunchpadCelebrities`."""
         mirror = getUtility(IDistributionMirrorSet).getByHttpUrl(
             'http://archive.ubuntu.com/ubuntu/')
         if mirror is None:
@@ -115,10 +113,12 @@ class LaunchpadCelebrities:
         return mirror
 
     @property
-    def ubuntu_release_mirror(self):
+    def ubuntu_cdimage_mirror(self):
+        """See `ILaunchpadCelebrities`."""
         mirror = getUtility(IDistributionMirrorSet).getByHttpUrl(
             'http://releases.ubuntu.com/')
         if mirror is None:
             raise MissingCelebrityError('http://releases.ubuntu.com/')
         assert mirror.isOfficial(), "Main mirror must be an official one."
         return mirror
+

@@ -5,14 +5,14 @@ There are a bunch of meta classes used for combine information from
 our Database Model for packages in a intuitive manner, they are:
 
  >>> from canonical.launchpad.database import (
- ...     Distribution, DistroRelease,
+ ...     Distribution, DistroSeries,
  ...     SourcePackageRelease, SourcePackageName,
  ...     DistributionSourcePackageRelease,
- ...     DistroReleaseSourcePackageRelease)
+ ...     DistroSeriesSourcePackageRelease)
 
  >>> from canonical.launchpad.interfaces import (
  ...     IDistributionSourcePackageRelease,
- ...     IDistroReleaseSourcePackageRelease)
+ ...     IDistroSeriesSourcePackageRelease)
 
 
 DistributionSourcePackage class is tested in:
@@ -33,7 +33,7 @@ Combining Distribution and SourcePackageRelease:
  >>> sourcepackagerelease.name
  u'pmount'
 
- >>> from zope.interface.verify import verifyObject
+ >>> from canonical.launchpad.webapp.testing import verifyObject
  >>> dspr = DistributionSourcePackageRelease(distribution,
  ...                                         sourcepackagerelease)
  >>> verifyObject(IDistributionSourcePackageRelease, dspr)
@@ -43,13 +43,13 @@ Combining Distribution and SourcePackageRelease:
  (u'pmount in ubuntu', u'0.1-1')
 
 
-Combining DistroRelease and SourcePackageRelease:
+Combining DistroSeries and SourcePackageRelease:
 
- >>> distrorelease = distribution['hoary']
+ >>> distroseries = distribution['hoary']
 
- >>> drspr = DistroReleaseSourcePackageRelease(distrorelease,
+ >>> drspr = DistroSeriesSourcePackageRelease(distroseries,
  ...                                           sourcepackagerelease)
- >>> verifyObject(IDistroReleaseSourcePackageRelease, drspr)
+ >>> verifyObject(IDistroSeriesSourcePackageRelease, drspr)
  True
 
  >>> drspr.displayname

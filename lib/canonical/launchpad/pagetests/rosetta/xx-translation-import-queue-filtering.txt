@@ -1,0 +1,221 @@
+With this test we are going to test the entries filtering on the translation
+import queue form.
+
+To get the filter widgets we will use their names directly because there
+is no human readable labels associated with them.
+
+Let's add 100 files to the queue so we have enough entries to play with.
+
+  >>> import canonical.launchpad
+  >>> import os.path
+  >>> test_file_name = os.path.join(
+  ...     os.path.dirname(canonical.launchpad.__file__),
+  ...     'pagetests/rosetta/xx-translation-import-queue-filtering.tar.gz')
+  >>> tarball = open(test_file_name)
+
+  >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/'
+  ...     '+translations-upload')
+  >>> file_ctrl = browser.getControl('File:')
+  >>> file_ctrl.add_file(
+  ...     tarball, 'application/x-gzip', 'foo.tar.gz')
+  >>> browser.getControl('Request Upload').click()
+  >>> for tag in find_tags_by_class(browser.contents, 'message'):
+  ...     print tag
+  <div...Thank you for your upload. 100 files from the tarball will be reviewed...
+
+Check that the import queue has the needed entries to do filtering and that
+we have all the entries we just imported plus the two entries already included
+in sample data.
+
+  >>> browser.open('http://translations.launchpad.dev/+imports')
+  >>> browser.getLink('Next')
+  <Link text='Next' url='http://translations.launchpad.dev/+imports/+index?start=5&batch=5'>
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...All targets...
+  ...Evolution...
+  ...All statuses...
+  ...Approved...
+  ...Imported...
+  ...Deleted...
+  ...Failed...
+  ...Needs Review...
+  ...Blocked...
+  ...All files...
+  ...Only po files...
+  ...Only pot files...
+  ...1...5...of...102 results...
+
+The entries that need review, as we can see, initially, are all entries minus
+the two already included in sample data.
+
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/+imports?'
+  ...     'field.filter_status=NEEDS_REVIEW&field.filter_extension=all')
+  >>> browser.getControl(name='field.filter_status', index=0).value
+  ['NEEDS_REVIEW']
+  >>> browser.getControl(name='field.filter_extension', index=0).value
+  ['all']
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...1...5...of...100 results...
+
+Let's select only the .po files, we get now only 96 entries.
+
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/+imports?field.filter_status=all'
+  ...     '&field.filter_extension=po')
+  >>> browser.getControl(name='field.filter_status', index=0).value
+  ['all']
+  >>> browser.getControl(name='field.filter_extension', index=0).value
+  ['po']
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...1...5...of...96 results...
+
+And now, all entries that are .pot files, we should get just 6.
+
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/+imports?field.filter_status=all'
+  ...     '&field.filter_extension=pot')
+  >>> browser.getControl(name='field.filter_status', index=0).value
+  ['all']
+  >>> browser.getControl(name='field.filter_extension', index=0).value
+  ['pot']
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...1...5...of...6 results...
+
+Now, we want the approved entries.
+
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/+imports?'
+  ...     'field.filter_status=APPROVED&field.filter_extension=all')
+  >>> browser.getControl(name='field.filter_status', index=0).value
+  ['APPROVED']
+  >>> browser.getControl(name='field.filter_extension', index=0).value
+  ['all']
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...There are no entries that match this filtering...
+
+Let's change the status of the third entry on the queue to be blocked.
+
+  >>> browser.open('http://translations.launchpad.dev/+imports')
+  >>> browser.getControl(name='field.status_3').value
+  ['NEEDS_REVIEW']
+  >>> browser.getControl(name='field.status_3').value = ['BLOCKED']
+  >>> browser.getControl('Change status').click()
+  >>> print browser.url
+  http://translations.launchpad.dev/+imports/+index
+
+We can see now an entry blocked.
+
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/+imports?'
+  ...     'field.filter_status=BLOCKED&field.filter_extension=all')
+  >>> browser.getControl(name='field.status_3').value
+  ['BLOCKED']
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...1...1...of...1 result...
+
+And the entries that need review are only 99
+
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/+imports?'
+  ...     'field.filter_status=NEEDS_REVIEW&field.filter_extension=all')
+  >>> browser.getControl(name='field.filter_status', index=0).value
+  ['NEEDS_REVIEW']
+  >>> browser.getControl(name='field.filter_extension', index=0).value
+  ['all']
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...1...5...of...99 results...
+
+Let's delete the fourth entry.
+
+  >>> browser.open('http://translations.launchpad.dev/+imports')
+  >>> browser.getControl(name='field.status_4').value
+  ['NEEDS_REVIEW']
+  >>> browser.getControl(name='field.status_4').value = ['DELETED']
+  >>> browser.getControl('Change status').click()
+  >>> browser.url
+  'http://translations.launchpad.dev/+imports/+index'
+
+And see that we have one deleted.
+
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/+imports?'
+  ...     'field.filter_status=DELETED&field.filter_extension=all')
+  >>> browser.getControl(name='field.status_4').value
+  ['DELETED']
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...1...1...of...1 result...
+
+And now, we only have 98 entries that need review.
+
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/+imports?'
+  ...     'field.filter_status=NEEDS_REVIEW&field.filter_extension=all')
+  >>> browser.getControl(name='field.filter_status', index=0).value
+  ['NEEDS_REVIEW']
+  >>> browser.getControl(name='field.filter_extension', index=0).value
+  ['all']
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...1...5...of...98 results...
+
+We can also filter by target. In this case, Evolution.
+
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/+imports?'
+  ...     'field.filter_target=evolution')
+  >>> browser.getControl(name='field.filter_target', index=0).value
+  ['evolution']
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...1...5...of...102 results...
+
+Also, we can filter by distro series, to do that, first we need to upload
+something in the queue.
+
+    >>> import transaction
+    >>> from StringIO import StringIO
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
+    ...     'evolution/+pots/evolution-2.2/+upload')
+    >>> file_ctrl = admin_browser.getControl('File:')
+    >>> file_ctrl.add_file(
+    ...     StringIO('foo'), 'application/x-po', 'foo.pot')
+    >>> admin_browser.getControl('Upload').click()
+    >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
+    ...     print extract_text(tag.renderContents())
+    Thank you for your upload. The file content will be imported soon into
+    Launchpad. You can track its status from the Translation Import Queue
+
+    # Commit the transaction so librarian stores the uploaded file.
+    >>> transaction.commit()
+
+Now, main translation import queue page allows you to filter by distribution:
+
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/+imports')
+    >>> user_browser.getControl(
+    ...     name='field.filter_target', index=0).value = ['ubuntu/hoary']
+    >>> user_browser.getControl('Filter').click()
+    >>> print user_browser.url
+    http://translations.launchpad.dev/+imports/+index?field.filter_target=ubuntu/hoary&...
+
+And we only get the entry we just uploaded.
+
+    >>> import_list = find_tag_by_id(
+    ...     user_browser.contents, 'import-entries-list')
+    >>> first_entry = import_list.findNext('tr')
+    >>> print extract_text(first_entry)
+    foo.pot in
+    evolution in Ubuntu Hoary
+    Needs Review

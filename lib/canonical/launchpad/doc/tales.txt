@@ -1,5 +1,4 @@
-TALES expressions
-=================
+= TALES expressions =
 
 There are several kinds of TALES expressions we've implemented in
 Launchpad, to help make it easier to create page templates, without
@@ -26,25 +25,29 @@ count:len gives you a number which is len(thing).
 
 == The fmt: namespace to get strings ==
 
-To display the icon for a milestone, use fmt:icon:
+To display the icon for a milestone, use image:icon:
 
    >>> from canonical.launchpad.database import MilestoneSet
    >>> milestone = MilestoneSet().get(1)
-   >>> test_tales("milestone/fmt:icon", milestone=milestone)
-   '<img alt="" src="/@@/milestone" />'
+   >>> test_tales("milestone/image:icon", milestone=milestone)
+   '<img ... src="/@@/milestone" />'
 
-The same fmt:icon, as well as a fmt:emblem and a fmt:heading_icon is also
+The same image:icon, as well as a image:logo and a image:logo is also
 available for Person, Product, Project, Sprint and Distributions, since
-they all implement IHasGotchiAndEmblem.
+they all implement IHasLogo,.IHasMugshot and IHasIcon.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> person = getUtility(IPersonSet).getByName('sabdfl')
-    >>> test_tales("person/fmt:icon", person=person)
-    '<img ... src="/@@/person-mugshot" />'
-    >>> test_tales("person/fmt:heading_icon", person=person)
-    '<img ... src="/@@/person-heading" />'
-    >>> test_tales("person/fmt:emblem", person=person)
-    '<img...src="/@@/person" />'
+    >>> test_tales("person/image:icon", person=person)
+    '<img ... src="/@@/person" />'
+    >>> test_tales("person/image:logo", person=person)
+    '<img ... src="/@@/person-logo" />'
+
+The Mugshot is presented in a div, floating right, with the mugshot inside
+it:
+
+    >>> test_tales("person/image:mugshot", person=person)
+    '<div...<img...src="/@@/person-mugshot" />.../div>'
 
 For people we even have different images in case the person in question is not
 an actual launchpad user.
@@ -52,25 +55,25 @@ an actual launchpad user.
     >>> spiv = getUtility(IPersonSet).getByName('spiv')
     >>> spiv.is_valid_person
     False
-    >>> test_tales("person/fmt:icon", person=spiv)
-    '<img ... src="/@@/person-inactive-mugshot" />'
-    >>> test_tales("person/fmt:heading_icon", person=spiv)
-    '<img ... src="/@@/person-inactive-heading" />'
-    >>> test_tales("person/fmt:emblem", person=spiv)
-    '<img...src="/@@/person-inactive" />'
+    >>> test_tales("person/image:icon", person=spiv)
+    '<img ... src="/@@/person-inactive" />'
+    >>> test_tales("person/image:logo", person=spiv)
+    '<img ... src="/@@/person-inactive-logo" />'
+    >>> test_tales("person/image:mugshot", person=spiv)
+    '...<img...src="/@@/person-inactive-mugshot" />...'
 
 One other thing we have for people is fmt:link, which gives us a link to that
 person's page, containing the person name and an icon.
 
     >>> test_tales("person/fmt:link", person=person)
-    u'<a ...><img alt="" src="/@@/person" />Mark Shuttleworth</a>'
+    u'<a ...><img ... src="/@@/person" />&nbsp;Mark Shuttleworth</a>'
 
     >>> test_tales("person/fmt:link", person=spiv)
-    u'<a ...><img alt="" src="/@@/person-inactive" />Andrew Bennetts</a>'
+    u'<a ...><img ... src="/@@/person-inactive" />&nbsp;Andrew Bennetts</a>'
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> test_tales("person/fmt:link", person=ubuntu_team)
-    u'<a ...><img alt="" src="/@@/team" />Ubuntu Team</a>'
+    u'<a ...><img ... src="/@@/team" />&nbsp;Ubuntu Team</a>'
 
 The fmt:link formatter uses additional path components to extend the
 link:
@@ -78,15 +81,15 @@ link:
     >>> test_tales("person/fmt:link/foo/bar", person=spiv)
     u'<a href=".../~spiv/foo/bar">...'
 
-We also have fmt:icon for KarmaCategory:
+We also have image:icon for KarmaCategory:
 
     >>> from canonical.launchpad.database import KarmaCategory
     >>> for category in KarmaCategory.select(orderBy='title'):
-    ...     print test_tales("category/fmt:icon", category=category)
-    <img alt="" title="Bug Management" src="/@@/bug" />
-    <img alt="" title="Specification Tracking" src="/@@/blueprint" />
-    <img alt="" title="Support Tracker" src="/@@/question" />
-    <img alt="" title="Translations in Rosetta" src="/@@/translation" />
+    ...     print test_tales("category/image:icon", category=category)
+    <img ... title="Answer Tracker" src="/@@/question" />
+    <img ... title="Bug Management" src="/@@/bug" />
+    <img ... title="Specification Tracking" src="/@@/blueprint" />
+    <img ... title="Translations in Rosetta" src="/@@/translation" />
 
 datetimes can be formatted with fmt:date, fmt:time, fmt:datetime and
 fmt:rfc822utcdatetime.
@@ -123,13 +126,240 @@ To "<pre>" format a string, use fmt:nice_pre:
     ['<pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;word-',
      'wrap: break-word;">hello &amp; goodbye</pre>']
 
-Add manual word breaks to long words in a string
+Add manual word breaks to long words in a string:
 
     >>> test_tales('foo/fmt:break-long-words', foo='short words')
     'short words'
     >>> test_tales('foo/fmt:break-long-words',
     ...     foo='<http://launchpad.net/products/launchpad>')
     '&lt;http:/<wbr></wbr>/launchpad.<wbr></wbr>net/products/<wbr></wbr>launchpad&gt;'
+
+
+== The fmt: namespace to get strings (hiding) ==
+
+PGP blocks, signatures and full-quoted parts of a message can be
+wrapped in markup to hide them:
+
+    >>> pgp_open = ('-----BEGIN PGP SIGNED MESSAGE-----\n'
+    ...             'Hash: SHA1\n'
+    ...             '\n')
+    >>> text = ('Top quoting is simply bad netiquette.\n'
+    ...         'The words of the leading text should be displayed\n'
+    ...         'normally--no markup to hide it from view.\n'
+    ...         'Raise your hand if you can read this.\n'
+    ...         '\n')
+    >>> signature = ('-- \n'
+    ...              '__C U R T I S  C.  H O V E Y_______\n'
+    ...              'sinzui.is@example.org\n'
+    ...              'Guilty of stealing everything I am.\n'
+    ...              '\n')
+    >>> pgp_close = ('-----BEGIN PGP SIGNATURE-----\n'
+    ...              'Version: GnuPG v1.4.1 (GNU/Linux)\n'
+    ...              'Comment: Using GnuPG with Thunderbird\n'
+    ...              '\n'
+    ...              'iD8DBQFED60Y0F+nu1YWqI0RAqrNAJ9hTww5vqDbxp4xJS8ek58W\n'
+    ...              'T2PIWy0CUJsX8RXSt/M51WE=\n'
+    ...              '=J2S5\n'
+    ...              '-----END PGP SIGNATURE-----\n')
+
+The email-to-html formatter marks up text as html using the
+text-to-html formatter, then adds additional markup to identify
+signatures and quoted passages. The formatters  wraps the text inside
+the paragraph in a span of 'foldable' class. Stylesheets and scripts
+in the browser can format or change the behaviour of the text as
+needed.
+
+When given simple paragraphs it behaves just as the text-to-html
+formatter.
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo=text)
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+
+    >>> print test_tales('foo/fmt:text-to-html',
+    ...                  foo=text)
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+
+
+=== Marking PGP blocks ===
+
+PGP signed messages have opening and closing blocks that are
+wrapped in a foldable span.
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([pgp_open, text, pgp_close]))
+    <p><span class="foldable">-----BEGIN PGP SIGNED MESSAGE-----<br />
+    Hash: SHA1
+    </span></p>
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p><span class="foldable">-----BEGIN PGP SIGNATURE-----<br />
+    Version: GnuPG v1.4.1 (GNU/Linux)<br />
+    Comment: Using GnuPG with Thunderbird<br />
+    <br />
+    iD8DBQFED60Y0F+<wbr></wbr>nu1YWqI0RAqrNAJ<wbr></wbr>...
+    T2PIWy0CUJsX8RX<wbr></wbr>St/M51WE=<br />
+    =J2S5<br />
+    -----END PGP SIGNATURE-----
+    </span></p>
+
+In this example, we see the main paragraph and the signature marked
+up as HTML. All the text inside the signature is wrapped with the
+foldable span.
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([text, signature]))
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p><span class="foldable"...>--<br />
+    __C U R T I S  C.  H O V E Y_______<br />
+    sinzui.<wbr></wbr>is@example.<wbr></wbr>org<br />
+    Guilty of stealing everything I am.
+    </span></p>
+
+
+=== Marking quoted passages ===
+
+Quoted passages are treated somewhat different from signatures because
+they often have a citation line before the quoted text. In this
+example of the main paragraph and the quoted paragraph, only the
+lines that start with the quote identifier ('> ' in this case) are
+wrapped with the foldable-quoted span.
+
+    >>> quoted_text = ('Somebody said sometime ago:\n'
+    ...                '> 1. Remove the letters  c, j, q, x, w\n'
+    ...                '>    from the English Language.\n'
+    ...                '> 2. Remove the penny from US currency.\n'
+    ...                '\n')
+    >>> quoted_text_all = ('> continuing from a previous thought.\n'
+    ...                    '> 3. Get new handwriting.\n'
+    ...                    '> 4. Add Year Zero to the calendar.\n'
+    ...                    '\n')
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([text, quoted_text, quoted_text_all]))
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p>Somebody said sometime ago:<br />
+    <span class="foldable-quoted">
+    &gt; 1. Remove the letters  c, j, q, x, w<br />
+    &gt;    from the English Language.<br />
+    &gt; 2. Remove the penny from US currency.
+    </span></p>
+    <p><span class="foldable-quoted">&gt; continuing from a previous thoug...
+    &gt; 3. Get new handwriting.<br />
+    &gt; 4. Add Year Zero to the calendar.
+    </span></p>
+
+
+=== Different kinds of content can be marked up in a single call ===
+
+The formatter is indifferent to the number and kinds of paragraphs
+it must markup. We can format the three examples at the same time.
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...     foo='\n'.join(
+    ...         [text, quoted_text, text, quoted_text_all, signature]))
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p>Somebody said sometime ago:<br />
+    <span class="foldable-quoted"...>
+    &gt; 1. Remove the letters  c, j, q, x, w<br />
+    &gt;    from the English Language.<br />
+    &gt; 2. Remove the penny from US currency.
+    </span></p>
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p><span class="foldable-quoted">&gt; continuing from a previous thoug...
+    &gt; 3. Get new handwriting.<br />
+    &gt; 4. Add Year Zero to the calendar.
+    </span></p>
+    <p><span class="foldable"...>--<br />
+    __C U R T I S  C.  H O V E Y_______<br />
+    sinzui.<wbr></wbr>is@example.<wbr></wbr>org<br />
+    Guilty of stealing everything I am.
+    </span></p>
+
+
+== The fmt: namespace to get strings (obfuscation) ==
+
+Email addresses embedded in text can be obfuscated. In cases where
+personal information may be in the content, and it will be shown to
+unauthenticated users, the email address can be hidden. The address
+is replaced with the message '<email address hidden>'.
+
+    >>> test_tales('foo/fmt:obfuscate-email', foo='name.surname@company.com')
+    '<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email', foo='name@organization.org.cc')
+    '<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email', foo='name+sub@domain.org')
+    '<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email',
+    ...     foo='long_name@host.long-network.org.cc')
+    '<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email',
+    ...     foo='"long/name="@organization.org')
+    '"<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email',
+    ...     foo='long-name@building.museum')
+    '<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email', foo='foo@staticmethod.com')
+    '<email address hidden>'
+
+    >>> print test_tales('foo/fmt:obfuscate-email/fmt:text-to-html',
+    ...     foo=signature)
+    <p>--<br />
+    __C U R T I S  C.  H O V E Y_______<br />
+    &lt;email address hidden&gt;<br />
+    Guilty of stealing everything I am.</p>
+
+    >>> # Email addresses and credentials in a URL match.
+    >>> test_tales('foo/fmt:obfuscate-email',
+    ...     foo='mailto:long-name@very.long.dom.cc')
+    'mailto:<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email',
+    ...     foo='http://person:password@site.net')
+    'http://person:<email address hidden>'
+
+    >>> # An Invalid email address does not match.
+    >>> test_tales('foo/fmt:obfuscate-email', foo='name @ host.school.edu')
+    'name @ host.school.edu'
+    >>> # SSH is not an email address.
+    >>> test_tales('foo/fmt:obfuscate-email', foo='person@host')
+    'person@host'
+    >>> # Perl/shell arrays are not an email address.
+    >>> test_tales('foo/fmt:obfuscate-email', foo='(head, tail)=@array')
+    '(head, tail)=@array'
+    >>> # Python decorators and Java annotations are not email addresses.
+    >>> test_tales('foo/fmt:obfuscate-email', foo='@staticmethod')
+    '@staticmethod'
+    >>> # XPath expressions are not email addresses.
+    >>> test_tales('foo/fmt:obfuscate-email', foo='element/@attribute')
+    'element/@attribute'
+    >>> # An invalid address, some characters, followed by many dots, and
+    >>> # some more characters. This pattern (derived from a real example)
+    >>> # caused the re to hang the servers and the test suite.
+    >>> # The re used one-or-none in a grouping (\.?), which is expensive.
+    >>> bad_address = (
+    ...     "medicalwei@sara:~$ Spinning................................"
+    ...     "...........................................................not")
+    >>> test_tales('foo/fmt:obfuscate-email', foo=bad_address)
+    'medicalwei@sara:~$ ...'
 
 
 == Test the 'fmt:' namespace where the context is a dict. ==
@@ -184,8 +414,11 @@ Make a mock-up IBrowserRequest, and use this as the interaction.
 
     >>> login(ANONYMOUS, participation)
 
+Note how the URL has only a path part, because it is for the same site
+as the current request.
+
     >>> test_tales('foo/fmt:url', foo=object_having_url)
-    u'https://mandrill.example.org:23/bonobo/saki'
+    u'/bonobo/saki'
 
 
 == The some_string/fmt:something helper ==
@@ -225,12 +458,15 @@ do with 'None/fmt:foo'.
     ''
     >>> test_tales('foo/fmt:text-to-html', foo=None)
     ''
+    >>> test_tales('foo/fmt:email-to-html', foo=None)
+    ''
     >>> test_tales('foo/fmt:url', foo=None)
     ''
     >>> test_tales('foo/fmt:exactduration', foo=None)
     ''
-    >>> test_tales('foo/fmt:icon', foo=None)
+    >>> test_tales('foo/image:icon', foo=None)
     ''
+
 
 == The lp: namespace for presenting DBSchema items ==
 
@@ -289,7 +525,7 @@ DBSchema the item comes from.
     >>> test_tales('deb/enumvalue:CHEESEFISH', deb=udeb)
     Traceback (most recent call last):
     ...
-    TraversalError: 'The BinaryPackageFormat dbschema does not have a value CHEESEFISH.'
+    TraversalError: 'The enumerated type BinaryPackageFormat does not have a value CHEESEFISH.'
 
 It is possible for dbschemas to have a 'None' value.  This is a bit awkward,
 because when the value is None, we can't do any checking whether a new value
@@ -307,4 +543,4 @@ wrapped dbschema items too:
     >>> test_tales('deb/enumvalue:CHEESEFISH', deb=wrapped_deb)
     Traceback (most recent call last):
     ...
-    TraversalError: 'The BinaryPackageFormat dbschema does not have a value CHEESEFISH.'
+    TraversalError: 'The enumerated type BinaryPackageFormat does not have a value CHEESEFISH.'

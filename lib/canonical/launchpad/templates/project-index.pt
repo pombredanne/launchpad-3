@@ -1,33 +1,49 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@launchpad_template/master"
-      i18n:domain="launchpad"
->
+<html metal:use-macro="view/macro:page/default" i18n:domain="launchpad">
   <body>
+
     <metal:portlets fill-slot="portlets">
       <tal:portlet tal:replace="structure context/@@+portlet-lifecycle" />
+      <tal:portlet tal:replace="structure context/@@+portlet-milestones" />
     </metal:portlets>
+
     <div metal:fill-slot="main">
+
+    <tal:block condition="view/required:launchpad.Edit">
+      <p tal:condition="not: context/products" class="warning message"> 
+        There are no projects registered for
+        <span tal:replace="context/displayname">project displayname</span>.
+        <br />
+        You need to <a href="+newproduct">register another project that is
+        part of <tal:project replace="context/displayname" /></a> or associate
+        an existing project with it.
+      </p>
+    </tal:block>
+
+    <span tal:replace="structure context/image:mugshot" />
       <h1 tal:content="context/title">Mozilla</h1>
-      <span tal:replace="structure context/fmt:icon" />
-      <div tal:content="context/summary">
-        This is the project Summary, which should be a single paragraph
-        summarising the project's purpose.
+
+      <div class="description" tal:content="context/summary">
+        This is the project group Summary, which should be a single paragraph
+        summarising the project group's purpose.
       </div>
 
-    <div tal:replace="structure context/description/fmt:text-to-html">
-    This is the Project Description,
-    which is a much more substantial description of the project. It should
-    be several paragraphs long, and give you a very clear insight into the
-    work of the Project, and the people behind it. It should describe the
-    project history, and organisation.
+      <div
+        class="description"
+        tal:content="structure context/description/fmt:text-to-html"
+      >
+        This is the Project Group Description,
+        which is a much more substantial description of the project group. 
+	It should be several paragraphs long, and give you a very clear 
+        insight into the
+        work of the Project, and the people behind it. It should describe the
+        project history, and organisation.
 
-    The Project Description should also mention the major project or
-    projects that make up the aggregate project. For example, the Apache
-    Project description
-    would highlight its work on the Apache Server, and mention other
-    projects such as APR.
-    </div>
+        The Project Description should also mention the major project or
+        projects that make up the aggregate project. For example, the Apache
+        Project description
+        would highlight its work on the Apache Server, and mention other
+        projects such as APR.
+      </div>
 
       <ul tal:condition="context/homepageurl">
         <li class="external link">
@@ -37,16 +53,22 @@
           </a>
         </li>
       </ul>
-      <ul class="buttons">
+      <ul class="buttons" tal:condition="context/products">
         <li>
           <a href="+filebug">
             <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
           </a>
         </li>
         <li tal:content="structure context/@@+ask-a-question-button" />
-        <li>
-          <a href="+translations">
-            <img alt="Help translate" src="/+icing/but-sml-helptranslate.gif" />
+        <li tal:content="structure context/@@+help-translate-button" />
+        <li tal:define="has_mentoring context/mentoring_offers/count">
+          <a href="+mentoring" tal:condition="has_mentoring">
+            <img alt="Mentoring available"
+                 src="/+icing/but-sml-mentoring.gif"/>
+          </a>
+          <a href="+mentoring" tal:condition="not: has_mentoring">
+            <img alt="No mentoring available"
+                 src="/+icing/but-sml-mentoring-off.gif" />
           </a>
         </li>
       </ul>
@@ -55,25 +77,24 @@
           class="section"
           tal:content="structure context/@@+portlet-coming-sprints"
         />
-        <div class="portlet">
+        <div class="portlet" id="products">
           <h2>Projects</h2>
-          <p tal:condition="not: context/products">
+          <p tal:condition="not: context/products"> 
             There are no projects registered for
             <span tal:replace="context/displayname">project displayname</span>.
           </p>
           <div
             tal:condition="context/products"
             tal:repeat="product context/products"
-          >
-            <h3>
-              <a
+            class="project"
+            >
+            <img src="/@@product" tal:replace="structure product/image:icon" />
+            <strong><a
                 tal:attributes="href product/fmt:url"
                 tal:content="product/title"
-              >Project title</a>
-            </h3>
-            <div>
-              <strong>Releases:</strong>
-              <tal:none condition="not:product/releases">None</tal:none>
+              >Project title</a></strong>
+            <div tal:condition="product/releases">
+              Releases:
               <tal:release repeat="release product/releases">
                 <a
                   tal:attributes="href release/fmt:url"
@@ -82,9 +103,8 @@
                 condition="not:repeat/release/end">,</tal:comma>
               </tal:release>
             </div>
-            <div>
-              <strong>Milestones:</strong>
-              <tal:none condition="not:product/milestones">None</tal:none>
+            <div tal:condition="product/milestones">
+              Milestones:
               <tal:milestone repeat="milestone product/milestones">
                 <a
                   tal:attributes="href milestone/fmt:url"
@@ -94,16 +114,21 @@
               </tal:milestone>
             </div>
           </div>
-          <ul tal:condition="context/required:launchpad.Edit">
-            <li><a href="+newproduct">Register another project</a></li>
-          </ul>
+          <tal:block condition="context/required:launchpad.Edit">
+            <a href="+newproduct">&raquo; Register another project that is
+            part of <tal:project replace="context/displayname" /></a>
+          </tal:block>
         </div>
-        <div tal:replace="structure context/@@+portlet-top-contributors" />
+        <div tal:replace="structure context/@@+portlet-latestspecs" />
       </div>
       <div class="right">
         <div tal:replace="structure context/@@+portlet-details" />
+        <div tal:replace="structure context/@@+portlet-top-contributors" />
         <div tal:replace="structure context/@@+portlet-latestbugs" />
-        <div tal:replace="structure context/@@+portlet-latestspecs" />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestquestions"
+        />
       </div>
     </div>
   </body>

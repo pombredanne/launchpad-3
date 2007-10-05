@@ -1,9 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
-
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -15,14 +20,8 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3>
-    <span tal:content="context/target/title">Ubuntu Linux</span>
-    <tal:has_series condition="context/series_target">
-    : <span tal:content="context/series_target/title">Hoary</span>
-    </tal:has_series>
-  </h3>
   <h1>
-    Milestone &ldquo;<tal:name replace="context/name">1.0</tal:name>&rdquo;
+    Milestone overview
   </h1>
 </metal:heading>
 
@@ -36,25 +35,22 @@
 
   <tal:has_specs condition="specs">
 
-    <h2>Targeted features</h2>
+    <h3 id="specification-count" tal:content="view/specification_count_text" />
 
     <table class="listing sortable" id="milestone_specs">
       <thead>
         <tr>
-          <th>Priority</th>
           <th>Specification</th>
+          <th tal:condition="view/is_project_milestone">
+            Product
+          </th>
+          <th>Priority</th>
           <th>Assignee</th>
           <th>Delivery</th>
         </tr>
       </thead>
       <tbody>
         <tr tal:repeat="spec specs">
-          <td>
-            <span class="sortkey" tal:content="spec/priority/sortkey" />
-            <span tal:content="spec/priority/title"
-                  tal:attributes="
-                  class string:specpriority${spec/priority/name}">High</span>
-          </td>
           <td>
             <a tal:content="spec/title/fmt:shorten/60"
                tal:attributes="
@@ -63,15 +59,27 @@
             <img src="/@@/info" alt="Informational"
                  tal:condition="spec/informational" />
           </td>
+          <td tal:condition="view/is_project_milestone">
+              <span class="sortkey" tal:content="spec/product/displayname" />
+              <a tal:attributes="href spec/milestone/fmt:url"
+                 tal:content="spec/product/displayname" />
+          </td>
+          <td>
+            <span class="sortkey" tal:content="spec/priority/sortkey" />
+            <span tal:content="spec/priority/title"
+                  tal:attributes="
+                  class string:specpriority${spec/priority/name}">High</span>
+          </td>
           <td>
             <a tal:condition="spec/assignee"
                tal:replace="structure spec/assignee/fmt:link" />&nbsp;
           </td>
           <td>
-            <span class="sortkey" tal:content="spec/delivery/sortkey" />
-            <span tal:content="spec/delivery/title"
+            <span class="sortkey"
+                  tal:content="spec/implementation_status/sortkey" />
+            <span tal:content="spec/implementation_status/title"
                   tal:attributes="
-                  class string:specdelivery${spec/delivery/name}">
+                  class string:specdelivery${spec/implementation_status/name}">
               Deployment
             </span>
           </td>
@@ -83,12 +91,15 @@
 
   <tal:has_bugtasks condition="bugtasks">
 
-    <h2>Targeted bugs</h2>
+    <h3 id="bug-count" tal:content="view/bugtask_count_text" />
 
     <table class="listing sortable" id="milestone_bugtasks">
       <thead>
         <tr>
           <th colspan="3">Report</th>
+          <th tal:condition="view/is_project_milestone">
+            Product
+          </th>
           <th>Importance</th>
           <th>Assignee</th>
           <th>Status</th>
@@ -96,13 +107,21 @@
       </thead>
       <tbody>
         <tr tal:repeat="bugtask bugtasks">
-          <td tal:content="structure bugtask/fmt:icon" class="icon left" />
+          <td class="icon left">
+            <span class="sortkey" tal:content="bugtask/bug/id" />
+            <span tal:content="structure bugtask/image:icon" />
+          </td>
           <td tal:content="bugtask/bug/id" class="amount">12345</td>
           <td>
             <a tal:attributes="href bugtask/bug/fmt:url"
                tal:content="bugtask/bug/title/fmt:shorten/65">
                Bug Title Here
             </a>
+          </td>
+          <td tal:condition="view/is_project_milestone">
+            <span class="sortkey" tal:content="bugtask/product/displayname" />
+            <a tal:attributes="href bugtask/milestone/fmt:url"
+               tal:content="bugtask/product/displayname" />
           </td>
           <td>
             <span class="sortkey" tal:content="bugtask/importance/sortkey" />
@@ -125,14 +144,12 @@
 
   </tal:has_bugtasks>
 
-  <tal:has_no_specs condition="not: specs">
-    <p class="informational message" tal:condition="not: bugtasks">
-      You do not have any feature specifications or bug tasks targeted to
-      this milestone. For any given specification or bug task, you can
-      target it to a milestone to keep a handy listing of things you want
-      to get done in that milestone.
-    </p>
-  </tal:has_no_specs>
+  <tal:has_bugs_or_specs condition="not: view/has_bugs_or_specs">
+    You do not have any feature specifications or bug tasks targeted to
+    this milestone. For any given specification or bug task, you can
+    target it to a milestone to keep a handy listing of things you want
+    to get done in that milestone.
+  </tal:has_bugs_or_specs>
 
 </div> 
 </body>

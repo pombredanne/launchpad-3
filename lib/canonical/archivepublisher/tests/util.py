@@ -10,7 +10,7 @@ __metaclass__ = type
 from canonical.archivepublisher.tests import datadir
 from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingStatus,
-    DistributionReleaseStatus)
+    DistroSeriesStatus)
 
 __all__ = ['FakeLogger']
 
@@ -26,32 +26,32 @@ class FakeDistribution:
     def __init__(self, name, conf):
         self.name = name.decode('utf-8')
         self.lucilleconfig = conf.decode('utf-8')
-        self.releases = []
+        self.serieses = []
 
-    def registerRelease(self, release):
-        self.releases.append(release)
+    def registerSeries(self, series):
+        self.serieses.append(series)
 
     def __getitem__(self, name):
-        for release in self.releases:
-            if release.name == name:
-                return release
+        for series in self.serieses:
+            if series.name == name:
+                return series
         return None
 
 
-class FakeDistroRelease:
+class FakeDistroSeries:
     def __init__(self, name, conf, distro):
         self.name = name.decode('utf-8')
         self.lucilleconfig = conf.decode('utf-8')
         self.distribution = distro
-        self.architectures = [FakeDistroArchRelease(self, "i386"),
-                              FakeDistroArchRelease(self, "powerpc")]
-        self.releasestatus = DistributionReleaseStatus.DEVELOPMENT
-        self.distribution.registerRelease(self)
+        self.architectures = [FakeDistroArchSeries(self, "i386"),
+                              FakeDistroArchSeries(self, "powerpc")]
+        self.status = DistroSeriesStatus.DEVELOPMENT
+        self.distribution.registerSeries(self)
 
 
-class FakeDistroArchRelease:
-    def __init__(self, release, archtag):
-        self.distrorelease = release
+class FakeDistroArchSeries:
+    def __init__(self, series, archtag):
+        self.distroseries = series
         self.architecturetag = archtag
 
 
@@ -88,8 +88,8 @@ class FakeBinary:
 class FakeSourcePublishing:
     """Mocks a SourcePackagePublishingHistory object."""
     id = 1
-    
-    def __init__(self, source, component, alias, section, dr):
+
+    def __init__(self, source, component, alias, section, ds):
         class Dummy: id = 1
         self.sourcepackagerelease = Dummy()
         self.sourcepackagerelease.name = source
@@ -98,8 +98,8 @@ class FakeSourcePublishing:
         self.libraryfilealias = alias
         self.section = Dummy()
         self.section.name = section
-        self.distrorelease = Dummy()
-        self.distrorelease.name = dr
+        self.distroseries = Dummy()
+        self.distroseries.name = ds
         self.pocket = PackagePublishingPocket.RELEASE
 
     def _deepCopy(self):
@@ -108,15 +108,15 @@ class FakeSourcePublishing:
             self.component.name,
             self.libraryfilealias,
             self.section.name,
-            self.distrorelease.name,
+            self.distroseries.name,
             )
 
 class FakeBinaryPublishing:
     """Mocks a BinaryPackagePublishingHistory object."""
     id = 1
-    
+
     def __init__(self, binary, source, component, alias,
-                 section, dr, prio, archtag):
+                 section, ds, prio, archtag):
         class Dummy: id = 1
         self.binarypackagerelease = Dummy()
         self.binarypackagerelease.name = source
@@ -128,9 +128,9 @@ class FakeBinaryPublishing:
         self.component.name = component
         self.section = Dummy()
         self.section.name = section
-        self.distroarchrelease = Dummy()
-        self.distroarchrelease.distrorelease = Dummy()
-        self.distroarchrelease.distrorelease.name = dr
+        self.distroarchseries = Dummy()
+        self.distroarchseries.distroseries = Dummy()
+        self.distroarchseries.distroseries.name = ds
         self.libraryfilealias = alias
         self.priority = prio
         self.architecturetag = archtag
@@ -143,7 +143,7 @@ class FakeBinaryPublishing:
             self.component.name,
             self.libraryfilealias,
             self.section.name,
-            self.distrorelease.name,
+            self.distroseries.name,
             self.priority,
             self.architecturetag,
             )
@@ -151,13 +151,13 @@ class FakeBinaryPublishing:
 
 class FakeSourceFilePublishing:
     """Mocks a SourcePackageFilePublishing object."""
-    def __init__(self, source, component, leafname, alias, section, dr):
+    def __init__(self, source, component, leafname, alias, section, ds):
         self.sourcepackagename = source
         self.componentname = component
         self.libraryfilealiasfilename = leafname
         self.libraryfilealias = alias
         self.sectionname = section
-        self.distroreleasename = dr
+        self.distroseriesname = ds
         self.pocket = PackagePublishingPocket.RELEASE
 
     def _deepCopy(self):
@@ -167,18 +167,18 @@ class FakeSourceFilePublishing:
             self.libraryfilealiasfilename,
             self.libraryfilealias,
             self.sectionname,
-            self.distroreleasename,
+            self.distroseriesname,
             )
 
 class FakeBinaryFilePublishing:
     """Mocks a BinaryPackageFilePublishing object."""
-    def __init__(self, source, component, leafname, alias, section, dr, archtag):
+    def __init__(self, source, component, leafname, alias, section, ds, archtag):
         self.sourcepackagename = source
         self.componentname = component
         self.libraryfilealiasfilename = leafname
         self.libraryfilealias = alias
         self.sectionname = section
-        self.distroreleasename = dr
+        self.distroseriesname = ds
         self.architecturetag = archtag
         self.pocket = PackagePublishingPocket.RELEASE
 
@@ -189,7 +189,7 @@ class FakeBinaryFilePublishing:
             self.libraryfilealiasfilename,
             self.libraryfilealias,
             self.sectionname,
-            self.distroreleasename,
+            self.distroseriesname,
             self.architecturetag,
             )
 
@@ -259,13 +259,13 @@ cacheroot=FOO/cache
 miscroot=FOO/misc
                         """.replace("FOO",datadir("distro")).replace("BAR","ubuntu"));
 
-fake_ubuntu_releases = [
-    FakeDistroRelease("warty",
+fake_ubuntu_serieses = [
+    FakeDistroSeries("warty",
                       """
 [publishing]
 components = main restricted universe
                       """, fake_ubuntu),
-    FakeDistroRelease("hoary",
+    FakeDistroSeries("hoary",
                       """
 [publishing]
 components = main restricted universe

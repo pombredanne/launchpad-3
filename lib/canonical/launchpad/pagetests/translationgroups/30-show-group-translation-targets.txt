@@ -2,22 +2,13 @@
 We should now see the various distro's, projects and products that the group
 has been assigned as the translator for.
 
-  >>> print http(r"""
-  ... GET /translations/groups/polyglot/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...The PolyGlot Translation Group...
-  ...
-      <h2>This group translates for</h2>
-  ...
-                    <a href="/ubuntu">Ubuntu</a>
-  ...
-                    <a href="/netapplet">NetApplet</a>
-  ...
-                    <a href="/gnome">GNOME</a>
-  ...
-
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/+groups/polyglot')
+  >>> print browser.url
+  http://translations.launchpad.dev/+groups/polyglot
+  >>> portlet = find_portlet(browser.contents, 'This group translates for')
+  >>> for link in portlet.findAll('a'):
+  ...     print '%s: %s' % (link.string, link['href'])
+  Ubuntu: /ubuntu
+  NetApplet: /netapplet
+  GNOME: /gnome

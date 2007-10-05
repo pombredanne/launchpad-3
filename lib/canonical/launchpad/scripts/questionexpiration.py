@@ -9,7 +9,6 @@ from logging import getLogger
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.interfaces import ILaunchpadCelebrities, IQuestionSet
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
@@ -40,7 +39,7 @@ class QuestionJanitor:
         self.log = log
 
         self.janitor = (
-            getUtility(ILaunchpadCelebrities).answer_tracker_janitor)
+            getUtility(ILaunchpadCelebrities).janitor)
 
     def expireQuestions(self, transaction_manager):
         """Expire old questions.
@@ -65,13 +64,13 @@ class QuestionJanitor:
                 question.expireQuestion(
                     self.janitor,
                     "This question was expired because it remained in "
-                    "the '%s' state without activity for the last %d days."
-                        % (question.status.title, self.days_before_expiration))
-                # XXX flacoste 2006/10/24 We commit after each and every
-                # expiration because of bug #29744 (emails are sent
+                    "the '%s' state without activity for the last %d days." %
+                        (question.status.title, self.days_before_expiration))
+                # XXX flacoste 2006-10-24 bug=29744: We commit after each and
+                # every expiration because of bug #29744 (emails are sent
                 # immediately in zopeless). This minimuze the risk of
-                # duplicate expiration email being sent in case an error occurs
-                # later on.
+                # duplicate expiration email being sent in case an error
+                # occurs later on.
                 transaction_manager.commit()
                 count += 1
             self.log.info('Expired %d questions.' % count)
@@ -81,7 +80,7 @@ class QuestionJanitor:
 
 
     def _login(self):
-        """Setup an interaction as the Support Tracker Janitor."""
+        """Setup an interaction as the Launchpad Janitor."""
         auth_utility = getUtility(IPlacelessAuthUtility)
         janitor_email = self.janitor.preferredemail.email
         setupInteraction(
@@ -89,5 +88,5 @@ class QuestionJanitor:
             login=janitor_email)
 
     def _logout(self):
-        """Removed the Support Tracker Janitor interaction."""
+        """Removed the Launchpad Janitor interaction."""
         endInteraction()

@@ -1,0 +1,56 @@
+= Translations front page =
+
+    >>> browser.open('http://translations.launchpad.dev/')
+    >>> print browser.title
+    Launchpad Translations
+
+The page includes a list of translatable distribution series
+in the left column.
+
+    >>> left_column = find_tags_by_class(
+    ...     browser.contents, 'three column left')[0]
+    >>> print extract_text(left_column)
+    Translatable operating systems
+    Ubuntu 5.04
+
+The middle lists translatable products, ALSA is listed in the page
+among featured projects.
+
+    >>> middle_column = find_tags_by_class(
+    ...     browser.contents, 'three column middle')[0]
+    >>> print extract_text(middle_column)
+    Translatable projects
+    ALSA utilities
+    The Evolution Groupware Application
+    ...
+    List all translatable projects...
+
+The translation front page list of the user's translatable languages.
+in the right column
+
+    >>> right_column = find_tags_by_class(
+    ...     browser.contents, 'three column right')[0]
+    >>> print extract_text(right_column)
+    Preferred languages
+    Afrikaans
+    Sotho, Southern
+    Xhosa
+    Zulu
+    ...
+    Change your preferred language...
+
+    >>> right_column.findAll('a')[-1]
+    <a href="/+editmylanguages">
+    ...Change your preferred language...
+
+There is also an "About" page that talks about how Launchpad
+Translations works.
+
+    >>> browser.getLink('Launchpad Translations').click()
+    >>> print browser.title
+    About Launchpad Translations
+
+    >>> print extract_text(find_main_content(browser.contents))
+    About Launchpad Translations ...
+    How do I get my software translated in Launchpad?
+    ... gettext ...

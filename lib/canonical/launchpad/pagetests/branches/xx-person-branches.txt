@@ -9,6 +9,7 @@ teams that the person is participating in.
 
 First, check that the condensed branch listing page works:
 
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
   >>> browser.open('http://code.launchpad.dev/~name12')
   >>> print browser.contents
   <!DOCTYPE...
@@ -20,7 +21,7 @@ message.
 
   >>> browser.open('http://code.launchpad.dev/~kinnison')
   >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
-  There may be branches related to Daniel Silverstone but none 
+  There may be branches related to Daniel Silverstone but none
   of them match the current filter criteria for this page. Try
   filtering on "Any Status".
 
@@ -46,18 +47,6 @@ normal branch listing view for that person.
   filtering on "Any Status".
 
 
-== Team Branches ==
-
-Branches that are owned by a team that the user is a member of, they are
-shown as 'Team Branch'.
-
-   >>> browser.open('http://launchpad.dev/~ddaa/+branches')
-   >>> table = find_tag_by_id(browser.contents, 'branchtable')
-   >>> for row in table.tbody.fetch('tr'):
-   ...     print extract_text(row)
-   main   60 New   evolution   Team Branch
-  
-  
 == Authored Branches ==
 
 There is a link in the branch context menu for person which points to
@@ -70,9 +59,11 @@ the authored branches page.
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   main         60 New           firefox
-   klingon      30 Experimental  gnome-terminal
-   junk.contrib 60 New
+   main         ... New           firefox
+   klingon      ... Experimental  gnome-terminal
+   feature-x    ... New           landscape
+   trunk        ... New           landscape
+   junk.contrib ... New
       2005-10-31 12:03:57 ... weeks ago
 
 
@@ -87,11 +78,12 @@ There is also a link which points to the registered branches page.
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   2.6                   10 Mature       gnome-terminal
-   main                  20 Development  gnome-terminal
-   pushed                60 New          gnome-terminal
-   junk.dev Ubuntu Team  30 Experimental
-      2005-10-31 12:03:57 ... weeks ago
+   2.6                   ... Mature       gnome-terminal
+   main                  ... Development  gnome-terminal
+   mirrored              ... New          gnome-terminal
+   pushed                ... New          gnome-terminal
+   scanned               ... New          gnome-terminal
+   junk.dev Ubuntu Team  ... Experimental  2005-10-31 12:03:57 ... weeks ago
 
 == Subscribed branches ==
 
@@ -105,6 +97,6 @@ branches.
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   launchpad   Launchpad Developers 60 New gnome-terminal
-   junk.dev    Ubuntu Team          30 Experimental
+   launchpad   Launchpad Developers ... New gnome-terminal
+   junk.dev    Ubuntu Team          ... Experimental
       2005-10-31 12:03:57 ... weeks ago

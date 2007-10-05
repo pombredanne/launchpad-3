@@ -1,7 +1,7 @@
 An anonymous user who tries to access the bugtask edit page will be
 redirected to the login page.
 
-    >>> browser.open("http://localhost/thunderbird/+bug/9/+editstatus")
+    >>> browser.open("http://launchpad.dev/thunderbird/+bug/9/+editstatus")
     Traceback (most recent call last):
       ...
     Unauthorized: ...
@@ -24,14 +24,15 @@ https://launchpad.net/malone/+bug/49891)
 
     >>> logout()
 
-    >>> browser.open("http://localhost/firefox/+bug/1/+editstatus")
+    >>> browser.open("http://launchpad.dev/firefox/+bug/1/+editstatus")
     Traceback (most recent call last):
       ...
     Unauthorized: ...
 
 Any logged-in user can edit a bugtask.
 
-    >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
-    >>> browser.open("http://localhost/firefox/+bug/6/+editstatus")
+    >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> browser.open("http://launchpad.dev/firefox/+bug/6/+editstatus")
     >>> browser.title
-    'Bug #6 in firefox (upstream)...'
+    'Bug #6 in Mozilla Firefox...'
+

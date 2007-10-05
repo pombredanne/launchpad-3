@@ -14,22 +14,17 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-latestquestions" />
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
-<metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
-</metal:heading>
-
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_generalform/generalform">
+  <div metal:use-macro="context/@@launchpad_form/form">
 
-    <p metal:fill-slot="extra_info">
+    <p metal:fill-slot="extra_top">
     An <em>answer contact</em> is implicitly subscribed to all
     questions. By checking the box below, you will receive changes
-    related to all questions (written in English or one of your <a
+    related to all questions (written in one of your <a
     tal:attributes="href string:${request/lp:person/fmt:url}/+editlanguages"
     >preferred languages</a>) opened on <span
     tal:replace="context/displayname">Mozilla Firefox</span>, and thus
@@ -41,9 +36,9 @@
 
         <div class="field">
           <strong>Choose:</strong><br />
-          <div tal:replace="structure view/want_to_be_answer_contact_widget" />
+          <div tal:replace="structure view/widgets/want_to_be_answer_contact" />
           <label style="font-weight: normal"
-              tal:attributes="for view/want_to_be_answer_contact_widget/name">
+              tal:attributes="for view/widgets/want_to_be_answer_contact/name">
             I want to be an answer contact for
             <span tal:replace="context/displayname">Mozilla Firefox</span>
           </label>
@@ -52,13 +47,13 @@
       </div>
 
       <div class="row"
-           tal:condition="view/answer_contact_teams_widget/vocabulary">
+           tal:condition="view/widgets/answer_contact_teams/vocabulary">
 
         <div class="field">
           <label>Let the following teams be an answer contact for
           <span tal:replace="context/displayname">Mozilla
           Firefox</span>:</label>
-          <div tal:content="structure view/answer_contact_teams_widget" />
+          <div tal:content="structure view/widgets/answer_contact_teams" />
         </div>
 
       </div>
@@ -76,12 +71,20 @@
     You will receive mail notifications about all changes to these questions,
     as well as for every new question created.
   </p>
-  <p>You can register yourself, or any of the teams you are a member of as
-    answer contact. Simply check the appropriate checkbox.
+  <p>You can register as answer contact yourself, or any of the teams you are
+    an administrator of. Simply check the appropriate checkbox.
   </p>
   <p>If you don't want to receive notifications anymore, simply remove
     yourself and/or your teams as answer contact by unchecking the
     appropriate checkbox.
+  </p>
+  <p>Answer contacts must tell Launchpad in which languages they provide help.
+     If you have not already set your
+    <a
+      tal:attributes="href string:${request/lp:person/fmt:url}/+editlanguages"
+      >preferred languages</a>, they will be automatically set to your
+      browser languages. In the case of a team, only English will be set as 
+      the preferred language.
   </p>
 </metal:help>
 </body>

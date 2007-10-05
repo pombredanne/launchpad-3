@@ -13,8 +13,6 @@ Launchpad.
     'name16'
     >>> browser.getControl('Timezone').value
     ['Africa/Johannesburg']
-    >>> browser.getControl(name='field.gotchi.action').value
-    ['keep']
     >>> browser.getControl(
     ...     'Hide my email addresses from other Launchpad users').selected
     False
@@ -46,24 +44,15 @@ user.
     >>> 'foo.bar@canonical.com' in user_browser.contents
     False
 
-He will also change his timezone and hackergotchi:
+He will also change his timezone:
 
     >>> browser.getControl('Timezone').value = ['Africa/Dakar']
-    >>> browser.getControl(name='field.gotchi.action').value = ['change']
-    >>> import os
-    >>> import canonical.launchpad
-    >>> hackergotchi = os.path.join(
-    ...     os.path.dirname(canonical.launchpad.__file__),
-    ...     'pagetests/standalone/mypng.png')
-    >>> browser.getControl(name='field.gotchi.image').add_file(
-    ...     open(hackergotchi, 'r'), 'image/png', 'hackergotchi.png')
     >>> browser.getControl('Save').click()
 
     >>> browser.url
     'http://launchpad.dev/~foobar'
+
     >>> browser.getLink('Change details').click()
-    >>> find_tag_by_id(browser.contents, 'field.gotchi_current_img').get('src')
-    u'.../hackergotchi.png'
     >>> browser.getControl('Timezone').value
     ['Africa/Dakar']
 

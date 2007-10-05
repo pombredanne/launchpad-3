@@ -1253,7 +1253,38 @@ EOF
 						"Source: ${pkg}\n".
 						"Version: ${version}\n\n";
 				close TRANS;
-			}
+				system("chmod -R go+rX $main::HOME/public_html/translations");
+			    }
+		    }
+
+		my $ddebtar = "";
+		my $ddebstring = "";
+		if (-r glob("$main::chroot_build_dir/*.ddeb")) {
+		    my @ddeblist = glob("$main::chroot_build_dir/*.ddeb");
+		    $ddebtar="${pkg}_${version}_${main::arch}_ddebs.tar";
+		    while (@ddeblist) {
+			$ddebstring .= basename(@ddeblist[0]) . " ";
+			shift @ddeblist;
+		    }
+		}
+		if ($ddebstring) {
+		    print PLOG "Publishing debug debs.\n";
+		    my $date = strftime '%Y%m%d',gmtime;
+		    my $target = "$main::HOME/public_html/ddebs/$date/";
+		    system "mkdir -p $target";
+		    if (system("tar -C $main::chroot_build_dir -chf $target/$ddebtar $ddebstring") != 0) {
+			print PLOG "ERROR: Could not create $ddebtar in $target\n";
+		    } else {
+			open TRANS, ">>$target/ddebs.txt";
+			print TRANS "File: " . basename(${ddebtar}) . "\n".
+                        "Distribution: ${main::archive}\n".
+                        "Release: ${main::distribution}\n".
+                        "Component: ${main::component}\n".
+                        "Source: ${pkg}\n".
+                        "Version: ${version}\n\n";
+		    close TRANS;
+			system("chmod -R go+rX $main::HOME/public_html/ddebs");
+		    }
 		}
 
 		if (-r "$dir/debian/files") {
@@ -1295,6 +1326,10 @@ EOF
 						and print PLOG "ERROR: Could not move $_ to .\n";
 				}
 			}
+		}
+
+		if (-r $translations) {
+		    system("rm",$translations);
 		}
 
 		$changes = "${pkg}_".

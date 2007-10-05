@@ -1,0 +1,127 @@
+Distro Arch Release
+^^^^^^^^^^^^^^^^^^^
+   >>> from canonical.launchpad.webapp.testing import verifyObject
+
+   >>> from canonical.launchpad.interfaces import (
+   ...    IDistroArchSeriesBinaryPackageRelease,
+   ...    IDistroArchSeriesBinaryPackage,
+   ...    IBinaryPackagePublishingHistory,
+   ...    ISectionSet)
+
+   >>> from canonical.launchpad.database.distroarchseries import (
+   ...     DistroArchSeries)
+
+
+   >>> hoary_i386 = DistroArchSeries.get(6)
+
+# XXX: daniels 2005-10-17 bug=3257:
+#      This needs many more tests to be effective.
+
+
+Distro Arch Releases can tell you about their published releases.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Distro Arch Releases have a number of releases of any given binary
+package in them. This can be due to various reasons such as uploads in
+progress, superseding in progress, or simply that there is more than
+one version spread across the pockets. getReleasedPackages lets us
+interrogate this information.
+
+   >>> for p in hoary_i386.getReleasedPackages("pmount"):
+   ...     print p.binarypackagerelease.binarypackagename.name
+   pmount
+
+
+DistroArchSeries class has a built-in method to return a single 
+dependency package candidate by its name as a PublishedPackage 
+instance:
+
+   >>> hoary_i386.findDepCandidateByName("pmount").binarypackagename
+   u'pmount'
+
+Since 'at' isn't available in our sampledata (not even published), 
+None is returned:
+
+   >>> hoary_i386.findDepCandidateByName("at") is None
+   True
+
+Check the behaviour of the provided search method, which returns a
+list of IDARBPR instances containing the matching packages.
+
+   >>> results = hoary_i386.searchBinaryPackages(text='pmount')
+   >>> len(results)
+   1
+   >>> pmount = results[0]
+
+The method works even when we are searching for packages whose names are
+not fti-matchable, such as "linux-2.6.12", and substrings:
+
+   >>> warty_i386 = DistroArchSeries.get(1)
+   >>> results = warty_i386.searchBinaryPackages(text='linux-2.6.12')
+   >>> len(results)
+   1
+   >>> results = hoary_i386.searchBinaryPackages(text='moun')
+   >>> len(results)
+   1
+
+   # XXX cprov 2006-03-21: Broken implementation, missing lastversions
+   # attribute.
+   verifyObject(IDistroArchSeriesBinaryPackageRelease, pmount)
+   True
+
+Check IDARBP provider
+
+   >>> pmount_hoary_i386 = hoary_i386.getBinaryPackage('pmount')
+
+   >>> verifyObject(IDistroArchSeriesBinaryPackage, pmount_hoary_i386)
+   True
+
+   >>> pmount_hoary_i386.name
+   u'pmount'
+
+
+Check some properties of DARBP meta class
+
+Entire publishing history:
+
+   >>> pmount_hoary_i386.publishing_history.count()
+   2
+
+Most recent published history row:
+
+   >>> bpph = pmount_hoary_i386.current_published
+
+   # XXX cprov 2006-03-22: The object doesn't pass verifyObject()
+   # due the lack of distroarchseriesbinarypackagerelease attribute.
+
+   >>> IBinaryPackagePublishingHistory.providedBy(bpph)
+   True
+
+   >>> bpph.section.name
+   u'editors'
+
+Perform `post publication` override:
+
+   >>> new_section = getUtility(ISectionSet)['base']
+   >>> version = bpph.binarypackagerelease.version
+   >>> pmount_hoary_i386_released = pmount_hoary_i386[version]
+
+   >>> pmount_hoary_i386_released.changeOverride(new_section=new_section)
+   >>> pub_hist = pmount_hoary_i386.publishing_history
+   >>> pub_hist.count()
+   3
+
+Override information about 'pmount' is pending publication:
+
+   >>> pub_hist[0].status.name, pub_hist[0].section.name
+   ('PENDING', u'base')
+
+Supersede current publication:
+
+   >>> superseded_pmount = pmount_hoary_i386_released.supersede()
+   >>> pmount_hoary_i386.publishing_history.count()
+   3
+
+   >>> superseded_pmount.status.name, superseded_pmount.datesuperseded
+   ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+

@@ -8,11 +8,11 @@ __all__ = ['BugTargetBase']
 from zope.component import getUtility
 
 from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
+from canonical.lp.dbschema import BugTaskImportance
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugtask import get_bug_privacy_filter
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
-from canonical.launchpad.interfaces import ILaunchBag, IProduct
+from canonical.launchpad.interfaces import BugTaskStatus, ILaunchBag
 from canonical.launchpad.interfaces.bugtask import (
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES, BugTaskSearchParams)
 
@@ -59,6 +59,16 @@ class BugTargetBase:
             Bug.select("Bug.id IN (%s)" % ", ".join(common_bug_ids)))
 
     @property
+    def closed_bugtasks(self):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        closed_tasks_query = BugTaskSearchParams(
+            user=getUtility(ILaunchBag).user,
+            status=any(*RESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
+
+        return self.searchTasks(closed_tasks_query)
+
+    @property
     def open_bugtasks(self):
         """See canonical.launchpad.interfaces.IBugTarget."""
         open_tasks_query = BugTaskSearchParams(
@@ -69,10 +79,10 @@ class BugTargetBase:
         return self.searchTasks(open_tasks_query)
 
     @property
-    def unconfirmed_bugtasks(self):
+    def new_bugtasks(self):
         """See canonical.launchpad.interfaces.IBugTarget."""
         open_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, status=BugTaskStatus.UNCONFIRMED,
+            user=getUtility(ILaunchBag).user, status=BugTaskStatus.NEW,
             omit_dupes=True)
 
         return self.searchTasks(open_tasks_query)

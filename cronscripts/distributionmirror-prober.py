@@ -5,6 +5,7 @@
 
 import _pythonpath
 
+import os
 from StringIO import StringIO
 
 from twisted.internet import reactor
@@ -12,19 +13,19 @@ from twisted.internet import reactor
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.lp.dbschema import MirrorContent
+from canonical.lp import AUTOCOMMIT_ISOLATION
 from canonical.launchpad.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import (
-    IDistributionMirrorSet, ILibraryFileAliasSet)
+    IDistributionMirrorSet, ILibraryFileAliasSet, MirrorContent)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.scripts.distributionmirror_prober import (
-    get_expected_cdimage_paths, probe_archive_mirror, probe_release_mirror)
+    get_expected_cdimage_paths, probe_archive_mirror, probe_cdimage_mirror)
 
 
-class DistroMirrorProber(LaunchpadScript):
-    usage = ('%prog --content-type=(archive|release) [--force] '
-             '[--no-owner-notification]')
+class DistroMirrorProber(LaunchpadCronScript):
+    usage = ('%prog --content-type=(archive|cdimage) [--force] '
+             '[--no-owner-notification] [--max-mirrors=N]')
 
     def _sanity_check_mirror(self, mirror):
         """Check that the given mirror is official and has an http_base_url."""
@@ -58,18 +59,28 @@ class DistroMirrorProber(LaunchpadScript):
         self.parser.add_option('--no-remote-hosts',
             dest='no_remote_hosts', default=False, action='store_true',
             help='Do not try to connect to any host other than localhost.')
+        self.parser.add_option('--max-mirrors',
+            dest='max_mirrors', default=None, action='store', type="int",
+            help='Only probe N mirrors.')
 
     def main(self):
         if self.options.content_type == 'archive':
             probe_function = probe_archive_mirror
             content_type = MirrorContent.ARCHIVE
-        elif self.options.content_type == 'release':
-            probe_function = probe_release_mirror
+        elif self.options.content_type == 'cdimage':
+            probe_function = probe_cdimage_mirror
             content_type = MirrorContent.RELEASE
         else:
             raise LaunchpadScriptFailure(
                 'Wrong value for argument --content-type: %s'
                 % self.options.content_type)
+
+        orig_proxy = os.environ.get('http_proxy')
+        if config.distributionmirrorprober.use_proxy:
+            os.environ['http_proxy'] = config.launchpad.http_proxy
+            self.logger.debug("Using %s as proxy." % os.environ['http_proxy'])
+        else:
+            self.logger.debug("Not using any proxy.")
 
         # Using a script argument to control a config variable is not a great
         # idea, but to me this seems better than passing the no_remote_hosts
@@ -82,10 +93,12 @@ class DistroMirrorProber(LaunchpadScript):
 
         mirror_set = getUtility(IDistributionMirrorSet)
 
+        self.txn.set_isolation_level(AUTOCOMMIT_ISOLATION)
         self.txn.begin()
 
         results = mirror_set.getMirrorsToProbe(
-            content_type, ignore_last_probe=self.options.force)
+            content_type, ignore_last_probe=self.options.force,
+            limit=self.options.max_mirrors)
         mirror_ids = [mirror.id for mirror in results]
         unchecked_keys = []
         logfiles = {}
@@ -96,9 +109,9 @@ class DistroMirrorProber(LaunchpadScript):
             if not self._sanity_check_mirror(mirror):
                 continue
 
-            # XXX: Some people registered mirrors on distros other than Ubuntu
-            # back in the old times, so now we need to do this small hack here.
-            # Guilherme Salgado, 2006-05-26
+            # XXX: salgado 2006-05-26:
+            # Some people registered mirrors on distros other than Ubuntu back
+            # in the old times, so now we need to do this small hack here.
             if not mirror.distribution.full_functionality:
                 self.logger.info(
                     "Mirror '%s' of distribution '%s' can't be probed --we only "
@@ -116,12 +129,12 @@ class DistroMirrorProber(LaunchpadScript):
             self.logger.info('Probed %d mirrors.' % len(probed_mirrors))
         else:
             self.logger.info('No mirrors to probe.')
-        self.txn.commit()
 
+        disabled_mirrors = []
+        reenabled_mirrors = []
         # Now that we finished probing all mirrors, we check if any of these
         # mirrors appear to have no content mirrored, and, if so, mark them as
         # disabled and notify their owners.
-        self.txn.begin()
         expected_iso_images_count = len(get_expected_cdimage_paths())
         notify_owner = not self.options.no_owner_notification
         for mirror in probed_mirrors:
@@ -129,15 +142,29 @@ class DistroMirrorProber(LaunchpadScript):
             if mirror.shouldDisable(expected_iso_images_count):
                 if mirror.enabled:
                     mirror.disable(notify_owner)
-                    self.logger.info('Disabled %s' % canonical_url(mirror))
+                    disabled_mirrors.append(canonical_url(mirror))
             else:
                 # Ensure the mirror is enabled, so that it shows up on public
                 # mirror listings.
                 if not mirror.enabled:
                     mirror.enabled = True
-                    self.logger.info('Enabled %s' % canonical_url(mirror))
+                    reenabled_mirrors.append(canonical_url(mirror))
 
+        if disabled_mirrors:
+            self.logger.info(
+                'Disabling %s mirror(s): %s'
+                % (len(disabled_mirrors), ", ".join(disabled_mirrors)))
+        if reenabled_mirrors:
+            self.logger.info(
+                'Re-enabling %s mirror(s): %s'
+                % (len(reenabled_mirrors), ", ".join(reenabled_mirrors)))
+        # XXX: salgado 2007-04-03:
+        # This should be done in LaunchpadScript.lock_and_run() when the
+        # isolation used is AUTOCOMMIT_ISOLATION. Also note that replacing
+        # this with a flush_database_updates() doesn't have the same effect,
+        # it seems.
         self.txn.commit()
+
         self.logger.info('Done.')
 
 

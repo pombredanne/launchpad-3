@@ -10,6 +10,7 @@ __all__ = [
     'logger',
     'log',
     'db_options',
+    'FakeLogger',
     ]
 
 import os
@@ -33,15 +34,15 @@ from canonical import lp
 from canonical.config import config
 
 from canonical.launchpad.scripts.logger import (
-        logger_options, logger, log
+        logger_options, logger, log, FakeLogger
         )
 
-# XXX: We should probably split out all the stuff in this directory that
+# XXX StuartBishop 2005-06-02:
+# We should probably split out all the stuff in this directory that
 # doesn't rely on Zope and migrate it to canonical/scripts.
-# -- StuartBishop 2005-06-02
 
-# XXX: This is a total mess.  I need to work out what this all means.
-# -- SteveAlexander, 2005-04-11
+# XXX SteveAlexander 2005-04-11:
+# This is a total mess.  I need to work out what this all means.
 
 class NullItem:
     def __init__(self, context, handler, info, *argdata):
@@ -68,10 +69,10 @@ class CustomMachine(ConfigurationMachine):
         # Hackery to remove 'browser:xxx' directives from being processed.
         # This is needed to avoid page directives, which screw up when you
         # parse the zcml from a cwd that isn't the launchpad root.
-        # XXX: I added a workaround so that browser:url directives get
+        # XXX: Bjorn Tillenius 2005-07-14:
+        #      I added a workaround so that browser:url directives get
         #      processed, though. SteveA said he will fix it better when
         #      he lands the navigation stuff.
-        #      -- Bjorn Tillenius, 2005-07-14
         ns, simplename = name
         if ns == u'http://namespaces.zope.org/browser' and simplename != 'url':
             return NullFactory
@@ -82,7 +83,7 @@ class CustomMachine(ConfigurationMachine):
 
 def execute_zcml_for_scripts(use_web_security=False):
     """Execute the zcml rooted at launchpad/script.zcml
-    
+
     If use_web_security is True, the same security policy as the web
     application uses will be used. Otherwise everything protected by a
     permission is allowed, and everything else denied.

@@ -7,9 +7,6 @@
   <!-- Sprint -->
   <content class="canonical.launchpad.database.Sprint">
     <allow interface="canonical.launchpad.interfaces.ISprint" />
-    <allow attributes="
-        default_gotchi_resource default_gotchi_heading_resource
-        default_emblem_resource" />
     <require
       permission="launchpad.AnyPerson"
       set_schema="canonical.launchpad.interfaces.ISprint" />
@@ -17,7 +14,7 @@
 
   <browser:menus
       module="canonical.launchpad.browser.sprint"
-      classes="SprintFacets SprintOverviewMenu 
+      classes="SprintFacets SprintOverviewMenu
                SprintSpecificationsMenu SprintSetContextMenu
                SprintSetFacets"
       />
@@ -73,7 +70,7 @@
       attribute="mdzCsv" />
     <browser:page
       name="+specs"
-      template="../templates/sprint-specs.pt" />
+      template="../templates/hasspecifications-specs.pt" />
     <browser:page
       name="+categorized"
       template="../templates/specificationtarget-categorized.pt" />
@@ -95,6 +92,14 @@
       permission="launchpad.Edit"
       facet="overview"
       template="../templates/sprint-edit.pt" />
+
+  <browser:page
+      name="+branding"
+      for="canonical.launchpad.interfaces.ISprint"
+      class="canonical.launchpad.browser.SprintBrandingView"
+      permission="launchpad.Edit"
+      facet="overview"
+      template="../templates/object-branding.pt" />
 
   <browser:page
       name="+attend"
@@ -132,6 +137,20 @@
     template="../templates/sprint-meeting-export.pt"
     />
 
+  <browser:page
+    name="+addspec"
+    for="canonical.launchpad.interfaces.ISprint"
+    class="canonical.launchpad.browser.NewSpecificationFromSprintView"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+  />
+
+  <browser:page
+    name="+register-a-blueprint-button"
+    for="canonical.launchpad.interfaces.ISprint"
+    class="canonical.launchpad.browser.RegisterABlueprintButtonView"
+    permission="zope.Public"
+  />
 
   <!-- IHasSprints -->
   <browser:pages
@@ -141,6 +160,9 @@
     <browser:page
       name="+portlet-coming-sprints"
       template="../templates/hassprints-portlet-coming-sprints.pt" />
+    <browser:page
+      name="+sprints"
+      template="../templates/hassprints-sprints.pt" />
   </browser:pages>
 
 
@@ -179,11 +201,15 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISprintSet"
+    class="canonical.launchpad.browser.SprintSetView"
     facet="overview"
     permission="zope.Public">
     <browser:page
       name="+index"
       template="../templates/sprints-index.pt" />
+    <browser:page
+      name="+all"
+      template="../templates/sprints-all.pt" />
     <browser:page
       name="+portlet-details"
       template="../templates/sprints-portlet-details.pt" />

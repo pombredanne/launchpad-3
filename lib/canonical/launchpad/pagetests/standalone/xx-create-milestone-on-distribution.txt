@@ -1,6 +1,6 @@
 
 First, let's make sure the sample user (name12) can't view the page to
-add a milestone to the Ubuntu/hoary distrorelease, which is owned by the Ubuntu
+add a milestone to the Ubuntu/hoary distroseries, which is owned by the Ubuntu
 Team (ubuntu-team).
 
   >>> print http(r"""
@@ -98,7 +98,7 @@ database ID for the milestone, so we find the ID:
   ... -----------------------------3354718323763093901439946724
   ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.status"
   ... 
-  ... Unconfirmed
+  ... New
   ... -----------------------------3354718323763093901439946724
   ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.status-empty-marker"
   ... 
@@ -136,7 +136,7 @@ database ID for the milestone, so we find the ID:
   ... 
   ... 1
   ... -----------------------------3354718323763093901439946724
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.actions.save"
   ... 
   ... Save Changes
   ... -----------------------------3354718323763093901439946724--
@@ -144,7 +144,7 @@ database ID for the milestone, so we find the ID:
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/1
+  Location: http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
 
 
 Verify that the bug now has the milestone set on the view page:
@@ -155,6 +155,6 @@ Verify that the bug now has the milestone set on the view page:
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  ...<span class="statusUNCONFIRMED">Unconfirmed</span>...
+  ...<span class="statusNEW">New</span>...
   ...<span class="importanceMEDIUM">Medium</span>...
   ...<td>sounder01</td>...

@@ -12,16 +12,20 @@ and badge decoration.
 Batching is applied to branch listings where there are many items.
 Luckily for us, many is 5 in the tests.
 
+Sample Person is used as the logged in user in order to show his private
+branches in the listings.
+
+   >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
    >>> browser.open('http://code.launchpad.dev/~name12')
    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
    >>> print links.renderContents()
    <BLANKLINE>
-   ...1...&rarr;...5...of 8 results...
+   ...1...&rarr;...6...of 12 results...
 
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.thead.fetch('tr'):
    ...     print extract_text(row)
-   Name      Author               Status  Last Commit  Product Role
+   Name      Author               Status  Last Commit  Project Role
 
 Unfortunately our sample data is somewhat lacking in the last commit
 fields.  There are a couple of branches that have them, but most don't
@@ -34,20 +38,24 @@ and are really just branch metadata without the revisions behind them.
    main                           Development  gnome-terminal  Registrant
    klingon   Sample Person        Experimental gnome-terminal  Author
    launchpad Launchpad Developers New          gnome-terminal  Subscriber
+   mirrored                       New          gnome-terminal  Registrant
 
    >>> browser.getLink('Next').click()
    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
    >>> print links.renderContents()
    <BLANKLINE>
-   ...6...&rarr;...8...of 8 results...
+   ...7...&rarr;...12...of 12 results...
 
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
    pushed                     New          gnome-terminal Registrant
-   junk.dev     Ubuntu Team   Experimental                
+   scanned                    New          gnome-terminal Registrant
+   feature-x    Sample Person New          landscape      Author
+   trunk        Sample Person New          landscape      Author
+   junk.dev     Ubuntu Team   Experimental
       2005-10-31 12:03:57 ... weeks ago  Registrant
-   junk.contrib Sample Person New                         
+   junk.contrib Sample Person New
       2005-10-31 12:03:57 ... weeks ago  Author
 
 If the branch listing has few enough entries that batching isn't
@@ -75,18 +83,19 @@ Merged or Abandoned branches are not shown.
    main                           Development  gnome-terminal  Registrant
    klingon   Sample Person        Experimental gnome-terminal  Author
    launchpad Launchpad Developers New          gnome-terminal  Subscriber
+   mirrored                       New          gnome-terminal  Registrant
 
 There is a select control that is used to define which
 subset of the branches are shown.
-  
+
    >>> filter_control = browser.getControl('Show branches with status of')
    >>> filter_control
    <ListControl name='field.lifecycle' type='select'>
-   >>> filter_control.value
+   >>> filter_control.displayValue
    ['New, Experimental, Development or Mature']
    >>> filter_control.displayOptions
    ['New, Experimental, Development or Mature', 'Any Status', 'New', 'Experimental', 'Development', 'Mature', 'Merged', 'Abandoned']
-    
+
 Changing the value of the select control will (in a javascript
 enabled browser) cause the form to be submitted automatically.
 For browsers with javascript disabled, there is a form submit
@@ -100,7 +109,7 @@ Now all types of branches should be shown.
    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
    >>> print links.renderContents()
    <BLANKLINE>
-   ...1...&rarr;...5...of 10 results...
+   ...1...&rarr;...6...of 14 results...
 
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
@@ -110,26 +119,26 @@ Now all types of branches should be shown.
    slowness  Sample Person        Merged       gnome-terminal  Author
    2.6                            Mature       gnome-terminal  Registrant
    main                           Development  gnome-terminal  Registrant
+   klingon   Sample Person        Experimental gnome-terminal  Author
 
    >>> browser.getLink('Next').click()
    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
    >>> print links.renderContents()
    <BLANKLINE>
-   ...6...&rarr;...10...of 10 results...
+   ...7...&rarr;...12...of 14 results...
 
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   klingon      Sample Person        Experimental gnome-terminal Author
    launchpad    Launchpad Developers New          gnome-terminal Subscriber
+   mirrored                          New          gnome-terminal Registrant
    pushed                            New          gnome-terminal Registrant
-   junk.dev     Ubuntu Team          Experimental                
-      2005-10-31 12:03:57 ... weeks ago  Registrant
-   junk.contrib Sample Person        New                         
-      2005-10-31 12:03:57 ... weeks ago  Author
+   scanned                           New          gnome-terminal Registrant
+   feature-x    Sample Person New          landscape      Author
+   trunk        Sample Person New          landscape      Author
 
 
-Selecting an individual lifecycle status from the select control 
+Selecting an individual lifecycle status from the select control
 will cause only branches with that status to be listed.
 
    >>> browser.getControl('Show branches with status of').displayValue = ['Abandoned']
@@ -137,7 +146,7 @@ will cause only branches with that status to be listed.
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   2.4  50 Abandoned    gnome-terminal  Registrant
+   2.4 ... Abandoned    gnome-terminal  Registrant
 
 If anyone tries to hack the URL, and put in an invalid
 status value, it will default to current branches.
@@ -154,6 +163,7 @@ status value, it will default to current branches.
    main                           Development  gnome-terminal  Registrant
    klingon   Sample Person        Experimental gnome-terminal  Author
    launchpad Launchpad Developers New          gnome-terminal  Subscriber
+   mirrored                       New          gnome-terminal  Registrant
 
 If the user does have branches, but they are not visible with
 the current filter, the table is shown, and a (hopefully)
@@ -180,13 +190,12 @@ We display badges for associated bugs.
   ...     first_cell = row.find('td')
   ...     anchors = first_cell.fetch('a')
   ...     print anchors[0].get('href')
-  ...     for anchor in anchors[1:]:
-  ...        print "  Bug:", anchor.get('href')
-  http://code.launchpad.dev/~name12/firefox/main
-    Bug: http://launchpad.dev/bugs/4
-    Bug: http://launchpad.dev/bugs/5
-  http://code.launchpad.dev/~name12/gnome-terminal/2.6
-  http://code.launchpad.dev/~name12/gnome-terminal/main
-  http://code.launchpad.dev/~name12/gnome-terminal/klingon
-  http://code.launchpad.dev/~launchpad/gnome-terminal/launchpad
-
+  ...     for img in first_cell.findAll('img'):
+  ...        print img['title']
+  /~name12/firefox/main
+    Related to a bug
+  /~name12/gnome-terminal/2.6
+  /~name12/gnome-terminal/main
+  /~name12/gnome-terminal/klingon
+  /~launchpad/gnome-terminal/launchpad
+  /~name12/gnome-terminal/mirrored

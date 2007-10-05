@@ -1,10 +1,17 @@
-<tal:layout define="columns1 default">
-<html metal:use-macro="context/@@main_template/master">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/freeform" 
+  i18n:domain="launchpad"
+>
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1 class="exception">Unexpected form data</h1>
-    </metal:heading>
     <div metal:fill-slot="main">
+      <h1 class="exception">Unexpected form data</h1>
       <p>
       Launchpad doesn't understand the form data submitted in this request.
       </p>
@@ -12,4 +19,3 @@
     </div>
   </body>
 </html>
-</tal:layout>

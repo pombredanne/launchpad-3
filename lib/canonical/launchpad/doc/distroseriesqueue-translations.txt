@@ -1,0 +1,205 @@
+== Upload processing queue with translations ==
+
+This test covers the use case when a package includes translations and is
+uploaded into the system.
+
+  >>> from canonical.launchpad.database import (
+  ...     ProcessorFamily, Component, GPGKey, Section,
+  ...     SecureSourcePackagePublishingHistory)
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet)
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+
+  >>> from canonical.archiveuploader.nascentupload import NascentUpload
+  >>> from canonical.archiveuploader.tests import (
+  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
+
+  >>> from canonical.launchpad.ftests import import_public_test_keys
+  >>> import_public_test_keys()
+
+  >>> from canonical.lp.dbschema import (
+  ... SourcePackageUrgency, PackagePublishingStatus,
+  ... PackagePublishingPocket)
+  >>> from canonical.database.constants import UTC_NOW
+
+  # Login as an admin.
+  >>> login('foo.bar@canonical.com')
+
+  # We need to setup our test environment and create the needed objects.
+  >>> distro_series_set = getUtility(IDistroSeriesSet)
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> hoary = distro_series_set.queryByName(ubuntu, 'hoary')
+
+  # Create the Dapper distro series.
+  >>> dapper = distro_series_set.new( ubuntu, 'dapper', 'Dapper', 'Dapper',
+  ...     'Dapper', 'Dapper', '06.04', hoary, hoary.owner)
+
+  # And an AMD 64 arch series.
+  >>> dapper_amd64 = dapper.newArch('amd64', ProcessorFamily.get(3), True,
+  ...     dapper.owner)
+
+Only uploads to the the RELEASE, UPDATES, SECURITY and PROPOSED pockets are
+considered for import. An upload to the BACKPORT pocket won't appear in the
+queue:
+
+  # We are going to import the pmount build into RELEASE pocket.
+  >>> pmount_sourcepackagename = getUtility(ISourcePackageNameSet)['pmount']
+  >>> source_package_release = dapper.createUploadedSourcePackageRelease(
+  ...     pmount_sourcepackagename, "0.9.7-2ubuntu2", dapper.owner,
+  ...     None, None, 'i386', Component.get(1), dapper.owner,
+  ...     SourcePackageUrgency.LOW, None, None, GPGKey.get(1), Section.get(1),
+  ...     None, None, None, None, dapper.main_archive, 'copyright ?!')
+
+  >>> publishing_history = SecureSourcePackagePublishingHistory(
+  ...     distroseries=dapper.id,
+  ...     sourcepackagerelease=source_package_release.id,
+  ...     component=source_package_release.component.id,
+  ...     section=source_package_release.section.id,
+  ...     status=PackagePublishingStatus.PUBLISHED,
+  ...     datecreated=UTC_NOW,
+  ...     pocket=PackagePublishingPocket.RELEASE,
+  ...     embargo=False,
+  ...     archive=dapper.main_archive)
+
+  # Do the upload into the system.
+
+  >>> build = source_package_release.createBuild(
+  ...      dapper_amd64, PackagePublishingPocket.RELEASE, dapper.main_archive)
+
+  >>> buildd_policy = getPolicy(
+  ...     name='buildd', distro='ubuntu', distroseries='dapper',
+  ...     buildid=build.id)
+
+  >>> pmount_upload = NascentUpload(
+  ...     datadir('pmount_0.9.7-2ubuntu2_amd64.changes'),
+  ...     buildd_policy, mock_logger)
+  DEBUG: Changes file can be unsigned.
+
+  >>> pmount_upload.process()
+  DEBUG: Beginning processing.
+  DEBUG: Verifying the changes file.
+  DEBUG: Verifying files in upload.
+  DEBUG: Verifying binary pmount_0.9.7-2ubuntu2_amd64.deb
+  DEBUG: Verifying timestamps in pmount_0.9.7-2ubuntu2_amd64.deb
+  DEBUG: Finding and applying overrides.
+  DEBUG: Checking for pmount/0.9.7-2ubuntu2/amd64 binary ancestry
+  DEBUG: pmount: (binary) NEW
+  DEBUG: No signer, therefore ACL not processed
+  DEBUG: Finished checking upload.
+
+  # It was not rejected.
+  >>> pmount_upload.is_rejected
+  False
+
+  >>> success = pmount_upload.do_accept()
+  DEBUG: Creating queue entry
+  DEBUG: Build ... found
+  DEBUG: Building recipients list.
+  DEBUG: Changes file is unsigned, adding changer as recipient
+  DEBUG: No recipients on email, not sending.
+
+  # And all things worked.
+  >>> success
+  True
+
+  # Ensure 'deb' is NEW and 'translation' is recognized, i.e., ACCEPTED
+  # XXX julian 2007-05-27 Commented out for now because getNotificationSummary
+  # no longer exists and this content is impossible to check at the moment
+  # since no email is generated because the recipients are not LP Persons.
+  # (So why is it being checked in the first place?)
+  #>>> print pmount_upload.getNotificationSummary()
+  #NEW: pmount_0.9.7-2ubuntu2_amd64.deb
+  #OK: pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz
+
+
+  # Check the import queue content, it should be empty.
+  >>> from canonical.launchpad.interfaces import ITranslationImportQueue
+  >>> translation_import_queue = getUtility(ITranslationImportQueue)
+  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
+  0
+
+  # We need to commit the transaction to be able to use the librarian files.
+  >>> import transaction
+  >>> transaction.commit()
+
+An upload to the RELEASE pocket will add items to the import queue:
+
+  >>> from canonical.lp.dbschema import PackageUploadStatus
+  >>> queue_item = dapper.getQueueItems(
+  ...     status=PackageUploadStatus.NEW)[0]
+  >>> queue_item.customfiles[0].publish()
+
+  # There are exactly the 10 entries imported by pmount.
+  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
+  10
+
+  # Let's abort the transaction so we can check the same upload in a different
+  # pocket.
+  >>> transaction.abort()
+
+  # The import queue content should be empty now that the transaction is
+  # reverted.
+  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
+  0
+
+An upload to the BACKPORTS pocket will not add items to the import queue:
+
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> dapper = distro_series_set.queryByName(ubuntu, 'dapper')
+  >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
+  >>> queue_item.pocket = PackagePublishingPocket.BACKPORTS
+  >>> queue_item.customfiles[0].publish()
+
+  # And this time, we see that there are no entries imported in the queue.
+  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
+  0
+
+  # Let's abort the transaction so we can check the same upload in a different
+  # pocket.
+  >>> transaction.abort()
+
+But an upload to the UPDATE pocket will add items to the import queue:
+
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> dapper = distro_series_set.queryByName(ubuntu, 'dapper')
+  >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
+  >>> queue_item.pocket = PackagePublishingPocket.UPDATES
+  >>> queue_item.customfiles[0].publish()
+
+  # And we get 10 new entries imported.
+  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
+  10
+
+  # Let's abort the transaction so we can check the same upload in a different
+  # pocket.
+  >>> transaction.abort()
+
+
+== Translations from PPA build ==
+
+For now we simply ignore translations for archives other than the
+Distribution archives (i.e. PPAs).
+
+  >>> from canonical.launchpad.interfaces import (
+  ...    IPersonSet, IArchiveSet)
+  >>> from canonical.lp.dbschema import ArchivePurpose
+
+  >>> foobar_archive = getUtility(IArchiveSet).new(
+  ...     purpose=ArchivePurpose.PPA,
+  ...     owner=getUtility(IPersonSet).getByName('name16'))
+
+  >>> dapper = getUtility(IDistributionSet)['ubuntu']['dapper']
+  >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
+  >>> queue_item.archive = foobar_archive
+
+  >>> queue_item.customfiles[0].publish(mock_logger)
+  DEBUG: Publishing custom pmount,pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz to ubuntu/dapper
+  DEBUG: Skipping translations since it is a PPA.
+
+
+  # And this time, we see that there are no entries imported in the queue.
+  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
+  0
+
+
+

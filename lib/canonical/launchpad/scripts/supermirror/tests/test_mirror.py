@@ -1,5 +1,4 @@
 import logging
-from StringIO import StringIO
 import unittest
 
 from canonical.launchpad.scripts.supermirror import mirror
@@ -37,15 +36,16 @@ class TestMirrorCommand(unittest.TestCase):
     def testMainRunsManager(self):
         self.startMirror()
         call_log = MockJobManager.instances[-1]._call_log
-        self.assertEquals(5, len(call_log))
+        self.assertEquals(6, len(call_log))
         self.assertEquals(call_log[0], ("__init__",))
         self.assertEquals(call_log[1], ("lock",))
         self.assertEquals(call_log[2], ("addBranches",))
         self.assertEquals(call_log[3], ("run", self.logger))
-        self.assertEquals(call_log[4], ("unlock",))
+        self.assertEquals(call_log[4], ("activity",))
+        self.assertEquals(call_log[5], ("unlock",))
 
     def startMirror(self):
-        self.assertEqual(0, mirror(self.logger, managerClass=MockJobManager))
+        self.assertEqual(0, mirror(self.logger, MockJobManager()))
 
 
 class TestMockJobManager(unittest.TestCase):
@@ -92,6 +92,9 @@ class MockJobManager:
 
     def run(self, logger):
         self._call_log.append(("run", logger))
+
+    def recordActivity(self, client, started, completed):
+        self._call_log.append(("activity",))
 
 
 def test_suite():

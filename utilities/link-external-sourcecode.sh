@@ -4,7 +4,7 @@
 # this tree.
 #
 
-if [ "x$1" == "x" ]; then 
+if [ "x$1" = "x" ]; then 
     echo "Usage: $0 <directory with main tree>"
     echo "Example: '$0 ~/devel/launchpad-main/'"
     exit 2
@@ -24,7 +24,6 @@ if [ ! -e "$LAUNCHPAD_BASE/sourcecode" ]; then
     echo "point me at the top level directory of your prebuilt launchpad tree"
     exit 1
 fi
-echo "Linking sourcecode/ subdirectories to $LAUNCHPAD_BASE/sourcecode"
 
 for f in $LAUNCHPAD_BASE/sourcecode/*; do
     target=sourcecode/`basename $f`

@@ -12,7 +12,7 @@ from canonical.config import config
 
 def pidfile_path(service_name):
     """Return the full pidfile path for the given service
-    
+
     >>> pidfile_path('nuts') == '/tmp/%s-nuts.pid' % config.name
     True
     """
@@ -23,7 +23,7 @@ def pidfile_path(service_name):
 
 def make_pidfile(service_name):
     """Write the current process id to a PID file.
-    
+
     Also installs an atexit handler to remove the file on process termination.
 
     Also installs a SIGTERM signal handler to remove the file on SIGTERM.
@@ -52,7 +52,7 @@ def make_pidfile(service_name):
     False
 
     And we want the pidfile to be removed if the process is exited with
-    Ctrl-C or SIGTERM, too. 
+    Ctrl-C or SIGTERM, too.
 
     >>> from signal import SIGINT, SIGTERM
     >>> import time
@@ -88,7 +88,7 @@ def make_pidfile(service_name):
         sys.exit(-1 * SIGTERM)
     signal(SIGTERM, remove_pidfile_handler)
 
-    fd, tempname = tempfile.mkstemp()
+    fd, tempname = tempfile.mkstemp(dir=os.path.dirname(pidfile))
     outf = os.fdopen(fd, 'w')
     outf.write(str(os.getpid())+'\n')
     outf.flush()

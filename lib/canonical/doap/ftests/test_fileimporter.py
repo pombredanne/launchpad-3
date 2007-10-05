@@ -22,7 +22,7 @@ class ProductReleaseImporterTestCase(unittest.TestCase):
 
         # Check the version is right
         self.assertEqual('999.99', pr.version)
-        
+
 
 def test_suite():
     return unittest.makeSuite(ProductReleaseImporterTestCase)

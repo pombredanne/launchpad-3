@@ -46,4 +46,4 @@ class BugWatchEditView(LaunchpadEditFormView):
 
     @property
     def next_url(self):
-        return canonical_url(getUtility(ILaunchBag).bugtask)
+        return canonical_url(getUtility(ILaunchBag).bug)

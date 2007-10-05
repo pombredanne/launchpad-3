@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
 <body>
@@ -9,6 +9,9 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+
+    <div tal:replace="structure context/@@+portlet-teambranches" />
+
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
@@ -39,7 +42,10 @@
 
     <li>The <strong>author</strong> is the person being given credit for the
       branch. The author cannot modify the branch in any way, and should
-      normally be the same as the registrant.</li>
+      normally be the same as the registrant. We have both fields to allow
+      you to register a branch which is useful for you and the community,
+      and which you want to monitor through Launchpad, but for which you
+      are not the author.</li>
 
     <li>A <strong>subscriber</strong> is a person expressing interest in a
       branch. Subscribing to a branch does not give any right, and is only

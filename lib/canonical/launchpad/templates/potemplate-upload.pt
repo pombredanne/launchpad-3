@@ -7,13 +7,18 @@
 
 <div metal:fill-slot="main">
 
-        <h1>Upload a new version of <span tal:replace="context/title" /></h1>
+        <h1>
+          Upload files for
+          <tal:title replace="context/title">
+            Template "evolution-2.2" in Evolution trunk
+          </tal:title>
+        </h1>
 
         <p>
         Here you can upload either a single PO template (<code>.pot</code>) or
         a tar file containing a PO template and a set of PO files
         (<code>.tar</code>, <code>.tar.gz</code> or <code>.tar.bz2</code>).
-        The files you upload will be imported into Rosetta shortly.
+        The files you upload will be imported into Launchpad shortly.
         </p>
 
         <form action="+upload" method="POST" enctype="multipart/form-data">

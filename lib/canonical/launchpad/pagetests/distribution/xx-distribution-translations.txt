@@ -1,99 +1,118 @@
-This page shows a list of PO templates contained within all source packages
-for the distrorelease that is the translation focus for a given distribution.
+= Distribution translations =
 
-  >>> browser.open('http://localhost/ubuntu/+translations')
-  >>> browser.url
-  'http://localhost/ubuntu/+translations'
+This page shows a list of PO templates contained within all source
+packages for the distroseries that is the translation focus for a
+given distribution.
+
+We can reach it from the main distribution page:
+
+    >>> browser.open('http://launchpad.dev/ubuntu')
+    >>> browser.getLink('Help translate').click()
+    >>> print browser.title
+    Translating Ubuntu
 
 Check that there aren't disabled languages shown here:
 
-  >>> 'Spanish (Spain)' not in browser.contents
-  True
-  >>> 'Italian (Italy)' not in browser.contents
-  True
+    >>> table = find_tag_by_id(browser.contents, 'languagestats')
+    >>> language_stats = extract_text(table)
+    >>> 'Spanish (Spain)' not in language_stats
+    True
+    >>> 'Italian (Italy)' not in language_stats
+    True
 
-But we show the other languages
+English is a special case in that it is not a translatable language
+even though it is visible.
 
-  >>> 'Spanish' in browser.contents
-  True
-  >>> 'Italian' in browser.contents
-  True
+    >>> 'English' not in language_stats
+    True
 
-Portuguese (Brazil) is a country specific language but it should not be
-disabled and appear in our list.
+But we show the other languages:
 
-  >>> 'Portuguese (Brazil)' in browser.contents
-  True
+    >>> 'Spanish' in language_stats
+    True
+    >>> 'Italian' in language_stats
+    True
 
-Now, we are going to check that the language list we got is pointing to the
-right translation focus.
+Portuguese (Brazil) is a country specific language but it should not
+be disabled and appear in our list.
 
-  >>> browser.getLink('Spanish')
-  <Link text='Spanish' url='http://localhost/ubuntu/hoary/+lang/es'>
-  >>> browser.getLink('Italian')
-  <Link text='Italian' url='http://localhost/ubuntu/hoary/+lang/it'>
-  >>> browser.getLink('Portuguese (Brazil)')
-  <Link text='Portuguese (Brazil)' url='http://localhost/ubuntu/hoary/+lang/pt_BR'>
+    >>> 'Portuguese (Brazil)' in language_stats
+    True
+
+Now, we are going to check that the language list we got is pointing
+to the right translation focus.
+
+    >>> print browser.getLink('Spanish').url
+    http://translations.launchpad.dev/ubuntu/hoary/+lang/es
+    >>> print browser.getLink('Italian').url
+    http://translations.launchpad.dev/ubuntu/hoary/+lang/it
+    >>> print browser.getLink('Portuguese (Brazil)').url
+    http://translations.launchpad.dev/ubuntu/hoary/+lang/pt_BR
 
 And the other Ubuntu distributions should be there too.
 
-  >>> 'Other releases of Ubuntu' in browser.contents
-  True
-  >>> 'Breezy Badger Autotest' in browser.contents
-  True
-  >>> 'The Grumpy Groundhog Release' in browser.contents
-  True
-  >>> 'The Warty Warthog Release' in browser.contents
-  True
+    >>> content = find_main_content(browser.contents)
+    >>> print extract_text(content.findAll('h2')[1])
+    Other versions of Ubuntu
 
-We are not showing its translation status here, so we should have links to
-their particular translation status.
+    >>> print extract_text(content.findAll('ul')[0])
+    6.6.6 Breezy Badger Autotest
+    5.10 The Grumpy Groundhog Release
+    4.10 The Warty Warthog Release
 
-  >>> browser.getLink('6.6.6 Breezy Badger Autotest')
-  <Link text='6.6.6 Breezy Badger Autotest' url='http://localhost/ubuntu/breezy-autotest/+translations'>
-  >>> browser.getLink('5.10 The Grumpy Groundhog Release')
-  <Link text='5.10 The Grumpy Groundhog Release' url='http://localhost/ubuntu/grumpy/+translations'>
-  >>> browser.getLink('4.10 The Warty Warthog Release')
-  <Link text='4.10 The Warty Warthog Release' url='http://localhost/ubuntu/warty/+translations'>
+We are not showing its translation status here, so we should have
+links to their particular translation status.
+
+    >>> print browser.getLink('6.6.6 Breezy Badger Autotest').url
+    http://translations.launchpad.dev/ubuntu/breezy-autotest
+    >>> print browser.getLink('5.10 The Grumpy Groundhog Release').url
+    http://translations.launchpad.dev/ubuntu/grumpy
+    >>> print browser.getLink('4.10 The Warty Warthog Release').url
+    http://translations.launchpad.dev/ubuntu/warty
 
 But we are already showing the status for the translation focus one,
 we should not have a link to it.
 
-  >>> 'http://localhost/ubuntu/hoary/+translations' in browser.contents
-  False
+    >>> browser.getLink('5.04 The Hoary Hedgehog Release')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
-Let's try now a distribution that lacks a translation focus.
-Debian is a good example. We should get latest release as the translation focus.
+Let's try now a distribution that lacks a translation focus. Debian is
+a good example. We should get latest release as the translation focus.
 
-  >>> browser.open('http://localhost/debian/+translations')
-  >>> browser.url
-  'http://localhost/debian/+translations'
+    >>> browser.open('http://translations.launchpad.dev/debian')
+    >>> browser.url
+    'http://translations.launchpad.dev/debian'
 
-It doesn't have any translation, so we will get the defaul geoIP languages
-pointing to the latest release, Hoary.
+It doesn't have any translation, so we will get the default GeoIP
+languages pointing to the latest release, Hoary.
 
-  >>> browser.getLink('Zulu')
-  <Link text='Zulu' url='http://localhost/debian/sarge/+lang/zu'>
+    >>> print browser.getLink('Zulu').url
+    http://translations.launchpad.dev/debian/sarge/+lang/zu
 
 And the other Ubuntu distributions should be there too.
 
-  >>> 'Other releases of Debian' in browser.contents
-  True
-  >>> 'Sid' in browser.contents
-  True
-  >>> 'WOODY' in browser.contents
-  True
+    >>> content = find_main_content(browser.contents)
+    >>> print extract_text(content.findAll('h2')[1])
+    Other versions of Debian
 
-We are not showing its translation status here, so we should have links to
-their particular translation status.
+    >>> print extract_text(content.findAll('ul')[0])
+    3.2 Sid
+    3.0 WOODY
 
-  >>> browser.getLink('3.2 Sid')
-  <Link text='3.2 Sid' url='http://localhost/debian/sid/+translations'>
-  >>> browser.getLink('3.0 WOODY')
-  <Link text='3.0 WOODY' url='http://localhost/debian/woody/+translations'>
+We are not showing its translation status here, so we should have
+links to their particular translation status.
+
+    >>> print browser.getLink('3.2 Sid').url
+    http://translations.launchpad.dev/debian/sid
+    >>> print browser.getLink('3.0 WOODY').url
+    http://translations.launchpad.dev/debian/woody
 
 But we are already showing the status for the translation focus one,
 we should not have a link to it.
 
-  >>> 'http://localhost/debian/sarge/+translations' in browser.contents
-  False
+    >>> browser.getLink('3.1 Sarge')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError

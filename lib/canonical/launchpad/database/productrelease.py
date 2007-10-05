@@ -13,9 +13,9 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IProductRelease, IProductReleaseFile, IProductReleaseSet)
+    IProductRelease, IProductReleaseFile, IProductReleaseSet,
+    NotFoundError, UpstreamFileType)
 
-from canonical.lp.dbschema import UpstreamFileType
 
 class ProductRelease(SQLBase):
     """A release of a product."""
@@ -35,12 +35,9 @@ class ProductRelease(SQLBase):
     owner = ForeignKey(dbName="owner", foreignKey="Person", notNull=True)
     productseries = ForeignKey(dbName='productseries',
                                foreignKey='ProductSeries', notNull=True)
-    manifest = ForeignKey(dbName='manifest', foreignKey='Manifest',
-                          default=None)
 
-    files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease')
-
-    files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease')
+    files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease',
+                            orderBy='-date_uploaded')
 
     # properties
     @property
@@ -59,12 +56,30 @@ class ProductRelease(SQLBase):
             thetitle += ' "' + self.codename + '"'
         return thetitle
 
-    def addFileAlias(self, alias, file_type=UpstreamFileType.CODETARBALL):
+    def addFileAlias(self, alias, uploader,
+                     file_type=UpstreamFileType.CODETARBALL,
+                     description=None):
         """See IProductRelease."""
         return ProductReleaseFile(productrelease=self,
                                   libraryfile=alias,
-                                  filetype=file_type)
+                                  filetype=file_type,
+                                  description=description,
+                                  uploader=uploader)
 
+    def deleteFileAlias(self, alias):
+        """See IProductRelease."""
+        for f in self.files:
+            if f.libraryfile.id == alias.id:
+                f.destroySelf()
+                return
+        raise NotFoundError(alias.filename)
+
+    def getFileAliasByName(self, name):
+        """See IProductRelase."""
+        for f in self.files:
+            if f.libraryfile.filename == name:
+                return f.libraryfile
+        raise NotFoundError(name)
 
 class ProductReleaseFile(SQLBase):
     """A file of a product release."""
@@ -77,12 +92,18 @@ class ProductReleaseFile(SQLBase):
     libraryfile = ForeignKey(dbName='libraryfile',
                              foreignKey='LibraryFileAlias', notNull=True)
 
-    filetype = EnumCol(dbName='filetype', schema=UpstreamFileType,
+    filetype = EnumCol(dbName='filetype', enum=UpstreamFileType,
                        notNull=True, default=UpstreamFileType.CODETARBALL)
 
+    description = StringCol(notNull=False, default=None)
+
+    uploader = ForeignKey(dbName="uploader", foreignKey='Person',
+                          notNull=True)
+
+    date_uploaded = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
 class ProductReleaseSet(object):
-    """See IProductReleaseSet""" 
+    """See IProductReleaseSet"""
     implements(IProductReleaseSet)
 
     def new(self, version, productseries, owner, codename=None, summary=None,
@@ -105,4 +126,3 @@ class ProductReleaseSet(object):
         if productrelease is None:
             return default
         return productrelease
-

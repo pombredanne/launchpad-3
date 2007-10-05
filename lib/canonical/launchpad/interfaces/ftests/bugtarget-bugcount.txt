@@ -9,10 +9,12 @@ anonymous user, i.e. no private bugs will be included in the counts.
     >>> bug_counts = bugtarget.getBugCounts(None)
     >>> for status in sorted(bug_counts.keys()):
     ...     print status.name
-    UNCONFIRMED
-    NEEDSINFO
-    REJECTED
+    NEW
+    INCOMPLETE
+    INVALID
+    WONTFIX
     CONFIRMED
+    TRIAGED
     INPROGRESS
     FIXCOMMITTED
     FIXRELEASED
@@ -20,12 +22,12 @@ anonymous user, i.e. no private bugs will be included in the counts.
 
 It's possible to limit which statuses to return.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> bug_counts = bugtarget.getBugCounts(
-    ...     None, [BugTaskStatus.UNCONFIRMED, BugTaskStatus.CONFIRMED])
+    ...     None, [BugTaskStatus.NEW, BugTaskStatus.CONFIRMED])
     >>> for status in sorted(bug_counts.keys()):
     ...     print status.name
-    UNCONFIRMED
+    NEW
     CONFIRMED
 
 If we file a few bugs in each status, the counts will increase.
@@ -47,10 +49,12 @@ If we file a few bugs in each status, the counts will increase.
     ...         bug = filebug(bugtarget, "Test Bug", status=status)
     ...     new_bug_counts = bugtarget.getBugCounts(None)
     ...     print_count_difference(new_bug_counts, old_counts, status)
-    UNCONFIRMED: 5 bug(s) more
-    NEEDSINFO: 5 bug(s) more
-    REJECTED: 5 bug(s) more
+    NEW: 5 bug(s) more
+    INCOMPLETE: 5 bug(s) more
+    INVALID: 5 bug(s) more
+    WONTFIX: 5 bug(s) more
     CONFIRMED: 5 bug(s) more
+    TRIAGED: 5 bug(s) more
     INPROGRESS: 5 bug(s) more
     FIXCOMMITTED: 5 bug(s) more
     FIXRELEASED: 5 bug(s) more
@@ -65,20 +69,21 @@ former status' count will of course decrease, and the latter's increase.
     >>> for bugtask in bug.bugtasks:
     ...     if bugtask.target == bugtarget:
     ...         break
-    >>> bugtask.transitionToStatus(BugTaskStatus.NEEDSINFO)
+    >>> bugtask.transitionToStatus(
+    ...     BugTaskStatus.INCOMPLETE, getUtility(ILaunchBag).user)
     >>> syncUpdate(bugtask)
     >>> new_bug_counts = bugtarget.getBugCounts(None)
     >>> print_count_difference(
     ...     new_bug_counts, old_counts, BugTaskStatus.CONFIRMED)
     CONFIRMED: 1 bug(s) less
     >>> print_count_difference(
-    ...     new_bug_counts, old_counts, BugTaskStatus.NEEDSINFO)
-    NEEDSINFO: 1 bug(s) more
+    ...     new_bug_counts, old_counts, BugTaskStatus.INCOMPLETE)
+    INCOMPLETE: 1 bug(s) more
 
 == Private Bugs ==
 
 Private bugs are included in the counts, only if the user has permission
-to view the bug. So if we set the NEEDSINFO bug above to be private,
+to view the bug. So if we set the INCOMPLETE bug above to be private,
 Sample Person (the bug reporter) will still get the bug included in the
 count, but not No Privileges Person or the anonymous user.
 
@@ -93,15 +98,15 @@ count, but not No Privileges Person or the anonymous user.
     >>> anon_counts = bugtarget.getBugCounts(None)
 
     >>> print_count_difference(
-    ...     sample_person_counts, old_counts, BugTaskStatus.NEEDSINFO)
-    NEEDSINFO: no difference
+    ...     sample_person_counts, old_counts, BugTaskStatus.INCOMPLETE)
+    INCOMPLETE: no difference
 
     >>> print_count_difference(
-    ...     nopriv_counts, old_counts, BugTaskStatus.NEEDSINFO)
-    NEEDSINFO: 1 bug(s) less
+    ...     nopriv_counts, old_counts, BugTaskStatus.INCOMPLETE)
+    INCOMPLETE: 1 bug(s) less
 
-    >>> print_count_difference(anon_counts, old_counts, BugTaskStatus.NEEDSINFO)
-    NEEDSINFO: 1 bug(s) less
+    >>> print_count_difference(anon_counts, old_counts, BugTaskStatus.INCOMPLETE)
+    INCOMPLETE: 1 bug(s) less
 
     >>> bug.private = False
     >>> syncUpdate(bug)
@@ -112,11 +117,11 @@ Duplicate bugs are not included in the counts, so if some bug is marked
 as a duplicate of another bug, the count will decrease.
 
     >>> another_bug =  filebug(
-    ...     bugtarget, "Another Test Bug", status=BugTaskStatus.UNCONFIRMED)
+    ...     bugtarget, "Another Test Bug", status=BugTaskStatus.NEW)
     >>> old_counts = bugtarget.getBugCounts(None)
     >>> another_bug.duplicateof = bug
     >>> syncUpdate(another_bug)
     >>> new_counts = bugtarget.getBugCounts(None)
     >>> print_count_difference(
-    ...     new_counts, old_counts, BugTaskStatus.UNCONFIRMED)
-    UNCONFIRMED: 1 bug(s) less
+    ...     new_counts, old_counts, BugTaskStatus.NEW)
+    NEW: 1 bug(s) less

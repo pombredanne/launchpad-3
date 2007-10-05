@@ -1,10 +1,6 @@
-<tal:layout define="contextless default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+<html metal:use-macro="view/macro:page/pillarindex" i18n:domain="launchpad">
+  <body>
+    <h1 metal:fill-slot="heading">Coming events</h1>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -12,11 +8,9 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Coming events</h1>
-
   <p id="application-summary">
     Launchpad can help you organise your developer sprints, summits and
-    gatherings! Register the meeting here, then you can invite people to
+    gatherings. Register the meeting here, then you can invite people to
     nominate blueprints for discussion at the event. The meeting drivers
     control the agenda, but everyone can see what's proposed and what's
     been accepted.
@@ -34,4 +28,3 @@
 </div>
 </body>
 </html>
-</tal:layout>

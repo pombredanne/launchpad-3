@@ -1,11 +1,11 @@
-<div id="question-subscribers" class="portlet">
+<div class="portlet" id="portlet-subscribers">
   <h2>Subscribers to question #<span tal:replace="context/id">4</span></h2>
 
   <div class="portletBody portletContent"
        tal:define="subscribers  context/getDirectSubscribers;
                    indirect_subscribers context/getIndirectSubscribers">
 
-    <ul class="people" tal:condition="subscribers">
+    <ul class="person" tal:condition="subscribers">
       <li tal:repeat="subscriber subscribers">
         <a href="#"
            tal:content="subscriber/browsername"
@@ -18,7 +18,7 @@
     <div style="margin-top: 1em;" tal:condition="indirect_subscribers">
 
       <b>Also notified:</b><br />
-      <ul class="people">
+      <ul class="person">
         <li tal:repeat="subscriber indirect_subscribers">
           <a href="#"
              tal:content="subscriber/browsername"

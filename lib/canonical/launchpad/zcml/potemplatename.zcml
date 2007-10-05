@@ -15,9 +15,15 @@
             />
     </content>
 
+    <browser:url
+      for="canonical.launchpad.interfaces.IPOTemplateName"
+      path_expression="name"
+      parent_utility="canonical.launchpad.interfaces.IPOTemplateNameSet" />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPOTemplateName"
         name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:page
@@ -26,6 +32,7 @@
         permission="launchpad.Edit"
         template="../templates/potemplatename-index.pt"
         class="canonical.launchpad.browser.POTemplateNameView"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:editform
@@ -35,7 +42,8 @@
         label="Change PO template name information"
         permission="launchpad.Edit"
         template="../templates/potemplatename-edit.pt"
-        fields="name title description translationdomain" >
+        fields="name title description translationdomain"
+        layer="canonical.launchpad.layers.TranslationsLayer" >
         <browser:widget
             field="title"
             class="zope.app.form.browser.TextWidget"
@@ -49,9 +57,17 @@
         <allow interface="canonical.launchpad.interfaces.IPOTemplateNameSet" />
     </securedutility>
 
+    <browser:url
+      for="canonical.launchpad.interfaces.IPOTemplateNameSet"
+      path_expression="string:potemplatenames"
+      parent_utility="canonical.launchpad.interfaces.IRosettaApplication"
+      />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPOTemplateNameSet"
-        name="+index" />
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -61,7 +77,8 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IPOTemplateNameSet"
         permission="launchpad.Edit"
-        class="canonical.launchpad.browser.POTemplateNameSetView" >
+        class="canonical.launchpad.browser.POTemplateNameSetView"
+        layer="canonical.launchpad.layers.TranslationsLayer" >
         <browser:page
             name="+index"
             template="../templates/potemplatenames-index.pt"

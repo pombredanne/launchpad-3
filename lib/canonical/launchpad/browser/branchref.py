@@ -22,7 +22,7 @@ class BranchRef:
         self.branch = branch
 
 
-# XXXX 2006-09-26 jamesh
+# XXX jamesh 2006-09-26:
 # Eventually we will be able to change this to serve a simple HTTP
 # redirect for 'branch-format' and have bzr do the rest.  However,
 # current Bazaar releases would continue to request branch data files
@@ -44,7 +44,7 @@ class BranchRefNavigation(Navigation):
         if name == 'format':
             return StaticContentView('Bazaar-NG Branch Reference Format 1\n')
         elif name == 'location':
-            return StaticContentView(config.launchpad.supermirror_root +
+            return StaticContentView(config.codehosting.supermirror_root +
                                      self.context.branch.unique_name)
         else:
             return None

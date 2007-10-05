@@ -9,7 +9,7 @@ categories.
 
     >>> import operator
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IPerson, IKarma, IKarmaCache, IProductSet,
     ...     ISourcePackageNameSet, IDistributionSet, IKarmaContext)

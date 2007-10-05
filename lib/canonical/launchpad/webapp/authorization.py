@@ -40,13 +40,15 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
           after the permission, use that to check the permission.
         - Otherwise, deny.
         """
-        # XXX: webapp shouldn't be depending on launchpad interfaces..
+        # XXX kiko 2007-02-07:
+        # webapp shouldn't be depending on launchpad interfaces..
         from canonical.launchpad.interfaces import IPerson
 
         # This check shouldn't be needed, strictly speaking.
         # However, it is here as a "belt and braces".
-        # XXX: This warning should apply to the policy in zope3 also.
-        # -- Steve Alexander, 2005-01-12
+
+        # XXX Steve Alexander 2005-01-12: 
+        # This warning should apply to the policy in zope3 also.
         if permission == 'zope.Public':
             if steveIsFixingThis:
                 warnings.warn('zope.Public being used raw on object %r' % object)

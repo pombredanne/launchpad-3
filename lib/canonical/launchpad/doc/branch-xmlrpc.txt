@@ -1,6 +1,9 @@
 IBranchSetAPI
 -------------
 
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from datetime import datetime
+    >>> import pytz 
     >>> import xmlrpclib
     >>> from canonical.functional import XMLRPCTestTransport
     >>> branchset_api = xmlrpclib.ServerProxy(
@@ -55,6 +58,16 @@ Since we didn't specify product, title or description, they are None:
     >>> new_branch.summary is None
     True
 
+Also, Launchpad is scheduled to mirror this branch on its next mirror run:
+
+    >>> removeSecurityProxy(new_branch).sync()
+    >>> print new_branch.mirror_request_time is not None
+    True
+    >>> print new_branch.mirror_request_time < datetime.now(pytz.timezone('UTC'))
+    True
+
+(We remove the security proxy in order to ensure that mirror_request_time has a
+real object in it, rather than an expression builder.)
 
 Let's register a branch specifying the name, description and product as
 well:
@@ -78,6 +91,25 @@ well:
     >>> print new_branch.product.displayname
     Evolution
 
+If we try to register a branch with a unique name that is already used:
+
+    >>> yet_another_branch_url = 'http://foo.com/yet_another_branch'
+    >>> branchset_api.register_branch(
+    ...      yet_another_branch_url, 'branch_name', 'branch_title',
+    ...      'branch description', 'test@canonical.com', 'evolution')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 130: 'Unique name already in use: ~name16/evolution/branch_name'>
+
+This check must also detect branch name conflict for +junk branches:
+
+    >>> branchset_api.register_branch(
+    ...      yet_another_branch_url, 'branch', '', '', '', '')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 130: 'Unique name already in use: ~name16/+junk/branch'>
+
+
 If we give a product name that doesn't exist, we get an error:
 
     >>> new_branch_url = 'http://foo.com/new_branch'
@@ -98,6 +130,46 @@ If we give an email address which isn't registered in Launchpad:
     Fault: <Fault 20: 'Invalid author: No user with the email address
                       "non-existing@canonical.com" was found'>
 
+If we try to register a branch with an invalid URI:
+
+    >>> invalid_uri = '.'
+    >>> branchset_api.register_branch(
+    ...     invalid_uri, 'branch_name', 'branch title', 'branch description',
+    ...     'test@canonical.com', 'evolution')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 120: 'Invalid URL: .\n"." is not a valid URI'>
+
+If we try to register a URL with a unsupported scheme:
+
+    >>> bad_scheme = 'svn://chinstrap.ubuntu.com/foo/bar/baz'
+    >>> branchset_api.register_branch(
+    ...     bad_scheme, 'branch_name', 'branch title', 'branch description',
+    ...     'test@canonical.com', 'evolution')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 120: 'Invalid URL: svn://chinstrap.ubuntu.com/foo/bar/baz\nThe URI scheme "svn" is not allowed.  Only URIs with the following schemes may be used: bzr+ssh, ftp, http, https, sftp'>
+
+If we try to register a root URL:
+
+    >>> root_url = 'http://example.com/'
+    >>> branchset_api.register_branch(
+    ...     root_url, 'branch_name', 'branch title', 'branch description',
+    ...     'test@canonical.com', 'evolution')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 120: 'Invalid URL: http://example.com\nURLs for branches cannot point to the root of a site.'>
+
+If we try to register a URL in launchpad.net (actually, launchpad.dev because
+we are in the testing environment):
+
+    >>> launchpad_url = 'https://blueprints.launchpad.dev/foo/bar/baz'
+    >>> branchset_api.register_branch(
+    ...     launchpad_url, 'branch_name', 'branch title', 'branch description',
+    ...     'test@canonical.com', 'evolution')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 120: 'Invalid URL: https://blueprints.launchpad.dev/foo/bar/baz\nFor Launchpad to mirror a branch, the original branch cannot be on <code>launchpad.dev</code>. Did you want to <a href="https://help.launchpad.net/CreatingAHostedBranch">create a hosted branch</a> instead?'>
 
 Registering a branch name that ends in a slash works, but the slash
 gets removed from the stored URL:
@@ -138,6 +210,17 @@ We get the same error if we try to register the branch with a slash appended:
     ...
     Fault: <Fault 50: 'http://foo.com/other_branch is already registered.'>
 
+Attempting to register a branch for a product where the branch visibility
+policy is forbidden will cause a fault result.
+
+    >>> branchset_api.register_branch(
+    ...     'http://foo.com/bar', 'branch_name', 'branch_title',
+    ...     'branch description', 'test@canonical.com', 'landscape')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 110: 'You are not allowed to create a branch for project:
+    The Landscape Project'>
+
 
 link_branch_to_bug(branch_url, bug_id, whiteboard)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -147,7 +230,7 @@ the branch we registered with bug 1. If the link is successful, the bug
 URL is returned.
 
     >>> branchset_api.link_branch_to_bug(other_branch_url, '1', '')
-    'http://launchpad.dev/bugs/1'
+    'http://bugs.launchpad.dev/bugs/1'
 
 Let's take a look to see that the branch actually got linked to the bug:
 
@@ -163,7 +246,7 @@ We can set the whiteboard:
 
     >>> branchset_api.link_branch_to_bug(
     ...     branch_url, 1, "i'm working on it today.")
-    'http://launchpad.dev/bugs/1'
+    'http://bugs.launchpad.dev/bugs/1'
     >>> for bug_branch in bug_one.bug_branches:
     ...     print "%s, %s, %s" % (
     ...         bug_branch.branch.url, bug_branch.status.title,

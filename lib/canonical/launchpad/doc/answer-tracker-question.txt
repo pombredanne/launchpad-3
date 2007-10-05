@@ -3,12 +3,12 @@
 Launchpad includes an Answer Tracker where users can post questions
 (usually about problems they encounter with projects) and other can
 answer them.) Questions are created and accessed using the
-IQuestionTarget interface. This interface is available on products,
-distributions and sourcepackages.
+IQuestionTarget interface. This interface is available on Products,
+Distributions and DistributionSourcePackages.
 
     >>> login('test@canonical.com')
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IProductSet, IPersonSet, IQuestionTarget)
 
@@ -20,16 +20,15 @@ distributions and sourcepackages.
     >>> verifyObject(IQuestionTarget, ubuntu)
     True
 
-    >>> firefox_package = ubuntu.currentrelease.getSourcePackage(
-    ...     'mozilla-firefox')
-    >>> verifyObject(IQuestionTarget, firefox_package)
+    >>> evolution_in_ubuntu = ubuntu.getSourcePackage('evolution')
+    >>> verifyObject(IQuestionTarget, evolution_in_ubuntu)
     True
 
-Altough distribution release do not implement the IQuestionTarget
+Although Distribution series do not implement the IQuestionTarget
 interface, it is possible to adapt one to it. (The adapter is actually
-the distrorelease's distribution.)
+the distroseries's distribution.)
 
-    >>> ubuntu_warty = ubuntu.getRelease('warty')
+    >>> ubuntu_warty = ubuntu.getSeries('warty')
     >>> IQuestionTarget.providedBy(ubuntu_warty)
     False
     >>> questiontarget = IQuestionTarget(ubuntu_warty)
@@ -46,6 +45,14 @@ IQuestionTarget.
     >>> verifyObject(IQuestionTarget, questiontarget)
     True
 
+SourcePackages are also QuestionTargets.
+XXX sinzui 2007-04-24. #108240 SourcePackages should not be QuestionTargets
+
+    >>> evolution_in_hoary = ubuntu.currentseries.getSourcePackage('evolution')
+    >>> questiontarget = IQuestionTarget(evolution_in_hoary)
+    >>> verifyObject(IQuestionTarget, questiontarget)
+    True
+
 You create a new question by calling the newQuestion() method of an
 IQuestionTarget attribute.
 
@@ -55,6 +62,17 @@ IQuestionTarget attribute.
 
 (The complete IQuestionTarget interface is documented in
 ../interfaces/ftests/questiontarget.txt.)
+
+== Official usage ==
+
+A product or distribution may be offically supported by the community
+using the Answer Tracker. This status is set by the official_answers
+attribute on the IProduct and IDistribution.
+
+    >>> ubuntu.official_answers
+    True
+    >>> firefox.official_answers
+    True
 
 == IQuestion ==
 
@@ -104,6 +122,47 @@ It is also possible to adapt a question to its IQuestionTarget.
     >>> verifyObject(IQuestionTarget, target)
     True
 
+The question can be assigned to a new IQuestionTarget.
+
+    >>> thunderbird = getUtility(IProductSet)['thunderbird']
+    >>> firefox_question.target = thunderbird
+    >>> print firefox_question.target.displayname
+    Mozilla Thunderbird
+
+When a question is reassigned, its product, distribution and
+sourcepackagename attributes are reconciled with the IQuestionTarget.
+
+    >>> firefox_question.target = ubuntu
+    >>> print firefox_question.target.displayname
+    Ubuntu
+    >>> print firefox_question.distribution.name
+    ubuntu
+    >>> print firefox_question.sourcepackagename
+    None
+    >>> print firefox_question.product
+    None
+
+    >>> firefox_question.target = evolution_in_ubuntu
+    >>> print firefox_question.target.displayname
+    evolution in ubuntu
+    >>> print firefox_question.distribution.name
+    ubuntu
+    >>> print firefox_question.sourcepackagename.name
+    evolution
+    >>> print firefox_question.product
+    None
+
+    >>> firefox_question.target = firefox
+    >>> print firefox_question.target.displayname
+    Mozilla Firefox
+    >>> print firefox_question.distribution
+    None
+    >>> print firefox_question.sourcepackagename
+    None
+    >>> print firefox_question.product.name
+    firefox
+
+
 == Subscriptions and Notifications ==
 
 Whenever a question is created or changed, email notifications will be
@@ -128,16 +187,26 @@ method.
     [u'Sample Person']
 
 The persons who are on the subscription list are said to be directly
-subscribed to the question. They explicitely choose to get notifications
+subscribed to the question. They explicitly choose to get notifications
 about that particular question. This list of persons is available through
 the getDirectSubscribers() method.
 
-    >>> [person.displayname
-    ...     for person in firefox_question.getDirectSubscribers()]
+    >>> subscribers = firefox_question.getDirectSubscribers()
+
+That method returns an INotificationRecipientSet, containing the direct
+subscribers along the rationale for contacting them:
+
+    >>> from canonical.launchpad.interfaces import INotificationRecipientSet
+    >>> verifyObject(INotificationRecipientSet, subscribers)
+    True
+    >>> [person.displayname for person in subscribers]
     [u'Sample Person']
+    >>> subscribers.getReason(sample_person)
+    ('You received this question notification because you are a direct
+      subscriber of the question.', 'Subscriber')
 
 There is also a list of 'indirect' subscribers to the question. These
-are persons that didn't explicitely subscribed to the question, but that
+are persons that didn't explicitly subscribed to the question, but that
 will receive notifications for other reason. Answer contacts for the
 question target are part of the indirect subscribers list.
 
@@ -145,11 +214,21 @@ question target are part of the indirect subscribers list.
     >>> [person.displayname
     ...     for person in firefox_question.getIndirectSubscribers()]
     []
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> english = getUtility(ILanguageSet)['en']
+    >>> no_priv.addLanguage(english)
     >>> firefox.addAnswerContact(no_priv)
     True
-    >>> [person.displayname
-    ...  for person in firefox_question.getIndirectSubscribers()]
+
+    >>> indirect_subscribers = firefox_question.getIndirectSubscribers()
+    >>> verifyObject(INotificationRecipientSet, indirect_subscribers)
+    True
+    >>> [person.displayname for person in indirect_subscribers]
     [u'No Privileges Person']
+    >>> indirect_subscribers.getReason(no_priv)
+    (u'You received this question notification because you are an answer
+      contact for Mozilla Firefox.',
+     u'Answer Contact (Mozilla Firefox)')
 
 There is a special case for when the question's is associated to a
 source package. The answer contacts for both the distribution and the
@@ -159,36 +238,52 @@ source package are part of the indirect subscribers list.
     # the package.
     >>> list(ubuntu.answer_contacts)
     []
-    >>> list(firefox_package.answer_contacts)
+    >>> list(evolution_in_ubuntu.answer_contacts)
     []
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> ubuntu_team.addLanguage(english)
     >>> ubuntu.addAnswerContact(ubuntu_team)
     True
-    >>> firefox_package.addAnswerContact(no_priv)
+    >>> evolution_in_ubuntu.addAnswerContact(no_priv)
     True
-    >>> package_question = firefox_package.newQuestion(
-    ...     sample_person, 'Upgrading to Firefox 1.5 breaks theme',
-    ...     "The FnordsHighlighter theme doesn't work after upgrade.")
+    >>> package_question = evolution_in_ubuntu.newQuestion(
+    ...     sample_person, 'Upgrading to Evolution 1.4 breaks plug-ins',
+    ...     "The FnordsHighlighter plug-in doesn't work after upgrade.")
     >>> [s.person.displayname for s in package_question.subscriptions]
     [u'Sample Person']
-    >>> [person.displayname
-    ...  for person in package_question.getIndirectSubscribers()]
+    >>> indirect_subscribers = package_question.getIndirectSubscribers()
+    >>> [person.displayname for person in indirect_subscribers]
     [u'No Privileges Person', u'Ubuntu Team']
+    >>> indirect_subscribers.getReason(ubuntu_team)
+    (u'You received this question notification because you are a member of
+      Ubuntu Team, which is an answer contact for Ubuntu.',
+     u'Answer Contact (ubuntu) @ubuntu-team')
+    >>> indirect_subscribers.getReason(no_priv)
+    (u'You received this question notification because you are an answer
+      contact for evolution in ubuntu.',
+     u'Answer Contact (evolution in ubuntu)')
 
 The question's assignee is also part of the indirect subscription list:
 
     >>> login('foo.bar@canonical.com')
     >>> package_question.assignee = getUtility(IPersonSet).getByName('name16')
-    >>> [person.displayname
-    ...  for person in package_question.getIndirectSubscribers()]
+    >>> indirect_subscribers = package_question.getIndirectSubscribers()
+    >>> [person.displayname for person in indirect_subscribers]
     [u'Foo Bar', u'No Privileges Person', u'Ubuntu Team']
+    >>> indirect_subscribers.getReason(package_question.assignee)
+    ('You received this question notification because you are the assignee
+      for this question.',
+     'Assignee')
 
 Notifications are sent to the list of direct and indirect subscribers.
 The notification recipients list can be obtained by using the
 getSubscribers() method.
 
     >>> login('no-priv@canonical.com')
-    >>> [person.displayname for person in firefox_question.getSubscribers()]
+    >>> subscribers = firefox_question.getSubscribers()
+    >>> verifyObject(INotificationRecipientSet, subscribers)
+    True
+    >>> [person.displayname for person in subscribers]
     [u'No Privileges Person', u'Sample Person']
 
 (More documentation on the question notifications can be found in
@@ -232,3 +327,27 @@ When the link is removed, the owner is unsubscribed:
     <QuestionBug...>
     >>> bug7.isSubscribed(firefox_question.owner)
     False
+
+== Unsupported Questions ==
+
+While a Person may ask questions in his language of choice, that does
+not mean that indirect subscribers (Answer Contacts) to an
+IQuestionTarget speak that language. IQuestionTarget can return a list
+Questions in languages that are not supported
+
+    >>> unsupported_questions = firefox.searchQuestions(unsupported=True)
+    >>> sorted([question.title for question in unsupported_questions])
+    [u'Problemas de Impress\xe3o no Firefox']
+
+    >>> unsupported_questions = evolution_in_ubuntu.searchQuestions(
+    ...     unsupported=True)
+    >>> sorted([question.title for question in unsupported_questions])
+    []
+
+    >>> warty_question_target = IQuestionTarget(ubuntu_warty)
+    >>> unsupported_questions = warty_question_target.searchQuestions(
+    ...     unsupported=True)
+    >>> sorted([question.title for question in unsupported_questions])
+    [u'Problema al recompilar kernel con soporte smp (doble-n\xfacleo)',
+     u'\u0639\u0643\u0633 \u0627\u0644\u062a\u063a\u064a\u064a\u0631...]
+

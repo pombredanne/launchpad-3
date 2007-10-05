@@ -33,8 +33,8 @@ class SectionSelection(SQLBase):
 
     _defaultOrder= ['id']
 
-    distrorelease = ForeignKey(dbName='distrorelease',
-        foreignKey='DistroRelease', notNull=True)
+    distroseries = ForeignKey(dbName='distrorelease',
+        foreignKey='DistroSeries', notNull=True)
     section = ForeignKey(dbName='section',
         foreignKey='Section', notNull=True)
 

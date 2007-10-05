@@ -8,7 +8,6 @@
     <metal:portlets fill-slot="portlets">
       <div tal:replace="structure context/@@+portlet-lifecycle" />
 
-  <div tal:replace="structure context/@@+portlet-feedbackqueue" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
 
   <div tal:replace="structure context/@@+portlet-bugs" />
@@ -19,7 +18,19 @@
 
 <div metal:fill-slot="main">
 
-      <h1 tal:content="context/title">Specification title</h1>
+  <div style="float: right;">
+    <img id="mentoring-available-icon"
+	 src="/@@/mentoring-large" title="Mentoring available"
+         tal:condition="context/mentoring_offers/count" />
+    <img id="branch-available-icon"
+	 src="/@@/branch-large" title="Branch available"
+         tal:condition="context/branch_links/count" />
+    <img id="informational-icon"
+	 src="/@@/info-large"
+         title="Informational blueprint, no implementation necessary"
+         tal:condition="context/informational" />
+  </div>
+  <h1>Blueprint overview</h1>
 
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">
@@ -27,9 +38,9 @@
   </p>
 
   <p tal:condition="context/superseded_by" class="warning message">
-    This specification has been superseded. See the newer specification
+    This blueprint has been superseded. See the newer blueprint
     "<b><a tal:content="context/superseded_by/title"
-           tal:attributes="href context/superseded_by/fmt:url">new spec
+           tal:attributes="href context/superseded_by/fmt:url">new blueprint
     title</a></b>" for updated plans.
   </p>
 
@@ -43,7 +54,7 @@
         <tr>
           <th>Definition:</th>
           <td>
-            <tal:definition replace="context/status/title" />
+            <tal:definition replace="context/definition_status/title" />
             <tal:guidance condition="not: context/direction_approved"
             >(Needs guidance)</tal:guidance>
           </td>
@@ -51,12 +62,15 @@
         <tr>
           <th>Implementation:</th>
           <td>
-            <tal:impl content="context/delivery/title">Unknown</tal:impl>
-            <i tal:condition="context/informational">Informational</i>
+            <img tal:condition="context/informational"
+                 src="/@@/info" alt="Informational"
+                 title="Informational blueprint, no implementation necessary"
+                 />
+            <tal:impl content="context/implementation_status/title">Unknown</tal:impl>
           </td>
         </tr>
         <tr tal:condition="context/goal">
-          <th>Release goal:</th>
+          <th>Series goal:</th>
           <td>
             <a
               tal:condition="context/goal/required:launchpad.Driver"
@@ -71,41 +85,32 @@
             <a tal:condition="context/productseries"
                tal:attributes="href context/productseries/fmt:url"
                tal:content="context/productseries/name">1.2</a>
-            <a  tal:condition="context/distrorelease"
-                tal:attributes="href context/distrorelease/fmt:url"
-                tal:content="context/distrorelease/name">hoary</a>
+            <a  tal:condition="context/distroseries"
+                tal:attributes="href context/distroseries/fmt:url"
+                tal:content="context/distroseries/name">hoary</a>
           </td>
         </tr>
         <tr>
           <th>Assignee:</th>
           <td>
-            <a
-              tal:condition="context/assignee"
-              tal:content="context/assignee/browsername"
-              tal:attributes="href context/assignee/fmt:url"
-            >Foo Bar</a>
+            <a tal:condition="context/assignee"
+               tal:replace="structure context/assignee/fmt:link">Foo Bar</a>
             <tal:none condition="not: context/assignee">None</tal:none>
           </td>
         </tr>
         <tr>
           <th>Drafter:</th>
           <td>
-            <a
-              tal:condition="context/drafter"
-              tal:content="context/drafter/browsername"
-              tal:attributes="href context/drafter/fmt:url"
-            >Foo Bar</a>
+            <a tal:condition="context/drafter"
+               tal:replace="structure context/drafter/fmt:link">Foo Bar</a>
             <tal:none condition="not: context/drafter">None</tal:none>
           </td>
         </tr>
         <tr>
           <th>Approver:</th>
           <td>
-            <a
-              tal:condition="context/approver"
-              tal:content="context/approver/browsername"
-              tal:attributes="href context/approver/fmt:url"
-            >Foo Bar</a>
+            <a tal:condition="context/approver"
+               tal:replace="structure context/approver/fmt:link">Foo Bar</a>
             <tal:none condition="not: context/approver">None</tal:none>
           </td>
         </tr>
@@ -115,21 +120,19 @@
         >
           <th>Sprints:</th>
           <td>
-            <ul class="sprint">
-              <li tal:repeat="sprint_link sprint_links">
+            <tal:per_sprint tal:repeat="sprint_link sprint_links">
+                <tal:approval replace="structure sprint_link/@@+icon-status" />
                 <a
                   tal:attributes="href sprint_link/sprint/fmt:url"
                   tal:content="sprint_link/sprint/name"
-                />
-                <tal:approval replace="structure sprint_link/@@+icon-status" />
-              </li>
-            </ul>
+                /><br />
+            </tal:per_sprint>
           </td>
         </tr>
       </tbody>
     </table>
     <tal:desc replace="structure context/summary/fmt:text-to-html">
-      The spec summary will go here.
+      The blueprint summary will go here.
     </tal:desc>
     <ul class="menu">
       <li class="link">
@@ -148,11 +151,34 @@
         <span tal:replace="context/milestone/name">1.0</span>.</a>
     </tal:has_milestone>
 
-    <tal:whiteboard condition="context/whiteboard">
-      <h2>Whiteboard</h2>
-      <div tal:content="structure context/whiteboard/fmt:text-to-html"
-      >Whiteboard text goes here.</div>
-    </tal:whiteboard>
+  <tal:mentors define="mentoring_offers context/mentoring_offers"
+               condition="mentoring_offers">
+    <p>
+      <img src="/@@/mentoring" alt="Mentoring"
+           title="People have offered to mentor this work" />
+      <b>Mentors:</b>
+      <tal:block repeat="mentoring_offer mentoring_offers">
+        <a tal:replace="structure mentoring_offer/owner/fmt:link">foobar</a>
+      </tal:block>
+    </p>
+    <tal:block condition="not: context/is_complete">
+      <p tal:condition="view/userIsMentor">
+        &raquo;
+        <a href="+retractmentoring">Retract my offer of mentorship</a>
+      </p>
+    </tal:block>
+  </tal:mentors>
+
+  <p tal:condition="view/userCanMentor">
+    &raquo; <a href="+mentor">Offer to mentor someone implementing
+    this blueprint</a>
+  </p>
+
+  <tal:whiteboard condition="context/whiteboard">
+    <h2>Whiteboard</h2>
+    <div tal:content="structure context/whiteboard/fmt:text-to-html"
+    >Whiteboard text goes here.</div>
+  </tal:whiteboard>
 
   <tal:deptree condition="view/has_dep_tree">
 
@@ -161,18 +187,24 @@
     <tal:block tal:replace="structure context/@@+deptreeimgtag" />
 
     <p class="discreet">
-      * Specifications in grey have been implemented.
+      * Blueprints in grey have been implemented.
     </p>
 
   </tal:deptree>
 
-      <ul class="nearby menu" tal:condition="context/goal">
+      <div tal:replace="structure context/@@+portlet-feedbackqueue" />
+      <div tal:condition="context/goal" class="related">
+        <h2>Nearby</h2>
+        <ul>
+
         <li>
           <a tal:attributes="href context/goal/fmt:url">
-            Other <tal:goal replace="context/goal/displayname" /> specifications
+            Other <tal:goal replace="context/goal/displayname" /> blueprints
           </a>
         </li>
       </ul>
+
+      </div>
     </div>
   </body>
 </html>

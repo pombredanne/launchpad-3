@@ -1,8 +1,15 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <metal:mirrors-table define-macro="mirrors-table">
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
     :mirrors_by_country: A list of dictionaries containing country names
                          and the list of IDistributionMirrors to be listed
+    :show_status: A boolean saying whether there should be an extra column
+                  with the mirror's status or not.
   </tal:comment>
 
   <table class="listing" id="mirrors_list">
@@ -15,26 +22,21 @@
       </tr>
       <tr tal:repeat="mirror country_and_mirrors/mirrors">
         <td>
-          <a tal:condition="mirror/base_url"
-             tal:attributes="href mirror/base_url"
+          <a tal:attributes="href mirror/fmt:url"
              tal:content="mirror/title">Mirror Name</a>
-          <span tal:condition="not:mirror/base_url"
-                tal:content="mirror/title">Mirror Name</span>
-        </td>
-        <td><span tal:replace="mirror/speed/title" /></td>
-        <td tal:define="status mirror/getOverallStatus">
-          <span tal:replace="status/title" />
         </td>
         <td>
-          <tal:block condition="mirror/has_ftp_or_rsync_base_url">
-            Alternatives:
-            <a tal:condition="mirror/ftp_base_url"
-              tal:attributes="href mirror/ftp_base_url">ftp</a>
-            <a tal:condition="mirror/rsync_base_url"
-            tal:attributes="href mirror/rsync_base_url">rsync</a>
-          </tal:block>
+          <a tal:condition="mirror/http_base_url"
+             tal:attributes="href mirror/http_base_url">http</a>
+          <a tal:condition="mirror/ftp_base_url"
+             tal:attributes="href mirror/ftp_base_url">ftp</a>
+          <a tal:condition="mirror/rsync_base_url"
+             tal:attributes="href mirror/rsync_base_url">rsync</a>
         </td>
-        <td><a tal:attributes="href mirror/fmt:url">Details</a>
+        <td><span tal:replace="mirror/speed/title" /></td>
+        <td tal:condition="show_status"
+            tal:define="status mirror/getOverallStatus">
+          <span tal:replace="status/title" />
         </td>
       </tr>
     <tr tal:condition="not: repeat/country_and_mirrors/end" class="note">
@@ -49,85 +51,85 @@
 <metal:archive-mirror-content define-macro="archive-mirror-content">
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
-      :arch_releases: The list of MirrorDistroArchRelease objects of this
+      :arch_serieses: The list of MirrorDistroArchSeries objects of this
                       mirror.
-      :source_releases: The list of MirrorDistroReleaseSource objects of this
+      :source_serieses: The list of MirrorDistroSeriesSource objects of this
                         mirror.
   </tal:comment>
 
-  <h2>Architecture Releases Mirrored</h2>
-  <div tal:condition="not: arch_releases">
-    We have found no releases for any architectures on this mirror.
+  <h2>Versions and architectures mirrored</h2>
+  <div tal:condition="not: arch_serieses">
+    We have found no versions for any architectures on this mirror.
     This is normal if we have not yet successfully verified the mirror.
   </div>
 
-  <table tal:condition="arch_releases"
+  <table tal:condition="arch_serieses"
          class="listing sortable" id="arches">
   <thead>
     <tr>
-      <th>Release</th>
+      <th>Version</th>
       <th>Architecture</th>
       <th>Status</th>
     </tr>
   </thead>
   <tbody>
-    <tr tal:repeat="arch_release arch_releases">
-      <td tal:content="arch_release/distro_arch_release/distrorelease/title" />
-      <td tal:content="arch_release/distro_arch_release/architecturetag" />
-      <td tal:content="arch_release/status/title" />
+    <tr tal:repeat="arch_series arch_serieses">
+      <td tal:content="arch_series/distro_arch_series/distroseries/title" />
+      <td tal:content="arch_series/distro_arch_series/architecturetag" />
+      <td tal:content="arch_series/status/title" />
     </tr>
   </tbody>
   </table>
 
-  <h2>Source Releases Mirrored</h2>
-  <div tal:condition="not: source_releases">
-    We have found no source releases on this mirror. This is normal
+  <h2>Source code mirrored</h2>
+  <div tal:condition="not: source_serieses">
+    We have found no source on this mirror. This is normal
     if we have not yet successfully verified the mirror.
   </div>
 
-  <table tal:condition="source_releases" 
+  <table tal:condition="source_serieses" 
          class="listing sortable" id="sources">
   <thead>
     <tr>
-      <th>Release</th>
+      <th>Version</th>
       <th>Status</th>
     </tr>
   </thead>
   <tbody>
-    <tr tal:repeat="source_release source_releases">
-      <td tal:content="source_release/distrorelease/title" />
-      <td tal:content="source_release/status/title" />
+    <tr tal:repeat="source_series source_serieses">
+      <td tal:content="source_series/distroseries/title" />
+      <td tal:content="source_series/status/title" />
     </tr>
   </tbody>
   </table>
 </metal:archive-mirror-content>
 
-<metal:release-mirror-content define-macro="release-mirror-content">
+<metal:cdimage-mirror-content define-macro="cdimage-mirror-content">
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
-      :flavours_by_releases: A list where each element contains attributes
-                             named 'distrorelease' and 'flavours'.
+      :flavours_by_serieses: A list where each element contains attributes
+                             named 'distroseries' and 'flavours'.
   </tal:comment>
 
-  <h2>Releases And Flavours Mirrored</h2>
-  <div tal:condition="not: flavours_by_releases">
-    We have found no CD images for any releases on this mirror.
+  <h2>Versions and flavours mirrored</h2>
+  <div tal:condition="not: flavours_by_serieses">
+    We have found no CD images for any versions on this mirror.
     This is normal if we have not yet successfully verified the mirror.
   </div>
 
-  <table class="listing sortable" id="releases"
-         tal:condition="flavours_by_releases">
+  <table class="listing sortable" id="serieses"
+         tal:condition="flavours_by_serieses">
     <thead>
       <tr>
-        <th>Release</th>
+        <th>Version</th>
         <th>Flavours</th>
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="flavours_by_release flavours_by_releases">
-        <td tal:content="flavours_by_release/distrorelease/title" />
+      <tr tal:repeat="flavours_by_series flavours_by_serieses">
+        <td tal:content="flavours_by_series/distroseries/title" />
         <td>
-          <tal:flavours repeat="flavour flavours_by_release/flavours">
+          <tal:flavours repeat="flavour flavours_by_series/flavours">
             <span tal:replace="flavour/capitalize"
             /><span tal:condition="not: repeat/flavour/end">,</span>
           </tal:flavours>
@@ -135,4 +137,5 @@
       </tr>
     </tbody>
   </table>
-</metal:release-mirror-content>
+</metal:cdimage-mirror-content>
+</tal:root>

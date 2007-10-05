@@ -1,5 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+"""SQLBase implementation of IQuestionReopening."""
+
 __metaclass__ = type
 
 __all__ = ['QuestionReopening',
@@ -16,10 +18,8 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import QuestionStatus
-
 from canonical.launchpad.event import SQLObjectCreatedEvent
-from canonical.launchpad.interfaces import IQuestionReopening
+from canonical.launchpad.interfaces import IQuestionReopening, QuestionStatus
 
 
 class QuestionReopening(SQLBase):
@@ -27,18 +27,19 @@ class QuestionReopening(SQLBase):
 
     implements(IQuestionReopening)
 
-    _table = 'TicketReopening'
+    _table = 'QuestionReopening'
 
-    question = ForeignKey(dbName='ticket', foreignKey='Question', notNull=True)
+    question = ForeignKey(
+        dbName='question', foreignKey='Question', notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     reopener = ForeignKey(dbName='reopener', foreignKey='Person',
         notNull=True)
     answerer = ForeignKey(dbName='answerer', foreignKey='Person',
         notNull=False, default=None)
-    dateanswered = UtcDateTimeCol(notNull=False, default=None)
+    date_solved = UtcDateTimeCol(notNull=False, default=None)
     priorstate = EnumCol(schema=QuestionStatus, notNull=True)
 
-# XXX flacoste 2006/10/25 The QuestionReopening is probably not that useful
+# XXX flacoste 2006-10-25 The QuestionReopening is probably not that useful
 # anymore since the question history is nearly completely tracked in the
 # question message trails. (Only missing information is the previous recorded
 # answer.) If we decide to still keep that class, this subscriber should
@@ -68,8 +69,9 @@ def create_questionreopening(question, event):
 
     reopening = QuestionReopening(
             question=question, reopener=reopen_msg.owner,
-            datecreated=reopen_msg.datecreated, answerer=old_question.answerer,
-            dateanswered=old_question.dateanswered,
+            datecreated=reopen_msg.datecreated,
+            answerer=old_question.answerer,
+            date_solved=old_question.date_solved,
             priorstate=old_question.status)
 
     reopening = ProxyFactory(reopening)

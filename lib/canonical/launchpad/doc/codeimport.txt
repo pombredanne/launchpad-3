@@ -1,0 +1,251 @@
+= Code Imports =
+
+CodeImport objects model the process surrounding the code import service
+of Launchpad. A CodeImport object is created by a user requesting an
+import, the import source is then reviewed by privileged users. Then
+importd, the code import daemon, performs the initial import that
+populates the import branch, and updates it regularly.
+
+We can import code from CVS or Subversion.
+
+CodeImports are hidden from regular users currently.  David Allouche is
+a member of the vcs-imports team and can access the objects freely.
+
+    >>> login('david.allouche@canonical.com')
+
+
+== Code import set utility ==
+
+CodeImports are created and found using the ICodeImportSet interface,
+which is registered as a utility.
+
+    >>> from canonical.launchpad.interfaces import ICodeImport, ICodeImportSet
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> code_import_set = getUtility(ICodeImportSet)
+    >>> verifyObject(ICodeImportSet, removeSecurityProxy(code_import_set))
+    True
+
+CodeImports record who created them, and we're going to pretend that
+this is done by 'No Privileges Person'.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+
+CodeImports are associated with a Branch when they are created; this
+is how they are linked to a Product.  For the basic tests, we
+associate the imports with a new branch for the FireFox project
+(arbitrarily many imports can be created for a project).  A helper
+function to create these branches makes the tests below easier to
+read.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchType, IBranchSet, ILaunchpadCelebrities, IPersonSet,
+    ...     IProductSet)
+    >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+    >>> def new_import_branch(name):
+    ...     product = getUtility(IProductSet).getByName('firefox')
+    ...     return getUtility(IBranchSet).new(
+    ...         BranchType.IMPORTED,
+    ...         name, vcs_imports, vcs_imports, product,
+    ...         None, 'Import branch')
+
+
+== Supported source systems ==
+
+The rcs_type field, which indicates whether the import is from CVS or
+Subversion, takes values from the 'RevisionControlSystems' vocabulary.
+
+    >>> from canonical.launchpad.interfaces import RevisionControlSystems
+
+
+=== Import from CVS ===
+
+Code imports from CVS specify the CVSROOT value, and the path to import
+in the repository, known as the "module".
+
+    >>> cvs = RevisionControlSystems.CVS
+    >>> cvs_root = ':pserver:anonymous@cvs.example.com:/cvsroot'
+    >>> cvs_module = 'hello'
+    >>> cvs_branch = new_import_branch("trunk-cvs")
+    >>> cvs_import = code_import_set.new(
+    ...     registrant=nopriv, branch=cvs_branch,
+    ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module)
+    >>> verifyObject(ICodeImport, removeSecurityProxy(cvs_import))
+    True
+
+
+=== Import from Subversion ===
+
+Code imports from Subversion specify the URL used with "svn checkout" to
+retrieve the tree to import.
+
+    >>> svn = RevisionControlSystems.SVN
+    >>> svn_url = 'svn://svn.example.com/trunk'
+    >>> svn_branch = new_import_branch("trunk-svn")
+    >>> svn_import = code_import_set.new(
+    ...     registrant=nopriv, branch=svn_branch,
+    ...     rcs_type=svn, svn_branch_url=svn_url)
+    >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
+    True
+
+
+== Creating a CodeImport from existing data ==
+
+The first production code that creates CodeImports will be a sync
+script that creates CodeImports from the existing information in the
+ProductSeries table.  The only ProductSeries with such information in
+the sample data is evolution/trunk.
+
+    >>> from canonical.launchpad.interfaces import IProductSeriesSet
+    >>> from canonical.lp.dbschema import ImportStatus
+    >>> [series] = getUtility(IProductSeriesSet).searchImports(
+    ...     importstatus=ImportStatus.PROCESSING)
+    >>> series.product.name
+    u'evolution'
+    >>> series.name
+    u'trunk'
+    >>> series.cvsroot
+    u':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'
+    >>> series.cvsmodule
+    u'evolution'
+
+Once we've found the series, creating a new CodeImport with the same
+source details is a fairly simple matter.
+
+    >>> from_existing_import = code_import_set.new(
+    ...     registrant=vcs_imports, branch=series.import_branch, rcs_type=cvs,
+    ...     cvs_root=series.cvsroot, cvs_module=series.cvsmodule)
+
+This CodeImport is associated to the evolution/main ProductSeries
+(because the series' import_branch is the branch of the CodeImport):
+
+    >>> from_existing_import.series.name
+    u'trunk'
+
+== Update intervals ==
+
+After an import is initially completed, it must be updated regularly. Each
+code import can specify a custom update interval, or use a default value.
+
+There is a separate default update interval for each version control system,
+set in the Launchpad configuration system.
+
+    >>> from datetime import timedelta
+    >>> from canonical.config import config
+    >>> default_interval_cvs = timedelta(
+    ...     seconds=config.codeimport.default_interval_cvs)
+    >>> default_interval_subversion = timedelta(
+    ...     seconds=config.codeimport.default_interval_subversion)
+
+By default, code imports are created with an unspecified update interval.
+
+    >>> print cvs_import.update_interval
+    None
+    >>> print svn_import.update_interval
+    None
+
+When the update interval interval is unspecified, the effective update
+interval, which decides how often the import is actually updated, uses the
+appropriate default value for the RCS type.
+
+    >>> default_interval_cvs
+    datetime.timedelta(0, 43200)
+    >>> cvs_import.effective_update_interval
+    datetime.timedelta(0, 43200)
+
+    >>> default_interval_subversion
+    datetime.timedelta(0, 21600)
+    >>> svn_import.effective_update_interval
+    datetime.timedelta(0, 21600)
+
+If the update interval is set, then it overrides the default value.
+
+    >>> cvs_import.update_interval = timedelta(seconds=7200)
+    >>> cvs_import.effective_update_interval
+    datetime.timedelta(0, 7200)
+
+    >>> svn_import.update_interval = timedelta(seconds=3600)
+    >>> svn_import.effective_update_interval
+    datetime.timedelta(0, 3600)
+
+== Retreiving CodeImports ==
+
+You can retrieve all imports with the `getAll` method of ICodeImport.
+
+    >>> svn_import in code_import_set.getAll()
+    True
+
+You can also retrive an import by id, which will be used to present the
+object view for an import and also by branch, which will be used to
+present the import's details on the page of the branch.
+
+    >>> code_import_set.get(svn_import.id).svn_branch_url
+    u'svn://svn.example.com/trunk'
+    >>> code_import_set.getByBranch(cvs_branch).cvs_root
+    u':pserver:anonymous@cvs.example.com:/cvsroot'
+
+Finally, you can search for imports by review status.  For instance,
+there is a single sample CodeImport with the "REVIEWED" status:
+
+    >>> from canonical.lp.dbschema import CodeImportReviewStatus
+    >>> reviewed_imports = list(code_import_set.search(
+    ...     review_status=CodeImportReviewStatus.REVIEWED))
+    >>> reviewed_imports
+    [<...CodeImport...>]
+    >>> reviewed_imports[0].review_status.name
+    'REVIEWED'
+
+When you ask for an id that is not present ICodeImportSet.get() raises
+canonical.launchpad.interfaces.NotFoundError, rather than some
+internal database exception.
+
+    >>> code_import_set.get(-10)
+    Traceback (most recent call last):
+      ...
+    NotFoundError: -10
+
+
+== Canonical URLs ==
+
+We've registered the ICodeImportSet utility on the 'code' part of the
+site:
+
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> print canonical_url(code_import_set)
+    http://code.launchpad.dev/+code-imports
+
+The code imports themselves are viewed under the branch's URL,
+however.
+
+    >>> print canonical_url(svn_import.branch)
+    http://code.launchpad.dev/~vcs-imports/firefox/trunk-svn
+    >>> print canonical_url(svn_import)
+    http://code.launchpad.dev/~vcs-imports/firefox/trunk-svn/+code-import
+
+
+== Security ==
+
+As we've seen above, David has access to all methods defined by
+ICodeImport and ICodeImportSet.  During the transitional period,
+anonymous and regular users do _not_ have this access.
+
+    >>> login(ANONYMOUS)
+    >>> code_import_set.new
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<...CodeImportSet...>, 'new', 'launchpad.View')
+    >>> svn_import.id
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<...CodeImport...>, 'id', 'launchpad.View')
+    >>> login('no-priv@canonical.com')
+    >>> code_import_set.new
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<...CodeImportSet...>, 'new', 'launchpad.View')
+    >>> svn_import.id
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<...CodeImport...>, 'id', 'launchpad.View')

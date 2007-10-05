@@ -1,11 +1,17 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="malone"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone"
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>About Malone</h1>
+      <h1>About the Launchpad Bug Tracker</h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -15,8 +21,9 @@
 <div metal:fill-slot="main">
 
       <p>
-        Malone is a collaborative bug tracker for the Free Software universe.
-        It works a bit differently from other trackers.
+        The Launchpad Bug Tracker is a collaborative bug tracker for the
+        Free Software universe. It works a bit differently from other
+        trackers.
       </p>
       <h2>One bug, many places</h2>
       <p>
@@ -26,21 +33,21 @@
         a distribution.
       </p>
       <p>
-        When these are the same bug, Malone can link them together.
+        When these are the same bug, Launchpad can link them together.
         Once one team fixes the bug, others can share the fix.
       </p>
       <h2>One world, many bug trackers</h2>
       <p>
-        The more software teams use Malone, the more useful it becomes.
+        The more software teams use Launchpad, the more useful it becomes.
         But if a team uses Bugzilla, Sourceforge, or debbugs,
-        Malone can link their bug reports with those in Malone,
+        Launchpad can link their bug reports with those in Launchpad,
         and let you know when they&#8217;re fixed.
       </p>
       <h2>How to get started</h2>
       <p>
-        To use Malone for your project, first
-        <a href="/products">check whether it&#8217;s registered already</a>.
-        The admin for a project can set that project to use Malone
+        To use Launchpad for your project, first
+        <a href="/projects">check whether it&#8217;s registered already</a>.
+        The admin for a project can set that project to use Launchpad
         (this is off by default so that people don&#8217;t report bugs that
         nobody reads).
       </p>

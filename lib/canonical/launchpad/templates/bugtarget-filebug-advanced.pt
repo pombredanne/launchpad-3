@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="malone"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone"
 >
 <body>
 
@@ -13,12 +19,22 @@
   <div tal:replace="structure context/@@+portlet-details|nothing" />
 </metal:rightportlets>
 
-<metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Foo Series: main</h3>
-  <h1>Report a new bug</h1>
-</metal:heading>
-
 <div metal:fill-slot="main">
+
+      <h1>
+        <img
+          tal:condition="view/isPrivate"
+          alt="(Private)"
+          id="privatebadge"
+          src="/@@/private-large"
+          style="float: right;"
+          title="This bug report will be private, though you can disclose it later."
+        />
+        Report a bug
+      </h1>
+
+  <metal:not_uses_malone
+    use-macro="context/@@+filebug-macros/not_uses_malone" />
 
   <tal:uses_malone tal:condition="view/contextUsesMalone">
 
@@ -27,37 +43,8 @@
       <table class="form" metal:fill-slot="widgets">
 
         <metal:basic_filebug_widgets
-            metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
+            use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
 
-        <tr tal:define="main_context view/getMainContext">
-          <td colspan="2" width="100%"
-              tal:define="widget nocall: view/widgets/security_related">
-            <input type="checkbox" tal:replace="structure widget" />
-            <label tal:attributes="for widget/name">
-              This bug is a security vulnerability
-            </label>
-            <div tal:condition="view/can_decide_security_contact"
-                 tal:define="security_contact main_context/security_contact|nothing">
-              <i tal:condition="security_contact">
-                The security contact for
-                <span tal:content="main_context/displayname" />,
-                <a href="#"
-                    tal:content="security_contact/displayname"
-                    tal:attributes="href security_contact/fmt:url" />,
-                will be notified.
-              </i>
-              <i tal:condition="not:security_contact"
-                 tal:define="maintainer main_context/owner">
-                The maintainer of
-                <span tal:content="main_context/displayname">Mozilla Firefox</span>,
-                <a href="" tal:attributes="href maintainer/fmt:url"
-                           tal:content="maintainer/displayname">Sample Person</a>,
-                will be notified.
-              </i>
-            </div>
-
-          </td>
-        </tr>
 
       </table>
 
@@ -69,19 +56,7 @@
 
   </tal:uses_malone>
 
-  <tal:not_uses_malone tal:condition="not: view/contextUsesMalone"
-                       tal:define="main_context view/getMainContext">
-    <p class="error message">
-      <span tal:replace="main_context/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
-    </p>
-
-    <p>
-      To report a bug about <span tal:replace="main_context/displayname">Alsa Utils</span>,
-      please use its official bug tracker.
-    </p>
-  </tal:not_uses_malone>
-
 </div>
-
+</body>
 </html>
 

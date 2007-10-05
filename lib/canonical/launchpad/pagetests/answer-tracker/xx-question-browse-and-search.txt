@@ -3,6 +3,7 @@
 This story describes some common use cases about using the browsing and
 searching features of the Answer Tracker.
 
+
 == When Nobody Uses the Answer Tracker ==
 
 Average Joe has recently installed Kubuntu. He has a problem with his
@@ -17,22 +18,29 @@ He discovers that there are no questions on the Kubuntu Answers page:
     >>> print browser.title
     Questions for Kubuntu
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no questions for Kubuntu with the requested statuses.
+
+For projects that don't have products, the Answers facet is disabled.
+
+    >>> browser.open('http://launchpad.dev/aaa')
+    >>> browser.getLink('Answers')
+    Traceback (most recent call last):
+     ...
+    LinkNotFoundError
 
 == Browsing Questions ==
 
 He realises that support for Kubuntu is probably going on in the Ubuntu
 Answers page and goes there to check.
 
-    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> browser.title
     'Questions for Ubuntu'
 
 He sees a listing of the current questions posted on Ubuntu:
 
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> for question in soup.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
     Continue playing after shutdown
@@ -48,7 +56,7 @@ results. There, he finds only one other question:
     >>> browser.getLink('Next').click()
     >>> browser.title
     'Questions for Ubuntu'
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> for question in soup.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
     Installation failed
@@ -69,7 +77,7 @@ out.
       ..
     LinkNotFoundError...
 
-He decides to go the first page. He remembered one quesiton title that
+He decides to go the first page. He remembered one question title that
 might have been remotely related to his problem.
 
     >>> browser.getLink('First').click()
@@ -94,7 +102,7 @@ When he passes the mouse over the question's row, the beginning of the
 description appears in a small pop-up:
 
     >>> import re
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> question_link = soup.first('a', text=re.compile('Play DVDs'))
     >>> print question_link.findParent('tr')['title']
     How do you play DVDs in Totem..........?
@@ -114,14 +122,61 @@ details of the question are available.
     >>> browser.getLink('Slow system').click()
     >>> browser.title
     'Ubuntu question #7: ...Slow system...'
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> soup('div', 'report')
     [<div class="report"><p>I get really poor hard drive performance.</p></div>]
 
+
+== Jumping to Questions ==
+
+The Answer Tracker main page permits the user to jump to a question by
+submitting the question's id in the text input field with the 'Find
+Answers' button.
+
+Average Joe learns than he might find the solution to his Firefox
+problem from someone on IRC. He is told to read question 9 on the
+Launchpad Answer Tracker. He visits the main page and enters '9'
+to jump to the question.
+
+    >>> browser.open('http://answers.launchpad.dev/')
+    >>> browser.getControl(name='field.search_text').value = '9'
+    >>> browser.getControl('Find Answers').click()
+    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> locators = find_tags_by_class(browser.contents, 'main')
+    >>> print backslashreplace(browser.title)
+    mozilla-firefox in ubuntu question #9: ...
+
+While reading the Ubuntu forums for a solution to his problem,
+Average Joe finds some unlinked text that refers to how to
+get extensions to work. He copies the text ' #6 ' from the page
+and pastes it into the main page of the Answer Tracker to read
+the answer.
+
+    >>> browser.open('http://answers.launchpad.dev/')
+    >>> browser.getControl(name='field.search_text').value = ' #6 '
+    >>> browser.getControl('Find Answers').click()
+    >>> print backslashreplace(browser.title)
+    Mozilla Firefox question #6: ...
+
+The Answer Tracker cannot identify Question ids within text. Average
+Joe finds a reference to question 8 in a blog. He copies 'question 8'
+and pastes it into the text field on the Answer Tracker main page. He
+is shown search results instead of the question.
+
+    >>> browser.open('http://answers.launchpad.dev/')
+    >>> browser.getControl(name='field.search_text').value = 'question 8'
+    >>> browser.getControl('Find Answers').click()
+    >>> print browser.title
+    Questions matching "question 8"
+
+    >>> print find_main_content(browser.contents).first('p').renderContents()
+    There are no questions matching "question 8" with the requested statuses.
+
+
 == Searching Questions ==
 
-Browsing is fine when the number of questions is small, but searching is
-more convenient as the number of questions grow larger.
+Browsing is fine when the number of questions is small, but searching
+is more convenient as the number of questions grow larger.
 
 This time, it's Firefox that brings Average Joe to the Ubuntu Answer
 Tracker. He finds that his machine becomes really slow
@@ -129,7 +184,7 @@ whenever he has Firefox open. Luckily for Average Joe, searching for
 similar questions is easy: on the question listing page, he just
 enters his search key and hit the 'Search' button.
 
-    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> browser.getControl(name='field.search_text').value = 'firefox is slow'
     >>> browser.getControl('Search').click()
 
@@ -137,22 +192,27 @@ Unfortunately, the search doesn't return any similar questions:
 
     >>> print browser.title
     Questions matching "firefox is slow" for Ubuntu
-    >>> print find_main_content(browser.contents).first('p').renderContents()
-    There are no questions matching "firefox is slow" for Ubuntu with
-    the requested statuses.
+    >>> search_summary = find_main_content(browser.contents)
+    >>> print search_summary
+    <...
+    <p>There are no questions matching "firefox is slow" for Ubuntu with
+    the requested statuses.</p>
+    ...
 
 Joe observes under the search widget that there are checkboxes to select
 the question status to search. He notices that only some statuses are
 selected. He adds 'Invalid' to the selection, and run his search again.
 
-    >>> browser.getControl(name='field.status').value
+    >>> statuses = browser.getControl(name='field.status').displayValue
+    >>> # Print the label without the leading non-breaking space.
+    >>> [status[1:] for status in statuses]
     ['Open', 'Needs information', 'Answered', 'Solved']
     >>> browser.getControl('Invalid').selected = True
     >>> browser.getControl('Search').click()
 
 This time, the search returns one item.
 
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> for question in soup.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
     Firefox is slow and consumes too much RAM
@@ -163,22 +223,33 @@ He clicks on the link to read the question description.
     >>> browser.title
     'mozilla-firefox in ubuntu question #3:...Firefox is slow...'
 
+The user must choose at least one status when searching questions. An
+error is displayed when the user forgets to select a status.
+
+    >>> browser.open('http://launchpad.dev/ubuntu/+questions')
+    >>> browser.getControl(name='field.status').displayValue = []
+    >>> browser.getControl('Search').click()
+    >>> messages = find_tags_by_class(browser.contents, 'message')
+    >>> print messages[0].renderContents()
+    You must choose at least one status.
+
+
 == Controlling the Sort Order ==
 
 That question isn't exactly what Average Joe was looking for. Now, he'd
 like to see all the questions that were related to the firefox package.
-The quesiton listing page for distribution displays the source package
+The question listing page for distribution displays the source package
 related to each question . The source package name is a link to the
 source package's question listing.
 
-    # We should use goBack() here but can't because of ZC #645:
+    # We should use goBack() here but can't because of bug #98372:
     # zope.testbrowser truncates document content after goBack().
     #>>> browser.goBack()
-    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> browser.getLink('mozilla-firefox').click()
     >>> browser.title
     'Questions for mozilla-firefox in ubuntu'
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> soup('table', 'listing')
     [<table...
     ...mailto: problem in webpage...2006-07-20...
@@ -193,7 +264,7 @@ selects the 'oldest first' sort order.
     >>> browser.getControl('oldest first').selected = True
     >>> browser.getControl('Search').click()
 
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> soup('table', 'listing')
     [<table...
     ...Firefox is slow and consumes too much RAM...2005-09-05...
@@ -201,16 +272,18 @@ selects the 'oldest first' sort order.
     ...mailto: problem in webpage...2006-07-20...
     </table>]
 
+
 == Common Reports ==
 
 In the actions menu, we find links to some common reports.
+
 
 === Open Questions ===
 
 Nice Guy likes helping others. He uses the 'Open' link to view the most
 recent questions on Mozilla Firefox.
 
-    >>> browser.open('http://launchpad.dev/firefox/+tickets')
+    >>> browser.open('http://launchpad.dev/firefox/+questions')
     >>> browser.getLink('Open').click()
     >>> print browser.title
     Open questions for Mozilla Firefox
@@ -239,6 +312,7 @@ problems:
     ...     print question.first('a').renderContents()
     Problem showing the SVG demo on W3C site
 
+
 === Answered Questions ===
 
 A random user has a problem with firefox in Ubuntu. He uses the
@@ -246,11 +320,13 @@ A random user has a problem with firefox in Ubuntu. He uses the
 similar problems. (This listing includes both 'Answered' and 'Solved'
 questions.)
 
-    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> browser.getLink('Answered').click()
     >>> print browser.title
     Answered questions for Ubuntu
-    >>> browser.getControl(name='field.status').value
+    >>> statuses = browser.getControl(name='field.status').displayValue
+    >>> # Print the label without the leading non-breaking space.
+    >>> [status[1:] for status in statuses]
     ['Answered', 'Solved']
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'question'):
@@ -265,8 +341,12 @@ he enters 'Evolution' as a keyword and hits the search button.
     >>> browser.getControl(name='field.search_text').value = 'Evolution'
     >>> browser.getControl('Search').click()
 
-    >>> print find_main_content(browser.contents).first('p').renderContents()
-    There are no answered questions matching "Evolution" for Ubuntu.
+    >>> search_summary = find_main_content(browser.contents)
+    >>> print search_summary
+    <...
+    <p>There are no answered questions matching "Evolution" for Ubuntu.</p>
+    ...
+
 
 === My questions ===
 
@@ -278,19 +358,17 @@ He needs to login to access that page:
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
-    ...     '+tickets')
+    ...     '+questions')
     >>> anon_browser.getLink('My questions').click()
     Traceback (most recent call last):
       ...
     Unauthorized...
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> sample_person_browser = Browser()
-    >>> sample_person_browser.addHeader(
-    ...     'Authorization', 'Basic test@canonical.com:test')
+    >>> sample_person_browser = setupBrowser(
+    ...     auth='Basic test@canonical.com:test')
     >>> sample_person_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
-    ...     '+tickets')
+    ...     '+questions')
     >>> sample_person_browser.getLink('My questions').click()
     >>> print sample_person_browser.title
     Questions you asked about mozilla-firefox in ubuntu
@@ -325,11 +403,13 @@ The exact question he was searching for is displayed!
 If the user didn't make any questions on the product, a message
 informing him of this fact is displayed.
 
-    >>> sample_person_browser.open('http://launchpad.dev/gnomebaker/+tickets')
+    >>> sample_person_browser.open(
+    ...     'http://launchpad.dev/gnomebaker/+questions')
     >>> sample_person_browser.getLink('My questions').click()
     >>> print find_main_content(
     ...     sample_person_browser.contents).first('p').renderContents()
     You didn't ask any questions about gnomebaker.
+
 
 === Need attention ===
 
@@ -341,14 +421,14 @@ information and that are now back in the 'Open' state.
 
 He needs to login to access that page:
 
-    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
     >>> anon_browser.getLink('Need attention').click()
     Traceback (most recent call last):
       ...
     Unauthorized...
 
     >>> sample_person_browser.open(
-    ...     'http://launchpad.dev/distros/ubuntu/+tickets')
+    ...     'http://launchpad.dev/distros/ubuntu/+questions')
     >>> sample_person_browser.getLink('Need attention').click()
     >>> print sample_person_browser.title
     Questions needing your attention for Ubuntu
@@ -366,19 +446,22 @@ Like all other report, this one is searchable:
     >>> sample_person_browser.getControl('Search').click()
     >>> print sample_person_browser.title
     Questions matching "evolution" needing your attention for Ubuntu
-    >>> print find_main_content(
-    ...     sample_person_browser.contents).first('p').renderContents()
-    No questions matching "evolution" need your attention for Ubuntu.
+    >>> search_summary = find_main_content(sample_person_browser.contents)
+    >>> print search_summary
+    <...
+    <p>No questions matching "evolution" need your attention for Ubuntu.</p>
+    ...
 
 If there is no questions needing the user's attention, a message
 informing him of this fact is displayed.
 
     >>> sample_person_browser.open(
-    ...    'http://launchpad.dev/products/gnomebaker/+tickets')
+    ...    'http://launchpad.dev/products/gnomebaker/+questions')
     >>> sample_person_browser.getLink('Need attention').click()
     >>> print find_main_content(
     ...     sample_person_browser.contents).first('p').renderContents()
     No questions need your attention for gnomebaker.
+
 
 == Person Reports ==
 
@@ -430,9 +513,10 @@ The listing is searchable and can restrict also the list of displayed
 questions to a particular status:
 
     # goBack() doesn't work.
-    >>> browser.open('http://launchpad.dev/~name16/+tickets')
+    >>> browser.open('http://launchpad.dev/~name16/+questions')
     >>> browser.getControl(name='field.search_text').value = 'Firefox'
-    >>> browser.getControl(name='field.status').value = ['Solved', 'Invalid']
+    >>> browser.getControl(name='field.status').displayValue = [
+    ...     'Solved', 'Invalid']
     >>> browser.getControl('Search').click()
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'question'):
@@ -442,6 +526,7 @@ questions to a particular status:
 
 The actions menu contains links to listing that contain only a specific
 type of involvement.
+
 
 === Assigned ===
 
@@ -453,6 +538,7 @@ assigned.
     Questions assigned to Foo Bar
     >>> print find_main_content(browser.contents).first('p').renderContents()
     No questions assigned to Foo Bar found with the requested statuses.
+
 
 === Answered ===
 
@@ -466,6 +552,7 @@ answerer.
     >>> for question in questions.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
     mailto: problem in webpage
+
 
 === Commented ===
 
@@ -484,6 +571,7 @@ questions commented on by the person.
     Installation of Java Runtime Environment for Mozilla
     Newly installed plug-in doesn't seem to be used
 
+
 === Asked ===
 
 The 'Asked' link displays a listing containing all the questions
@@ -497,6 +585,7 @@ asked by the person.
     ...     print question.first('a').renderContents()
     Slow system
     Firefox loses focus and gets stuck
+
 
 === Need attention ===
 
@@ -512,6 +601,7 @@ the attention of that person.
     Continue playing after shutdown
     Slow system
 
+
 === Subscribed ===
 
 Foo Bar can find all the questions to which he is subscribed by
@@ -524,6 +614,7 @@ visiting the 'Subscribed' link in the 'Answers' facet.
     >>> for question in questions.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
     Slow system
+
 
 == Browsing and Searching Questions in a Project ==
 
@@ -538,13 +629,15 @@ questions filed against any of the project's products is displayed.
 The results are displayed in a format similar to the Person reports:
 there is an 'In' column displaying where the questions were filed.
 
-    >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.tbody.fetch('tr'):
-    ...     question_title = question.first(
-    ...         'td', 'question').first('a').renderContents()
-    ...     question_target = question.first(
-    ...         'td', 'question-target').first('a').renderContents()
-    ...     print question_title, question_target
+    >>> def print_questions_with_target(contents):
+    ...     questions = find_tag_by_id(contents, 'question-listing')
+    ...     for question in questions.tbody.fetch('tr'):
+    ...         question_title = question.first(
+    ...             'td', 'question').first('a').renderContents()
+    ...         question_target = question.first(
+    ...             'td', 'question-target').first('a').renderContents()
+    ...         print question_title, question_target
+    >>> print_questions_with_target(browser.contents)
     Newly installed plug-in doesn't seem to be used Mozilla Firefox
     Firefox loses focus and gets stuck  Mozilla Firefox
     Problem showing the SVG demo on W3C site    Mozilla Firefox
@@ -571,7 +664,7 @@ The same standard reports than on regular QuestionTarget are available:
     Answered questions for the Mozilla Project
 
     # The next two reports are only available to a logged-in user.
-    >>> user_browser.open('http://launchpad.dev/mozilla/+tickets')
+    >>> user_browser.open('http://launchpad.dev/mozilla/+questions')
     >>> user_browser.getLink('My questions').click()
     >>> print user_browser.title
     Questions you asked about the Mozilla Project
@@ -579,6 +672,7 @@ The same standard reports than on regular QuestionTarget are available:
     >>> user_browser.getLink('Need attention').click()
     >>> print user_browser.title
     Questions needing your attention for the Mozilla Project
+
 
 == Searching All Questions ==
 
@@ -593,18 +687,12 @@ questions ever filed on Launchpad.
     Questions matching "firefox"
 
     >>> print browser.url
-    http://answers.launchpad.dev/support/+tickets?...
+    http://answers.launchpad.dev/questions/+questions?...
 
 The results are displayed in a format similar to the Person reports:
 there is an 'In' column displaying where the questions were filed.
 
-    >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.tbody.fetch('tr'):
-    ...     question_title = question.first(
-    ...         'td', 'question').first('a').renderContents()
-    ...     question_target = question.first(
-    ...         'td', 'question-target').first('a').renderContents()
-    ...     print question_title, question_target
+    >>> print_questions_with_target(browser.contents)
     Firefox loses focus and gets stuck  Mozilla Firefox
     Firefox cannot render Bank Site     Mozilla Firefox
     mailto: problem in webpage          mozilla-firefox in ubuntu
@@ -613,7 +701,9 @@ there is an 'In' column displaying where the questions were filed.
 
 Only the default set of statuses is searched:
 
-    >>> browser.getControl(name='field.status').value
+    >>> statuses = browser.getControl(name='field.status').displayValue
+    >>> # Print the label without the leading non-breaking space.
+    >>> [status[1:] for status in statuses]
     ['Open', 'Needs information', 'Answered', 'Solved']
 
 When no results are found, a message informs the user of this fact:
@@ -624,6 +714,21 @@ When no results are found, a message informs the user of this fact:
     >>> print find_main_content(
     ...     browser.contents).first('p').renderContents()
     There are no questions matching "firefox" with the requested statuses.
+
+Clicking the 'Search' button without entering any search text will
+display all questions asked in Launchpad with the selected statuses.
+
+    >>> browser.getControl(name='field.status').displayValue = ['Open']
+    >>> browser.getControl(name='field.search_text').value = ''
+    >>> browser.getControl('Search').click()
+
+    >>> print_questions_with_target(browser.contents)
+    Continue playing after shutdown             Ubuntu
+    Installation failed                         Ubuntu
+    Firefox loses focus and gets stuck          Mozilla Firefox
+    Problem showing the SVG demo on W3C site    Mozilla Firefox
+    Firefox cannot render Bank Site             Mozilla Firefox
+
 
 == Searching in a Selected Project ==
 
@@ -660,8 +765,8 @@ to mimick the user clicking on it.)
     >>> [search_url] = re.findall(
     ...     "popup_window\('([^']*')", choose_link.url)
 
-    # XXX flacoste 2007/02/21 We should use directly search_url here but
-    # can't because of bug #
+    # XXX flacoste 2007-02-21 bug=51853:
+    # We should use directly search_url here but can't because of bug #51853.
     # >>> anon_browser.open(search_url)
     >>> anon_browser.open('http://answers.launchpad.dev/' + search_url)
     >>> print anon_browser.title

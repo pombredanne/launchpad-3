@@ -6,7 +6,7 @@ This page is incorporated in parent pages with a specific relationship
 group. Some example of pages using it are:
 
  * +builds/+build/1234/$binaryname
- * $distrorelease/+source/$sourcename
+ * $distroseries/+source/$sourcename
 
 Let's fill a IPackageRelationshipSet:
 

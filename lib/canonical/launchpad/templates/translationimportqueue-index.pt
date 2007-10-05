@@ -1,164 +1,34 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
+<html metal:use-macro="view/macro:page/applicationhome"
+      i18n:domain="launchpad">
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Translation files waiting to be imported</h1>
-    </metal:heading>
+    <metal:css fill-slot="head_epilogue">
+      <style type="text/css">
+        div.inlined-widget {
+          display: inline;
+        }
 
-<div metal:fill-slot="main">
+        div.inlined-widget div {
+          display: inline;
+        }
+      </style>
+    </metal:css>
 
-  <tal:block condition="view/has_entries">
-    <p tal:condition="not:request/lp:person">
-      <a href="+login">Log in</a> to change items in this list.
-    </p>
+    <div metal:fill-slot="main">
+      <h1 tal:condition="view/label"
+          tal:content="view/label">
+        Translation files waiting to be imported in Launchpad
+      </h1>
 
-    <!-- Filtering options. -->
-    <div>
-      <form method="GET" action="">
-        <label>Show:</label>
-        <tal:comment tal:replace="nothing">
-          The 'selected' attribute value in next select means basically
-          the following:
-
-          if request.form['status'] == literalvalue:
-              return 'selected'
-          else:
-              return None
-
-          Where 'literalvalue' is 'all' or any valid status.
-        </tal:comment>
-        <select name="target" title="Choose which target of entries to show">
-          <option value="all"
-            tal:attributes="selected request/htmlform:target/selected/all">
-            All files
-          </option>
-          <option value="products"
-            tal:attributes="selected request/htmlform:target/selected/products">
-            Only Upstream Projects
-          </option>
-          <option value="distros"
-            tal:attributes="selected request/htmlform:target/selected/distros">
-            Only Distributions
-          </option>
-        </select>
-        <select name="status" title="Choose which status to show">
-          <option value="all"
-            tal:attributes="selected
-            request/htmlform:status/selected/all"
-            >
-            All
-          </option>
-          <tal:options content="structure view/getStatusFilteringSelect" />
-        </select>
-        <select name="type" title="Choose which kind of files to show">
-          <option value="all"
-            tal:attributes="selected request/htmlform:type/selected/all">
-            Files of any type
-          </option>
-          <option value="po"
-            tal:attributes="selected request/htmlform:type/selected/po">
-            Only .po files
-          </option>
-          <option value="pot"
-            tal:attributes="selected request/htmlform:type/selected/pot">
-            Only .pot files
-          </option>
-        </select>
-        <input
-          type="submit" value="Filter" />
-      </form>
-    </div>
-
-    <br />
-
-    <!-- Queue entries -->
-    <tal:block condition="not:view/batchnav/currentBatch">
-      <div class="documentDescription">
-        There are no entries that match this filtering.
-      </div>
-    </tal:block>
-    <tal:block condition="view/batchnav/currentBatch">
-      <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
-      <form name="entries_to_import" action="" method="POST">
-        <table class="listing" width="100%">
-          <tal:loop repeat="entry view/batchnav/currentBatch">
-            <tr>
-              <tal:comment replace="nothing">
-                XXX: CarlosPerelloMarin 20060309:
-                We are using here condition="entry/import_into/title|nothing"
-                because, sometimes, entry/import_into evaluates as false when
-                it should not. See bug #34213 for more information.
-              </tal:comment>
-              <td tal:condition="entry/import_into/title|nothing" rowspan="3">
-                <img alt="" src="/@@/download" />
-              </td>
-              <td tal:condition="not: entry/import_into/title|nothing" rowspan="2">
-                <img alt="" src="/@@/download" />
-              </td>
-              <td>
-                <a tal:attributes="href entry/content/http_url"
-                   tal:content="entry/path">po/foo.pot</a> in
-                <a tal:condition="entry/sourcepackage"
-                   tal:content="entry/sourcepackage/title"
-                   tal:attributes="href entry/sourcepackage/fmt:url"
-                   >evolution in Ubuntu Hoary</a>
-                <a tal:condition="entry/productseries"
-                   tal:content="entry/productseries/title"
-                   tal:attributes="href entry/productseries/fmt:url"
-                   >Evolution Series: MAIN</a>
-              </td>
-              <td tal:condition="entry/required:launchpad.Edit"
-                  tal:content="structure python: view.getStatusSelect(entry)">
-              </td>
-              <td tal:condition="not: entry/required:launchpad.Edit"
-                  tal:content="entry/status/title">Needs Review
-              </td>
-              <td>
-                <tal:block condition="entry/required:launchpad.Admin">
-                  <a tal:attributes="href entry/fmt:url"
-                    ><img src="/@@/edit" title="Change this entry" /></a>
-                </tal:block>
-              </td>
-            </tr>
-            <tr class="discreet secondary">
-              <td colspan="3">
-                Uploaded by 
-                <a tal:content="entry/importer/browsername"
-                   tal:attributes="href entry/importer/fmt:url"
-                   >Mark Shuttleworth</a>
-                on <span tal:content="entry/dateimported/fmt:datetime">date</span>
-              </td>
-            </tr>
-            <tal:comment replace="nothing">
-              XXX: CarlosPerelloMarin 20060309:
-              We are using here condition="entry/import_into/title|nothing"
-              because, sometimes, entry/import_into evaluates as false when
-              it should not. See bug #34213 for more information.
-            </tal:comment>
-            <tr tal:condition="entry/import_into/title|nothing" class="discreet secondary">
-              <td colspan="3">
-                Will be imported into 
-                <a tal:content="entry/import_into/title"
-                   tal:attributes="href entry/import_into/fmt:url"
-                   >Foo</a>
-              </td>
-            </tr>
-          </tal:loop>
-        </table>
-        <input tal:condition="request/lp:person"
-               type="submit"
-               name="handle_queue"
-               value="Change Status" />
-      </form>
-    </tal:block>
-  </tal:block>
-
-      <p tal:condition="not:view/has_entries">
-        There are no files waiting to be imported into Rosetta.
+      <p id="description">
+        These translation related entries are imported, blocked, deleted or
+        waiting to be imported in Launchpad.
+        <tal:login condition="not:request/lp:person">
+          <a href="+login">Log in</a> to change items in this list.
+        </tal:login>
       </p>
+
+      <metal:translation-import-queue
+        use-macro="view/translation_import_queue_content" />
     </div>
   </body>
 </html>

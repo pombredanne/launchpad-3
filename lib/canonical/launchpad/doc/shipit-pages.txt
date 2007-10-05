@@ -2,19 +2,8 @@ ShipIt Pages
 ============
 
     >>> from canonical.launchpad.database import ShippingRequest
+    >>> from canonical.launchpad.layers import ShipItUbuntuLayer
     >>> jordis_request = ShippingRequest.get(16)
-
-Let's define a helper function to make it easier to construct a view.
-
-    >>> from zope.component import getView
-    >>> from zope.publisher.browser import TestRequest
-    >>> from canonical.launchpad.layers import ShipItUbuntuLayer, setFirstLayer
-    >>> def create_view(context, name, form=None):
-    ...     request = TestRequest(form=form)
-    ...     request.notifications = []
-    ...     setFirstLayer(request, ShipItUbuntuLayer)
-    ...     view = getView(context, name, request)
-    ...     return view
 
 
 /shipit/myrequest
@@ -36,14 +25,15 @@ StandardShipItRequests.
     >>> login('test@canonical.com')
     >>> from canonical.launchpad.systemhomes import ShipItApplication
     >>> shipit = ShipItApplication()
-    >>> myrequest_view = create_view(shipit, 'myrequest')
+    >>> myrequest_view = create_view(
+    ...     shipit, 'myrequest', layer=ShipItUbuntuLayer)
     >>> html = myrequest_view.renderStandardrequestForm()
     >>> 'Request CDs' in html
     True
     >>> 'ShipIt is currently closed' in html
     False
 
-    >>> myrequest_view.standardShipItRequests = lambda: []
+    >>> myrequest_view.is_open = False
     >>> html = myrequest_view.renderStandardrequestForm()
     >>> 'How many CDs would you like?' in html
     False
@@ -64,12 +54,13 @@ headers, or we'll start shipping wrong CDs to people. This order is specified
 by the ordered_flavours and ordered_architectures attributes of the view
 class.
 
-    >>> review_request_view = create_view(jordis_request, '+edit')
+    >>> review_request_view = create_view(
+    ...     jordis_request, '+edit', layer=ShipItUbuntuLayer)
     >>> [flavour.title for flavour in review_request_view.ordered_flavours]
     ['Ubuntu', 'Kubuntu', 'Edubuntu']
 
     >>> [arch.title for arch in review_request_view.ordered_architectures]
-    ['PC', '64-bit PC', 'Mac']
+    ['PC', '64-bit PC']
 
 And this is the order we use when generating the widgets matrix.
 
@@ -82,9 +73,9 @@ And this is the order we use when generating the widgets matrix.
     ...         else:
     ...             newrow.append(cell.label)
     ...     print newrow
-    ['Ubuntu', u'PC', u'64-bit PC', u'Mac']
-    ['Kubuntu', u'PC', u'64-bit PC', None]
-    ['Edubuntu', u'PC', None, None]
+    ['Ubuntu', u'PC', u'64-bit PC']
+    ['Kubuntu', u'PC', u'64-bit PC']
+    ['Edubuntu', u'PC', None]
 
 Similarly to the quantity widgets, we use a table to display the quantities
 requested by the user. But in this case, the shipit admins are not supposed to
@@ -92,8 +83,8 @@ change these values, so we don't need widgets.
 
     >>> for row in review_request_view.quantities_matrix:
     ...     print row
-    ['Kubuntu', 5, 0, 0]
-    ['Edubuntu', 5, 0, 0]
+    ['Kubuntu', 5, 0]
+    ['Edubuntu', 5, 0]
 
 
 If the request we're looking at is already approved, we use the approved
@@ -107,21 +98,20 @@ widgets.
     >>> review_request_view.initial_values
     {'highpriority': True, 'kubuntu_quantityamd64approved': 0,
      'ubuntu_quantityx86approved': 0, 'kubuntu_quantityx86approved': 5,
-     'edubuntu_quantityx86approved': 5, 'ubuntu_quantityamd64approved': 0,
-     'ubuntu_quantityppcapproved': 0}
+     'edubuntu_quantityx86approved': 5, 'ubuntu_quantityamd64approved': 0}
 
     >>> pending_approval_request = ShippingRequest.get(12)
-    >>> review_request_view = create_view(pending_approval_request, '+edit')
+    >>> review_request_view = create_view(
+    ...     pending_approval_request, '+edit', layer=ShipItUbuntuLayer)
     >>> review_request_view.context.isApproved()
     False
 
     >>> for row in review_request_view.quantities_matrix:
     ...     print row
-    ['Ubuntu', 10, 0, 0]
+    ['Ubuntu', 10, 0]
 
     >>> review_request_view.initial_values
     {'highpriority': False, 'kubuntu_quantityamd64approved': 0,
      'ubuntu_quantityx86approved': 10, 'kubuntu_quantityx86approved': 0,
-     'edubuntu_quantityx86approved': 0, 'ubuntu_quantityamd64approved': 0,
-     'ubuntu_quantityppcapproved': 0}
+     'edubuntu_quantityx86approved': 0, 'ubuntu_quantityamd64approved': 0}
 

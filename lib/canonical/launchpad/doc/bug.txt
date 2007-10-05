@@ -1,17 +1,15 @@
-Bugs in Malone
-==============
+= Bugs in Malone = 
 
 This document describes what a Bug is in Malone, and provides some (currently
 rather incomplete) info on how to poke at bugs through the Component
 Architecture.
 
-Working with Bugs
------------------
+== Working with Bugs ==
 
 Bugs are created and retrieved via IBugSet.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.interfaces import IBugSet, IBug
     >>> bugset = getUtility(IBugSet)
 
 To retrieve a specific Bug, use IBugSet.get:
@@ -32,16 +30,25 @@ raised:
     >>> bugset.get(123456)
     Traceback (most recent call last):
       ...
-    NotFoundError: 'Unable to locate bug with ID 123456'
+    NotFoundError: 'Unable to locate bug with ID 123456.'
 
     >>> bugset.getByNameOrID('+bugs')
     Traceback (most recent call last):
       ...
-    NotFoundError: 'Unable to locate bug with nickname +bugs'
+    NotFoundError: 'Unable to locate bug with nickname +bugs.'
 
+== Interface check ==
 
-Searching for Bugs
-------------------
+It is guaranteed to implement the correct interface, too:
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(IBug, firefox_crashes)
+    True
+
+(We grab the object directly from the database here to avoid it being
+security proxied, which doesn't make sense to test here.)
+
+== Searching for Bugs ==
 
 To search for bugs matching specific criteria, use IBugSet.searchAsUser:
 
@@ -73,8 +80,7 @@ To search for bugs matching specific criteria, use IBugSet.searchAsUser:
 
     >>> login(ANONYMOUS)
 
-Absolute URLs
--------------
+== Absolute URLs ==
 
 For things like bug notification emails, it's handy to be able to
 include a URL to the bug inside the email.
@@ -83,16 +89,14 @@ include a URL to the bug inside the email.
     >>> print canonical_url(firefox_crashes)
     http://.../bugs/6
 
-Bug Privacy
-===========
+== Bug Privacy ==
 
 A Bug has a "private" field. If Bug.private is False, the bug is
 publicly visible. If Bug.private is True, only people who are directly
 subscribed to the bug can see it. Launchpad admins can always view and
 modify private bugs.
 
-Marking Bugs Private
---------------------
+=== Marking Bugs Private ===
 
 For the purposes of demonstration, we'll make the firefox crashing bug
 private. A bug cannot be made private by an anonymous user.
@@ -126,7 +130,7 @@ Now we can mark bug #6 private:
     ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent,
     ...     SQLObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IBug)
+    ...     IPersonSet)
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
 
     >>> new_values = {"private" : True}
@@ -144,8 +148,7 @@ Now we can mark bug #6 private:
     >>> notify(bug_set_private)
     >>> flush_database_updates()
 
-How Privacy Affects Access to a Bug
------------------------------------
+=== How Privacy Affects Access to a Bug ===
 
 Once a bug is made private, it can only be accessed by the users that
 are directly subscribed to the bug and Launchpad admins.
@@ -157,12 +160,16 @@ firefox_crashes bug, we can still access properties of this bug:
     >>> firefox_crashes.title
     u'Firefox crashes when Save As dialog for a nonexistent window is closed'
 
-Note that a search will return all the bugs, as well:
+Note that a search will return all public bugs, omitting bug 14 which is
+private:
 
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
-    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+
+(This test breaks if you add a new public bug to sampledata; rely on it
+to ensure it worked!)
 
 Likewise Foo Bar, an admin, can access the bug.
 
@@ -176,12 +183,15 @@ Likewise Foo Bar, an admin, can access the bug.
     >>> firefox_crashes.title
     u'Firefox crashes when Save As dialog for a nonexistent window is closed'
 
-Bug #6 is returned by the search results for an admin as well:
+Bug 14, which is private, is  returned by the search results for an
+admin as well:
 
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
-    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+
+(This test breaks if you add any bug to sampledata.)
 
 As one would expect, the permissions are team aware. So, let's retrieve a bug
 and set it private (as Foo Bar again who, of course, is an admin.)
@@ -231,7 +241,7 @@ and see it (bug #2) in searches:
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
-    [1, 2, 3, 4, 5, 7, 8, 9, 10]
+    [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13]
 
 If we login as someone who *isn't* a member of the Ubuntu Team (and
 isn't otherwise someone who should be allowed to access the properties
@@ -253,10 +263,9 @@ And, as you might have guessed, is once again invisible in searches
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
-    [1, 3, 4, 5, 7, 8, 9, 10]
+    [1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13]
 
-Filing Public vs. Private Bugs
-------------------------------
+=== Filing Public vs. Private Bugs ===
 
 Let's log back in as Foo Bar to continue our examples:
 
@@ -264,71 +273,71 @@ Let's log back in as Foo Bar to continue our examples:
 
 When a public bug is filed:
 
->>> from canonical.launchpad.interfaces import (
-...     IProductSet, IBugSet, CreateBugParams)
->>> productset = getUtility(IProductSet)
->>> bugset = getUtility(IBugSet)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IProductSet, IBugSet, CreateBugParams)
+    >>> productset = getUtility(IProductSet)
+    >>> bugset = getUtility(IBugSet)
 
->>> firefox = productset.get(4)
->>> foobar = personset.get(16)
->>> params = CreateBugParams(
-...     title="test firefox bug", comment="blah blah blah", owner=foobar)
->>> params.setBugTarget(product=firefox)
->>> added_bug = getUtility(IBugSet).createBug(params)
->>> notify(SQLObjectCreatedEvent(added_bug))
->>> public_bug = bugset.get(added_bug.id)
+    >>> firefox = productset.get(4)
+    >>> foobar = personset.get(16)
+    >>> params = CreateBugParams(
+    ...     title="test firefox bug", comment="blah blah blah", owner=foobar)
+    >>> params.setBugTarget(product=firefox)
+    >>> added_bug = getUtility(IBugSet).createBug(params)
+    >>> notify(SQLObjectCreatedEvent(added_bug))
+    >>> public_bug = bugset.get(added_bug.id)
 
 the submitter and the maintainer are directly subscribed. Note that
 passing both a comment /and/ a msg would have raised an AssertionError:
 
->>> params = CreateBugParams(
-...     title="test firefox bug", comment="blah blah blah", msg="foo foo foo",
-...     owner=foobar)
->>> params.setBugTarget(product=firefox)
->>> added_bug = getUtility(IBugSet).createBug(params)
-Traceback (most recent call last):
-  ...
-AssertionError: Expected either a comment or a msg, but got both
+    >>> params = CreateBugParams(
+    ...     title="test firefox bug", comment="blah blah blah",
+    ...     msg="foo foo foo", owner=foobar)
+    >>> params.setBugTarget(product=firefox)
+    >>> added_bug = getUtility(IBugSet).createBug(params)
+    Traceback (most recent call last):
+      ...
+    AssertionError: Expected either a comment or a msg, but got both.
 
 
 So, let's continue:
 
->>> [subscription.person.name for subscription in public_bug.subscriptions]
-[u'name16']
+    >>> [subscription.person.name for subscription in public_bug.subscriptions]
+    [u'name16']
 
 The first comment made (this is submitted in the bug report) is set to
 the description of the bug:
 
->>> public_bug.description
-u'blah blah blah'
+    >>> public_bug.description
+    u'blah blah blah'
 
 The bug description can also be accessed through the task:
 
->>> public_bug.bugtasks[0].bug.description
-u'blah blah blah'
->>> public_bug.description = 'a new description'
->>> public_bug.bugtasks[0].bug.description
-u'a new description'
+    >>> public_bug.bugtasks[0].bug.description
+    u'blah blah blah'
+    >>> public_bug.description = 'a new description'
+    >>> public_bug.bugtasks[0].bug.description
+    u'a new description'
 
 When a private bug is filed:
 
->>> params = CreateBugParams(
-...     title="test firefox bug", comment="blah blah blah", owner=foobar,
-...     private=True)
->>> params.setBugTarget(product=firefox)
->>> added_bug = getUtility(IBugSet).createBug(params)
->>> notify(SQLObjectCreatedEvent(added_bug))
->>> private_bug = bugset.get(added_bug.id)
+    >>> params = CreateBugParams(
+    ...     title="test firefox bug", comment="blah blah blah", owner=foobar,
+    ...     private=True)
+    >>> params.setBugTarget(product=firefox)
+    >>> added_bug = getUtility(IBugSet).createBug(params)
+    >>> notify(SQLObjectCreatedEvent(added_bug))
+    >>> private_bug = bugset.get(added_bug.id)
 
 *only* the submitter is directly subscribed:
 
->>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]
-[u'name16']
+    >>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]
+    [u'name16']
 
 Since it's private, there are no indirect subscribers.
 
->>> private_bug.getIndirectSubscribers()
-[]
+    >>> private_bug.getIndirectSubscribers()
+    []
 
 It's up to the submitter to subscribe the maintainer, if they so choose.
 
@@ -336,46 +345,45 @@ This works similarly for distributions; in this case the
 "maintainer" is considered the person who maintains the applicable
 sourcepackage. E.g.
 
->>> from canonical.launchpad.interfaces import (
-...     IDistributionSet, ISourcePackageNameSet)
->>> distributionset = getUtility(IDistributionSet)
->>> spnset = getUtility(ISourcePackageNameSet)
->>> ubuntu = distributionset.get(1)
->>> evolution = spnset.get(9)
->>> params = CreateBugParams(
-...     title="test firefox bug", comment="blah blah blah",
-...     owner=foobar, private=True)
->>> params.setBugTarget(distribution=ubuntu, sourcepackagename=evolution)
->>> added_bug = getUtility(IBugSet).createBug(params)
->>> notify(SQLObjectCreatedEvent(added_bug))
->>> private_bug = bugset.get(added_bug.id)
->>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]
-[u'name16']
->>> private_bug.getIndirectSubscribers()
-[]
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, ISourcePackageNameSet)
+    >>> distributionset = getUtility(IDistributionSet)
+    >>> spnset = getUtility(ISourcePackageNameSet)
+    >>> ubuntu = distributionset.get(1)
+    >>> evolution = spnset.get(9)
+    >>> params = CreateBugParams(
+    ...     title="test firefox bug", comment="blah blah blah",
+    ...     owner=foobar, private=True)
+    >>> params.setBugTarget(distribution=ubuntu, sourcepackagename=evolution)
+    >>> added_bug = getUtility(IBugSet).createBug(params)
+    >>> notify(SQLObjectCreatedEvent(added_bug))
+    >>> private_bug = bugset.get(added_bug.id)
+    >>> [subscriber.name for subscriber in private_bug.getDirectSubscribers()]
+    [u'name16']
+    >>> private_bug.getIndirectSubscribers()
+    []
 
 There are some IBugTargets that don't allow bugs to be directly filed on
-them, e.g. IDistroRelease and ISourcePackage.
+them, e.g. IDistroSeries and ISourcePackage.
 
->>> from canonical.launchpad.interfaces import IDistroReleaseSet
+    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
 
->>> ubuntu_warty = getUtility(IDistroReleaseSet).get(1)
->>> ubuntu_warty_firefox = ubuntu_warty.getSourcePackage("mozilla-firefox")
->>> params = CreateBugParams(
-...     owner=current_user(), title="test", comment="test")
->>> ubuntu_warty.createBug(params)
-Traceback (most recent call last):
-  ...
-NotImplementedError: A new bug cannot be filed directly on a distribution release, because releases are meant for "targeting" a fix to a specific release. It's possible that we may change this behaviour to allow filing a bug on a distribution release in the not-too-distant future. For now, you probably meant to file the bug on the distribution instead.
->>> params = CreateBugParams
-...     owner=current_user(), title="test", comment="test")
->>> ubuntu_warty_firefox.createBug(params)
-Traceback (most recent call last):
-  ...
-NotImplementedError: A new bug cannot be filed directly on a source package in a specific distribution release, because releases are meant for "targeting" a fix to a specific release. It's possible that we may change this behaviour to allow filing a bug on a distribution release source package in the not-too-distant future. For now, you probably meant to file the bug on the distro-wide (i.e. not release-specific) source package.
+    >>> ubuntu_warty = getUtility(IDistroSeriesSet).get(1)
+    >>> ubuntu_warty_firefox = ubuntu_warty.getSourcePackage("mozilla-firefox")
+    >>> params = CreateBugParams(
+    ...     owner=current_user(), title="test", comment="test")
+    >>> ubuntu_warty.createBug(params)
+    Traceback (most recent call last):
+      ...
+    NotImplementedError: A new bug cannot be filed directly...
+    >>> params = CreateBugParams
+    ...     owner=current_user(), title="test", comment="test")
+    >>> ubuntu_warty_firefox.createBug(params)
+    Traceback (most recent call last):
+      ...
+    NotImplementedError: A new bug cannot be filed directly...
 
-Date Last Updated
------------------
+== Date Last Updated ==
 
 Malone tracks the last time a change was made to a
 bug. IBug.date_last_updated stores the date when anything is changed or
@@ -387,366 +395,461 @@ objects.) Let's look at an example of each.
 When a bug is created, its date_last_updated is set right away, to
 ensure that new bugs sort appropriately.
 
-  >>> params = CreateBugParams(
-  ...     title="a test firefox bug",
-  ...     comment="a description of the bug",
-  ...     owner=current_user())
-  >>> firefox_bug = firefox.createBug(params)
+    >>> params = CreateBugParams(
+    ...     title="a test firefox bug",
+    ...     comment="a description of the bug",
+    ...     owner=current_user())
+    >>> firefox_bug = firefox.createBug(params)
 
-  >>> firefox_bug.datecreated == firefox_bug.date_last_updated
-  True
+    >>> firefox_bug.datecreated == firefox_bug.date_last_updated
+    True
 
 Adding a comment.
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
+    >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> comment = firefox_bug.newMessage(
-  ...     owner=current_user(),
-  ...     subject="blah blah blah",
-  ...     content="blah blah blah")
+    >>> comment = firefox_bug.newMessage(
+    ...     owner=current_user(),
+    ...     subject="blah blah blah",
+    ...     content="blah blah blah")
 
-  >>> firefox_bug.date_last_updated > current_date_last_updated
-  True
+    >>> firefox_bug.date_last_updated > current_date_last_updated
+    True
 
 Changing the bug summary.
 
-  >>> from canonical.launchpad.interfaces import IBug
+    >>> from canonical.launchpad.interfaces import IBug
 
-  >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
+    >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
 
-  >>> firefox_bug.title = "a new title"
+    >>> firefox_bug.title = "a new title"
 
-  >>> bug_summary_changed = SQLObjectModifiedEvent(
-  ...     firefox_bug, bug_before_modification, ["title"])
+    >>> bug_summary_changed = SQLObjectModifiedEvent(
+    ...     firefox_bug, bug_before_modification, ["title"])
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
+    >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> notify(bug_summary_changed)
+    >>> notify(bug_summary_changed)
 
-  >>> firefox_bug.date_last_updated > current_date_last_updated
-  True
+    >>> firefox_bug.date_last_updated > current_date_last_updated
+    True
 
 Changing the description.
 
-  >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
+    >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
 
-  >>> firefox_bug.description = "a new description"
+    >>> firefox_bug.description = "a new description"
 
-  >>> bug_description_changed = SQLObjectModifiedEvent(
-  ...     firefox_bug, bug_before_modification, ["description"])
+    >>> bug_description_changed = SQLObjectModifiedEvent(
+    ...     firefox_bug, bug_before_modification, ["description"])
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
+    >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> notify(bug_description_changed)
+    >>> notify(bug_description_changed)
 
-  >>> firefox_bug.date_last_updated > current_date_last_updated
-  True
+    >>> firefox_bug.date_last_updated > current_date_last_updated
+    True
 
 Modifying a bugtask will update IBug.date_last_updated.
 
-  >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
-  >>> from canonical.launchpad.interfaces import IUpstreamBugTask
+    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskStatus, IUpstreamBugTask)
 
-  >>> firefox_task = firefox_bug.bugtasks[0]
+    >>> firefox_task = firefox_bug.bugtasks[0]
 
-  >>> print firefox_task.targetname
-  firefox (upstream)
+    >>> print firefox_task.bugtargetdisplayname
+    Mozilla Firefox
 
-  >>> print firefox_task.importance.title
-  Undecided
-  >>> print firefox_task.status.title
-  Unconfirmed
+    >>> print firefox_task.importance.title
+    Undecided
+    >>> print firefox_task.status.title
+    New
 
-  >>> bugtask_before_modification = Snapshot(
-  ...     firefox_task, providing=IUpstreamBugTask)
+    >>> bugtask_before_modification = Snapshot(
+    ...     firefox_task, providing=IUpstreamBugTask)
 
-  >>> firefox_task.importance = BugTaskImportance.CRITICAL
-  >>> firefox_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> firefox_task.importance = BugTaskImportance.CRITICAL
+    >>> firefox_task.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
 
-  >>> bugtask_modified = SQLObjectModifiedEvent(
-  ...     firefox_task, bugtask_before_modification,
-  ...     ["status", "importance"])
+    >>> bugtask_modified = SQLObjectModifiedEvent(
+    ...     firefox_task, bugtask_before_modification,
+    ...     ["status", "importance"])
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
+    >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> notify(bugtask_modified)
+    >>> notify(bugtask_modified)
 
-  >>> firefox_bug.date_last_updated > current_date_last_updated
-  True
+    >>> firefox_bug.date_last_updated > current_date_last_updated
+    True
 
 Adding a new task.
 
-  >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from canonical.launchpad.interfaces import IBugTaskSet
 
-  >>> thunderbird = productset.getByName("thunderbird")
+    >>> thunderbird = productset.getByName("thunderbird")
 
-  >>> print thunderbird.name
-  thunderbird
+    >>> print thunderbird.name
+    thunderbird
 
-  >>> thunderbird_task = getUtility(IBugTaskSet).createTask(
-  ...     bug=firefox_bug, owner=foobar, product=thunderbird)
+    >>> thunderbird_task = getUtility(IBugTaskSet).createTask(
+    ...     bug=firefox_bug, owner=foobar, product=thunderbird)
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
+    >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> notify(SQLObjectCreatedEvent(thunderbird_task))
+    >>> notify(SQLObjectCreatedEvent(thunderbird_task))
 
-  >>> firefox_bug.date_last_updated > current_date_last_updated
-  True
+    >>> firefox_bug.date_last_updated > current_date_last_updated
+    True
 
 Changing bug visibility.
 
-  >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
+    >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
 
-  >>> firefox_bug.private
-  False
-  >>> firefox_bug.private = True
+    >>> firefox_bug.private
+    False
+    >>> firefox_bug.private = True
 
-  >>> bug_visibility_changed = SQLObjectModifiedEvent(
-  ...     firefox_bug, bug_before_modification, ["private"])
+    >>> bug_visibility_changed = SQLObjectModifiedEvent(
+    ...     firefox_bug, bug_before_modification, ["private"])
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
+    >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> notify(bug_visibility_changed)
+    >>> notify(bug_visibility_changed)
 
-  >>> firefox_bug.date_last_updated > current_date_last_updated
-  True
+    >>> firefox_bug.date_last_updated > current_date_last_updated
+    True
 
 Changing bug security.
 
-  >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
+    >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
 
-  >>> firefox_bug.security_related
-  False
-  >>> firefox_bug.security_related = True
+    >>> firefox_bug.security_related
+    False
+    >>> firefox_bug.security_related = True
 
-  >>> bug_security_changed = SQLObjectModifiedEvent(
-  ...     firefox_bug, bug_before_modification, ["security_related"])
+    >>> bug_security_changed = SQLObjectModifiedEvent(
+    ...     firefox_bug, bug_before_modification, ["security_related"])
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
+    >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> notify(bug_security_changed)
+    >>> notify(bug_security_changed)
 
-  >>> firefox_bug.date_last_updated > current_date_last_updated
-  True
+    >>> firefox_bug.date_last_updated > current_date_last_updated
+    True
 
 Marking as duplicate.
 
-  >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
+    >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
 
-  >>> print firefox_bug.duplicateof
-  None
-  >>> firefox_bug.duplicateof = firefox_crashes
+    >>> print firefox_bug.duplicateof
+    None
+    >>> firefox_bug.duplicateof = firefox_crashes
 
-  >>> bug_duplicateof_changed = SQLObjectModifiedEvent(
-  ...     firefox_bug, bug_before_modification, ["duplicateof"])
+    >>> bug_duplicateof_changed = SQLObjectModifiedEvent(
+    ...     firefox_bug, bug_before_modification, ["duplicateof"])
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
+    >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> notify(bug_duplicateof_changed)
+    >>> notify(bug_duplicateof_changed)
 
-  >>> firefox_bug.date_last_updated > current_date_last_updated
-  True
+    >>> firefox_bug.date_last_updated > current_date_last_updated
+    True
 
 Adding an attachment.
 
-  >>> from StringIO import StringIO
-  >>> from canonical.launchpad.interfaces import (
-  ...     IBugAttachmentSet, IMessageSet, IBugMessageSet, ILibraryFileAliasSet)
+    >>> from StringIO import StringIO
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugAttachmentSet, IMessageSet, IBugMessageSet,
+    ...     ILibraryFileAliasSet)
 
-  >>> firefox_bug.attachments.count()
-  0
+    >>> firefox_bug.attachments.count()
+    0
 
 (Upload a file to the Librarian.)
 
-  >>> filecontent = 'Some useful information.'
-  >>> filealias = getUtility(ILibraryFileAliasSet).create(
-  ...     name='foo.txt', size=len(filecontent),
-  ...     file=StringIO(filecontent), contentType='text/plain')
+    >>> filecontent = 'Some useful information.'
+    >>> filealias = getUtility(ILibraryFileAliasSet).create(
+    ...     name='foo.txt', size=len(filecontent),
+    ...     file=StringIO(filecontent), contentType='text/plain')
 
 (Attach it to the bug.)
 
-  >>> message = getUtility(IMessageSet).fromText(
-  ...     subject="title", content="added an attachment.")
-  >>> attachmentset = getUtility(IBugAttachmentSet)
-  >>> attachment = attachmentset.create(
-  ...     bug=firefox_bug, filealias=filealias, title='Some info.',
-  ...     message=message)
+    >>> message = getUtility(IMessageSet).fromText(
+    ...     subject="title", content="added an attachment.")
+    >>> attachmentset = getUtility(IBugAttachmentSet)
+    >>> attachment = attachmentset.create(
+    ...     bug=firefox_bug, filealias=filealias, title='Some info.',
+    ...     message=message)
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
+    >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> notify(SQLObjectCreatedEvent(attachment))
+    >>> notify(SQLObjectCreatedEvent(attachment))
 
-  >>> firefox_bug.attachments.count()
-  1
+    >>> firefox_bug.attachments.count()
+    1
 
-  >>> firefox_bug.date_last_updated > current_date_last_updated
-  True
+    >>> firefox_bug.date_last_updated > current_date_last_updated
+    True
 
 Editing an attachment.
 
-  >>> from canonical.launchpad.interfaces import IBugAttachment
+    >>> from canonical.launchpad.interfaces import IBugAttachment
 
-  >>> attachment_before_modification = Snapshot(
-  ...     attachment, providing=IBugAttachment)
+    >>> attachment_before_modification = Snapshot(
+    ...     attachment, providing=IBugAttachment)
 
-  >>> attachment.title = "a new title"
+    >>> attachment.title = "a new title"
 
-  >>> attachment_changed = SQLObjectModifiedEvent(
-  ...     attachment, attachment_before_modification,
-  ...     ["title"])
+    >>> attachment_changed = SQLObjectModifiedEvent(
+    ...     attachment, attachment_before_modification,
+    ...     ["title"])
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
+    >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> notify(attachment_changed)
+    >>> notify(attachment_changed)
 
-  >>> firefox_bug.date_last_updated > current_date_last_updated
-  True
+    >>> firefox_bug.date_last_updated > current_date_last_updated
+    True
 
 Adding a branch.
 
-  >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> from canonical.launchpad.interfaces import IBranchSet
 
-  >>> firefox_bug.bug_branches.count()
-  0
+    >>> firefox_bug.bug_branches.count()
+    0
 
-  >>> branch_one = getUtility(IBranchSet).get(1)
-  >>> current_date_last_updated = firefox_bug.date_last_updated
+    >>> branch_one = getUtility(IBranchSet).get(1)
+    >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> bug_branch = firefox_bug.addBranch(branch_one)
+    >>> bug_branch = firefox_bug.addBranch(branch_one)
 
-  >>> firefox_bug.bug_branches.count()
-  1
-  >>> firefox_bug.date_last_updated > current_date_last_updated
-  True
+    >>> firefox_bug.bug_branches.count()
+    1
+    >>> firefox_bug.date_last_updated > current_date_last_updated
+    True
 
 Editing a branch.
 
-  >>> from canonical.launchpad.interfaces import IBugBranch
-  >>> from canonical.lp.dbschema import BugBranchStatus
+    >>> from canonical.launchpad.interfaces import IBugBranch
+    >>> from canonical.lp.dbschema import BugBranchStatus
 
-  >>> branch_before_modification = Snapshot(
-  ...     bug_branch, providing=IBugBranch)
+    >>> branch_before_modification = Snapshot(
+    ...     bug_branch, providing=IBugBranch)
 
-  >>> print bug_branch.status.title
-  Fix In Progress
+    >>> print bug_branch.status.title
+    Fix In Progress
 
-  >>> bug_branch.status = BugBranchStatus.BESTFIX
+    >>> bug_branch.status = BugBranchStatus.BESTFIX
 
-  >>> bug_branch_changed = SQLObjectModifiedEvent(
-  ...     bug_branch, branch_before_modification, ["status"])
+    >>> bug_branch_changed = SQLObjectModifiedEvent(
+    ...     bug_branch, branch_before_modification, ["status"])
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
+    >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> notify(bug_branch_changed)
+    >>> notify(bug_branch_changed)
 
-  >>> firefox_bug.date_last_updated > current_date_last_updated
-  True
+    >>> firefox_bug.date_last_updated > current_date_last_updated
+    True
 
 Linking to a CVE.
 
-  >>> from canonical.launchpad.interfaces import ICveSet
+    >>> from canonical.launchpad.interfaces import ICveSet
 
-  >>> firefox_bug.cve_links.count()
-  0
+    >>> firefox_bug.cve_links.count()
+    0
 
-  >>> cveref = getUtility(ICveSet)["1999-8979"]
-  >>> bug_cveref = firefox_bug.linkCVE(cveref)
+    >>> cveref = getUtility(ICveSet)["1999-8979"]
+    >>> bug_cveref = firefox_bug.linkCVE(cveref, sample_person)
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
+    >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> notify(SQLObjectCreatedEvent(bug_cveref))
+    >>> notify(SQLObjectCreatedEvent(bug_cveref))
 
-  >>> firefox_bug.cve_links.count()
-  1
+    >>> firefox_bug.cve_links.count()
+    1
 
-  >>> firefox_bug.date_last_updated > current_date_last_updated
-  True
+    >>> firefox_bug.date_last_updated > current_date_last_updated
+    True
 
 Linking to an external bug tracker.
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IBugWatchSet, IBugTrackerSet)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugWatchSet, IBugTrackerSet)
 
-  >>> firefox_bug.watches.count()
-  0
+    >>> firefox_bug.watches.count()
+    0
 
-  >>> mozilla_bugtracker = getUtility(IBugTrackerSet)['mozilla.org']
-  >>> bugwatch = getUtility(IBugWatchSet).createBugWatch(
-  ...     bug=firefox_bug, owner=current_user(), bugtracker=mozilla_bugtracker,
-  ...     remotebug='1234')
+    >>> mozilla_bugtracker = getUtility(IBugTrackerSet)['mozilla.org']
+    >>> bugwatch = getUtility(IBugWatchSet).createBugWatch(
+    ...     bug=firefox_bug, owner=current_user(),
+    ...     bugtracker=mozilla_bugtracker, remotebug='1234')
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
+    >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> notify(SQLObjectCreatedEvent(bugwatch))
+    >>> notify(SQLObjectCreatedEvent(bugwatch))
 
-  >>> firefox_bug.watches.count()
-  1
+    >>> firefox_bug.watches.count()
+    1
 
-  >>> firefox_bug.date_last_updated > current_date_last_updated
-  True
+    >>> firefox_bug.date_last_updated > current_date_last_updated
+    True
 
 Editing the external bug watch.
 
-  >>> from canonical.launchpad.interfaces import IBugWatch
+    >>> from canonical.launchpad.interfaces import IBugWatch
 
-  >>> bugwatch_before_modification = Snapshot(
-  ...     bugwatch, providing=IBugWatch)
+    >>> bugwatch_before_modification = Snapshot(
+    ...     bugwatch, providing=IBugWatch)
 
-  >>> print bugwatch.remotebug
-  1234
+    >>> print bugwatch.remotebug
+    1234
 
-  >>> bugwatch.remotebug = '5678'
+    >>> bugwatch.remotebug = '5678'
 
-  >>> bugwatch_changed = SQLObjectModifiedEvent(
-  ...     bugwatch, bugwatch_before_modification, ["remotebug"])
+    >>> bugwatch_changed = SQLObjectModifiedEvent(
+    ...     bugwatch, bugwatch_before_modification, ["remotebug"])
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
+    >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> notify(bugwatch_changed)
+    >>> notify(bugwatch_changed)
 
-  >>> firefox_bug.date_last_updated > current_date_last_updated
-  True
+    >>> firefox_bug.date_last_updated > current_date_last_updated
+    True
 
 Subscribing and unsubscribing does *not* trigger an update of
 IBug.date_last_updated.
 
-  >>> firefox_bug.isSubscribed(ubuntu_team)
-  False
+    >>> firefox_bug.isSubscribed(ubuntu_team)
+    False
 
-  >>> subscription = firefox_bug.subscribe(ubuntu_team)
+    >>> subscription = firefox_bug.subscribe(ubuntu_team)
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
+    >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> notify(SQLObjectCreatedEvent(subscription))
+    >>> notify(SQLObjectCreatedEvent(subscription))
 
-  >>> firefox_bug.date_last_updated == current_date_last_updated
-  True
+    >>> firefox_bug.date_last_updated == current_date_last_updated
+    True
 
-  >>> firefox_bug.unsubscribe(ubuntu_team)
+    >>> firefox_bug.unsubscribe(ubuntu_team)
 
-  >>> firefox_bug.date_last_updated == current_date_last_updated
-  True
+    >>> firefox_bug.date_last_updated == current_date_last_updated
+    True
 
 
-Enumerating Bug Tasks
-=====================
+== Bug Completeness ==
 
-You can get a set of bugtasks for this bug:
+A bug is considered "complete" iff all of its bugtasks are themselves
+complete. The definition of completeness for a bugtask is that the bug
+has been marked invalid or a fix has been released.
 
-  >>> b2 = bugset.get(2)
-  >>> for task in b2.bugtasks: print task.target.displayname
-  Ubuntu
-  Ubuntu
-  Hoary
-  mozilla-firefox in debian
-  Woody mozilla-firefox
+    >>> b8 = bugset.get(8)
+    >>> b8.is_complete
+    True
+    >>> b9 = bugset.get(9)
+    >>> b9.is_complete
+    False
+
+Let's add a new task to b8 to see if that affects the completeness.
+
+    >>> from canonical.launchpad.database import BugTask
+    >>> newtask = BugTask(bug=b8, product=firefox, owner=b8.owner)
+    >>> newtask.status.name
+    'NEW'
+    >>> b8.is_complete
+    False
+
+Now, let's iterate over the bug tasks, some complete and others
+incomplete, and show the status of each of the tasts:
+
+    >>> for task in b8.bugtasks:
+    ...     print task.bugtargetdisplayname, task.is_complete
+    Mozilla Firefox False
+    mozilla-firefox (Debian) True
+
+== Bug Tasks ==
+
+A bug can be targeted to more than one product, distribution, or source
+package. A BugTask is used to represent a target, which has its own
+status, importance, assignee, and so on.
+
+You can get the set of bugtasks for at bug with the 'bugtasks' attribute:
+
+    >>> bug_two = bugset.get(2)
+    >>> for task in bug_two.bugtasks: print task.target.displayname
+    Tomcat
+    Ubuntu
+    Hoary
+    mozilla-firefox in debian
+    Woody mozilla-firefox
 
 You can also get a list of the "LP pillars" affected by a particular bug.
 
-  >>> for pillar in b2.affected_pillars: print pillar.displayname
-  Ubuntu
-  Ubuntu
-  Debian
+    >>> for pillar in bug_two.affected_pillars:
+    ...     print pillar.displayname
+    Tomcat
+    Ubuntu
+    Debian
 
 Yes, this is TERRIBLE sample data, but it serves to illustrate the point.
+
+If you are interested in bugtask targeted to a specific target, you can
+use getBugTask() to get it.
+
+    >>> tomcat = getUtility(IProductSet).getByName('tomcat')
+    >>> tomcat_task = bug_two.getBugTask(tomcat)
+    >>> tomcat_task.target.name
+    u'tomcat'
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_task = bug_two.getBugTask(ubuntu)
+    >>> ubuntu_task.target.name
+    u'ubuntu'
+
+    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
+    >>> ubuntu_hoary_task = bug_two.getBugTask(ubuntu_hoary)
+    >>> ubuntu_hoary_task.target.name
+    u'hoary'
+
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> mozilla_in_debian = debian.getSourcePackage('mozilla-firefox')
+    >>> mozilla_in_debian_task = bug_two.getBugTask(mozilla_in_debian)
+    >>> mozilla_in_debian_task.target.displayname
+    u'mozilla-firefox in debian'
+
+    >>> debian_woody = debian.getSeries('woody')
+    >>> mozilla_in_woody = debian_woody.getSourcePackage('mozilla-firefox')
+    >>> mozilla_in_woody_task = bug_two.getBugTask(mozilla_in_woody)
+    >>> mozilla_in_woody_task.target.displayname
+    u'Woody mozilla-firefox'
+
+If the bug isn't targeted to the target, None is returned.
+
+    >>> bug_two.getBugTask(debian) is None
+    True
+
+== Bug Comments ==
+
+A bug comment is actually made up of a number of chunks. The
+IBug.getMessageChunks() method allows you to retreive these chunks in a
+single shot.
+
+    >>> from canonical.ftests.pgsql import CursorWrapper
+    >>> CursorWrapper.record_sql = True
+    >>> queries = len(CursorWrapper.last_executed_sql)
+
+    >>> chunks = bug_two.getMessageChunks()
+    >>> for chunk in sorted(chunks, key=lambda x:x.id):
+    ...    chunk.id, chunk.message.id, chunk.message.owner.id, chunk.content[:30]
+    (4, 1, 16, u'Problem exists between chair a')
+    (7, 5, 12, u'This would be a real killer fe')
+    (8, 6, 12, u'Oddly enough the bug system se')
+
+It's done in a way that we only issue two queries to fetch all this
+information, too:
+
+    >>> len(CursorWrapper.last_executed_sql) - queries
+    2
 

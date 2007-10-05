@@ -9,88 +9,44 @@ __metaclass__ = type
 
 import _pythonpath
 
-import sys
-from optparse import OptionParser
-
-from contrib.glock import GlobalLock, LockAlreadyAcquired
-
 from zope.component import getUtility
+#XXX: Only needed until the soyuz buildmaster class is fully deleted.
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.lp import initZopeless
 from canonical.config import config
-from canonical.buildmaster.master import BuilddMaster
+from canonical.buildmaster.master import (
+    BuilddMaster, builddmaster_lockfilename)
 
-from canonical.launchpad.interfaces import IDistroArchReleaseSet
-from canonical.launchpad.scripts import (
-        execute_zcml_for_scripts, logger_options, logger
-        )
+from canonical.launchpad.scripts.base import (LaunchpadCronScript,
+    LaunchpadScriptFailure)
+from canonical.launchpad.interfaces import IBuilderSet
+from canonical.lp import READ_COMMITTED_ISOLATION
 
-_default_lockfile = '/var/lock/buildd-master.lock'
 
-def doSlaveScan(logger):
-    """Proceed the Slave Scanning Process."""
+class SlaveScanner(LaunchpadCronScript):
 
-    # setup a transaction manager
-    tm = initZopeless(dbuser=config.builddmaster.dbuser)
+    def main(self):
+        if self.args:
+            raise LaunchpadScriptFailure(
+                "Unhandled arguments %s" % repr(self.args))
 
-    buildMaster = BuilddMaster(logger, tm)
+        builder_set = getUtility(IBuilderSet)
+        buildMaster = builder_set.pollBuilders(self.logger, self.txn)
+        # XXX: lifeless 2007-05-25:
+        # Only needed until the soyuz buildmaster class is fully deleted.
+        builder_set.dispatchBuilds(self.logger, removeSecurityProxy(buildMaster))
 
-    logger.info("Setting Builders.")
-
-    # For every distroarchrelease we can find;
-    # put it into the build master
-    for archrelease in getUtility(IDistroArchReleaseSet):
-        buildMaster.addDistroArchRelease(archrelease)
-        buildMaster.setupBuilders(archrelease)
-
-    logger.info("Scanning Builders.")
-    # Scan all the pending builds; update logtails; retrieve
-    # builds where they are compled
-    result_code = buildMaster.scanActiveBuilders()
-
-    # Now that the slaves are free, ask the buildmaster to calculate
-    # the set of build candiates
-    buildCandidatesSortedByProcessor = buildMaster.sortAndSplitByProcessor()
-
-    logger.info("Dispatching Jobs.")
-    # Now that we've gathered in all the builds;
-    # dispatch the pending ones
-    for processor, buildCandidates in \
-            buildCandidatesSortedByProcessor.iteritems():
-        buildMaster.dispatchByProcessor(processor, buildCandidates)
-
-    return result_code
+    @property
+    def lockfilename(self):
+        """Buildd master cronscript shares the same lockfile."""
+        return builddmaster_lockfilename
 
 
 if __name__ == '__main__':
-    parser = OptionParser()
-    logger_options(parser)
-    (options, arguments) = parser.parse_args()
-
-    if arguments:
-        parser.error("Unhandled arguments %s" % repr(arguments))
-    execute_zcml_for_scripts()
-
-    log = logger(options, 'slavescanner')
-
-    log.info("Slave Scan Process Initiated.")
-
-    locker = GlobalLock(_default_lockfile, logger=log)
+    script = SlaveScanner('slave-scanner', dbuser=config.builddmaster.dbuser)
+    script.lock_or_quit()
     try:
-        locker.acquire()
-    except LockAlreadyAcquired:
-        log.info("Cannot acquire lock.")
-        # XXX cprov 20060625: do not scream on lock conflicts during the
-        # edgy rebuild time.
-        sys.exit(0)
-
-    result_code = 0
-    try:
-        result_code = max(result_code, doSlaveScan(log))
+        script.run(isolation=READ_COMMITTED_ISOLATION)
     finally:
-        # release process lock file if the procedure finished properly
-        locker.release()
+        script.unlock()
 
-    log.info("Slave Scan Process Finished.")
-
-    sys.exit(result_code)

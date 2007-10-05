@@ -39,7 +39,7 @@ class IKarma(Interface):
         title=_("Date Created"), required=True, readonly=True,
         description=_("The date this karma was assigned to the user."))
 
-    product = Attribute(_("Product"))
+    product = Attribute(_("Project"))
 
     distribution = Attribute(_("Distribution"))
 
@@ -93,7 +93,7 @@ class IKarmaActionSet(IAddFormCustomization):
 
 class IKarmaCache(Interface):
     """A cached value of a person's karma, grouped by category and context.
-    
+
     Context, in this case, means the Product/Distribution on which the person
     performed an action that in turn caused the karma to be assigned.
 
@@ -117,9 +117,9 @@ class IKarmaCache(Interface):
         description=_("The karma points of all actions of this category "
                       "performed by this person."))
 
-    product = Attribute(_("Product"))
+    product = Attribute(_("Project"))
 
-    project = Attribute(_("Project"))
+    project = Attribute(_("Project Group"))
 
     distribution = Attribute(_("Distribution"))
 
@@ -142,7 +142,7 @@ class IKarmaCacheManager(Interface):
         """Update the karmavalue attribute of the KarmaCache with the given
         person_id, category_id, product_id, distribution_id and
         sourcepackagename_id.
-        
+
         Raise NotFoundError if there's no KarmaCache with those attributes.
 
         We expect the objects IDs (instead of the real objects) here because

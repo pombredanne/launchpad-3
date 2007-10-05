@@ -1,5 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+"""SQLBase implementation of IQuestionSubscription."""
+
 __metaclass__ = type
 
 __all__ = ['QuestionSubscription']
@@ -18,9 +20,10 @@ class QuestionSubscription(SQLBase):
 
     implements(IQuestionSubscription)
 
-    _table='TicketSubscription'
+    _table = 'QuestionSubscription'
 
-    question = ForeignKey(dbName='ticket', foreignKey='Question', notNull=True)
+    question = ForeignKey(
+        dbName='question', foreignKey='Question', notNull=True)
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 

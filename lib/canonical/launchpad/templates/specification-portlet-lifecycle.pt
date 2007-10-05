@@ -1,53 +1,61 @@
-<div class="portlet">
+<div class="portlet" id="portlet-lifecycle">
   <h2>Lifecycle</h2>
-  <table>
-    <tbody>
-      <tr>
-        <th>Registered:</th>
-        <td tal:content="context/datecreated/fmt:date">2006-07-21</td>
-      </tr>
-      <tr>
-        <th>by:</th>
-        <td>
-          <a
-            tal:content="context/owner/browsername"
-            tal:attributes="href context/owner/fmt:url"
-          >Foo Bar</a>
-        </td>
-      </tr>
-      <tal:started condition="context/starter">
+  <div class="portletBody">
+    <table>
+      <tbody>
         <tr>
-          <th>Started:</th>
-          <td tal:content="context/date_started/fmt:date">2006-12-14</td>
-        </tr>
-        <tr>
-          <th>by:</th>
+          <th>Registered by:</th>
           <td>
             <a
-              tal:content="context/starter/browsername"
-              tal:attributes="href context/starter/fmt:url"
+              tal:content="context/owner/browsername"
+              tal:attributes="href context/owner/fmt:url"
             >Foo Bar</a>
           </td>
         </tr>
-      </tal:started>
-      <tr tal:condition="nothing"><!-- 1-0 todo "Abandoned" line -->
-        <th>Abandoned:</th>
-      </tr>
-      <tal:completed condition="context/completer">
         <tr>
-          <th>Completed:</th>
-          <td tal:content="context/date_completed/fmt:date">2006-12-14</td>
-        </tr>
-        <tr>
-          <th>by:</th>
+          <th>When:</th>
           <td>
-            <a
-              tal:content="context/completer/browsername"
-              tal:attributes="href context/completer/fmt:url"
-            >Foo Bar</a>
+            <span
+              tal:attributes="title context/datecreated/fmt:datetime"
+              tal:content="context/datecreated/fmt:approximatedate">
+              2006-07-21
+            </span>
           </td>
         </tr>
-      </tal:completed>
-    </tbody>
-  </table>
+        <tal:started condition="context/starter">
+          <tr>
+            <th>Started:</th>
+            <td tal:content="context/date_started/fmt:date">2006-12-14</td>
+          </tr>
+          <tr>
+            <th>by:</th>
+            <td>
+              <a
+                tal:content="context/starter/browsername"
+                tal:attributes="href context/starter/fmt:url"
+              >Foo Bar</a>
+            </td>
+          </tr>
+        </tal:started>
+        <tr tal:condition="nothing"><!-- 1-0 todo "Abandoned" line -->
+          <th>Abandoned:</th>
+        </tr>
+        <tal:completed condition="context/completer">
+          <tr>
+            <th>Completed:</th>
+            <td tal:content="context/date_completed/fmt:date">2006-12-14</td>
+          </tr>
+          <tr>
+            <th>by:</th>
+            <td>
+              <a
+                tal:content="context/completer/browsername"
+                tal:attributes="href context/completer/fmt:url"
+              >Foo Bar</a>
+            </td>
+          </tr>
+        </tal:completed>
+      </tbody>
+    </table>
+  </div>
 </div>

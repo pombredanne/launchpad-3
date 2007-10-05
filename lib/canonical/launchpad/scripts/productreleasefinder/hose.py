@@ -9,8 +9,7 @@ __all__ = [
     'Hose',
     ]
 
-from hct.util import log
-
+from canonical.launchpad.scripts.productreleasefinder import log
 from canonical.launchpad.scripts.productreleasefinder.filter import Filter
 from canonical.launchpad.scripts.productreleasefinder.walker import (
     walk, combine_url)

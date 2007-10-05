@@ -1,4 +1,5 @@
-<div class="portlet" tal:condition="context/is_valid_person_or_team">
+<div class="portlet" id="portlet-details"
+     tal:condition="context/is_valid_person_or_team">
   <h2 tal:content="context/browsername" />
 
   <div class="portletBody portletContent">
@@ -18,7 +19,7 @@
               <b>Preferred address:</b>
 
               <span style="white-space: nowrap">&nbsp;&nbsp;&nbsp;
-                <img src="/@@/locked" alt=""> 
+                <img src="/@@/private" alt="" /> 
                 <span tal:replace="context/preferredemail/email">foo@bar.com</span>
               </span>
               <br />
@@ -29,7 +30,7 @@
           <tal:visible_emails condition="not: context/hide_email_addresses">
             <b>Preferred address:</b><br />
 
-            &nbsp;&nbsp;&nbsp;<img src="/@@/mail" alt="">
+            &nbsp;&nbsp;&nbsp;<img src="/@@/mail" alt="" />
               <span tal:replace="context/preferredemail/email">foo@bar.com</span>
             <br />
 
@@ -59,21 +60,12 @@
 
     <tal:is_team condition="context/teamowner">
 
-      <b>Membership policy:</b>
-      <span tal:replace="context/subscriptionpolicy/title">Open team</span>.
+      <b tal:content="context/subscriptionpolicy/title">Policy</b>:
       <span tal:replace="context/subscriptionpolicy/description">More
       detail goes here.</span>
       <br />
 
     </tal:is_team>
-
-    <tal:emblems repeat="team context/teams_participated_in">
-      <a tal:attributes="href team/fmt:url"
-        ><img tal:condition="team/emblem"
-              tal:attributes="src team/emblem/getURL;
-                              title string:Emblem of ${team/name}"
-          /></a>
-    </tal:emblems>
 
   </div>
 

@@ -1,22 +1,33 @@
+ <tal:root
+   xmlns:tal="http://xml.zope.org/namespaces/tal"
+   omit-tag="">
 <b>
-  <span tal:replace="context/distroarchrelease/distrorelease/name">hoary</span>
-  <span tal:replace="context/distroarchrelease/architecturetag">i386</span>
+  <span tal:replace="context/distroarchseries/distroseries/name">hoary</span>
+  <span tal:replace="context/distroarchseries/architecturetag">i386</span>
   <span tal:replace="context/pocket/title">pocket</span></b>:
 <span tal:replace="context/status/title">Published</span>
 version <span tal:replace="context/binarypackagerelease/version">1.1-2</span>
 in component <span tal:replace="context/component/name">main</span>
 and section <span tal:replace="context/section/name">x11</span>
 <tal:has_datepublished condition="context/datepublished">
-  on <span tal:replace="context/datepublished/fmt:datetime" />
+  <span
+    tal:attributes="title context/datepublished/fmt:datetime"
+    tal:content="context/datepublished/fmt:displaydate" />
 </tal:has_datepublished>
 <tal:removal_requested condition="context/hasRemovalRequested">
-  - removal requested on <span
-    tal:replace="context/datesuperseded/fmt:datetime" />.
+  - removal requested
+  <span
+    tal:attributes="title context/datesuperseded/fmt:datetime"
+    tal:content="context/datesuperseded/fmt:displaydate" />.
 </tal:removal_requested>
 <tal:not_removal_requested condition="not: context/hasRemovalRequested">
   <tal:has_supersededby condition="context/supersededby">
-    and superseded on <span tal:replace="context/datesuperseded/fmt:datetime"
+    and superseded
+    <span
+      tal:attributes="title context/datesuperseded/fmt:datetime"
+      tal:content="context/datesuperseded/fmt:displaydate"
       /> by <span tal:replace="context/supersededby/title" />
   </tal:has_supersededby>
 </tal:not_removal_requested>
 <hr />
+</tal:root>

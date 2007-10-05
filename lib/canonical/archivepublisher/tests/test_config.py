@@ -39,20 +39,20 @@ class TestConfig(LaunchpadZopelessTestCase):
         d = Config(self.ubuntutest)
         self.assertEqual(d.distroName, "ubuntutest")
 
-    def testDistroReleaseNames(self):
-        """Config should return two distrorelease names"""
+    def testDistroSeriesNames(self):
+        """Config should return two distroseries names"""
         from canonical.archivepublisher.config import Config
         d = Config(self.ubuntutest)
-        drns = d.distroReleaseNames()
-        self.assertEquals(len(drns), 2)
-        self.assertEquals(drns[0], "breezy-autotest")
-        self.assertEquals(drns[1], "hoary-test")
+        dsns = d.distroSeriesNames()
+        self.assertEquals(len(dsns), 2)
+        self.assertEquals(dsns[0], "breezy-autotest")
+        self.assertEquals(dsns[1], "hoary-test")
 
-    def testArchTagsForRelease(self):
+    def testArchTagsForSeries(self):
         """Config should have the arch tags for the drs"""
         from canonical.archivepublisher.config import Config
         d = Config(self.ubuntutest)
-        archs = d.archTagsForRelease("hoary-test")
+        archs = d.archTagsForSeries("hoary-test")
         self.assertEquals( len(archs), 2)
 
     def testDistroConfig(self):

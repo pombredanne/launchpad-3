@@ -10,7 +10,7 @@ from zope.app.form.interfaces import ConversionError
 from canonical.launchpad.interfaces import UnexpectedFormData
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 
-#XXX matsubara 2006-05-10: Should I move our NewLineToSpacesWidget to 
+# XXX matsubara 2006-05-10: Should I move our NewLineToSpacesWidget to
 # this module?
 
 
@@ -19,6 +19,15 @@ class StrippedTextWidget(TextWidget):
 
     def _toFieldValue(self, input):
         return TextWidget._toFieldValue(self, input.strip())
+
+
+class LowerCaseTextWidget(StrippedTextWidget):
+    """A widget that converts text to lower case."""
+
+    cssClass = 'lowerCaseText'
+
+    def _toFieldValue(self, input):
+        return StrippedTextWidget._toFieldValue(self, input.lower())
 
 
 class LocalDateTimeWidget(TextWidget):
@@ -69,7 +78,7 @@ class LocalDateTimeWidget(TextWidget):
             raise ConversionError('Invalid date value', v)
         tz = pytz.timezone(self.timeZoneName)
         return tz.localize(dt)
-        
+
     def _toFormValue(self, value):
         """Convert a date to its string representation.
 

@@ -16,9 +16,9 @@
   >>> firefox.owner.name
   u'name12'
 
-  >>> [series.name for series in firefox.serieslist]
+  >>> [series.name for series in firefox.serieses]
   [u'1.0', u'trunk']
-  >>> [series.owner.name for series in firefox.serieslist]
+  >>> [series.owner.name for series in firefox.serieses]
   [u'name12', u'name12']
   >>> [release.version for release in firefox.releases]
   [u'0.9', u'0.9.1', u'0.9.2', u'1.0.0']
@@ -27,7 +27,7 @@
 
   Add a TranslationImportQueueEntry owned by Sample Person.
 
-  >>> firefox_productseries = firefox.serieslist[0]
+  >>> firefox_productseries = firefox.serieses[0]
   >>> sample_person = firefox.owner
   >>> translationimportqueue = getUtility(ITranslationImportQueue)
   >>> entry = translationimportqueue.addOrUpdateEntry(
@@ -82,7 +82,7 @@
 
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(admin_browser.contents)
-  >>> soup.fetchText('Registered:')[0].findNext('a').string
+  >>> soup.fetchText('Registered by:')[0].findNext('a').string
   u'No Privileges Person'
 
   >>> login('no-priv@canonical.com')
@@ -93,19 +93,19 @@
 
   The dependencies are also correctly re-assigned.
 
-  >>> [series.name for series in firefox.serieslist]
+  >>> [series.name for series in firefox.serieses]
   [u'1.0', u'trunk']
-  >>> [series.owner.name for series in firefox.serieslist]
+  >>> [series.owner.name for series in firefox.serieses]
   [u'no-priv', u'no-priv']
   >>> [release.version for release in firefox.releases]
   [u'0.9', u'0.9.1', u'0.9.2', u'1.0.0']
   >>> [release.owner.name for release in firefox.releases]
   [u'name16', u'name16', u'name16', u'no-priv']
 
-  >>> firefox_productseries = firefox.serieslist[0]
+  >>> firefox_productseries = firefox.serieses[0]
   >>> translationimportqueue = getUtility(ITranslationImportQueue)
-  >>> entry = translationimportqueue.getEntryByProductSeries(
-  ...     firefox_productseries)
+  >>> entry = translationimportqueue.getAllEntries(
+  ...     target=firefox_productseries)
   >>> entry[0].importer.name
   u'no-priv'
 
@@ -124,5 +124,5 @@
   >>> browser.getControl('Change Registrant').click()
 
   >>> soup = BeautifulSoup(browser.contents)
-  >>> soup.fetchText('Registered:')[0].findNext('a').string
+  >>> soup.fetchText('Registered by:')[0].findNext('a').string
   u'Sample Person'

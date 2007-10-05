@@ -1,4 +1,4 @@
-  If we try to add a packaging record entry to a distrorelease where
+  If we try to add a packaging record entry to a distroseries where
   that productseries is already packaged we should get a nice error message.
 
   >>> print http(r"""
@@ -7,11 +7,11 @@
   ... Content-Type: multipart/form-data; boundary=---------------------------1000417103532496791590743664
   ... 
   ... -----------------------------1000417103532496791590743664
-  ... Content-Disposition: form-data; name="field.distrorelease"
+  ... Content-Disposition: form-data; name="field.distroseries"
   ... 
   ... ubuntu/hoary
   ... -----------------------------1000417103532496791590743664
-  ... Content-Disposition: form-data; name="field.distrorelease-empty-marker"
+  ... Content-Disposition: form-data; name="field.distroseries-empty-marker"
   ... 
   ... 1
   ... -----------------------------1000417103532496791590743664
@@ -46,11 +46,11 @@
   ... Content-Type: multipart/form-data; boundary=---------------------------2047034390275580538431124302
   ... 
   ... -----------------------------2047034390275580538431124302
-  ... Content-Disposition: form-data; name="field.distrorelease"
+  ... Content-Disposition: form-data; name="field.distroseries"
   ... 
   ... ubuntu/grumpy
   ... -----------------------------2047034390275580538431124302
-  ... Content-Disposition: form-data; name="field.distrorelease-empty-marker"
+  ... Content-Disposition: form-data; name="field.distroseries-empty-marker"
   ... 
   ... 1
   ... -----------------------------2047034390275580538431124302

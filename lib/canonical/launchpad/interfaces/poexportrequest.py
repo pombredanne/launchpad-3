@@ -1,33 +1,54 @@
-# Copyright 2005 Canonical Ltd. All rights reserved.
+# Copyright 2007 Canonical Ltd. All rights reserved.
 
 __metaclass__ = type
 
-__all__ = ('IPOExportRequestSet', 'IPOExportRequest')
+__all__ = [
+    'IPOExportRequestSet',
+    'IPOExportRequest'
+    ]
 
-from zope.interface import Interface, Attribute
-from canonical.lp.dbschema import RosettaFileFormat
+from zope.interface import Interface
+from zope.schema import Int, Object
+
+from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.interfaces.pofile import IPOFile
+from canonical.launchpad.interfaces.potemplate import IPOTemplate
+from canonical.launchpad.interfaces.translationfileformat import (
+    TranslationFileFormat)
+
 
 class IPOExportRequestSet(Interface):
-    def addRequest(person, potemplate=None, pofiles=None,
-                   format=RosettaFileFormat.PO):
+    entry_count = Int(
+        title=u'Number of entries waiting in the queue.',
+        required=True, readonly=True)
+
+    def addRequest(person, potemplates=None, pofiles=None,
+                   format=TranslationFileFormat.PO):
         """Add a request to export a set of files.
 
-        :potemplate: The PO template to export, or None.
-        :pofiles: A list of PO files to export.
+        :param potemplates: PO template or list of PO templates to export, or
+            `None`.
+        :param pofiles: A list of PO files to export.
         """
 
     def popRequest():
         """Take the next request out of the queue.
 
         Returns a 3-tuple containing the person who made the request, the PO
-        template the request was for, and a list of POTemplate and POFile
+        template the request was for, and a list of `POTemplate` and `POFile`
         objects to export.
         """
 
 class IPOExportRequest(Interface):
-    person = Attribute("The person who made the request.")
-    potemplate = Attribute(
-        "The PO template to which the requested files belong.")
-    pofile = Attribute(
-        "The PO file requested, if any.")
+    person = Object(
+        title=u'The person who made the request.',
+        required=True, readonly=True, schema=IPerson)
+
+    potemplate = Object(
+        title=u'The translation template to which the requested file belong.',
+        required=True, readonly=True, schema=IPOTemplate)
+
+    pofile = Object(
+        title=u'The translation file requested, if any.',
+        required=True, readonly=True, schema=IPOFile)
 

@@ -1,7 +1,6 @@
 Page to edit a product - does the page load as the product owner?
 
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox')
   >>> browser.getLink('Change details').click()
   >>> print browser.url
@@ -14,7 +13,7 @@ Page to edit a product - does the page load as the product owner?
 We try to change the project related to that product. First with a invalid
 project.
 
-  >>> browser.getControl('Project', index=0).value = 'asdasfasd'
+  >>> browser.getControl('Part of', index=0).value = 'asdasfasd'
   >>> browser.getControl(name='field.actions.change').click()
   >>> for message in find_tags_by_class(browser.contents, 'error'):
   ...     print message.renderContents()
@@ -27,7 +26,7 @@ project.
 
 Now we try to edit with a project that exists.
 
-  >>> browser.getControl('Project', index=0).value = 'gnome'
+  >>> browser.getControl('Part of', index=0).value = 'gnome'
   >>> browser.getControl(name='field.actions.change').click()
   >>> print browser.url
   http://launchpad.dev/firefox
@@ -39,28 +38,6 @@ Now we test if we edited it successfully.
   True
 
 
-We can also change the product's icon/emblem.
-
-  >>> browser.getLink('Change details').click()
-  >>> browser.url
-  'http://launchpad.dev/firefox/+edit'
-
-  >>> from canonical.launchpad.ftests import set_gotchi_and_emblem
-  >>> set_gotchi_and_emblem(browser)
-
-  >>> browser.getControl(name='field.actions.change').click()
-  >>> browser.url
-  'http://launchpad.dev/firefox'
-
-And if we go back to that page we'll see the new images.
-
-  >>> browser.getLink('Change details').click()
-  >>> find_tag_by_id(browser.contents, 'field.emblem_current_img').get('src')
-  u'.../emblem.png'
-  >>> find_tag_by_id(browser.contents, 'field.gotchi_current_img').get('src')
-  u'.../icon.png'
-
-
 Setting Development Focus
 =========================
 
@@ -70,8 +47,7 @@ The Firefox product's trunk series is set as the development focus:
   >>> print browser.contents
   <!...
   ...
-  ...trunk...
-  ...development focus
+  ...trunk...development fo...
   ...
   ...1.0...
   ...
@@ -87,8 +63,7 @@ We can change this to the 1.0 series through the edit form:
   >>> print browser.contents
   <!...
   ...
-  ...1.0...
-  ...development focus
+  ...1.0...development fo...
   ...
   ...trunk...
   ...

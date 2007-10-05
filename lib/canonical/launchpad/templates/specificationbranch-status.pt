@@ -7,9 +7,6 @@
 >
   <body>
 
-  <h3 metal:fill-slot="pageheading"
-      tal:content="context/specification/title">Spec Title</h3>
-
   <div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_form/form">
@@ -24,10 +21,5 @@
 
   </div>
 
-  <div metal:fill-slot="help">
-    <p>This form can be used to update the summary for the
-    specification branch relationship, or to delete the
-    relationship.</p>
-  </div>
 </body>
 </html>

@@ -11,6 +11,7 @@ from zope.schema import ASCII, Bool
 from canonical.launchpad.interfaces import IMailBox
 from canonical.launchpad.mail.stub import StubMailer, TestMailer
 from canonical.launchpad.mail.mailbox import TestMailBox, POP3MailBox
+from canonical.launchpad.mail.mbox import MboxMailer
 
 
 
@@ -28,13 +29,13 @@ class IPOP3MailBoxDirective(Interface):
             description=u"Host name of the POP3 server.",
             required=True,
             )
-    
+
     user = ASCII(
             title=u"User",
             description=u"User name to connect to the POP3 server with.",
             required=True,
             )
-    
+
     password = ASCII(
             title=u"Password",
             description=u"Password to connect to the POP3 server with.",
@@ -105,3 +106,37 @@ def testMailerHandler(_context, name):
             callable = handler,
             args = ('provideUtility', IMailer, TestMailer(), name,)
             )
+
+
+class IMboxMailerDirective(IMailerDirective):
+    filename = ASCII(
+        title=u'File name',
+        description=u'Unix mbox file to store outgoing emails in',
+        required=True,
+        )
+    overwrite = Bool(
+        title=u'Overwrite',
+        description=u'Whether to overwrite the existing mbox file or not',
+        required=False,
+        default=False,
+        )
+    mailer = ASCII(
+        title=u"Chained mailer to which messages are forwarded",
+        description=u"""\
+            Optional mailer to forward messages to, such as those configured
+            with smtpMailer, sendmailMailer, or testMailer directives.  When
+            not given, the message is not forwarded but only stored in the
+            mbox file.""",
+        required=False,
+        default=None,
+        )
+
+
+def mboxMailerHandler(_context, name, filename, overwrite, mailer=None):
+    _context.action(
+        discriminator = ('utility', IMailer, name),
+        callable = handler,
+        args = ('provideUtility', IMailer,
+                MboxMailer(filename, overwrite, mailer),
+                name,)
+        )

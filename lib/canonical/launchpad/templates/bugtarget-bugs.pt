@@ -1,9 +1,25 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
-  xml:lang="en" lang="en"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
   i18n:domain="malone"
 >
+  <metal:block fill-slot="head_epilogue">
+    <script type="text/javascript" src="/+icing/FormatAndColor.js"></script>
+    <script type="text/javascript" src="/+icing/PlotKit_Packed.js"></script>
+  </metal:block>
+  <metal:portlets fill-slot="portlets">
+    <tal:block content="structure context/@@+portlet-bugfilters" />
+    <tal:block content="structure context/@@+portlet-bugtags" />
+    <tal:releasecriticalbugs
+      tal:condition="view/shouldShowReleaseCriticalPortlet"
+      tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
+  </metal:portlets>
   <body>
     <div metal:fill-slot="main" class="tab-bugs"
          tal:define="search_url string:+bugs;
@@ -14,21 +30,20 @@
       />
 
       <div class="columns">
-        <div id="bugs-chart" class="two column left" height="200" width="200">
-          <script type="text/javascript" src="/@@/MochiKit/Color.js"></script>
-          <script type="text/javascript" src="/@@/MochiKit/Format.js"></script>
-          <script type="text/javascript" src="/@@/PlotKit/PlotKit_Packed.js"></script>
           <script type="text/javascript"
                tal:content="structure view/getChartJavascript">
           </script>
-          <noscript>
-          <ul>
-            <li tal:repeat="bug_count view/bug_count_items"
-                tal:content="string:${bug_count/count} ${bug_count/label} bugs">
-              12 Unconfirmed bugs
-            </li>
-          </ul>
-          </noscript>
+        <div class="two column left">
+          <div id="bugs-chart" height="200" width="200">
+            <noscript>
+            <ul>
+              <li tal:repeat="bug_count view/bug_count_items"
+                  tal:content="string:${bug_count/count} ${bug_count/label} bugs">
+                12 Unconfirmed bugs
+              </li>
+            </ul>
+            </noscript>
+          </div>
         </div>
         <div class="two column right">
           <h2>Key contacts</h2>
@@ -45,7 +60,7 @@
                   >John Smith</a>
                 </td>
               </tr>
-              <tr tal:define="bugcontact context/bugcontact|context/distribution/bugcontact">
+              <tr tal:define="bugcontact context/bugcontact">
                 <th>Bug contact:</th>
                 <td>
                   <tal:none condition="not:bugcontact"
@@ -57,7 +72,7 @@
                   >Bob Johnson</a>
                 </td>
               </tr>
-              <tr tal:define="securitycontact context/security_contact|context/distribution/security_contact">
+              <tr tal:define="securitycontact context/security_contact">
                 <th>Security contact:</th>
                 <td>
                   <tal:none condition="not:securitycontact"
@@ -75,14 +90,29 @@
             <li tal:define="fixed_elsewhere view/getBugsFixedElsewhereInfo">
               <a tal:attributes="href fixed_elsewhere/url">
                 <strong tal:content="fixed_elsewhere/count">42</strong>
-                bugs fixed elsewhere
+                <tal:label
+                  tal:replace="fixed_elsewhere/label">bugs</tal:label>
+                fixed elsewhere
               </a>
             </li>
             <li tal:define="cve_bugs view/getOpenCVEBugsInfo">
               <a tal:attributes="href cve_bugs/url">
                 <strong tal:content="cve_bugs/count"></strong>
-                open CVE bugs
+                open CVE
+                <tal:label tal:replace="cve_bugs/label">bugs</tal:label>
               </a>
+            </li>
+            <li tal:define="pending_bugwatches view/getPendingBugWatches"
+                tal:condition="view/isUpstreamProduct">
+              <a tal:attributes="href pending_bugwatches/url">
+                <strong tal:content="pending_bugwatches/count"></strong>
+                <tal:label
+                  tal:replace="pending_bugwatches/label">bugs</tal:label>
+                need forwarding upstream
+              </a>
+            </li>
+            <li style="font-weight: bold;">
+              <a href="+bugs">List all open bugs</a>
             </li>
           </ul>
           <ul class="rollover buttons">
@@ -108,4 +138,3 @@
     </div><!-- main -->
   </body>
 </html>
-<!-- 1-0 in-progress Needs pie chart (bug 74718), CVE count (bug 79034), fixed-elsewhere count (bug 79035). -->

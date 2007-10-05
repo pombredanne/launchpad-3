@@ -1,57 +1,38 @@
-<tal:bugtask define="can_edit_bugtask context/required:launchpad.Edit;
-                     indent_task view/shouldIndentTask;
-                     tasklink view/taskLink;
-                     form_row_id string:task${context/id}">
+<tal:bugtask 
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  define="expandable view/canSeeTaskDetails;
+          indent_task view/shouldIndentTask;
+          tasklink view/taskLink;
+          form_row_id string:task${context/id}">
   <tr tal:attributes="class view/getTaskRowCSSClass">
+    <td width="14" tal:condition="nothing"><a tal:condition="expandable"
+           tal:attributes="
+              href tasklink;
+              onclick string:return toggleFormVisibility('${form_row_id}')"
+          ><img tal:attributes="id string:${form_row_id}-edit"
+               width="14" height="14"
+               src="/@@/treeCollapsed" alt="edit" /></a></td>
     <td style="padding: 0.3em 0em 0.3em 1.5em"
         tal:condition="indent_task"
-        tal:define="release_targetname view/getReleaseTargetName">
+        tal:define="series_targetname view/getSeriesTargetName">
       <img src="/@@/milestone" alt="Targeted to" />
-      <span tal:condition="context/conjoined_master"
-            tal:content="release_targetname">
-        Edgy
-      </span>
       <tal:not-conjoined-task condition="not: context/conjoined_master">
-      <a
-        tal:condition="can_edit_bugtask"
-        tal:attributes="
-            href tasklink;
-            onclick string:return toggleFormVisibility(document.getElementById('${form_row_id}'))"
-        tal:content="release_targetname"
-      />
-      <a
-        tal:condition="not:can_edit_bugtask"
-        tal:attributes="href tasklink"
-        tal:content="release_targetname"
-      />
+        <a
+          tal:attributes="href context/target/fmt:url"
+          tal:content="series_targetname"
+        />
       </tal:not-conjoined-task>
     </td>
-    <td style="margin: 0; padding: 0" tal:condition="not:indent_task">
-      <span style="display: block; padding: 0.25em">
-        <img src="/@@/pkg-source" alt="package"
-             tal:condition="view/shouldShowPackageIcon" />
-        <img src="/@@/product" alt="project"
-             tal:condition="view/shouldShowProductIcon" />
-        <tal:not-conjoined-task tal:condition="not: context/conjoined_master">
-          <a
-            tal:condition="can_edit_bugtask"
-            tal:attributes="
-                href tasklink;
-                onclick string:return toggleFormVisibility(document.getElementById('${form_row_id}'))"
-            tal:content="context/targetname"
-          />
-          <a
-            tal:condition="not:can_edit_bugtask"
-            tal:attributes="href tasklink"
-            tal:content="context/targetname"
-          />
-        </tal:not-conjoined-task>
-        <tal:conjoined-task
-            tal:condition="context/conjoined_master"
-            tal:replace="context/targetname">
-          evolution (Ubuntu)
-        </tal:conjoined-task>
-      </span>
+    <td tal:condition="not:indent_task">
+      <img
+        tal:condition="view/bugtask_icon"
+        alt=""
+        tal:attributes="src view/bugtask_icon"
+      />
+      <a
+        tal:attributes="href context/target/fmt:url"
+        tal:content="context/bugtargetdisplayname"
+      />
     </td>
 
     <tal:conjoined-task condition="context/conjoined_master">
@@ -66,14 +47,41 @@
     </tal:conjoined-task>
 
     <tal:not-conjoined-task condition="not:context/conjoined_master">
-    <td tal:attributes="class string:status${context/status/name}"
-        tal:content="context/status/title">
-       $BugTask.status
+    <td tal:attributes="class string:status${context/status/name}">
+      <a
+        tal:condition="expandable"
+        tal:attributes="
+          href tasklink;
+          onclick string:return toggleFormVisibility('${form_row_id}')
+        "
+      >
+        <img
+          src="/@@/bug-status-expand"
+          alt=""
+        />
+        <tal:status replace="context/status/title" />
+      </a>
+      <tal:status condition="not:expandable" replace="context/status/title" />
     </td>
 
-    <td tal:attributes="class string:importance${context/importance/name}"
-        tal:content="context/importance/title">
-       Critical
+    <td tal:attributes="class string:importance${context/importance/name}">
+      <a
+        tal:condition="expandable"
+        tal:attributes="
+          href tasklink;
+          onclick string:return toggleFormVisibility('${form_row_id}')
+        "
+      >
+        <img
+          src="/@@/bug-status-expand"
+          alt=""
+        />
+        <tal:importance replace="context/importance/title" />
+      </a>
+      <tal:importance
+        condition="not:expandable"
+        replace="context/importance/title"
+      />
     </td>
 
     <td style="margin: 0; padding: 0; vertical-align: middle">
@@ -95,9 +103,8 @@
             style="display: block; padding: 0.25em; text-decoration: none;"
             tal:attributes="href string:${context/assignee/fmt:url}/+assignedbugs"
           >
-            <img tal:attributes="src context/assignee/default_emblem_resource"
-                 style="padding-bottom: 2px"
-                 alt="" />
+            <img tal:replace="structure context/assignee/image:icon"
+                 src="/@@/person" />
             <span tal:replace="context/assignee/browsername">
               assignee.browsername
             </span>
@@ -109,10 +116,22 @@
       </tal:has_no_watch>
     </td>
     </tal:not-conjoined-task>
+    <td class="icon right">
+      <a
+        tal:condition="expandable"
+        tal:attributes="
+          href tasklink;
+          onclick string:return toggleFormVisibility('${form_row_id}')
+        "
+      ><img
+        src="/@@/bug-status-expand"
+        alt="[edit]"
+      /></a>
+    </td>
   </tr>
   <tr
     tal:attributes="id form_row_id"
-    tal:condition="can_edit_bugtask"
+    tal:condition="expandable"
     style="display: none"
   >
    <td colspan="5" tal:content="structure context/@@+edit-form" />

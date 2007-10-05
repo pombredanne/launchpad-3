@@ -18,7 +18,6 @@ import warnings
 from StringIO import StringIO
 from difflib import unified_diff
 import sha
-from twisted.internet.error import TimeoutError
 
 from zope.component import getUtility
 
@@ -28,7 +27,6 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     ILaunchBag, IRequestPreferredLanguages,
     IRequestLocalLanguages, ITeam)
-from canonical.launchpad.components.poparser import POParser
 
 
 def text_replaced(text, replacements, _cache={}):
@@ -211,10 +209,10 @@ def contactEmailAddresses(person):
     """
     emails = set()
     if person.preferredemail is not None:
-        # XXX: This str() call can be removed as soon as Andrew lands his
+        # XXX: Guilherme Salgado 2006-04-20:
+        # This str() call can be removed as soon as Andrew lands his
         # unicode-simple-sendmail branch, because that will make
         # simple_sendmail handle unicode email addresses.
-        # Guilherme Salgado, 2006-04-20
         emails.add(str(person.preferredemail.email))
         return emails
 
@@ -290,7 +288,8 @@ def validate_translation(original, translation, flags):
 
 class ShortListTimeoutError(Exception):
     """This error is raised when the shortlist hardlimit is reached"""
-    
+
+
 def shortlist(sequence, longest_expected=15, hardlimit=None):
     """Return a listified version of sequence.
 
@@ -329,8 +328,13 @@ def shortlist(sequence, longest_expected=15, hardlimit=None):
     return L
 
 
-def request_languages(request):
-    '''Turn a request into a list of languages to show.'''
+def preferred_or_request_languages(request):
+    '''Turn a request into a list of languages to show.
+
+    Return Person.languages when the user has preferred languages.
+    Otherwise, return the languages from the request either from the
+    headers or from the IP address.
+    '''
     user = getUtility(ILaunchBag).user
     if user is not None and user.languages:
         return user.languages
@@ -353,25 +357,16 @@ def is_english_variant(language):
     >>> is_english_variant(Language('fr'))
     False
     >>> is_english_variant(Language('en'))
-    True
+    False
     >>> is_english_variant(Language('en_CA'))
     True
     >>> is_english_variant(Language('enm'))
     False
     """
-    return language.code[0:3] in ['en', 'en_']
-
-
-def check_po_syntax(s):
-    parser = POParser()
-
-    try:
-        parser.write(s)
-        parser.finish()
-    except:
-        return False
-
-    return True
+    # XXX sinzui 2007-07-12 bug=125545:
+    # We would not need to use this function so often if variant languages
+    # knew their parent language.
+    return language.code[0:3] in ['en_']
 
 
 def is_tar_filename(filename):
@@ -575,3 +570,17 @@ def is_ascii_only(string):
         return False
     else:
         return True
+
+
+def truncate_text(text, max_length):
+    """Return a version of string no longer than max_length characters.
+
+    Tries not to cut off the text mid-word.
+    """
+    words = re.compile(r'\s*\S+').findall(text, 0, max_length + 1)
+    truncated = words[0]
+    for word in words[1:]:
+        if len(truncated) + len(word) > max_length:
+            break
+        truncated += word
+    return truncated[:max_length]

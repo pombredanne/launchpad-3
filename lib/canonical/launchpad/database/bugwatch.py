@@ -24,6 +24,7 @@ from canonical.launchpad.event import SQLObjectModifiedEvent
 
 from canonical.launchpad.webapp import urlappend, urlsplit
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.webapp.uri import find_uris_in_text
 
 from canonical.launchpad.interfaces import (
     IBugWatch, IBugWatchSet, IBugTrackerSet, ILaunchpadCelebrities,
@@ -63,6 +64,7 @@ class BugWatch(SQLBase):
             BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
             BugTrackerType.ROUNDUP:     'issue%s',
             BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
+            BugTrackerType.MANTIS:      'view.php?id=%s',
         }
         bt = self.bugtracker.bugtrackertype
         if not url_formats.has_key(bt):
@@ -86,7 +88,9 @@ class BugWatch(SQLBase):
         for linked_bugtask in self.bugtasks:
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
-            linked_bugtask.transitionToStatus(malone_status)
+            linked_bugtask.transitionToStatus(
+                malone_status,
+                getUtility(ILaunchpadCelebrities).bug_watch_updater)
             # We don't yet support updating the following values.
             linked_bugtask.importance = BugTaskImportance.UNKNOWN
             linked_bugtask.transitionToAssignee(None)
@@ -106,7 +110,6 @@ class BugWatchSet(BugSetBase):
 
     implements(IBugWatchSet)
     table = BugWatch
-    url_pattern = re.compile(r'(\bhttps?://.+/\S*)\.?\b')
 
     def __init__(self, bug=None):
         BugSetBase.__init__(self, bug)
@@ -117,6 +120,7 @@ class BugWatchSet(BugSetBase):
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
             BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
             BugTrackerType.TRAC: self.parseTracURL,
+            BugTrackerType.MANTIS: self.parseMantisURL,
         }
 
     def get(self, watch_id):
@@ -133,13 +137,13 @@ class BugWatchSet(BugSetBase):
         """See IBugTrackerSet.fromText."""
         newwatches = []
         # Let's find all the URLs and see if they are bug references.
-        matches = self.url_pattern.findall(text)
+        matches = list(find_uris_in_text(text))
         if len(matches) == 0:
             return []
 
         for url in matches:
             try:
-                bugtracker, remotebug = self.extractBugTrackerAndBug(url)
+                bugtracker, remotebug = self.extractBugTrackerAndBug(str(url))
             except NoBugTrackerFound, error:
                 bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
                     error.base_url, owner, error.bugtracker_type)
@@ -177,7 +181,7 @@ class BugWatchSet(BugSetBase):
     def createBugWatch(self, bug, owner, bugtracker, remotebug):
         """See canonical.launchpad.interfaces.IBugWatchSet."""
         return BugWatch(
-            bug=bug, owner=owner, datecreated=UTC_NOW, lastchanged=UTC_NOW, 
+            bug=bug, owner=owner, datecreated=UTC_NOW, lastchanged=UTC_NOW,
             bugtracker=bugtracker, remotebug=remotebug)
 
     def parseBugzillaURL(self, scheme, host, path, query):
@@ -191,6 +195,19 @@ class BugWatchSet(BugSetBase):
         elif query.get('issue'):
             # This is a Issuezilla URL.
             remote_bug = query['issue']
+        else:
+            return None
+        base_path = path[:-len(bug_page)]
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
+    def parseMantisURL(self, scheme, host, path, query):
+        """Extract the Mantis base URL and bug ID."""
+        bug_page = 'view.php'
+        if not path.endswith(bug_page):
+            return None
+        if query.get('id'):
+            remote_bug = query['id']
         else:
             return None
         base_path = path[:-len(bug_page)]
@@ -251,7 +268,8 @@ class BugWatchSet(BugSetBase):
         return the global SF instance. This makes it possible for people
         to use alternative host names, like sf.net.
         """
-        if not path.startswith('/tracker/'):
+        if (not path.startswith('/support/tracker.php') and
+            not path.startswith('/tracker/index.php')):
             return None
         if not query.get('aid'):
             return None

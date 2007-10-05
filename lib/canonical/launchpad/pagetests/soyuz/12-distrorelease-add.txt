@@ -1,17 +1,17 @@
-We will test that we can add a distro release.
+We will test that we can add a distro series.
 
-First, we test that the link to add distro releases is not there
+First, we test that the link to add distro series is not there
 when we are not logged in.
 
   >>> anon_browser.open("http://localhost/ubuntu")
-  >>> anon_browser.getLink("Add release")
+  >>> anon_browser.getLink("Add series")
   Traceback (most recent call last):
   ...
   LinkNotFoundError 
   
 and that going directly to the page redirects to login
 
-  >>> anon_browser.open("http://localhost/ubuntu/+addrelease")
+  >>> anon_browser.open("http://localhost/ubuntu/+addseries")
   Traceback (most recent call last):
   ...
   Unauthorized: ...
@@ -19,21 +19,20 @@ and that going directly to the page redirects to login
 Now we will try as Mark Shuttleworth on Debian, where he is the owner.
 This time we expect to be able to see the link and the page.
 
-  >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
-
+  >>> browser = setupBrowser(auth="Basic mark@hbd.com:test")
   >>> browser.open("http://localhost/debian")
-  >>> browser.getLink("Add release").click()
+  >>> browser.getLink("Add series").click()
   >>> browser.url
-  'http://localhost/debian/+addrelease'  
+  'http://localhost/debian/+addseries'  
 
 OK, let's test as Foo Bar, who is an administrator.
 
   >>> admin_browser.open("http://localhost/ubuntu")
-  >>> admin_browser.getLink("Add release").click()
+  >>> admin_browser.getLink("Add series").click()
   >>> admin_browser.url
-  'http://localhost/ubuntu/+addrelease'  
+  'http://localhost/ubuntu/+addseries'  
 
-Now, lets fill out this form and add a release.
+Now, lets fill out this form and add a series.
 
   >>> admin_browser.getControl(name="field.name").value = 'fidgety'
   >>> admin_browser.getControl("Display name").value = 'Fidgety'
@@ -41,7 +40,7 @@ Now, lets fill out this form and add a release.
   >>> admin_browser.getControl("Summary").value = 'The Fidgety Fairy release'
   >>> admin_browser.getControl("Description").value = 'Fidgety Fairy desc'
   >>> admin_browser.getControl("Version").value = '5.12'
-  >>> admin_browser.getControl("Parent Release").value = ['ubuntu/hoary']
+  >>> admin_browser.getControl("Parent series").value = ['ubuntu/hoary']
   >>> admin_browser.getControl("Add").click()
   >>> admin_browser.url
   'http://localhost/ubuntu/fidgety'

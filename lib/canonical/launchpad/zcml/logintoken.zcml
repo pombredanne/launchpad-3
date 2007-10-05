@@ -8,8 +8,8 @@
 
     <!-- LoginToken -->
     <content class="canonical.launchpad.database.LoginToken">
-        <require 
-            permission="zope.Public" 
+        <require
+            permission="zope.Public"
             interface="canonical.launchpad.interfaces.ILoginToken" />
     </content>
 
@@ -26,7 +26,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
         name="+index"
-        permission="zope.Public" 
+        permission="zope.Public"
         class="canonical.launchpad.browser.LoginTokenView"
         template="../templates/logintoken-index.pt"
         />
@@ -51,7 +51,7 @@
         for="canonical.launchpad.interfaces.ILoginToken"
         name="+validategpg"
         permission="zope.Public"
-        class="canonical.launchpad.browser.ValidateEmailView"
+        class="canonical.launchpad.browser.ValidateGPGKeyView"
         template="../templates/logintoken-validategpg.pt"
         />
 
@@ -59,25 +59,17 @@
         for="canonical.launchpad.interfaces.ILoginToken"
         name="+validatesignonlygpg"
         permission="zope.Public"
-        class="canonical.launchpad.browser.ValidateEmailView"
+        class="canonical.launchpad.browser.ValidateGPGKeyView"
         template="../templates/logintoken-validatesignonlygpg.pt"
         />
 
-    <browser:generalform
+    <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
-        label="Reset password"
         name="+resetpassword"
         permission="zope.Public"
-        schema="canonical.launchpad.interfaces.ILoginToken"
-        fields="email password"
-        keyword_arguments="email password"
         class="canonical.launchpad.browser.ResetPasswordView"
         template="../templates/logintoken-resetpassword.pt"
-        >
-        <browser:widget
-            field="password"
-            class="canonical.widgets.PasswordChangeWidget" />
-    </browser:generalform>
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -94,21 +86,13 @@
         class="canonical.launchpad.browser.ClaimProfileView"
         template="../templates/logintoken-claimprofile.pt" />
 
-    <browser:generalform
+    <browser:page
         name="+newaccount"
-        label="Complete your registration"
         for="canonical.launchpad.interfaces.ILoginToken"
-        schema="canonical.launchpad.interfaces.IPerson"
-        fields="displayname hide_email_addresses password"
-        keyword_arguments="displayname hide_email_addresses password"
         class="canonical.launchpad.browser.NewAccountView"
         permission="zope.Public"
         template="../templates/logintoken-newaccount.pt"
-        >
-        <browser:widget
-            field="password"
-            class="canonical.widgets.PasswordChangeWidget" />
-    </browser:generalform>
+        />
 
     <!-- LoginTokenSet -->
     <content class="canonical.launchpad.database.LoginTokenSet">

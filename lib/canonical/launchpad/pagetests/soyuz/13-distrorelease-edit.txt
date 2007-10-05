@@ -1,5 +1,5 @@
-DistroRelease information edit.
-This tests makes a modification in warty distrorelease and check 
+DistroSeries information edit.
+This tests makes a modification in warty distroseries and check 
 if the page is not broken.
 
 Navigate to the edit page as admin

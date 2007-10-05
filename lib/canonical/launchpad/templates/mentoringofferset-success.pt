@@ -1,0 +1,79 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:heading fill-slot="pageheading">
+  <h1>Successful mentorships</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
+
+<tal:def_offers define="
+                    batch view/batched_successes;
+                    offer_count context/recent_completed_mentorships/count">
+<tal:mentoring_available condition="offer_count">
+
+  <p>
+    This list describes bugs and features in
+    <span tal:replace="context/displayname">Mozilla</span>
+    which have been completed with the help of mentorship.
+  </p>
+
+  <h2>Mentorships</h2>
+
+  <tal:navigation replace="structure batch/@@+navigation-links-upper" />
+  <table class="listing" id="mentorships">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>For</th>
+        <th>By</th>
+        <th>What</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="offer batch/currentBatch">
+        <td>
+          <span tal:content="offer/date_created/fmt:date"
+                tal:attributes="title offer/date_created/fmt:time">
+            2007-15-13
+          </span>
+        </td>
+        <td>
+          <a tal:replace="structure offer/team/fmt:link">foobar</a>
+        </td>
+        <td>
+          <a tal:replace="structure offer/owner/fmt:link">foobar</a>
+        </td>
+        <td>
+          <div tal:replace="structure offer/target/@@+listing-column" />
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <tal:navigation replace="structure batch/@@+navigation-links-lower" />
+
+</tal:mentoring_available>
+
+<tal:no_mentoring condition="not: offer_count">
+  <p>
+    Nobody has yet completed any bug fixes or feature implementations
+    in <span tal:replace="context/displayname">Mozilla</span> with the help
+    of mentorship.
+  </p>
+</tal:no_mentoring>
+</tal:def_offers>
+
+</div>
+</body>
+</html>

@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-builds">
 
   <h2>Builds of <span tal:replace="context/title">apache2 2.0.54 (source) in
   Ubuntu</span></h2>
@@ -8,12 +8,15 @@
     <ul tal:condition="context/builds">
     <li tal:repeat="build context/builds">
       <a tal:attributes="href build/fmt:url">
-        <span tal:replace="build/distroarchrelease/distrorelease/name">
+        <span tal:replace="build/distroarchseries/distroseries/name">
           hoary
         </span>
-        <span tal:content="build/distroarchrelease/architecturetag">i386</span>
+        <span tal:content="build/distroarchseries/architecturetag">i386</span>
       </a>
       <span tal:replace="build/buildstate/title">Failure</span>
+      <span tal:condition="build/package_upload">
+        (<span tal:replace="build/package_upload/status/name">NEW</span>)
+      </span>
     </li>
     </ul>
     <p tal:condition="not:context/builds">

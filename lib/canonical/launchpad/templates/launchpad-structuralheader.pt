@@ -1,11 +1,21 @@
-<div id="structuralobjectheading">
-  <div tal:content="structure context/fmt:heading_icon|nothing" />
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  id="structuralobjectheading">
+  <div tal:replace="structure context/fmt:heading_icon|nothing" />
   <tal:comment condition="nothing">
-    XXX: This is a hack because we don't have a heading_icon for pages like
-    /people, /distros, /products, etc.
+    <!-- XXX: Guilherme Salgado 2007-03-08:
+    This is a hack because we don't have a heading_icon for pages like
+    /people, /distros, /products, etc. -->
   </tal:comment>
-  <img tal:condition="not: context/fmt:heading_icon|nothing"
-       alt="" src="/@@/nyet-heading" />
-  <div class="intro" tal:content="view/getIntroHeading">Ubuntu 6.10</div>
-  <div class="main" tal:content="view/getMainHeading">Edgy Eft</div>
+  <img tal:replace="structure context/image:logo"
+       alt="" src="/@@/nyet-logo" />
+  <div class="intro" tal:define="intro view/getIntroHeading">
+    <span tal:condition="not: intro"
+          tal:replace="structure string:&nbsp;">&nbsp;
+    </span><tal:intro condition="intro" replace="intro">Ubuntu
+    specification:</tal:intro>
+  </div>
+  <div class="main" tal:content="view/getMainHeading">Use more foobar's</div>
 </div>

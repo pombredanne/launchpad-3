@@ -1,0 +1,56 @@
+== Display of filesize and mime type of attachments ==
+
+File size and mime type are displayed for each attachment
+
+    >>> from cStringIO import StringIO
+    >>> filecontent = '123456789' * 30
+    >>> foo_file = StringIO(filecontent)
+
+    >>> user_browser.open(
+    ...     "http://bugs.launchpad.dev/firefox/+bug/1/+addcomment")
+
+    >>> user_browser.getControl("Attachment").add_file(
+    ...     foo_file, "text/plain", "foo.txt")
+    >>> user_browser.getControl("Description").value = "description text"
+    >>> user_browser.getControl("Comment").value = "comment comment"
+    >>> user_browser.getControl("Save Changes").click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1'
+
+    >>> last_comment = find_tags_by_class(
+    ...     user_browser.contents, 'boardCommentBody')[-1]
+    >>> fileinfo = '(270 bytes, text/plain)'
+    >>> for attachment in last_comment('li', {'class': 'download'}):
+    ...     print extract_text(attachment)
+    description text
+    (270 bytes, text/plain)
+
+A filesize of 2700 byte is displayed in 'KiB'
+
+    >>> from canonical.config import config
+    >>> old_value = config.launchpad.max_bug_attachment_size
+    >>> config.launchpad.max_bug_attachment_size = 5000
+
+    >>> filecontent = '123456789' * 300
+    >>> foo_file = StringIO(filecontent)
+
+    >>> user_browser.open(
+    ...     "http://bugs.launchpad.dev/firefox/+bug/1/+addcomment")
+
+    >>> user_browser.getControl("Attachment").add_file(
+    ...     foo_file, "text/plain", "foo.txt")
+    >>> user_browser.getControl("Description").value = "description text"
+    >>> user_browser.getControl("Comment").value = "comment comment"
+    >>> user_browser.getControl("Save Changes").click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1'
+
+    >>> last_comment = find_tags_by_class(
+    ...     user_browser.contents, 'boardCommentBody')[-1]
+    >>> fileinfo = '(270 bytes, text/plain)'
+    >>> for attachment in last_comment('li', {'class': 'download'}):
+    ...     print extract_text(attachment)
+    description text
+    (2.6 KiB, text/plain)
+
+    >>> config.launchpad.max_bug_attachment_size = old_value

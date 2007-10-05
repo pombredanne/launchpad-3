@@ -30,7 +30,7 @@ When using the search_text criteria, the default is to sort the results
 by relevancy. One can use the sort parameter to change that. It takes
 one of the constant defined in the QuestionSort enumeration.
 
-    >>> from canonical.lp.dbschema import QuestionSort
+    >>> from canonical.launchpad.interfaces import QuestionSort
     >>> for question in foo_bar.searchQuestions(
     ...         search_text='firefox', sort=QuestionSort.OLDEST_FIRST):
     ...     print question.id, question.title, question.status.title
@@ -57,7 +57,7 @@ The last searches showed that by default, not all statuses are searched
 for by default (they excluded expired and invalid questions). The status
 parameter can be used to control the list of statuses to select:
 
-    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> from canonical.launchpad.interfaces import QuestionStatus
     >>> for question in foo_bar.searchQuestions(status=QuestionStatus.INVALID):
     ...     print question.title, question.status.title
     Firefox is slow and consumes too much RAM   Invalid
@@ -80,7 +80,7 @@ QuestionParticipation enumeration.
 To select only questions on which the person commented, the
 QuestionParticipation.COMMENTER is used:
 
-    >>> from canonical.lp.dbschema import QuestionParticipation
+    >>> from canonical.launchpad.interfaces import QuestionParticipation
     >>> for question in foo_bar.searchQuestions(
     ...         participation=QuestionParticipation.COMMENTER, status=None):
     ...     print question.title
@@ -140,10 +140,10 @@ will be selected:
 
 === language ===
 
-By default, questions in all languages are included in the results. It is
-possible to filter questions by the language they were writtenin . One or
-a list of ILanguage object should be passed in the language parameter to
-specify the language filter.
+By default, questions in all languages are included in the results.
+It is possible to filter questions by the language they were written
+in . One or a list of ILanguage object should be passed in the
+language parameter to specify the language filter.
 
     >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> spanish = getUtility(ILanguageSet)['es']
@@ -189,93 +189,6 @@ by each criteria:
     Installation of Java Runtime Environment for Mozilla    Answered
     Newly installed plug-in doesn't seem to be used         Answered
 
-== getSupportedLanguages() ==
-
-IPerson also provides a getSupportedLanguages method which can be used
-to retrieve the list of languages in which the person or team can
-answer questions.
-
-    # Helper to see easily the languages in a list.
-    >>> def language_codes(languages):
-    ...     return sorted(str(language.code) for language in languages)
-
-For a person, it is the same list than its list of known languages,
-with the addition that English is always assumed to be supported:
-
-    >>> sample_person = getUtility(IPersonSet).getByName('name16')
-    >>> language_codes(sample_person.languages)
-    []
-    >>> language_codes(sample_person.getSupportedLanguages())
-    ['en']
-
-    >>> carlos = getUtility(IPersonSet).getByName('carlos')
-    >>> language_codes(carlos.languages)
-    ['ca', 'es']
-    >>> language_codes(carlos.getSupportedLanguages())
-    ['ca', 'en', 'es']
-
-Also, note that all English variants will be excluded.
-
-    >>> daf = getUtility(IPersonSet).getByName('daf')
-    >>> language_codes(daf.languages)
-    ['cy', 'en_GB', 'ja']
-    >>> language_codes(daf.getSupportedLanguages())
-    ['cy', 'en', 'ja']
-
-For team with a list of known languages set, the same rule applies:
-
-    >>> from canonical.launchpad.interfaces import ILanguageSet
-    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
-    >>> esperanto = getUtility(ILanguageSet)['eo']
-    >>> ubuntu_team.addLanguage(esperanto)
-
-    >>> language_codes(ubuntu_team.languages)
-    ['eo']
-    >>> language_codes(ubuntu_team.getSupportedLanguages())
-    ['en', 'eo']
-
-But when the list of known languages is not set, the list of supported
-languages will be the union of all the members supported languages.
-
-    >>> rosetta_admins = getUtility(IPersonSet).getByName(
-    ...     'rosetta-admins')
-
-    >>> carlos.inTeam(rosetta_admins)
-    True
-    >>> daf.inTeam(rosetta_admins)
-    True
-
-    >>> language_codes(rosetta_admins.languages)
-    []
-    >>> language_codes(rosetta_admins.getSupportedLanguages())
-    ['ca', 'cy', 'en', 'es', 'ja']
-
-These rules are applied recursively when teams are nested one inside
-the other. For example, the 'Guadamen' team includes the Ubuntu Team
-and doesn't have its list of known languages set, so it will be the
-languages of the Ubuntu Team that will be used.
-
-    >>> celso = getUtility(IPersonSet).getByName('cprov')
-    >>> celso.inTeam(ubuntu_team)
-    True
-    >>> celso.addLanguage(getUtility(ILanguageSet)['es'])
-    >>> language_codes(celso.languages)
-    ['es']
-
-    >>> guadamen_team = getUtility(IPersonSet).getByName('guadamen')
-    >>> ubuntu_team.inTeam(guadamen_team)
-    True
-
-    >>> language_codes(guadamen_team.languages)
-    []
-    >>> language_codes(guadamen_team.getSupportedLanguages())
-    ['en', 'eo']
-
-    # Empty the list of known languages to use the list of the
-    # Ubuntu team members.
-    >>> ubuntu_team.removeLanguage(esperanto)
-    >>> language_codes(guadamen_team.getSupportedLanguages())
-    ['en', 'es']
 
 == getQuestionLanguages() ==
 
@@ -325,3 +238,72 @@ And questions on which the user commented:
 
     >>> sorted(language.code for language in carlos.getQuestionLanguages())
     [u'en', u'es', u'pt_BR']
+
+== getDirectAnswerQuestionTargets() ==
+
+IPerson defines getDirectAnswerQuestionTargets that can be used to retrieve
+a list of IQuestionTargets that a person subscribed himself to as an
+answer contact.
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv.getDirectAnswerQuestionTargets()
+    []
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> # Answer contacts must speak a language
+    >>> no_priv.addLanguage(english)
+    >>> firefox.addAnswerContact(no_priv)
+    True
+
+    >>> for target in no_priv.getDirectAnswerQuestionTargets():
+    ...    print target.name
+    firefox
+
+== getTeamAnswerQuestionTargets() ==
+
+IPerson defines getTeamAnswerQuestionTargets that retrieves a list of
+IQuestionTargets that the person is subscribed to indirectly as an
+answer contact through his team membership.
+
+    >>> landscape_team = getUtility(IPersonSet).getByName(
+    ...    "landscape-developers")
+    >>> landscape_team.addMember(no_priv, foo_bar)
+    >>> no_priv.inTeam(landscape_team)
+    True
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> landscape_team.addLanguage(english)
+    >>> ubuntu.addAnswerContact(landscape_team)
+    True
+
+    >>> sorted([target.name
+    ...         for target in no_priv.getTeamAnswerQuestionTargets()])
+    [u'ubuntu']
+
+Indirect team membership is also taken in consideration. For example,
+the Landscape Team joins the Translator Team. So targets for which the
+Translator team is an answer contact will be included in No Privileges
+Person's supported IQuestionTargets:
+
+    >>> translator_team = getUtility(IPersonSet).getByName('ubuntu-translators')
+    >>> no_priv.inTeam(translator_team)
+    False
+    >>> translator_team.addMember(landscape_team, carlos)
+
+    # We need to accept the invitation sent by the addMember() call in
+    # order to make landscape_team an actual member of translator_team.
+    >>> login(landscape_team.teamowner.preferredemail.email)
+    >>> landscape_team.acceptInvitationToBeMemberOf(
+    ...     translator_team, comment='something')
+
+    >>> no_priv.hasParticipationEntryFor(translator_team)
+    True
+    >>> evolution_package = ubuntu.getSourcePackage('evolution')
+    >>> translator_team.addLanguage(english)
+    >>> evolution_package.addAnswerContact(translator_team)
+    True
+    >>> sorted([target.name
+    ...         for target in no_priv.getTeamAnswerQuestionTargets()])
+    [u'evolution', u'ubuntu']

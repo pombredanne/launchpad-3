@@ -15,11 +15,11 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Choice, Text, TextLine
+from zope.schema import Datetime, Int, Choice, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, LargeImageUpload, BaseImageUpload, SmallImageUpload)
+    ContentNameField, IconImageUpload, LogoImageUpload, MugshotImageUpload)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import (
     IHasOwner, IHasSpecifications, IHasDrivers)
@@ -39,6 +39,8 @@ class SprintNameField(ContentNameField):
 
 class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     """A sprint, or conference, or meeting."""
+
+    id = Int(title=_('The Sprint ID'))
 
     name = SprintNameField(
         title=_('Name'), required=True, description=_('A unique name '
@@ -64,34 +66,33 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     home_page = TextLine(
         title=_('Home Page'), required=False, description=_("A web page "
         "with further information about the event."))
+    icon = IconImageUpload(
+        title=_("Icon"), required=False,
+        default_image_resource='/@@/meeting',
+        description=_(
+            "A small image of exactly 14x14 pixels and at most 5kb in size, "
+            "that can be used to identify this meeting. The icon will be "
+            "displayed wherever we list and link to the meeting."))
+    logo = LogoImageUpload(
+        title=_("Logo"), required=False,
+        default_image_resource='/@@/meeting-logo',
+        description=_(
+            "An image of exactly 64x64 pixels that will be displayed in "
+            "the heading of all pages related to this meeting. It should be "
+            "no bigger than 50kb in size."))
+    mugshot = MugshotImageUpload(
+        title=_("Brand"), required=False,
+        default_image_resource='/@@/meeting-mugshot',
+        description=_(
+            "A large image of exactly 192x192 pixels, that will be displayed "
+            "on this meeting's home page in Launchpad. It should be no "
+            "bigger than 100kb in size. "))
     homepage_content = Text(
         title=_("Homepage Content"), required=False,
         description=_(
             "The content of this meeting's home page. Edit this and it "
             "will be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
-    emblem = SmallImageUpload(
-        title=_("Emblem"), required=False,
-        default_image_resource='/@@/sprint',
-        description=_(
-            "A small image, max 16x16 pixels and 25k in file size, that can "
-            "be used to refer to this meeting."))
-    # This field should not be used on forms, so we use a BaseImageUpload here
-    # only for documentation purposes.
-    gotchi_heading = BaseImageUpload(
-        title=_("Heading icon"), required=False,
-        default_image_resource='/@@/sprint-heading',
-        description=_(
-            "An image, maximum 64x64 pixels, that will be displayed on "
-            "the header of all pages related to this meeting. It should "
-            "be no bigger than 50k in size."))
-    gotchi = LargeImageUpload(
-        title=_("Icon"), required=False,
-        default_image_resource='/@@/sprint-mugshot',
-        description=_(
-            "An image, maximum 170x170 pixels, that will be displayed on "
-            "this meeting's home page. It should be no bigger than 100k "
-            "in size. "))
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     time_zone = Choice(
@@ -108,7 +109,7 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     # joins
     attendees = Attribute('The set of attendees at this sprint.')
     attendances = Attribute('The set of SprintAttendance records.')
-    
+
     def specificationLinks(status=None):
         """Return the SprintSpecification records matching the filter,
         quantity and sort given. The rules for filtering and sorting etc are
@@ -135,7 +136,7 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     # subscription-related methods
     def attend(person, time_starts, time_ends):
         """Record that this person will be attending the Sprint."""
-        
+
     def removeAttendance(person):
         """Remove the person's attendance record."""
 
@@ -145,6 +146,15 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
 
     def unlinkSpecification(spec):
         """Remove this specification from the sprint spec list."""
+
+    def isDriver(user):
+        """Returns True if and only if the specified user
+        is a driver of this sprint.
+
+        A driver for a sprint is either the person in the
+        `driver` attribute, a person who is memeber of a team
+        in the `driver` attribute or an administrator.
+        """
 
 
 class IHasSprints(Interface):
@@ -158,11 +168,17 @@ class IHasSprints(Interface):
         "A list of up to 5 events currently on, or soon to be on, that are "
         "relevant to this context.")
 
+    sprints = Attribute("All sprints relevant to this context.")
+
+    past_sprints = Attribute("Sprints that occured in the past.")
+
 
 class ISprintSet(Interface):
     """A container for sprints."""
 
     title = Attribute('Title')
+
+    all = Attribute('All sprints, in reverse order of starting')
 
     def __iter__():
         """Iterate over all Sprints, in reverse time_start order."""
@@ -171,6 +187,6 @@ class ISprintSet(Interface):
         """Get a specific Sprint."""
 
     def new(owner, name, title, time_starts, time_ends, summary=None,
-            description=None, gotchi=None, gotchi_heading=None, emblem=None):
+            description=None, mugshot=None, logo=None, icon=None):
         """Create a new sprint."""
 

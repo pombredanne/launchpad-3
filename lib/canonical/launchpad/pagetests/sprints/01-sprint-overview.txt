@@ -17,7 +17,7 @@ Let's start by viewing the list of sprints registered.
   >>> print soup('p')[0].string
   <BLANKLINE>
       Launchpad can help you organise your developer sprints, summits and
-      gatherings! Register the meeting here, then you can invite people to
+      gatherings. Register the meeting here, then you can invite people to
       nominate blueprints for discussion at the event. The meeting drivers
       control the agenda, but everyone can see what's proposed and what's
       been accepted.

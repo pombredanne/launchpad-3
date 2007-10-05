@@ -1,5 +1,6 @@
-<div class="portlet" tal:condition="context/milestones">
-  <h2>Milestones</h2>
+<div class="portlet" id="portlet-milestones"
+     tal:condition="context/milestones">
+  <h2>Active milestones</h2>
   <div class="portletBody portletContent">
     <ul tal:condition="context/milestones">
       <li class="milestone" tal:repeat="milestone context/milestones">
@@ -9,5 +10,8 @@
         </a>
       </li>
     </ul>
+    <p><a tal:attributes="href string:${context/fmt:url}/+milestones">
+      All milestones</a>
+    </p>
   </div>
 </div>

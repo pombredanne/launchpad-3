@@ -1,8 +1,8 @@
 Check the behaviour of the initialise_from_parent script. It basically
-calls IDistroRelease.initialiseFromParent method with experimental extra
+calls IDistroSeries.initialiseFromParent method with experimental extra
 checks and tasks.
 
-We need to create an initialisable DistroRelease as a child of Ubuntu
+We need to create an initialisable DistroSeries as a child of Ubuntu
 Hoary (we do it inside the ubuntutest distribution to avoid conflicts
 with other tests)
 
@@ -15,13 +15,14 @@ with other tests)
   >>> ubuntu = distribution_set['ubuntu']
   >>> hoary = ubuntu['hoary']
 
-  XXX cprov 20060529: new distrorelease should be provided by IDistribution
-  This maybe affected by derivation design and is documented in bug
-  #49133
+  # XXX cprov 2006-05-29 bug=49133: 
+  # New distroseries should be provided by IDistribution.
+  # This maybe affected by derivation design and is documented in bug.
 
-  >>> from canonical.launchpad.interfaces import IDistroReleaseSet
-  >>> distrorelease_set = getUtility(IDistroReleaseSet)
-  >>> foobuntu = distrorelease_set.new(ubuntutest, 'foobuntu', 'FooBuntu',
+
+  >>> from canonical.launchpad.interfaces import IDistroSeriesSet
+  >>> distroseries_set = getUtility(IDistroSeriesSet)
+  >>> foobuntu = distroseries_set.new(ubuntutest, 'foobuntu', 'FooBuntu',
   ...                                  'The Foobuntu', 'yeck', 'doom',
   ...                                  '888', hoary, hoary.owner)
 
@@ -35,7 +36,7 @@ with other tests)
   >>> from canonical.config import config
 
 
-Check if it fails for an already released distrorelease:
+Check if it fails for an already released distroseries:
 
   >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
   ...                       "initialise-from-parent.py")
@@ -49,16 +50,16 @@ Check if it fails for an already released distrorelease:
   >>> print stderr
   DEBUG   Acquiring lock
   DEBUG   Initialising connection.
-  DEBUG   Check empty mutable queues in parentrelease
-  DEBUG   Check for no pending builds in parentrelease
-  DEBUG   Copying distroarchreleases from parent and setting nominatedarchindep.
+  DEBUG   Check empty mutable queues in parentseries
+  DEBUG   Check for no pending builds in parentseries
+  DEBUG   Copying distroarchserieses from parent and setting nominatedarchindep.
   Traceback (most recent call last):
   ...
-  AssertionError: Can not copy distroarchreleases from parent, there are already distroarchrelease(s) initialised for this release.
+  AssertionError: Can not copy distroarchseries from parent, there are already distroarchseries(s) initialised for this series.
   <BLANKLINE>
 
 
-Let's initialise the just created distrorelease:
+Let's initialise the just created distroseries:
 
   >>> process = subprocess.Popen([sys.executable, script, "-vv",
   ...                             "-d", "ubuntutest", "foobuntu"],
@@ -70,9 +71,9 @@ Let's initialise the just created distrorelease:
   >>> print stderr
   DEBUG   Acquiring lock
   DEBUG   Initialising connection.
-  DEBUG   Check empty mutable queues in parentrelease
-  DEBUG   Check for no pending builds in parentrelease
-  DEBUG   Copying distroarchreleases from parent and setting nominatedarchindep.
+  DEBUG   Check empty mutable queues in parentseries
+  DEBUG   Check for no pending builds in parentseries
+  DEBUG   Copying distroarchserieses from parent and setting nominatedarchindep.
   DEBUG   initialising from parent, copying publishing records.
   DEBUG   Committing transaction.
   DEBUG   Releasing lock
@@ -93,8 +94,7 @@ against its parent, ubuntu/hoary:
   >>> len(foobuntu_i386_pmount_pubs) == len(hoary_i386_pmount_pubs)
   True
 
-
-Check how the publication records behave in a just-initialise distrorelease.
+Check how the publication records behave in a just-initialise distroseries.
 First we get a binarypackagerelease published in foobuntu:
 
   >>> pmount_binrel = (
@@ -103,7 +103,7 @@ First we get a binarypackagerelease published in foobuntu:
   >>> pmount_binrel.title
   u'pmount-0.1-1'
 
-Follow BPR.build and discover it was built in the parent release:
+Follow BPR.build and discover it was built in the parent series:
 
   >>> pmount_binrel.build.id
   7
@@ -117,9 +117,14 @@ Now we obtain the sourcepackagerelease from the build:
   u'pmount - 0.1-1'
 
 and check it the ISPR.getBuildByArch() would find out the same build
-record for foobuntu and it's parent release (hoary):
+record for foobuntu and it's parent series (hoary):
 
-  >>> pmount_srcrel.getBuildByArch(foobuntu['i386']).id == pmount_srcrel.getBuildByArch(hoary['i386']).id
+  >>> foobuntu_pmount = pmount_srcrel.getBuildByArch(
+  ...     foobuntu['i386'], foobuntu.main_archive)
+  >>> hoary_pmount = pmount_srcrel.getBuildByArch(
+  ...     hoary['i386'], hoary.main_archive)
+
+  >>> foobuntu_pmount.id == hoary_pmount.id
   True
 
 It means that queuebuilder doesn't need to create a new build record
@@ -130,11 +135,11 @@ hoary and consequently in foobuntu:
 
 Note: This is a very unlikely situation, since ubuntu/hoary was marked
 as RELEASED before build pmount_0.1-2 in the sampledata. So when we
-try initialise a distrorelease in another distribution based on hoary,
+try initialise a distroseries in another distribution based on hoary,
 since they have independent archives (pool), pmount_0.1-1 binary
 becomes a NBS (not build from source) since the pmount_0.1-1 source
 was superseded in hoary and won't be inherited by the initialised
-distrorelease.
+distroseries.
 
   >>> pmount_source = hoary.getSourcePackage('pmount').currentrelease
   >>> pmount_source.title
@@ -149,7 +154,7 @@ Since pmount_0.1-2 source is published we can safely look up for the
 respective build record:
 
   >>> pmount_source.sourcepackagerelease.getBuildByArch(
-  ...    foobuntu['i386']) is None
+  ...    foobuntu['i386'], ubuntu.main_archive) is None
   True
 
 It's not present, Let's create it to check if getBuildByArch responds
@@ -158,14 +163,15 @@ this test, see more details in buildd-queuebuilder)
 
   >>> from canonical.lp.dbschema import PackagePublishingPocket
   >>> created_build = pmount_source.sourcepackagerelease.createBuild(
-  ...    foobuntu['i386'], PackagePublishingPocket.RELEASE)
+  ...     foobuntu['i386'], PackagePublishingPocket.RELEASE,
+  ...     ubuntu.main_archive)
 
   >>> retrieved_build = pmount_source.sourcepackagerelease.getBuildByArch(
-  ...    foobuntu['i386'])
+  ...    foobuntu['i386'], ubuntu.main_archive)
 
   >>> retrieved_build.id == created_build.id
   True
 
   >>> pmount_source.sourcepackagerelease.getBuildByArch(
-  ...    foobuntu['hppa']) is None
+  ...    foobuntu['hppa'], ubuntu.main_archive) is None
   True

@@ -17,7 +17,7 @@ Now we can see the added bug watch in the bug watch portlet.
     >>> bugwatch_portlet = find_portlet(
     ...     user_browser.contents, 'Remote bug watches')
     >>> for li_tag in bugwatch_portlet.fetch('li'):
-    ...     print li_tag.a.string
+    ...     print li_tag.findAll('a')[1].renderContents()
     debbugs #42
 
 If we add another bug watch, pointing to the same URL, the previous one
@@ -34,7 +34,7 @@ will be used; i.e., another one won't be added.
     >>> bugwatch_portlet = find_portlet(
     ...     user_browser.contents, 'Remote bug watches')
     >>> for li_tag in bugwatch_portlet.fetch('li'):
-    ...     print li_tag.a.string
+    ...     print li_tag.findAll('a')[1].string
     debbugs #42
 
 Both the thunderbird and gnome-terminal Debian tasks are pointing to the
@@ -48,7 +48,7 @@ same bug watch.
     ...     row for row in affects_table.tbody.fetch('tr', recursive=False)
     ...     if row.get('style') != 'display: none']
     >>> for row in task_rows:
-    ...     target_td, bugwatch_td = row('td')[0], row('td')[-1]
+    ...     target_td, bugwatch_td = row('td')[0], row('td')[-2]
     ...     if bugwatch_td.img:
     ...         bugwatch = bugwatch_td.img.nextSibling
     ...     else:

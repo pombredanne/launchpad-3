@@ -66,6 +66,7 @@ class AllVirtualHostsConfiguration:
                     'blueprints': config_for_blueprints,
                      ...
                     }
+    self.hostnames : set of hostnames handled by the vhost config
     """
 
     def __init__(self, launchpad_conf_vhosts):
@@ -84,13 +85,16 @@ class AllVirtualHostsConfiguration:
         set_of_vhosts = attrs
 
         self.configs = {}
+        self.hostnames = set()
         for conf_item_name in set_of_vhosts:
             vhost = getattr(launchpad_conf_vhosts, conf_item_name)
-            self.configs[conf_item_name] = VirtualHostConfig(
+            self.configs[conf_item_name] = config = VirtualHostConfig(
                 vhost.hostname,
                 vhost.althostnames,
                 vhost.rooturl,
                 self.use_https)
+            self.hostnames.add(config.hostname)
+            self.hostnames.update(config.althostnames)
 
 
 # The only public API to this module, the global virtual host configuration.

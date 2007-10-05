@@ -1,0 +1,179 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:leftportlets>
+
+  <div metal:fill-slot="help">
+    <p>
+      Here you see the information we have available about this language.
+    </p>
+
+    <p>
+      If you see anything wrong with this information, please see whether it's
+      already been brought up in the 
+      <a href="https://answers.launchpad.net/rosetta/">Answers</a> application.
+       If not, please file a question there.
+    </p>
+
+    <ul class="info">
+      <li>
+        <a href="https://help.launchpad.net/RosettaFAQ"
+        >Frequently asked questions</a>
+        </li>
+      </ul>
+  </div>
+
+  <div metal:fill-slot="main">
+    <h1>Overview of
+    <tal:has_nativename condition="context/nativename">
+      <tal:nativename replace="context/nativename">
+        Espa&ntilde;ol
+      </tal:nativename> (
+    </tal:has_nativename>
+    <tal:englishname replace="context/englishname">Spain</tal:englishname>
+    <tal:has_nativename condition="context/nativename">)</tal:has_nativename>
+    in Launchpad.
+    </h1>
+
+    <tal:not-visible condition="not:context/visible">
+      This language is not usually displayed in lists of languages. You will
+      have to select it specially in your <a href="/+editmylanguages">language
+      preferences</a> in order to see it.
+    </tal:not-visible>
+
+    <div class="left">
+      <div class="section">
+        <div class="portlet">
+          <h2>Plural Forms</h2>
+          <p>
+            When translating into this language, you need to be able to
+            express plural forms effectively. The plural form expression tells
+            the translation system when to use each plural form. For example,
+            some languages express the idea of "zero objects" differently to
+            "one object" or "more than ten objects". In these cases, the
+            plural form expression captures the information needed to know
+            which form to use based on the number in question.
+          </p>
+          <tal:has_pluralforms condition="context/pluralexpression">
+            <p>
+              The amount of plural forms for
+              <tal:language replace="view/language_name">
+                Espa&ntilde;ol
+              </tal:language>
+              is:
+              <tal:pluralforms replace="context/pluralforms">
+                2
+              </tal:pluralforms>
+            </p>
+            <p>
+              And its default plural form expression is:
+            </p>
+            <p>
+              <pre tal:content="context/pluralexpression">
+                n != 1
+              </pre>
+            </p>
+          </tal:has_pluralforms>
+          <tal:has_not_pluralforms condition="not:context/pluralexpression">
+            <p class="helpwanted">
+              Unfortunately, Launchpad doesn't know the plural form
+              information for this language. If you know it, please open a
+              <a href="/rosetta/+addticket">ticket</a> with that information,
+              so we can add it to Launchpad.
+            </p>
+          </tal:has_not_pluralforms>
+        </div>
+      </div>
+      <div class="section">
+        <div class="portlet">
+          <h2>Translation teams</h2>
+          <p tal:condition="view/translation_teams">
+            The following people and teams are specifically identified as
+            being experts in
+            <tal:language replace="view/language_name">
+              Espa&ntilde;ol
+            </tal:language>
+            :
+          </p>
+          <table>
+            <tr tal:repeat="expert_info view/translation_teams">
+              <td>
+                <img tal:condition="expert_info/expert/isTeam"
+                     src="/@@/team" />
+                <img tal:condition="not:expert_info/expert/isTeam"
+                     src="/@@/person" />
+              </td>
+              <td>
+                <div>
+                  <a
+                    tal:attributes="
+                      href expert_info/expert/fmt:url;
+                      title expert_info/expert/browsername/fmt:shorten/80"
+                    tal:content="expert_info/expert/browsername"
+                    >Expert name</a>(
+                    <tal:groups repeat="group expert_info/groups">
+                      <a tal:attributes="
+                           href group/fmt:url;
+                           title group/title/fmt:shorten/80"
+                         tal:content="group/title"
+                         >Translation group title</a>
+                    </tal:groups>)
+                </div>
+              </td>
+            </tr>
+          </table>
+          <p tal:condition="not:view/translation_teams">
+            <tal:language replace="view/language_name">
+              Espa&ntilde;ol
+            </tal:language>
+            has no team or person registered as an expert.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="right">
+      <div class="section">
+        <div class="portlet">
+          <h2>Countries</h2>
+          <tal:has_countries condition="context/countries">
+            <p>
+              <tal:language replace="view/language_name">
+                Espa&ntilde;ol
+              </tal:language>
+                is registered as being spoken in the following countries:
+            </p>
+            <ul>
+              <li tal:repeat="country context/countries"
+                  tal:content="country/name">Spain</li>
+            </ul>
+          </tal:has_countries>
+          <tal:has_not_countries condition="not:context/countries">
+          <p class="helpwanted">
+            <tal:language replace="view/language_name">
+              Espa&ntilde;ol
+            </tal:language>
+            is not registered as being spoken in any country. If you know
+            about a country that officially speaks this language, please
+            open a <a href="/rosetta/+addticket">ticket</a> with that
+            information, so we can add it to Launchpad.
+          </p>
+          </tal:has_not_countries>
+        </div>
+      </div>
+      <div class="section"
+           tal:content="structure context/@@+portlet-top-contributors" />
+    </div>
+  </div>
+  </body>
+</html>

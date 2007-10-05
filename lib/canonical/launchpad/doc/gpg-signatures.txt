@@ -132,11 +132,20 @@ signed text can not be attributed solely to either key:
     ... =iUSC
     ... -----END PGP SIGNATURE-----
     ... """
+
+XXX: See discussion on the launchpad@ mailing list for an explanation to this
+change. -- Guilherme Salgado, 2007-04-05
+(https://lists.ubuntu.com/mailman/private/launchpad/2007-April/015085.html)
+
     >>> master_sig = gpghandler.getVerifiedSignature(content)
     Traceback (most recent call last):
     ...
-    GPGVerificationError: Single signature expected, found multiple signatures
+    GPGVerificationError...
 
+#     >>> master_sig = gpghandler.getVerifiedSignature(content)
+#     Traceback (most recent call last):
+#     ...
+#     GPGVerificationError: Single signature expected, found multiple signatures
 
 The text below was signed by  key that's is not part of the
 imported keyring. Note that we have extra debug information containing

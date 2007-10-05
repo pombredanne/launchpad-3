@@ -1,0 +1,9 @@
+<configure
+   xmlns="http://namespaces.zope.org/zope"
+   >
+  <!-- output summary of requests for each hit -->
+  <subscriber
+     for="zope.app.publication.interfaces.EndRequestEvent"
+        handler="canonical.launchpad.webapp.adapter.summarize_requests_to_stderr"
+        />
+</configure>

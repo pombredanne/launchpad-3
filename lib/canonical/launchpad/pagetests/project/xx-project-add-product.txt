@@ -48,5 +48,5 @@ A default product series named "trunk" was created for the new
 product:
 
   >>> anon_browser.open('http://launchpad.dev/eog/trunk')
-  >>> 'Series overview' in anon_browser.contents
+  >>> 'Release series overview' in anon_browser.contents
   True

@@ -211,7 +211,7 @@ out:
     ERROR:...:An exception was raised inside the handler: http://...
     ERROR: new row for relation "product" violates check constraint "valid_name"
     <BLANKLINE>
-    /*...*/ UPDATE Product SET name = 'invalid name' WHERE id = 4
+    UPDATE Product SET name = 'invalid name' WHERE id = 4
     WARNING...
 
 
@@ -277,7 +277,25 @@ Emails with an empty Return-Path header should be dropped:
 Since this happens way too often, as we seem to get more spam than
 legitimate email, an email is not sent about it to the errors-list.
 
-    >>> import email
+    >>> len(stub.test_emails)
+    0
+
+If the content type is multipart/report, it's most likely a DSN
+(RFC 3464), so those get dropped as well. Normally a DSN should have an
+empty Return-Path, but there are some broken mailers out there.
+
+    >>> msg = read_test_message('signed_inline.txt')
+    >>> msg.replace_header('To', '123@foo.com')
+    >>> msg['Return-Path'] = '<not@empty.com>'
+    >>> msg['Content-Type'] = (
+    ...     'multipart/report; report-type=delivery-status;'
+    ...     ' boundary="boundary"')
+    >>> msgid = '<%s>' % sendmail(msg)
+    >>> transaction.commit()
+    >>> handleMail()
+    >>> msgid in foo_handler.handledMails
+    False
+
     >>> len(stub.test_emails)
     0
 

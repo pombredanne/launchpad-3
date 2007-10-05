@@ -1,48 +1,42 @@
-<tal:do-this-first tal:content="view/processForm" />
-
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Confirm OpenPGP key</h1>
-    </metal:heading>
 
-<div metal:fill-slot="main">
+  <div metal:fill-slot="main">
 
-    <div tal:condition="not: view/successfullyProcessed">
+    <div metal:use-macro="context/@@launchpad_form/form">
 
-        <p
-          tal:condition="view/errormessage"
-          tal:content="structure view/errormessage"
-          class="error message"
-        />
-      </div>
+      <metal:heading fill-slot="heading">
+        Confirm OpenPGP key
+      </metal:heading>
 
-      <p>
+      <p metal:fill-slot="extra_info">
         Confirm the key <code tal:content="context/fingerprint"/> by 
         <tal:name replace="context/requester/displayname">Foo Bar</tal:name>
       </p>
 
-      <form name="validate" action="" method="POST">
+      <div metal:fill-slot="extra_top">
+        <p>Please paste a clear-signed copy of the following phrase
+        into the box below.  This can be achieved by saving the
+        phrase to a file and running <kbd>gpg --clearsign
+        FILENAME</kbd>.</p>
 
-          <p>Please paste a clear-signed copy of the following phrase
-          into the text box below.  This can be achieved by saving the
-          phrase to a file and running <kbd>gpg --clearsign
-          FILENAME</kbd>.</p>
-
-          <pre tal:content="view/validationphrase">
-            Please register ABCDEF... to the Launchpad user joe
-            2005-04-01 10:30:42 UTC
-          </pre>
-
-          <textarea name="signedcontent" rows="14" cols="70"></textarea>
-
-          <input type="submit" name="VALIDATE" value="Confirm" />
-
-      </form>
+        <pre tal:content="view/validationphrase">
+          Please register ABCDEF... to the Launchpad user joe
+          2005-04-01 10:30:42 UTC
+        </pre>
+      </div>
     </div>
-  </body>
+
+  </div>
+</body>
 </html>

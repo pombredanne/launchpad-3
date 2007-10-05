@@ -1,11 +1,17 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="malone"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone"
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>Bug trackers registered in Malone</h1>
+      <h1>Bug trackers registered in Launchpad</h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -15,9 +21,9 @@
 <div metal:fill-slot="main">
 
       <p>
-        Registering a bug tracker lets you link Malone bug reports with reports
-        in that bug tracker, so that assignees in Malone will be notified
-        when the upstream bug report changes state.
+        Registering a bug tracker lets you link Launchpad bug reports with
+        reports in that bug tracker, so that assignees in Launchpad will be
+        notified when the upstream bug report changes state.
       </p>
 
   <table class="sortable listing" id="trackers">

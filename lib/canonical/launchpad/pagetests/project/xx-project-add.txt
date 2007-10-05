@@ -2,93 +2,62 @@
 
 Normal users should not be able to do this:
 
-  >>> user_browser.open("http://launchpad.dev/projects/+new")
+  >>> user_browser.open("http://launchpad.dev/projectgroups/+new")
   Traceback (most recent call last):
     ...
   Unauthorized:...
 
 But an admin user should be able to do it:
 
-  >>> admin_browser.open('http://launchpad.dev/projects')
-  >>> admin_browser.getLink('Register a project').click()
+  >>> admin_browser.open('http://launchpad.dev/projectgroups')
+  >>> admin_browser.getLink('Register a project group').click()
   >>> admin_browser.url
-  'http://launchpad.dev/projects/+new'
+  'http://launchpad.dev/projectgroups/+new'
 
 Testing if the validator is working for the URL field.
 Add a new project without the http://
 
-  >>> admin_browser.getControl('Name', index=0).value = 'apache'
-  >>> admin_browser.getControl('Display Name').value = 'the Apache Project'
-  >>> admin_browser.getControl('Title').value = 'The Apache Project'
-  >>> admin_browser.getControl('Project Summary').value = 'The Apache Project'
-  >>> admin_browser.getControl('Description').value = 'The Apache Project'
-  >>> admin_browser.getControl('Homepage URL').value = 'www.apache.org'
+  >>> admin_browser.getControl('Name', index=0).value = 'kde'
+  >>> admin_browser.getControl('Display Name').value = 'K Desktop Environment'
+  >>> admin_browser.getControl('Title').value = 'K Desktop Environment'
+  >>> admin_browser.getControl('Project Group Summary').value = 'KDE'
+  >>> admin_browser.getControl('Description').value = 'K Desktop Environment'
+  >>> admin_browser.getControl('Homepage URL').value = 'www.kde.org'
   >>> admin_browser.getControl('Add').click()
-  >>> '<p class="error message">There is 1 error.</p>' in admin_browser.contents
-  True
-  >>> '"www.apache.org" is not a valid URI' in admin_browser.contents
-  True
-
+  >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
+  ...     print message.renderContents()
+  There is 1 error.
+  "www.kde.org" is not a valid URI
 
 Testing if the validator is working for the name field.
 
-  >>> admin_browser.open('http://launchpad.dev/projects/+new')
-  >>> admin_browser.getControl('Name', index=0).value = 'APACHE'
-  >>> admin_browser.getControl('Display Name').value = 'the Apache Project'
-  >>> admin_browser.getControl('Title').value = 'The Apache Project'
-  >>> admin_browser.getControl('Project Summary').value = 'The Apache Project'
-  >>> admin_browser.getControl('Description').value = 'The Apache Project'
-  >>> admin_browser.getControl('Homepage URL').value = 'http://www.apache.org'
+  >>> admin_browser.open('http://launchpad.dev/projectgroups/+new')
+  >>> admin_browser.getControl('Name', index=0).value = 'kde!'
+  >>> admin_browser.getControl('Display Name').value = 'K Desktop Environment'
+  >>> admin_browser.getControl('Title').value = 'K Desktop Environment'
+  >>> admin_browser.getControl('Project Group Summary').value = 'KDE'
+  >>> admin_browser.getControl('Description').value = 'K Desktop Environment'
+  >>> admin_browser.getControl('Homepage URL').value = 'http://kde.org/'
   >>> admin_browser.getControl('Add').click()
-  >>> "Invalid name 'APACHE'" in admin_browser.contents
-  True
-
-  >>> admin_browser.getControl('Name', index=0).value = 'ubuntu'
-  >>> admin_browser.getControl('Add').click()
-  >>> ("ubuntu is already in use by another project"
-  ... in admin_browser.contents)
-  True
-
-Now we add a new project.
+  >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
+  ...     print message.renderContents()
+  There is 1 error.
+  Invalid name 'kde!'. Names must...
 
   >>> admin_browser.getControl('Name', index=0).value = 'apache'
   >>> admin_browser.getControl('Add').click()
-  >>> admin_browser.url
-  'http://launchpad.dev/apache'
+  >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
+  ...     print message.renderContents()
+  There is 1 error.
+  apache is already in use by another project
 
-  >>> anon_browser.open(admin_browser.url)
-  >>> 'The Apache Project' in anon_browser.contents
-  True
+Now we add a new project.
 
-
-== Project's icon/emblem ==
-
-It's also possible to specify an icon and/or an emblem when creating a
-project.
-
-  >>> admin_browser.open('http://launchpad.dev/projects/+new')
-
-  >>> admin_browser.getControl('Name', index=0).value = 'test-project'
-  >>> admin_browser.getControl('Display Name').value = 'the test Project'
-  >>> admin_browser.getControl('Title').value = 'The test Project'
-  >>> admin_browser.getControl('Project Summary').value = 'The test Project'
-  >>> admin_browser.getControl('Description').value = 'The test Project'
-
-  >>> from canonical.launchpad.ftests import set_gotchi_and_emblem
-  >>> set_gotchi_and_emblem(admin_browser)
-
+  >>> admin_browser.getControl('Name', index=0).value = 'kde'
   >>> admin_browser.getControl('Add').click()
   >>> admin_browser.url
-  'http://launchpad.dev/test-project'
+  'http://launchpad.dev/kde'
 
-The uploaded icon and emblem can be seen on the project's edit page:
-
-  >>> admin_browser.getLink('Change details').click()
-  >>> admin_browser.url
-  'http://launchpad.dev/test-project/+edit'
-  >>> find_tag_by_id(
-  ...     admin_browser.contents, 'field.gotchi_current_img').get('src')
-  u'.../icon.png'
-  >>> find_tag_by_id(
-  ...     admin_browser.contents, 'field.emblem_current_img').get('src')
-  u'.../emblem.png'
+  >>> anon_browser.open(admin_browser.url)
+  >>> print anon_browser.title
+  K Desktop Environment in Launchpad

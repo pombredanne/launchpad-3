@@ -22,9 +22,9 @@ class IVPOTExport(Interface):
     translationdomain = Attribute("See IPOTemplateName.translationdomain")
 
     potemplate = Attribute("See IPOTemplate")
-    distrorelease = Attribute("See IPOTemplate.distrorelease")
+    distroseries = Attribute("See IPOTemplate.distroseries")
     sourcepackagename = Attribute("See IPOTemplate.sourcepackagename")
-    productrelease = Attribute("See IPOTemplate.productrelease")
+    productseries = Attribute("See IPOTemplate.productseries")
     header = Attribute("See IPOTemplate.header")
     languagepack = Attribute("See IPOTemplate.languagepack")
 
@@ -39,4 +39,5 @@ class IVPOTExport(Interface):
 
     pluralform = Attribute("See IPOMsgIDSighting.pluralform")
 
+    context = Attribute("See IPOTMsgSet.context")
     msgid = Attribute("See IPOMsgID.pomsgid")

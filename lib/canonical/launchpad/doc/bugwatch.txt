@@ -149,6 +149,8 @@ easier you can use IBugWatchSet.fromText().
     ...         http://some.roundup/issue42
     ...     A Trac URL:
     ...         http://some.trac/ticket/42
+    ...     A Mantis URL:
+    ...         http://some.mantis/mantis/view.php?id=50
     ...     A SourceForge URL:
     ...         http://some.sf/tracker/index.php?func=detail&aid=1568562&group_id=84122&atid=42
     ...     An unrecognised URL:
@@ -166,6 +168,29 @@ easier you can use IBugWatchSet.fromText().
     ROUNDUP: 42
     TRAC: 42
     SOURCEFORGE: 1568562
+    MANTIS: 50
+
+The bug trackers in the text above were automatically created. If the
+bugwatch points to a bug tracker that already is registered in Launchpad
+with the same URL, it won't be registered again. This is true even if
+the URL is slightly different, for example https instead of https. It
+doesn't handle the case where the same bug tracker is available through
+different URLs, for example where the host name is different (e.g.,
+bugs.gnome.org vs. bugzilla.gnome.org).
+
+    >>> old_bugtracker_count = getUtility(IBugTrackerSet).search().count()
+    >>> gnome_bugzilla = getUtility(IBugTrackerSet).queryByBaseURL(
+    ...     'http://bugzilla.gnome.org/bugs')
+    >>> gnome_bugzilla.name
+    u'gnome-bugzilla'
+    >>> text = "https://bugzilla.gnome.org/bugs/show_bug.cgi?id=12345"
+    >>> [gnome_bugwatch] = getUtility(IBugWatchSet).fromText(
+    ...     text, bug_one, sample_person)
+    >>> gnome_bugwatch.bugtracker.name
+    u'gnome-bugzilla'
+    >>> new_bugtracker_count = getUtility(IBugTrackerSet).search().count()
+    >>> old_bugtracker_count == new_bugtracker_count
+    True
 
 Syncing the Status with Linked Bugtasks
 ---------------------------------------
@@ -180,7 +205,7 @@ Updater and get a bug watch and a bugtask to test with.
     >>> print len(bug_one.bugtasks)
     3
     >>> debian_task = bug_one.bugtasks[2]
-    >>> print debian_task.targetname
+    >>> print debian_task.bugtargetdisplayname
     mozilla-firefox (Debian)
 
     >>> print debian_task.status.title
@@ -206,11 +231,11 @@ we can confirm that an event is indeed fired off.
 If we pass in a different Malone status than the existing one, an event
 will be fired off, even though the remote status stays the same.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> old_lastchanged = debian_bugwatch.lastchanged
     >>> debian_bugwatch.updateStatus(
-    ...     debian_bugwatch.remotestatus, BugTaskStatus.UNCONFIRMED)
-    Confirmed => Unconfirmed
+    ...     debian_bugwatch.remotestatus, BugTaskStatus.NEW)
+    Confirmed => New
 
 The lastchanged isn't updated, though, since it indicates when the
 remotestatus changed. The bug watch can change the status of its bug
@@ -223,18 +248,18 @@ status mapping.
     >>> debian_bugwatch.remotestatus == old_remotestatus
     True
     >>> print debian_task.status.title
-    Unconfirmed
+    New
 
 If only the remote status is changed, not the bugtask's status, no
 event is fired off. The remote status is simply a string, it doesn't
 have to be convertable to a real Malone status.
 
-    >>> debian_bugwatch.updateStatus(u'some status', BugTaskStatus.UNCONFIRMED)
+    >>> debian_bugwatch.updateStatus(u'some status', BugTaskStatus.NEW)
 
     >>> debian_bugwatch.remotestatus
     u'some status'
     >>> print debian_task.status.title
-    Unconfirmed
+    New
 
 The lastchanged was updated, though.
 
@@ -259,7 +284,12 @@ Finally, let's make sure that bug notifications were added:
     Bug 1 changed by Bug Watch Updater:
     ** Changed in: mozilla-firefox (Debian)
        Importance: Low => Unknown
-           Status: Confirmed => Unconfirmed
+           Status: Confirmed => New
 
     >>> event_listener.unregister()
+
+The Bug Watch Updater can transition a bug to any status:
+
+    >>> for status in BugTaskStatus.items:
+    ...     debian_bugwatch.updateStatus(u'nothing', status)
 

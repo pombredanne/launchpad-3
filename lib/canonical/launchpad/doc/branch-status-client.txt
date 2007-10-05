@@ -109,3 +109,27 @@ A successful mirror will reset the failure counter though:
   >>> print branch.mirror_status_message
   None
 
+On normal termination, the branch puller calls the recordSuccess method to
+record its starting and finishing times in the database.
+
+  >>> import datetime
+  >>> import pytz
+  >>> UTC = pytz.timezone('UTC')
+  >>> started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
+  >>> completed = datetime.datetime(2007, 07, 05, 19, 34, 24, tzinfo=UTC)
+  >>> client.recordSuccess('test-recordsuccess', 'vostok', started, completed)
+
+That inserts a row into the ScriptActivity table where it can be used by the
+standard script monitoring tools.
+
+  >>> LaunchpadZopelessTestSetup().txn.abort()
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import IScriptActivitySet
+  >>> script_activity_set = getUtility(IScriptActivitySet)
+  >>> last_activity = script_activity_set.getLastActivity('test-recordsuccess')
+  >>> last_activity.hostname
+  u'vostok'
+  >>> last_activity.date_started
+  datetime.datetime(2007, 7, 5, 19, 32, 1, tzinfo=<UTC>)
+  >>> last_activity.date_completed
+  datetime.datetime(2007, 7, 5, 19, 34, 24, tzinfo=<UTC>)

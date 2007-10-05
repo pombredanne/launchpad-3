@@ -1,5 +1,5 @@
-<div class="portlet">
-  <h2>Upstream product series</h2>
+<div class="portlet" id="portlet-upstream">
+  <h2>Upstream release series</h2>
   <div class="portletBody portletContent">
 
   <a tal:condition="context/productseries"

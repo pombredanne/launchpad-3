@@ -11,13 +11,13 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
-    IHasQueueItems, IDistroReleaseQueueSet, QueueInconsistentStateError,
+    IHasQueueItems, IPackageUploadSet, QueueInconsistentStateError,
     UnexpectedFormData, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
 
-from canonical.lp.dbschema import DistroReleaseQueueStatus
+from canonical.lp.dbschema import PackageUploadStatus
 
 QUEUE_SIZE = 20
 
@@ -27,7 +27,7 @@ class QueueItemsView(LaunchpadView):
 
     It retrieves the UI queue_state selector action and sets up a proper
     batched list with the requested results. See further UI details in
-    template/distrorelease-queue.pt and callsite details in DistroRelease
+    template/distroseries-queue.pt and callsite details in DistroSeries
     view classes.
     """
     __used_for__ = IHasQueueItems
@@ -48,7 +48,7 @@ class QueueItemsView(LaunchpadView):
             state_value = 0
 
         try:
-            self.state = DistroReleaseQueueStatus.items[state_value]
+            self.state = PackageUploadStatus.items[state_value]
         except KeyError:
             raise UnexpectedFormData(
                 'No suitable status found for value "%s"' % state_value
@@ -60,19 +60,19 @@ class QueueItemsView(LaunchpadView):
             raise Unauthorized("User don't have permission to see this queue.")
 
         valid_states = [
-            DistroReleaseQueueStatus.NEW,
-            DistroReleaseQueueStatus.ACCEPTED,
-            DistroReleaseQueueStatus.REJECTED,
-            DistroReleaseQueueStatus.DONE,
-            DistroReleaseQueueStatus.UNAPPROVED,
+            PackageUploadStatus.NEW,
+            PackageUploadStatus.ACCEPTED,
+            PackageUploadStatus.REJECTED,
+            PackageUploadStatus.DONE,
+            PackageUploadStatus.UNAPPROVED,
             ]
 
         if not check_permission('launchpad.Edit', self.queue):
             # Omit the UNAPPROVED status, which the user is unable to
             # view anyway. If he hand-hacks the URL, all he will get is
             # a Forbidden which is enforced by the security wrapper for
-            # DistroReleaseQueue.
-            valid_states.remove(DistroReleaseQueueStatus.UNAPPROVED)
+            # Upload.
+            valid_states.remove(PackageUploadStatus.UNAPPROVED)
 
         self.filtered_options = []
 
@@ -98,8 +98,8 @@ class QueueItemsView(LaunchpadView):
         """
         # states that support actions
         mutable_states = [
-            DistroReleaseQueueStatus.NEW,
-            DistroReleaseQueueStatus.UNAPPROVED,
+            PackageUploadStatus.NEW,
+            PackageUploadStatus.UNAPPROVED,
             ]
 
         # return actions only for supported states and require
@@ -134,7 +134,7 @@ class QueueItemsView(LaunchpadView):
         if not isinstance(queue_ids, list):
             queue_ids = [queue_ids]
 
-        queue_set = getUtility(IDistroReleaseQueueSet)
+        queue_set = getUtility(IPackageUploadSet)
 
         if accept:
             header = 'Accepting Results:<br>'

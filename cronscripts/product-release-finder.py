@@ -9,12 +9,12 @@ to identify files and create new ProductRelease records for them.
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.productreleasefinder.finder import (
     ProductReleaseFinder)
 
 
-class ReleaseFinderScript(LaunchpadScript):
+class ReleaseFinderScript(LaunchpadCronScript):
     def main(self):
         prf = ProductReleaseFinder(self.txn, self.logger)
         prf.findReleases()

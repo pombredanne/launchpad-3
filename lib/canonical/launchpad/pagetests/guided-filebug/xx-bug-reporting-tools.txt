@@ -78,7 +78,7 @@ information specified in the extra filebug data.
     ...     'A bug description.')
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.url
-    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/...'
+    'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/...'
 
 Some extra text was appended to the description.
 
@@ -100,13 +100,6 @@ Two attachments were added.
 And three comments were added, including the empty comment that was
 created for the attachments.
 
-    >>> def print_comments(page):
-    ...     main_content = find_main_content(page)
-    ...     for comment in main_content('div', 'boardCommentBody'):
-    ...         for li_tag in comment('li'):
-    ...             print "Attachment: %s" % li_tag.a.renderContents()
-    ...         print comment.div.renderContents()
-    ...         print "-"*40
     >>> print_comments(user_browser.contents)
     <p>This should be added as a comment.</p>
     ----------------------------------------
@@ -138,7 +131,7 @@ bug.
     ...     'An advanced bug description.')
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.url
-    'http://launchpad.dev/firefox/+bug/...'
+    'http://bugs.launchpad.dev/firefox/+bug/...'
 
     >>> print find_tag_by_id(
     ...     user_browser.contents, 'bug-description').renderContents()
@@ -192,3 +185,57 @@ The user can of course change the summary if he wants to.
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.getControl('Summary').value
     'Another summary'
+
+=== Tags ===
+
+If the uploaded message contains a Tags field, the tags widget will be
+initialized with that value.
+
+    >>> extra_filebug_data_with_subject = open(
+    ...     os.path.join(testfiles, 'extra_filebug_data_tags.msg'))
+    >>> anon_browser.open('http://launchpad.dev/+storeblob')
+    >>> anon_browser.getControl(name='field.blob').add_file(
+    ...     extra_filebug_data_with_subject, 'not/important', 'not.important')
+    >>> anon_browser.getControl(name='FORM_SUBMIT').click()
+    >>> blob_token = anon_browser.headers['X-Launchpad-Blob-Token']
+
+    >>> user_browser.open(
+    ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
+    ...     '+filebug-advanced/%s' % blob_token)
+
+    >>> user_browser.getControl('Tags').value
+    'foo bar'
+
+The user can of course change the tags if he wants.
+
+    >>> user_browser.getControl('Tags').value = 'bar baz'
+    >>> user_browser.getControl('Summary').value = 'Bug Summary'
+    >>> user_browser.getControl('Further information').value = (
+    ...     'Bug description.')
+    >>> user_browser.getControl('Submit Bug Report').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/...'
+
+    >>> tags = find_tag_by_id(user_browser.contents, 'bug-tags')
+    >>> print extract_text(tags)
+    Tags: bar baz
+
+The normal +filebug page has a hidden tags widget, so bugs filed via
+that will get their tags set as well.
+
+    >>> user_browser.open(
+    ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug/'
+    ...     '%s' % blob_token)
+    >>> user_browser.getControl('Summary').value = 'Bug Summary'
+    >>> user_browser.getControl('Continue').click()
+
+    >>> user_browser.getControl('Further information').value = (
+    ...     'Bug description.')
+    >>> user_browser.getControl('Submit Bug Report').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/...'
+
+    >>> tags = find_tag_by_id(user_browser.contents, 'bug-tags')
+    >>> print extract_text(tags)
+    Tags: bar foo
+

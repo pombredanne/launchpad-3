@@ -1,0 +1,38 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+    <tal:tag condition="view/update"/>
+    <metal:heading fill-slot="pageheading">
+      <h1>Administer architecture release</h1>
+    </metal:heading>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_editform/editform">
+
+    <p metal:fill-slot="extra_info" class="exception">
+      <strong>Changing the architecture tag will use large amounts of archive disk space,
+      and may affect many people. Please be very careful.</strong>
+    </p>
+
+  </div>
+
+</div>
+</body>
+</html>

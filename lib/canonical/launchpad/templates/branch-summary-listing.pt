@@ -1,4 +1,4 @@
-<li>
+<li xmlns:tal="http://xml.zope.org/namespaces/tal">
   <div>
     <a tal:attributes="href context/fmt:url"
         tal:content="context/displayname">Mozilla Thunderbird 0.9.1</a>
@@ -12,7 +12,7 @@
     <tal:product-link condition="view/show_product_link">
       - <img src="/@@/product" />
       <a tal:attributes="href string:${context/product/fmt:url}/+branches"
-	  tal:content="context/product/displayname">Product</a>
+	  tal:content="context/product/displayname">Project</a>
     </tal:product-link>
   </div>
   <div>

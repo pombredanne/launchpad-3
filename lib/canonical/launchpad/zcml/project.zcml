@@ -8,10 +8,8 @@
     <content class="canonical.launchpad.database.Project">
         <allow interface="canonical.launchpad.interfaces.IProject" />
         <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
+        <allow interface="canonical.launchpad.interfaces.IFAQCollection" />
         <allow interface="canonical.launchpad.interfaces.IQuestionCollection" />
-        <allow attributes="
-            default_gotchi_resource default_gotchi_heading_resource
-            default_emblem_resource" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IProject"
@@ -21,6 +19,14 @@
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="ProjectNavigation"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProject"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProjectDynMenu"
+        attribute="__call__"
+        name="+menudata"
         />
 
     <adapter
@@ -35,10 +41,20 @@
         classes="ProjectFacets ProjectOverviewMenu ProjectBountiesMenu
                  ProjectSpecificationsMenu ProjectSetContextMenu
                  ProjectAnswersMenu ProjectTranslationsMenu"
-	 />
+        />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
         name="+index"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
+        name="+branches"
+        layer="canonical.launchpad.layers.CodeLayer"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
+        name="+bugs"
+        layer="canonical.launchpad.layers.BugsLayer"
         />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
@@ -47,7 +63,7 @@
         />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
-        name="+tickets"
+        name="+questions"
         layer="canonical.launchpad.layers.AnswersLayer"
         />
     <browser:defaultView
@@ -65,11 +81,6 @@
             template="../templates/project-index.pt"
             />
         <browser:page
-            name="+branches"
-            facet="overview"
-            template="../templates/project-branches.pt"
-            />
-        <browser:page
             name="+bounties"
             facet="bounties"
             template="../templates/related-bounties.pt"
@@ -77,10 +88,10 @@
         <browser:page
             name="+listing-detailed"
             template="../templates/project-listing-detailed.pt" />
-        <browser:page
-            name="+translations"
-            facet="translations"
-            template="../templates/project-translations.pt"
+       <browser:page
+            name="+milestones"
+            facet="overview"
+            template="../templates/object-milestones.pt"
             />
 
        <!-- Projects portlets -->
@@ -99,7 +110,21 @@
             facet="overview"
             template="../templates/project-portlet-lifecycle.pt"
             />
+       <browser:page
+            name="+portlet-milestones"
+            facet="overview"
+            template="../templates/object-portlet-milestones.pt"
+            />
     </browser:pages>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectBranchesView"
+        facet="branches"
+        permission="zope.Public"
+        name="+branches"
+        template="../templates/project-branches.pt"
+    />
 
     <browser:page
         for="canonical.launchpad.interfaces.IProject"
@@ -110,14 +135,38 @@
         attribute="__call__"
         />
 
+    <browser:page
+        name="+translations"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.TranslationsRedirectView"
+        permission="zope.Public"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProject"
+        permission="zope.Public"
+        name="+translations"
+        facet="translations"
+        template="../templates/project-translations.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+    <browser:page
+        name="+help-translate-button"
+        facet="translations"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.HelpTranslateButtonView"
+        permission="zope.Public"
+        />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IProject"
-    class="canonical.launchpad.browser.SpecificationTargetView"
+    class="canonical.launchpad.browser.HasSpecificationsView"
     facet="specifications"
     permission="zope.Public">
     <browser:page
       name="+specs"
-      template="../templates/project-specs.pt" />
+      template="../templates/hasspecifications-specs.pt" />
     <browser:page
       name="+assignments"
       template="../templates/specificationtarget-assignments.pt" />
@@ -141,12 +190,19 @@
     </browser:pages>
 
     <browser:page
-        name="+new"
-        for="canonical.launchpad.interfaces.IProjectSet"
-        class="canonical.launchpad.browser.ProjectAddView"
-        facet="overview"
-        permission="launchpad.Admin"
-        template="../templates/project-add.pt"
+      name="+addspec"
+      for="canonical.launchpad.interfaces.IProject"
+      class="canonical.launchpad.browser.NewSpecificationFromProjectView"
+      facet="specifications"
+      permission="launchpad.AnyPerson"
+      template="../templates/specification-add.pt"
+    />
+
+    <browser:page
+        name="+register-a-blueprint-button"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.RegisterABlueprintButtonView"
+        permission="zope.Public"
         />
 
     <browser:page
@@ -156,6 +212,15 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/project-edit.pt"
+        />
+
+    <browser:page
+        name="+branding"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectBrandingView"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/object-branding.pt"
         />
 
     <browser:page
@@ -176,6 +241,7 @@
         permission="launchpad.Edit"
         label="Select a new translation group"
         template="../templates/project-translators.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:page
@@ -218,10 +284,16 @@
 
     <facet facet="answers">
         <browser:page
-            name="+addticket"
+            name="+addquestion"
             for="canonical.launchpad.interfaces.IProject"
             class="canonical.launchpad.browser.ProjectAddQuestionView"
             permission="launchpad.AnyPerson"
+            />
+        <browser:renamed-page
+            name="+addticket"
+            for="canonical.launchpad.interfaces.IProject"
+            new_name="+addquestion"
+            rootsite="answers"
             />
         <browser:page
             name="+ask-a-question-button"
@@ -274,7 +346,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IProjectSet"
         facet="overview"
-        permission="zope.Public"
+        permission="launchpad.Admin"
         class="canonical.launchpad.browser.ProjectSetView"
         >
         <browser:page
@@ -287,11 +359,20 @@
             />
     </browser:pages>
 
+    <browser:page
+      name="+new"
+      for="canonical.launchpad.interfaces.IProjectSet"
+      class="canonical.launchpad.browser.ProjectAddView"
+      facet="overview"
+      permission="launchpad.Admin"
+      template="../templates/project-add.pt"
+      />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProjectSet"
         facet="overview"
         class="canonical.launchpad.browser.ProjectSetView"
-        permission="launchpad.AnyPerson">
+        permission="launchpad.Admin">
         <browser:page
             name="+review"
             template="../templates/registry-review.pt"

@@ -1,0 +1,129 @@
+= Script Monitoring =
+
+To help monitor the health of the various cron jobs that keep
+Launchpad running, we record the status of successful script runs in
+the database.  This data can then be used for the following:
+
+ * Check that the script is running as often as it should.
+ * Check that the script has run recently.
+ * Check that the script's average runtime is sensible.
+
+
+== Recording Successful Runs ==
+
+When a script completes successfully, it should record the fact in the
+database.  This is performed with a call to
+IScriptActivitySet.recordSuccess():
+
+  >>> import datetime
+  >>> import os
+  >>> import socket
+  >>> import subprocess
+  >>> import sys
+  >>> import tempfile
+  >>> import pytz
+  >>> from zope.component import getUtility
+  >>> from canonical.database.sqlbase import ZopelessTransactionManager
+  >>> from canonical.launchpad.interfaces import IScriptActivitySet
+
+  >>> UTC = pytz.timezone('UTC')
+  >>> ztm = ZopelessTransactionManager._installed
+
+  >>> activity = getUtility(IScriptActivitySet).recordSuccess(
+  ...     name='script-name',
+  ...     date_started=datetime.datetime(2007,2,1,10,0,tzinfo=UTC),
+  ...     date_completed=datetime.datetime(2007,2,1,10,1,tzinfo=UTC))
+
+The activity object records the script name, the host name it ran on
+and the start and end timestamps:
+
+  >>> print activity.name
+  script-name
+  >>> activity.hostname == socket.gethostname()
+  True
+  >>> print activity.date_started
+  2007-02-01 10:00:00+00:00
+  >>> print activity.date_completed
+  2007-02-01 10:01:00+00:00
+
+We can also query for the last activity for a particular script, which
+will match the activity we just created:
+
+  >>> activity = getUtility(IScriptActivitySet).getLastActivity('script-name')
+  >>> print activity.date_started
+  2007-02-01 10:00:00+00:00
+
+
+If no activity has occurred for a script, getLastActivity() returns
+None:
+
+  >>> print getUtility(IScriptActivitySet).getLastActivity('no-such-script')
+  None
+
+
+== LaunchpadScript Integration ==
+
+A LaunchpadScript subclass is provided that will automatically log the
+result of successful runs.  This is intended for use by cron scripts
+and others where it is useful to monitor the result.
+
+  >>> script_file = tempfile.NamedTemporaryFile()
+  >>> script_file.write("""
+  ... from canonical.launchpad.scripts.base import LaunchpadCronScript
+  ... 
+  ... class TestScript(LaunchpadCronScript):
+  ...     def main(self):
+  ...         # Fail if we are told to do so
+  ...         if self.args[0] == 'fail':
+  ...             raise RuntimeError('Some failure')
+  ... 
+  ... if __name__ == '__main__':
+  ...     script = TestScript('test-script')
+  ...     script.run()
+  ... """)
+  >>> script_file.flush()
+
+We'll now run this script, telling it to fail:
+
+  >>> ztm.commit()
+  >>> env = dict(os.environ)
+  >>> env['LPCONFIG_SECTION'] = 'testrunner'
+  >>> proc = subprocess.Popen([sys.executable, script_file.name, 'fail'],
+  ...                         env=env, stdin=subprocess.PIPE,
+  ...                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  >>> (out, err) = proc.communicate()
+  >>> ztm.abort()
+
+The process failed:
+
+  >>> print proc.returncode
+  1
+
+And no activity got recorded:
+
+  >>> print getUtility(IScriptActivitySet).getLastActivity('test-script')
+  None
+
+If we run it such that it succeeds, we will get an activity record:
+
+  >>> proc = subprocess.Popen([sys.executable, script_file.name, 'pass'],
+  ...                         env=env, stdin=subprocess.PIPE,
+  ...                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  >>> (out, err) = proc.communicate()
+  >>> ztm.abort()
+
+  >>> print proc.returncode
+  0
+  >>> activity = getUtility(IScriptActivitySet).getLastActivity('test-script')
+  >>> activity is not None
+  True
+  >>> print activity.name
+  test-script
+  >>> activity.hostname == socket.gethostname()
+  True
+
+Remove the temporary script file:
+
+  >>> script_file.close()
+
+

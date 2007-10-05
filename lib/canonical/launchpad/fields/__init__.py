@@ -3,6 +3,7 @@
 from StringIO import StringIO
 from textwrap import dedent
 
+from zope.component import getUtility
 from zope.schema import (
     Bool, Bytes, Choice, Field, Int, Text, TextLine, Password, Tuple)
 from zope.schema.interfaces import (
@@ -12,8 +13,9 @@ from zope.security.interfaces import ForbiddenAttribute
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import valid_name, name_validator
 
 
 # Marker object to tell BaseImageUpload to keep the existing image.
@@ -130,13 +132,13 @@ class IURIField(ITextLine):
 class IBaseImageUpload(IBytes):
     """Marker interface for ImageUpload fields."""
 
-    max_dimensions = Tuple(
-        title=_('Maximun dimensions'),
-        description=_('A two-tuple with the maximun width and height (in '
+    dimensions = Tuple(
+        title=_('Maximum dimensions'),
+        description=_('A two-tuple with the maximum width and height (in '
                       'pixels) of this image.'))
     max_size = Int(
-        title=_('Maximun size'),
-        description=_('The maximun size (in bytes) of this image.'))
+        title=_('Maximum size'),
+        description=_('The maximum size (in bytes) of this image.'))
 
     default_image_resource = TextLine(
         title=_('The default image'),
@@ -195,6 +197,41 @@ class BugField(Field):
     implements(IBugField)
 
 
+class DuplicateBug(BugField):
+    """A bug that the context is a duplicate of."""
+
+    def _validate(self, value):
+        """Prevent dups of dups.
+
+        Returns True if the dup target is not a duplicate /and/ if the
+        current bug doesn't have any duplicates referencing it /and/ if the
+        bug isn't a duplicate of itself, otherwise
+        return False.
+        """
+        from canonical.launchpad.interfaces.bug import IBugSet
+        bugset = getUtility(IBugSet)
+        current_bug = self.context
+        dup_target = value
+        current_bug_has_dup_refs = bool(bugset.searchAsUser(
+            user=getUtility(ILaunchBag).user, duplicateof=current_bug))
+        if current_bug == dup_target:
+            raise LaunchpadValidationError(_(dedent("""
+                You can't mark a bug as a duplicate of itself.""")))
+        elif dup_target.duplicateof is not None:
+            raise LaunchpadValidationError(_(dedent("""
+                Bug %i is already a duplicate of bug %i. You can only
+                duplicate to bugs that are not duplicates themselves.
+                """% (dup_target.id, dup_target.duplicateof.id))))
+        elif current_bug_has_dup_refs:
+            raise LaunchpadValidationError(_(dedent("""
+                There are other bugs already marked as duplicates of Bug %i.
+                These bugs should be changed to be duplicates of another bug
+                if you are certain you would like to perform this change."""
+                % current_bug.id)))
+        else:
+            return True
+
+
 class Tag(TextLine):
 
     implements(ITag)
@@ -224,7 +261,7 @@ class UniqueField(TextLine):
 
     @property
     def _content_iface(self):
-        """Return the content interface. 
+        """Return the content interface.
 
         Override this in subclasses.
         """
@@ -237,22 +274,32 @@ class UniqueField(TextLine):
         """
         raise NotImplementedError
 
+    def _isValueTaken(self, value):
+        """Returns true if and only if the specified value is already taken."""
+        return self._getByAttribute(value) is not None
+
     def _validate(self, input):
         """Raise a LaunchpadValidationError if the attribute is not available.
 
-        A attribute is not available if it's already in use by another object 
-        of this same context. The 'input' should be valid as per TextLine.
+        A attribute is not available if it's already in use by another
+        object of this same context. The 'input' should be valid as per
+        TextLine.
         """
         TextLine._validate(self, input)
         assert self._content_iface is not None
         _marker = object()
-        if (self._content_iface.providedBy(self.context) and 
+
+        # If we are editing an existing object and the attribute is
+        # unchanged...
+        if (self._content_iface.providedBy(self.context) and
             input == getattr(self.context, self.attribute, _marker)):
-            # The attribute wasn't changed.
+            # ...then do nothing: we already know the value is unique.
             return
 
-        contentobj = self._getByAttribute(input)
-        if contentobj is not None:
+        # Now we know we are dealing with either a new object, or an
+        # object whose attribute is going to be updated. We need to
+        # ensure the new value is unique.
+        if self._isValueTaken(input):
             raise LaunchpadValidationError(self.errormessage % input)
 
 
@@ -264,6 +311,11 @@ class ContentNameField(UniqueField):
     def _getByAttribute(self, name):
         """Return the content object with the given name."""
         return self._getByName(name)
+
+    def _validate(self, name):
+        """Check that the given name is valid (and by delegation, unique)."""
+        name_validator(name)
+        UniqueField._validate(self, name)
 
 
 class BlacklistableContentNameField(ContentNameField):
@@ -277,7 +329,7 @@ class BlacklistableContentNameField(ContentNameField):
         super(BlacklistableContentNameField, self)._validate(input)
 
         _marker = object()
-        if (self._content_iface.providedBy(self.context) and 
+        if (self._content_iface.providedBy(self.context) and
             input == getattr(self.context, self.attribute, _marker)):
             # The attribute wasn't changed.
             return
@@ -379,7 +431,7 @@ class URIField(TextLine):
             uri = URI(value)
         except InvalidURIError, e:
             raise LaunchpadValidationError(str(e))
-        
+
         if self.allowed_schemes and uri.scheme not in self.allowed_schemes:
             raise LaunchpadValidationError(
                 'The URI scheme "%s" is not allowed.  Only URIs with '
@@ -425,20 +477,20 @@ class BaseImageUpload(Bytes):
 
     Any subclass of this one must be used in conjunction with
     ImageUploadWidget and must define the following attributes:
-    - max_dimensions: the maximun dimension of the image; a tuple of the
+    - dimensions: the exact dimensions of the image; a tuple of the
       form (width, height).
-    - max_size: the maximun size of the image, in bytes.
+    - max_size: the maximum size of the image, in bytes.
     """
 
     implements(IBaseImageUpload)
 
-    max_dimensions = ()
+    dimensions = ()
     max_size = 0
 
-    def __init__(self, default_image_resource='/@@/nyet', **kw):
+    def __init__(self, default_image_resource='/@@/nyet-icon', **kw):
         self.default_image_resource = default_image_resource
         Bytes.__init__(self, **kw)
- 
+
     def getCurrentImage(self):
         if self.context is None:
             raise FieldNotBoundError("This field must be bound to an object.")
@@ -466,11 +518,11 @@ class BaseImageUpload(Bytes):
                 The file uploaded was not recognized as an image; please
                 check it and retry.""")))
         width, height = pil_image.size
-        max_width, max_height = self.max_dimensions
-        if width > max_width or height > max_height:
+        required_width, required_height = self.dimensions
+        if width != required_width or height != required_height:
             raise LaunchpadValidationError(_(dedent("""
-                This image exceeds the maximum allowed width or height in
-                pixels.""")))
+                This image is not exactly %dx%d pixels in size.""" % (
+                required_width, required_height))))
         return True
 
     def validate(self, value):
@@ -484,57 +536,24 @@ class BaseImageUpload(Bytes):
             Bytes.set(self, object, value)
 
 
-# XXX: This field and its corresponding widget could be made slightly simpler
-# by doing what Francis suggested on
-# https://lists.ubuntu.com/mailman/private/launchpad-reviews/2007-March/004856.html
-# -- Guilherme Salgado, 2007-03-07
-# XXX: I'll rename this field on the following iteration (which is going to
-# hapen before this branch lands); I just don't want to do it now because this
-# branch is quite big already. -- Guilherme Salgado 2007-02-14
-# XXX: When renaming this field, it'll also be necessary to define new
-# attributes in our pillars (named gotchi_and_heading, probably) which will
-# then use this field, which will in turn operate in the gotchi and
-# gotchi_heading attributes (https://launchpad.net/bugs/90613).
-# -- Guilherme Salgado, 2007-03-08
-class LargeImageUpload(BaseImageUpload):
+class IconImageUpload(BaseImageUpload):
 
-    # The max dimensions here is actually a bit bigger than the advertised
-    # one --it's nice to be a bit permissive with user-entered data where we
-    # can.
-    max_dimensions = (200, 200)
+    dimensions = (14, 14)
+    max_size = 5*1024
+    default_image_resource = '/@@/nyet-icon'
+
+
+class LogoImageUpload(BaseImageUpload):
+
+    dimensions = (64, 64)
+    max_size = 50*1024
+    default_image_resource = '/@@/nyet-logo'
+
+
+class MugshotImageUpload(BaseImageUpload):
+
+    dimensions = (192, 192)
     max_size = 100*1024
     default_image_resource = '/@@/nyet-mugshot'
 
-    def __init__(self, default_image_resource='/@@/nyet',
-                 heading_name='gotchi_heading', **kw):
-        self.default_image_resource = default_image_resource
-        self.heading_name = heading_name
-        Bytes.__init__(self, **kw)
- 
-    # Ideally this method should get a single image, resize it and store both
-    # images, but we can't do that because the widget gives us a
-    # LibraryFileAlias and we don't have access to its contents before the
-    # transaction is committed.
-    def set(self, object, value):
-        assert isinstance(value, (list, tuple))
-        original_img, small_img = value
-        if original_img is not KEEP_SAME_IMAGE:
-            assert small_img is not KEEP_SAME_IMAGE
-            BaseImageUpload.set(self, object, original_img)
-            setattr(object, self.heading_name, small_img)
-        else:
-            assert small_img is KEEP_SAME_IMAGE
-
-    # This method is not necessary on this field since it's used together with
-    # a widget which has two other subwidgets/subfields and the values stored
-    # on the subfields are the ones we actually care about.
-    def get(self, object):
-        return None
-
-
-class SmallImageUpload(BaseImageUpload):
-
-    max_dimensions = (16, 16)
-    max_size = 10*1024
-    default_image_resource = '/@@/nyet-mini'
 

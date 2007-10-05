@@ -1,6 +1,7 @@
 <tal:subs define="subscriptions context/subscriptions">
-  <div tal:condition="subscriptions" class="portlet">
+  <div class="portlet" id="portlet-subscribers" tal:condition="subscriptions">
     <h2>Subscribers</h2>
+    <div class="portletBody">
       <tal:comment replace="nothing">
         This is messy, but the portlet has to convey both subscribers and
         whether or not they are essential. Also, in the case where a person
@@ -24,6 +25,6 @@
         </tal:no_edit>
         <a tal:replace="structure subscription/person/fmt:link"/>
       </div>
-
+    </div>
   </div>
 </tal:subs>

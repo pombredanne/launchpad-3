@@ -1,4 +1,4 @@
-<tr>
+<tr xmlns:tal="http://xml.zope.org/namespaces/tal">
   <td class="icon left">
     <img alt="" src="/@@/bug" />
   </td>
@@ -14,10 +14,14 @@
         <tal:per_pillar repeat="pillar context/affected_pillars">
           <b tal:content="pillar/displayname" />,
         </tal:per_pillar>
-      reported by <a
-      tal:attributes="href context/owner/fmt:url"
-      tal:content="context/owner/browsername">Foo Bar</a> on
-      <span tal:replace="context/datecreated/fmt:date">2005-10-05</span>
+      reported
+      <span
+        tal:attributes="title context/datecreated/fmt:datetime"
+        tal:content="context/datecreated/fmt:displaydate">2005-10-05</span>
+      by
+      <a
+        tal:attributes="href context/owner/fmt:url"
+        tal:content="context/owner/browsername">Foo Bar</a>
     </div>
   </td>
 </tr>

@@ -1,9 +1,11 @@
   <tr>
-     <td tal:content="context/datepublished/fmt:datetime">
-       2005-09-16 13:42:02 SAST
+     <td
+       tal:attributes="title context/datepublished/fmt:datetime"
+       tal:content="context/datepublished/fmt:approximatedate">
+       2005-09-16
      </td>
      <td tal:content="context/status/title">PUBLISHED</td>
-     <td><a tal:content="context/meta_sourcepackage/distrorelease/name"
+     <td><a tal:content="context/meta_sourcepackage/distroseries/name"
             tal:attributes="href context/meta_sourcepackage/fmt:url">
          alsa-utils
          </a>

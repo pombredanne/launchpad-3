@@ -7,15 +7,7 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context Title Here</h3>
   <h1>Appoint driver</h1>
 </metal:heading>
 

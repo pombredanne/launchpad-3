@@ -4,9 +4,8 @@ Bug #%(bug_id)s status changed in %(bugtask_target_name)s:
 
 %(statusexplanation)s
 %(bugtask_url)s
+"%(bugtask_title)s"
 
---
-You received this email because you are a subscriber of
-question #%(question_id)s which is linked to this bug.
+This bug is linked to #%(question_id)s.
 %(question_title)s
 %(question_url)s

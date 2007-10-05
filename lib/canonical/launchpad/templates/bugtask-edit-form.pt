@@ -1,127 +1,218 @@
-<tal:process define="status view/process_form" />
 <form
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   action="#"
   tal:attributes="action string:${context/fmt:url}/+editstatus"
   method="post"
   enctype="multipart/form-data">
   <p
-    tal:define="errors view/errors|nothing"
-    tal:condition="errors"
+    tal:condition="view/errors"
     class="error message"
     i18n:translate=""
   >
-    There are
-    <strong
-      tal:content="view/errors/count:len"
-      i18n:name="num_errors"
-    >6</strong>
-    problems with the information you entered.  Please fix them and try again.
+    <tal:block condition="python:len(view.errors) > 1">
+      There are <tal:count content="view/errors/count:len" /> errors in the
+      data you entered. Please fix them and try again.
+    </tal:block>
+    <tal:block condition="python:len(view.errors) == 1">
+      There is 1 error in the data you entered. Please fix it and try again.
+    </tal:block>
+
+    <tal:block
+      condition="view/form_wide_errors"
+      repeat="error view/form_wide_errors">
+      <tal content="error" /><br />
+    </tal:block>
   </p>
-  <p
-    tal:define="errors view/errors|nothing"
-    tal:condition="errors"
-    tal:repeat="error errors"
-    tal:content="error"
-    class="error message"
-  >Individual error.</p>
 
   <p tal:condition="not: context/required:launchpad.Edit" class="error message">
     You are not the bug assignee nor the maintainer of
-    <tal:context replace="context/targetname">project</tal:context>,
+    <tal:context replace="context/bugtargetdisplayname">project</tal:context>,
     and therefore cannot edit this bug's status.
   </p>
+  <table class="summary">
+    <tr>
+      <th>Affecting:</th>
+      <td><a tal:attributes="href context/target/fmt:url"
+             tal:content="context/target/bugtargetdisplayname">Ubuntu</a></td>
+    </tr>
+    <tr tal:condition="context/target/currentrelease|nothing">
+      <th>Latest release:</th>
+      <td tal:define="cr context/target/currentrelease">
+        <a tal:content="cr/version" tal:attributes="href cr/fmt:url">3.2.1-3</a>
+      </td>
+    </tr>
+    <tr>
+      <th>Filed here by:</th>
+      <td><a tal:replace="structure context/owner/fmt:link">Foo Bar</a></td>
+    </tr>
+    <tr>
+      <th>When:</th>
+      <td>
+        <span
+          tal:attributes="title context/datecreated/fmt:datetime"
+          tal:content="context/datecreated/fmt:approximatedate">
+          2006-12-13
+        </span>
+      </td>
+    </tr>
+    <tr tal:condition="context/date_confirmed">
+      <th>Confirmed:</th>
+      <td>
+        <span
+          tal:attributes="title context/date_confirmed/fmt:datetime"
+          tal:content="context/date_confirmed/fmt:approximatedate">
+          2006-12-13
+        </span>
+      </td>
+    </tr>
+    <tr tal:condition="context/date_assigned">
+      <th>Assigned:</th>
+      <td>
+        <span
+          tal:attributes="title context/date_assigned/fmt:datetime"
+          tal:content="context/date_assigned/fmt:approximatedate">
+          2006-12-13
+        </span>
+      </td>
+    </tr>
+    <tr tal:condition="context/date_inprogress">
+      <th>Started work:</th>
+      <td>
+        <span
+          tal:attributes="title context/date_inprogress/fmt:datetime"
+          tal:content="context/date_inprogress/fmt:approximatedate">
+          2006-12-13
+        </span>
+      </td>
+    </tr>
+    <tr tal:condition="context/date_closed">
+      <th>Completed:</th>
+      <td>
+        <span
+          tal:attributes="title context/date_closed/fmt:datetime"
+          tal:content="context/date_closed/fmt:approximatedate">
+          2006-12-13
+        </span>
+      </td>
+    </tr>
+  </table>
   <div class="field">
     <table>
       <tal:distrotask
-        condition="python:context.distribution or context.distrorelease"
+        condition="python:context.distribution or context.distroseries"
+        define="error python:view.getWidgetError('sourcepackagename')"
       >
         <tr>
           <td>
             <label
-              tal:attributes="for view/sourcepackagename_widget/name"
-              tal:content="view/sourcepackagename_widget/label"
+              tal:attributes="for view/widgets/sourcepackagename/name"
+              tal:content="view/widgets/sourcepackagename/label"
             >Source package name</label>
           </td>
         </tr>
-        <tr>
-          <td
-            tal:content="structure view/sourcepackagename_widget"
-            style="white-space: nowrap;"
-          />
+        <tr tal:attributes="class python:error and 'error' or None">
+          <td>
+            <tal:widget content="structure view/widgets/sourcepackagename" />
+            <div tal:condition="error"
+                class="message"
+                tal:content="error">An error in sourcepackagename widget.
+            </div>
+          </td>
         </tr>
       </tal:distrotask>
-      <tal:upstreamtask condition="python:context.product">
-        <tr tal:condition="view/product_widget">
+
+      <tal:upstreamtask
+          condition="python:context.product"
+          define="omit_required default;
+                  error python:view.getWidgetError('product')">
+        <tr>
           <td colspan="2">
-            <label
-              tal:attributes="for view/product_widget/name"
-              tal:content="view/product_widget/label"
+            <label style="font-weight: bold"
+              tal:attributes="for view/widgets/product/name"
+              tal:content="view/widgets/product/label"
             >Upstream project</label>
           </td>
         </tr>
-        <tr tal:condition="view/product_widget">
-          <td colspan="2" tal:content="structure view/product_widget" nowrap />
+        <tr tal:attributes="class python:error and 'error' or None">
+          <td colspan="2" style="white-space: nowrap">
+            <tal:widget content="structure view/widgets/product" />
+            <div tal:condition="error"
+                class="message"
+                tal:content="error">An error in product widget.
+            </div>
+          </td>
         </tr>
       </tal:upstreamtask>
     </table>
     <table>
       <tr>
         <td>
-          <label
-            tal:attributes="for view/status_widget/name"
-            tal:content="view/status_widget/label"
+          <label style="font-weight: bold"
+            tal:attributes="for view/widgets/status/name"
+            tal:content="view/widgets/status/label"
           >Status</label>
         </td>
         <td>
-          <label
-            tal:attributes="for view/importance_widget/name"
-            tal:content="view/importance_widget/label"
+          <label style="font-weight: bold"
+            tal:attributes="for view/widgets/importance/name"
+            tal:content="view/widgets/importance/label"
           >Importance</label>
         </td>
-        <td tal:condition="view/milestone_widget">
-          <label
-            tal:attributes="for view/milestone_widget/name"
-            tal:content="view/milestone_widget/label"
+        <td tal:condition="view/widgets/milestone">
+          <label style="font-weight: bold"
+            tal:attributes="for view/widgets/milestone/name"
+            tal:content="view/widgets/milestone/label"
           >Target</label>
         </td>
       </tr>
       <tr>
-        <td tal:content="structure view/status_widget" />
-        <td title="Editable only by the maintainer or bug contact of the project">
-          <img tal:condition="not:view/userCanEditImportance" src="/@@/locked" />
-          <span tal:content="structure view/importance_widget" />
+        <td tal:content="structure view/widgets/status" />
+        <td title="Changeable only by a project maintainer or bug contact">
+          <img
+            tal:condition="not:view/userCanEditImportance"
+            alt=""
+            src="/@@/read-only"
+          />
+          <tal:widget content="structure view/widgets/importance" />
         </td>
-        <td tal:condition="view/milestone_widget"
-            title="Editable only by the maintainer or bug contact of the project">
-          <img tal:condition="not:view/userCanEditMilestone" src="/@@/locked" />
-          <span tal:content="structure view/milestone_widget" />
+        <td tal:condition="view/widgets/milestone"
+            title="Changeable only by a project maintainer or bug contact">
+          <img
+            tal:condition="not:view/userCanEditMilestone"
+            alt=""
+            src="/@@/read-only"
+          />
+          <tal:widget content="structure view/widgets/milestone" />
         </td>
       </tr>
     </table>
     <table>
       <tr>
         <td>
-          <label
-            tal:attributes="for view/assignee_widget/name"
-            tal:content="view/assignee_widget/label"
+          <label style="font-weight: bold"
+            tal:attributes="for view/widgets/assignee/name"
+            tal:content="view/widgets/assignee/label"
           />
         </td>
       </tr>
       <tr>
-        <td nowrap tal:content="structure view/assignee_widget" colspan="2" />
+        <td tal:content="structure view/widgets/assignee"
+          colspan="2" style="white-space: nowrap" />
       </tr>
     </table>
     <table tal:condition="not:context/target_uses_malone">
       <tr>
         <td>
           <label
-            tal:attributes="for view/bugwatch_widget/name"
+            tal:attributes="for view/widgets/bugwatch/name"
             style="white-space: nowrap"
           >Remote Watch</label>
         </td>
       </tr>
       <tr>
-        <td nowrap tal:content="structure view/bugwatch_widget" colspan="2" />
+        <td tal:content="structure view/widgets/bugwatch"
+          colspan="2" style="white-space: nowrap" />
       </tr>
       <tr>
         <td class="formHelp" colspan="2">
@@ -130,9 +221,11 @@
         <tal:has_bugwatch tal:condition="context/bugwatch">
           <tal:has_been_pulled 
               tal:condition="context/bugwatch/lastchecked">
-            This information was last pulled 
-            <b tal:content="context/bugwatch/lastchecked/fmt:datetime">
-              2006-03-01 23:15 UTC
+            This information was last pulled
+            <b
+              tal:attributes="title context/bugwatch/lastchecked/fmt:datetime"
+              tal:content="context/bugwatch/lastchecked/fmt:displaydate">
+              3 minutes ago
             </b>.
           </tal:has_been_pulled>
           <tal:has_not_been_pulled 
@@ -145,14 +238,14 @@
     </table>
   </div>
   <div class="field">
-    <label tal:attributes="for string:${view/prefix}.comment_on_change">Comment on most recent change</label>
-    <div style="margin-top: 5px">
+    <label style="font-weight: bold" tal:attributes="for string:${view/prefix}.comment_on_change">Comment on most recent change</label>
+    <div style="margin-top: 5px; margin-bottom: 1em">
       <i tal:content="python:context.statusexplanation or '(none)'" />
     </div>
   </div>
   <div class="field">
     <div>
-      <label  tal:attributes="for string:${view/prefix}.comment_on_change">Comment on this change (optional)</label>
+      <label style="font-weight: bold" tal:attributes="for string:${view/prefix}.comment_on_change">Comment on this change (optional)</label>
       <textarea
         cols="62"
         rows="4"
@@ -172,9 +265,9 @@
   <div class="actions" tal:condition="context/required:launchpad.Edit">
     <input
       type="submit"
-      name="FORM_SUBMIT"
       value="Save Changes"
       i18n:attributes="value submit-button"
+      tal:attributes="name string:${view/prefix}.actions.save"
     />
   </div>
 </form>

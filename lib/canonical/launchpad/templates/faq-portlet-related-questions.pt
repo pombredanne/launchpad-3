@@ -1,0 +1,23 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-related-questions"
+  tal:define="questions context/related_questions"
+  tal:condition="questions" >
+
+    <h2>Related questions</h2>
+
+    <div class="portletBody">
+
+      <ul>
+        <li class="question" tal:repeat="question questions">
+          <a tal:attributes="href question/fmt:url;
+                             title question/description/fmt:shorten/100"
+             tal:content="string:#${question/id} ${question/title}"># Title</a>
+        </li>
+      </ul>
+
+    </div>
+
+</div>

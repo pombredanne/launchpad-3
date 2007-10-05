@@ -10,12 +10,21 @@ from zope.app.security.interfaces import IAuthenticationService, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.schema import Int, Text, Object, Datetime, TextLine, Bool
+from zope.security.interfaces import Forbidden
 
 from canonical.launchpad import _
 
 
+class TranslationUnavailable(Exception):
+    """Translation objects are unavailable."""
+
+
 class NotFoundError(KeyError):
     """Launchpad object not found."""
+
+
+class UnexpectedFormData(AssertionError):
+    """Got form data that is not what is expected by a form handler."""
 
 
 class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
@@ -29,7 +38,6 @@ class ILaunchpadApplication(Interface):
     application objects will provide an interface that extends this
     interface.
     """
-    name = Attribute('Name')
     title = Attribute('Title')
 
 
@@ -47,6 +55,15 @@ class IAuthorization(Interface):
 
         The argument `user` is the person who is authenticated.
         """
+
+
+class OffsiteFormPostError(Exception):
+    """An attempt was made to post a form from a remote site."""
+
+
+class UnsafeFormGetSubmissionError(Exception):
+    """An attempt was made to submit an unsafe form action with GET."""
+
 
 #
 # Menus and Facets
@@ -173,6 +190,8 @@ class IBreadcrumb(Interface):
 
     text = Attribute('Text of this breadcrumb.')
 
+    has_menu = Attribute('Whether this breadcrumb has a drop-down menu.')
+
 
 #
 # Traversal bits
@@ -234,8 +253,8 @@ class NoCanonicalUrl(TypeError):
 #
 
 
-# XXX: this is currently unused. We need somebody to come in and set up
-# interfaces for the enums. -- kiko, 2007-02-08
+# XXX kiko 2007-02-08: this is currently unused. We need somebody to come
+# in and set up interfaces for the enums.
 class IDBSchema(Interface):
     """A DBSchema enumeration."""
 
@@ -277,20 +296,20 @@ class IDBSchemaItem(Interface):
     def __hash__():
         """Returns a hash value."""
 
-# XXX: this needs reconsideration if we are to make it a truly generic
-# thing. The problem lies in the fact that half of this (user, login,
-# timezone, developer) is actually useful inside webapp/, and ther other
+# XXX kiko 2007-02-08: this needs reconsideration if we are to make it a
+# truly generic thing. The problem lies in the fact that half of this (user,
+# login, timezone, developer) is actually useful inside webapp/, and the other
 # half is very Launchpad-specific. I suggest we split the interface and
 # implementation into two parts, having a different name for the webapp/
-# bits. -- kiko, 2007-02-08
+# bits.
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')
     person = Attribute('IPerson, or None')
     project = Attribute('IProject, or None')
     product = Attribute('IProduct, or None')
     distribution = Attribute('IDistribution, or None')
-    distrorelease = Attribute('IDistroRelease, or None')
-    distroarchrelease = Attribute('IDistroArchRelease, or None')
+    distroseries = Attribute('IDistroSeries, or None')
+    distroarchseries = Attribute('IDistroArchSeries, or None')
     sourcepackage = Attribute('ISourcepackage, or None')
     sourcepackagereleasepublishing = Attribute(
         'ISourcepackageReleasePublishing, or None')
@@ -351,14 +370,47 @@ class IBasicLaunchpadRequest(Interface):
         """
 
 
+class IBrowserFormNG(Interface):
+    """Interface to manipulate submitted form data."""
+
+    def __contains__(name):
+        """Return True if a field named name was submitted."""
+
+    def __iter__():
+        """Return an iterator over the submitted field names."""
+
+    def getOne(name, default=None):
+        """Return the value of the field name.
+
+        If the field wasn't submitted return the default value.
+        If more than one value was submitted, raises UnexpectedFormData.
+        """
+
+    def getAll(name, default=None):
+        """Return the the list of values submitted under field name.
+
+        If the field wasn't submitted return the default value. (If default
+        is None, an empty list will be returned. It is an error to use
+        something else than None or a list as default value.
+
+        This method should always return a list, if only one value was
+        submitted, it will be returned in a list.
+        """
+
+
 class ILaunchpadBrowserApplicationRequest(
     IBasicLaunchpadRequest,
     zope.publisher.interfaces.browser.IBrowserApplicationRequest):
     """The request interface to the application for launchpad browser requests.
     """
 
-# XXX: These need making into a launchpad version rather than the zope versions
-#      for the publisher simplification work.  SteveAlexander 2005-09-14
+    form_ng = Object(
+        title=u'IBrowserFormNG object containing the submitted form data',
+        schema=IBrowserFormNG)
+
+
+# XXX SteveAlexander 2005-09-14: These need making into a launchpad version
+#     rather than the zope versions for the publisher simplification work.
 # class IEndRequestEvent(Interface):
 #     """An event which gets sent when the publication is ended"""
 #
@@ -473,7 +525,7 @@ class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
     """The Launchpad customized database adapter"""
     def readonly():
         """Set the connection to read only.
-        
+
         This should only be called at the start of the transaction to
         avoid confusing code that defers making database changes until
         transaction commit time.
@@ -482,7 +534,7 @@ class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
     def switchUser(self, dbuser=None):
         """Change the PostgreSQL user we are connected as, defaulting to the
         default Launchpad user.
-       
+
         This involves closing the existing connection and reopening it;
         uncommitted changes will be lost. The new connection will also open
         in read/write mode so calls to readonly() will need to be made
@@ -497,8 +549,8 @@ class BrowserNotificationLevel:
     """Matches the standard logging levels, with the addition of notice
     (which we should probably add to our log levels as well)
     """
-    # XXX Matthew Paul Thomas 2006-03-22: NOTICE and INFO should be merged.
-    # https://launchpad.net/bugs/36287
+    # XXX Matthew Paul Thomas 2006-03-22 bugs=36287:
+    # NOTICE and INFO should be merged.
     DEBUG = logging.DEBUG     # A debugging message
     INFO = logging.INFO       # simple confirmation of a change
     NOTICE = logging.INFO + 5 # action had effects you might not have intended
@@ -589,7 +641,7 @@ class INotificationResponse(Interface):
         are preserved.
         """
 
- 
+
 class IErrorReport(Interface):
     id = TextLine(description=u"the name of this error report")
     type = TextLine(description=u"the type of the exception that occurred")
@@ -603,7 +655,7 @@ class IErrorReport(Interface):
 
 class IErrorReportRequest(Interface):
     oopsid = TextLine(
-        description=u"""an identifier for the exception, or None if no 
+        description=u"""an identifier for the exception, or None if no
         exception has occurred""")
 
 #
@@ -655,3 +707,10 @@ class IMultiLineWidgetLayout(Interface):
 
 class ICheckBoxWidgetLayout(IAlwaysSubmittedWidget):
     """A widget that is displayed like a check box with label to the right."""
+
+
+class IBreadcrumbProvider(Interface):
+    """Object that provides breadcrumb text."""
+
+    def breadcrumb():
+        """Breadcrumb text."""

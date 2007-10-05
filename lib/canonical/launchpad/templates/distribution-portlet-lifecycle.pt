@@ -1,4 +1,8 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-lifecycle">
   <h2>Lifecycle</h2>
   <div class="portletBody portletContent">
     <table>
@@ -10,6 +14,13 @@
               tal:attributes="href context/owner/fmt:url"
               tal:content="context/owner/browsername"
             />
+          </td>
+        </tr>
+        <tr>
+          <th>When:</th>
+          <td tal:attributes="title context/date_created/fmt:datetime"
+              tal:content="context/date_created/fmt:approximatedate">
+            2006-05-14
           </td>
         </tr>
       </tbody>

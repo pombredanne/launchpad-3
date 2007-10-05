@@ -1,25 +1,18 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
+  dir="ltr"
   metal:use-macro="context/@@unlinkbugs_template/master"
   i18n:domain="launchpad">
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-bugs" />
-</metal:leftportlets>
-
-<metal:heading fill-slot="heading">
-  <h4><span tal:replace="context/target/displayname">Firefox</span>
-      Feature Specification:</h4>
-  <h2 tal:content="context/title">Spec Title</h2>
-  <h1 i18n:translate="">Remove links to bug reports</h1>
-</metal:heading>
-
   <div class="documentDescription" metal:fill-slot="extra_info">
-    This will <em>remove</em> the link between the specification and
+    This will <em>remove</em> the link between the blueprint and
     the selected bug reports.
   </div>
 

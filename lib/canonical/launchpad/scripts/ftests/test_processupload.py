@@ -24,8 +24,10 @@ class TestProcessUpload(LaunchpadZopelessTestCase):
         LaunchpadZopelessTestCase.tearDown(self)
         shutil.rmtree(self.queue_location)
 
-    def runProcessUpload(self, extra_args=[]):
+    def runProcessUpload(self, extra_args=None):
         """Run process-upload.py, returning the result and output."""
+        if extra_args is None:
+            extra_args = []
         script = os.path.join(config.root, "scripts", "process-upload.py")
         args = [sys.executable, script, "-vvv", self.queue_location]
         args.extend(extra_args)
@@ -63,17 +65,19 @@ class TestProcessUpload(LaunchpadZopelessTestCase):
         """
         # acquire the process-upload lockfile locally
         from contrib.glock import GlobalLock
-        locker = GlobalLock('/var/lock/process-upload.lock')
+        locker = GlobalLock('/var/lock/process-upload-insecure.lock')
         locker.acquire()
 
-        returncode, out, err = self.runProcessUpload()
+        returncode, out, err = self.runProcessUpload(
+            extra_args=['-C', 'insecure']
+            )
 
         # the process-upload call terminated with ERROR and
         # proper log message
         self.assertEqual(1, returncode)
         self.assertEqual(
             ['INFO    creating lockfile',
-             'ERROR   Cannot acquire lock.'
+             'ERROR   Lockfile /var/lock/process-upload-insecure.lock in use'
              ], err.splitlines())
 
         # release the locally acquired lockfile

@@ -3,6 +3,8 @@
 Several views are used to handle the various operations on a question.
 
     >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
+    >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IProductSet)
@@ -32,6 +34,7 @@ Several views are used to handle the various operations on a question.
     ...     stub.test_emails = []
     ...     return notifications
 
+
 == QuestionSubscriptionView ==
 
 This view is used to subscribe and unsubscribe from a question.
@@ -51,7 +54,7 @@ view page.
     ...     print notice.message
     You have subscribed to this question.
     >>> request.response.getHeader('Location')
-    '.../+ticket/3'
+    '.../+question/3'
 
 Unsubscription works in a similar manner.
 
@@ -65,12 +68,13 @@ Unsubscription works in a similar manner.
     ...     print notice.message
     You have unsubscribed from this question.
     >>> request.response.getHeader('Location')
-    '.../+ticket/3'
+    '.../+question/3'
 
 These two actions didn't generate any notification mails:
 
     >>> len(pop_notifications())
     0
+
 
 == QuestionWorkflowView ==
 
@@ -93,7 +97,7 @@ form.
     ...              if action.available()]
     ...     return sorted(names)
 
-Unlogged users cannot post any comments on the question:
+Unlogged-in users cannot post any comments on the question:
 
     >>> login(ANONYMOUS)
     >>> workflow_harness.submit('', {})
@@ -130,7 +134,7 @@ redirected back to the question page.
     >>> print firefox_question.status.name
     NEEDSINFO
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
 
 Workflow actions like these will send out notifications to subscribers.
 (Complete notifications testing will be found in
@@ -165,7 +169,7 @@ to the OPEN state.
     >>> print firefox_question.status.name
     OPEN
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
 
 The other user can come back and gives an answer:
 
@@ -181,7 +185,7 @@ The other user can come back and gives an answer:
     >>> print firefox_question.status.name
     ANSWERED
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
 
 Once the question is answered, the set of possible actions for the question
 owner changes. He can now either confirm the answer, answer the problem
@@ -196,8 +200,9 @@ Let's say he confirms the previous answer, in this case, the question will
 move to the 'SOLVED' state. Note that the UI doesn't enable the user to
 enter a confirmation message at that stage.
 
+    >>> answer_message_number = firefox_question.messages.count() - 1
     >>> workflow_harness.submit(
-    ...     'confirm', {'answer_id': firefox_question.messages.count()-1,
+    ...     'confirm', {'answer_id': answer_message_number,
     ...                 'field.message': ''})
     >>> for notification in workflow_harness.request.response.notifications:
     ...     print notification.message
@@ -205,15 +210,16 @@ enter a confirmation message at that stage.
     >>> print firefox_question.status.name
     SOLVED
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
 
 Since no confirmation message was given, a default one was used.
 
     >>> print firefox_question.messages[-1].text_contents
-    User confirmed that the question is solved.
+    Thanks No Privileges Person, that solved my question.
 
-Once in the SOLVED state, the owner can now only either add a comment
-or reopen the question:
+Once in the SOLVED state, when the answerer is a person other than the
+question owner, the owner can now only either add a comment or reopen
+the question:
 
     >>> getAvailableActionNames(workflow_harness.view)
     ['comment', 'reopen']
@@ -228,7 +234,7 @@ Adding a comment doesn't change the status:
     ...     print notification.message
     Thanks for your comment.
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
     >>> print firefox_question.status.name
     SOLVED
 
@@ -255,10 +261,11 @@ If the question owner reopens the question, its status is changed back to
     >>> print firefox_question.status.name
     OPEN
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
 
 When the question owner answers his own question, it is moved straight to
-the SOLVED state.
+the SOLVED state. The question owner is attributed as the answerer, but
+no answer message is assigned to the answer.
 
     >>> workflow_harness.submit(
     ...     'selfanswer', {
@@ -266,14 +273,44 @@ the SOLVED state.
     ...         "SVG features that will only be available in Firefox 2.0."})
     >>> for notification in workflow_harness.request.response.notifications:
     ...     print notification.message
-    Thanks for sharing your solution.
+    Your question is solved. If a particular message helped you solve the 
+    problem, use the <em>'This solved my problem'</em> button.
     >>> print firefox_question.status.name
     SOLVED
+    >>> print firefox_question.answerer.displayname
+    Sample Person
+    >>> firefox_question.answer is None
+    True
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
+
+When the answerer is the question owner, the owner can still confirm
+an answer, in addition to adding a comment or reopening the question.
+This path permits the question owner to state how the problem was
+solved, then attribute an answerer as a contributor to the solution.
+The answerer's message is attributed as the answer in this case.
+
+    >>> getAvailableActionNames(workflow_harness.view)
+    ['comment', 'confirm', 'reopen']
+
+    >>> workflow_harness.submit(
+    ...     'confirm', {'answer_id': answer_message_number,
+    ...                 'field.message': ''})
+    >>> print firefox_question.status.name
+    SOLVED
+    >>> print firefox_question.answerer.displayname
+    No Privileges Person
+    >>> print firefox_question.answer.owner.displayname
+    No Privileges Person
+    >>> answer_id = firefox_question.messages[answer_message_number].id
+    >>> firefox_question.answer.id == answer_id
+    True
+    >>> workflow_harness.redirectionTarget()
+    '.../+question/2'
 
     # Clear all notifications.
     >>> notifications = pop_notifications()
+
 
 == QuestionMakeBugView ==
 
@@ -281,32 +318,19 @@ The QuestionMakeBugView is used to handle the creation of a bug from a
 question. In addition to creating a bug, this operation will also link
 the bug to the question.
 
-If the user cancels a bug creation request, the user is redirected back
-the question page.
-
-    >>> login('foo.bar@canonical.com')
-    >>> request = LaunchpadTestRequest(form={'cancel': 'cancel'})
-    >>> request.method = 'POST'
-    >>> makebug = getView(question_three, '+makebug', request)
-    >>> makebug.initialize()
-    >>> makebug.process_form()
-    ''
-    >>> list(question_three.bugs)
-    []
-
 If the user creates a bug, a "Linked to bug" notification is sent and
 the user is subscribed to the bug.
 
+    >>> login('foo.bar@canonical.com')
     >>> request = LaunchpadTestRequest(
-    ...     form={'create': 'create',
+    ...     form={'field.actions.create': 'Create',
     ...           'field.title': 'Bug title',
     ...           'field.description': 'Bug description.'})
     >>> request.method = 'POST'
-    >>> makebug = getView(question_three, '+makebug', request)
+    >>> makebug = getMultiAdapter((question_three, request), name='+makebug')
+    >>> question_three.bugs.count() == 0
+    True
     >>> makebug.initialize()
-    >>> makebug.process_form()
-    >>> sorted(bug.id for bug in question_three.bugs)
-    [11L]
     >>> print question_three.bugs[0].title
     Bug title
     >>> print question_three.bugs[0].description
@@ -315,28 +339,36 @@ the user is subscribed to the bug.
     name16
     >>> question_three.bugs[0].isSubscribed(makebug.user)
     True
-    >>> [n.message for n in request.notifications]
-    [u'Thank you! Bug #11 created.']
-
-
+    >>> new_bug_id = int(question_three.bugs[0].id)
+    >>> message = [n.message for n in request.notifications]
+    >>> message
+    [u'Thank you! Bug #... created.']
+    >>> 'Bug #%s created.' % new_bug_id in message[0]
+    True
     >>> notifications = pop_notifications()
     >>> len(notifications)
     1
     >>> print notifications[0].get_payload(decode=True)
     Your question #3...
     ...
-        Linked to bug: #11
+        Linked to bug: #...
+
+        http://bugs.launchpad.dev/bugs/...
+        "Bug title"
     ...
+
 
 If the question already has bugs linked to it, no new bug can be created.
 
-    >>> request = LaunchpadTestRequest(form={'create': 'create'})
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.actions.create': 'create'})
     >>> request.method = 'POST'
-    >>> makebug = getView(question_three, '+makebug', request)
+    >>> makebug = getMultiAdapter((question_three, request), name='+makebug')
     >>> makebug.initialize()
     >>> for n in request.notifications:
     ...     print n.message
     You cannot create a bug report...
+
 
 == BugLinkView and BugsUnlinkView ==
 
@@ -345,6 +377,7 @@ Unlinking bugs from the question is managed through the BugsUnlinkView.
 See 'buglinktarget-pages.txt' for their documentation. The notifications
 sent along linking and unlinking bugs can be found in
 'answer-tracker-notifications.txt'.
+
 
 == QuestionRejectView ==
 
@@ -364,6 +397,7 @@ question.
     >>> print firefox_question.status.title
     Invalid
 
+
 == QuestionChangeStatusView ==
 
 QuestionChangeStatusView is used by administrator to change the status
@@ -371,7 +405,7 @@ outside of the comment workflow.
 
     >>> request = LaunchpadTestRequest(
     ...     form={'field.actions.change-status': 'Change Status',
-    ...           'field.status': 'Solved',
+    ...           'field.status': 'SOLVED',
     ...           'field.message': 'Previous rejection was an error.'})
     >>> request.method = 'POST'
     >>> view = getView(firefox_question, '+change-status', request)
@@ -385,24 +419,25 @@ outside of the comment workflow.
     # Clear the notification.
     >>> notifications = pop_notifications()
 
+
 == QuestionEditView ==
 
-QuestionEditView available through '+edit' is used to edit most question
-fields. It can be used to edit the question title and description and also
-its metadata like language, priority, assignee, source package and
-whiteboard.
+QuestionEditView available through '+edit' is used to edit most
+question fields. It can be used to edit the question title and
+description and also its metadata like language, assignee,
+distribution, source package, product and whiteboard.
 
     >>> login('test@canonical.com')
-    >>> question_three.sourcepackagename = None
     >>> request = LaunchpadTestRequest(form={
     ...     'field.actions.change': 'Continue',
     ...     'field.title': 'Better Title',
     ...     'field.language': 'en',
     ...     'field.description': 'A better description.',
-    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.target': 'package',
+    ...     'field.target.distribution': 'ubuntu',
+    ...     'field.target.package': 'mozilla-firefox',
     ...     'field.assignee': 'name16',
-    ...     'field.whiteboard': 'Some note',
-    ...     'field.priority': 'Wishlist'})
+    ...     'field.whiteboard': 'Some note'})
     >>> request.method = 'POST'
 
     >>> view = getView(question_three, '+edit', request)
@@ -411,15 +446,16 @@ whiteboard.
     u'Better Title'
     >>> question_three.description
     u'A better description.'
+    >>> print question_three.distribution.name
+    ubuntu
     >>> print question_three.sourcepackagename.name
     mozilla-firefox
+    >>> print question_three.product
+    None
 
 Since only a user with launchpad.Admin privilege can change the
-priority, assignee and status whiteboard, the values won't have been
-changed:
+assignee and status whiteboard, the values won't have been changed:
 
-    >>> print question_three.priority.title
-    Normal
     >>> question_three.assignee is None
     True
     >>> question_three.whiteboard is None
@@ -440,9 +476,12 @@ This View send the event appropriate to send out a notification:
     Description changed to:
     A better description.
     <BLANKLINE>
+    --
+    You received this question notification because you are a direct
+    subscriber of the question.
 
-If the user has the required permission, the assignee, whiteboard and
-priority fields will be updated:
+If the user has the required permission, the assignee and whiteboard
+fields will be updated:
 
     >>> login('foo.bar@canonical.com')
     >>> request = LaunchpadTestRequest(form={
@@ -450,15 +489,14 @@ priority fields will be updated:
     ...     'field.language': 'en',
     ...     'field.title': 'Better Title',
     ...     'field.description': 'A better description.',
-    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.target': 'package',
+    ...     'field.target.distribution': 'ubuntu',
+    ...     'field.target.package': 'mozilla-firefox',
     ...     'field.assignee': 'name16',
-    ...     'field.whiteboard': 'Some note',
-    ...     'field.priority': 'Wishlist'})
+    ...     'field.whiteboard': 'Some note'})
     >>> request.method = 'POST'
     >>> view = getView(question_three, '+edit', request)
     >>> view.initialize()
-    >>> print question_three.priority.title
-    Wishlist
     >>> print question_three.assignee.displayname
     Foo Bar
     >>> print question_three.whiteboard
@@ -472,20 +510,29 @@ a distribution question:
     ...     'field.language': 'en',
     ...     'field.title': 'Better Title',
     ...     'field.description': 'A better description.',
-    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.target': 'product',
+    ...     'field.target.distribution': '',
+    ...     'field.target.package': 'mozilla-firefox',
+    ...     'field.target.product': 'firefox',
     ...     'field.assignee': '',
-    ...     'field.whiteboard': '',
-    ...     'field.priority': 'Normal'})
+    ...     'field.whiteboard': ''})
     >>> request.method = 'POST'
-    >>> view = getView(firefox_question, '+edit', request)
+    >>> view = getView(question_three, '+edit', request)
     >>> view.initialize()
     >>> view.errors
     []
-    >>> firefox_question.sourcepackagename is None
+    >>> question_three.sourcepackagename is None
     True
+    >>> print question_three.distribution
+    None
+    >>> print question_three.sourcepackagename
+    None
+    >>> print question_three.product.name
+    firefox
 
     # Clear out the pending notifications.
     >>> notifications = pop_notifications()
+
 
 == The QuestionLanguage vocabulary ==
 
@@ -494,72 +541,69 @@ is used in browser forms to create a vocabulary containing only the
 languages that are likely to interest the user.
 
 When the user has not configured his preferred languages, the vocabulary
-will contain 'English' (the default choice) and the most likely
-interesting languages based on GeoIP information and the request's
-languages.
+will contain languages from the HTTP request, or the most likely
+interesting languages based on GeoIP information.
 
 For example, if the user doesn't log in and his browser is configured
-to accept brazilian Portuguese, the vocabulary will contain 'English'
-plus the languages spoken in South Africa (because the 127.0.0.1 IP
-address is mapped to South Africa in the tests).
+to accept brazilian Portuguese, the vocabulary will contain the
+languages spoken in South Africa (because the 127.0.0.1 IP address is
+mapped to South Africa in the tests).
 .
     >>> login(ANONYMOUS)
     >>> request = LaunchpadTestRequest(
     ...     HTTP_ACCEPT_LANGUAGE='pt_BR')
     >>> from canonical.launchpad.browser.question import (
     ...     QuestionLanguageVocabularyFactory)
-    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
+    >>> view = getMultiAdapter((firefox, request), name='+addticket')
+    >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]
-    >>> languages[0].code
-    u'en'
-    >>> sorted([lang.code for lang in languages[1:]])
-    [u'af', u'pt_BR', u'st', u'xh', u'zu']
+    >>> sorted([lang.code for lang in languages])
+    [u'af', u'en', u'pt_BR', u'st', u'xh', u'zu']
 
 If the user logs in but didn't configure his preferred languages, the
 same logic is used to find the languages:
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('test@canonical.com')
     >>> user = getUtility(ILaunchBag).user
     >>> user.languages.count()
     0
 
-    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
+    >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]
-    >>> languages[0].code
-    u'en'
-    >>> sorted(lang.code for lang in languages[1:])
-    [u'af', u'pt_BR', u'st', u'xh', u'zu']
+    >>> sorted(lang.code for lang in languages)
+    [u'af', u'en', u'pt_BR', u'st', u'xh', u'zu']
 
 But if the user configured his preferred languages, only these
-are used (plus English):
+are used:
 
     >>> login('carlos@canonical.com')
     >>> user = getUtility(ILaunchBag).user
     >>> sorted(lang.code for lang in user.languages)
-    [u'ca', u'es']
+    [u'ca', u'en', u'es']
 
-    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
+    >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]
-    >>> languages[0].code
-    u'en'
-    >>> sorted(lang.code for lang in languages[1:])
-    [u'ca', u'es']
+    >>> sorted(lang.code for lang in languages)
+    [u'ca', u'en', u'es']
 
 Note that all variants of English are always excluded from the
 vocabulary (since we don't want to confuse people by providing multiple
 English options).
+
+Daf has en_GB listed among his languages:
 
     >>> login('daf@canonical.com')
     >>> user = getUtility(ILaunchBag).user
     >>> sorted(lang.code for lang in user.languages)
     [u'cy', u'en_GB', u'ja']
 
-    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
+But the vocabulary made from this languages has substituted the
+English variant with English:
+
+    >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]
-    >>> languages[0].code
-    u'en'
-    >>> sorted(lang.code for lang in languages[1:])
-    [u'cy', u'ja']
+    >>> sorted(lang.code for lang in languages)
+    [u'cy', u'en', u'ja']
 
 Note also that the vocabulary will always contain the current question's
 language in the vocabulary, even if this language would not be selected
@@ -568,12 +612,13 @@ by the previous rules.
     >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> afar = getUtility(ILanguageSet)['aa_DJ']
     >>> question_three.language = afar
-    >>> vocab = QuestionLanguageVocabularyFactory(request)(question_three)
+    >>> vocab = QuestionLanguageVocabularyFactory(view)(question_three)
     >>> afar in vocab
     True
 
     # Clean up.
     >>> question_three.language = getUtility(ILanguageSet)['en']
+
 
 == UserSupportLanguagesMixin ==
 
@@ -592,8 +637,7 @@ The set of languages to use for support is defined in the
 'user_support_languages' attribute.
 
 Like all operations involving languages in the Answer Tracker, we
-assume that the user is always interested in English and we ignore
-all other English variants.
+ignore all other English variants.
 
 When the user is not logged in, or didn't define his preferred
 languages, the set will be initialized from the request. That's the
@@ -606,9 +650,9 @@ GeoIP database.
     >>> login(ANONYMOUS)
     >>> view = UserSupportLanguagesView(None, request)
 
-For this request, the set of support languages contain English
-(default), French (from the request), and the languages spoken
-in South Africa (inferred from the GeoIP location of the request).
+For this request, the set of support languages contains French
+(from the request), and the languages spoken in South Africa
+(inferred from the GeoIP location of the request).
 
     >>> sorted(language.code for language in view.user_support_languages)
     [u'af', u'en', u'fr', u'st', u'xh', u'zu']
@@ -637,6 +681,7 @@ excluded:
     >>> sorted(language.code for language in view.user_support_languages)
     [u'cy', u'en', u'ja']
 
+
 == SearchQuestionsView ==
 
 This view is used as a base class to search for questions. It is intended
@@ -663,6 +708,8 @@ By default, that class provides widgets to search by text and by status.
     >>> search_view = search_view_harness.view
     >>> search_view.widgets.get('search_text') is not None
     True
+    >>> search_view.widgets.get('language') is not None
+    True
     >>> search_view.widgets.get('status') is not None
     True
 
@@ -677,32 +724,35 @@ searchResults() method. The returned results are batched.
     >>> questions = search_view.searchResults()
     >>> questions
     <canonical.launchpad.webapp.batching.BatchNavigator ...>
-    >>> print "\n".join([question.title for question in questions.batch])
+    >>> for question in questions.batch:
+    ...     print question.title.encode('us-ascii', 'backslashreplace')
+    Problema al recompilar kernel con soporte smp (doble-n\xfacleo)
     Continue playing after shutdown
     Play DVDs in Totem
     mailto: problem in webpage
     Installation of Java Runtime Environment for Mozilla
-    Slow system
 
 These were the default results when no search is entered. The user
 can tweak the search and filter the results:
 
     >>> search_view_harness.submit('search', {
-    ...     'field.status': ['Solved', 'Open'],
+    ...     'field.status': ['SOLVED', 'OPEN'],
     ...     'field.search_text': 'firefox',
+    ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})
     >>> search_view = search_view_harness.view
     >>> questions = search_view.searchResults()
     >>> for question in questions.batch:
     ...     print question.title, question.status.title
-    mailto: problem in webpage  Solved
+    mailto: problem in webpage Solved
 
 Specific views can provide a default filter by returning the default
 search parameters to use in the getDefaultFilter() method:
 
-    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> from canonical.launchpad.interfaces import QuestionStatus
     >>> MyCustomSearchQuestionsView.default_filter = {
-    ...     'status': [QuestionStatus.SOLVED, QuestionStatus.INVALID]}
+    ...     'status': [QuestionStatus.SOLVED, QuestionStatus.INVALID],
+    ...     'language' : search_view.user_support_languages}
     >>> search_view_harness.submit('', {})
 
 In this example, only the solved and invalid questions are listed by
@@ -726,8 +776,9 @@ The user selected search parameters will override these default
 criteria.
 
     >>> search_view_harness.submit('search', {
-    ...     'field.status': ['Solved'],
+    ...     'field.status': ['SOLVED'],
     ...     'field.search_text': 'firefox',
+    ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})
     >>> search_view = search_view_harness.view
     >>> questions = search_view.searchResults()
@@ -759,8 +810,9 @@ no results are found based on the selected search filter:
 It works also with user submitted values:
 
     >>> search_view_harness.submit('search', {
-    ...     'field.status': ['Expired'],
+    ...     'field.status': ['EXPIRED'],
     ...     'field.search_text': '',
+    ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})
     >>> print translate(search_view_harness.view.pageheading)
     Expired questions for Ubuntu
@@ -768,14 +820,16 @@ It works also with user submitted values:
     There are no expired questions for Ubuntu.
 
     >>> search_view_harness.submit('search', {
-    ...     'field.status': ['Open', 'Answered'],
+    ...     'field.status': ['OPEN', 'ANSWERED'],
     ...     'field.search_text': 'evolution',
+    ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})
     >>> print translate(search_view_harness.view.pageheading)
     Questions matching "evolution" for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
     There are no questions matching "evolution" for Ubuntu with the
     requested statuses.
+
 
 == QuestionCollectionOpenCountView ==
 
@@ -787,3 +841,129 @@ states on that target.
     ...     firefox, '+open_questions_count', LaunchpadTestRequest())
     >>> view()
     u'4'
+
+
+== QuestionSOP ==
+
+There is an IStructuralObjectPresentation adapter available for
+IQuestion. This adapter is used to render the title appearing in
+in the structuralheader area.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IStructuralObjectPresentation)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    >>> firefox_question_sop = IStructuralObjectPresentation(firefox_question)
+    >>> verifyObject(
+    ...     IStructuralObjectPresentation,
+    ...     removeSecurityProxy(firefox_question_sop))
+    True
+
+    # The returned string is an instance of zope.i18n.Message.
+    >>> import zope.i18n
+    >>> print zope.i18n.translate(
+    ...     firefox_question_sop.getMainHeading())
+    Question #2 in Mozilla Firefox
+
+
+== ManageAnswerContactView ==
+
+That view is used by a user to register himself or any team he
+administrates as an answer contact for the project.
+
+Jeff Waugh is an administrator for the Ubuntu Team. Thus he can
+register himself or the Ubuntu Team as answer contact for ubuntu:
+
+    >>> list(ubuntu.answer_contacts)
+    []
+    >>> login('jeff.waugh@ubuntulinux.com')
+    >>> jeff_waugh = getUtility(ILaunchBag).user
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> jeff_waugh in ubuntu_team.getDirectAdministrators()
+    True
+
+    >>> request = LaunchpadTestRequest(
+    ...     method='POST', form={
+    ...         'field.actions.update': 'Continue',
+    ...         'field.want_to_be_answer_contact': 'on',
+    ...         'field.answer_contact_teams': 'ubuntu-team'})
+    >>> view = getMultiAdapter((ubuntu, request), name="+answer-contact")
+    >>> view.initialize()
+
+    >>> sorted(
+    ...     [person.displayname for person in ubuntu.direct_answer_contacts])
+    [u'Jeff Waugh', u'Ubuntu Team']
+
+The view adds notifications about the answer contacts added:
+
+    >>> for notification in request.notifications:
+    ...     print notification.message
+    <...Your preferred languages... were updated to include ...English (en).
+    You have been added as an answer contact for Ubuntu.
+    English was added to Ubuntu Team's ...preferred languages...
+    Ubuntu Team has been added as an answer contact for Ubuntu.
+
+But Daniel Silverstone is only a regular member of Ubuntu Team, so he
+can only subscribe himself:
+
+    >>> login('daniel.silverstone@canonical.com')
+    >>> kinnison = getUtility(ILaunchBag).user
+    >>> kinnison in ubuntu_team.getDirectAdministrators()
+    False
+
+    >>> request = LaunchpadTestRequest(
+    ...     method='POST', form={
+    ...         'field.actions.update': 'Continue',
+    ...         'field.want_to_be_answer_contact': 'on'})
+    >>> view = getMultiAdapter((ubuntu, request), name="+answer-contact")
+    >>> view.initialize()
+
+    >>> sorted(
+    ...     [person.displayname for person in ubuntu.direct_answer_contacts])
+    [u'Daniel Silverstone', u'Jeff Waugh', u'Ubuntu Team']
+
+    >>> for notification in request.notifications:
+    ...     print notification.message
+    <...Your preferred languages... were updated to include ...English (en).
+    You have been added as an answer contact for Ubuntu.
+
+The same view is used to remove answer contact registrations. The user
+can only remove his own registration.
+
+    >>> request = LaunchpadTestRequest(
+    ...     method='POST', form={
+    ...         'field.actions.update': 'Continue',
+    ...         'field.want_to_be_answer_contact': 'off'})
+    >>> view = getMultiAdapter((ubuntu, request), name="+answer-contact")
+    >>> view.initialize()
+
+    >>> sorted(
+    ...     [person.displayname for person in ubuntu.direct_answer_contacts])
+    [u'Jeff Waugh', u'Ubuntu Team']
+
+    >>> for notification in request.notifications:
+    ...     print notification.message
+    You have been removed as an answer contact for Ubuntu.
+
+It can also be used to remove a team registration when the user is a team
+administrator:
+
+    >>> login('jeff.waugh@ubuntulinux.com')
+    >>> request = LaunchpadTestRequest(
+    ...     method='POST', form={
+    ...         'field.actions.update': 'Continue',
+    ...         'field.want_to_be_answer_contact': 'on',
+    ...         'field.answer_contact_teams-empty_marker': '1'})
+    >>> view = getMultiAdapter((ubuntu, request), name="+answer-contact")
+    >>> view.initialize()
+
+    >>> sorted(
+    ...     [person.displayname for person in ubuntu.direct_answer_contacts])
+    [u'Jeff Waugh']
+
+    >>> for notification in request.notifications:
+    ...     print notification.message
+    Ubuntu Team has been removed as an answer contact for Ubuntu.

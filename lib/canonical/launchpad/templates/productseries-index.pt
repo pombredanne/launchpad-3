@@ -14,24 +14,22 @@
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/product/@@+portlet-summary" />
-  <div tal:replace="structure context/@@+portlet-potemplates" />
   <div tal:replace="structure context/@@+portlet-source" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Mozilla Firefox</h3>
-  <h1>Series overview</h1>
+  <h1>Release series overview</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
 
-    <p class="highlighted" tal:content="context/summary">
+    <p tal:content="context/summary">
         $ProductSeries.summary goes here. This should be quite short,
         just a single paragraph of text really, giving the status of
         this series of releases.
     </p>
 
-    <p class="lesser discreet">
+    <p>
       <img src="/@@/info" />
       A "release series" is major release that would typically have a number
       of "point releases" associated with it. For example, Mozilla Firefox
@@ -48,7 +46,7 @@
 
     </tal:has_releases>
 
-    <h2>This series in The Bazaar</h2>
+    <h2>Code for this series</h2>
 
     <div tal:replace="structure context/@@+importstatus" />
 

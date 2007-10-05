@@ -10,4 +10,8 @@
         for="canonical.launchpad.event.interfaces.IJoinTeamEvent"
         handler="canonical.launchpad.mailnotification.notify_team_join" />
 
+    <subscriber
+        for="canonical.launchpad.event.interfaces.ITeamInvitationEvent"
+        handler="canonical.launchpad.mailnotification.notify_invitation_to_join_team" />
+
 </configure>

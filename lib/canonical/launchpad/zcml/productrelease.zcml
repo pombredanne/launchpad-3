@@ -29,6 +29,11 @@
             set_schema="canonical.launchpad.interfaces.IProductRelease" />
     </content>
 
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="ProductReleaseNavigation"
+        />
+
     <browser:menus
         module="canonical.launchpad.browser"
         classes="ProductReleaseContextMenu"
@@ -71,6 +76,15 @@
         attribute="__call__"
         />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductRelease"
+        name="+adddownloadfile"
+        class="canonical.launchpad.browser.productrelease.ProductReleaseAddDownloadFileView"
+        permission="launchpad.Edit"
+        facet="overview"
+        template="../templates/productrelease-file-add.pt"
+        />
+
     <browser:editform
       name="+edit"
       for="canonical.launchpad.interfaces.IProductRelease"
@@ -78,7 +92,7 @@
       class="canonical.launchpad.browser.productrelease.ProductReleaseEditView"
       facet="overview"
       label="Edit product release details"
-      fields="summary description changelog"
+      fields="summary description changelog codename"
       permission="launchpad.Edit"
       template="../templates/productrelease-edit.pt"
       >

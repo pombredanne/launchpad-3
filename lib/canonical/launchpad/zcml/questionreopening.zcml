@@ -7,7 +7,8 @@
   <!-- QuestionReopening -->
   <content class="canonical.launchpad.database.QuestionReopening">
     <allow
-      interface="canonical.launchpad.interfaces.IQuestionReopening" />
+      interface="canonical.launchpad.interfaces.IQuestionReopening"
+      />
   </content>
 
 </configure>

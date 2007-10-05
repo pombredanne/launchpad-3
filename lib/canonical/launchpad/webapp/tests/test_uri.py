@@ -95,10 +95,26 @@ class URITestCase(unittest.TestCase):
         self.assertEqual(resolve('g?y/../x'),     'http://a/b/c/g?y/../x')
         self.assertEqual(resolve('g#s/./x'),      'http://a/b/c/g#s/./x')
         self.assertEqual(resolve('g#s/../x'),     'http://a/b/c/g#s/../x')
-        # XXX 20090130 jamesh:
+        # XXX 2009-01-30 jamesh:
         # I've disabled this test since we refuse to accept HTTP URIs
         # without a hostname component.
         #self.assertEqual(resolve('http:g'),       'http:g')
+
+    def test_underDomain_matches_subdomain(self):
+        # URI.underDomain should return True when asked whether the url is
+        # under one of its parent domains.
+        uri = URI('http://code.launchpad.dev/foo')
+        self.assertTrue(uri.underDomain('code.launchpad.dev'))
+        self.assertTrue(uri.underDomain('launchpad.dev'))
+        self.assertTrue(uri.underDomain(''))
+
+    def test_underDomain_doesnt_match_non_subdomain(self):
+        # URI.underDomain should return False when asked whether the url is
+        # under a domain which isn't one of its parents.
+        uri = URI('http://code.launchpad.dev/foo')
+        self.assertFalse(uri.underDomain('beta.code.launchpad.dev'))
+        self.assertFalse(uri.underDomain('google.com'))
+        self.assertFalse(uri.underDomain('unchpad.dev'))
 
 
 def test_suite():

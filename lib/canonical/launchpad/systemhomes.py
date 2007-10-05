@@ -3,20 +3,26 @@
 """Content classes for the 'home pages' of the subsystems of Launchpad."""
 
 __all__ = [
-    'RegistryApplication', 'ShipItApplication', 'MaloneApplication',
-    'BazaarApplication', 'RosettaApplication']
+    'BazaarApplication',
+    'MailingListApplication',
+    'MaloneApplication',
+    'RegistryApplication',
+    'RosettaApplication',
+    'ShipItApplication',
+    ]
 
 __metaclass__ = type
 
 from zope.component import getUtility
 from zope.interface import implements
+
 from canonical.launchpad.interfaces import (
-    IRegistryApplication, IMaloneApplication, IBazaarApplication,
-    IShipItApplication, IRosettaApplication, IProductSet, IDistroReleaseSet,
-    ITranslationGroupSet, ILaunchpadStatisticSet,
-    IBugSet, IBugWatchSet, IBugExternalRefSet,
-    IBugTaskSet, IBugTrackerSet, ILaunchBag, BugTaskSearchParams,
-    IBranchSet)
+    BugTaskSearchParams, IBazaarApplication, IBugExternalRefSet,
+    IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet, IDistroSeriesSet,
+    IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
+    IMailingListApplication, IMaloneApplication,
+    IOpenIdApplication, IProductSet, IRegistryApplication,
+    IRosettaApplication, IShipItApplication, ITranslationGroupSet)
 
 
 class RegistryApplication:
@@ -25,6 +31,10 @@ class RegistryApplication:
 
 class ShipItApplication:
     implements(IShipItApplication)
+
+
+class MailingListApplication:
+    implements(IMailingListApplication)
 
 
 class MaloneApplication:
@@ -61,6 +71,14 @@ class MaloneApplication:
         return getUtility(IBugTrackerSet).search().count()
 
     @property
+    def projects_with_bugs_count(self):
+        return getUtility(ILaunchpadStatisticSet).value('projects_with_bugs')
+
+    @property
+    def shared_bug_count(self):
+        return getUtility(ILaunchpadStatisticSet).value('shared_bug_count')
+
+    @property
     def top_bugtrackers(self):
         return getUtility(IBugTrackerSet).getMostActiveBugTrackers(limit=5)
 
@@ -78,6 +96,12 @@ class BazaarApplication:
         self.title = 'The Open Source Bazaar'
 
 
+class OpenIdApplication:
+    implements(IOpenIdApplication)
+
+    title = 'Launchpad Login Service'
+
+
 class RosettaApplication:
     implements(IRosettaApplication)
 
@@ -86,23 +110,40 @@ class RosettaApplication:
         self.name = 'Rosetta'
 
     @property
+    def languages(self):
+        """See IRosettaApplication."""
+        return getUtility(ILanguageSet)
+
+    @property
+    def language_count(self):
+        """See IRosettaApplication."""
+        stats = getUtility(ILaunchpadStatisticSet)
+        return stats.value('language_count')
+
+    @property
     def statsdate(self):
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.dateupdated('potemplate_count')
 
-    def translatable_products(self):
-        """See IRosettaApplication."""
-        products = getUtility(IProductSet)
-        return products.translatables()
-
-    def translatable_distroreleases(self):
-        """See IRosettaApplication."""
-        distroreleases = getUtility(IDistroReleaseSet)
-        return distroreleases.translatables()
-
+    @property
     def translation_groups(self):
         """See IRosettaApplication."""
         return getUtility(ITranslationGroupSet)
+
+    def translatable_products(self):
+        """See IRosettaApplication."""
+        products = getUtility(IProductSet)
+        return products.getTranslatables()
+
+    def featured_products(self):
+        """See IRosettaApplication."""
+        products = getUtility(IProductSet)
+        return products.featuredTranslatables()
+
+    def translatable_distroseriess(self):
+        """See IRosettaApplication."""
+        distroseriess = getUtility(IDistroSeriesSet)
+        return distroseriess.translatables()
 
     def potemplate_count(self):
         """See IRosettaApplication."""
@@ -124,8 +165,6 @@ class RosettaApplication:
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.value('translator_count')
 
-    def language_count(self):
-        """See IRosettaApplication."""
-        stats = getUtility(ILaunchpadStatisticSet)
-        return stats.value('language_count')
 
+class HWDBApplication:
+    implements(IHWDBApplication)

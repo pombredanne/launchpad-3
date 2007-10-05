@@ -1,0 +1,236 @@
+Here is the tale of languages. We will see how to create, find and
+edit them.
+
+Launchpad Translations has a main page.
+
+  >>> admin_browser.open('http://translations.launchpad.dev/')
+
+There we can find a link to browse and manage languages.
+
+  >>> admin_browser.getLink('18 languages').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/+languages
+
+Following the link, there is a form to add new languages.
+
+  >>> admin_browser.getLink('Add Language').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/+languages/+add
+
+Which detects an attempt to create duplicate Languages, such as Spanish,
+which is already registered:
+
+  >>> browser.open('http://translations.launchpad.dev/+languages/es')
+  >>> print browser.url
+  http://translations.launchpad.dev/+languages/es
+
+If someone tries to create a new language with the same language code,
+the system detects it and warns the user.
+
+  >>> admin_browser.getControl('The ISO 639').value = 'es'
+  >>> admin_browser.getControl('English name').value = 'Foos'
+  >>> admin_browser.getControl('Add').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/+languages/+add
+
+  >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
+  ...     print tag.renderContents()
+  There is 1 error.
+  There is already a language with that code.
+
+But, with a new language, it will succeed.
+
+  >>> browser.open('http://translations.launchpad.dev/+languages/foos')
+  Traceback (most recent call last):
+  ...
+  NotFound:...
+
+  >>> admin_browser.getControl('The ISO 639').value = 'foos'
+  >>> admin_browser.getControl('English name').value = 'Foos'
+  >>> admin_browser.getControl('Add').click()
+
+And the system forwards us to its main page:
+
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/+languages/foos
+
+
+A normal user will not be able to see or use the url to add languages.
+
+  >>> user_browser.open('http://translations.launchpad.dev/+languages')
+  >>> print user_browser.url
+  http://translations.launchpad.dev/+languages
+  >>> user_browser.getLink('Add Language')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+  >>> user_browser.open('http://translations.launchpad.dev/+languages/+add')
+  Traceback (most recent call last):
+  ...
+  Unauthorized:...
+
+From the top languages page, anyone can find languages.
+
+  >>> browser.open('http://translations.launchpad.dev/+languages')
+  >>> print browser.url
+  http://translations.launchpad.dev/+languages
+
+  >>> text_search = browser.getControl(name='language_search')
+  >>> text_search.value = 'Spanish'
+  >>> browser.getControl('Search').click()
+  >>> print browser.url
+  http://translations.launchpad.dev/+languages/+index
+
+And following one of the found languages, we can see a brief information about
+the selected language.
+
+  >>> browser.getLink('Spanish (es)').click()
+  >>> print browser.url
+  http://translations.launchpad.dev/+languages/es
+
+  >>> pluralforms_portlet = find_portlet(browser.contents, 'Plural Forms')
+  >>> print pluralforms_portlet
+  <...
+  The amount of plural forms for Spanish is: 2
+  ...
+  And its default plural form expression is:
+  ...
+  <pre>n != 1</pre>
+  ...
+
+  >>> translationteams_portlet = find_portlet(
+  ...     browser.contents, 'Translation teams')
+  >>> print translationteams_portlet
+  <...
+  ...testing Spanish team...
+  ...Just a testing team...
+
+  >>> countries_portlet = find_portlet(browser.contents, 'Countries')
+  >>> print countries_portlet
+  <...
+  ...Argentina...
+  ...Bolivia...
+  ...Chile...
+  ...Colombia...
+  ...Costa Rica...
+  ...Dominican Republic...
+  ...Ecuador...
+  ...El Salvador...
+  ...Guatemala...
+  ...Honduras...
+  ...Mexico...
+  ...Nicaragua...
+  ...Panama...
+  ...Paraguay...
+  ...Peru...
+  ...Puerto Rico...
+  ...Spain...
+  ...United States...
+  ...Uruguay...
+  ...Venezuela...
+
+  >>> topcontributors_portlet = find_portlet(browser.contents, 'Top contributors')
+  >>> print topcontributors_portlet
+  <...
+  ...Carlos Perelló Marín...
+
+Finally, there is the edit form to change language basic information.
+
+  >>> user_browser.open('http://translations.launchpad.dev/+languages/es')
+  >>> print user_browser.url
+  http://translations.launchpad.dev/+languages/es
+
+A plain user is not able to reach it.
+
+  >>> user_browser.getLink('Administer')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+  >>> user_browser.open('http://translations.launchpad.dev/+languages/es/+admin')
+  Traceback (most recent call last):
+  ...
+  Unauthorized:...
+
+An admin, though, will see the link and will be able to edit it.
+
+  >>> admin_browser.open('http://translations.launchpad.dev/+languages/es')
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/+languages/es
+  >>> admin_browser.getLink('Administer').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/+languages/es/+admin
+  >>> print admin_browser.getControl('ISO 639').value
+  es
+  >>> print admin_browser.getControl('English name').value
+  Spanish
+  >>> print admin_browser.getControl('Native name').value
+
+  >>> print admin_browser.getControl('Number of plural forms').value
+  2
+  >>> print admin_browser.getControl('Plural form expression').value
+  n != 1
+  >>> print admin_browser.getControl('Visible').optionValue
+  on
+  >>> print admin_browser.getControl('Text direction').displayValue
+  ['Left to Right']
+  >>> spokenin_control = admin_browser.getControl(name='field.countries')
+  >>> print [country for country in spokenin_control.displayValue]
+  ['\xa0Argentina', '\xa0Bolivia', '\xa0Chile', '\xa0Colombia',
+   '\xa0Costa Rica', '\xa0Dominican Republic', '\xa0Ecuador',
+   '\xa0El Salvador', '\xa0Guatemala', '\xa0Honduras', '\xa0Mexico',
+   '\xa0Nicaragua', '\xa0Panama', '\xa0Paraguay', '\xa0Peru',
+   '\xa0Puerto Rico', '\xa0Spain', '\xa0United States', '\xa0Uruguay',
+   '\xa0Venezuela']
+
+Changing values and submitting the form will allow the admin to change values.
+
+If the new language code already exists, the system will show a failure so the
+user can fix it.
+
+  >>> admin_browser.getControl('ISO 639').value = 'fr'
+  >>> admin_browser.getControl('Admin Language').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/+languages/es/+admin
+
+  >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
+  ...     print tag.renderContents()
+  There is 1 error.
+  There is already a language with that code.
+
+Changing values to correct content works:
+
+  >>> admin_browser.getControl('ISO 639').value = 'bars'
+  >>> admin_browser.getControl('English name').value = 'Changed field'
+  >>> spokenin_control = admin_browser.getControl(name='field.countries')
+  >>> spokenin_control.getControl('Argentina').selected = False
+  >>> spokenin_control.getControl('France').selected = True
+  >>> admin_browser.getControl('Admin Language').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/+languages/bars
+
+And we can validate it:
+
+  >>> admin_browser.getLink('Administer').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/+languages/bars/+admin
+  >>> print admin_browser.getControl('ISO 639').value
+  bars
+  >>> print admin_browser.getControl('English name').value
+  Changed field
+  >>> spokenin_control = admin_browser.getControl(name='field.countries')
+  >>> print [country for country in spokenin_control.displayValue]
+  ['\xa0Bolivia', '\xa0Chile', '\xa0Colombia', '\xa0Costa Rica',
+   '\xa0Dominican Republic', '\xa0Ecuador', '\xa0El Salvador', '\xa0France',
+   '\xa0Guatemala', '\xa0Honduras', '\xa0Mexico', '\xa0Nicaragua',
+   '\xa0Panama', '\xa0Paraguay', '\xa0Peru', '\xa0Puerto Rico', '\xa0Spain',
+   '\xa0United States', '\xa0Uruguay', '\xa0Venezuela']
+
+That was a renaming action, which means that language code 'es' doesn't
+exist anymore.
+
+  >>> browser.open('http://translations.launchpad.dev/+languages/es')
+  Traceback (most recent call last):
+  ...
+  NotFound:...

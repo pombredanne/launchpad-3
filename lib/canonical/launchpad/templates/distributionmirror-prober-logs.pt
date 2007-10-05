@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
 
 <body>
@@ -31,13 +37,17 @@
     <table class="listing">
       <thead>
         <tr>
-          <th>date</th>
-          <th>log file</th>
+          <th>When</th>
+          <th>Log</th>
         </tr>
       </thead>
       <tbody>
         <tr tal:repeat="record view/probe_records/currentBatch">
-          <td tal:content="record/date_created/fmt:datetime" />
+          <td>
+            <span
+              tal:attributes="title record/date_created/fmt:datetime"
+              tal:content="record/date_created/fmt:approximatedate" />
+          </td>
           <td><a tal:content="record/log_file/filename"
                  tal:attributes="href record/log_file/http_url" />
           </td>

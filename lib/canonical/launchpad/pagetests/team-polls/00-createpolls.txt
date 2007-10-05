@@ -1,13 +1,9 @@
-Let's first setup some objects that we'll need. 
+Let's first setup some objects that we'll need.
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> no_priv_browser = Browser()
-  >>> no_priv_browser.handleErrors = False
-  >>> no_priv_browser.addHeader(
-  ...     'Authorization', 'Basic no-priv@canonical.com:test')
-  >>> team_admin_browser = browser
-  >>> team_admin_browser.addHeader(
-  ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> no_priv_browser = setupBrowser(
+  ...     auth='Basic no-priv@canonical.com:test')
+  >>> team_admin_browser = setupBrowser(
+  ...    'Basic jeff.waugh@ubuntulinux.com:jdub')
 
 If you're not logged in and go to the +polls page of the "Ubuntu Team"
 you'll see a link to login as a team administrator.
@@ -39,14 +35,14 @@ create a new poll.
   >>> team_admin_browser.title
   'New poll for team Ubuntu Team'
 
-  >>> 'Create a new poll for team' in team_admin_browser.contents 
+  >>> 'Create a new poll for team' in team_admin_browser.contents
   True
 
-First we try to create a poll with a invalid name (upper case characters) to 
+First we try to create a poll with a invalid name to
 test the name field validator.
 
   >>> team_admin_browser.getControl(
-  ...     'The unique name of this poll').value = 'Election-2100'
+  ...     'The unique name of this poll').value = 'election_2100'
   >>> team_admin_browser.getControl(
   ...     'The title of this poll').value = 'Presidential Election 2100'
   >>> proposition = 'Who is going to be the next president?'
@@ -54,7 +50,7 @@ test the name field validator.
   ...     'The proposition that is going to be voted').value = proposition
   >>> secrecy = "Secret Votes (It's impossible to track a person's vote)"
   >>> team_admin_browser.getControl(
-  ...     'The secrecy of the Poll').value = [secrecy]
+  ...     'The secrecy of the Poll').displayValue = [secrecy]
   >>> team_admin_browser.getControl(
   ...     'Users can spoil their votes?').selected = True
   >>> team_admin_browser.getControl(
@@ -63,7 +59,7 @@ test the name field validator.
   ...     name='field.datecloses').value = '2100-07-04 02:00:00+00:00'
   >>> team_admin_browser.getControl('Continue').click()
 
-  >>> "Invalid name 'Election-2100'" in team_admin_browser.contents
+  >>> "Invalid name 'election_2100'" in team_admin_browser.contents
   True
 
 We fix the name, but swap the dates. Again a nice error message.
@@ -89,7 +85,7 @@ Now we get it right.
 
 We're redirected to the newly created poll page.
 
-  >>> team_admin_browser.url 
+  >>> team_admin_browser.url
   'http://launchpad.dev/~ubuntu-team/+poll/election-2100'
 
 Create a new poll that starts in 2025-06-04 and will last until 2035.
@@ -107,7 +103,7 @@ Create a new poll that starts in 2025-06-04 and will last until 2035.
   ...     "Semi-secret Votes (Only team administrators can see a person's "
   ...     "vote)")
   >>> team_admin_browser.getControl(
-  ...     'The secrecy of the Poll').value = [secrecy]
+  ...     'The secrecy of the Poll').displayValue = [secrecy]
   >>> team_admin_browser.getControl(
   ...     'Users can spoil their votes?').selected = True
   >>> team_admin_browser.getControl(
@@ -129,8 +125,8 @@ We're redirected to the newly created poll
 
 Now lets try to insert a poll with the name of a existing one.
 
-# XXX matsubara 2006-07-17: There's no link to get back to +polls
-# Bug https://launchpad.net/bugs/53302
+# XXX matsubara 2006-07-17 bug=53302:
+# There's no link to get back to +polls.
 
   >>> team_admin_browser.open(
   ...     'http://launchpad.dev/~ubuntu-team/+newpoll')
@@ -145,7 +141,7 @@ Now lets try to insert a poll with the name of a existing one.
   ...     "Semi-secret Votes (Only team administrators can see a person's "
   ...     "vote)")
   >>> team_admin_browser.getControl(
-  ...     'The secrecy of the Poll').value = [secrecy]
+  ...     'The secrecy of the Poll').displayValue = [secrecy]
   >>> team_admin_browser.getControl(
   ...     'Users can spoil their votes?').selected = True
   >>> team_admin_browser.getControl(

@@ -1,15 +1,6 @@
-<tal:layout define="contextless default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
-
-<body>
-
-<metal:heading fill-slot="pageheading">    
-  <h1>Projects registered in Launchpad</h1>
-</metal:heading>
+<html metal:use-macro="view/macro:page/pillarindex" i18n:domain="launchpad">
+  <body>
+    <h1 metal:fill-slot="heading">Project groups in Launchpad</h1>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div class="portlet">
@@ -23,7 +14,7 @@
       <br />
       Only the Launchpad administrators can register new project groups. You can
       register an individual application (what we call a project). To do so,
-      first <a href="/products/">search to see if your project is already in
+      first <a href="/projects/">search to see if your project is already in
       Launchpad</a>.
     </div>
   </div>
@@ -41,7 +32,7 @@
       simpler.
   </p>
 
-  <form method="get">
+  <form method="get" accept-charset="UTF-8">
     <label for="text">Search projects:</label>
     <input name="text" tal:attributes="value view/text" />
     <input
@@ -55,7 +46,7 @@
   <tal:notsearching condition="not:view/searchrequested">
     <p>
       For individual computer programs, applications or libraries,
-      see <a href="/products">projects</a>.
+      see <a href="/projects">projects</a>.
     </p>
 
     <p>
@@ -98,4 +89,3 @@
 
 </body>
 </html>
-</tal:layout>

@@ -2,37 +2,72 @@
 
 __metaclass__ = type
 
-__all__ = ['TeamEditView', 'TeamEmailView', 'TeamAddView', 'TeamMembersView',
-           'TeamMemberAddView', 'ProposedTeamMembersEditView']
+__all__ = [
+    'ProposedTeamMembersEditView',
+    'TeamAddView',
+    'TeamBrandingView',
+    'TeamEditView',
+    'TeamEmailView',
+    'TeamMemberAddView',
+    ]
 
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
-from zope.app.form.browser.add import AddView
+from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 
-from canonical.lp.dbschema import LoginTokenType, TeamMembershipStatus
 from canonical.database.sqlbase import flush_database_updates
+from canonical.widgets import (
+    HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
 
+from canonical.launchpad import _
 from canonical.launchpad.validators.email import valid_email
-from canonical.widgets.image import (
-    GotchiTiedWithHeadingWidget, ImageChangeWidget)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadEditFormView)
+    action, canonical_url, custom_widget, LaunchpadEditFormView,
+    LaunchpadFormView)
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
-    IPersonSet, ILaunchBag, IEmailAddressSet, ILoginTokenSet,
-    ITeam, ITeamMembershipSet)
+    IEmailAddressSet, ILaunchBag, ILoginTokenSet, IPersonSet,
+    ITeamCreation, ITeamMember, ITeam, LoginTokenType, TeamMembershipStatus)
 
 
-class TeamEditView(LaunchpadEditFormView):
+class HasRenewalPolicyMixin:
+    """Mixin to be used on forms which contain ITeam.renewal_policy.
+
+    This mixin will short-circuit Launchpad*FormView when defining whether
+    the renewal_policy widget should be displayed in a single or multi-line
+    layout. We need that because that field has a very long title, thus
+    breaking the page layout.
+
+    Since this mixin short-circuits Launchpad*FormView in some cases, it must
+    always precede Launchpad*FormView in the inheritance list.
+    """
+
+    def isMultiLineLayout(self, field_name):
+        if field_name == 'renewal_policy':
+            return True
+        return super(HasRenewalPolicyMixin, self).isMultiLineLayout(
+            field_name)
+
+    def isSingleLineLayout(self, field_name):
+        if field_name == 'renewal_policy':
+            return False
+        return super(HasRenewalPolicyMixin, self).isSingleLineLayout(
+            field_name)
+
+
+class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
 
     schema = ITeam
     field_names = [
-        'name', 'displayname', 'teamdescription', 'gotchi', 'emblem',
-        'defaultmembershipperiod', 'defaultrenewalperiod',
-        'subscriptionpolicy']
+        'teamowner', 'name', 'displayname', 'teamdescription',
+        'subscriptionpolicy', 'defaultmembershipperiod',
+        'renewal_policy', 'defaultrenewalperiod']
+    custom_widget('teamowner', SinglePopupWidget, visible=False)
     custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+        'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget(
+        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
 
     @action('Save', name='save')
     def action_save(self, action, data):
@@ -144,25 +179,29 @@ class TeamEmailView:
             "for up to an hour or two.)" % email)
 
 
-class TeamAddView(AddView):
+class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        AddView.__init__(self, context, request)
-        self._nextURL = '.'
+    schema = ITeamCreation
+    label = ''
+    field_names = ["name", "displayname", "contactemail", "teamdescription",
+                   "subscriptionpolicy", "defaultmembershipperiod",
+                   "renewal_policy", "defaultrenewalperiod", "teamowner"]
+    custom_widget('teamowner', HiddenUserWidget)
+    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
+    custom_widget(
+        'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget(
+        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
 
-    def nextURL(self):
-        return self._nextURL
-
-    def createAndAdd(self, data):
+    @action('Create', name='create')
+    def create_action(self, action, data):
         name = data.get('name')
         displayname = data.get('displayname')
         teamdescription = data.get('teamdescription')
         defaultmembershipperiod = data.get('defaultmembershipperiod')
         defaultrenewalperiod = data.get('defaultrenewalperiod')
         subscriptionpolicy = data.get('subscriptionpolicy')
-        teamowner = getUtility(ILaunchBag).user
+        teamowner = data.get('teamowner')
         team = getUtility(IPersonSet).newTeam(
             teamowner, name, displayname, teamdescription,
             subscriptionpolicy, defaultmembershipperiod, defaultrenewalperiod)
@@ -179,25 +218,7 @@ class TeamAddView(AddView):
                 "provider might use 'greylisting', which could delay the "
                 "message for up to an hour or two.)" % email)
 
-        self._nextURL = canonical_url(team)
-        return team
-
-
-class TeamMembersView:
-
-    def allMembersCount(self):
-        return getUtility(ITeamMembershipSet).getTeamMembersCount(self.context)
-
-    def activeMemberships(self):
-        return getUtility(ITeamMembershipSet).getActiveMemberships(self.context)
-
-    def proposedMemberships(self):
-        return getUtility(ITeamMembershipSet).getProposedMemberships(
-            self.context)
-
-    def inactiveMemberships(self):
-        return getUtility(ITeamMembershipSet).getInactiveMemberships(
-            self.context)
+        self.next_url = canonical_url(team)
 
 
 class ProposedTeamMembersEditView:
@@ -232,49 +253,53 @@ class ProposedTeamMembersEditView:
         self.request.response.redirect('%s/+members' % canonical_url(team))
 
 
-class TeamMemberAddView(AddView):
+class TeamBrandingView(BrandingChangeView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
-        self.alreadyMember = None
-        self.addedMember = None
-        added = self.request.get('added')
-        notadded = self.request.get('notadded')
-        if added:
-            self.addedMember = getUtility(IPersonSet).get(added)
-        elif notadded:
-            self.alreadyMember = getUtility(IPersonSet).get(notadded)
-        AddView.__init__(self, context, request)
+    schema = ITeam
+    field_names = ['icon', 'logo', 'mugshot']
 
-    def nextURL(self):
-        if self.addedMember:
-            return '+addmember?added=%d' % self.addedMember.id
-        elif self.alreadyMember:
-            return '+addmember?notadded=%d' % self.alreadyMember.id
-        else:
-            return '+addmember'
 
-    def createAndAdd(self, data):
-        team = self.context
-        approved = TeamMembershipStatus.APPROVED
+class TeamMemberAddView(LaunchpadFormView):
 
+    schema = ITeamMember
+    label = "Select the new member"
+
+    def validate(self, data):
+        """Verify new member.
+
+        This checks that the new member has some active members and is not
+        already an active team member.
+        """
+        newmember = data.get('newmember')
+        error = None
+        if newmember is not None:
+            if newmember.isTeam() and not newmember.activemembers:
+                error = _("You can't add a team that doesn't have any active"
+                          " members.")
+            elif newmember in self.context.activemembers:
+                error = _("%s (%s) is already a member of %s." % (
+                    newmember.browsername, newmember.name,
+                    self.context.browsername))
+
+        if error:
+            self.setFieldError("newmember", error)
+
+    @action(u"Add Member", name="add")
+    def add_action(self, action, data):
+        """Add the new member to the team."""
         newmember = data['newmember']
         # If we get to this point with the member being the team itself,
         # it means the ValidTeamMemberVocabulary is broken.
-        assert newmember != team, newmember
+        assert newmember != self.context, (
+            "Can't add team to itself: %s" % newmember)
 
-        if newmember in team.activemembers:
-            self.alreadyMember = newmember
-            return
-
-        expires = team.defaultexpirationdate
-        if newmember.hasMembershipEntryFor(team):
-            team.setMembershipData(
-                newmember, approved, reviewer=self.user, expires=expires)
+        self.context.addMember(newmember, reviewer=self.user,
+                               status=TeamMembershipStatus.APPROVED)
+        if newmember.isTeam():
+            msg = "%s has been invited to join this team." % (
+                  newmember.unique_displayname)
         else:
-            team.addMember(newmember, reviewer=self.user, status=approved)
-
-        self.addedMember = newmember
+            msg = "%s has been added as a member of this team." % (
+                  newmember.unique_displayname)
+        self.request.response.addInfoNotification(msg)
 

@@ -1,0 +1,13 @@
+<div class="portlet" id="portlet-team-branches"
+     tal:condition="view/teams_with_branches">
+  <h2>Branches for</h2>
+
+  <div class="portletBody portletContent">
+   
+    <div tal:repeat="team view/teams_with_branches">
+      <img src="/@@/team" />
+      <a tal:content="team/displayname"
+         tal:attributes="href team/fmt:url">team name</a>
+    </div>
+  </div>
+</div>

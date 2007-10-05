@@ -1,8 +1,4 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
+<html metal:use-macro="view/macro:page/default" i18n:domain="launchpad">
   <body>
     <metal:portlets fill-slot="portlets">
       <div tal:replace="structure context/@@+portlet-lifecycle" />
@@ -11,20 +7,23 @@
 
 <div metal:fill-slot="main">
 
-  <h1 tal:content="context/title">Name of product</h1>
-  <span tal:replace="structure context/fmt:icon" />
+  <span tal:replace="structure context/image:mugshot" />
+  <h1 tal:content="context/title">Name of project</h1>
 
-  <div class="documentDescription" tal:content="context/summary">
+  <div class="description" tal:content="context/summary">
     $Product.summary goes here. This should be quite short,
-    just a single paragraph of text really, giving the product
+    just a single paragraph of text really, giving the project
     highlights.
   </div>
 
-  <div tal:content="structure context/description/fmt:text-to-html"
-       tal:condition="context/description">
+  <div
+    class="description"
+    tal:content="structure context/description/fmt:text-to-html"
+    tal:condition="context/description"
+  >
     $Product.description goes here. This should be a longer piece of
     text, up to three paragraphs in length, which gives much more
-    detailed information about the open source product in question.
+    detailed information about the open source project in question.
   </div>
 
       <ul class="buttons">
@@ -34,9 +33,15 @@
           </a>
         </li>
         <li tal:content="structure context/@@+ask-a-question-button" />
-        <li>
-          <a href="+translations">
-            <img alt="Help translate" src="/+icing/but-sml-helptranslate.gif" />
+        <li tal:content="structure context/@@+help-translate-button" />
+        <li tal:define="has_mentoring context/mentoring_offers/count">
+          <a href="+mentoring" tal:condition="has_mentoring">
+            <img alt="Mentoring available"
+                 src="/+icing/but-sml-mentoring.gif"/>
+          </a>
+          <a href="+mentoring" tal:condition="not: has_mentoring">
+            <img alt="No mentoring available"
+                 src="/+icing/but-sml-mentoring-off.gif" />
           </a>
         </li>
       </ul>
@@ -56,51 +61,22 @@
         <div class="portlet">
           <h2>Timeline</h2>
 
-  <div class="productSeries" tal:repeat="series view/sorted_serieslist">
+          <div class="project series"
+               tal:repeat="series view/sorted_serieses">
 
-    <div tal:define="is_focus python:context.development_focus == series"
-         tal:attributes="class python:is_focus and 'highlighted' or 'unhighlighted'">
+            <div tal:define="
+                   is_focus python:context.development_focus == series"
+                 tal:attributes="
+                   class python:is_focus and 'highlighted' or 'unhighlighted'">
+              <metal:series use-macro="series/@@+macros/detailed_display" />
+            </div>
 
-              <h3>
-                <a
-                  tal:attributes="href series/fmt:url"
-                  tal:content="series/name"
-                >1.0</a>
-              </h3>
-              <div>
-                <strong>Releases:</strong>
-                <tal:none condition="not:series/releases">None</tal:none>
-                <tal:release repeat="release series/releases">
-                  <a
-                    tal:attributes="href release/fmt:url"
-                    tal:content="release/version"
-                  >version</a><tal:comma
-                  condition="not:repeat/release/end">,</tal:comma>
-                </tal:release>
-              </div>
-              <div>
-                <strong>Milestones:</strong>
-                <tal:none condition="not:series/milestones">None</tal:none>
-                <tal:milestone repeat="milestone series/milestones">
-                  <a
-                    tal:attributes="href milestone/fmt:url"
-                    tal:content="milestone/name"
-                  >name</a><tal:comma
-                  condition="not:repeat/milestone/end">,</tal:comma>
-                </tal:milestone>
-              </div>
-              <div tal:condition="is_focus" style="font-style: italic;">
-                Current development focus
-              </div>
-
-    </div>
-
-  </div>
+          </div>
 
         </div>
         <div
           class="section"
-          tal:content="structure context/@@+portlet-packages"
+          tal:content="structure context/@@+portlet-latestspecs"
         />
         <div
           class="section"
@@ -119,7 +95,11 @@
         />
         <div
           class="section"
-          tal:content="structure context/@@+portlet-latestspecs"
+          tal:content="structure context/@@+portlet-latestquestions"
+        />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-packages"
         />
       </div>
     </div>

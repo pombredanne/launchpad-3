@@ -12,12 +12,12 @@
 
 <div metal:fill-slot="main">
 
-  <h2>Upstream links for <span tal:replace="context/displayname">foobar in
-  hoary</span></h2>
+  <h1>Upstream links for <span tal:replace="context/displayname">foobar in
+  hoary</span></h1>
 
   <p>
-    Links from distribution packages to upstream product series let
-    distribution and upstream maintainers share bugs, patches, and translations
+    Linking distribution packages to upstream series allows
+    distribution and upstream developers share bugs, patches, and translations
     efficiently.
   </p>
 
@@ -27,16 +27,16 @@
     If you can, please <a href="+edit-packaging">let us know</a>.
   </p>
 
-  <table class="listing"
+  <table id="packaging-table" class="listing"
          tal:condition="context/sourcepackagename/packagings">
     <caption>Upstream links for all source packages called
-      "<span tal:replace="context/sourcepackagename/name">apache</span>"
+      "<span tal:replace="context/name">apache</span>"
     </caption>
 
     <thead>
       <tr>
         <th>Distribution</th>
-        <th>Release</th>
+        <th>Version</th>
         <th>Upstream Project Series</th>
       </tr>
     </thead>
@@ -44,20 +44,21 @@
     <tbody>
       <tal:block repeat="packaging context/sourcepackagename/packagings">
 	<tr tal:attributes="
-          class python:packaging == context.packaging and 'highlight' or None">
-          <td tal:content="context/packaging/distrorelease/distribution/displayname">
+          class python: packaging == context.packaging and 'highlight' or None">
+
+          <td tal:content="packaging/distroseries/distribution/displayname">
             ubuntu
           </td>
-          <td tal:content="context/packaging/distrorelease/displayname">
+          <td tal:content="packaging/distroseries/displayname">
             hoary
           </td>
-          <td tal:content="context/packaging/productseries/title">
+          <td tal:content="packaging/productseries/title">
             evolution main
           </td>
+
         </tr>
       </tal:block>
     </tbody>
-
   </table>
 
 </div>

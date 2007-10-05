@@ -1,0 +1,103 @@
+= Reconnecting Adapter / Zope Transaction Interaction =
+
+The reconnecting database adapter code is intended to be primarily
+used within Zope applications and the Zope transaction framework.
+
+Therefore, it is important that the adapter become usable in new Zope
+transactions after an outage.
+
+First we'll import a few things needed for the tests:
+
+    >>> import transaction
+    >>> from canonical.config import config
+    >>> from canonical.database.ftests import PortForwardTestSetup
+    >>> from canonical.ftests.pgsql import PgTestSetup
+    >>> from canonical.launchpad.webapp.adapter import (
+    ...     ReconnectingDatabaseAdapter, DisconnectionError)
+
+Now set up a small port forwarding daemon that proxies requests
+through to the database:
+
+    >>> portforward = PortForwardTestSetup()
+    >>> portforward.setUp()
+
+And finally create a database adapter that connects to the port
+forwarder, and a corresponding connection.
+
+    >>> adapter = ReconnectingDatabaseAdapter(
+    ...     'dbi://%s:@localhost:5555/%s' % (
+    ...     config.launchpad.dbuser, PgTestSetup().dbname))
+    >>> connection = adapter()
+
+
+== Disconnection on execute() ==
+
+First we'll simulate a disconnect on execute():
+
+    >>> cursor = connection.cursor()
+    >>> portforward.tearDown()
+    >>> portforward.setUp()
+    >>> cursor.execute("SELECT 1")
+    Traceback (most recent call last):
+      ...
+    DisconnectionError: ...
+
+Now we will abort the Zope transaction and start another one.  The
+connection should be usable:
+
+    >>> transaction.abort()
+    >>> cursor.execute("SELECT 1")
+    >>> cursor.fetchone()[0]
+    1
+
+
+== Disconnection on commit() ==
+
+Now we'll simulate a disconnection just before the commit:
+
+    >>> transaction.abort()
+    >>> cursor.execute("SELECT 1")
+    >>> cursor.fetchone()[0]
+    1
+    >>> portforward.tearDown()
+    >>> portforward.setUp()
+    >>> transaction.commit()
+    Traceback (most recent call last):
+      ...
+    DisconnectionError: ...
+
+If we abort the transaction now, the connection is usable:
+
+    >>> transaction.abort()
+    >>> cursor.execute("SELECT 1")
+    >>> cursor.fetchone()[0]
+    1
+
+
+== Disconnection on cursor() ==
+
+If the connection has previously been disconnected, a call to
+connection.cursor() will result in an attempt to reconnect.  This is a
+common case if the database connection has dropped before the
+transaction starts.
+
+    >>> portforward.tearDown()
+    >>> transaction.abort()
+    >>> cursor = connection.cursor()
+    Traceback (most recent call last):
+      ...
+    DisconnectionError: ...
+    >>> portforward.setUp()
+
+Now when we abort the transaction, we should have a usable connection
+again:
+
+    >>> transaction.abort()
+    >>> cursor.execute("SELECT 1")
+    >>> cursor.fetchone()[0]
+    1
+
+
+== Cleanup ==
+
+    >>> portforward.tearDown()

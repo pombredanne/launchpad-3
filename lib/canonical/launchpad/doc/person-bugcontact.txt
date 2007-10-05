@@ -25,7 +25,7 @@ states.
     >>> def print_package_counts(package_count):
     ...     for key, value in sorted(package_count.items()):
     ...         if IDistributionSourcePackage.providedBy(value):
-    ...             value = value.bugtargetname
+    ...             value = value.bugtargetdisplayname
     ...         print "%s: %s" % (key, value)
     ...     print # Blank line, to make output more readable.
     >>> for package_count in foo_bar.getBugContactOpenBugCounts(None):
@@ -48,7 +48,7 @@ open_unassigned count will increase by one.
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_firefox = ubuntu.getSourcePackage('mozilla-firefox')
-    >>> ubuntu_firefox.bugtargetname
+    >>> ubuntu_firefox.bugtargetdisplayname
     u'mozilla-firefox (Ubuntu)'
 
     >>> login('foo.bar@canonical.com')
@@ -100,8 +100,9 @@ decrease.
 
 If we mark the bug as In Progress, the open_inprogress will increase.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> ubuntu_firefox_bugtask.transitionToStatus(BugTaskStatus.INPROGRESS)
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> ubuntu_firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
     >>> syncUpdate(ubuntu_firefox_bugtask)
 
     >>> for package_count in foo_bar.getBugContactOpenBugCounts(None):

@@ -1,4 +1,4 @@
-= Branches Overview =
+= Product Branches Overview =
 
 Products link their branch listing page.
 
@@ -39,4 +39,4 @@ OK, lets follow the advice.
    <a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a>
    for more information about how you can use
    the Bazaar revision control system to improve community
-   participation in this product.
+   participation in this project.

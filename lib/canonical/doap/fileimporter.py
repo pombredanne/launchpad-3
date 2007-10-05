@@ -45,7 +45,7 @@ class ProductReleaseImporter:
         # ...and we're done!
 
     def _ensureProductRelease(self, filename):
-        from hct.util.path import split_version, name
+        from cscvs.dircompare.path import split_version, name
         version = split_version(name(filename))[1]
         series = version.split('.')[0]
         existingSeries = ProductSeries.selectOneBy(productID=self.product.id,
@@ -82,10 +82,12 @@ class ProductReleaseImporter:
 
         Returns the library alias ID of the file.
         """
-        # FIXME: cope with web/ftp servers that don't give the size of files by
-        #        first saving to a temporary file.
-        # XXX: this isn't at all specific to this importer, and probably belongs
-        #      as a utility in the librarian code somewhere.
+        # XXX: dsilvers 2004-12-14:
+        #      Cope with web/ftp servers that don't give
+        #      the size of files by first saving to a temporary file.
+        # XXX: ddaa 2005-01-26:
+        #      This isn't at all specific to this importer, and probably
+        #      belongs as a utility in the librarian code somewhere.
         file = urllib2.urlopen(url)
         info = file.info()
         size = int(info['content-length'])
@@ -93,10 +95,10 @@ class ProductReleaseImporter:
         librarian.connect(librarianHost, librarianPort)
         ids = librarian.addFile(filename, size, file, info.get('content-type'))
         aliasID = ids[1]
-        
-        # XXX: Awful hack -- the librarian's updated the database, so we need to
-        #      reset our connection so that we can see it.
-        #        - Andrew Bennetts, 2005-01-27
+
+        # XXX: Andrew Bennetts 2005-01-27:
+        #      Awful hack -- the librarian's updated the database, so we need
+        #      to reset our connection so that we can see it.
         SQLBase._connection.rollback()
         SQLBase._connection.begin()
         return aliasID
@@ -111,7 +113,7 @@ class ProductReleaseImporter:
             % (self.product, quote(filename)),
             clauseTables=['ProductRelease', 'LibraryFileAlias']
         )
-        
+
         return bool(existingFiles.count())
 
     def getReleases(self):
@@ -123,7 +125,7 @@ class ProductReleaseImporter:
 
     def getLastManifest(self):
         """Return the last manifest for this product, or None."""
-        from sourcerer.deb.version import deb_cmp
+        from canonical.archivepublisher.debversion import deb_cmp
 
         releases = list(ProductRelease.select(
             'manifest IS NOT NULL AND product = %d' % self.product

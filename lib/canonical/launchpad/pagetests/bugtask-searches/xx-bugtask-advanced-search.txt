@@ -1,9 +1,11 @@
+= Advanced Search =
+
   We have different advanced search forms depending on the context.
   Let's test the advanced form for a distribution. If we enter an
   invalid assignee, we'll get a nice error message.
 
   >>> print http(r"""
-  ... GET /debian/+bugs?advanced=1&field.searchtext=&search=Search+bugs+in+Debian&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=invalid-assignee&field.owner=&field.component-empty-marker=1&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
+  ... GET /debian/+bugs?advanced=1&field.searchtext=&search=Search+bugs+in+Debian&orderby=-importance&field.status:list=New&field.status:list=Incomplete&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=invalid-assignee&field.bug_reporter=&field.component-empty-marker=1&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -14,7 +16,7 @@
   The same with an invalid reporter.
 
   >>> print http(r"""
-  ... GET /debian/+bugs?advanced=1&field.searchtext=&search=Search+bugs+in+Debian&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=&field.owner=invalid-reporter&field.component-empty-marker=1&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
+  ... GET /debian/+bugs?advanced=1&field.searchtext=&search=Search+bugs+in+Debian&orderby=-importance&field.status:list=New&field.status:list=Incomplete&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=&field.bug_reporter=invalid-reporter&field.component-empty-marker=1&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -25,7 +27,7 @@
   We get the search results when we use a valid assignee.
 
   >>> print http(r"""
-  ... GET /debian/+bugs?field.searchtext=&search=Search+bugs+in+Debian&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=name12&field.owner=&field.component-empty-marker=1&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
+  ... GET /debian/+bugs?field.searchtext=&search=Search+bugs+in+Debian&orderby=-importance&field.status:list=New&field.status:list=Incomplete&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=name12&field.bug_reporter=&field.component-empty-marker=1&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -38,7 +40,7 @@
   Again, we'll get a nice error message if we enter a invalid reporter.
 
   >>> print http(r"""
-  ... GET /~name12/+assignedbugs?advanced=1&field.searchtext=&search=Search+bugs+assigned+to+Sample+Person&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&field.owner=invalid-reporter&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
+  ... GET /~name12/+assignedbugs?advanced=1&field.searchtext=&search=Search+bugs+assigned+to+Sample+Person&orderby=-importance&field.status:list=New&field.status:list=Incomplete&field.status:list=Confirmed&field.status:list=In+Progress&field.bug_reporter=invalid-reporter&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -49,7 +51,7 @@
 Using a valid one we get the correct search results, most important first.
 
   >>> print http(r"""
-  ... GET /~name12/+assignedbugs?field.searchtext=&search=Search+bugs+assigned+to+Sample+Person&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&field.owner=name12&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
+  ... GET /~name12/+assignedbugs?field.searchtext=&search=Search+bugs+assigned+to+Sample+Person&orderby=-importance&field.status:list=New&field.status:list=Incomplete&field.status:list=Confirmed&field.status:list=In+Progress&field.bug_reporter=name12&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -64,7 +66,7 @@ Using a valid one we get the correct search results, most important first.
   Now with an invalid assignee 
 
   >>> print http(r"""
-  ... GET /~name12/+reportedbugs?advanced=1&field.searchtext=&search=Search+bugs+reported+by+Sample+Person&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=invalid-assignee&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
+  ... GET /~name12/+reportedbugs?advanced=1&field.searchtext=&search=Search+bugs+reported+by+Sample+Person&orderby=-importance&field.status:list=New&field.status:list=Incomplete&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=invalid-assignee&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -73,7 +75,7 @@ Using a valid one we get the correct search results, most important first.
   ...
 
   >>> print http(r"""
-  ... GET /~name12/+reportedbugs?field.searchtext=&search=Search+bugs+reported+by+Sample+Person&orderby=-importance&field.status:list=Unconfirmed&field.status:list=Needs+Info&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=sabdfl&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
+  ... GET /~name12/+reportedbugs?field.searchtext=&search=Search+bugs+reported+by+Sample+Person&orderby=-importance&field.status:list=New&field.status:list=Incomplete&field.status:list=Confirmed&field.status:list=In+Progress&assignee_option=choose&field.assignee=sabdfl&field.omit_dupes.used=&field.omit_dupes=on&field.has_patch.used= HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -82,3 +84,28 @@ Using a valid one we get the correct search results, most important first.
   ...1...
   ...Firefox does not support SVG...
   ...
+
+== Advanced Search Form ==
+
+The advanced search form allows searching for bugs within a target by
+supplying many different criteria.
+
+    >>> browser.open('http://launchpad.dev/firefox/+bugs?advanced=1')
+
+=== Searching by Assignee ===
+
+To search bugs by assignee, we can select from two options: `Nobody`
+(bugs that aren't assigned) or by a specific user name.
+
+==== Assignee field and radio button behaviour ====
+
+When searching by username we need to both select the coresponding
+radio button and enter a valid user name. The username input
+automatically selects the coresponding radio button when we type some
+text into it by calling the selectWidget Javascript function.
+
+    >>> assignee_widget = find_tag_by_id(browser.contents, 'field.assignee')
+    >>> print assignee_widget['onkeypress']
+    selectWidget('assignee_option', event)
+    >>> print find_tag_by_id(browser.contents, 'assignee_option')
+    <input...type="radio"...>

@@ -1,18 +1,16 @@
 Launchpad can show you a product's packages by distribution, with links to each.
 
-    >>> from zope.testbrowser.testing import Browser
-
     >>> anon_browser.open(
     ...     'http://launchpad.dev/evolution/+distributions')
     >>> anon_browser.url
     'http://launchpad.dev/evolution/+distributions'
     >>> print anon_browser.contents
     <...
-    ...<h1>Packages by distribution</h1>
+    <h1>Packages by distribution</h1>
     ...
-    ...<h2>Ubuntu Linux</h2>
+    <h2>Ubuntu Linux</h2>
     ...
-    >>> anon_browser.getLink(url='http://launchpad.dev/ubuntu/warty/+source/evolution').click()
+    >>> anon_browser.getLink(url='/ubuntu/warty/+source/evolution').click()
     >>> print anon_browser.contents
     <...
     ...evolution in Ubuntu Warty...
@@ -22,8 +20,7 @@ It can also show the packages by product series. And if you have permission (for
 example, you're the owner of the product), Launchpad lets you register packages
 for each series. In this case, mark@hbd.com is the owner of Evolution.
 
-    >>> evo_owner = Browser()
-    >>> evo_owner.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> evo_owner = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> evo_owner.open('http://launchpad.dev/evolution/+packages')
     >>> evo_owner.url
     'http://launchpad.dev/evolution/+packages'
@@ -33,9 +30,9 @@ for each series. In this case, mark@hbd.com is the owner of Evolution.
     ...
     ...trunk...
     ...
-    >>> evo_owner.getLink(url='http://launchpad.dev/ubuntu/hoary/+source/evolution') is not None
+    >>> evo_owner.getLink(url='/ubuntu/hoary/+source/evolution') is not None
     True
-    >>> evo_owner.getLink(url='http://launchpad.dev/evolution/trunk/+addpackage') is not None
+    >>> evo_owner.getLink(url='/evolution/trunk/+addpackage') is not None
     True
 
 If you're not the owner or an admin, you still see the packages, but without
@@ -48,7 +45,7 @@ the link to add packages yourself.
     <...
     ...<h1>Distribution packages</h1>...
     ...
-    >>> browser.getLink(url='http://launchpad.dev/evolution/trunk/+addpackage')
+    >>> browser.getLink(url='/evolution/trunk/+addpackage')
     Traceback (most recent call last):
     ...
     LinkNotFoundError

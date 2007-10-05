@@ -6,6 +6,9 @@ __metaclass__ = type
 
 __all__ = [
     'BranchListingView',
+    'RecentlyChangedBranchesView',
+    'RecentlyImportedBranchesView',
+    'RecentlyRegisteredBranchesView',
     ]
 
 from datetime import datetime
@@ -13,14 +16,14 @@ from datetime import datetime
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.lp import decorates
-from canonical.lp.dbschema import (BranchLifecycleStatus,
-                                   BranchLifecycleStatusFilter)
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchLifecycleFilter,
-    IBranchSet, IBugBranchSet, IBranchBatchNavigator)
+    BranchLifecycleStatus, BranchLifecycleStatusFilter,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    IBranchSet, IBugBranchSet, IBranchBatchNavigator, IBranchLifecycleFilter)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
@@ -35,13 +38,25 @@ class BranchListingItem:
     """
     decorates(IBranch, 'branch')
 
-    def __init__(self, branch, last_commit, elapsed, bugbranches, role=None):
+    def __init__(self, branch, last_commit, now, bugbranches, role=None):
         self.branch = branch
         self.last_commit = last_commit
-        self.elapsed_time = elapsed
         self.bugbranches = bugbranches
         self.role = role
-        
+        self._now = now
+
+    @property
+    def elapsed_time(self):
+        """How long since the branch's last commit."""
+        return self.last_commit and (self._now - self.last_commit)
+
+    @property
+    def since_created(self):
+        """How long since the branch was created."""
+        # Need to make an TZ unaware date in order to subtract it.
+        unaware_date = self.branch.date_created.replace(tzinfo=None)
+        return self._now - unaware_date
+
 
 class BranchListingBatchNavigator(TableBatchNavigator):
     """Batch up the branch listings."""
@@ -50,10 +65,11 @@ class BranchListingBatchNavigator(TableBatchNavigator):
     def __init__(self, view):
         TableBatchNavigator.__init__(
             self, view._branches(), view.request,
-            columns_to_show=view.extra_columns)
+            columns_to_show=view.extra_columns,
+            size=config.launchpad.branchlisting_batch_size)
         self.view = view
         self.column_count = 4 + len(view.extra_columns)
-        self._now = datetime.now()
+        self._now = datetime.utcnow()
 
     @cachedproperty
     def last_commit(self):
@@ -74,15 +90,14 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
     def _createItem(self, branch):
         last_commit = self.last_commit[branch]
-        elapsed = last_commit and (self._now - last_commit)
         bug_branches = self.branch_bug_links.get(branch.id)
         role = self.view.roleForBranch(branch)
         return BranchListingItem(
-            branch, last_commit, elapsed, bug_branches, role)
+            branch, last_commit, self._now, bug_branches, role)
 
     def branches(self):
         "Return a list of BranchListingItems"
-        return [self._createItem(branch) for branch in self.currentBatch()] 
+        return [self._createItem(branch) for branch in self.currentBatch()]
 
     @cachedproperty
     def multiple_pages(self):
@@ -94,7 +109,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             return "listing"
         else:
             return "listing sortable"
-        
+
 
 class BranchListingView(LaunchpadFormView):
     """A base class for views of branch listings."""
@@ -108,7 +123,7 @@ class BranchListingView(LaunchpadFormView):
     def page_title(self):
         return '%s branches for %s' % (
             self.title_prefix, self.context.displayname)
-    
+
     @property
     def initial_values(self):
         return {
@@ -129,7 +144,7 @@ class BranchListingView(LaunchpadFormView):
         elif lifecycle_filter == BranchLifecycleStatusFilter.CURRENT:
             return DEFAULT_BRANCH_STATUS_IN_LISTING
         else:
-            return (BranchLifecycleStatus.items[lifecycle_filter.value], )
+            return (BranchLifecycleStatus.items[lifecycle_filter.name], )
 
     def branches(self):
         """All branches related to this target, sorted for display."""
@@ -145,7 +160,7 @@ class BranchListingView(LaunchpadFormView):
     def no_branch_message(self):
         """This may also be overridden in derived classes to provide
         context relevant messages if there are no branches returned."""
-        if self.selected_lifecycle_status:
+        if self.selected_lifecycle_status is not None:
             message = (
                 'There may be branches related to %s '
                 'but none of them match the current filter criteria '
@@ -160,3 +175,46 @@ class BranchListingView(LaunchpadFormView):
         return message % self.context.displayname
 
 
+class NoContextBranchListingView(BranchListingView):
+    """A branch listing that has no associated product or person."""
+
+    no_branch_message = (
+        'There are no branches that match the current status filter.')
+    extra_columns = ('author', 'product', 'date_created')
+
+
+class RecentlyRegisteredBranchesView(NoContextBranchListingView):
+    """A batched view of branches orded by registration date."""
+
+    page_title = 'Recently registered branches'
+
+    def _branches(self):
+        """Return the branches ordered by date created."""
+        return getUtility(IBranchSet).getRecentlyRegisteredBranches(
+            lifecycle_statuses=self.selected_lifecycle_status,
+            visible_by_user=self.user)
+
+
+class RecentlyImportedBranchesView(NoContextBranchListingView):
+    """A batched view of imported branches ordered by last scanned time."""
+
+    page_title = 'Recently imported branches'
+    extra_columns = ('product', 'date_created')
+
+    def _branches(self):
+        """Return imported branches ordered by last update."""
+        return getUtility(IBranchSet).getRecentlyImportedBranches(
+            lifecycle_statuses=self.selected_lifecycle_status,
+            visible_by_user=self.user)
+
+
+class RecentlyChangedBranchesView(NoContextBranchListingView):
+    """A batched view of non-imported branches ordered by last scanned time."""
+
+    page_title = 'Recently changed branches'
+
+    def _branches(self):
+        """Return non-imported branches orded by last commit."""
+        return getUtility(IBranchSet).getRecentlyChangedBranches(
+            lifecycle_statuses=self.selected_lifecycle_status,
+            visible_by_user=self.user)

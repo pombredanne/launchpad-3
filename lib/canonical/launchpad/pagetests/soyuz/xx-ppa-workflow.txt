@@ -1,0 +1,359 @@
+= Personal Package Archive pages and work-flow =
+
+
+== Activated Personal Package Archives ==
+
+Setup a browser for 'cprov' :
+
+    >>> cprov_browser = setupBrowser(
+    ...     auth="Basic celso.providelo@canonical.com:cprov")
+
+Since cprov's Personal Package Archive is already activated in
+sampledata, 'Activate Personal Package Archive' action is not
+presented in cprov's page:
+
+    >>> cprov_browser.open("http://launchpad.dev/~cprov")
+    >>> cprov_browser.getLink("Activate Personal Package Archive")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Instead, a 'Show Personal Package Archive' link is presented which
+drives the user to their Personal Package Archive page:
+
+    >>> cprov_browser.getLink("Show Personal Package Archive").click()
+    >>> cprov_browser.title
+    'Personal Package Archive for Celso Providelo'
+    >>> cprov_browser.url
+    'http://launchpad.dev/~cprov/+archive'
+
+If, by any chance, the user tries to access the Personal Package
+Archive activation page for already activated PPA (hand-made or save
+URLs) it will get redirected to the PPA page automatically:
+
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+activate-ppa")
+    >>> cprov_browser.url
+    'http://launchpad.dev/~cprov/+archive'
+
+Only users with lp.Edit permission on PPA (owner and admin), are able
+to see and click on the 'Review terms of service' menu link on PPA pages and
+read the current version of the document.
+
+    >>> cprov_browser.getLink("Review terms of service").click()
+    >>> cprov_browser.url
+    'http://launchpad.dev/~cprov/+archive/+view-tos'
+
+    >>> print cprov_browser.contents
+    <BLANKLINE>
+    ...
+    ...<h2>Personal Package Archive Terms of Service</h2>
+    ...
+
+    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> admin_browser.getLink("Review terms of service").click()
+    >>> admin_browser.url
+    'http://launchpad.dev/~cprov/+archive/+view-tos'
+
+    >>> user_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> user_browser.getLink("Review terms of service").click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> user_browser.open("http://launchpad.dev/~cprov/+archive/+view-tos")
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...'browserDefault', 'launchpad.Edit')
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> anon_browser.getLink("Review terms of service").click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/+view-tos")
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...'browserDefault', 'launchpad.Edit')
+
+
+== Activating Personal Package Archives for Users ==
+
+Personal Package Archives have to be activated before they can be
+accessed, in this section we will cover the activation procedure for
+an user-PPA by its own user:
+
+Checking if the Person action-menu is sane, by not presenting links to
+a Personal Package Archive that doesn't exist yet:
+
+    >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> sample_browser.open("http://launchpad.dev/~name12")
+    >>> sample_browser.getLink("Show Personal Package Archive")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Accessing a nonexistent Personal Package Archive page with a hand-made
+URL results in NotFound error:
+
+    >>> sample_browser.open("http://launchpad.dev/~name12/+archive")
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <Person at ...>, name: u'+archive'
+
+Person action-menu presents a link to 'Activate Personal Package Archive':
+
+    >>> sample_browser.open("http://launchpad.dev/~name12")
+    >>> sample_browser.getLink("Activate Personal Package Archive").click()
+    >>> sample_browser.title
+    'Activate Personal Package Archive'
+    >>> sample_browser.url
+    'http://launchpad.dev/~name12/+activate-ppa'
+
+This page presents the current PPA-ToS (terms of service) with a
+mandatory checkbox ('accepted') indicating that the user has read and
+accepted the conditions and an optional 'description' text-area.
+
+The 'accepted' checkbox is unchecked by default:
+
+    >>> sample_browser.getControl(name="field.accepted").value
+    False
+
+
+By submitting the form without checking the check-box results in a
+error with a proper message:
+
+    >>> sample_browser.getControl("Activate").click()
+    >>> sample_browser.url
+    'http://launchpad.dev/%7Ename12/+activate-ppa'
+
+    >>> errors = find_tags_by_class(sample_browser.contents, 'error')
+    >>> for error in [extract_text(e) for e in errors]:
+    ...     print error
+    There is 1 error.
+    PPA ToS has to be accepted to complete the activation.
+
+So, in order to 'activate' a Personal Package Archive the 'accepted'
+checkbox must be checked:
+
+    >>> sample_browser.getControl(name="field.accepted").value = True
+    >>> sample_browser.getControl(name="field.description").value = (
+    ...    'Hoohay for PPA.')
+    >>> sample_browser.getControl("Activate").click()
+
+A successful activation redirects to the Personal Package Archive page:
+
+    >>> sample_browser.url
+    'http://launchpad.dev/~name12/+archive'
+
+Where we can check for the submitted description:
+
+    >>> print extract_text(
+    ...     find_tag_by_id(sample_browser.contents, 'description'))
+    PPA description:
+    Hoohay for PPA.
+
+... and an empty 'whiteboard' section that when filled, includes
+administrator messages about operations done in this Personal Package Archive.
+
+    >>> find_tag_by_id(sample_browser.contents, 'whiteboard') is None
+    True
+
+Note that the 'whiteboard' section is presented as an informational
+box. Only users with 'launchpad.Edit' permission on the PPA in
+question will be able to see it, see below. 
+
+The PPA owner is able to edit PPA 'description' and 'whiteboard':
+
+    >>> sample_browser.getLink("Change details").click()
+    >>> sample_browser.getControl(name="field.description").value = (
+    ...    'Howdy, cowboys !')
+    >>> sample_browser.getControl(name="field.whiteboard").value = (
+    ...    'Not here, John Wayne !')
+    >>> sample_browser.getControl("Save").click()
+
+    >>> sample_browser.url
+    'http://launchpad.dev/~name12/+archive'
+
+    >>> print extract_text(
+    ...     find_tag_by_id(sample_browser.contents, 'description'))
+    PPA description:
+    Howdy, cowboys !
+
+    >>> print extract_text(
+    ...     find_tag_by_id(sample_browser.contents, 'whiteboard'))
+    PPA whiteboard:
+    Not here, John Wayne !
+
+
+== Activating Personal Package Archives for Teams ==
+
+Similarly to the user PPAs activation, team PPAs can be activated by
+anyone with 'launchpad.Edit' permission in the team in question:
+
+    >>> cprov_browser.open("http://launchpad.dev/~landscape-developers")
+    >>> cprov_browser.getLink("Activate Personal Package Archive")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Even if we try the URL directly:
+
+    >>> cprov_browser.open(
+    ...    "http://launchpad.dev/~landscape-developers/+activate-ppa")
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'launchpad.Edit')
+
+Let's proceed with the required permissions:
+
+    >>> sample_browser.open("http://launchpad.dev/~landscape-developers")
+    >>> sample_browser.getLink("Activate Personal Package Archive").click()
+    >>> sample_browser.title
+    'Activate Personal Package Archive'
+
+    >>> sample_browser.getControl(name="field.accepted").value = True
+    >>> sample_browser.getControl(name="field.description").value = (
+    ...    'Hoohay for Team PPA.')
+    >>> sample_browser.getControl("Activate").click()
+
+    >>> sample_browser.url
+    'http://launchpad.dev/~landscape-developers/+archive'
+
+    >>> print extract_text(
+    ...     find_tag_by_id(sample_browser.contents, 'description'))
+    PPA description:
+    Hoohay for Team PPA.
+
+Any team administrator can 'edit' description & whiteboard contents,
+exactly the same as for a user-PPA, see above:
+
+    >>> sample_browser.getLink("Change details").click()
+    >>> sample_browser.url
+    'http://launchpad.dev/~landscape-developers/+archive/+edit'
+
+
+== Activating someone else's Personal Package Archives  ==
+
+We also allow LP-admins to create Personal Package Archives in the
+name of other users or teams:
+
+    >>> admin_browser.open("http://launchpad.dev/~carlos")
+    >>> admin_browser.getLink("Show Personal Package Archive")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> admin_browser.open("http://launchpad.dev/~carlos")
+    >>> admin_browser.getLink("Activate Personal Package Archive").click()
+    >>> admin_browser.getControl(name="field.accepted").value = True
+    >>> admin_browser.getControl(name="field.description").value = (
+    ...    'Go for it, you lazy !')
+    >>> admin_browser.getControl("Activate").click()
+
+    >>> admin_browser.url
+    'http://launchpad.dev/~carlos/+archive'
+
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'description'))
+    PPA description:
+    Go for it, you lazy !
+
+    >>> find_tag_by_id(admin_browser.contents, 'whiteboard') is None
+    True
+
+LP-admins can also 'edit' PPAs of other people:
+
+    >>> admin_browser.getLink("Change details") is not None
+    True
+
+But more importantly, only LP-admin can 'administer' Personal Package Archives.
+
+    >>> admin_browser.getLink("Administer archive").click()
+
+The administration procedure allow us to:
+
+ * Enable/Disable: disabled PPA that won't accept uploads (not
+   implemented yet)
+ * Set a maximum disk size: uploads will be rejected if the resulting
+   PPA size is exceeding the authorized size. (not implemented yet)
+ * Edit the whiteboard: to communicate & record administration decisions.
+
+    >>> admin_browser.getControl(name="field.enabled").value = False
+    >>> admin_browser.getControl(name="field.authorized_size").value = '1'
+    >>> admin_browser.getControl(name="field.whiteboard").value = (
+    ...    'Here lives a lazy community.')
+    >>> admin_browser.getControl("Save").click()
+
+    >>> admin_browser.url
+    'http://launchpad.dev/~carlos/+archive'
+
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'whiteboard'))
+    PPA whiteboard:
+    Here lives a lazy community.
+
+The whiteboard section can be viewed by the PPA owner:
+
+    >>> carlos_browser = setupBrowser(auth="Basic carlos@canonical.com:test")
+    >>> carlos_browser.open("http://launchpad.dev/~carlos/+archive")
+    >>> print extract_text(
+    ...     find_tag_by_id(carlos_browser.contents, 'whiteboard'))
+    PPA whiteboard:
+    Here lives a lazy community.
+
+
+== Double submission ==
+
+If two browser windows are open at the same time on the activation page 
+then when the second activation is clicked after already
+activating on the first, then it will just go to the archive page.
+
+Set up two browsers (waiting for bug #68655):
+
+    >>> browser1 = setupBrowser(auth="Basic foo.bar@canonical.com:test")
+    >>> browser1.open("http://launchpad.dev/~name16/+activate-ppa")
+    >>> browser2 = setupBrowser(auth="Basic foo.bar@canonical.com:test")
+    >>> browser2.open("http://launchpad.dev/~name16/+activate-ppa")
+
+The 'accepted' checkbox must be checked:
+
+    >>> browser1.getControl(name="field.accepted").value = True
+    >>> browser1.getControl(name="field.description").value = (
+    ...    'PPA rocks!')
+    >>> browser2.getControl(name="field.accepted").value = True
+    >>> browser2.getControl(name="field.description").value = (
+    ...    'PPA does not explode!')
+
+Activate the first browser:
+
+    >>> browser1.getControl("Activate").click()
+
+A successful activation redirects to the Personal Package Archive page:
+
+    >>> browser1.url
+    'http://launchpad.dev/~name16/+archive'
+
+Where we can check for the submitted description:
+
+    >>> print extract_text(
+    ...     find_tag_by_id(browser1.contents, 'description'))
+    PPA description:
+    PPA rocks!
+
+Activate the second browser:
+
+    >>> browser2.getControl("Activate").click()
+
+It will be directed to the Personal Package Archive page:
+
+    >>> browser2.url
+    'http://launchpad.dev/~name16/+archive'
+
+And the description matches the first submission's:
+
+    >>> print extract_text(
+    ...     find_tag_by_id(browser1.contents, 'description'))
+    PPA description:
+    PPA rocks!
+

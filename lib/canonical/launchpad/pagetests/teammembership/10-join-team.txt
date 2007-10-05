@@ -1,0 +1,146 @@
+= Joining a team =
+
+Karl will join the newly created team.
+
+    >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~myemail')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'subscription_policy'))
+    This is an open team; any user can join and no approval is required.
+
+    >>> browser.getLink('Join the team').click()
+    >>> browser.url
+    'http://launchpad.dev/~myemail/+join'
+
+    >>> browser.getControl(name='join').click()
+    >>> browser.url
+    'http://launchpad.dev/~myemail'
+
+Since this is an open team, he's automatically approved.
+
+    >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+    ...     print tag.renderContents()
+    Successfully joined my own team.
+
+Now, the link to join the team is not present anymore and the +join page will
+say that there's no need to join since the user is already a member of that
+team.
+
+    >>> browser.getLink('Join the team')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+    >>> browser.open('http://launchpad.dev/~myemail/+join')
+    >>> for tag in find_tags_by_class(browser.contents, 'warning'):
+    ...     print tag.renderContents()
+    You are an active member of this team already.
+
+We have a 'Back to team' button, though, which just takes the user back to
+the team's home page.
+
+    >>> browser.getControl('Back to team').click()
+    >>> browser.url
+    'http://launchpad.dev/~myemail'
+
+If this was a moderated team, the membership would not have been automatically
+approved, though.
+
+    >>> from canonical.launchpad.database import Person
+    >>> from canonical.launchpad.interfaces import TeamSubscriptionPolicy
+    >>> myemail = Person.selectOneBy(name='myemail')
+    >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+    >>> myemail.syncUpdate()
+
+    >>> browser = setupBrowser(
+    ...     auth='Basic james.blackwell@ubuntulinux.com:jblack')
+    >>> browser.open('http://launchpad.dev/~myemail')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'subscription_policy'))
+    This is a moderated team; all subscriptions are subjected to approval by
+    one of the team's administrators.
+
+    >>> browser.getLink('Join the team').click()
+    >>> browser.url
+    'http://launchpad.dev/~myemail/+join'
+
+    >>> print find_tag_by_id(browser.contents, 'maincontent').renderContents()
+    <BLANKLINE>
+    ...
+    Since this is a moderated team, one of its administrators will have to
+    approve your membership before you actually become a member of this team.
+    ...
+
+If the user changes his mind because this is a moderated team, he can hit
+the 'Cancel' button, going back to the team's page...
+
+    >>> browser.getControl('Cancel').click()
+    >>> browser.url
+    'http://launchpad.dev/~myemail'
+
+...and then do everything again, if he really wants to join.
+
+    >>> browser.getLink('Join the team').click()
+    >>> browser.getControl(name='join').click()
+    >>> browser.url
+    'http://launchpad.dev/~myemail'
+
+    >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+    ...     print tag.renderContents()
+    Subscription request pending approval.
+
+If it was a restricted team, users wouldn't even see a link to join the team.
+
+    >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.RESTRICTED
+    >>> myemail.syncUpdate()
+
+    >>> browser = setupBrowser(
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> browser.open('http://launchpad.dev/~myemail')
+    >>> browser.url
+    'http://launchpad.dev/~myemail'
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'subscription_policy'))
+    This is a restricted team; new members can only be added by one of the
+    team's administrators.
+
+    >>> browser.getLink('Join the team')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+If the user manually craft the URL to the +join page, he'll only see a
+message explaining that this is a restricted team.
+
+    >>> browser.open('http://launchpad.dev/~myemail/+join')
+    >>> browser.url
+    'http://launchpad.dev/~myemail/+join'
+
+    >>> for tag in find_tags_by_class(browser.contents, 'warning'):
+    ...     print tag.renderContents()
+    my own team is a restricted team.
+    Only a team administrator can add new members.
+
+But we provide a 'Back to team' button to take the user back to the team's
+home page, since he can't join it.
+
+    >>> browser.getControl('Back to team').click()
+    >>> browser.url
+    'http://launchpad.dev/~myemail'
+
+On the team's +members page we can now see Karl as an approved member,
+James Blackwell as a proposed one and Jeff Waugh won't be there at all.
+
+    >>> anon_browser.open('http://launchpad.dev/~myemail')
+    >>> anon_browser.getLink('Show all members').click()
+    >>> anon_browser.url
+    'http://launchpad.dev/~myemail/+members'
+
+    >>> contents = anon_browser.contents
+    >>> for link in find_tag_by_id(contents, 'activemembers').findAll('a'):
+    ...     print link.renderContents()
+    Karl Tilbury 
+    Sample Person
+
+    >>> for link in find_tag_by_id(contents, 'proposedmembers').findAll('a'):
+    ...     print link.renderContents()
+    James Blackwell

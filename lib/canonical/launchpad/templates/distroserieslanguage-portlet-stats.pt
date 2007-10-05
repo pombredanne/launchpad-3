@@ -1,0 +1,25 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-stats">
+
+  <h2><span tal:replace="context/language/englishname">French</span>
+      statistics in <span
+      tal:replace="context/distroseries/displayname">Hoary</span></h2>
+
+  <div class="portletBody portletContent">
+
+    <b>Translatable items:</b>
+    <span tal:replace="context/messageCount">N</span>
+    <br/>
+    <b>Untranslated:</b>
+    <span tal:replace="context/untranslatedCount">N</span>
+    <br />
+    <span style="white-space: nowrap"
+          tal:content="structure context/@@+barchart">--</span>
+    <br />
+
+  </div>
+
+</div>

@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
 <body>
 
@@ -13,13 +19,12 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Ubuntu Linux</h3>
   <h1>Translations</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
 
-  <tal:block condition="view/translation_focus">
+  <tal:translation_focus condition="view/translation_focus">
     <p>
       The current translation focus for
       <span tal:replace="context/displayname">Ubuntu</span> is
@@ -35,30 +40,53 @@
       </span>
     </h2>
     <div tal:replace="structure view/translation_focus/@@+langchart" />
-  </tal:block>
+  </tal:translation_focus>
 
-  <tal:block condition="view/secondary_translatable_releases">
+  <tal:secondary condition="view/secondary_translatable_serieses">
     <h2 tal:condition="view/translation_focus">
-      Other releases of <span tal:replace="context/displayname">Ubuntu</span>
+      Other versions of <span tal:replace="context/displayname">Ubuntu</span>
     </h2>
-    <table class="listing">
-      <thead>
-        <tr>
-          <th>Release</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr tal:repeat="distrorelease view/secondary_translatable_releases">
-          <td><a tal:attributes="href string:${distrorelease/fmt:url}/+translations"
+
+    <ul>
+      <li tal:repeat="distroseries view/secondary_translatable_serieses">
+        <a tal:attributes="href distroseries/fmt:url"
                  tal:content=
-                    "string: ${distrorelease/version} ${distrorelease/title}"
+                    "string: ${distroseries/version} ${distroseries/title}"
                 >5.04 The Hoary Hedgehog Release</a>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </tal:block>
+      </li>
+    </ul>
+  </tal:secondary>
+
+  <tal:untranslatable condition="not: view/translation_focus">
+    <p>
+      This distribution does not have any series to be translated.  Once
+      <span tal:replace="context/displayname">Ubuntu</span> has created a
+      distroseries, you will be able to find or create its translations here.
+    </p>
+  </tal:untranslatable>
 
 </div>
+
+<div metal:fill-slot="help">
+  <p>
+    These are the series of the
+    <span tal:replace="context/displayname">Ubuntu</span> distribution that are
+    available for translation.
+  </p>
+  <p>
+    If you have the access privileges to manage translation for this
+    distribution, you can appoint translators and set translation acceptance
+    policies for <span tal:replace="context/displayname">Ubuntu</span> by
+    selecting <a href="+changetranslators">Change translators</a> from the
+    Actions menu.
+  </p>
+  <ul class="info">
+    <li>
+      <a href="https://help.launchpad.net/RosettaFAQ"
+      >Frequently asked questions</a>
+    </li>
+  </ul>
+</div>
+
 </body>
 </html>

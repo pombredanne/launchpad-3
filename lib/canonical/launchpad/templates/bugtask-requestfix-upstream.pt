@@ -1,11 +1,15 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
   <body>
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-  </metal:leftportlets>
 
 <div metal:fill-slot="main">
 
@@ -27,14 +31,18 @@
                     product product_widget/getInputValue">
 
 
+      <div tal:define="widgets view/compulsory_widgets">
+        <div metal:use-macro="context/@@launchpad_form/widget_rows" />
+      </div>
+
       <div class="field">
 
         <label tal:content="product_widget/label">Label</label>
 
         <div>
           <a tal:attributes="href product/fmt:url"
-             tal:content="product/bugtargetname">
-            firefox (upstream)
+             tal:content="product/bugtargetdisplayname">
+            Mozilla Firefox
           </a> (<a tal:attributes="href string:+choose-affected-product?field.product=${product/name}">Choose another project</a>)
           <input type="hidden" tal:replace="structure product_widget/hidden" />
         </div>
@@ -96,13 +104,13 @@
       <tal:private_bug tal:condition="context/bug/private">
 
       <p tal:condition="product/bugcontact">
-        This is a confidential bug,
+        This is a private bug report,
         so <a tal:attributes="href product/bugcontact/fmt:url"
            tal:content="product/bugcontact/displayname">Sample Person</a>,
          the bug contact for 
          <tal:product tal:replace="product/displayname">Firefox</tal:product>,
-         won't be notified about this bug. If you want him to know
-         about this bug you have to subscribe him to it.
+         won&rsquo;t be notified. You can also set up 
+           <a href="+addsubscriber">additional contacts</a> to be notified.
       </p>
 
       </tal:private_bug>

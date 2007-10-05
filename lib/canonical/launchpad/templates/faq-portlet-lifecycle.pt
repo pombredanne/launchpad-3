@@ -1,0 +1,41 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-lifecycle">
+  <h2>Lifecycle</h2>
+  <div class="portletBody">
+    <table>
+      <tbody>
+        <tr>
+          <th>Created by:</th>
+          <td tal:content="structure context/owner/fmt:link">
+            Foo Bar
+          </td>
+        </tr>
+        <tr>
+          <th>When:</th>
+          <td tal:attributes="title context/date_created/fmt:datetime"
+              tal:content="context/date_created/fmt:displaydate"
+              >2005-10-05
+          </td>
+        </tr>
+        <tal:last_updated_by condition="context/last_updated_by">
+          <tr>
+            <th>Last updated by:</th>
+            <td tal:content="structure context/last_updated_by/fmt:link">
+              Foo Bar
+            </td>
+          </tr>
+          <tr>
+            <th>When:</th>
+            <td tal:attributes="title context/date_last_updated/fmt:datetime"
+                tal:content="context/date_last_updated/fmt:displaydate"
+                >2005-10-05
+            </td>
+          </tr>
+        </tal:last_updated_by>
+      </tbody>
+    </table>
+  </div>
+</div>

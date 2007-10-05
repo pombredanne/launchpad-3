@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-details">
   <div class="portletBody portletContent">
     <table class="summary">
       <tbody>
@@ -16,6 +16,13 @@
               >Uses Translations</li>
               <li tal:condition="not: context/official_rosetta"
               >Doesn&rsquo;t use Translations</li>
+              <li tal:condition="context/official_answers"
+              >Uses Answers</li>
+              <li tal:condition="not: context/official_answers"
+              >Doesn&rsquo;t use Answers</li>
+              <li tal:condition="context/icon">Branded
+                <tal:icon replace="structure context/image:icon" />
+              </li>
             </ul>
           </td>
           <td tal:condition="not:context/active">Not active</td>

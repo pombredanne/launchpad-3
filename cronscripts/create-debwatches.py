@@ -19,7 +19,7 @@ from zope.component import getUtility
 from canonical.launchpad.scripts.debsync import (
     do_import)
 from canonical.launchpad.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 
 
@@ -31,7 +31,7 @@ debbugs_pl = '../lib/canonical/launchpad/scripts/debbugs-log.pl'
 MIN_AGE = 7
 
 
-class CreateDebWatches(LaunchpadScript):
+class CreateDebWatches(LaunchpadCronScript):
     description = """
     This script syncs debbugs from http://bugs.debian.org/ into Malone.
     It selects interesting bugs in debian and makes sure that there is a

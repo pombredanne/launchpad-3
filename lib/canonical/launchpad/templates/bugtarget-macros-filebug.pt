@@ -1,3 +1,7 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  omit-tag="">
 <metal:basic_filebug_widgets metal:define-macro="basic_filebug_widgets">
 
   <tal:bugtarget
@@ -62,4 +66,268 @@
     <metal:row use-macro="context/@@launchpad_form/widget_row" />
   </metal:description>
 
+  <tr tal:define="security_context view/getSecurityContext">
+    <td colspan="2" width="100%"
+        tal:define="widget nocall: view/widgets/security_related">
+      <table>
+        <tbody>
+          <tr>
+            <td>
+              <input type="checkbox" tal:replace="structure widget" />
+            </td>
+            <td>
+              <label tal:attributes="for widget/name">
+                This bug is a security vulnerability
+              </label>
+              <div tal:condition="view/can_decide_security_contact"
+                   tal:define="security_contact security_context/security_contact|nothing">
+                <tal:security-contact tal:condition="security_contact">
+                  The security contact for
+                  <tal:security-context content="security_context/displayname" />,
+                  <a tal:replace="structure security_contact/fmt:link" />,
+                  will be notified.
+                </tal:security-contact>
+                <tal:maintainer condition="not:security_contact"
+                   define="maintainer security_context/owner">
+                  The maintainer of
+                  <tal:security-context content="security_context/displayname">
+                    Mozilla Firefox</tal:security-context>,
+                  <a href="" tal:attributes="href maintainer/fmt:url"
+                     tal:content="maintainer/displayname">Sample Person</a>,
+                  will be notified.
+                </tal:maintainer>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </td>
+  </tr>
+
 </metal:basic_filebug_widgets>
+
+
+<metal:not_uses_malone metal:define-macro="not_uses_malone">
+
+  <tal:not_uses_malone tal:condition="not: view/contextUsesMalone">
+
+    <tal:has-context define="product_or_distro view/getProductOrDistroFromContext"
+                     condition="product_or_distro">
+
+      <p class="warning message">
+        <span tal:replace="product_or_distro/displayname">Alsa Utils</span> does not use
+        Launchpad as its bug tracker.
+        <br />
+        <span tal:condition="view/frontpage_form">
+          You can <a href="+filebug">refine and resubmit</a> your bug report.
+        </span>
+      </p>
+
+      <tal:upstream condition="view/contextIsProduct">
+
+        <tal:defines define="bugtracker product_or_distro/getExternalBugTracker">
+
+          <h3>Are you sure this bug is in <acronym class="explain" style="color: inherit" 
+                                title="the original developer of the software">upstream</acronym>
+                                <span tal:replace="product_or_distro/displayname" />?</h3>
+
+          <ul class="info">
+            <li tal:condition="product_or_distro/distrosourcepackages">
+              If you are using a package installed by your Linux
+              distribution, <b>the bug should be reported in that
+              distribution</b>, instead. Launchpad knows that <span
+              tal:replace="product_or_distro/displayname" /> is present in
+              the following distribution packages:
+                  <ul class="source package" tal:repeat="dsp product_or_distro/distrosourcepackages">
+                      <li><a tal:attributes="href dsp/fmt:url"><span tal:replace="dsp/distribution/displayname" /> <span tal:replace="dsp/sourcepackagename" /></a>
+                      </li>
+                  </ul>
+              You can report bugs by visiting the package's page.
+            </li>
+
+            <br />
+            <li tal:condition="not: product_or_distro/distrosourcepackages">If
+              the bug you are reporting is in a package installed by a <a
+              href="/distros">distribution registered in Launchpad</a>, you should file the bug
+              against that specific distribution. 
+
+              <tal:comment replace="nothing">
+                <!-- XXX: Graham Binns 2007-07-12 bug=125574: 
+                     The formatting of this next paragraph seems a little 
+                     odd when seen in the context of a product that does not
+                     use Malone and does not specify another bug tracker.
+                     For an example of this, see
+                     http://bugs.launchpad.dev/thunderbird/+filebug. -->
+              </tal:comment>
+              <p class="helpwanted message">Launchpad doesn't know of
+              any distribution packages that include upstream <span
+              tal:replace="product_or_distro/displayname" />. You can
+              help by <a tal:attributes="href
+              string:${product_or_distro/development_focus/fmt:url}/+ubuntupkg">linking
+              them for us.</a></p>
+            </li>
+
+            <tal:has-bugtracker condition="bugtracker">
+              <br />
+              <li>Bugs in <abbr class="explain" 
+                                title="the original developer of the software">upstream</abbr>
+              <span tal:replace="product_or_distro/displayname">Alsa Utils</span>
+              should be reported in its official bug tracker, <a
+              tal:attributes="href bugtracker/baseurl"><span
+              tal:replace="bugtracker/title" /></a>.</li>
+            </tal:has-bugtracker>
+
+          </ul>
+
+          <tal:comment replace="nothing">
+            <!-- XXX: kiko 2007-03-14: 
+                 We shouldn't be using feedback@launchpad.net, but we have
+                 no way of allowing people to go around changing product
+                 bugtracker details, so for now it will have to do. -->
+          </tal:comment>
+          <p tal:condition="not: bugtracker" class="helpwanted message">
+              Launchpad doesn't know what bug tracker <span
+              tal:replace="product_or_distro/displayname">Alsa Utils</span>
+              uses. Do you know? <a href="mailto: feedback@launchpad.net">Tell us about it.</a>
+          </p>
+        </tal:defines>
+
+      </tal:upstream>
+
+
+      <tal:distro condition="not: view/contextIsProduct">
+
+        To file a bug for this distribution, visit its official bug
+        tracker.
+
+      </tal:distro>
+    </tal:has-context>
+
+    <tal:project condition="view/contextIsProject">
+
+      <p class="informational message"
+        condition="not: context/required:launchpad.Edit"
+      >
+        There are no projects registered for
+        <span tal:replace="context/displayname">project displayname</span>
+        that use Launchpad to track bugs.
+      </p>
+
+      <tal:admin-warning condition="context/required:launchpad.Edit">
+        <p tal:condition="not: context/products" class="warning message">
+          There are no projects registered for
+          <span tal:replace="context/displayname">project displayname</span>.
+          <br />
+          You need to <a href="+newproduct">register another project that is
+          part of <tal:project replace="context/displayname" /></a> or
+          associate an existing project with it.
+        </p>
+      </tal:admin-warning>
+
+      <tal:has-products condition="context/products">
+
+        <tal:plural condition="python:context.products.count() > 1">
+          <p id="product-list-summary">
+            There are <tal:count replace="context/products/count" /> projects
+            registered as part of <tal:project replace="context/displayname" />
+            but none of them use Launchpad as their bug tracker.
+          </p>
+          <p>
+            However, it may be possible for you to file a bug against a
+            specific project in a source package with which it is registered
+            or in an external bug tracker.
+          </p>
+          <p>
+            The projects that are part of
+            <tal:project replace="context/displayname" />
+            are listed below, along with
+            the source packages with which they are registered and their
+            external bug trackers.  If you can't find an appropriate place
+            to file your bug, please try contacting the administrator of
+            <tal:project replace="context/displayname" />.
+          </p>
+        </tal:plural>
+        <tal:singular condition="python:context.products.count() == 1">
+          <p id="product-list-summary">
+            There is 1 project registered as part of
+            <tal:project replace="context/displayname">Project</tal:project>
+            but it does not use Launchpad as its bug tracker.
+          </p>
+          <p>
+            The details of the project are shown below, along with any source
+            packages with which it is registered and its external bug tracker,
+            if it uses one. If you can't find an appropriate place to file
+            your bug, please contact the administrator of
+            <tal:project replace="context/displayname">Project</tal:project>.
+          </p>
+        </tal:singular>
+
+        <ul class="product-bug-options" tal:repeat="product context/products">
+          <li condition="product/official_malone">
+            <img src="/@@product" tal:replace="structure product/image:icon" />
+            <strong>
+              <a tal:attributes="href product/fmt:url"
+                  tal:content="product/displayname"
+              >
+                Sample Product
+              </a></strong>
+
+            <ul>
+              <tal:external-tracker
+                  define="bugtracker product/getExternalBugTracker">
+
+                <li tal:condition="bugtracker">
+                  External bug tracker:
+                  <a tal:attributes="href bugtracker/baseurl"
+                      tal:content="bugtracker/title">
+                    Bug Tracker
+                  </a>.
+                </li>
+
+                <li tal:condition="not: bugtracker">
+                   <tal:product replace="product/displayname">
+                     Project
+                   </tal:product>
+                   does not use an external bug tracker or has not registered
+                   it with launchpad.
+                </li>
+              </tal:external-tracker>
+
+              <tal:packages define="packages product/distrosourcepackages">
+
+                <li tal:condition="packages">
+                  <ul tal:repeat="package packages">
+                    <li class="source package">
+                      Source package:
+                      <a tal:attributes="href package/fmt:url">
+                        <tal:displayname 
+                            replace="package/distribution/displayname" />
+                        <tal:packagename replace="package/sourcepackagename" />
+                      </a>
+                      (<a
+                         tal:attributes="href string:${package/fmt:url}/+filebug"
+                       >File a bug here</a>)
+                    </li>
+                  </ul>
+                </li>
+
+                <li tal:condition="not: packages">
+                  <tal:product replace="product/displayname">
+                    Project
+                  </tal:product>
+                  is not registered with any source packages. You can help by
+                  <a tal:attributes="href string:${product/development_focus/fmt:url}/+ubuntupkg">linking them for us.</a>
+                </li>
+
+              </tal:packages>
+            </ul>
+          </li>
+        </ul>
+
+      </tal:has-products>
+
+    </tal:project>
+  </tal:not_uses_malone>
+
+</metal:not_uses_malone>
+</tal:root>

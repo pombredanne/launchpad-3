@@ -235,6 +235,252 @@ The attachments are all added to the same comment.
     ...         comment.owner.displayname, comment.bugattachments.count())
     Comment by No Privileges Person: 2 attachment(s)
 
+=== Private Bugs ===
+
+We can specify whether a bug is private by providing Private field in the
+message.
+
+    >>> debug_data = """MIME-Version: 1.0 
+    ... Content-type: multipart/mixed; boundary=boundary
+    ... Private: yes
+    ...
+    ... --boundary
+    ... Content-disposition: inline
+    ... Content-type: text/plain; charset=utf-8
+    ...
+    ... This bug should be private.
+    ...
+    ... --boundary--
+    ... """
+    >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
+    >>> transaction.commit()
+
+    >>> request = LaunchpadTestRequest()
+    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    True
+    >>> filebug_view.extra_data.extra_description
+    u'This bug should be private.'
+    >>> filebug_view.extra_data.private
+    True
+
+    >>> filebug_view.validate(bug_data) is None
+    True
+    >>> filebug_view.submit_bug_action.success(bug_data)
+    >>> filebug_view.added_bug.title
+    u'Test Title'
+    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    Test description.
+    <BLANKLINE>
+    This bug should be private.
+    >>> filebug_view.added_bug.private
+    True
+    >>> filebug_view.added_bug.security_related
+    False
+
+Since the bug was marked private before it was filed, only the bug reporter has
+been subscribed to the bug and there should be no indirect subscribers.
+
+    >>> for subscriber in filebug_view.added_bug.getDirectSubscribers():
+    ...     print subscriber.displayname
+    No Privileges Person
+
+    >>> filebug_view.added_bug.getIndirectSubscribers()
+    []
+
+The user will be notified that the bug has been marked as private.
+
+    >>> print filebug_view.request.response.notifications[2].message
+    This bug report has been marked as <span title="Private bugs...
+
+We can also specify that a bug is public via the same field.
+
+    >>> debug_data = """MIME-Version: 1.0 
+    ... Content-type: multipart/mixed; boundary=boundary
+    ... Private: no
+    ...
+    ... --boundary
+    ... Content-disposition: inline
+    ... Content-type: text/plain; charset=utf-8
+    ...
+    ... This bug should be public.
+    ...
+    ... --boundary--
+    ... """
+    >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
+    >>> transaction.commit()
+
+    >>> request = LaunchpadTestRequest()
+    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    True
+    >>> filebug_view.extra_data.extra_description
+    u'This bug should be public.'
+    >>> filebug_view.extra_data.private
+    False
+
+    >>> filebug_view.validate(bug_data) is None
+    True
+    >>> filebug_view.submit_bug_action.success(bug_data)
+    >>> filebug_view.added_bug.title
+    u'Test Title'
+    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    Test description.
+    <BLANKLINE>
+    This bug should be public.
+    >>> filebug_view.added_bug.private
+    False
+
+Since this bug is public, both the reporter and the bug contact have been
+subscribed.
+
+    >>> for subscriber in filebug_view.added_bug.getDirectSubscribers():
+    ...     print subscriber.displayname
+    No Privileges Person
+
+    >>> for subscriber in filebug_view.added_bug.getIndirectSubscribers():
+    ...     print subscriber.displayname
+    Foo Bar
+
+=== Subscriptions ===
+
+We can also subscribe someone to this bug when we file it by using a Subscribe
+field in the message. Multiple people can be specified and they can be
+identified by their Launchpad name or their e-mail address.
+
+    >>> debug_data = """MIME-Version: 1.0 
+    ... Content-type: multipart/mixed; boundary=boundary
+    ... Subscribers: ddaa test@canonical.com
+    ...
+    ... --boundary
+    ... Content-disposition: inline
+    ... Content-type: text/plain; charset=utf-8
+    ...
+    ... Other people are interested in this bug.
+    ...
+    ... --boundary--
+    ... """
+    >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
+    >>> transaction.commit()
+
+    >>> request = LaunchpadTestRequest()
+    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    True
+
+    >>> filebug_view.extra_data.extra_description
+    u'Other people are interested in this bug.'
+
+    >>> for subscriber in filebug_view.extra_data.subscribers:
+    ...     print subscriber
+    ddaa
+    test@canonical.com
+
+    >>> filebug_view.validate(bug_data) is None
+    True
+    >>> filebug_view.submit_bug_action.success(bug_data)
+    >>> filebug_view.added_bug.title
+    u'Test Title'
+    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    Test description.
+    <BLANKLINE>
+    Other people are interested in this bug.
+
+As well as the reporter, both Sample Person and David Allouche have been
+subscribed to the bug.
+
+    >>> for subscriber in filebug_view.added_bug.getDirectSubscribers():
+    ...     print subscriber.displayname
+    David Allouche
+    No Privileges Person
+    Sample Person
+
+The user will be notified that Sample Person and David Allouche has been
+subscribed to this bug.
+
+    >>> for notification in filebug_view.request.response.notifications:
+    ...     print notification.message
+    Thank you for your bug report.
+    Additional information was added to the bug description.
+    David Allouche has been subscribed to this bug.
+    Sample Person has been subscribed to this bug.
+
+=== Subscribers to Private bugs ===
+
+The Private and Subscriber fields are intended to be used together to subscribe
+certain people and teams to bugs when they are filed.
+
+    >>> debug_data = """MIME-Version: 1.0 
+    ... Content-type: multipart/mixed; boundary=boundary
+    ... Private: yes
+    ... Subscribers: sabdfl
+    ...
+    ... --boundary
+    ... Content-disposition: inline
+    ... Content-type: text/plain; charset=utf-8
+    ...
+    ... This bug should be private, and Mark Shuttleworth subscribed.
+    ...
+    ... --boundary--
+    ... """
+    >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
+    >>> transaction.commit()
+
+    >>> request = LaunchpadTestRequest()
+    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    True
+
+    >>> filebug_view.extra_data.extra_description
+    u'This bug should be private, and Mark Shuttleworth subscribed.'
+
+    >>> filebug_view.extra_data.private
+    True
+
+    >>> for subscriber in filebug_view.extra_data.subscribers:
+    ...     print subscriber
+    sabdfl
+
+    >>> filebug_view.validate(bug_data) is None
+    True
+
+    >>> filebug_view.submit_bug_action.success(bug_data)
+    >>> filebug_view.added_bug.title
+    u'Test Title'
+
+    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    Test description.
+    <BLANKLINE>
+    This bug should be private, and Mark Shuttleworth subscribed.
+
+    >>> filebug_view.added_bug.private
+    True
+    >>> filebug_view.added_bug.security_related
+    False
+
+As well as the reporter, Mark Shuttleworth should have been subscribed to the
+bug.
+
+    >>> for subscriber in filebug_view.added_bug.getDirectSubscribers():
+    ...     print subscriber.displayname
+    Mark Shuttleworth
+    No Privileges Person
+
+Since the bug is private, there should be no indirect subscribers.
+
+    >>> filebug_view.added_bug.getIndirectSubscribers()
+    []
+
+The user will be notified that Mark Shuttleworth has been subscribed to this
+bug and that the bug has been marked as private.
+
+    >>> for notification in filebug_view.request.response.notifications:
+    ...     print notification.message
+    Thank you for your bug report.
+    Additional information was added to the bug description.
+    Mark Shuttleworth has been subscribed to this bug.
+    This bug report has been marked as <span title="Private bugs...
+
 == publishTraverse() ==
 
 As already seen above, it's the FileBugViewBase's publishTraverse that
@@ -293,3 +539,20 @@ directly.
     ...     print tag
     bar
     foo
+
+== Filing security bugs ==
+
+The base class allows security bugs to be filed.
+
+    >>> bug_data = dict(
+    ...     title=u'Security bug', comment=u'Test description.',
+    ...     security_related=True)
+
+    >>> filebug_view = FileBugViewBase(ubuntu_firefox, LaunchpadTestRequest())
+    >>> filebug_view.validate(bug_data) is None
+    True
+    >>> filebug_view.submit_bug_action.success(bug_data)
+    >>> filebug_view.added_bug.title
+    u'Security bug'
+    >>> filebug_view.added_bug.security_related
+    True

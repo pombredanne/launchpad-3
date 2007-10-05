@@ -58,17 +58,14 @@ __metaclass__  = type
 import commands
 import urlparse
 
-from psycopg import IntegrityError
 from sqlobject.main import SQLObjectNotFound
 
 import canonical.lp
-from canonical.launchpad.interfaces import NotFoundError
 
 from pybaz import NameParser
 
-from canonical.lp.dbschema import (
-    ManifestEntryType, ManifestEntryHint, RevisionControlSystems
-    )
+from canonical.lp.dbschema import ManifestEntryType, ManifestEntryHint
+
 from canonical.librarian.db import Library
 from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.database.constants import UTC_NOW
@@ -80,8 +77,8 @@ from canonical.launchpad.database import (
      SourcePackage, SourcePackageRelease, Manifest, ManifestEntry,
      )
 
-# XXX: somebody needs to update this code and fix these broken
-# imports -- kiko, 2006-03-16
+# XXX kiko, 2006-03-16: somebody needs to update this code and fix these
+# broken imports
 # from canonical.launchpad.database import (Archive, ArchNamespace,
 #   Changeset, VersionMapper)
 
@@ -223,14 +220,14 @@ def get_object(url, resolve=False):
 
                 objs = DistroReleaseSet().findByVersion(part)
                 if objs.count() == 1:
-                    # XXX: This code path is not tested.  SteveAlexander,
-                    # 2005-07-11
+                    # XXX: SteveAlexander 2005-07-11:
+                    # This code path is not tested.
                     obj = objs[0]
                     continue
 
                 try:
                     name = SourcePackageName.byName(part)
-                    # FIXME "current" distro?
+                    # XXX scott 2005-06-20: "current" distro?
                     distro = Distribution.byName(default_distro)
                     obj = distro.getSourcePackage(name)
                     continue

@@ -1,8 +1,4 @@
-<tr>
+<tr xmlns:tal="http://xml.zope.org/namespaces/tal">
   <th>Bazaar branch:</th>
-  <td><a tal:attributes="href context/fmt:url" tal:content="context/displayname">Mozilla Thunderbird 0.9.1</a></td>
-<tr class="secondary">
-  <td colspan="2" tal:content="view/url">
-    http://example.com/software/hello.devel
-  </td>
+  <td><a id="import-branch-link" tal:attributes="href context/fmt:url" tal:content="context/displayname">Mozilla Thunderbird 0.9.1</a></td>
 </tr>

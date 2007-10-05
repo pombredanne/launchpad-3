@@ -26,7 +26,10 @@ message inform him of the driver change.
 
 Sample Person is listed as the driver of Firefox 1.0.
 
+  >>> sp = u'Sample Person'
   >>> project_portlet = find_portlet(
   ...     browser.contents, 'Mozilla Firefox Series: 1.0')
-  >>> extract_text(project_portlet.find(text='Drivers:').findNext('a'))
-  u'Sample Person'
+  >>> sp in extract_text(project_portlet.find(text='Drivers:').findNext('a'))
+  True
+
+

@@ -18,13 +18,18 @@
 
 <div metal:fill-slot="main">
 
+      <div>
+        <img alt="" src="/@@/question" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+      </div>
+
   <div metal:use-macro="context/@@launchpad_form/form">
     <metal:extra_info fill-slot="extra_info">
       <tal:comment replace="nothing">
         This link should appear in the appropriate widget description,
         but cannot because of bug #72730.
       </tal:comment>
-      <p><a href="/people/+editlanguages">Change your
+      <p><a href="/people/+me/+editlanguages">Change your
         preferred languages</a> to modify the list of languages available
         for writing the question.
       </p>

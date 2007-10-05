@@ -21,6 +21,7 @@ that page.
 
   >>> print http(r"""
   ... GET /ubuntu/+changetranslators HTTP/1.1
+  ... Host: translations.launchpad.dev
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -31,6 +32,7 @@ message indicating that the form was updated.
 
   >>> print http(r"""
   ... POST /ubuntu/+changetranslators HTTP/1.1
+  ... Host: translations.launchpad.dev
   ... Content-Length: 740
   ... Content-Type: multipart/form-data; boundary=---------------------------1421369065201436391526227802
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -74,5 +76,5 @@ portlet for translation group and permissions.
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...The PolyGlot Translation Group...
   ...Closed...
+  ...The PolyGlot Translation Group...

@@ -1,11 +1,15 @@
-<tal:tag condition="view/update"/>
 <html
-    xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="malone"
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone"
 >
+<tal:tag condition="view/update"/>
   <body>
     <metal:heading fill-slot="pageheading">
       <div>
@@ -16,10 +20,6 @@
         <h1>Edit web link</h1>
       </div>
     </metal:heading>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure view/bug/@@+portlet-details" />
-</metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure view/bug/@@+portlet-reference" />

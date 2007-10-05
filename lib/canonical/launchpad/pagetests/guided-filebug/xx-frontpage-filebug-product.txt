@@ -9,12 +9,43 @@ On the Bugs front page there is a link to file a bug.
 
 Here we can select a product to file a bug on.
 
-    >>> user_browser.getControl('Product') is not None
+    >>> user_browser.getControl('Project') is not None
     True
 
-If we enter an non-existant product, we get an error message.
+Selecting a product that doesn't use Launchpad Bugs will produce a warning.
 
-    >>> user_browser.getControl('Product').selected = True
+    >>> user_browser.getControl('Project').selected = True
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.product').value = 'thunderbird'
+    >>> user_browser.getControl('Summary').value = 'Some harry'
+    >>> user_browser.getControl('Continue').click()
+    >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
+    ...     print extract_text(message)
+    Mozilla Thunderbird does not use...
+    ...
+    You can refine and resubmit your bug report.
+
+A link will be included to take the user back to the +filebug page:
+
+    >>> user_browser.getLink('refine and resubmit').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/bugs/+filebug'
+
+    >>> user_browser.getControl('Summary').value
+    ''
+
+We show a list of similar bugs later and it would be good to show at
+least one completed bug. We need to prepare here:
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+bug/6/+editstatus')
+    >>> user_browser.getControl('Status').value = ['Fix Released']
+    >>> user_browser.getControl('Save Changes').click()
+
+If we enter an non-existent product, we get an error message.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/bugs/+filebug/')
+    >>> user_browser.getControl('Project').selected = True
     >>> user_browser.getControl(
     ...     name='field.bugtarget.product').value = 'non-existant'
     >>> user_browser.getControl('Summary').value = (
@@ -32,10 +63,14 @@ Selecting a valid product will take us to the next filebug step.
     ...     name='field.bugtarget.product').value = 'firefox'
     >>> user_browser.getControl('Continue').click()
 
-    >>> from canonical.launchpad.ftests.bug import print_bugs_table
-    >>> print_bugs_table(user_browser.contents, "similar-bugs")
-    6 Firefox crashes when Save As dialog for a nonexistent window is closed
-    1 Firefox does not support SVG
+    >>> from canonical.launchpad.ftests.bug import print_bugs_list
+    >>> print_bugs_list(user_browser.contents, "similar-bugs")
+    #6 Firefox crashes when Save As dialog for a nonexistent window is closed
+    Closed, last updated ... seconds ago
+    #1 Firefox does not support SVG
+    Open, last updated 2006-05-19
+    #5 Firefox install instructions should be complete
+    Open, last updated 2006-07-14
 
 Entering a description and submitting the bug takes the user to the bug
 page.
@@ -45,7 +80,7 @@ page.
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/...'
     >>> user_browser.title
-    'Bug #... in firefox (upstream): ...SVG causes Firefox to crash...'
+    'Bug #... in Mozilla Firefox: ...SVG causes Firefox to crash...'
 
 == Advanced filebug page ==
 
@@ -58,7 +93,7 @@ filebug page and file a bug directly.
     >>> user_browser.title
     'Report a bug'
 
-    >>> user_browser.getControl('Product').selected = True
+    >>> user_browser.getControl('Project').selected = True
     >>> user_browser.getControl(
     ...     name='field.bugtarget.product').value = 'evolution'
     >>> user_browser.getControl('Summary').value = 'Evolution crashes'
@@ -67,4 +102,22 @@ filebug page and file a bug directly.
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/...'
     >>> user_browser.title
-    'Bug #... in evolution (upstream): ...Evolution crashes...'
+    'Bug #... in Evolution: ...Evolution crashes...'
+
+Once again, trying to file a bug against a product that doesn't use 
+Launchpad Bugs results in an informational page being displayed.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/')
+    >>> user_browser.getLink('Report a bug').click()
+    >>> user_browser.getLink('complicated bug filing form').click()
+    >>> user_browser.getControl('Project').selected = True
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.product').value = 'thunderbird'
+    >>> user_browser.getControl('Summary').value = 'Thunderbird crashes'
+    >>> user_browser.getControl('Further information').value = 'Crash.'
+    >>> user_browser.getControl('Submit Bug Report').click()
+    >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
+    ...     print extract_text(message)
+    Mozilla Thunderbird does not use...
+    ...
+    You can refine and resubmit your bug report.

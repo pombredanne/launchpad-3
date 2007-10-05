@@ -1,3 +1,7 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  omit-tag="">
 <metal:block define-macro="sortwidget_label">
   <label for="orderby">Sorted by:</label>
 </metal:block>
@@ -45,22 +49,20 @@
 <metal:block define-macro="simple-search-form">
 <form method="get" name="search" class="primary search" action=""
       tal:attributes="action search_url|string:">
-  <tal:searchbox replace="structure view/searchtext_widget" />
+  <tal:searchbox replace="structure view/widgets/searchtext" />
   <metal:widget use-macro="context/@@+bugtarget-macros-search/sortwidget" />
   <input type="submit" name="search" value="Search" />
-  <tal:widget replace="structure view/status_widget/hidden" />
-  <tal:widget replace="structure view/importance_widget/hidden" />
-  <tal:widget replace="structure view/assignee_widget/hidden" />
-  <tal:widget replace="structure view/owner_widget/hidden" />
-  <tal:widget replace="structure view/milestone_widget/hidden" />
-  <tal:widget replace="structure view/omit_dupes_widget/hidden" />
-  <tal:widget replace="structure view/has_patch_widget/hidden" />
-  <tal:widget replace="structure view/component_widget/hidden" />
-  <tal:widget replace="structure view/has_no_package_widget/hidden" />
-  <a href="#"
-     tal:attributes="href advanced_search_url|string:?advanced=1">
-    <small>Advanced search</small>
-  </a>
+  <tal:widget replace="structure view/widgets/status/hidden" />
+  <tal:widget replace="structure view/widgets/importance/hidden" />
+  <tal:widget replace="structure view/widgets/assignee/hidden" />
+  <tal:widget replace="structure view/widgets/bug_reporter/hidden" />
+  <tal:widget replace="structure view/widgets/milestone/hidden" />
+  <tal:widget replace="structure view/widgets/omit_dupes/hidden" />
+  <tal:widget replace="structure view/widgets/has_patch/hidden" />
+  <tal:widget replace="structure view/widgets/component/hidden" />
+  <tal:widget replace="structure view/widgets/has_no_package/hidden" />
+  <a tal:attributes="href advanced_search_url|string:?advanced=1"
+  >Advanced search</a>
   <div metal:define-slot="extra-search-widgets">
   </div>
 </form>
@@ -70,3 +72,4 @@
     -->
 </script>
 </metal:block>
+</tal:root>

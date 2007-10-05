@@ -1,5 +1,5 @@
 
-We want to test that we can add a new DistroArchRelease (or "Port").
+We want to test that we can add a new DistroArchSeries (or "Port").
 
   >>> admin_browser.open("http://localhost/ubuntu/hoary")
   >>> admin_browser.getLink("Add architecture").click()

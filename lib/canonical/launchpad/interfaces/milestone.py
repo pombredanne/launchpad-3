@@ -5,15 +5,17 @@
 __metaclass__ = type
 
 __all__ = [
+    'IHasMilestones',
     'IMilestone',
     'IMilestoneSet',
+    'IProjectMilestone',
     ]
 
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Int, Date, Bool
 
 from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.distrorelease import IDistroRelease
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad import _
 from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.validators.name import name_validator
@@ -24,13 +26,13 @@ class MilestoneNameField(ContentNameField):
     @property
     def _content_iface(self):
         return IMilestone
-    
+
     def _getByName(self, name):
         if IMilestone.providedBy(self.context):
             milestone = self.context.target.getMilestone(name)
         elif IProductSeries.providedBy(self.context):
             milestone = self.context.product.getMilestone(name)
-        elif IDistroRelease.providedBy(self.context):
+        elif IDistroSeries.providedBy(self.context):
             milestone = self.context.distribution.getMilestone(name)
         else:
             raise AssertionError, 'Editing a milestone from a weird place.'
@@ -42,8 +44,8 @@ class MilestoneNameField(ContentNameField):
 
 
 class IMilestone(Interface):
-    """A milestone, or a targeting point for bugs and other release-related
-    items that need coordination.
+    """A milestone, or a targeting point for bugs and other
+    release-management items that need coordination.
     """
     id = Int(title=_("Id"))
     name = MilestoneNameField(
@@ -53,22 +55,22 @@ class IMilestone(Interface):
         required=True,
         constraint=name_validator)
     product = Choice(
-        title=_("Product"),
-        description=_("The product to which this milestone is associated"),
+        title=_("Project"),
+        description=_("The project to which this milestone is associated"),
         vocabulary="Product")
     distribution = Choice(title=_("Distribution"),
         description=_("The distribution to which this milestone belongs."),
         vocabulary="Distribution")
     productseries = Choice(
-        title=_("Product Series"),
-        description=_("The product series for which this is a milestone."),
+        title=_("Series"),
+        description=_("The series for which this is a milestone."),
         vocabulary="FilteredProductSeries",
         required=False) # for now
-    distrorelease = Choice(
-        title=_("Distribution Release"),
+    distroseries = Choice(
+        title=_("Series"),
         description=_(
-            "The distribution release for which this is a milestone."),
-        vocabulary="FilteredDistroRelease",
+            "The series for which this is a milestone."),
+        vocabulary="FilteredDistroSeries",
         required=False) # for now
     dateexpected = Date(title=_("Date Targeted"), required=False,
         description=_("Example: 2005-11-24"))
@@ -76,7 +78,7 @@ class IMilestone(Interface):
         "milestone should be shown in web forms for bug targeting."))
     target = Attribute("The product or distribution of this milestone.")
     series_target = Attribute(
-        'The productseries or distrorelease of this milestone.')
+        'The productseries or distroseries of this milestone.')
     displayname = Attribute("A displayname for this milestone, constructed "
         "from the milestone name.")
     title = Attribute("A milestone context title for pages.")
@@ -98,7 +100,7 @@ class IMilestoneSet(Interface):
     def getByNameAndProduct(name, product, default=None):
         """Get a milestone by its name and product.
 
-        If no milestone is found, default will be returned. 
+        If no milestone is found, default will be returned.
         """
 
     def getByNameAndDistribution(name, distribution, default=None):
@@ -107,3 +109,21 @@ class IMilestoneSet(Interface):
         If no milestone is found, default will be returned.
         """
 
+
+class IProjectMilestone(IMilestone):
+    """A marker interface for milestones related to a project"""
+
+
+class IHasMilestones(Interface):
+    """An interface for classes providing milestones."""
+
+    milestones = Attribute(_(
+        "The visible milestones associated with this object, "
+        "ordered by date expected."))
+
+    all_milestones = Attribute(_(
+        "All milestones associated with this object, ordered by "
+        "date expected."))
+
+    def getMilestone(name):
+        """Return a milestone with the given name for this object, or None."""

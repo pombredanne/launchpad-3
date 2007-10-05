@@ -31,7 +31,10 @@ kbd {
   min-width: 1em;
   outline: 1px #666;
 }
-label {white-space: nowrap;}
+label {
+  white-space: nowrap;
+  font-weight: bold;
+}
 legend {font-weight: bold;}
 legend legend {font-weight: normal;}
 .listbox { /* a scrolling list of checkboxes or radio buttons */
@@ -61,10 +64,10 @@ thead th, tr.thead th {text-align: center;}
 
 html {
   position: relative;
-  font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
-  font-size: 8pt;
-  color: #656565;
-  background-color: #FFFFFF;
+  font-family: sans-serif;
+  font-size: 10pt;
+  color: #333;
+  background-color: #fff;
 }
 body {margin: 0; padding: 0;}
 
@@ -74,16 +77,16 @@ body {margin: 0; padding: 0;}
 :visited                      {color: #324c7f; text-decoration: none;}
 
 h1, h2, h3, h4, h5, h6 {background: none; color: #83ad23; font-weight: normal;}
-h1 {font-size: 3em;    margin: 0;              padding: 0px 0px 10px 0px;}
-h2 {font-size: 1.75em; margin: 1em 0 0.75em;   padding: 0;} /* FP; /products */
-h3 {font-size: 1.25em; margin: 1em 0 0.5em 0;  padding: 0;} /* +topcontributors */
+h1 {font-size: 2.2em;  margin: 0;              padding: 0px 0px 10px 0px;}
+h2 {font-size: 1.5em;  margin: 1em 0 0.75em;   padding: 0;} /* FP; /products */
+h3 {font-size: 1.1em;  margin: 1em 0 0.5em 0;  padding: 0;} /* +topcontributors */
 h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
 h5 {font-size: 1em;    margin: 0;              padding: 0;}
 h6 {font-size: 1em;    margin: 0;              padding: 0;}
-h1:first-child, h2:first-child, h3:first-child, h4:first-child {margin-top: 0;}
 
 .exception {color: #cc0000;}
-.discreet, .lesser {font-size: smaller;}
+.discreet, .lesser {font-size: 80%;}
+.offline {text-align: center; max-width: 30em; margin: 2em auto;}
 .unavailable {color: #999; background: none;}
 .oopsid {color: #cc0000; font-weight: bold;}
 
@@ -102,14 +105,25 @@ h1:first-child, h2:first-child, h3:first-child, h4:first-child {margin-top: 0;}
   margin: 0.25em 0 0;
   padding: 0 0 0 25px;
   background: 0 0 no-repeat;
+  
 }
-.error {background-color: #f0cccc; color: black;}
+.error {color: #db1f22;}
 .error.message, .error .message {
   background-image: url(/@@/error);
+}
+td.error {
+  border: 1px solid #db1f22;
+  background-color: #ffffff;
 }
 .warning {background-color: #fcdd99; color: black;}
 .warning.message, .warning .message {
   background-image: url(/@@/warning);
+}
+.helpwanted {background-color: #fafca9; color: black; border: 1px solid black; 
+    padding: 0.5em; font-size: smaller; padding-left: 3em
+}
+.helpwanted.message, .helpwanted .message {
+  background-image: url(/@@/helpwanted);
 }
 .informational {background-color: #fcfc99; color: black;}
 .informational.message, .informational .message {
@@ -123,28 +137,46 @@ h1:first-child, h2:first-child, h3:first-child, h4:first-child {margin-top: 0;}
 /* --- Form controls --- */
 
 form {border: 0; margin: 0; padding: 0;}
-input, select, textarea {
+input[type="text"], input[type="password"], textarea {
   background-color: #fff;
   color: #656565;
-  font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
+  font-family: sans-serif;
   margin: 0;
 }
 input[type="text"], input[type="submit"], input[type="reset"], textarea {
   font-size: 1em; /* Forces a readable font size in Safari */
 }
+button, input[type="button"], input[type="file"], input[type="password"],
+input[type="submit"], input[type="text"], select, textarea {
+  margin-right: 0.5em;
+}
 input.urlTextType {width: 100%;}
 .fieldRequired, .fieldOptional {color: #999;}
 .formHelp {margin-bottom: 1em;}
+/* Hack to add breathing room to bug status forms: */
+table.listing div.field>table {margin-top: 0.5em;}
+table.listing div.field>label, table.listing div.field>div>label,
+table.listing div.actions {
+  display: block; margin-top: 1em;
+}
 textarea {width: 100%;}
 table.form {width: 100%;}
 
 /* --- Other --- */
 
+/* No border on images that are links. */
 a img {
   border: none;
 }
+/* No border on images that have link maps.
+ * There's nothing special for this, as the image and map
+ * may be separate.  So, just set no border for all images.
+ */
+img {
+  border: none;
+}
 
-/* see launchpad.js:activateCollapsables() */
+/* see launchpad.js:activateCollapsibles() */
 .collapsible legend a, .collapsible legend a:visited {
   text-decoration: none;
   color: #000088;
@@ -153,6 +185,8 @@ img.collapseIcon {text-decoration: none; margin-bottom: -3px;}
 .collapsible legend a span {text-decoration: underline;}
 .collapsible {padding: 0; margin: 0;}
 .collapsed {border: none; margin-bottom: 0;}
+fieldset .collapsed {display: none;}
+fieldset .expanded {display: block;}
 
 form.primary.search {
   margin-bottom: 2em;
@@ -164,7 +198,7 @@ form.primary.search {
   .notforscreen {display:none;}
 }
 
-.highlighted, tr.highlight {background: #eee; border: 1px solid #ddd;}
+.highlighted, tr.highlight {background: #ddd; border: 1px solid #ddd;}
 .highlighted {padding: 0.5em;}
 .highlighted h3 {margin-top: 0;}
 .unhighlighted {padding: 0 0.5em;}
@@ -204,202 +238,490 @@ strong span {
   overflow: hidden;
   display: none;
 }
-hr, #globalheader label {
+hr {
   display: none;
 }
-#globalheader .logo {
-  float: left;
-}
+
+/* === Universal page layout === */
+
+/* All pages begin with a global header or a topline. */
 #globalheader {
   position: relative;
   width: 100%;
   height: 21px;
   overflow: hidden;
-  margin: 0 auto;
-  background-color: #EEEEEE;
+  margin: 0;
+  background-color: #EEE;
   background-image:  url(globalheader_bg.gif);
   background-repeat: repeat-x;
   background-position: top center;
-  text-align: left;
 }
-#central_column {
+/* Home icon and link. */
+#globalheader a.home {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+#globalheader .sitemessage a {
+  color: #FFF;
+  text-decoration: underline;
+}
+/* Site-specific message. */
+#globalheader .sitemessage {
+  position: absolute;
+  top: 2px;
+  left: 10px;
+  display: inline;
+  color: #FFF;
+  font-size: 13px;
+}
+/* Small launchpad icon and rasterized text. */
+#globalheader img.launchpad {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+/* Thin line at the top, when we don't have a global header site message */
+#topline {
   position: relative;
   width: 100%;
-  margin: 0 auto;
-  background-color: #EEEEEE;
-  text-align: left;
-}
-#content_left {
-  position: relative;
-  float: left;
-  width: 175px;
-  background-color: #DDDDDD;
-}
-#content_right {
-  position: relative;
-  float: left;
-  width: 175px;
-  background-color: #CCCCCC;
-}
-#content_center {
-  position: relative;
-  float: left;
-  width: 410px;
-  background-color: #BBBBBB;
-}
-.content {
-  clear: both;
-  padding: 12px 14px 14px 14px;
-}
-#content_left .content {
-  width: 146px;
-}
-#content_right .content {
-  width: 146px;
-}
-#content_center .content {
-  width: 380px;
-}
-#globalfooter {
-  clear: both;
-  position: relative;
-  margin: 0px 22px 0px 52px;
-  padding-top: 10px;
-  padding-bottom: 20px;
-}
-#globalfooter.extraspacing {
-  padding-top: 50px;
-}
-#colophon {
-  float: left;
-  width: 45%;
-}
-#applications-footer {
-  float: right;
-  text-align: right;
-  width: 45%;
-}
-#copyright {
-  clear: left;
-  float: left;
-  margin-top: 0.5em;
-  border-top: 1px solid #ccc;
-  padding: 0.5em 0 1em;
-  width: auto;
-}
-.clear {
-  clear: both;
-  height: 0px;
+  height: 1px;
   overflow: hidden;
+  margin: 0;
+  background-color: #6D6D6D;
 }
-.clear_content {
-  clear: both;
-}
-.align_r {
-  text-align: right;
-}
-.align_c {
-  text-align: center;
-}
-.float_l {
-  float: left;
-}
-.float_r {
-  float: right;
-}
-.content_img_left {
-  float: left;
-  padding: 3px;
-  background-color: #FFFFFF;
-  border: 1px solid #656565;
-  margin-right: 12px;
-  margin-bottom: 8px;
-}
-.content_img_right {
-  float: right;
-  padding: 3px;
-  background-color: #FFFFFF;
-  border: 1px solid #656565;
-  margin-left: 12px;
-  margin-bottom: 8px;
-}
+/* Next is a location bar. */
 #locationbar {
-  float: left;
   width: 100%;
   height: 26px;
-  overflow: hidden;
   margin: 0;
   padding: 0;
   list-style: none;
   background-color: #AFDB1F;
   font-size: 11px;
   font-weight: bold;
-  color: #FFFFFF;
+  color: #FFF;
 }
-#locationbar strong {
-  margin-right: 16px;
+ul#menuroot a#homebreadcrumb span {
+  background: url(home-low-high.gif) left top no-repeat;
+  padding-left: 16px; /* space between home icon and the word "Home" */
 }
+ul#menuroot li a#homebreadcrumb:hover span,
+ul#menuroot li.selected a#homebreadcrumb span {
+  background: url(home-low-high.gif) left -20px no-repeat;
+  padding-left: 16px;
+}
+/* The location bar contains menus. */
 ul#menuroot {
   display: inline;
   float: left;
   margin: 0;
 }
+/* XXX: needs explanation */
 ul#menuroot li {
   display: inline;
 }
-ul#menuroot em {
-  margin-top: 0px;
-}
-#locationbar li a {
+/* Style for breadcrumb items.
+ *
+ * XXX: background stuff needs explanation.
+ *
+ * Negative right margin for breadcrumbs.
+ * This is part of how we make them look like arrows.
+ */
+ul#menuroot a.breadcrumb {
   position: relative;
-  left: -16px;
-  margin: 0px -16px 0px 0px;
-  float: left;
-  height: 26px;
-  display: block;
   background-image: url(locationbar_a_bg.gif);
   background-repeat: no-repeat;
   background-position: -1000px 0px;
-  color: #000000;
-}
-#locationbar li a:hover {
-  background-position: 0px 0px;
-  text-decoration: none;
-  color: #000000;
-}
-#locationbar li em { /* should be changed to not need em */
-  font-style: normal;
-  float: left;
   display: block;
-  background-image: url(locationbar_em_bg.gif);
-  background-repeat: no-repeat;
-  background-position: right top;
-  padding: 6px 26px 10px 20px;
-  cursor: hand;
-  cursor: pointer;
+  float: left;
+  margin-right: -16px;
 }
-#locationbar strong {
+/* "Your location:" text.
+ *
+ * The 1px negative right margin is to bring the first breadcrumb a little
+ * closer to the "Your location:" text.  It makes it look visually tighter
+ * because of the chevron shape of the highlights.
+ */
+#yourlocation {
   float: left;
   display: block;
   background-image: url(locationbar_a_bg.gif);
   background-repeat: no-repeat;
   background-position: -1100px 0px;
-  padding: 6px 0 10px 10px !important;
-  padding: 5px 0 10px 10px;
+  padding: 6px 0 6px 10px;
+  margin-right: -1px;
 }
-#logincontrol {
+/* IE6 specific rule to make the location bar look better. */
+* html #yourlocation {padding-bottom: 4px;}
+/* Display dyn menu items and breadcrumbs with black text and as blocks. */
+#locationbar li a,
+#locationbar li span {
+  display: block;
+  color: #000000;
+}
+/* Unlinked items.  Same colour as the overview actions menu. */
+#locationbar li .unlinked {
+  color: #83AD23;
+}
+/* XXX: needs explanation */
+ul#menuroot a.breadcrumb em { /* should be changed to not need em */
+  font-style: normal;
+  float: left;
+  display: block;
+  background-image: url(locationbar_nodrop_em_bg.gif);
+  background-repeat: no-repeat;
+  background-position: right top;
+  padding: 6px 26px 6px 20px;
+  cursor: pointer;
+}
+* html ul#menuroot a.breadcrumb em {padding-bottom: 4px;} /* for IE6 */
+/* When a breadcrumb has a submenu, show a down-arrow. */
+ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
+  background-image: url(locationbar_em_bg.gif);
+}
+/* Undo more generic formatting around ul elements. */
+#locationbar ul {
+    margin: 0;
+    padding: 0;
+}
+/* General appearance of a dynamic menu item.
+ * The area we actually see on the page is an <a> element.
+ * The <li> element takes up no space.
+ */
+#locationbar ul.menu li a,
+#locationbar ul.menu li .unlinked {
+  background-image: none;
+  background-color: #AFDB1F;
+  float: none;
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  height: auto;
+}
+/* General appearance of a dynamic menu item. */
+#locationbar ul.menu li {
+  margin-bottom: 0px;
+  padding-bottom: 0px;
+}
+/* Appearance of a dynamic menu or submenu.
+ * Note the 3d-effect border.
+ * Note the z-index so that they appear above all other content.
+ */
+#locationbar ul.menu {
+  background-color: #AFDB1F;
   position: absolute;
-  top: 21px;
-  right: 0px;
-  padding: 6px 16px 10px 10px !important;
-  padding: 5px 16px 10px 10px;
+  z-index: 2000;
+  margin-left: 0px;
+  border-right: 1px solid #90B51A;
+  border-bottom: 1px solid #90B51A;
+  border-top: 1px solid #DCF58B;
+  border-left: 1px solid #DCF58B;
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+/* Because the menus are misplaced on IE6, we'll hide them for now. */
+* html ul#menuroot a.container.breadcrumb em {
+  background-image: url(locationbar_nodrop_em_bg.gif);
+}
+* html #locationbar ul.menu {display: none;}
+
+/* Inhibit underlines on all dyn menu items. */
+#locationbar li a:hover {
+  text-decoration: none;
+}
+/* Set the appearance of dyn menu items other than the breadcrumbs
+ * on mouse-over.
+ * The colour #EEE is sometimes used for debugging.
+ */
+#locationbar ul#rootmenu ul.menu li a:hover {
+  /* color: #EEE; */
+}
+/* Set the appearance of dyn menu items other than the breadcrumbs
+ * when selected and potentially opened.
+ * This works, but has the > that makes IE unhappy.
+ * #locationbar ul.menu li.selected>a {
+ *   background-color: #C8EF48;
+ *   color: #000;
+ * }
+ * So instead, we have the following two rules.
+*/
+#locationbar ul.menu li a {
+  background-color: #AFDB1F;
+  color: #000;
+}
+#locationbar ul.menu li.selected>a {
+  background-color: #C8EF48;
+  color: #000;
+}
+/* Set the appearance of breadcrumb items on mouse-over.
+ * This is the same as how they look when selected, so that
+ * they look right during the deliberate delay between being
+ * moused-over and actually activated.
+ */
+ul#menuroot li a.breadcrumb:hover {
+  background-position: 0px 0px;
+  color: #000;
+}
+/* Set the appearance of breadcrumb items when selected for opening. */
+ul#menuroot li.selected a.breadcrumb {
+  background-position: 0px 0px;
+  color: #000;
+}
+/* Make dyn menu items that are the source of submenus have a right-arrow
+ * on the far right, to show they can be opened.
+ *
+ * Does not include the breadcrumbs.
+ */
+#locationbar ul.menu a.container {
+  background-image: url(/@@/arrowRight);
+  background-repeat: no-repeat;
+  background-position: center right;
+}
+/* Allow dyn menus to appear ouside of the locationbar, even though they
+ * overflow its bounds.
+ */
+#locationbar {
+  overflow: visible;
+}
+/* Prevent the text in links in menu items from wrapping.
+ * Apply appropriate formatting to links in menu items.
+ */
+#locationbar li a,
+#locationbar li .unlinked {
+  left: auto;
+  margin: 0px 0px 0px 0px;
+  white-space: pre;
+}
+/* Login control goes on the right, taking up the full height of the
+ * locationbar.
+ */
+#logincontrol {
+  float: right;
+  height: 100%;
+}
+/* The control itself is actually in a table cell, vertically aligned to
+ * the middle of the locationbar.
+ */
+#logincontrol td {
   color: #FFFFFF;
   font-size: 11px;
   font-weight: bold;
+  vertical-align: middle;
 }
-#logincontrol a {color: #000000;}
-ul#applicationchooser {
+/* Link text is black. */
+#logincontrol a {
+    color: #000000;
+}
+
+/* Under the location bar is a Help widget that expands when clicked. */
+#help {
+  clear: both;
+  position: absolute;
+  top: 27px;
+  left: 0;
+  width: 300px;
+  z-index: 100;
+}
+/* The widget has two parts. First, the tab itself. */
+#help-tab {
+  background: url(help-tab.gif);
+  color: #f7f7f7;
   float: right;
+  font-size: 1px;
+  width: 32px;
+  height: 62px;
+}
+/* Second, the help panel, which takes up the rest of the 300px. */
+#help-panel {float: left; width: 268px;}
+/* The help panel needs to be longer than the tab -- 70px will do. */
+#help-content {
+  background: #fff url(help_bg.gif) top right repeat-y;
+  margin: 0;
+  padding: 0;
+  min-height: 70px;
+}
+/* IE6 and lower ignore "min-height", but treat "height" as min-height. */
+* html #help-content {height: 70px;}
+/* The "help-text" element exists only to provide padding. */
+/* The "1px" is because Gecko malfunctions if the top padding is 0. */
+#help-text {padding: 1px 14px 6px 10px;}
+/* The "help-bottom" element exists to provide the rounded bottom border. */
+#help-bottom {
+  clear: both;
+  font-size: 1px;
+  height: 6px;
+  background: url(help-bottom.gif) bottom right no-repeat;
+}
+/* When the tab is opened, the triangle in it swivels to show it's a toggle. */
+#help.open #help-tab {background: url(help-tab-open.gif);}
+/* When the tab is closed, the help panel is not displayed. */
+#help.closed {width: 32px;}
+#help.closed #help-panel {display: none;}
+
+/*
+Showing the help panel all the time would be in the way,
+and there shouldn't be a "Help" tab that does nothing.
+So it's hidden initially, and then revealed if JavaScript is available. 
+*/
+#help {visibility: hidden;}
+
+/* The rest of the page keeps clear of the collapsed help panel. */
+/* test: http://launchpad.dev/+logout */
+#nonhelp {
+  margin: 0 20px 0 38px;
+  min-width: 752px; /* prevents search field from sliding under tabs */
+  padding-top: 10px;
+}
+
+/* The last element on every page is a standard footer. */
+#globalfooter {clear: both; margin-left: -20px;}
+/* It has a top border if the page doesn't already have a rounded border. */
+body.freeform #globalfooter {
+  border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
+  padding-top: 0.5em;
+}
+#colophon            {float: left;                     width: 49%;}
+#applications-footer {float: right; text-align: right; width: 49%;}
+#copyright           {float: right; text-align: right; width: 45%;}
+
+/* === Specific page layouts === */
+
+/*- App home pages and pillar indexes both have a heading and app buttons. -*/
+table#applications {margin-bottom: -0.5em;}
+table#applications th, table#applications td {vertical-align: bottom;}
+table#applications th {padding-left: 60px; text-align: left;}
+table#applications th h1 {margin: 0; padding: 0;}
+table#applications td {text-align: right;}
+body.tab-branches #applications,
+body.tab-bugs #applications,
+body.tab-specifications #applications,
+body.tab-answers #applications,
+body.tab-translations #applications {
+  background-position: left bottom !important;
+}
+/* But the pillar indexes have no watermark, so no heading indenting. */
+body.pillarindex table#applications th {padding-left: 0;}
+
+/* Other page types have a global search field. */
+#globalsearch {
+  float: right;
+  margin-top: 15px;
+}
+#globalsearch #q {border: 1px solid #a7c2ce; width: 170px;}
+#globalsearch #searchbutton {
+  position: relative;
+  top: 6px;
+  border: 0;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+#globalsearchscope {padding: 4px 0 0;}
+#globalsearchscope label {display: block; padding: 0 0 2px;}
+
+.clear {
+  clear: both;
+  height: 0px;
+  overflow: hidden;
+}
+
+/* Either that application/pillar heading, or a structural heading,
+partly (but not visibly) overlaps the rounded border of the main area. */
+#structuralobject, #applications {
+  position: relative;
+  z-index: 1;
+}
+#structuralobjectheading {
+  background: none;
+  color: black;
+  float: left;
+  width: 70%;
+}
+/* Structural headings contain an icon, maybe an intro, and a main heading. */
+#structuralobjectheading img {
+  float: left;
+  margin: 0 0 0 3px;
+}
+#structuralobjectheading .intro {
+  margin: 2px 0 0 70px;
+  font-size: 12px;
+}
+#structuralobjectheading .main {
+  font-weight: bold;
+  margin: 1px 0 0 70px;
+  font-size: 24px;
+}
+
+/* mainarea and five other divs supply the bottom (mainarea), bottom left
+(v), bottom right (w), top (x), top left (y), and top right (z) of the rounded
+border. */
+#mainarea {
+  clear: both;
+  min-width: 712px;
+  background-image: url(mainarea_bottom.gif);
+  background-repeat: repeat-x;
+  background-position: bottom left;
+  margin: 0 -20px 0 -38px; /* opposite of margin for #nonhelp */
+  position: relative;
+  top: -15px; /*- reduces logo~tab gap -*/
+}
+body.freeform #mainarea {top: 0;}
+* html #mainarea {top: 0;}
+body.freeform #mainarea {top: 20px;} /*- no logo on freeform pages -*/
+#mainarea div.v {
+  position: relative;
+  width: 100%;
+  background: url(mainarea_bottomleft.gif) bottom left no-repeat;
+}
+#mainarea div.w {
+  position: relative;
+  width: 100%;
+  background: url(mainarea_bottomright.gif) bottom right no-repeat;
+}
+#mainarea div.x {
+  position: relative;
+  width: 100%;
+  background: url(mainarea_top.gif) top left repeat-x;
+}
+#mainarea div.y {
+  position: relative;
+  width: 100%;
+  background: url(mainarea_topleft.gif) top left no-repeat;
+}
+#mainarea div.z {
+  position: relative;
+  width: 100%;
+  background: url(mainarea_topright.gif) 100% top no-repeat;
+}
+
+body {min-width: 480px;}
+
+/* Inside those is a container for the main content, and the portlets if any. */
+#container {
+  margin-top: 30px;
+  padding: 20px 20px 40px 240px;
+  position: relative;
+  top: 28px;
+}
+* html #container {margin-top: 28px; position: static;} /* fixes in IE6 */
+body.applicationhome #container {padding-left: 20px;}
+#maincontent {
+  width: 100%;
+  padding: 0 0 20px 0;
+  display: inline;
+  float: left;
+  position: relative;
+}
+#portlets .portlet {
+  width: 200px;
+}
+
+ul#applicationchooser {
+  position: absolute;
+  right: 0;
   width: 510px;
   height: 32px;
   overflow: hidden;
@@ -411,10 +733,8 @@ ul#applicationchooser {
   background-repeat: no-repeat;
   background-position: top right;
 }
-div#noapplicationchooser {
-  clear: both;
-  margin-bottom: 18px;
-}
+/* If there are no tabs, a substitute div maintains the same spacing. */
+div#noapplicationchooser {clear: both; margin-bottom: -28px;}
 ul#applicationchooser li {
   float: left;
   display: block;
@@ -427,31 +747,71 @@ ul#applicationchooser li {
   text-align: center;
   font-weight: bold;
   color: #000000;
-  padding: 8px 0px 0px 0px;
 }
+
+/* We make the anchor display block, and use the same height as the li,
+ * to ensure the whole tab area is clickable. */
+ul#applicationchooser li a {
+  display: block;
+  padding: 7px 0px 0px 0px;
+  height: 40px;
+}
+
+/* For the selected and unavailable tabs, we need to provide the padding
+ * (since there's no anchor), and change the cursor to avoid it being an
+ * i-beam when hovering over the text of the tab. */
+ul#applicationchooser li span.selected,
+ul#applicationchooser li span.disabled,
+ul#applicationchooser li.unavailable
+{
+  display: block;
+  padding: 8px 0px 0px 0px;
+  cursor: default;
+}
+
+/* Disabled icons shouldn't hover up */
+ul#applicationchooser li span.disabled:hover,
+ul#applicationchooser li.unavailable:hover
+{
+  background-position: -100px 0px;
+}
+
+ul#applicationchooser li span.disabled,
+ul#applicationchooser li.unavailable
+{
+  color: lightgrey;
+}
+
 ul#applicationchooser li:hover {
   background-position: 0px 0px;
+}
+
+/* Avoid underlining anchors inside the tabs */
+ul#applicationchooser a:hover {
   text-decoration: none;
 }
+
 ul#applicationchooser li#applicationchooser_selected {
   background-position: -200px 0px;
 }
 
 /* --- Portlets --- */
-
 #portlets {
+  position: relative;
+  display: inline;
   float: left;
   width: 200px;
   overflow: hidden;
-  margin: 0px 16px 0px 16px;
-  padding: 0;
+  margin: 0 0 20px -100%;
+  padding: 0 20px;
   list-style: none;
-  font-size: 11px;
+  right: 240px;
 }
-#portlets .portlet {
-  clear: both;
-  float: left;
-}
+/* IE6 and  lower ignore the left padding, so we add extra positioning. */
+* html #portlets {left: 20px;}
+/* IE7 gets the padding right but overcalculates the left margin, so we use
+a conditional comment in main-template.pt to work around the above rule. */
+#portlets .portlet {clear: both; float: left;}
 #portlets .portlet h2 {
   display: block;
   width: 180px;
@@ -465,6 +825,14 @@ ul#applicationchooser li#applicationchooser_selected {
   margin: 0px 0px 1px 0px;
   color: #FFFFFF;
   font-weight: bold;
+}
+#portlets .portlet h2 a, #portlets .portlet h2 a:hover {
+  display: block;
+  color: inherit;
+  text-decoration: inherit;
+}
+#portlets .portlet.expanded h2 {
+  background-image: url(leftnav_bg_expanded.gif);
 }
 #portlets #actions h2 {
   background-image: url(leftnav_bg_uncollapsible.gif);
@@ -495,32 +863,13 @@ ul#applicationchooser li#applicationchooser_selected {
 #portlets .portlet,
 #portlets .portlet h2,
 #portlets .portlet li {
-  font-size: 11px !important;
+  font-size: 12px !important;
 }
 #portlets .portlet h2 {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-}
-#portlets .portlet h2 a {
-  float: left;
-  display: block;
-  width: 180px;
-  height: 18px;
-  background-color: #8F8F8F;
-  background-image: url(leftnav_bg.gif);
-  background-repeat: no-repeat;
-  background-position: left top;
-  overflow: hidden;
-  padding: 2px 10px 0px 10px;
-  margin: 0px 0px 1px 0px;
-  color: #FFFFFF;
-  font-weight: bold;
-}
-#portlets .portlet h2 a:hover {
-  background-color: #A3A3A3;
-  text-decoration: none;
 }
 #portlets .portlet ul li a:hover {
   background-color: #fff;
@@ -543,272 +892,54 @@ ul#applicationchooser li#applicationchooser_selected {
 #portlets li.active ul li a:hover {
   background-color: #EBF6C7;
 }
-#actions ul {
-  width: 192px;
-  overflow: hidden;
-  margin: 0;
-  padding: 4px;
-}
+#actions ul {list-style-type: none; margin: 0; padding: 4px; width: 192px;}
 #actions li {
-  padding: 1px 0; /* Works around a bug that makes items taller in WinIE. */
-  list-style-image: url(/+icing/action.png);
-  list-style-type: circle; /* A fallback in case the image can't be found. */
-  margin-left: 18px; /* Neutralizes typical UA outdenting of list bullets. */ 
+  margin: 0; /* neutralizes UA list item indenting */
+  padding: 1px 0; /* works around a bug that makes items taller in WinIE */
 }
-#actions li:hover {background-color: #fff; text-decoration: underline;}
 #actions a {
-  display: block; /* Makes the clickable area equal to the highlighted area. */
-  margin-left: -18px; /* Extends the highlighted area to include the bullet. */
-  padding: 3px 4px 3px 14px; /* 14px on the left makes room for the bullet. */ 
+  background: url(action.png) 4px center no-repeat;
+  display: block; /* makes the clickable area equal to the highlighted area */
+  padding: 2px 2px 2px 14px; /* 14px on the left makes room for the bullet */ 
 }
-#globalsearch {
-  width: 220px;
-  float: right;
-  margin-top: 20px;
-}
-#globalsearch #q {
-  width: 170px;
-  border: 1px solid #A7C2CE;
-}
-#globalsearch #searchbutton {
-  position: relative;
-  top: 6px !important;
-  top: 5px;
-  border: 0;
-  width: 20px;
-  height: 20px;
-  cursor: hand;
-  cursor: pointer;
-}
-#globalsearchscope {
-  padding: 4px 0px 0px 0px;
-}
-#globalsearchscope label {
-  display: block;
-  padding: 0px 0px 2px 0px;
-}
-#content_center input,
-#content_center select,
-#content_center textarea {
-  width: 200px;
-  border: 1px solid #A5A5A5;
-  margin-bottom: 10px;
-}
-#content_center select {
-  width: 202px !important;
-  width: 204px;
-}
-#content_center label {
-  clear: both;
-  width: 110px;
-  display: block;
-  float: left;
-  padding-top: 2px;
-  font-weight: bold;
-}
+#actions a:hover {background-color: #fff; text-decoration: underline;}
 .check,
 .radio {
   background: transparent;
   width: auto !important;
   border: 0 !important;
 }
-#globalheader,
-#locationbar {
-  min-width: 760px;
-}
-#globalheader img {
-  display: none;
-}
-#globalheader div.launchpad a {
-  float: right;
-  display: block;
-  width: 90px;
-  height: 20px;
-  background-image: url(globalheader_launchpad_bg.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
-  text-indent: -9999px;
-  overflow: hidden;
-}
-#globalheader ul.home {
-  float: left;
-  width: 30px;
-  height: 20px;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-#globalheader ul.home li a {
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  float: left;
-  display: block;
-  width: 30px;
-  height: 20px;
-  background-image: url(globalheader_home.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
-  text-indent: -9999px;
-  overflow: hidden;
-}
-#structuralobject, #applications {
-  position: relative;
-  z-index: 1;
-}
-#structuralobjectheading {
-  background: none;
-  color: black;
-  float: left;
-  margin: 10px 0px 0px 38px;
-  width: 50%;
-}
-#structuralobjectheading img {
-  float: left;
-  margin: 0;
-}
-#structuralobjectheading .main {
-  font-weight: bold;
-  margin: 20px 0 0;
-  font-size: 2.5em;
-}
 #structural-children {
   clear: both;
   font-size: 0.75em;
   margin-top: 2em;
   padding: 2em 0 0;
-  border-top: 1px dotted #ccc;
+  border-top: 1px dotted #cbcbcb; /* matches color of mainarea_* images */
 }
 #applicationchooser {
   clear: both;
   position: relative; /* needed to make z-index work */
   z-index: 1; /* ensures tabs appear above structural object heading */
 }
-#mainarea {
-  clear: both;
-  min-width: 712px;
-  margin: 0 20px 0 38px;
-  background-image: url(mainarea_bottom.gif);
-  background-repeat: repeat-x;
-  background-position: bottom left;
-}
-#singlecolumn #mainarea {
-  margin-left: 0;
-  margin-right: 0;
-}
-#mainarea {position: relative; top: -20px;} /* reduces pillargotchi~tab gap */
-* html #mainarea {top: 0;}
-#singlecolumn #mainarea {top: -20px;}
-* html #singlecolumn #mainarea {top: 0;}
-#singlecolumn h1 {
-  padding-bottom: 0;
+
+/* Some pages end with links to related items. */
+/* Examples: branch page, bug page. */
+.related {
+  margin-top: 4em;
+  border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
   padding-top: 1em;
 }
-* html #singlecolumn h1 {padding-top: 0;}
-#mainarea div.t {
-  width: 100%;
-  background-image: url(mainarea_left.gif);
-  background-repeat: repeat-y;
-  background-position: top left;
+.related ul {
+  list-style: none;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  text-indent: 0.5em;
 }
-#mainarea div.u {
-  width: 100%;
-  background-image: url(mainarea_right.gif);
-  background-repeat: repeat-y;
-  background-position: top right;
-}
-#mainarea div.v {
-  width: 100%;
-  background-image: url(mainarea_bottomleft.gif);
-  background-repeat: no-repeat;
-  background-position: bottom left;
-}
-#mainarea div.w {
-  width: 100%;
-  background-image: url(mainarea_bottomright.gif);
-  background-repeat: no-repeat;
-  background-position: bottom right;
-}
-#mainarea div.x {
-  width: 100%;
-  background-image: url(mainarea_top.gif);
-  background-repeat: repeat-x;
-  background-position: top left;
-}
-#mainarea div.y {
-  width: 100%;
-  background-image: url(mainarea_topleft.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
-}
-#mainarea div.z {
-  width: 100%;
-  background-image: url(mainarea_topright.gif);
-  background-repeat: no-repeat;
-  background-position: 100% top;
-}
-#singlecolumn div.z {
-  padding: 0 0 20px; /* XXX Makes the top right corner disappear */
-}
-#help_panel {
-  visibility: hidden; /* global.js reveals it if JavaScript is available */
-}
-#help_panel.open,
-#help_panel.closed {
-  position: absolute;
-  float: left;
-  top: 47px;
-  left: 0px;
-  width: 350px;
-  z-index: 100;
-}
-#help_panel.closed {
-  left: -318px !important;
-}
-.help1 {
-  width: 350px;
-  background-color: #FFFFFF;
-  background-image: url(help_bg.gif);
-  background-repeat: repeat-y;
-  background-position: top right;
-}
-.help2 {
-  float: left;
-  width: 286px;
-  padding: 16px;
-}
-#help_panel.open .bottom,
-#help_panel.closed .bottom {
-  clear: both;
-  width: 350px;
-  height: 14px;
-  position: relative;
-  top: -2px;
-  background-color: transparent;
-  background-image: url(help_bottom_bg.gif);
-  background-repeat: no-repeat;
-  background-position: bottom right;
-}
-#help_panel.open a.open-close, #help_panel.closed a.open-close,
-a.open, a.closed {
-  float: left;
-  display: block;
-  width: 28px;
-  height: 120px;
-  background-image: url(help_ttl_open.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
-  text-indent: -9999px;
-  overflow: hidden;
-}
-#help_panel.closed a.open-close, a.closed {
-  background-image: url(help_ttl_closed.gif);
-}
+.related ul li:before {content: "\00BB \0020";}
 
 /* --- Various custom list formats --- */
 
-#maincontent ol, #maincontent ul, #singlecolumn ul, #singlecolumn ol {
+#maincontent ol, #maincontent ul {
   margin-left: 24px;
   padding-left: 0;
 }
@@ -821,25 +952,25 @@ ul.bug, li.bug                       {list-style-image: url(/@@/bug);}
 ul.bug.remote, li.bug.remote         {list-style-image: url(/@@/bug-remote);}
 ul.cve, li.cve                       {list-style-image: url(/@@/cve);}
 ul.distro, li.distro                 {list-style-image: url(/@@/distribution);}
-ul.distrorelease, li.distrorelease   {list-style-image: url(/@@/distribution);}
+ul.distroseries, li.distroseries   {list-style-image: url(/@@/distribution);}
 ul.download, li.download             {list-style-image: url(/@@/download);}
 ul.edit, li.edit                     {list-style-image: url(/@@/edit);}
+ul.faq, li.faq                       {list-style-image: url(/@@/faq);}
 ul.info, li.info                     {list-style-image: url(/@@/info);}
-ul.languages, li.languages           {list-style-image: url(/@@/languages);}
-ul.locked, li.locked                 {list-style-image: url(/@@/locked);}
+ul.language, li.language             {list-style-image: url(/@@/language);}
 ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
+ul.meeting, li.meeting               {list-style-image: url(/@@/meeting);}
 ul.milestone, li.milestone           {list-style-image: url(/@@/milestone);}
 ul.news, li.news                     {list-style-image: url(/@@/news);}
-ul.package.binary, li.package.binary {list-style-image: url(/@@/pkg-binary);}
-ul.package.source, li.package.source {list-style-image: url(/@@/pkg-source);}
+ul.package.binary, li.package.binary {list-style-image: url(/@@/package-binary);}
+ul.package.source, li.package.source {list-style-image: url(/@@/package-source);}
 ul.person, li.person                 {list-style-image: url(/@@/person);}
 ul.product, li.product               {list-style-image: url(/@@/product);}
 dl.products>dt:before                {content: url(/@@/product);}
 ul.question, li.question             {list-style-image: url(/@@/question);}
 ul.search, li.search                 {list-style-image: url(/@@/search);}
-ul.sprint, li.sprint                 {list-style-image: url(/@@/sprint);}
 ul.team, li.team                     {list-style-image: url(/@@/team);}
-ul.translations, li.translations     {list-style-image: url(/@@/translations);}
+ul.translation, li.translation       {list-style-image: url(/@@/translation);}
 ul.link, li.link                     {list-style-image: url(/@@/link);}
 ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 
@@ -847,7 +978,8 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 
 #application-footer strong {font-weight: normal;}
 
-.report, .boardComment {font-size: 1.125em;} /* bug descriptions/comments */
+.description {font-size: 1.125em;}
+/* person/project/bug descriptions, bug comments */
 .report h2 {font-size: 1.4em;}
 .boardComment {border: 1px solid #ddd; margin: 1em 0 1.5em;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
@@ -865,8 +997,7 @@ body.tab-overview #mainarea div.x {
 body.tab-overview #mainarea div.y {
   background-image: url(mainarea_topleft.gif);
 }
-body.tab-overview #mainarea div.z,
-body.tab-overview #mainarea ul#applicationchooser {
+body.tab-overview #mainarea div.z {
   background-image: url(mainarea_topright.gif);
 }
 body.tab-overview #mainarea ul#applicationchooser li {
@@ -902,6 +1033,13 @@ body.tab-overview #actions, body.tab-overview .results {
 body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background-color: #83ad23;
 }
+
+.tab-overview #application-footer strong {
+  background: none;
+  color: #83ad23;
+}
+
+.product.series, .project {margin-bottom: 1em;}
 
 /* --- Code --- */
 
@@ -960,6 +1098,11 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .branchstatusABANDONED    {color: #666;}
 .branchstatusNEW          {color: black;}
 
+.mergeproposal p {margin: 0.5em 0 }
+
+.vcsimportSUCCESS {} /* inherited text color */
+.vcsimportFAILURE {color: Red;}
+
 /* --- Bugs --- */
 
 body.tab-bugs #applications {background: url(app-bugs-wm.gif) no-repeat;}
@@ -1010,19 +1153,24 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
   color: #9f2b33;
 }
 
-.statusUNCONFIRMED  { color: #993300; }
-.statusNEEDSINFO    { color: Red; }
-.statusCONFIRMED    { color: Red; }
-.statusINPROGRESS   { color: Black; }
-.statusFIXRELEASED  { color: Black; }
-.statusFIXCOMMITTED { color: Black; }
-.statusREJECTED     { color: Gray; }
-.importanceCRITICAL  { color: Red; }
-.importanceHIGH      { color: #ff6600; }
-.importanceMEDIUM    { color: Green; }
-.importanceLOW       { color: Black; }
-.importanceWISHLIST  { color: Blue; }
-.importanceUNDECIDED { color: #999; }
+.statusNEW,           .statusNEW a           {color: #930;}
+.statusINCOMPLETE,    .statusINCOMPLETE a    {color: red;}
+.statusCONFIRMED,     .statusCONFIRMED a     {color: red;}
+.statusTRIAGED,       .statusTRIAGED a       {color: black;}
+.statusINPROGRESS,    .statusINPROGRESS a    {color: black;}
+.statusFIXRELEASED,   .statusFIXRELEASED a   {color: black;}
+.statusFIXCOMMITTED,  .statusFIXCOMMITTED a  {color: black;}
+.statusINVALID,       .statusINVALID a       {color: gray;}
+.statusWONTFIX,       .statusWONTFIX a       {color: gray;}
+.importanceCRITICAL,  .importanceCRITICAL a  {color: red;}
+.importanceHIGH,      .importanceHIGH a      {color: #f60;}
+.importanceMEDIUM,    .importanceMEDIUM a    {color: green;}
+.importanceLOW,       .importanceLOW a       {color: black;}
+.importanceWISHLIST,  .importanceWISHLIST a  {color: blue;}
+.importanceUNDECIDED, .importanceUNDECIDED a {color: #999;}
+.status :link, .importance :link {text-decoration: none;}
+
+#bug-description {font-family: monospace;}
 
 /* --- Blueprints --- */
 
@@ -1100,6 +1248,7 @@ body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
 .specdeliveryNEEDSREVIEW        {color: purple;}
 .specdeliveryAWAITINGDEPLOYMENT {color: red;}
 .specdeliveryIMPLEMENTED        {color: green;}
+.specdeliveryINFORMATIONAL      {color: green;}
 
 /* --- Translations --- */
 
@@ -1212,12 +1361,12 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
   color: #3840be;
 }
 
-.questionstatusOPEN      {color: black;}
-.questionstatusNEEDSINFO {color: black;}
-.questionstatusANSWERED  {color: green;}
-.questionstatusSOLVED    {color: green;}
-.questionstatusEXPIRED   {color: red;}
-.questionstatusINVALID   {color: red;}
+.questionstatusOPEN      {color: #000;} /* black */
+.questionstatusNEEDSINFO {color: #930;} /* brown */
+.questionstatusANSWERED  {color: #363;} /* grey-green */
+.questionstatusSOLVED    {color: #090;} /* green */
+.questionstatusEXPIRED   {color: #666;} /* dark grey */
+.questionstatusINVALID   {color: #c00;} /* red */
 
 
 /* --- Other --- */
@@ -1225,41 +1374,6 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
 ul#applicationchooser a, ul#applicationchooser a:hover {
   color: #000;
 }
-/* Matthew's code for laying out the columns: */
-body {
-  min-width: 480px;
-}
-#container {
-  padding-left: 240px;
-  padding-right: 20px;
-}
-#singlecolumn #container {
-  padding-left: 20px;
-  padding-top: 50px;
-}
-#maincontent, #portlets {
-  display: inline;
-  float: left;
-  position: relative;
-}
-#maincontent {
-  width: 100%;
-  padding: 0 0 20px 0;
-}
-#portlets {
-  width: 200px;
-  margin: 0 0 20px -100%;
-  padding: 0 20px;
-  right: 240px;
-}
-* html #portlets { /* Works around Internet Explorer bug */
-  left: 20px;
-}
-#portlets .portlet {
-  width: 200px;
-}
-#singlecolumn {margin: 20px 20px 0 38px;} /* test: front page, FAQ page */
-#mainarea #singlecolumn {margin-right: 0;}
 
 /* ====== Content area styles ====== */
 
@@ -1267,10 +1381,6 @@ body {
 
 #applications {clear: both; width: 100%;}
 div#applications {padding: 1em 0; text-align: center;}
-table#applications {margin-bottom: -0.5em;}
-table#applications th, table#applications td {vertical-align: baseline;}
-table#applications th {padding-left: 100px; text-align: left;}
-table#applications td {padding-right: 20px; text-align: right;}
 #applications span {
   display: inline-block;
   float: right;
@@ -1280,21 +1390,21 @@ table#applications td {padding-right: 20px; text-align: right;}
 }
 .central {
   clear: left; /* Bugs FP */
-  font-size: 1.5em;
-  margin: auto;
+  font-size: 1.125em;
+  margin: 0 auto 1em;
   padding: 0.5em 0; /* FP should fit in ~750px; Bugs FP */
   width: auto;
 }
-.tab-unknown .central {font-size: 1.75em;}
 .central input {
   font-size: 1em;
 }
-div.bordered {
-  padding: 2em 4em;
+.front_page label {
+  color: #303030;
+  font-size: 1.2em;
 }
 #application-summary, #application-footer {
-  font-size: 1.5em;
-  line-height: 1.5em;
+  font-size: 1.2em;
+  line-height: 1.4em;
   margin-top: 0;
 }
 #application-footer {
@@ -1328,7 +1438,7 @@ div.left, div.right {width: 50%;}
 div.left {clear: both; float: left;}
 div.right {clear: right; float: right;}
 div.left div.portlet, div.right div.portlet {
-  border: dotted #ccc;
+  border: dotted #cbcbcb; /* matches color of mainarea_* images */
   border-width: 1px 0 0 0;
   margin-top: 1em;
   padding-top: 1em;
@@ -1351,11 +1461,11 @@ div.three.column.left, div.three.column.middle, div.three.column.right {
 .title {
   font-weight: bold;
 }
-ul.buttons {margin: 2em 0 4em 0; padding: 0;}
+ul.buttons {margin: 2em 0 4em 0 !important; padding: 0 !important;}
+/*- without !important, gets overridden by the '#maincontent ol' etc rule -*/
 ul.buttons li {display: inline; margin-right: 1em;}
-#singlecolumn ul.buttons {float: right; margin: 0;}
-#singlecolumn ul.buttons li {margin: 0;}
-#singlecolumn ul.buttons li {display: block;}
+body.applicationhome ul.buttons {float: right; margin: 0 0 0 1em !important;}
+body.applicationhome ul.buttons li {display: block; margin-right: 0;}
 ul.cross-reference {font-size: 1.25em;}
 /*
 li {
@@ -1363,7 +1473,7 @@ li {
 }
 */
 
-.bug-summary {
+.bug-summary, .summary {
   font-weight: bold;
 }
 
@@ -1377,9 +1487,10 @@ fieldset {
 
 table.latest th, table.latest td {padding-bottom: 2em;}
 table.summary {float: right; margin: 0 0 1em 1em;}
+table.listing table.summary {margin-top: 0.5em;}
 table.summary caption {font-style: italic; margin-left: 1em;}
 div.right table.summary {float: none; margin: 1em auto;}
-table.summary tr {border: dotted #ccc; border-width: 1px 0;}
+table.summary tr {border: dotted #cbcbcb; border-width: 1px 0;}
 table.summary td {padding-left: 0.5em;}
 table.summary ul, table.summary ul li {
   list-style-position: inside;
@@ -1394,6 +1505,7 @@ th.nowrap, td.nowrap {white-space: nowrap;}
 tfoot th, table.contributions th {text-align: left;}
 table.contributions, table.contributions th, table.contributions td {
   border: 1px solid #e6e6e6;}
+table.contributions th {font-weight: normal;}
 table.contributions tr.odd {background-color: #fff; color: inherit;}
 table.contributions tr.even {background-color: #f6f6f6; color: inherit;}
 table.contributions th, table.contributions td {padding: 0.5em 0.75em;}
@@ -1401,7 +1513,7 @@ table.contributions td {vertical-align: middle; width: 16px;}
 
 /* --- Listing tables --- */
 
-table.listing {margin: 0; width: 100%;}
+table.listing {margin: 0; width: 100%; font-size: 8.5pt;}
 table.listing, table.listing tbody {border-bottom: 1px solid #d2d2d2;}
 table.listing thead, table.listing thead th, table.listing tfoot tr {
   border: 1px solid #d2d2d2;
@@ -1413,6 +1525,8 @@ tr.highlight {background-color: #ff9;}
 table.listing tr.note {font-size: smaller;}
 tr.amount, td.amount {text-align: right;}
 table.listing th, table.listing td {padding: 0.25em;}
+/* We don't want extra padding on nested tables, such as batch navigation. */
+table.listing table th, table.listing table td {padding: 0;}
 table.listing th {font-size: 1.125em; white-space: nowrap;}
 table.listing td {border: 1px #d2d2d2; border-style: dotted none none none;}
 table.listing tr.note td {border-style: none;}
@@ -1449,55 +1563,8 @@ th.descending {
 /* Used to indicate a value to be used to sort cells in a row */
 .sortkey, .revsortkey {display: none;}
 
-
-/* SteveA's fix-ups for the dynamic menu */
-#locationbar ul {margin: 0; padding: 0;}
-#locationbar ul.menuroot li a {
-  margin-right: -16px;
-}
-#locationbar ul.menu li a {
-  background-image: none;
-  background-color: #AFDB1F;
-  float: none;
-  padding-left: 16px;
-  padding-right: 16px;
-  padding-top: 3px;
-  padding-bottom: 3px;
-  height: auto;
-}
-#locationbar ul.menu li {
-  margin-bottom: 0px;
-  padding-bottom: 0px;
-}
-#locationbar ul.menu {
-  background-color: #AFDB1F;
-  position: absolute;
-  z-index: 2000;
-  margin-left: 0px;
-  border-right: 1px solid #90B51A;
-  border-bottom: 1px solid #90B51A;
-  border-top: 1px solid #DCF58B;
-  border-left: 1px solid #DCF58B;
-  padding-left: 0px;
-  padding-right: 16px;
-}
-#locationbar ul.menu li.selected a {
-  background-color: #C8EF48;
-}
-#locationbar {
-  overflow: visible;
-}
-#locationbar li a {
-  left: auto;
-  margin: 0px 0px 0px 0px;
-}
-#locationbar strong {
-  margin-right: -5px;
-}
-#locationbar {
-  overflow: visible;
-}
-.cloud-size-small { 
+/* Clouds of links. */
+.cloud-size-small {
   font-size: 1em;
 }
 .cloud-size-medium {
@@ -1506,12 +1573,25 @@ th.descending {
 .cloud-size-large {
   font-size: 1.7em;
 }
-.cloud-shade-dark { 
+.cloud-shade-dark {
   color: #00f;
 }
-.cloud-shade-medium { 
+.cloud-shade-medium {
   color: #7878ff;
 }
 .cloud-shade-light {
   color: #b8b8ff;
+}
+.cloud-highlight-dark {
+  color: #00c500;
+}
+.cloud-highlight-medium {
+  color: #90e090;
+}
+.cloud-highlight-light {
+  color: #b8ffb8;
+}
+
+.lowerCaseText {
+  text-transform: lowercase
 }

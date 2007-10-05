@@ -54,7 +54,7 @@ The Bazaar homepage.
 The Answer Tracker
 
     >>> canonical_url(getUtility(IQuestionSet))
-    u'http://answers.launchpad.dev/support'
+    u'http://answers.launchpad.dev/questions'
 
 == Persons and Teams ==
 
@@ -99,7 +99,7 @@ An ICodeOfConduct
     u'http://launchpad.dev/codeofconduct/1.0'
 
 
-== Distributions, distroreleases and so on ==
+== Distributions, distroseriess and so on ==
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
 
@@ -115,9 +115,9 @@ An IDistribution.
     >>> canonical_url(celebs.ubuntu)
     u'http://launchpad.dev/ubuntu'
 
-An IDistroRelease.
+An IDistroSeries.
 
-    >>> hoary = celebs.ubuntu.getRelease('hoary')
+    >>> hoary = celebs.ubuntu.getSeries('hoary')
     >>> canonical_url(hoary)
     u'http://launchpad.dev/ubuntu/hoary'
 
@@ -145,18 +145,18 @@ An IDistributionSourcePackage.
 The IProjectSet.
 
     >>> canonical_url(getUtility(IProjectSet))
-    u'http://launchpad.dev/projects'
+    u'http://launchpad.dev/projectgroups'
 
 An IProject.
 
-    >>> canonical_url(getUtility(IProjectSet)['ubuntu-project'])
-    u'http://launchpad.dev/ubuntu-project'
+    >>> canonical_url(getUtility(IProjectSet)['apache'])
+    u'http://launchpad.dev/apache'
 
 The IProductSet.
 
     >>> productset = getUtility(IProductSet)
     >>> canonical_url(productset)
-    u'http://launchpad.dev/products'
+    u'http://launchpad.dev/projects'
 
 An IProduct.
 
@@ -180,7 +180,7 @@ An IProductRelease.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IBug, IBugSet, IBugTaskSet, IUpstreamBugTask, IDistroBugTask,
-    ...     IDistroReleaseBugTask, IBugWatchSet,
+    ...     IDistroSeriesBugTask, IBugWatchSet,
     ...     IBugExternalRefSet)
     >>> from canonical.launchpad.database import (
     ...     BugWatchSet, BugExternalRefSet)
@@ -193,18 +193,18 @@ The IBugSet.
 An IBug.
 
     >>> canonical_url(getUtility(IBugSet).get(1))
-    u'http://launchpad.dev/bugs/1'
+    u'http://bugs.launchpad.dev/bugs/1'
 
 An IUpstreamBugTask.
 
     >>> canonical_url(getUtility(IBugTaskSet).get(2))
-    u'http://launchpad.dev/firefox/+bug/1'
+    u'http://bugs.launchpad.dev/firefox/+bug/1'
 
 An IDistroBugTask.
 
     >>> distro_task = getUtility(IBugTaskSet).get(4)
     >>> canonical_url(distro_task)
-    u'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/1'
+    u'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1'
 
 An IDistroBugTask without a sourcepackage.
 
@@ -214,22 +214,22 @@ An IDistroBugTask without a sourcepackage.
     >>> temp_spname = distro_task.sourcepackagename
     >>> distro_task.sourcepackagename = None
     >>> canonical_url(distro_task)
-    u'http://launchpad.dev/debian/+bug/1'
+    u'http://bugs.launchpad.dev/debian/+bug/1'
     >>> distro_task.sourcepackagename = temp_spname
 
-An IDistroReleaseBugTask.
+An IDistroSeriesBugTask.
 
-    >>> distro_release_task = getUtility(IBugTaskSet).get(16)
-    >>> canonical_url(distro_release_task)
-    u'http://launchpad.dev/ubuntu/warty/+source/mozilla-firefox/+bug/5'
+    >>> distro_series_task = getUtility(IBugTaskSet).get(16)
+    >>> canonical_url(distro_series_task)
+    u'http://bugs.launchpad.dev/ubuntu/warty/+source/mozilla-firefox/+bug/5'
 
-An IDistroReleaseBugTask without a sourcepackage.
+An IDistroSeriesBugTask without a sourcepackage.
 
-    >>> temp_spname = distro_release_task.sourcepackagename
-    >>> distro_release_task.sourcepackagename = None
-    >>> canonical_url(distro_release_task)
-    u'http://launchpad.dev/ubuntu/warty/+bug/5'
-    >>> distro_release_task.sourcepackagename = temp_spname
+    >>> temp_spname = distro_series_task.sourcepackagename
+    >>> distro_series_task.sourcepackagename = None
+    >>> canonical_url(distro_series_task)
+    u'http://bugs.launchpad.dev/ubuntu/warty/+bug/5'
+    >>> distro_series_task.sourcepackagename = temp_spname
 
 A private bug, as an anonymous user! (We'll temporarily subscribe to the bug,
 to ensure that at least one person has the perms to edit it while it's set
@@ -237,23 +237,23 @@ private.)
 
     >>> from canonical.launchpad.interfaces import ILaunchBag
     >>> current_user = getUtility(ILaunchBag).user
-    >>> subscription = distro_release_task.bug.subscribe(current_user)
+    >>> subscription = distro_series_task.bug.subscribe(current_user)
 
-    >>> distro_release_task.bug.private = True
+    >>> distro_series_task.bug.private = True
 
     >>> login(ANONYMOUS)
 
-    >>> canonical_url(distro_release_task.bug)
-    u'http://launchpad.dev/bugs/5'
+    >>> canonical_url(distro_series_task.bug)
+    u'http://bugs.launchpad.dev/bugs/5'
 
 A private bugtask, as an anonymous user.
 
-    >>> canonical_url(distro_release_task)
-    u'http://launchpad.dev/ubuntu/warty/+source/mozilla-firefox/+bug/5'
+    >>> canonical_url(distro_series_task)
+    u'http://bugs.launchpad.dev/ubuntu/warty/+source/mozilla-firefox/+bug/5'
 
     >>> login("foo.bar@canonical.com")
-    >>> distro_release_task.bug.private = False
-    >>> distro_release_task.bug.unsubscribe(current_user)
+    >>> distro_series_task.bug.private = False
+    >>> distro_series_task.bug.unsubscribe(current_user)
 
 An IBugWatchSet.
 
@@ -280,6 +280,13 @@ An IBugComment.
     >>> bug_comment = BugComment(1, bug_one.initial_message, bugtask_one)
     >>> canonical_url(bug_comment)
     u'http://launchpad.dev/firefox/+bug/1/comments/1'
+
+An IBugNomination.
+
+    >>> from canonical.launchpad.interfaces import IBugNominationSet
+    >>> bug_nomination = getUtility(IBugNominationSet).get(1)
+    >>> canonical_url(bug_nomination)
+    u'http://launchpad.dev/bugs/1/nominations/1'
 
 == Remote Bug Trackers and Remote Bugs ==
 
@@ -339,7 +346,7 @@ And here's our subset.
 
     >>> potemplateset = getUtility(IPOTemplateSet)
     >>> potemplatesubset = potemplateset.getSubset(
-    ...     distrorelease=hoary, sourcepackagename=sourcepackagename)
+    ...     distroseries=hoary, sourcepackagename=sourcepackagename)
 
     >>> canonical_url(potemplatesubset)
     u'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots'
@@ -371,7 +378,7 @@ Even for a dummy PO msgset
     u'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es_ES/1'
 
 Upstream POTemplateSubsets work in much the same way, except they hang off a
-product release.  Let's get a product release.
+product series.  Let's get a product series.
 
 Now we can get an upstream subset and do the same sorts of thing as we did
 with the distro subset.
@@ -402,7 +409,7 @@ Even for a dummy PO msgset
 Rosetta also has translation groups.
 
     >>> canonical_url(getUtility(ITranslationGroupSet))
-    u'http://launchpad.dev/translations/groups'
+    u'http://launchpad.dev/+groups'
 
 == Specifications ==
 

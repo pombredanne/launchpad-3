@@ -13,7 +13,7 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.launchpad.scripts import debbugs
-from canonical.launchpad.scripts.base import (LaunchpadScript,
+from canonical.launchpad.scripts.base import (LaunchpadCronScript,
     LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import (IBugSet,
     ILaunchpadCelebrities, InvalidEmailMessage, IBugTaskSet,
@@ -24,7 +24,7 @@ from canonical.database.constants import UTC_NOW
 debbugs_location_default = '/srv/bugs-mirror.debian.org/'
 
 
-class DebWatchUpdater(LaunchpadScript):
+class DebWatchUpdater(LaunchpadCronScript):
     loglevel = logging.WARNING
 
     def add_my_options(self):
@@ -103,7 +103,8 @@ class DebWatchUpdater(LaunchpadScript):
                 # we need a new task to link the bug to the debian package
                 self.logger.info('Linking %d and debian %s/%s' % (
                     malone_bug.id, srcpkgname.name, binpkgname.name))
-                # XXX: this code is completely untested and broken XXX
+                # XXX: kiko 2007-02-03:
+                # This code is completely untested and broken.
                 bugtask = malone_bug.addTask(
                     owner=malone_bug.owner, distribution=debian,
                     sourcepackagename=srcpkgname)

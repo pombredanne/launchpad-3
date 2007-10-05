@@ -18,6 +18,24 @@ HOURS = 60 * MINUTES
 DAYS = 24 * HOURS
 YEARS = 365 * DAYS
 
+
+def get_cookie_domain(request_domain):
+    """Return a string suitable for use as the domain parameter of a cookie.
+
+    The returned domain value should allow the cookie to be seen by
+    all virtual hosts of the Launchpad instance.  If no matching
+    domain is known, None is returned.
+    """
+    for domain in config.launchpad.cookie_domains:
+        assert not domain.startswith('.'), \
+               "domain should not start with '.'"
+        dotted_domain = '.' + domain
+        if (domain_match(request_domain, domain)
+            or domain_match(request_domain, dotted_domain)):
+            return dotted_domain
+    return None
+
+
 class LaunchpadCookieClientIdManager(CookieClientIdManager):
 
     def __init__(self):
@@ -69,6 +87,9 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
             # Session has never been set
             new_session = True
 
+        # XXX: SteveAlexander, 2007-04-01.
+        #      This is on the codepath where anon users get a session cookie
+        #      set unnecessarily.
         CookieClientIdManager.setRequestId(self, request, id)
 
         cookie = request.response.getCookie(self.namespace)
@@ -81,14 +102,9 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
             cookie['secure'] = False
 
         # Set domain attribute on cookie if vhosting requires it.
-        for domain in config.launchpad.cookie_domains:
-            assert not domain.startswith('.'), \
-                    "domain should not start with '.'"
-            dotted_domain = '.' + domain
-            if (domain_match(request_domain, domain)
-                    or domain_match(request_domain, dotted_domain)):
-                cookie['domain'] = dotted_domain
-                break
+        cookie_domain = get_cookie_domain(request_domain)
+        if cookie_domain is not None:
+            cookie['domain'] = cookie_domain
 
         if new_session:
             session = ISession(request)['launchpad.session']

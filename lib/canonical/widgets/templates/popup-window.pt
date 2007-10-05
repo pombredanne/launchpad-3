@@ -29,10 +29,11 @@
             function hide() {
                 parent_doc = window.parent.document
                 iframe = parent_doc.getElementById('popup_iframe_' + field);
-                // XXX: when we alter the iframe's display value, the
+                // XXX: kiko 2007-03-12:
+                // when we alter the iframe's display value, the
                 // @@popup-window page is reloaded for some reason, and
                 // I can't find out why. I've tried
-                // event.preventBubble() and return false.. -- kiko, 2007-03-12
+                // event.preventBubble() and return false.
                 iframe.style.display = 'none';
                 return false;
             }

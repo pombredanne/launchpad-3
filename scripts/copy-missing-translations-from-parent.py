@@ -1,61 +1,80 @@
 #!/usr/bin/python2.4
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
+"""Furnish distroseries with lacking translations that its parent does have.
+
+This can be used either to update a distroseries' translations, or to
+provide a new distroseries in a series with its initial translation data.
+Only current translations are copied.
+"""
+
 import _pythonpath
 import sys
-from optparse import OptionParser
 from zope.component import getUtility
 from canonical.config import config
-from canonical.lp import initZopeless
 from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.scripts import logger, logger_options
+from canonical.launchpad.scripts.base import LaunchpadScript
 
-def parse_options(args):
-    """Parse a set of command line options.
 
-    Return an optparse.Values object.
+class TranslationsCopier(LaunchpadScript):
+    """A LaunchpadScript for copying distroseries translations from parent.
+
+    Core job is to invoke distroseries.copyMissingTranslationsFromParent().
     """
-    parser = OptionParser()
-    parser.add_option("-d", "--distribution", dest="distro",
-        default='ubuntu',
-        help="The distribution we want to work with.")
-    parser.add_option("-r", "--release", dest="release",
-        help="The distrorelease where we want to migrate translations.")
 
-    logger_options(parser)
+    def add_my_options(self):
+        self.parser.add_option('-d', '--distribution', dest='distro',
+            default='ubuntu',
+            help='Name of distribution to copy translations in.')
+        self.parser.add_option('-s', '--series', dest='series',
+            help='Name of distroseries whose translations should be updated')
 
-    (options, args) = parser.parse_args(args)
+    def main(self):
+        distribution = getUtility(IDistributionSet)[self.options.distro]
+        series = distribution[self.options.series]
 
-    return options
+        if (not series.hide_all_translations or
+            not series.defer_translation_imports):
+            # We cannot start the process, precondition is not meet.
+            self.txn.abort()
+            self.logger.error(
+                'Before this process starts, you should set'
+                ' hide_all_translations and defer_translation_imports flags'
+                ' for the distribution %s, series %s' % (
+                    self.options.distro, self.options.series))
+            sys.exit(1)
 
-def main(argv):
-    options = parse_options(argv[1:])
+        self.logger.info('Starting...')
+        series.copyMissingTranslationsFromParent(self.txn, self.logger)
 
-    logger_object = logger(options, 'initialise')
+        # We would like to update the DistroRelase statistics, but it takes
+        # too long so this should be done after.
+        #
+        # Finally, we changed many things related with cached statistics, so
+        # we may want to update those.
+        # self.logger.info('Updating DistroRelease statistics...')
+        # series.updateStatistics(self.txn)
+        self.logger.info('Done...')
 
-    # Setup zcml machinery to be able to use getUtility
-    execute_zcml_for_scripts()
-    ztm = initZopeless(dbuser=config.rosetta.rosettaadmin.dbuser)
+        # Commit our transaction.
+        self.txn.commit()
 
-    distribution = getUtility(IDistributionSet)[options.distro]
-    release = distribution[options.release]
+    @property
+    def lockfilename(self):
+        """Return lock file name for this script on this distroseries.
 
-    logger_object.info('Starting...')
-    release.copyMissingTranslationsFromParent()
+        No global lock is needed, only one for the distroseries we operate
+        on.  This does mean that our options must have been parsed before this
+        property is ever accessed.  Luckily that is what LaunchpadScript does!
+        """
+        return "launchpad-%s-%s-%s.lock" % (self.name, self.options.distro,
+            self.options.series)
 
-    # We would like to update the DistroRelase statistics, but it takes
-    # too long so this should be done after.
-    #
-    # Finally, we changed many things related with cached statistics,
-    # let's update it.
-    # logger_object.info('Updating DistroRelease statistics...')
-    # release.updateStatistics(ztm)
-    logger_object.info('Done...')
-
-    # Commit the transaction.
-    ztm.commit()
 
 if __name__ == '__main__':
-    main(sys.argv)
+
+    script = TranslationsCopier(
+        'copy-missing-translations', dbuser=config.rosetta.poimport.dbuser)
+
+    script.lock_and_run()
 

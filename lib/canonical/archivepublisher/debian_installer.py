@@ -7,125 +7,89 @@
 
 __metaclass__ = type
 
-__all__ = ['process_debian_installer', 'DebianInstallerError']
+__all__ = ['process_debian_installer']
 
 import os
 import tarfile
 import stat
 import shutil
 
-from sourcerer.deb.version import Version as make_version
+from canonical.archivepublisher.customupload import (
+    CustomUpload, CustomUploadError)
+from canonical.archivepublisher.debversion import Version as make_version
 
 
-class DebianInstallerError(Exception):
-    """Base class for all errors associated with putting a d-i tarball on
-    disk in the archive."""
-
-
-class DebianInstallerAlreadyExists(DebianInstallerError):
+class DebianInstallerAlreadyExists(CustomUploadError):
     """A build for this type, architecture, and version already exists."""
     def __init__(self, build_type, arch, version):
         message = ('%s build %s for architecture %s already exists' %
                    (build_type, arch, version))
-        DebianInstallerError.__init__(self, message)
+        CustomUploadError.__init__(self, message)
 
 
-class DebianInstallerTarError(DebianInstallerError):
-    """The tarfile module raised an exception."""
-    def __init__(self, tarfile_path, tar_error):
-        message = 'Problem reading tarfile %s: %s' % (tarfile_path, tar_error)
-        DebianInstallerError.__init__(self, message)
+class DebianInstallerUpload(CustomUpload):
+    """ Debian Installer custom upload.
 
+    The debian-installer filename should be something like:
 
-class DebianInstallerInvalidTarfile(DebianInstallerError):
-    """The supplied tarfile did not contain the expected elements."""
-    def __init__(self, tarfile_path, expected_dir):
-        message = ('Tarfile %s did not contain expected directory %s' %
-                   (tarfile_path, expected_dir))
-        DebianInstallerError.__init__(self, message)
+        <BASE>_<VERSION>_<ARCH>.tar.gz
 
+    where:
 
-def extract_filename_parts(tarfile_path):
-    """Extract the basename, version and arch of the supplied d-i tarfile."""
-    tarfile_base = os.path.basename(tarfile_path)
-    components = tarfile_base.split('_')
-    version = components[1]
-    arch = components[2].split('.')[0]
-    return tarfile_base, version, arch
+      * BASE: base name (usually 'debian-installer-images');
+      * VERSION: encoded version (something like '20061102ubuntu14');
+      * if the version string contains '.0.' we assume it is a
+        'daily-installer', otherwise, it is a normal 'installer';
+      * ARCH: targeted architecture tag ('i386', 'amd64', etc);
+
+    The contents are extracted in the archive, respecting its type
+    ('installer' or 'daily-installer'), in the following path:
+
+         <ARCHIVE>/dists/<SUITE>/main/<TYPE>-<ARCH>/<VERSION>
+
+    A 'current' symbolic link points to the most recent version.
+    """
+    def __init__(self, archive_root, tarfile_path, distrorelease):
+        CustomUpload.__init__(self, archive_root, tarfile_path, distrorelease)
+
+        tarfile_base = os.path.basename(tarfile_path)
+        components = tarfile_base.split('_')
+        self.version = components[1]
+        self.arch = components[2].split('.')[0]
+
+        # Is this a full build or a daily build?
+        if '.0.' not in self.version:
+            build_type = 'installer'
+        else:
+            build_type = 'daily-installer'
+
+        self.targetdir = os.path.join(
+            archive_root, 'dists', distrorelease, 'main',
+            '%s-%s' % (build_type, self.arch))
+
+        if os.path.exists(os.path.join(self.targetdir, self.version)):
+            raise DebianInstallerAlreadyExists(
+                build_type, self.arch, self.version)
+
+    def extract(self):
+        CustomUpload.extract(self)
+        # We now have a valid unpacked installer directory, but it's one level
+        # deeper than it should be. Move it up and remove the debris.
+        unpack_dir = 'installer-%s' % self.arch
+        os.rename(os.path.join(self.tmpdir, unpack_dir, self.version),
+                  os.path.join(self.tmpdir, self.version))
+        shutil.rmtree(os.path.join(self.tmpdir, unpack_dir))
+
+    def shouldInstall(self, filename):
+        return filename.startswith('%s/' % self.version)
 
 
 def process_debian_installer(archive_root, tarfile_path, distrorelease):
     """Process a raw-installer tarfile.
 
     Unpacking it into the given archive for the given distrorelease.
-    Raises DebianInstallerError (or some subclass thereof) if anything goes
+    Raises CustomUploadError (or some subclass thereof) if anything goes
     wrong.
     """
-
-    tarfile_base, version, arch = extract_filename_parts(tarfile_path)
-
-    # Is this a full build or a daily build?
-    if '.0.' not in version:
-        build_type = 'installer'
-    else:
-        build_type = 'daily-installer'
-
-    target = os.path.join(archive_root, 'dists', distrorelease, 'main',
-                          '%s-%s' % (build_type, arch))
-    unpack_dir = 'installer-%s' % arch
-
-    # Make sure the target version doesn't already exist. If it does, raise
-    # DebianInstallerAlreadyExists.
-    if os.path.exists(os.path.join(target, version)):
-        raise DebianInstallerAlreadyExists(build_type, arch, version)
-
-    # Unpack the tarball directly into the archive. Skip anything outside
-    # unpack_dir/version, and skip the unpack_dir/current symlink (which
-    # we'll fix up ourselves in a moment). Make sure everything we extract
-    # is group-writable. If we didn't extract anything, raise
-    # DebianInstallerInvalidTarfile.
-    expected_dir = os.path.join(unpack_dir, version)
-    tar = None
-    extracted = False
-    try:
-        try:
-            tar = tarfile.open(tarfile_path)
-            for tarinfo in tar:
-                if (tarinfo.name.startswith('%s/' % expected_dir) and
-                    tarinfo.name != os.path.join(unpack_dir, 'current')):
-                    tar.extract(tarinfo, target)
-                    newpath = os.path.join(target, tarinfo.name)
-                    mode = stat.S_IMODE(os.stat(newpath).st_mode)
-                    os.chmod(newpath, mode | stat.S_IWGRP)
-                    extracted = True
-        except tarfile.TarError, e:
-            raise DebianInstallerTarError(tarfile_path, e)
-    finally:
-        if tar is not None:
-            tar.close()
-    if not extracted:
-        raise DebianInstallerInvalidTarfile(tarfile_path, expected_dir)
-
-    # We now have a valid unpacked installer directory, but it's one level
-    # deeper than it should be. Move it up and remove the debris.
-    shutil.move(os.path.join(target, expected_dir),
-                os.path.join(target, version))
-    shutil.rmtree(os.path.join(target, unpack_dir))
-
-    # Get an appropriately-sorted list of the installer directories now
-    # present in the target.
-    versions = [inst for inst in os.listdir(target) if inst != 'current']
-    versions.sort(key=make_version, reverse=True)
-
-    # Make sure the 'current' symlink points to the most recent version
-    # The most recent version is in versions[0]
-    current = os.path.join(target, 'current')
-    os.symlink(versions[0], '%s.new' % current)
-    os.rename('%s.new' % current, current)
-
-    # There may be some other unpacked installer directories in the target
-    # already. We only keep the three with the highest version (plus the one
-    # we just extracted, if for some reason it's lower).
-    for oldversion in versions[3:]:
-        if oldversion != version:
-            shutil.rmtree(os.path.join(target, oldversion))
+    upload = DebianInstallerUpload(archive_root, tarfile_path, distrorelease)
+    upload.process()

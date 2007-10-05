@@ -1,0 +1,140 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+
+<metal:leftportlets fill-slot="portlets">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<style metal:fill-slot="head_epilogue" type="text/css">
+  div.indented {padding-left: 2em}
+</style>
+
+<div metal:fill-slot="main">
+
+  <tal:branch-link define="branch context">
+    <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
+  </tal:branch-link>
+  <h1>Branch associations</h1>
+
+  <tal:comment condition="nothing">
+    XXX: thumper 2007-07-13
+    This page needs to be updated with fmt:link when bug 119208 has
+    been fully implemented.
+  </tal:comment>
+  <tal:not-junk condition="context/product">
+    <h2>Project</h2>
+    <div class="indented" id="branch-project">
+      <img src="/@@/project"
+           tal:replace="structure context/product/image:icon" />
+      <a tal:attributes="href context/product/fmt:url"
+         tal:content="context/product/displayname" />
+    </div>
+  </tal:not-junk>
+
+  <tal:landing-targets condition="view/landing_targets">
+    <h2>Landing Targets</h2>
+    <div id="landing-targets" class="indented">
+    <div tal:repeat="mergeproposal view/landing_targets">
+      <tal:target replace="structure mergeproposal/target_branch/fmt:link" />
+      <tal:show-registrant condition="mergeproposal/show_registrant">
+        registered by
+        <tal:registrant replace="structure mergeproposal/registrant/fmt:link"/>
+      </tal:show-registrant>
+      <tal:dependent condition="mergeproposal/dependent_branch">
+        and depends on
+        <tal:branch replace="structure mergeproposal/dependent_branch/fmt:link" />
+      </tal:dependent>
+    </div>
+    </div>
+  </tal:landing-targets>
+
+  <tal:dependent-branches condition="context/dependent_branches">
+    <h2>Dependent Branches</h2>
+    <div id="dependent-branches" class="indented">
+    <div tal:repeat="mergeproposal context/dependent_branches">
+      <tal:source replace="structure mergeproposal/source_branch/fmt:link" />
+    </div>
+    </div>
+  </tal:dependent-branches>
+
+  <tal:landing-candidates condition="view/landing_candidates">
+    <h2>Landing Candidates</h2>
+    <div id="landing-candidates" class="indented">
+    <div tal:repeat="mergeproposal view/landing_candidates">
+      <tal:target replace="structure mergeproposal/source_branch/fmt:link" />
+      <tal:show-registrant condition="mergeproposal/show_registrant">
+        registered by
+        <tal:registrant replace="structure mergeproposal/registrant/fmt:link"/>
+      </tal:show-registrant>
+    </div>
+    </div>
+  </tal:landing-candidates>
+
+  <h2>Bugs</h2>
+
+  <div id="bug-links">
+  <tal:has-bugs condition="context/related_bugs">
+    <div tal:repeat="bug context/related_bugs" class="indented">
+      <img src="/@@/bug" alt="" />
+      <a tal:attributes="href bug/fmt:url"
+         tal:content="bug/title" />
+    </div>
+  </tal:has-bugs>
+  <tal:has-bugs condition="not: context/related_bugs">
+    <p>This branch is not associated with any bugs at this time.</p>
+  </tal:has-bugs>
+  </div>
+
+  <h2>Blueprints</h2>
+
+  <div id="blueprint-links">
+  <tal:has-blueprints condition="context/spec_links">
+    <div tal:repeat="spec_link context/spec_links" class="indented">
+      <img src="/@@/blueprint"
+           tal:replace="structure spec_link/specification/image:icon" />
+      <a tal:attributes="href spec_link/specification/fmt:url"
+         tal:content="spec_link/specification/title" />
+    </div>
+  </tal:has-blueprints>
+  <tal:has-blueprints condition="not: context/spec_links">
+    <p>This branch is not associated with any blueprints at this time.</p>
+  </tal:has-blueprints>
+  </div>
+
+  <h2>Subscribers</h2>
+
+  <div id="branch-subscribers">
+  <tal:has-subscribers condition="context/subscribers">
+    <div tal:repeat="subscriber context/subscribers" class="indented">
+      <tal:person replace="structure subscriber/fmt:link" />
+    </div>
+  </tal:has-subscribers>
+  <tal:has-subscribers condition="not: context/subscribers">
+    <p>This branch has no subscribers at this time.</p>
+  </tal:has-subscribers>
+  </div>
+
+</div>
+
+<metal:block fill-slot="help">
+
+   <p>Branches can be associated with many other entities
+   in Launchpad.</p>
+
+   <p>This page shows all the associations that a branch has.</p>
+
+</metal:block>
+
+</body>
+</html>
+<!-- 1-0 done -->

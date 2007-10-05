@@ -27,7 +27,7 @@ the list page and redirect the user directly to that bug's page:
 
   >>> browser.open('http://launchpad.dev/bugs/bugtrackers/mozilla.org/2000')
   >>> print browser.url
-  http://launchpad.dev/firefox/+bug/1
+  http://bugs.launchpad.dev/firefox/+bug/1
 
 If there are no bug watches for a particular remote bug, then a Not
 Found page is generated:
@@ -50,13 +50,13 @@ Mark bug 1 as private:
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox/+bug/1')
-  >>> browser.getLink('Visibility/security').click()
+  >>> browser.getLink('Set privacy/security').click()
   >>> browser.url
-  'http://launchpad.dev/firefox/+bug/1/+secrecy'
-  >>> browser.getControl('Keep bug confidential').selected = True
+  'http://bugs.launchpad.dev/firefox/+bug/1/+secrecy'
+  >>> browser.getControl('This bug report should be private').selected = True
   >>> browser.getControl('Change').click()
   >>> browser.url
-  'http://launchpad.dev/firefox/+bug/1'
+  'http://bugs.launchpad.dev/firefox/+bug/1'
 
 
 List Launchpad bugs watching Mozilla bug 42:
@@ -88,25 +88,24 @@ The bug title is still provided if the user can view the private bug:
 
 
 For the case where the private bug is the only one watching the given
-remote bug, we still perform a redirect (which will lead to a page
-telling the user they are unauthorised to view the bug):
+remote bug, we don't perform the redirect ahead of time:
 
   >>> anon_browser.handleErrors = True
-  >>> anon_browser.open('http://launchpad.dev/bugs/bugtrackers/mozilla.org/2000')
+  >>> anon_browser.open('http://bugs.launchpad.dev/bugs/bugtrackers/mozilla.org/2000')
   >>> print anon_browser.contents
   <!DOCTYPE...
   ...To continue, you must log in to Launchpad...
   ...<input type="hidden" name="redirection_url"
-  value="http://launchpad.dev/firefox/+bug/1/+index" />...
+  value="http://bugs.launchpad.dev/bugs/1" />...
   
 
 Set the bug back to public:
 
-  >>> browser.open('http://launchpad.dev/firefox/+bug/1')
-  >>> browser.getLink('Visibility/security').click()
+  >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
+  >>> browser.getLink('Set privacy/security').click()
   >>> browser.url
-  'http://launchpad.dev/firefox/+bug/1/+secrecy'
-  >>> browser.getControl('Keep bug confidential').selected = False
+  'http://bugs.launchpad.dev/firefox/+bug/1/+secrecy'
+  >>> browser.getControl('This bug report should be private').selected = False
   >>> browser.getControl('Change').click()
   >>> browser.url
-  'http://launchpad.dev/firefox/+bug/1'
+  'http://bugs.launchpad.dev/firefox/+bug/1'

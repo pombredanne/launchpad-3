@@ -1,17 +1,20 @@
-# (c) Canonical Software Ltd. 2004, all rights reserved.
+# (c) Canonical Software Ltd. 2004-2007, all rights reserved.
 
 __metaclass__ = type
 
+import os
 import inspect
+
 from zope.interface import Interface, implements
 from zope.component import getUtility
 import zope.component.servicenames
 from zope.component.interfaces import IDefaultViewName
 from zope.schema import TextLine
+from zope.configuration.exceptions import ConfigurationError
 from zope.configuration.fields import (
     MessageID, GlobalObject, PythonIdentifier, Path, Tokens)
 
-from zope.security.checker import CheckerPublic, Checker
+from zope.security.checker import CheckerPublic, Checker, defineChecker
 from zope.security.proxy import ProxyFactory
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher, IBrowserRequest)
@@ -40,7 +43,9 @@ from canonical.launchpad.webapp.generalform import (
 
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, IFacetMenu, IApplicationMenu,
-    IContextMenu, IBreadcrumb, IAuthorization)
+    IContextMenu, IBreadcrumb, IAuthorization,
+    IBreadcrumbProvider)
+from canonical.launchpad.webapp.launchpadtour import LaunchpadTourView
 from canonical.launchpad.webapp.publisher import RenamedView
 
 
@@ -71,11 +76,13 @@ def authorizations(_context, module):
 class ISecuredUtilityDirective(Interface):
     """Configure a utility with security directives."""
 
-    class_ = GlobalObject(title=u'class', required=True)
+    class_ = GlobalObject(title=u'class', required=False)
 
     provides = GlobalObject(
         title=u'interface this utility provides',
         required=True)
+
+    component = GlobalObject(title=u'component', required=False)
 
 
 class PermissionCollectingContext:
@@ -98,8 +105,14 @@ class PermissionCollectingContext:
 
 class SecuredUtilityDirective:
 
-    def __init__(self, _context, class_, provides):
-        self.component = class_()
+    def __init__(self, _context, provides, class_=None, component=None):
+        if class_ is not None:
+            assert component is None, "Both class and component specified"
+            self.component = class_()
+        else:
+            assert component is not None, \
+                    "Neither class nor component specified"
+            self.component = component
         self._context = _context
         self.provides = provides
         self.permission_collector = PermissionCollectingContext()
@@ -266,6 +279,17 @@ def navigation(_context, module, classes):
         xmlrpc_layer = IXMLRPCRequest
         view(_context, factory, xmlrpc_layer, name, for_,
              permission=PublicPermission, provides=provides)
+
+        # Register the navigation a breadcrumb provider.
+        # This needs to be named to avoid the issue with a kind of overlap
+        # with the main IBrowserPublisher registration, and how the publisher
+        # looks up views without asking for a specific interface.
+        layer = IDefaultBrowserLayer
+        provides = IBreadcrumbProvider
+        name = 'breadcrumb'
+        view(_context, factory, IBrowserRequest, name, for_, layer,
+                permission=PublicPermission, provides=provides,
+                allowed_interface=[IBreadcrumbProvider])
 
 
 class InterfaceInstanceDispatcher:
@@ -501,6 +525,69 @@ def renamed_page(_context, for_, name, new_name, layer=IDefaultBrowserLayer,
         callable = handler,
         args = ('provideAdapter',
                 (for_, layer), Interface, name, renamed_factory, _context.info),
+        )
+
+
+class ITourPageDirective(Interface):
+    """Schema for the browser:tour directive."""
+
+    for_ = GlobalObject(
+        title=u"Specification of the object that has the tour page",
+        required=True )
+
+    layer = LayerField(
+        title=u"The layer the tour page is in.",
+        description=u"""
+        A skin is composed of layers. It is common to put skin
+        specific views in a layer named after the skin. If the 'layer'
+        attribute is not supplied, it defaults to 'default'.""",
+        required=False,
+        )
+
+    name = zope.schema.TextLine(
+        title=u"The name of tour page.",
+        description=u"The name shows up in URLs/paths. For example 'foo'.",
+        required=True)
+
+    tour = Path(
+        title=u"Path to the tour XML description.",
+        description=u"The tour description is held in an XML file.",
+        required=True)
+
+
+def tour_page(_context, for_, name, tour, layer=IDefaultBrowserLayer):
+    """Register a new LaunchpadTourView.
+
+    This actually register a dynamically generated subclass that is protected
+    with the configured permission.
+    """
+    tour = os.path.abspath(str(_context.path(tour)))
+    if not os.path.isfile(tour):
+        raise ConfigurationError("No such file", tour)
+
+    cdict = {
+        '__name__' : name,
+        '__tour_file__' : tour,
+        '__init__' : (
+            lambda self, context, request: LaunchpadTourView.__init__(
+                self, context, request, self.__tour_file__))
+        }
+
+    new_class = type(
+        "SimpleLaunchpadTourView for %s" % tour, (LaunchpadTourView, ), cdict)
+
+    # Tours are always public.
+    required = {'__call__': CheckerPublic}
+    for n in IBrowserPublisher.names(all=True):
+        required[n] = CheckerPublic
+
+    defineChecker(new_class, Checker(required))
+
+    _context.action(
+        discriminator = ('view', for_, name, IBrowserRequest, layer),
+        callable = handler,
+        args = ('provideAdapter',
+                (for_, layer), Interface, name, new_class, _context.info),
         )
 
 

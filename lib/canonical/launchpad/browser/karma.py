@@ -48,11 +48,11 @@ class KarmaContextTopContributorsView(LaunchpadView):
     def initialize(self):
         context = self.context
         if IProduct.providedBy(context):
-            self.context_name = 'Product'
+            self.context_name = 'Project'
         elif IDistribution.providedBy(context):
             self.context_name = 'Distribution'
         elif IProject.providedBy(context):
-            self.context_name = 'Project'
+            self.context_name = 'Project Group'
         else:
             raise AssertionError(
                 "Context is not a Product, Project or Distribution: %r"

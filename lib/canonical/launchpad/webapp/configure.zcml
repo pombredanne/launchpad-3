@@ -79,7 +79,7 @@
 
     <!-- TALES enum-value: namespace -->
     <adapter
-        for="canonical.lp.dbschema.Item"
+        for="canonical.lazr.BaseItem"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.EnumValueAPI"
         name="enumvalue"
@@ -115,6 +115,56 @@
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.HTMLFormAPI"
         name="htmlform"
+        />
+
+    <!-- TALES image: namespace -->
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ObjectImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IKarmaCategory"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.KarmaCategoryImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBugTask"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugTaskImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IMilestone"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.MilestoneImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBuild"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BuildImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.ISpecification"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SpecificationImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.browser.PillarSearchItem"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PillarSearchItemAPI"
+        name="image"
         />
 
     <!-- TALES fmt: namespace -->
@@ -200,16 +250,9 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IHasGotchiAndEmblem"
+        for="canonical.launchpad.interfaces.IBranch"
         provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.HasGotchiAndEmblemFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IKarmaCategory"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.KarmaCategoryFormatterAPI"
+        factory="canonical.launchpad.webapp.tales.BranchFormatterAPI"
         name="fmt"
         />
 
@@ -217,20 +260,6 @@
         for="canonical.launchpad.interfaces.IBugTask"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugTaskFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IMilestone"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.MilestoneFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IBuild"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BuildFormatterAPI"
         name="fmt"
         />
 
@@ -353,7 +382,7 @@
         permission="zope.Public"
         template="../templates/rdf-macros.pt"
         />
-
+<!--
     <content
         class="canonical.launchpad.webapp.adapter.LaunchpadDatabaseAdapter">
         <factory id="zope.da.LaunchpadDA" />
@@ -366,7 +395,7 @@
             interface="zope.app.rdb.interfaces.IZopeDatabaseAdapterManagement"
             />
     </content>
-
+-->
     <!-- Launchpad publication machinery. We have customized publication
     and requests that need to be hooked up.
     -->
@@ -465,20 +494,10 @@
 
     <!-- the URI class -->
     <class class="canonical.launchpad.webapp.uri.URI">
-      <allow attributes="scheme userinfo host port path query fragment 
+      <allow attributes="scheme userinfo host port path query fragment
           authority hier_part
           __str__ __repr__ __eq__ __ne__ replace resolve append contains
           ensureSlash ensureNoSlash" />
-    </class>
-
-    <!-- enum classes Item and OrderedMapping -->
-    <class class="canonical.launchpad.webapp.enum.Item">
-        <allow attributes="name title value description schema
-                           schema_items schema_name sortkey __sqlrepr__" />
-    </class>
-
-    <class class="canonical.launchpad.webapp.enum.OrderedMapping">
-        <allow attributes="__getitem__ __iter__" />
     </class>
 
     <!-- Define the widget used by Choice fields that use huge vocabularies -->

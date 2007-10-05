@@ -24,7 +24,7 @@ def referenced_oops():
     '''Return a set of OOPS codes that are referenced somewhere in the
     Launchpad database.
 
-    We currently check the entire Message store, Bugs, BugTasks and Tickets
+    We currently check the entire Message store, Bugs, BugTasks and Question
     '''
     # Note that the POSIX regexp syntax is subtly different to the Python,
     # and that we need to escape all \ characters to keep the SQL interpreter
@@ -44,7 +44,7 @@ def referenced_oops():
         WHERE statusexplanation %(posix_oops_match)s
         UNION ALL
         SELECT title || ' ' || description || ' ' || COALESCE(whiteboard,'')
-        FROM Ticket WHERE title %(posix_oops_match)s
+        FROM Question WHERE title %(posix_oops_match)s
             OR description %(posix_oops_match)s
             OR whiteboard %(posix_oops_match)s
         """ % vars()
@@ -94,7 +94,7 @@ def unwanted_oops_files(root_path, days, log=None):
 def old_oops_files(root_path, days):
     '''Generate a list of all OOPS files found under root_path that
        are older than 'days' days old.
-    
+
        root_path defaults to the config.launchpad.errorreports.errordir
     '''
     now = date.today()

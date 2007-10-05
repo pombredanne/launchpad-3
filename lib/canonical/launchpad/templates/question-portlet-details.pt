@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-details">
 
   <h2><span tal:replace="context/target/displayname">Ubuntu</span> question
       #<span tal:replace="context/id">234</span></h2>
@@ -14,9 +14,6 @@
     <b>Status:</b>
     <span tal:replace="context/status/title">Open</span><br />
 
-    <b>Priority:</b>
-    <span tal:replace="context/priority/title">Normal</span><br />
-
     <b>For:</b>
     <span tal:condition="context/product"
           tal:replace="context/product/name">Firefox</span>
@@ -28,11 +25,15 @@
 
     <tal:block condition="context/datedue">
       <b>Due:</b>
-      <span tal:replace="context/datedue/fmt:date" /><br />
+      <span
+        tal:attributes="title context/datedue/fmt:datetime"
+        tal:content="context/datedue/fmt:approximatedate" /><br />
     </tal:block>
 
     <b>Created:</b>
-    <span tal:replace="context/datecreated/fmt:datetime" /><br />
+    <span
+      tal:attributes="title context/datecreated/fmt:datetime"
+      tal:content="context/datecreated/fmt:approximatedate" /><br />
 
     <b>Assignee:</b><br />
     <tal:block condition="context/assignee">
@@ -50,16 +51,22 @@
     </tal:block>
 
     <b>Last query:</b>
-    <span tal:replace="context/datelastquery/fmt:date" /><br />
+    <span
+      tal:attributes="title context/datelastquery/fmt:datetime"
+      tal:content="context/datelastquery/fmt:approximatedate" /><br />
 
     <tal:block condition="context/datelastresponse">
       <b>Last reply:</b>
-      <span tal:replace="context/datelastresponse/fmt:date" /><br />
+      <span
+        tal:attributes="title context/datelastresponse/fmt:datetime"
+        tal:content="context/datelastresponse/fmt:approximatedate" /><br />
     </tal:block>
 
-    <tal:block condition="context/dateanswered">
+    <tal:block condition="context/date_solved">
       <b>Solved:</b>
-      <span tal:replace="context/dateanswered/fmt:date" /><br />
+      <span
+        tal:attributes="title context/date_solved/fmt:datetime"
+        tal:content="context/date_solved/fmt:approximatedate" /><br />
     </tal:block>
 
   </div>

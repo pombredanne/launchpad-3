@@ -40,6 +40,11 @@ class BugWidget(IntWidget):
         if input == self._missing:
             return self.context.missing_value
         else:
+            input = input.strip()
+            # Bug ids are often prefixed with '#', but getByNameOrID
+            # doesn't accept such ids.
+            if input.startswith('#'):
+                input = input[1:]
             try:
                 return getUtility(IBugSet).getByNameOrID(input)
             except (NotFoundError, ValueError):
@@ -66,7 +71,10 @@ class BugTagsWidget(TextWidget):
         if input == self._missing:
             return []
         else:
-            return sorted(tag.lower() for tag in re.split(r'[,\s]+', input))
+            tags = set(tag.lower()
+                       for tag in re.split(r'[,\s]+', input)
+                       if len(tag) != 0)
+            return sorted(tags)
 
     def getInputValue(self):
         try:
@@ -89,122 +97,3 @@ class BugTagsWidget(TextWidget):
             else:
                 raise
 
-
-class FileBugTargetWidget(BrowserWidget, InputWidget):
-    """Widget for selecting a bug target in +filebug."""
-
-    implements(IAlwaysSubmittedWidget, IMultiLineWidgetLayout, IInputWidget)
-
-    template = ViewPageTemplateFile('templates/filebug-target.pt')
-    default_option = "package"
-
-    def __init__(self, field, request):
-        BrowserWidget.__init__(self, field, request)
-        fields = [
-            Choice(
-                __name__='product', title=u'Product',
-                required=True, vocabulary='Product'),
-            Choice(
-                __name__='distribution', title=u"Distribution",
-                required=True, vocabulary='Distribution'),
-            Choice(
-                __name__='package', title=u"Package",
-                required=False, vocabulary='SourcePackageName'),
-            ]
-        self.distribution_widget = CustomWidgetFactory(LaunchpadDropdownWidget)
-        for field in fields:
-            setUpWidget(
-                self, field.__name__, field, IInputWidget, prefix=self.name)
-
-    def setUpOptions(self):
-        """Set up options to be rendered."""
-        self.options = {}
-        for option in ['package', 'product']:
-            attributes = dict(
-                type='radio', name=self.name, value=option,
-                id='%s.option.%s' % (self.name, option))
-            if self.request.form.get(self.name, self.default_option) == option:
-                attributes['checked'] = 'checked'
-            self.options[option] = renderElement('input', **attributes)
-        self.package_widget.onKeyPress = (
-            "selectWidget('%s.option.package', event)" % self.name)
-        self.product_widget.onKeyPress = (
-            "selectWidget('%s.option.product', event)" % self.name)
-
-    def hasInput(self):
-        return self.name in self.request.form
-
-    def hasValidInput(self):
-        """See zope.app.form.interfaces.IInputWidget."""
-        try:
-            self.getInputValue()
-            return True
-        except (InputErrors, UnexpectedFormData):
-            return False
-
-    def getInputValue(self):
-        """See zope.app.form.interfaces.IInputWidget."""
-        form_value = self.request.form.get(self.name)
-        if form_value == 'product':
-            try:
-                return self.product_widget.getInputValue()
-            except MissingInputError:
-                raise LaunchpadValidationError('Please enter a project name')
-            except ConversionError:
-                entered_name = self.request.form.get("%s.product" % self.name)
-                raise LaunchpadValidationError(
-                    "There is no project named '%s' registered in"
-                    " Launchpad", entered_name)
-        elif form_value == 'package':
-            try:
-                distribution = self.distribution_widget.getInputValue()
-            except ConversionError:
-                entered_name = self.request.form.get(
-                    "%s.distribution" % self.name)
-                raise LaunchpadValidationError(
-                    "There is no distribution named '%s' registered in"
-                    " Launchpad", entered_name)
-
-            if self.package_widget.hasInput():
-                try:
-                    package_name = self.package_widget.getInputValue()
-                except ConversionError:
-                    entered_name = self.request.form.get(
-                        '%s.package' % self.name)
-                    raise LaunchpadValidationError(
-                        "There is no source package name '%s' published in %s",
-                        entered_name, distribution.displayname)
-                if package_name is None:
-                    return distribution
-                try:
-                    source_name, binary_name = distribution.guessPackageNames(
-                        package_name.name)
-                except NotFoundError:
-                    raise LaunchpadValidationError(
-                        "There is no source package name '%s' published in %s",
-                        package_name.name, distribution.displayname)
-                return distribution.getSourcePackage(source_name)
-            else:
-                return distribution
-        else:
-            raise UnexpectedFormData("No valid option was selected.")
-
-    def setRenderedValue(self, value):
-        """See IWidget."""
-        if IProduct.providedBy(value):
-            self.default_option = 'product'
-            self.product_widget.setRenderedValue(value)
-        elif IDistribution.providedBy(value):
-            self.default_option = 'package'
-            self.distribution_widget.setRenderedValue(value)
-        elif IDistributionSourcePackage.providedBy(value):
-            self.default_option = 'package'
-            self.distribution_widget.setRenderedValue(value.distribution)
-            self.package_widget.setRenderedValue(value.sourcepackagename)
-        else:
-            raise AssertionError('Not a valid value: %r' % value)
-
-    def __call__(self):
-        """See zope.app.form.interfaces.IBrowserWidget."""
-        self.setUpOptions()
-        return self.template()

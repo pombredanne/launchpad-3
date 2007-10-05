@@ -1,16 +1,15 @@
-<div class="portlet" tal:condition="context/specifications">
-
-  <h2>Related specifications</h2>
-
-  <div class="portletBody portletContent">
-
-    <ul tal:condition="context/specifications">
-      <li class="spec" tal:repeat="spec context/specifications">
-        <a tal:attributes="href spec/fmt:url"
-           tal:content="spec/title">spec title here</a>
-      </li>
-    </ul>
-
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-blueprints"
+  tal:condition="context/specifications"
+>
+  <h2>Related blueprints</h2>
+  <div class="portletBody">
+    <table>
+      <tr tal:repeat="spec context/specifications"
+          tal:replace="structure spec/@@+listing-compact" />
+    </table>
   </div>
-
 </div>

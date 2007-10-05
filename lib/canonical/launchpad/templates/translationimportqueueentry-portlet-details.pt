@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-details">
   <h2>Import entry details</h2>
 
     <div class="portletBody">
@@ -19,14 +19,18 @@
             <a tal:replace="structure context/importer/fmt:link"
                >Mark Shuttleworth</a><br />
             <b>Waiting since:</b>
-            <span tal:replace="context/dateimported/fmt:date">
+            <span
+              tal:attributes="title context/dateimported/fmt:datetime"
+              tal:content="context/dateimported/fmt:approximatedate">
               2004-05-22
             </span><br />
             <b>Status:</b>
             <span tal:replace="context/status/title"></span><br />
-            <b>Status changed on:</b>
-            <span tal:replace="context/date_status_changed/fmt:date">
-              2004-05-22
+            <b>Status changed:</b>
+            <span
+              tal:attributes="title context/date_status_changed/fmt:datetime"
+              tal:content="context/date_status_changed/fmt:approximatedate">
+              2004-05-21
             </span><br />
         </div>
     </div>

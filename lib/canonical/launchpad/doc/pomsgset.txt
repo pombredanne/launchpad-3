@@ -39,8 +39,12 @@ We need the right POMsgSet. We'll get the PO File, then, create the needed
 po msgset there.
 
   >>> upstream_pofile = upstream_evo.newPOFile('ca')
-  >>> upstream_pomsgset = upstream_pofile.createMessageSetFromText(
+  >>> upstream_potmsgset = upstream_evo.getPOTMsgSetByMsgIDText(
   ...     u'evolution addressbook')
+  >>> upstream_pomsgset = upstream_pofile.createMessageSetFromMessageSet(
+  ...     upstream_potmsgset)
+  >>> print upstream_pomsgset.language.code
+  ca
 
 Show that there are no active translations and no suggestions.
 
@@ -48,7 +52,7 @@ Show that there are no active translations and no suggestions.
   [None]
   >>> upstream_pomsgset.published_texts
   [None]
-  >>> list(upstream_pomsgset.getSuggestedSubmissions(0))
+  >>> upstream_pomsgset.getNewSubmissions(0)
   []
 
 And the fuzzy flags should also be disabled
@@ -66,6 +70,18 @@ Let's add a fuzzy translation.
   >>> upstream_pomsgset.updateTranslationSet(
   ...     carlos, {0: u'foo'}, fuzzy=True, published=True,
   ...     lock_timestamp=datetime.datetime.now(UTC))
+
+Since this message came from upstream, it doesn't have a reviewer, but
+it does note a person which last changed it.
+
+  >>> print upstream_pomsgset.reviewer
+  None
+  >>> print upstream_pomsgset.date_reviewed
+  None
+  >>> upstream_pomsgset.latest_change_person.displayname
+  u'Carlos Perell\xf3 Mar\xedn'
+  >>> upstream_pomsgset.latest_change_date is None
+  False
 
 Now it should appear as active and as published.
 
@@ -113,8 +129,8 @@ the translation submitted already exist from another translator.
 
 We check that there are no suggested translations yet.
 
-  >>> suggested = pomsgset.getSuggestedSubmissions(0)
-  >>> suggested.count()
+  >>> suggested = pomsgset.getNewSubmissions(0)
+  >>> len(suggested)
   0
 
 The one submitting the string will be the No Privileges User. He's not an
@@ -127,8 +143,8 @@ editor for this POFile.
 
 Now, we should have one extra suggestion.
 
-  >>> suggested = pomsgset.getSuggestedSubmissions(0)
-  >>> suggested.count()
+  >>> suggested = pomsgset.getNewSubmissions(0)
+  >>> len(suggested)
   1
 
 That is the one that no_priv submitted.
@@ -155,8 +171,8 @@ suggestion.
 
 We don't have any suggestion newer than the new active translation
 
-  >>> suggested = pomsgset.getSuggestedSubmissions(0)
-  >>> suggested.count()
+  >>> suggested = pomsgset.getNewSubmissions(0)
+  >>> len(suggested)
   0
 
 And the active translation is now the one from no-priv user.
@@ -187,24 +203,37 @@ We get a POMsgSet and verify it's a singular form:
 
   >>> pt_BR_dummypomsgset = pt_BR_dummypofile.getPOMsgSet(
   ...     u'evolution addressbook')
-  >>> pt_BR_dummypomsgset.potmsgset.getPOMsgIDs().count()
-  1
+  >>> pt_BR_dummypomsgset.potmsgset.msgid_plural is None
+  True
 
   >>> pt_BR_dummypomsgset.pluralforms
   1
   >>> pt_BR_dummypomsgset.active_texts
   [None]
+  >>> pt_BR_dummypomsgset.published_texts
+  [None]
 
-Using another dummy pofile we'll get a POMsgset that's not a
-singular form: 
+The POMsgSet knows what language it is in.  Any POMsgSet's language is the
+same as that of its POFile.
+
+  >>> print pt_BR_dummypomsgset.language.code
+  pt_BR
+  >>> print pt_BR_dummypomsgset.pofile.language.code
+  pt_BR
+
+Using another dummy pofile we'll get a POMsgset that's not a singular form:
 
   >>> apa_dummypofile = upstream_evo.getDummyPOFile('apa')
   >>> apa_dummypomsgset = apa_dummypofile.getPOMsgSet(u'%d contact')
+  >>> print apa_dummypomsgset.language.code
+  apa
+  >>> print apa_dummypomsgset.pofile.language.code
+  apa
 
 We don't know anything about pluralforms for this language, so we fall back to
 the most common case:
 
-  >>> print apa_dummypomsgset.pofile.language.pluralforms
+  >>> print apa_dummypomsgset.language.pluralforms
   None
   >>> apa_dummypomsgset.pluralforms
   2
@@ -216,7 +245,7 @@ We can guess the pluralforms for this language thru ILanguage.pluralforms:
   >>> ru_dummypofile = upstream_evo.getDummyPOFile('ru')
   >>> ru_dummypomsgset = ru_dummypofile.getPOMsgSet(u'%d contact')
 
-  >>> print ru_dummypomsgset.pofile.language.pluralforms
+  >>> print ru_dummypomsgset.language.pluralforms
   3
   >>> ru_dummypomsgset.pluralforms
   3
@@ -249,8 +278,7 @@ same msgid as the given IPOMsgSet across the whole system.
   >>> pomsgset_translated = POMsgSet.get(752)
   >>> print pomsgset_translated.pofile.title
   Spanish (es) translation of man in Ubuntu Hoary package "evolution"
-  >>> pomsgid = pomsgset_translated.potmsgset.getPOMsgIDs()[0]
-  >>> print pomsgid.msgid
+  >>> print pomsgset_translated.potmsgset.msgid
   test man page
   >>> pomsgset_translated.active_texts
   [u'just a translation']
@@ -261,7 +289,7 @@ space is for any submission done outside that IPOMsgSet.
   # There is no other message with the same msgid in our system that has a non
   # active submission.
   >>> wiki_submissions = pomsgset_translated.getWikiSubmissions(0)
-  >>> wiki_submissions.count()
+  >>> len(wiki_submissions)
   0
 
   # Now, we get a dummy message that has the same msgid as the previous one.
@@ -271,26 +299,27 @@ space is for any submission done outside that IPOMsgSet.
   >>> pomsgset_untranslated = potmsgset.getDummyPOMsgSet('es')
   >>> print pomsgset_untranslated.pofile.title
   Spanish (es) translation of man in Ubuntu Hoary package "pmount"
-  >>> pomsgid = potmsgset.getPOMsgIDs()[0]
-  >>> print pomsgid.msgid
+  >>> print potmsgset.msgid
   test man page
 
   # As expected, is not translated.
   >>> pomsgset_untranslated.active_texts
   [None]
+  >>> pomsgset_untranslated.published_texts
+  [None]
 
 This other IPOMsgSet though, will get all submissions done in
-pomsgset_translated as it's another context.
+pomsgset_translated (except ones with the same translation that is already
+active) as it's another context.
 
   # And we get as a suggestions submissions for previous message.
   >>> wiki_submissions = pomsgset_untranslated.getWikiSubmissions(0)
-  >>> wiki_submissions.count()
-  3
+  >>> len(wiki_submissions)
+  2
   >>> for submission in wiki_submissions:
   ...     assert submission.pomsgset == pomsgset_translated, (
-  ...         "This wiki suggestion doesn't come from the expected IPOMgsSet")
+  ...         "This wiki suggestion doesn't come from the expected IPOMsgSet")
   ...     print submission.potranslation.translation
   blah, blah, blah
   lalalala
-  just a translation
 

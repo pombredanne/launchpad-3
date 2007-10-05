@@ -52,18 +52,13 @@
   There's a third page, accessible only to distro owners, mirror admins of the
   distro or launchpad admins.
 
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/ubuntu/+disabledmirrors')
   Traceback (most recent call last):
   ...
   Unauthorized: ...
 
-  # XXX: This is a workaround for https://launchpad.net/bugs/45226
-  >>> from zope.testbrowser.testing import Browser
-  >>> browser = Browser()
-  >>> browser.handleErrors = False
-
-  >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
   >>> browser.open('http://launchpad.dev/ubuntu/+disabledmirrors')
   >>> browser.url
   'http://launchpad.dev/ubuntu/+disabledmirrors'
@@ -78,21 +73,13 @@
   And yet another page to list the non-official mirrors, which can be seen
   only by the distro owners, mirror admins of the distro or launchpad admins.
 
-  # XXX: This is a workaround for https://launchpad.net/bugs/45226
-  >>> browser = Browser()
-  >>> browser.handleErrors = False
-
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/ubuntu/+unofficialmirrors')
   Traceback (most recent call last):
   ...
   Unauthorized: ...
 
-  # XXX: This is a workaround for https://launchpad.net/bugs/45226
-  >>> browser = Browser()
-  >>> browser.handleErrors = False
-
-  >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
   >>> browser.open('http://launchpad.dev/ubuntu/+unofficialmirrors')
   >>> browser.url
   'http://launchpad.dev/ubuntu/+unofficialmirrors'

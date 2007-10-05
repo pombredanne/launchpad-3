@@ -2,7 +2,7 @@
 
 The question page shows a link to make the question into a bug.
 
-  >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
+  >>> browser.open('http://launchpad.dev/firefox/+question/2')
   >>> createLink = browser.getLink('Create bug report')
   >>> createLink is not None
   True
@@ -20,21 +20,9 @@ the question's description and the title is empty.
   >>> browser.getControl('Description').value
   "...I'm trying to learn about SVG..."
 
-Cancelling the request brings you back to the question page.
-
-  >>> browser.getControl('Cancel').click()
-  >>> browser.url
-  '.../firefox/+ticket/2'
-  >>> browser.title
-  '...question #2...'
-  >>> createLink = browser.getLink('Create bug report')
-  >>> createLink is not None
-  True
-
 The user must enter a valid title and description before creating the
 bug.
 
-  >>> createLink.click()
   >>> browser.getControl('Description').value= ''
   >>> browser.getControl('Create').click()
   >>> from BeautifulSoup import BeautifulSoup
@@ -69,12 +57,12 @@ questions' portlet:
   >>> portlet = find_portlet(browser.contents, 'Related questions')
   >>> for question in portlet.fetch('li', 'question'):
   ...     print question.renderContents()
-   Mozilla Firefox: ...<a href=".../firefox/+ticket/2">Problem...
+   Mozilla Firefox: ...<a href=".../firefox/+question/2">Problem...
 
 A user can't create a bug report when a question has already a bug linked
 to it.
 
-  >>> browser.open('http://launchpad.dev/firefox/+ticket/2')
+  >>> browser.open('http://launchpad.dev/firefox/+question/2')
   >>> browser.contents
   '...<h2>Related bugs</h2>...'
   >>> browser.getLink('Create bug report')
@@ -84,7 +72,7 @@ to it.
 
 It works with distribution questions as well.
 
-  >>> browser.open('http://launchpad.dev/ubuntu/+ticket/5/+makebug')
+  >>> browser.open('http://launchpad.dev/ubuntu/+question/5/+makebug')
   >>> browser.getControl('Summary').value = (
   ...     "Ubuntu Installer can't find CDROM")
   >>> browser.getControl('Create Bug Report').click()

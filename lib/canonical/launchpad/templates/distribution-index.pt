@@ -1,21 +1,31 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/default"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:portlets fill-slot="portlets">
-      <tal:portlet replace="structure context/@@+portlet-translations" />
       <tal:portlet replace="structure context/@@+portlet-lifecycle" />
-
-  <div tal:replace="structure context/@@+portlet-milestones" />
-
+      <tal:portlet replace="structure context/@@+portlet-milestones" />
     </metal:portlets>
+
     <div metal:fill-slot="main">
+      <span tal:replace="structure context/image:mugshot" />
       <h1 tal:content="context/title">Ubuntu Linux</h1>
-      <span tal:replace="structure context/fmt:icon" />
-      <div tal:replace="structure context/summary/fmt:text-to-html" />
-      <div tal:replace="structure context/description/fmt:text-to-html" />
+      <div
+        class="description"
+        tal:content="structure context/summary/fmt:text-to-html"
+      />
+      <div
+        class="description"
+        tal:content="structure context/description/fmt:text-to-html"
+      />
       <ul class="buttons">
         <li>
           <a href="+filebug">
@@ -23,9 +33,15 @@
           </a>
         </li>
         <li tal:content="structure context/@@+ask-a-question-button" />
-        <li>
-          <a href="+translations">
-            <img alt="Help translate" src="/+icing/but-sml-helptranslate.gif" />
+        <li tal:content="structure context/@@+help-translate-button" />
+        <li tal:define="has_mentoring context/mentoring_offers/count">
+          <a href="+mentoring" tal:condition="has_mentoring">
+            <img alt="Mentoring available"
+                 src="/+icing/but-sml-mentoring.gif"/>
+          </a>
+          <a href="+mentoring" tal:condition="not: has_mentoring">
+            <img alt="No mentoring available"
+                 src="/+icing/but-sml-mentoring-off.gif" />
           </a>
         </li>
       </ul>
@@ -46,46 +62,57 @@
           class="section"
           tal:content="structure context/@@+portlet-coming-sprints"
         />
-        <div class="portlet">
-          <h2>Releases</h2>
-          <p tal:condition="not:context/releases">
-            <tal:name replace="context/displayname" /> has no releases
-            registered yet.
-          </p>
-          <ul tal:condition="context/releases" class="distrorelease">
-            <li tal:repeat="release context/releases">
-              <a tal:attributes="href release/fmt:url">
-                <tal:version replace="release/version" />
-                (<tal:codename replace="release/displayname" />)
-              </a>
-            </li>
+        <div class="portlet" tal:condition="context/serieses">
+          <h2>Series</h2>
+          <ul class="distroseries">
+            <tal:per_series repeat="series context/serieses">
+              <li tal:condition="series/active">
+                <a tal:attributes="href series/fmt:url">
+                  <tal:version replace="series/version" />
+                  "<tal:codename replace="series/displayname" />"
+                </a>
+                - <tal:status replace="series/status/name/fmt:lower" />
+              </li>
+            </tal:per_series>
           </ul>
+          <a href="+series">See all versions...</a>
         </div>
-        <div class="portlet" tal:condition="context/currentrelease">
+        <div class="portlet" tal:condition="context/currentseries">
           <h2>
             Architectures for
-            <tal:latestrelease replace="context/currentrelease/displayname" />
+            <tal:latestseries replace="context/currentseries/displayname" />
           </h2>
-          <p tal:condition="not:context/currentrelease/architectures">
-            <tal:name replace="context/currentrelease/displayname" />
+          <p tal:condition="not:context/currentseries/architectures">
+            <tal:name replace="context/currentseries/displayname" />
             has no architectures managed in Launchpad.
           </p>
           <ul
-            tal:condition="context/currentrelease/architectures"
+            tal:condition="context/currentseries/architectures"
             class="architecture"
           >
-            <li tal:repeat="architecture context/currentrelease/architectures">
-              <a
-                tal:attributes="href architecture/fmt:url"
-                tal:content="architecture/displayname"
-              />
+            <tal:official
+                 repeat="architecture context/currentseries/architectures">
+              <li tal:condition="architecture/official">
+                <a tal:attributes="href architecture/fmt:url"
+                   tal:content="architecture/displayname"
+                   />
             </li>
+            </tal:official>
+            <tal:unofficial
+                 repeat="architecture context/currentseries/architectures">
+              <li tal:condition="not: architecture/official">
+                <a tal:attributes="href architecture/fmt:url"
+                   tal:content="architecture/displayname"
+                   />
+                (unofficial)
+            </li>
+            </tal:unofficial>
           </ul>
         </div>
         <div tal:content="structure context/@@+portlet-latestbugs" />
         <div
-          tal:condition="context/currentrelease"
-          tal:content="structure context/currentrelease/@@+latest-uploads"
+          tal:condition="context/currentseries"
+          tal:content="structure context/currentseries/@@+portlet-latestuploads"
         />
       </div>
       <div class="right">
@@ -101,8 +128,11 @@
           class="two column section"
           tal:content="structure context/@@+portlet-latestspecs"
         />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestquestions"
+        />
       </div>
     </div>
   </body>
 </html>
-<!-- 1-0 in-progress Needs list of latest uploads (bug 74342). -->

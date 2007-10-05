@@ -1,0 +1,14 @@
+<tr>
+  <td class="icon left">
+    <img alt="" tal:replace="structure context/image:icon" />
+  </td>
+  <td>
+    <div>
+      <a tal:attributes="href string:/${context/name}"
+      tal:content="context/displayname">Pillar displayname</a>
+    </div>
+    <div>
+      <tal:summary replace="context/summary/fmt:shorten/240" />
+    </div>
+  </td>
+</tr>

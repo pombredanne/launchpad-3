@@ -5,32 +5,30 @@ distribution.
     >>> browser.open("http://localhost/firefox/+bug/6")
     >>> browser.getLink(url='+distrotask').click()
     >>> browser.url
-    'http://localhost/firefox/+bug/6/+distrotask'
+    'http://bugs.launchpad.dev/firefox/+bug/6/+distrotask'
 
 On this page we can add distribution task. We start by adding an Ubuntu
-task. Since Ubuntu uses Malone as its bug tracker, the task gets added
+task. Since Ubuntu uses Launchpad as its bug tracker, the task gets added
 and we return to the newly created task's page.
 
     >>> browser.getControl('Distribution').value = ['ubuntu']
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    'http://localhost/ubuntu/+bug/6'
+    'http://bugs.launchpad.dev/ubuntu/+bug/6'
 
 It should not be possible to add the same distrotask again.
 
     >>> browser.getLink(url='+distrotask').click()
     >>> browser.url
-    'http://localhost/ubuntu/+bug/6/+distrotask'
+    'http://bugs.launchpad.dev/ubuntu/+bug/6/+distrotask'
     >>> browser.getControl('Distribution').value = ['ubuntu']
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    'http://localhost/ubuntu/+bug/6/+distrotask'
-    >>> print browser.contents
-    <...
-    ...There is 1 error...
-    ...
-    ...This bug is already open on Ubuntu...
-    ...
+    'http://bugs.launchpad.dev/ubuntu/+bug/6/+distrotask'
+    >>> print get_feedback_messages(browser)
+    [u'There is 1 error.',
+     u'This bug is already on Ubuntu. Please specify an affected package 
+       in which the bug has not yet been reported.']
 
 You also can't add another task on a distro source package, when there's
 already a distro task open. (Instead, you should target the existing
@@ -41,13 +39,10 @@ distro task to an appropriate source package.)
     >>> browser.getControl("Distribution").value = ["ubuntu"]
     >>> browser.getControl("Source Package Name").value = "mozilla-firefox"
     >>> browser.getControl("Continue").click()
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...
-    ...There is 1 error...
-    ...
-    ...This bug is already open on Ubuntu with no package specified...
-    ...
+    >>> print get_feedback_messages(browser)
+    [u'There is 1 error.',
+     u'This bug is already open on Ubuntu with no package specified.
+       You should fill in a package name for the existing bug.']
 
 Let's assign the existing Ubuntu task to mozilla-firefox, then add
 another task on Ubuntu evolution.
@@ -72,20 +67,17 @@ Ubuntu evolution, because there already is an evolution task open.
     ...     "+editstatus")
     >>> browser.getControl("Package").value = "evolution"
     >>> browser.getControl("Save Changes").click()
-    >>> print browser.contents
-    <!DOCTYPE...
-    ...
-    ...This bug has already been reported on evolution (ubuntu)...
-    ...
+    >>> print get_feedback_messages(browser)
+    [...There is 1 error in the data you entered...
+     u'This bug has already been reported on evolution (ubuntu).']
 
-Now let's add a Debian task to bug 1. Since Debian doesn't use Malone,
+Now let's add a Debian task to bug 1. Since Debian doesn't use Launchpad,
 we add a bug watch as well.
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open('http://localhost/firefox/+bug/1')
     >>> browser.getLink(url='+distrotask').click()
     >>> browser.url
-    'http://localhost/firefox/+bug/1/+distrotask'
+    'http://bugs.launchpad.dev/firefox/+bug/1/+distrotask'
     >>> browser.getControl(name='field.distribution').value
     ['debian']
     >>> browser.getControl("Source Package Name").value = "alsa-utils"
@@ -93,10 +85,10 @@ we add a bug watch as well.
     ...     'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=123')
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    'http://localhost/debian/+source/alsa-utils/+bug/1'
+    'http://bugs.launchpad.dev/debian/+source/alsa-utils/+bug/1'
 
 If we try to add an Ubuntu task together with a bug watch we get an
-error, because Ubuntu uses Malone as its bug tracker
+error, because Ubuntu uses Launchpad as its bug tracker
 
     >>> browser.getLink(url='+distrotask').click()
     >>> browser.getControl('Distribution').value = ['ubuntu']
@@ -105,39 +97,40 @@ error, because Ubuntu uses Malone as its bug tracker
     ...     'https://bugzilla.mozilla.org/show_bug.cgi?id=84')
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    'http://localhost/debian/+source/alsa-utils/+bug/1/+distrotask'
-    >>> print browser.contents
-    <...
-    ...Bug watches can not be added for Ubuntu...
+    'http://bugs.launchpad.dev/debian/+source/alsa-utils/+bug/1/+distrotask'
+    >>> print get_feedback_messages(browser)
+    [u'There is 1 error.',
+     u'Bug watches can not be added for Ubuntu, as it uses Launchpad as
+       its official bug tracker. Alternatives are to add a watch for
+       another project, or a comment containing a URL to the related
+       bug report.']
 
 If we remove the remote bug it will work.
 
     >>> browser.getControl('URL').value = ''
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    'http://localhost/ubuntu/+source/thunderbird/+bug/1'
+    'http://bugs.launchpad.dev/ubuntu/+source/thunderbird/+bug/1'
 
 It's not possible to change a bugtask to a existing one.
 
-    >>> browser.getLink('mozilla-firefox (Ubuntu)').click()
+    >>> browser.getLink(
+    ...     url='ubuntu/+source/mozilla-firefox/+bug/1/+editstatus').click()
     >>> browser.url
-    'http://localhost/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus'
+    'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus'
 
     >>> browser.getControl('Package').value = 'thunderbird'
     >>> browser.getControl('Save Changes').click()
     >>> browser.url
-    'http://localhost/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus'
-
-    >>> print browser.contents
-    <...
-    ...Please fix them and try again...
-    ...
-    ...This bug has already been reported on thunderbird (ubuntu)...
+    'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus'
+    >>> print get_feedback_messages(browser)
+    [...There is 1 error in the data you entered...
+     u'This bug has already been reported on thunderbird (ubuntu).']
 
     >>> browser.getControl('Package').value = 'pmount'
     >>> browser.getControl('Save Changes').click()
     >>> browser.url
-    'http://localhost/ubuntu/+source/pmount/+bug/1'
+    'http://bugs.launchpad.dev/ubuntu/+source/pmount/+bug/1'
 
 We want to make people aware of that they should link bugtasks to bug
 watches in order to get automatic status updates. So if we try to add a
@@ -150,10 +143,9 @@ we really want to do this.
     >>> browser.getControl('Source Package Name').value = 'evolution'
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    'http://localhost/ubuntu/+source/pmount/+bug/1/+distrotask'
-    >>> print browser.contents
-    <...
-    ...Debian doesn't use Malone as its bug tracker...
+    'http://bugs.launchpad.dev/ubuntu/+source/pmount/+bug/1/+distrotask'
+    >>> print get_feedback_messages(browser)
+    [u"Debian doesn't use Launchpad as its bug tracker. ...]
 
 The form is shown as well, so it's possible to easily change the
 field values, in order to add a bug watch.
@@ -166,17 +158,16 @@ notification will still be displayed.
 
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    'http://localhost/ubuntu/+source/pmount/+bug/1/+distrotask'
-    >>> print browser.contents
-    <...
-    ...Debian doesn't use Malone as its bug tracker...
+    'http://bugs.launchpad.dev/ubuntu/+source/pmount/+bug/1/+distrotask'
+    >>> print get_feedback_messages(browser)
+    [u"Debian doesn't use Launchpad as its bug tracker. ...]
 
 If we confirm that we indeed want to add an unlinked task, we get
 redirected to the bug page.
 
     >>> browser.getControl('Yes').click()
     >>> browser.url
-    'http://localhost/debian/+source/evolution/+bug/1'
+    'http://bugs.launchpad.dev/debian/+source/evolution/+bug/1'
     >>> print browser.contents
     <...
     ...>evolution (Debian)</a>...
@@ -190,12 +181,11 @@ message saying so.
     >>> browser.getControl('Source Package Name').value = 'no-such-package'
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    'http://localhost/debian/+source/evolution/+bug/1/+distrotask'
-    >>> for message_tag in find_tags_by_class(browser.contents, 'message'):
-    ...     print message_tag.renderContents()
-    There is 1 error.
-    There is no package in Ubuntu named "no-such-package". If it should
-    be here, <a href="...">report this as a bug</a>.
+    'http://bugs.launchpad.dev/debian/+source/evolution/+bug/1/+distrotask'
+    >>> print get_feedback_messages(browser)
+    [u'There is 1 error.',
+     u'There is no package in Ubuntu named "no-such-package". If it should
+       be here, report this as a bug.']
 
 The link in the error page links to the Launchpad filebug page.
 

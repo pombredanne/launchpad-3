@@ -1,5 +1,4 @@
-ExternalBugTracker: DebBugs
-===========================
+= ExternalBugTracker: DebBugs =
 
 Differently from Bugzilla, debbugs watch syncing is done by reading from
 a local database, so we can use a real class for testing: we just need
@@ -29,21 +28,21 @@ will use the config value:
     >>> external_debbugs.db_location == config.malone.debbugs_db_location
     True
 
-Retrieving bug status from the debbugs database
------------------------------------------------
+
+== Retrieving bug status from the debbugs database ==
 
 The retrieval of the remote status is done through the
-_getRemoteStatus() method. If we pass a bug number that doesn't exist in
+getRemoteStatus() method. If we pass a bug number that doesn't exist in
 the debbugs db, BugNotFound is raised.
 
-    >>> external_debbugs._getRemoteStatus('42')
+    >>> external_debbugs.getRemoteStatus('42')
     Traceback (most recent call last):
     ...
     BugNotFound: 42
 
 If we pass a non-integer bug id, InvalidBugId is raised.
 
-    >>> external_debbugs._getRemoteStatus('foo')
+    >>> external_debbugs.getRemoteStatus('foo')
     Traceback (most recent call last):
     ...
     InvalidBugId: Debbugs bug number not an integer: foo
@@ -53,16 +52,16 @@ contains current bugs, while the archive contains older bugs that have
 been moved there manually. The DebBugs wrapper fetches bugs from them
 transparently. Bug 237001 lives in db-h:
 
-    >>> external_debbugs._getRemoteStatus('237001')
+    >>> external_debbugs.getRemoteStatus('237001')
     'open normal'
 
 Bug 563 resides in the archive. It is also fetchable:
 
-    >>> external_debbugs._getRemoteStatus('563')
+    >>> external_debbugs.getRemoteStatus('563')
     'done normal'
 
-Checking debbugs bug watches
-----------------------------
+
+== Checking debbugs bug watches ==
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
@@ -95,10 +94,10 @@ And the linked bugtasks got updated:
     >>> for bug_watch in bug_watches:
     ...     bugtasks += list(bug_watch.bugtasks)
     >>> for bugtask in sorted(bugtasks, key=operator.attrgetter('id')):
-    ...     print bugtask.bug.id, bugtask.targetname, bugtask.status.title,
+    ...     print bugtask.bug.id, bugtask.bugtargetname, bugtask.status.title,
     ...     print bugtask.importance.title
-    1 mozilla-firefox (Debian) Unconfirmed Unknown
-    3 mozilla-firefox (Debian Sarge) Unconfirmed Unknown
+    1 mozilla-firefox (Debian) New Unknown
+    3 mozilla-firefox (Debian Sarge) New Unknown
     7 evolution (Debian) Fix Released Unknown
 
 Sometimes the severity field is missing in the bug summary. That will
@@ -112,11 +111,11 @@ in debbugs.
     >>> 'Severity' not in summary
     True
 
-    >>> external_debbugs._getRemoteStatus('237001')
+    >>> external_debbugs.getRemoteStatus('237001')
     'open normal'
 
-Debbugs status conversions
---------------------------
+
+== Debbugs status conversions ==
 
 Let's take closer look at the status conversion. Debbugs has basically
 only two statuses, 'open' and 'done', so in order to get a more fine
@@ -128,23 +127,31 @@ uploaded, so it maps to 'Fix Released.
     >>> print external_debbugs.convertRemoteStatus('done normal').title
     Fix Released
 
-If the status is simply 'open', we map it to 'Unconfirmed', since
+If the status is simply 'open', we map it to 'New', since
 there's no way of knowing if the bug is confirmed or not.
 
     >>> print external_debbugs.convertRemoteStatus('open normal').title
-    Unconfirmed
+    New
 
-If the 'wontfix' tag is present we map it to 'Confirmed', since even
-though the bug won't be fixed, it's still a confirmed bug.
+If the 'wontfix' tag is present we map it to "Won't Fix". The 'wontfix'
+tag takes precedence over the confimed tags (help, confirmed, upstream,
+fixed-upstream) since 'wontfix' is the state after confirmed. The 'wontfix'
+tag also takes precedence over the fix-committed tags (pending, fixed,
+fixed-in-experimental) since the malone status will correctly change to
+fix-released when the debbugs status changes to 'done', so a nonsensical
+combination of 'fixed' & 'wontfix' tags will only affect the malone status
+temporarily.
 
-    >>> print external_debbugs.convertRemoteStatus('open normal wontfix').title
-    Confirmed
+    >>> print external_debbugs.convertRemoteStatus(
+    ...         'open normal pending fixed fixed-in-experimental'
+    ...         ' wontfix help confirmed upstream fixed-upstream').title
+    Won't Fix
 
 If the 'moreinfo' tag is present, we map the status to 'Needs Info'.
 
     >>> print external_debbugs.convertRemoteStatus(
     ...     'open normal moreinfo').title
-    Needs Info
+    Incomplete
 
 Of course, if the 'moreinfo' tag is present and the status is 'done',
 we still map to 'Fix Released'.
@@ -199,17 +206,17 @@ the fix has reached the unstable distribution.
     ...     'open normal fixed-in-experimental').title
     Fix Committed
 
-All other tags we map to 'Unconfirmed'.
+All other tags we map to 'New'.
 
     >>> print external_debbugs.convertRemoteStatus(
     ...     'open normal unreproducible lfs woody').title
-    Unconfirmed
+    New
 
 If we pass in a malformed status string, we map it to 'Unknown' and
 log an error.
 
     >>> print external_debbugs.convertRemoteStatus('open').title
-    ERROR:...:Malformed debbugs status: 'open'
+    ERROR:...:Malformed debbugs status: 'open'.
     Unknown
 
 UNKNOWN_REMOTE_STATUS maps to Unknown.
@@ -218,8 +225,8 @@ UNKNOWN_REMOTE_STATUS maps to Unknown.
     >>> print external_debbugs.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
     Unknown
 
-Wrapping up
------------
+
+== Wrapping up ==
 
 Restore the database path:
 

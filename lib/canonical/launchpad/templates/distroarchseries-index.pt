@@ -1,0 +1,58 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1
+        tal:define="distroseries context/distroseries; distro distroseries/distribution"
+      >
+        <tal:distro replace="distro/displayname">Fooix</tal:distro>
+        <tal:series replace="distroseries/displayname">3.1</tal:series> for
+        <tal:arch replace="context/architecturetag">i386</tal:arch>
+      </h1>
+    </metal:heading>
+
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" /> 
+  <div tal:replace="structure context/distroseries/distribution/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/distroseries/@@+portlet-details" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main"
+     tal:define="distroseries context/distroseries;
+                 distro distroseries/distribution">
+
+  <h2>Search binary packages</h2>
+
+  <form name="search" action="+search" method="GET">
+  
+    <input type="text"
+      name="text"
+      size="35"
+      tal:attributes="value request/text|nothing" />
+
+    <input type="submit" value="Search Packages"/>
+
+  </form>
+
+  <p class="discreet">
+    This archive currently contains
+    <tal:count replace="context/package_count">bazillions of</tal:count> software packages.
+  </p>
+
+</div>
+
+</body>
+</html>

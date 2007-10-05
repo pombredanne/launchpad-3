@@ -1,0 +1,30 @@
+#!/bin/sh
+# Copyright Canonical Limited
+# Author: Colin Watson <cjwatson@canonical.com>
+
+# Buildd Slave tool to override sources.list in the chroot with a list of
+# archives
+
+# Expects build id as arg 1
+# Expects sources.list lines as subsequent args
+
+# Needs SUDO to be set to a sudo instance for passwordless access
+
+set -e
+exec 2>&1
+
+SUDO=/usr/bin/sudo
+
+BUILDID="$1"
+shift
+
+cd $HOME
+cd "build-$BUILDID/chroot-autobuild/etc/apt"
+
+echo "Overriding sources.list in build-$BUILDID"
+
+$SUDO rm -f sources.list.new
+(for archive; do
+  echo "$archive"
+done) | $SUDO tee sources.list.new >/dev/null
+$SUDO mv sources.list.new sources.list

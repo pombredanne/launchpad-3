@@ -104,8 +104,8 @@ class ImageChangeWidget(SimpleInputWidget):
     def getInputValue(self):
         self._error = None
         action = self.action_widget.getInputValue()
-        form = self.request.form
-        if action == 'change' and not form.get(self.image_widget.name):
+        form = self.request.form_ng
+        if action == 'change' and not form.getOne(self.image_widget.name):
             self._error = WidgetInputError(
                 self.name, self.label,
                 LaunchpadValidationError(
@@ -123,7 +123,7 @@ class ImageChangeWidget(SimpleInputWidget):
                     "Style must be one of EDIT_STYLE or ADD_STYLE, got %s"
                     % self.style)
         elif action == "change":
-            self._image = form.get(self.image_widget.name)
+            self._image = form.getOne(self.image_widget.name)
             try:
                 self.context.validate(self._image)
             except ValidationError, v:
@@ -183,7 +183,7 @@ class GotchiTiedWithHeadingWidget(ImageChangeWidget):
         original_content = StringIO(self._image.read())
         image = PIL.Image.open(original_content)
         width, height = image.size
-        if (width <= self.resized_image_width and 
+        if (width <= self.resized_image_width and
             height <= self.resized_image_height):
             # No resize needed.
             content = original_content

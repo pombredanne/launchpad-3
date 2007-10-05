@@ -4,17 +4,15 @@ __metaclass__ = type
 
 from cStringIO import StringIO
 import datetime
-import sys
 import unittest
 
 import pytz
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IEmailAddressSet, ILaunchpadCelebrities, IPersonSet, IProductSet)
+    BugTaskStatus, IEmailAddressSet, ILaunchpadCelebrities, IPersonSet,
+    IProductSet, PersonCreationRationale)
 from canonical.launchpad.scripts import sftracker
-from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType,
-    PersonCreationRationale)
+from canonical.lp.dbschema import BugAttachmentType, BugTaskImportance
 
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -252,7 +250,7 @@ class PersonMappingTestCase(unittest.TestCase):
 
 
 class TrackerItemImporterTestCase(unittest.TestCase):
-    
+
     layer = LaunchpadZopelessLayer
 
     def test_import_item(self):
@@ -329,6 +327,6 @@ class TrackerItemImporterTestCase(unittest.TestCase):
         self.assertEqual(bug.activity[0].message,
                          'Imported SF tracker item #1278591')
 
-        
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

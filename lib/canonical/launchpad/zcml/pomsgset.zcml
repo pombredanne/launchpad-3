@@ -25,6 +25,13 @@
       <allow interface="canonical.launchpad.interfaces.IPOMsgSetSuggestions" />
     </content>
 
+    <adapter
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      for="canonical.launchpad.interfaces.IPOMsgSet"
+      factory="canonical.launchpad.browser.POMsgSetSOP"
+      permission="zope.Public"
+      />
+
     <browser:url
         for="canonical.launchpad.interfaces.IPOMsgSet"
         path_expression="string:${potmsgset/sequence}"
@@ -38,7 +45,8 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPOMsgSet"
-        name="+index" />
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer" />
 
     <browser:page
         for="canonical.launchpad.interfaces.IPOMsgSet"
@@ -46,6 +54,14 @@
         permission="zope.Public"
         name="+index"
         attribute="__call__"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+    <browser:page
+        name="+translate"
+        for="canonical.launchpad.interfaces.IPOMsgSet"
+        class="canonical.launchpad.browser.TranslateRedirectView"
+        permission="zope.Public"
         />
 
     <browser:page
@@ -55,6 +71,7 @@
         permission="zope.Public"
         template="../templates/pomsgset-translate.pt"
         class="canonical.launchpad.browser.POMsgSetPageView"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:page
@@ -62,6 +79,7 @@
         for="canonical.launchpad.interfaces.IPOMsgSetSuggestions"
         permission="launchpad.AnyPerson"
         template="../templates/pomsgset-suggestions.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
 </facet>

@@ -1,14 +1,11 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="bazaar">
+<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="bazaar">
 
 <body>
 
+  <h1 metal:fill-slot="heading">Upstream trunk imports</h1>
+
 <div metal:fill-slot="main" class="visualPadding"
      tal:define="batch view/batchnav/currentBatch">
-
-  <h1>Bazaar: Upstream revision control imports</h1>
 
   <form action="" method="GET">
     <fieldset>
@@ -20,9 +17,6 @@
             <span tal:replace="structure view/sourcestateselector">
                 StateSelector
             </span>
-            <input type="checkbox" name="ready" id="ready"
-                   tal:attributes="checked view/ready">
-            <label for="ready">Ready</label>
             <input type="submit" name="search" value="search" />
             <br />
         </div>
@@ -53,16 +47,36 @@
                  style="display: block"
                  tal:content="string:${series/product/name}/${series/name}"
               >$Product.name/$Series.name</a></td>
-          <td tal:content="series/datestarted/fmt:date"
-              >$Series.datestarted</td>
-          <td tal:content="series/datefinished/fmt:date"
-              >$Series.datefinished</td>
-          <td tal:content="series/dateautotested/fmt:date"
-              >$Series.dateautotested</td>
-          <td tal:content="series/dateprocessapproved/fmt:date"
-              >$Series.dateprocessapproved</td>
-          <td tal:content="series/datesyncapproved/fmt:date"
-              >$Series.datesyncapproved</td>
+          <td>
+            <span
+              tal:attributes="title series/datestarted/fmt:datetime"
+              tal:content="series/datestarted/fmt:approximatedate"
+              >$Series.datestarted</span>
+          </td>
+          <td>
+            <span
+              tal:attributes="title series/datefinished/fmt:datetime"
+              tal:content="series/datefinished/fmt:approximatedate"
+              >$Series.datefinished</span>
+          </td>
+          <td>
+            <span
+              tal:attributes="title series/dateautotested/fmt:datetime"
+              tal:content="series/dateautotested/fmt:approximatedate"
+              >$Series.dateautotested</span>
+          </td>
+          <td>
+            <span
+              tal:attributes="title series/dateprocessapproved/fmt:datetime"
+              tal:content="series/dateprocessapproved/fmt:approximatedate"
+              >$Series.dateprocessapproved</span>
+          </td>
+          <td>
+            <span
+              tal:attributes="title series/datesyncapproved/fmt:datetime"
+              tal:content="series/datesyncapproved/fmt:approximatedate"
+              >$Series.datesyncapproved</span>
+          </td>
         </tr>
       </tbody>
     </table>

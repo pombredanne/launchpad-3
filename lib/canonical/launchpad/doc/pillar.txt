@@ -17,18 +17,18 @@ share their name namespace are Product, Project and Distribution.
     >>> IDistribution.providedBy(pillar_set['ubuntu'])
     True
 
-    >>> 'ubuntu-product' in pillar_set
+    >>> 'tomcat' in pillar_set
     True
-    >>> pillar_set['ubuntu-product'].name
-    u'ubuntu-product'
-    >>> IProduct.providedBy(pillar_set['ubuntu-product'])
+    >>> pillar_set['tomcat'].name
+    u'tomcat'
+    >>> IProduct.providedBy(pillar_set['tomcat'])
     True
 
-    >>> 'ubuntu-project' in pillar_set
+    >>> 'apache' in pillar_set
     True
-    >>> pillar_set['ubuntu-project'].name
-    u'ubuntu-project'
-    >>> IProject.providedBy(pillar_set['ubuntu-project'])
+    >>> pillar_set['apache'].name
+    u'apache'
+    >>> IProject.providedBy(pillar_set['apache'])
     True
 
     >>> 'fnord' in pillar_set
@@ -96,15 +96,14 @@ Right now this search is done across Products, Projects and Distributions.
     project: Mozilla Firefox (firefox) [relevance: high]
     project: Mozilla Thunderbird (thunderbird) [relevance: high]
 
-    >>> for row in pillar_set.search('ubuntu', limit=6):
+    >>> for row in pillar_set.search('ubuntu', limit=5):
     ...     rank = get_meaningful_rank(row)
     ...     print ("%s: %s (%s) [relevance: %s]"
     ...            % (row['type'], row['title'], row['name'], rank))
     distribution: Ubuntu Linux (ubuntu) [relevance: perfect]
-    project: Ubuntu (ubuntu-product) [relevance: perfect]
-    project: The Ubuntu Project (ubuntu-project) [relevance: high]
     distribution: Ubuntu Test (ubuntutest) [relevance: low]
     project: The Evolution Groupware Application (evolution) [relevance: low]
+    project: Tomcat (tomcat) [relevance: low]
     project: The Gnome Panel Applets (applets) [relevance: low]
 
 Note that inactive products and projects won't be included in the results.
@@ -118,15 +117,35 @@ Note that inactive products and projects won't be included in the results.
     project group: The Mozilla Project (mozilla) [relevance: perfect]
     project: Mozilla Thunderbird (thunderbird) [relevance: high]
 
-    >>> pillar_set['ubuntu-project'].active = False
+    >>> pillar_set['apache'].active = False
     >>> flush_database_updates()
     >>> for row in pillar_set.search('ubuntu', limit=6):
     ...     rank = get_meaningful_rank(row)
     ...     print ("%s: %s (%s) [relevance: %s]"
     ...            % (row['type'], row['title'], row['name'], rank))
     distribution: Ubuntu Linux (ubuntu) [relevance: perfect]
-    project: Ubuntu (ubuntu-product) [relevance: perfect]
     distribution: Ubuntu Test (ubuntutest) [relevance: low]
     project: The Evolution Groupware Application (evolution) [relevance: low]
-    distribution: GuadaLinex: Linux for Andalucia (guadalinex) [relevance: low]
+    project: Tomcat (tomcat) [relevance: low]
     project: The Gnome Panel Applets (applets) [relevance: low]
+    distribution: GuadaLinex: Linux for Andalucia (guadalinex) [relevance: low]
+
+
+== PillarName objects ==
+
+PillarName objects have a pillar attribute that returns the object referenced
+by that pillar name
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IProjectSet)
+    >>> from canonical.launchpad.database import PillarName
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> gnome = getUtility(IProjectSet).getByName('gnome')
+    >>> ubuntu_pillarname = PillarName.selectOneBy(name='ubuntu')
+    >>> ubuntu_pillarname.pillar == ubuntu
+    True
+    >>> gnome_pillarname = PillarName.selectOneBy(name='gnome')
+    >>> gnome_pillarname.pillar == gnome
+    True
+

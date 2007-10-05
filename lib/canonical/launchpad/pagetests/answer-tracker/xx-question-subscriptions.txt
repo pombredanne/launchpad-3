@@ -9,10 +9,10 @@ To subscribe, users use the 'Subscribe' link and then confirm that
 they want to subscribe by clicking on the 'Subscribe' button.
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/firefox/+ticket/2')
+    ...     'http://launchpad.dev/firefox/+question/2')
     >>> link = user_browser.getLink('Subscribe')
     >>> link.url
-    '.../+ticket/2/+subscribe'
+    '.../+question/2/+subscribe'
     >>> link.click()
     >>> print user_browser.title
     Subscription to question #2
@@ -30,13 +30,13 @@ name appears in the 'Subscribers' portlet:
     >>> print soup.first('div', 'informational message').renderContents()
     You have subscribed to this question.
 
-    >>> portlet = soup.first('div', id='question-subscribers')
+    >>> portlet = soup.first('div', id='portlet-subscribers')
     >>> portlet.first('h2')
     <h2>Subscribers to question #2</h2>
     >>> portlet.first('ul')
-    <ul class="people">
+    <ul class="person">
       <li>
-        <a href="http://answers.launchpad.dev/~no-priv">No Privileges
+        <a href="/~no-priv">No Privileges
             Person</a>
       </li>
     </ul>
@@ -49,7 +49,7 @@ link and then click on the 'Unsubscribe' button.
 
     >>> link = user_browser.getLink('Unsubscribe')
     >>> link.url
-    '.../+ticket/2/+subscribe'
+    '.../+question/2/+subscribe'
     >>> link.click()
 
     >>> soup = BeautifulSoup(user_browser.contents)
@@ -64,7 +64,7 @@ the question, doesn't appear anymore in the subscribers portlet:
     >>> print soup.first('div', 'informational message').renderContents()
     You have unsubscribed from this question.
 
-    >>> portlet = soup.first('div', id='question-subscribers')
+    >>> portlet = soup.first('div', id='portlet-subscribers')
     >>> portlet.first('p')
     <p>
       <i>No subscribers.</i>
@@ -76,7 +76,7 @@ It is also possible to subscribe at the same time than posting a message
 on an existing question. The user can simply check the 'E-mail me future
 discussion about this question' checkbox:
 
-    >>> user_browser.open('http://launchpad.dev/products/firefox/+ticket/6')
+    >>> user_browser.open('http://launchpad.dev/firefox/+question/6')
     >>> user_browser.getControl('Message').value = (
     ...     "Try starting firefox from the command-line. Are there any "
     ...     "messages appearing?")
@@ -92,7 +92,7 @@ A notification message is displayed notifying of the subscription:
     You have subscribed to this question.
 
     >>> soup = BeautifulSoup(user_browser.contents)
-    >>> portlet = soup.first('div', id='question-subscribers')
+    >>> portlet = soup.first('div', id='portlet-subscribers')
     >>> for subscriber_link in portlet.findAll('a'):
     ...     print subscriber_link.renderContents()
     No Privileges Person

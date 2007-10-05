@@ -1,0 +1,219 @@
+= Branch Visibility =
+
+Most branches on Launchpad are considered public branches, and are
+visible to everybody, even people not logged in.
+
+Some branches are also considered "private".  These are branches that
+are only visible to the owner of the branch, and the subscribers.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchType, IBranchSet, IPersonSet)
+    >>> person_set = getUtility(IPersonSet)
+    >>> no_priv_person = person_set.getByName('no-priv')
+
+    >>> proxied_branch = getUtility(IBranchSet).new(
+    ...     branch_type=BranchType.HOSTED,
+    ...     name='test-branch', creator=no_priv_person, owner=no_priv_person,
+    ...     product=None, url=None, title='Test branch')
+
+Since many of the examples here are testing the ability of various users
+to access branches, we don't want all the access to the branch to go
+through the security proxy, as when the AccessBranch authorization class
+is used, it does not have a proxied object, but the direct object.  This
+is needed as in order to check to see if the user is authorized to see
+the branch we have to look at some of the member variables for the
+branch, and accessing these member variables triggers an authorization
+check on the proxied object.  So we'll remove it.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> branch = removeSecurityProxy(proxied_branch)
+
+    >>> print branch.unique_name
+    ~no-priv/+junk/test-branch
+    >>> branch.private
+    False
+
+Calling check_permission is used to show that the AccessBranch is in
+fact configured correctly.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> login(ANONYMOUS)
+    >>> check_permission('launchpad.View', proxied_branch)
+    True
+    >>> login('test@canonical.com')
+    >>> check_permission('launchpad.View', proxied_branch)
+    True
+
+
+== Accessing branches ==
+
+Accessing any attributes of the Branch content class through the
+IBranch interface is configured to require the launchpad.View permission.
+The AccessBranch authorization class is used to authorize users
+for the combination of the launchpad.View permission and the IBranch
+interface.
+
+    >>> from canonical.launchpad.webapp.interfaces import IAuthorization
+    >>> from zope.component import getAdapter
+    >>> getAdapter(branch, IAuthorization, name='launchpad.View')
+    <canonical.launchpad.security.AccessBranch ...>
+
+    >>> from canonical.launchpad.security import AccessBranch
+    >>> access = AccessBranch(branch)
+    >>> access.checkUnauthenticated()
+    True
+    >>> access.checkAuthenticated(no_priv_person)
+    True
+
+Branches that are private are accessible by the owner and subscribers.
+
+
+== Visibility due to ownership ==
+
+The owners of the branch always have visiblity of their own branches.
+
+    >>> branch.private = True
+    >>> access.checkUnauthenticated()
+    False
+    >>> branch.owner == no_priv_person
+    True
+    >>> access.checkAuthenticated(no_priv_person)
+    True
+
+Check the configuration of the AccessBranch authorization.
+
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> print getUtility(ILaunchBag).user.displayname
+    Sample Person
+    >>> getUtility(ILaunchBag).user == no_priv_person
+    False
+    >>> check_permission('launchpad.View', proxied_branch)
+    False
+
+
+== Visibility due to being a Launchpad administrator ==
+
+Mark is a Launchpad administrator, and Launchpad administrators are
+special.  Launchpad administrators often have a need to see private
+Launchpad things in order to fix up fubars by users.
+
+    >>> sabdfl = person_set.getByName('sabdfl')
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> lp_admins = getUtility(ILaunchpadCelebrities).admin
+    >>> sabdfl.inTeam(lp_admins)
+    True
+    >>> access.checkAuthenticated(sabdfl)
+    True
+
+
+== Visibility due to subscription ==
+
+Branches that are not public are viewable by members of the visibility_team
+and to subscribers.
+
+The Jeff Waugh is a member of the Ubuntu team, but not a Luanchpad admin.
+
+    >>> jdub = person_set.getByName('jdub')
+    >>> ubuntu_team = person_set.getByName('ubuntu-team')
+    >>> jdub.inTeam(ubuntu_team)
+    True
+    >>> jdub.inTeam(lp_admins)
+    False
+    >>> access.checkAuthenticated(jdub)
+    False
+
+Subscribing the Ubuntu team to the branch will allow Jeff to have access
+to the branch.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize)
+
+    >>> branch.subscribe(ubuntu_team,
+    ...     BranchSubscriptionNotificationLevel.NOEMAIL,
+    ...     BranchSubscriptionDiffSize.NODIFF)
+    <BranchSubscription ...>
+
+    >>> access.checkAuthenticated(jdub)
+    True
+
+
+== Not visible to everyone else ==
+
+David is not a Launchpad admin, nor is currently subscribed to our new
+branch.
+
+    >>> ddaa = person_set.getByName('ddaa')
+    >>> ddaa.inTeam(lp_admins)
+    False
+    >>> access.checkAuthenticated(ddaa)
+    False
+
+
+== BranchSet restricted queries ==
+
+All of the BranchSet queries that are used to populate user viewable
+branch listings have an optional parameter called `visible_by_user`.
+This parameter is used to restrict the result set to those branches
+that would be visible by that user.  If the parameter is None, then
+only the public branches are returned.
+
+Since we are printing out general private branch details, we log
+in a member of the Launchpad admin team so there are no permission
+errors.
+
+    >>> login('foo.bar@canonical.com')
+
+The syncUpdate call is necessary to make sure the database has
+the private flag set correctly for the branch.
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(branch)
+
+    >>> branch_set = getUtility(IBranchSet)
+
+Anonymous users see just the public branches.
+
+    >>> for branch in branch_set.getRecentlyRegisteredBranches(3):
+    ...     print branch.unique_name, branch.private
+    ~sabdfl/+junk/testdoc False
+    ~name12/gnome-terminal/scanned False
+    ~name12/gnome-terminal/mirrored False
+
+David is not in eligible to see any of the private branches.
+
+    >>> for branch in branch_set.getRecentlyRegisteredBranches(
+    ...     3, visible_by_user=ddaa):
+    ...     print branch.unique_name, branch.private
+    ~sabdfl/+junk/testdoc False
+    ~name12/gnome-terminal/scanned False
+    ~name12/gnome-terminal/mirrored False
+
+No Privileges Person sees his new private junk branch and other public branches.
+
+    >>> for branch in branch_set.getRecentlyRegisteredBranches(
+    ...     3, visible_by_user=no_priv_person):
+    ...     print branch.unique_name, branch.private
+    ~no-priv/+junk/test-branch True
+    ~sabdfl/+junk/testdoc False
+    ~name12/gnome-terminal/scanned False
+
+Mark as a Launchpad admin can see all the private branches.
+
+    >>> for branch in branch_set.getRecentlyRegisteredBranches(
+    ...     3, visible_by_user=sabdfl):
+    ...     print branch.unique_name, branch.private
+    ~no-priv/+junk/test-branch True
+    ~name12/landscape/feature-x True
+    ~landscape-developers/landscape/trunk True
+
+Sample Person as the author of the Landscape branches sees those,
+but not the private branch owned by No Privileges Person.
+
+    >>> sample_person = person_set.getByEmail('test@canonical.com')
+    >>> for branch in branch_set.getRecentlyRegisteredBranches(
+    ...     3, visible_by_user=sample_person):
+    ...     print branch.unique_name, branch.private
+    ~name12/landscape/feature-x True
+    ~landscape-developers/landscape/trunk True
+    ~sabdfl/+junk/testdoc False

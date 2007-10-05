@@ -1,38 +1,38 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
-"""Browser code for PO files."""
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+"""Browser code for Translation files."""
 
 __metaclass__ = type
 
 __all__ = [
-    'POFileNavigation',
+    'POExportView',
+    'POFileAppMenus',
     'POFileFacets',
-    'POFileAppMenus',
-    'POFileView',
-    'POFileUploadView',
+    'POFileNavigation',
+    'POFileSOP',
     'POFileTranslateView',
-    'BaseExportView',
-    'POFileAppMenus',
-    'POExportView']
+    'POFileUploadView',
+    'POFileView',
+    ]
 
 import re
+import os.path
 from zope.app.form.browser import DropdownWidget
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
 from canonical.cachedproperty import cachedproperty
-from canonical.lp.dbschema import RosettaFileFormat
-from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import (
-    IPOFile, IPOExportRequestSet, ITranslationImportQueue,
-    UnexpectedFormData, NotFoundError)
-from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url,
-    LaunchpadView, Navigation)
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.pomsgset import (
     BaseTranslationView, POMsgSetView)
+from canonical.launchpad.browser.poexportrequest import BaseExportView
+from canonical.launchpad.browser.potemplate import (
+    POTemplateSOP, POTemplateFacets)
+from canonical.launchpad.interfaces import (
+    IPOFile, ITranslationImporter, ITranslationImportQueue,
+    UnexpectedFormData, NotFoundError)
+from canonical.launchpad.webapp import (
+    ApplicationMenu, Link, canonical_url, LaunchpadView, Navigation)
+from canonical.launchpad.webapp.batching import BatchNavigator
 
-from canonical.launchpad import _
 
 class CustomDropdownWidget(DropdownWidget):
     def _div(self, cssClass, contents, **kw):
@@ -83,46 +83,29 @@ class POFileNavigation(Navigation):
                 self.context.language.code, self.context.variant)
         else:
             # It's a POST.
-            # XXX CarlosPerelloMarin 2006-04-20: We should check the kind of
-            # POST we got, a Log out action will be also a POST and we should
-            # not create a POMsgSet in that case. See bug #40275 for more
-            # information.
+            # XXX CarlosPerelloMarin 2006-04-20 bug=40275:
+            # We should check the kind of POST we got,
+            # a Log out action will be also a POST and we
+            # should not create a POMsgSet in that case.
             return self.context.createMessageSetFromMessageSet(potmsgset)
 
-
-class POFileFacets(StandardLaunchpadFacets):
-    # XXX 20061004 mpt: A POFile is not a structural object. It should
-    # inherit all navigation from its product or source package.
+class POFileFacets(POTemplateFacets):
     usedfor = IPOFile
-    defaultlink = 'translations'
-    enable_only = ['overview', 'translations']
 
-    def _parent_url(self):
-        """Return URL of whatever POTemplate of this POFile is attached to."""
-        potemplate = self.context.potemplate
-        if potemplate.distrorelease:
-            source_package = potemplate.distrorelease.getSourcePackage(
-                potemplate.sourcepackagename)
-            return canonical_url(source_package)
-        else:
-            return canonical_url(potemplate.productseries)
+    def __init__(self, context):
+        POTemplateFacets.__init__(self, context.potemplate)
 
-    def overview(self):
-        target = self._parent_url()
-        text = 'Overview'
-        return Link(target, text)
 
-    def translations(self):
-        target = ''
-        text = 'Translations'
-        return Link(target, text)
+class POFileSOP(POTemplateSOP):
+
+    def __init__(self, context):
+        POTemplateSOP.__init__(self, context.potemplate)
 
 
 class POFileAppMenus(ApplicationMenu):
     usedfor = IPOFile
     facet = 'translations'
-    links = ['overview', 'translate', 'switchlanguages', 'upload', 'download',
-        'viewtemplate']
+    links = ['overview', 'translate', 'upload', 'download']
 
     def overview(self):
         text = 'Overview'
@@ -132,10 +115,6 @@ class POFileAppMenus(ApplicationMenu):
         text = 'Translate'
         return Link('+translate', text, icon='languages')
 
-    def switchlanguages(self):
-        text = 'Switch languages'
-        return Link('../', text, icon='languages')
-
     def upload(self):
         text = 'Upload a file'
         return Link('+upload', text, icon='edit')
@@ -144,56 +123,9 @@ class POFileAppMenus(ApplicationMenu):
         text = 'Download'
         return Link('+export', text, icon='download')
 
-    def viewtemplate(self):
-        text = 'View template'
-        return Link('../', text, icon='languages')
-
-
-class BaseExportView(LaunchpadView):
-    """Base class for PO export views."""
-
-    def initialize(self):
-        self.request_set = getUtility(IPOExportRequestSet)
-        self.processForm()
-
-    def processForm(self):
-        """Override in subclass."""
-        raise NotImplementedError
-
-    def nextURL(self):
-        self.request.response.addInfoNotification(_(
-            "Your request has been received. Expect to receive an email "
-            "shortly."))
-        self.request.response.redirect(canonical_url(self.context))
-
-    def validateFileFormat(self, format_name):
-        try:
-            return RosettaFileFormat.items[format_name]
-        except KeyError:
-            self.request.response.addErrorNotification(_(
-                'Please select a valid format for download.'))
-            return
-
-    def formats(self):
-        """Return a list of formats available for translation exports."""
-
-        class BrowserFormat:
-            def __init__(self, title, value):
-                self.title = title
-                self.value = value
-
-        formats = [
-            RosettaFileFormat.PO,
-            RosettaFileFormat.MO,
-        ]
-
-        for format in formats:
-            yield BrowserFormat(format.title, format.name)
-
 
 class POFileView(LaunchpadView):
     """A basic view for a POFile"""
-    __used_for__ = IPOFile
 
     @cachedproperty
     def contributors(self):
@@ -202,40 +134,39 @@ class POFileView(LaunchpadView):
 
 class POFileUploadView(POFileView):
     """A basic view for a POFile"""
-    __used_for__ = IPOFile
 
     def initialize(self):
         self.form = self.request.form
         self.process_form()
 
     def process_form(self):
-        """Handle a form submission to request a .po file upload."""
+        """Handle a form submission to request a translation file upload."""
         if self.request.method != 'POST' or self.user is None:
             # The form was not submitted or the user is not logged in.
             return
 
-        file = self.form['file']
+        upload_file = self.form.get('file', None)
 
-        if not isinstance(file, FileUpload):
-            if file == '':
+        if not isinstance(upload_file, FileUpload):
+            if upload_file is None or upload_file == '':
                 self.request.response.addErrorNotification(
                     "Ignored your upload because you didn't select a file to"
                     " upload.")
             else:
-                # XXX: Carlos Perello Marin 2004/12/30
+                # XXX: Carlos Perello Marin 2004-12-30 bug=116:
                 # Epiphany seems to have an unpredictable bug with upload
                 # forms (or perhaps it's launchpad because I never had
                 # problems with bugzilla). The fact is that some uploads don't
                 # work and we get a unicode object instead of a file-like
-                # object in "file". We show an error if we see that behaviour.
-                # For more info, look at bug #116.
+                # object in "upload_file". We show an error if we see that
+                # behaviour.
                 self.request.response.addErrorNotification(
                     "The upload failed because there was a problem receiving"
                     " the data.")
             return
 
-        filename = file.filename
-        content = file.read()
+        filename = upload_file.filename
+        content = upload_file.read()
 
         if len(content) == 0:
             self.request.response.addWarningNotification(
@@ -243,12 +174,12 @@ class POFileUploadView(POFileView):
             return
 
         translation_import_queue = getUtility(ITranslationImportQueue)
-
-        if not filename.endswith('.po'):
-            self.request.response.addWarningNotification(
+        root, ext = os.path.splitext(filename)
+        translation_importer = getUtility(ITranslationImporter)
+        if (ext not in translation_importer.supported_file_extensions):
+            self.request.response.addErrorNotification(
                 "Ignored your upload because the file you uploaded was not"
-                " recognised as a file that can be imported as it does not"
-                " ends with the '.po' suffix.")
+                " recognised as a file that can be imported.")
             return
 
         # We only set the 'published' flag if the upload is marked as an
@@ -267,15 +198,15 @@ class POFileUploadView(POFileView):
         translation_import_queue.addOrUpdateEntry(
             path, content, published, self.user,
             sourcepackagename=self.context.potemplate.sourcepackagename,
-            distrorelease=self.context.potemplate.distrorelease,
+            distroseries=self.context.potemplate.distroseries,
             productseries=self.context.potemplate.productseries,
             potemplate=self.context.potemplate, pofile=self.context)
 
         self.request.response.addInfoNotification(
-            'Thank you for your upload. The PO file content will be imported'
-            ' soon into Rosetta. You can track its status from the'
-            ' <a href="%s">Translation Import Queue</a>' %
-                canonical_url(translation_import_queue))
+            'Thank you for your upload. The translation content will be'
+            ' imported soon into Launchpad. You can track its status from the'
+            ' <a href="%s/+imports">Translation Import Queue</a>' %
+                canonical_url(self.context.potemplate.translationtarget))
 
 
 class POFileTranslateView(BaseTranslationView):
@@ -289,8 +220,6 @@ class POFileTranslateView(BaseTranslationView):
     traversal is done for details about how we decide between a POFile
     or a DummyPOFile.
     """
-
-    __used_for__ = IPOFile
 
     DEFAULT_SHOW = 'all'
     DEFAULT_SIZE = 10
@@ -321,8 +250,23 @@ class POFileTranslateView(BaseTranslationView):
 
     def _initializeMsgSetViews(self):
         """See BaseTranslationView._initializeMsgSetViews."""
-        for potmsgset in self.batchnav.currentBatch():
-            self.pomsgset_views.append(self._buildPOMsgSetView(potmsgset))
+        self._buildPOMsgSetViews(self.batchnav.currentBatch())
+
+    def _buildPOMsgSetViews(self, for_potmsgsets):
+        """Build POMsgSet views for all POTMsgSets in for_potmsgsets."""
+        for_potmsgsets = list(for_potmsgsets)
+        po_to_pot_msg = self.context.getMsgSetsForPOTMsgSets(for_potmsgsets)
+
+        last = None
+        for potmsgset in for_potmsgsets:
+            assert last is None or potmsgset.sequence >= last.sequence, (
+                "POTMsgSets on page not in ascending sequence order")
+            last = potmsgset
+
+            pomsgset = po_to_pot_msg[potmsgset]
+            view = self._prepareView(
+                POMsgSetView, pomsgset, self.errors.get(potmsgset))
+            self.pomsgset_views.append(view)
 
     def _submitTranslations(self):
         """See BaseTranslationView._submitTranslations."""
@@ -343,10 +287,10 @@ class POFileTranslateView(BaseTranslationView):
 
             # Get hold of an appropriate message set in the PO file,
             # creating it if necessary.
-            msgid_text = potmsgset.primemsgid_.msgid
-            pomsgset = self.pofile.getPOMsgSet(msgid_text, only_current=False)
+            pomsgset = self.pofile.getPOMsgSetFromPOTMsgSet(potmsgset,
+                                                            only_current=False)
             if pomsgset is None:
-                pomsgset = self.pofile.createMessageSetFromText(msgid_text)
+                pomsgset = self.pofile.createMessageSetFromMessageSet(potmsgset)
 
             error = self._storeTranslations(pomsgset)
             if error and pomsgset.sequence != 0:
@@ -389,40 +333,27 @@ class POFileTranslateView(BaseTranslationView):
     # Specific methods
     #
 
-    def _buildPOMsgSetView(self, potmsgset):
-        """Build a POMsgSetView for a given POTMsgSet."""
-        language = self.context.language
-        variant = self.context.variant
-        pomsgset = potmsgset.getPOMsgSet(language.code, variant)
-        if pomsgset is None:
-            pomsgset = potmsgset.getDummyPOMsgSet(language.code, variant)
-        return self._prepareView(POMsgSetView, pomsgset,
-                                 self.errors.get(pomsgset.potmsgset))
-
     def _initializeShowOption(self):
         # Get any value given by the user
         self.show = self.request.form.get('show')
 
         if self.show not in (
-            'translated', 'untranslated', 'all', 'need_review'):
-            # XXX: should this be an UnexpectedFormData?
+            'translated', 'untranslated', 'all', 'need_review',
+            'changed_in_launchpad', 'new_suggestions'):
+            # XXX: kiko 2006-09-27: Should this be an UnexpectedFormData?
             self.show = self.DEFAULT_SHOW
-        self.show_all = False
-        self.show_need_review = False
-        self.show_translated = False
-        self.show_untranslated = False
         if self.show == 'all':
-            self.show_all = True
             self.shown_count = self.context.messageCount()
         elif self.show == 'translated':
-            self.show_translated = True
             self.shown_count = self.context.translatedCount()
         elif self.show == 'untranslated':
-            self.show_untranslated = True
             self.shown_count = self.context.untranslatedCount()
         elif self.show == 'need_review':
-            self.show_need_review = True
             self.shown_count = self.context.fuzzy_count
+        elif self.show == 'new_suggestions':
+            self.shown_count = self.context.unreviewedCount()
+        elif self.show == 'changed_in_launchpad':
+            self.shown_count = self.context.updatesCount()
         else:
             raise AssertionError("Bug in _initializeShowOption")
 
@@ -440,6 +371,10 @@ class POFileTranslateView(BaseTranslationView):
             ret = pofile.getPOTMsgSetFuzzy()
         elif self.show == 'untranslated':
             ret = pofile.getPOTMsgSetUntranslated()
+        elif self.show == 'new_suggestions':
+            ret = pofile.getPOTMsgSetWithNewSuggestions()
+        elif self.show == 'changed_in_launchpad':
+            ret = pofile.getPOTMsgSetChangedInLaunchpad()
         else:
             raise UnexpectedFormData('show = "%s"' % self.show)
         # We cannot listify the results to avoid additional count queries,
@@ -458,14 +393,13 @@ class POFileTranslateView(BaseTranslationView):
 class POExportView(BaseExportView):
 
     def processForm(self):
-        if self.request.method != 'POST':
-            return
+        if self.context.validExportCache():
+            # There is already a valid exported file cached in Librarian, we
+            # can serve that file directly.
+            self.request.response.redirect(self.context.exportfile.http_url)
+            return None
 
-        format = self.validateFileFormat(self.request.form.get('format'))
-        if not format:
-            return
+        return (None, [self.context])
 
-        self.request_set.addRequest(
-            self.user, pofiles=[self.context], format=format)
-        self.nextURL()
-
+    def getDefaultFormat(self):
+        return self.context.potemplate.source_file_format

@@ -1,0 +1,117 @@
+= Packaging =
+
+The Packaging records of a source package can be via the source
+package's +packaging page:
+
+  >>> user_browser.open(
+  ...     "http://launchpad.dev/ubuntu/warty/+source/mozilla/+packaging")
+
+  >>> print extract_text(
+  ...     find_tags_by_class(user_browser.contents, 'informational')[0])
+  Launchpad doesn&#8217;t know which project and series this package
+  belongs to.
+  If you can, please let us know.
+
+As we could see 'mozilla' sourcepackage has no established Packaging
+records. We can add or edit the Packaging information for a specific
+distroseries context. Let's try it for "grumpy":
+
+  >>> user_browser.open(
+  ...     "http://launchpad.dev/ubuntu/grumpy/+source/mozilla/+edit-packaging")
+  >>> user_browser.getControl(name="field.productseries").value = 'firefox/trunk'
+  >>> user_browser.getControl("Change").click()
+
+
+Now we can check if the Packaging record for "grumpy" is annotated:
+
+  >>> user_browser.open(
+  ...     "http://launchpad.dev/ubuntu/grumpy/+source/mozilla/+packaging")
+  >>> print extract_text(
+  ...     find_tag_by_id(user_browser.contents, 'packaging-table'))
+  Upstream links for all source packages called
+  "mozilla"
+  Distribution
+  Version
+  Upstream Project Series
+  Ubuntu
+  Grumpy
+  Mozilla Firefox Series: trunk
+
+
+The same Packaging record is also presented in "warty", because the
+list of Packaging records depends only on the source package name:
+
+  >>> user_browser.open(
+  ...     "http://launchpad.dev/ubuntu/warty/+source/mozilla/+packaging")
+  >>> print extract_text(
+  ...     find_tag_by_id(user_browser.contents, 'packaging-table'))
+  Upstream links for all source packages called
+  "mozilla"
+  Distribution
+  Version
+  Upstream Project Series
+  Ubuntu
+  Grumpy
+  Mozilla Firefox Series: trunk
+
+
+Now, let's add a Packaging record to the warty context:
+
+  >>> user_browser.open(
+  ...     "http://launchpad.dev/ubuntu/warty/+source/mozilla/+edit-packaging")
+  >>> user_browser.getControl(name="field.productseries").value = 'firefox/1.0'
+  >>> user_browser.getControl("Change").click()
+
+
+Now in the "warty" context both Packaging records are presented:
+
+  >>> user_browser.open(
+  ...     "http://launchpad.dev/ubuntu/warty/+source/mozilla/+packaging")
+  >>> print extract_text(
+  ...     find_tag_by_id(user_browser.contents, 'packaging-table'))
+  Upstream links for all source packages called
+  "mozilla"
+  Distribution
+  Version
+  Upstream Project Series
+  Ubuntu
+  Grumpy
+  Mozilla Firefox Series: trunk
+  Ubuntu
+  Warty
+  Mozilla Firefox Series: 1.0
+
+And the Packaging record for "warty" context is highlighted:
+
+  >>> print extract_text(
+  ...    find_tags_by_class(user_browser.contents, 'highlight')[0])
+  Ubuntu
+  Warty
+  Mozilla Firefox Series: 1.0
+
+In the same way when we are back to the "grumpy" context the both
+stored Packaging records are presented but now, the "grumpy" Packaging
+record is highlighted.
+
+  >>> user_browser.open(
+  ...     "http://launchpad.dev/ubuntu/grumpy/+source/mozilla/+packaging")
+
+  >>> print extract_text(
+  ...     find_tag_by_id(user_browser.contents, 'packaging-table'))
+  Upstream links for all source packages called
+  "mozilla"
+  Distribution
+  Version
+  Upstream Project Series
+  Ubuntu
+  Grumpy
+  Mozilla Firefox Series: trunk
+  Ubuntu
+  Warty
+  Mozilla Firefox Series: 1.0
+
+  >>> print extract_text(
+  ...     find_tags_by_class(user_browser.contents, 'highlight')[0])
+  Ubuntu
+  Grumpy
+  Mozilla Firefox Series: trunk

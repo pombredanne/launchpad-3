@@ -6,14 +6,14 @@ common external bug tracker.
 
     # Some basic imports
     >>> from canonical.launchpad.interfaces import IProjectSet, IProject
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> projectset = getUtility(IProjectSet)
 
 
 == Creating new projects ==
 
 When creating a new project there are a bunch of things we need to provide.
-While some of them (homepageurl, gotchi and emblem) are optional, others
+While some of them (homepageurl, icon, logo and mugshot) are optional, others
 (name, displayname, title, summary, description and owner) are required).
 
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -22,7 +22,7 @@ While some of them (homepageurl, gotchi and emblem) are optional, others
     ...     name='project-test', displayname='Test Project', 
     ...     title='Just a test project', homepageurl=None,
     ...     summary='Mandatory summary', description='blah',
-    ...     owner=no_priv, gotchi=None, gotchi_heading=None, emblem=None)
+    ...     owner=no_priv)
     >>> test_project.name
     u'project-test'
 
@@ -82,6 +82,25 @@ getByName() also accepts an argument to ignore inactive projects.
 
     >>> print getUtility(IProjectSet).getByName('gnome', ignore_inactive=True)
     None
+
+== Products which are part of a project ==
+
+The products which are part of a given project are given by a project's
+.products property. Note that only active products are included and they're
+ordered by their names.
+
+    >>> [product.name for product in gnome.products]
+    [u'applets', u'evolution', u'gnome-terminal', u'gnomebaker', u'netapplet']
+
+    >>> netapplet = gnome.getProduct('netapplet')
+    >>> netapplet.active = False
+    >>> flush_database_updates()
+    >>> [product.name for product in gnome.products]
+    [u'applets', u'evolution', u'gnome-terminal', u'gnomebaker']
+
+    # Re-activate netapplet so that we don't interfere in other tests below.
+    >>> netapplet.active = True
+    >>> flush_database_updates()
 
 
 == Specification Listings ==
@@ -212,3 +231,56 @@ Even if it has resources to translate.
 
   >>> len(netapplet.translatable_series)
   1
+
+
+== Milestones ==
+
+A project can have virtual milestones. If any of its products has milestones,
+these milestones are also associated with the project.
+
+Project.milestones is a list of all visible milestones associated with
+a project.
+
+    >>> from canonical.launchpad.ftests.test_project_milestone import (
+    ...     ProjectMilestoneTest)
+    >>> from canonical.launchpad.interfaces import (BugTaskSearchParams,
+    ...     IBugTaskSet, IProjectSet)
+    >>> def product_milestone_info(milestone_name, product_name):
+    ...     product = productset[product_name]
+    ...     milestone = milestoneset.getByNameAndProduct(
+    ...         milestone_name, product)
+    ...     if milestone:
+    ...         print 'product', product_name, 'visible:', milestone.visible,
+    ...         print 'expected:', milestone.dateexpected
+    >>> login('foo.bar@canonical.com')
+    >>> test_helper = ProjectMilestoneTest(helper_only=True)
+    >>> test_helper.setUpProjectMilestoneTests()
+    >>> gnome = getUtility(IProjectSet)['gnome']
+    >>> milestones = gnome.milestones
+    >>> for milestone in milestones:
+    ...     print milestone.name, 'visible:', milestone.visible
+    1.1  visible: True
+    1.1. visible: True
+    1.2  visible: True
+
+Project.all_milestones is a list of all milestones associated with a project.
+
+    >>> milestones = gnome.all_milestones
+    >>> for milestone in milestones:
+    ...     print milestone.name, 'visible:', milestone.visible
+    1.1  visible: True
+    1.1. visible: True
+    1.2  visible: True
+    1.3  visible: False
+
+Project.getMilestone(name) returns the project milestone with the name `name'
+or None, if no milestone with this name exists.
+
+    >>> milestone = gnome.getMilestone('1.1')
+    >>> print milestone.name
+    1.1
+    >>> milestone = gnome.getMilestone('invalid')
+    >>> print milestone
+    None
+
+For details see doc/milestone.txt and ftests/test_project_milestone.py.

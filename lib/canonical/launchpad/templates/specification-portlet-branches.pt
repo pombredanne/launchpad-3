@@ -1,4 +1,4 @@
-<div class="portlet" tal:condition="context/branch_links">
+<div class="portlet" id="portlet-branches" tal:condition="view/branch_links">
   <h2>Branches</h2>
   <div class="portletBody portletContent">
     <ul class="branch">

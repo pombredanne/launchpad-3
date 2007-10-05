@@ -1,0 +1,43 @@
+<table
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="summary">
+  <tbody>
+    <tr>
+      <th>Drivers:</th>
+      <td>
+        <tal:has_drivers condition="context/drivers">
+          <tal:per_driver repeat="driver context/drivers">
+            <a tal:replace=" structure driver/fmt:link">Carlos
+            Perello</a><br />
+          </tal:per_driver>
+        </tal:has_drivers>
+        <tal:none condition="not:context/drivers">None appointed</tal:none>
+      </td>
+    </tr>
+    <tr>
+      <th>Status:</th>
+      <td tal:content="context/status/title" />
+    </tr>
+    <tr>
+      <th>Source packages:</th>
+      <td tal:content="context/sourcecount" />
+    </tr>
+    <tr>
+      <th>Binary packages:</th>
+      <td tal:content="context/binarycount" />
+    </tr>
+    <tr tal:condition="context/parentseries">
+      <th>Derives from:</th>
+      <td>
+        <a tal:attributes="href context/parentseries/fmt:url">
+          <tal:distro
+            replace="context/parentseries/distribution/displayname"
+          />
+          <tal:distroseries replace="context/parentseries/displayname" />
+        </a>
+      </td>
+    </tr>
+  </tbody>
+</table>

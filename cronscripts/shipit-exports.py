@@ -9,14 +9,14 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.lp import READ_COMMITTED_ISOLATION
-from canonical.launchpad.scripts.base import (LaunchpadScript,
-    LaunchpadScriptFailure)
+from canonical.launchpad.scripts.base import (
+    LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import (
-    IShippingRequestSet, ShipItConstants, ShippingRequestPriority)
-from canonical.lp.dbschema import ShipItDistroRelease
+    IShippingRequestSet, ShipItConstants, ShipItDistroSeries,
+    ShippingRequestPriority)
 
 
-class ShipitExports(LaunchpadScript):
+class ShipitExports(LaunchpadCronScript):
     usage = '%prog --priority=normal|high'
     def add_my_options(self):
         self.parser.add_option(
@@ -27,11 +27,11 @@ class ShipitExports(LaunchpadScript):
             help='Export only requests with the given priority'
             )
         self.parser.add_option(
-            '--distrorelease',
-            dest='distrorelease',
+            '--distroseries',
+            dest='distroseries',
             default=None,
             action='store',
-            help='Export only requests for CDs of the given distrorelease'
+            help='Export only requests for CDs of the given distroseries'
             )
 
     def main(self):
@@ -47,20 +47,20 @@ class ShipitExports(LaunchpadScript):
             raise LaunchpadScriptFailure('Wrong value for argument --priority: %s'
                 % self.options.priority)
 
-        distrorelease = ShipItConstants.current_distrorelease
-        if self.options.distrorelease is not None:
+        distroseries = ShipItConstants.current_distroseries
+        if self.options.distroseries is not None:
             try:
-                distrorelease = ShipItDistroRelease.items[
-                    self.options.distrorelease.upper()]
+                distroseries = ShipItDistroSeries.items[
+                    self.options.distroseries.upper()]
             except KeyError:
                 valid_names = ", ".join(
-                    release.name for release in ShipItDistroRelease.items)
+                    series.name for series in ShipItDistroSeries.items)
                 raise LaunchpadScriptFailure(
-                    'Invalid value for argument --distrorelease: %s. Valid '
-                    'values are: %s' % (self.options.distrorelease, valid_names))
+                    'Invalid value for argument --distroseries: %s. Valid '
+                    'values are: %s' % (self.options.distroseries, valid_names))
 
         requestset = getUtility(IShippingRequestSet)
-        requestset.exportRequestsToFiles(priority, self.txn, distrorelease)
+        requestset.exportRequestsToFiles(priority, self.txn, distroseries)
 
         self.logger.info('Done.')
 

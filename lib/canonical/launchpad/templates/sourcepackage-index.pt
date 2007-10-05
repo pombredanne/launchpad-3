@@ -10,7 +10,7 @@
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/distrorelease/@@+portlet-details" />
+    <div tal:replace="structure context/distroseries/@@+portlet-details" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
@@ -25,7 +25,7 @@
 
   <p class="warning message" tal:condition="not:context/currentrelease">
     There is no current release of this source package 
-    in <span tal:replace="context/distrorelease/title" />.
+    in <span tal:replace="context/distroseries/title" />.
     You can still report bugs, make translations, and so on,
     but they might not be used until the package is published.
   </p>

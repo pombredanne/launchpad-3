@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="malone"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone"
 >
 <body>
 
@@ -9,71 +15,93 @@
   <div tal:replace="structure context/@@+portlet-latestbugs|nothing" />
 </metal:leftportlets>
 
-<metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Foo Series: main</h3>
-  <h1>Report a new bug</h1>
-</metal:heading>
-
 <div metal:fill-slot="main">
 
-  <tal:uses_malone tal:condition="view/contextUsesMalone">
-    <div metal:use-macro="context/@@launchpad_form/form">
-      <table class="form" metal:fill-slot="widgets">
-        <tal:product_widget
-            tal:define="widget nocall:view/widgets/product|nothing"
-            tal:condition="widget">
-          <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-        </tal:product_widget>
+      <h1>
+        <img
+          tal:condition="view/isPrivate"
+          alt="(Private)"
+          id="privatebadge"
+          src="/@@/private-large"
+          style="float: right;"
+          title="This bug report will be private, though you can disclose it later."
+        />
+        Report a bug
+      </h1>
 
-        <tal:bugtarget
-            tal:define="widget nocall:view/widgets/bugtarget|nothing"
-            tal:condition="widget">
-          <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-        </tal:bugtarget>
+ <metal:not_uses_malone
+    use-macro="context/@@+filebug-macros/not_uses_malone" />
 
-        <tal:hidden_tags tal:replace="structure view/widgets/tags/hidden" />
+ <tal:uses_malone tal:condition="view/contextUsesMalone">
 
-        <tr>
-          <td colspan="2">
-            <p>
-          Please describe the bug in a few words, for example, "weather
-          applet crashes on logout":
-            </p>
-          </td>
-        </tr>
-        <tal:title_widget tal:define="widget nocall:view/widgets/title">
-          <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-        </tal:title_widget>
-      </table>
+   <div metal:use-macro="context/@@launchpad_form/form">
+    <table class="form" metal:fill-slot="widgets">
+      <tal:product_widget
+          tal:define="widget nocall:view/widgets/product|nothing"
+          tal:condition="widget">
+        <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+      </tal:product_widget>
 
-      <div class="actions" metal:fill-slot="buttons">
-        <input tal:replace="structure view/actions/field.actions.search/render" />
-      </div>
+      <tal:bugtarget
+          tal:define="widget nocall:view/widgets/bugtarget|nothing"
+          tal:condition="widget">
+        <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+      </tal:bugtarget>
+
+      <tal:hidden_tags tal:replace="structure view/widgets/tags/hidden" />
+
+      <tr>
+        <td colspan="2">
+          <p>
+        Please describe the bug in a few words, for example, "weather
+        applet crashes on logout":
+          </p>
+        </td>
+      </tr>
+      <tal:title_widget tal:define="widget nocall:view/widgets/title">
+        <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+      </tal:title_widget>
+    </table>
+
+    <div class="actions" metal:fill-slot="buttons">
+      <input tal:replace="structure view/actions/field.actions.search/render" />
     </div>
+  </div>
 
-    <p class="discreet">
-      <small>
-        This guided form will try to help you find out whether your bug
-        has already been reported. You may prefer the
-        <a href="#" tal:attributes="href view/advanced_filebug_url">complicated bug filing form</a>.
-      </small>
-    </p>
+  <p class="discreet">
+    <small>
+      This guided form will try to help you find out whether your bug
+      has already been reported. You may prefer the
+      <a href="#" tal:attributes="href view/advanced_filebug_url">complicated bug filing form</a>.
+    </small>
+  </p>
 
+    <tal:most-common-bugs condition="view/most_common_bugs">
+      <h2>Most Frequently Reported Bugs</h2>
+
+      <table class="listing" id="most-common-bugs">
+        <thead>
+          <tr><th colspan="2">Summary</th></tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="bug view/most_common_bugs"
+              tal:attributes="title bug/description/fmt:shorten/150"
+              title="bug description goes here">
+            <td class="amount" tal:content="bug/id" width="10%">1</td>
+            <td>
+              <a href="#"
+                 tal:content="bug/title"
+                 tal:attributes="href bug/fmt:url">
+                 Firefox doesn't work
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </tal:most-common-bugs>
   </tal:uses_malone>
 
-  <tal:not_uses_malone
-      tal:condition="not: view/contextUsesMalone"
-      tal:define="main_context view/getMainContext">
-    <p class="error message">
-      <span tal:replace="main_context/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
-    </p>
 
-    <p>
-      To report a bug about <span tal:replace="main_context/displayname">Alsa Utils</span>,
-      please use its official bug tracker.
-    </p>
-  </tal:not_uses_malone>
-
-</div>
-
+    </div>
+  </body>
 </html>

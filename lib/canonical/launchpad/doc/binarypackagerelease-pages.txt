@@ -30,7 +30,7 @@ IPackageRelationshipSet. (see package-relationship.txt).
 
   >>> pmount_deps = pmount_view.depends()
 
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.launchpad.interfaces import IPackageRelationshipSet
 
   >>> verifyObject(IPackageRelationshipSet, pmount_deps)
@@ -39,13 +39,13 @@ IPackageRelationshipSet. (see package-relationship.txt).
 Let's check the rendering parameters for a specific dep:
 
 Note that the 'url' attribute points to the
-IDistroArchReleaseBinaryPackage for 'at'.
+IDistroArchSeriesBinaryPackage for 'at'.
 
 Besides that, 'operator' can be null regarding the given relationship,
 it automatically means that 'version' will be an empty string.
 
 Another possible case is the binary package mentioned in
-package relationship isn't present in the DistroArchRelease in
+package relationship isn't present in the DistroArchSeries in
 question. In this case 'url' will be None, which indicates no link
 should be rendered for this dependency.
 

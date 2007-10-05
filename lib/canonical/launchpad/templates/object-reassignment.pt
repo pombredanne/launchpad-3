@@ -6,21 +6,14 @@
 >
 <body>
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Mozilla Firefox</h3>
   <h1>Change the <tal:role replace="view/ownerOrMaintainerAttr" /> of 
         <tal:thing replace="view/contextName" />
   </h1>
 </metal:heading>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
+  <span metal:define-macro="object-reassignment">
   <p
     tal:condition="view/errormessage"
     class="error message"
@@ -73,6 +66,8 @@
         </td>
       </tr>
     </table>
+  </form>
+  </span>
 
 </div> 
 

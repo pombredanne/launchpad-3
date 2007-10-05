@@ -43,7 +43,7 @@ class PasswordChangeWidget(PasswordWidget):
 
     def hasInput(self):
         """We always have input if there is an existing value
-        
+
         No input indicates unchanged.
         """
         if PasswordWidget.hasInput(self):
@@ -61,14 +61,15 @@ class PasswordChangeWidget(PasswordWidget):
     def getInputValue(self):
         """Ensure both text boxes contain the same value and inherited checks
 
-        >>> from zope.publisher.browser import TestRequest
+        >>> from canonical.launchpad.webapp.servers import (
+        ...     LaunchpadTestRequest)
         >>> from zope.schema import Field
         >>> field = Field(__name__='foo', title=u'Foo')
 
         The widget will only return a value if both of the text boxes
         contain the same value. It returns the value encrypted.
 
-        >>> request = TestRequest(form={
+        >>> request = LaunchpadTestRequest(form={
         ...     'field.foo': u'My Password', 'field.foo_dupe': u'My Password'})
         >>> widget = PasswordChangeWidget(field, request)
         >>> crypted_pw = widget.getInputValue()
@@ -76,9 +77,9 @@ class PasswordChangeWidget(PasswordWidget):
         >>> encryptor.validate(u'My Password', crypted_pw)
         True
 
-        Otherwise it raises the exception required by IInputWidget 
+        Otherwise it raises the exception required by IInputWidget
 
-        >>> request = TestRequest(form={
+        >>> request = LaunchpadTestRequest(form={
         ...     'field.foo': u'My Password', 'field.foo_dupe': u'No Match'})
         >>> widget = PasswordChangeWidget(field, request)
         >>> widget.getInputValue()
@@ -86,8 +87,8 @@ class PasswordChangeWidget(PasswordWidget):
             [...]
         WidgetInputError: ('foo', u'Foo', u'Passwords do not match.')
         """
-        value1 = self.request.form.get(self.name, None)
-        value2 = self.request.form.get('%s_dupe' % self.name, None)
+        value1 = self.request.form_ng.getOne(self.name, None)
+        value2 = self.request.form_ng.getOne('%s_dupe' % self.name, None)
         if value1 != value2:
             self._error = WidgetInputError(
                     self.context.__name__, self.label, PasswordMismatch()

@@ -1,13 +1,13 @@
 == Manage-Chroot Tool ==
 
-This tool is used for add or update chroots for suites (distrorelease
-+ pocket) and DistroArchReleases.
+This tool is used for add or update chroots for suites (distroseries
++ pocket) and DistroArchSeriess.
 
 Chroots are compressed files which contains a pristine ubuntu
 work-tree, they are used to build packages. When LP is requested to
 build "foo in dapper/i386", it needs to use the respective chroot.
 
-This script is based on the IDistroArchrelease.addOrUpdateChroot
+This script is based on the IDistroArchSeries.addOrUpdateChroot
 method, which is better tested in doc/pocketchroot.txt.
 
 
@@ -73,7 +73,7 @@ Update the previous chroot (with the same file, just a test):
 
 
 Check the error when requesting to add a chroot for an unknown suite
-(<distrorelease>-<pocket> term, extensively used in soyuz context):
+(<distroseries>-<pocket> term, extensively used in soyuz context):
 
   >>> process = subprocess.Popen([sys.executable, script, "-v", "add",
   ...                             "-d", "ubuntu",
@@ -87,7 +87,7 @@ Check the error when requesting to add a chroot for an unknown suite
   1
   >>> print stderr
   DEBUG   Intitialising connetion.
-  ERROR   Suite not found: 'hoary-foo'
+  ERROR   Series not found: 'hoary-foo'
   <BLANKLINE>
 
 Remove the temporary file created by this script

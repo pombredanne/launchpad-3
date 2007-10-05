@@ -13,26 +13,17 @@ displayed.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
-    There's no person with the name or email address 'non-existent'
+    There's no person with the name or email address 'non-existent'.
 
-Entering an existing person shows all bugs that or on packages or
-products that person is a bug contact for. Since we're in the ubuntu
-context, only bugs on Ubuntu packages will be returned. In Ubuntu Foo
-Bar is a bug contact for mozilla-firefox and pmount, but there aren't
-any bugs open on pmount.
+Entering an existing person shows all bugs for packages or products that the
+person is a bug contact for. Since we're in the ubuntu context, only bugs for
+Ubuntu packages will be returned. In Ubuntu Foo Bar is a bug contact for
+mozilla-firefox and pmount, but there aren't any bugs open for pmount.
 
     >>> anon_browser.getControl('Bug contact').value = 'foo.bar@canonical.com'
     >>> anon_browser.getControl('Search', index=0).click()
 
-    >>> def print_bugtasks(soup):
-    ...     """Print all the bugtasks in the text."""
-    ...     table = soup.find('table', {'id': 'buglisting'})
-    ...     if table is None:
-    ...         return
-    ...     for tr in table('tr'):
-    ...         if not tr.td:
-    ...             continue
-    ...         print extract_text(tr)
-    >>> print_bugtasks(find_main_content(anon_browser.contents))
+    >>> from canonical.launchpad.ftests.bug import print_bugtasks
+    >>> print_bugtasks(anon_browser.contents)
     1 Firefox does not support SVG
-      mozilla-firefox Medium Unconfirmed
+      mozilla-firefox Medium New

@@ -1,53 +1,49 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-filters">
   <h2>Filters</h2>
   <div class="portletBody portletContent">
  
-<ul>
-
-  <li>
-    <a tal:attributes="href view/getOpenBugsURL">
-      Open
-    </a>
-    (<span tal:content="context/open_bugtasks/count">10</span>)
-  </li>
-  <li>
-    <a href="#" tal:attributes="href view/getBugsAssignedToMeURL">
-      Assigned to me
-    </a>
-    <tal:loggedin condition="view/user">
-      (<span tal:content="view/getBugsAssignedToMeCount">50</span>)
-    </tal:loggedin>
-    <tal:notloggedin condition="not:view/user">
-      (requires
-      <a tal:attributes="href string:${request/URL}/+login">
-      login</a>)
-    </tal:notloggedin>
-  </li>
-  <li>
-    <a tal:attributes="href view/getCriticalBugsURL">
-      Critical
-    </a>
-    (<span tal:content="context/critical_bugtasks/count">42</span>)
-  </li>
-  <li>
-    <a tal:attributes="href view/getUnconfirmedBugsURL">
-      Unconfirmed
-    </a>
-    (<span tal:content="context/unconfirmed_bugtasks/count">42</span>)
-  </li>
-  <li>
-    <a tal:attributes="href view/getUnassignedBugsURL">
-      Unassigned
-    </a>
-    (<span tal:content="context/unassigned_bugtasks/count">42</span>)
-  </li>
-  <li>
-    <a tal:attributes="href view/getAllBugsEverReportedURL">
-      All bugs ever reported
-    </a>
-    (<span tal:content="context/all_bugtasks/count">42</span>)
-  </li>
-</ul>
+  <table width="100%">
+    <tr>
+      <td><a tal:attributes="href view/getOpenBugsURL">Open</a></td>
+      <td tal:content="context/open_bugtasks/count">10</td>
+    </tr>
+    <tr tal:condition="view/user">
+      <td>
+        <a href="#" tal:attributes="href view/getBugsAssignedToMeURL">
+          Assigned to me
+        </a>
+      </td>
+      <td tal:content="view/getBugsAssignedToMeCount">50</td>
+    </tr>
+    <tr>
+      <td><a tal:attributes="href view/getCriticalBugsURL">Critical</a></td>
+      <td tal:content="context/critical_bugtasks/count">42</td>
+    </tr>
+    <tr>
+      <td>
+        <a tal:attributes="href view/getNewBugsURL">New</a>
+      </td>
+      <td tal:content="context/new_bugtasks/count">42</td>
+    </tr>
+    <tr>
+      <td>
+        <a tal:attributes="href view/getUnassignedBugsURL">Unassigned</a>
+      </td>
+      <td tal:content="context/unassigned_bugtasks/count">42</td>
+    </tr>
+    <tr>
+      <td>
+        <a tal:attributes="href view/getAllBugsEverReportedURL">
+          All bugs ever reported
+        </a>
+      </td>
+      <td tal:content="context/all_bugtasks/count">42</td>
+    </tr>
+  </table>
 
   </div>
 </div>

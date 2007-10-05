@@ -6,7 +6,8 @@ import tempfile
 import unittest
 
 from canonical.testing import reset_logging
-from hct.scaffold import Scaffold
+from canonical.launchpad.scripts.importd.tests.helpers import (
+    instrument_method, InstrumentedMethodObserver)
 
 
 class Hose_Logging(unittest.TestCase):
@@ -52,12 +53,20 @@ class Hose_Filter(unittest.TestCase):
         self.assertEquals(h.filter.filters[0], pattern)
 
 
-class Hose_Urls(Scaffold):
+class Hose_Urls(unittest.TestCase):
     def testCallsReduceWork(self):
         """Hose constructor calls reduceWork function."""
         from canonical.launchpad.scripts.productreleasefinder.hose import Hose
-        h = self.wrapped(Hose)
-        self.assertEquals(h.called["reduceWork"], True)
+        h = Hose.__new__(Hose)
+        class Observer(InstrumentedMethodObserver):
+            def __init__(self):
+                self.called_it = False
+            def called(self, name, args, kw):
+                self.called_it = True
+        obs = Observer()
+        instrument_method(obs, h, "reduceWork")
+        h.__init__()
+        self.assert_(obs.called_it)
 
     def testPassesUrlList(self):
         """Hose constructor passes url list to reduceWork."""
@@ -65,8 +74,16 @@ class Hose_Urls(Scaffold):
         from canonical.launchpad.scripts.productreleasefinder.filter import (
             FilterPattern)
         pattern = FilterPattern("foo", "http://archive.ubuntu.com/e*")
-        h = self.wrapped(Hose, [pattern])
-        self.assertEquals(h.called_args["reduceWork"][0][0],
+        h = Hose.__new__(Hose)
+        class Observer(InstrumentedMethodObserver):
+            def __init__(self):
+                self.args = []
+            def called(self, name, args, kw):
+                self.args.append(args)
+        obs = Observer()
+        instrument_method(obs, h, "reduceWork")
+        h.__init__([pattern])
+        self.assertEquals(obs.args[0][0],
                           ["http://archive.ubuntu.com/"])
 
     def testSetsUrlProperty(self):
@@ -118,7 +135,7 @@ class Hose_LimitWalk(unittest.TestCase):
     def testHoseLimitsWalk(self):
         # Test that the hose limits the directory walk to places that
         # could contain a match.
-        
+
         # Set up the releases tree:
         for directory in ['bar',
                           'foo',
@@ -144,7 +161,7 @@ class Hose_LimitWalk(unittest.TestCase):
         from canonical.launchpad.scripts.productreleasefinder.hose import Hose
         from canonical.launchpad.scripts.productreleasefinder.filter import (
             FilterPattern)
-        pattern = FilterPattern("key", self.release_url + 
+        pattern = FilterPattern("key", self.release_url +
                                 "/foo/1.*/source/foo-1.*.tar.gz")
         hose = Hose([pattern])
 

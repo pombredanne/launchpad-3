@@ -11,13 +11,14 @@ from zope.component import getUtility
 
 import pytz
 
+from canonical.config import config
 from canonical.uuid import generate_uuid
-from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IShippingRequestSet, IShipItReportSet)
 
 
-class ShipitReporter(LaunchpadScript):
+class ShipitReporter(LaunchpadCronScript):
     def _createLibraryFileAlias(self, csv_file, basename):
         """Create and return a LibraryFileAlias containing the given csv file.
 
@@ -40,15 +41,26 @@ class ShipitReporter(LaunchpadScript):
         reportset = getUtility(IShipItReportSet)
 
         self.txn.begin()
+        csv_file = requestset.generateRequestDistributionReport()
+        reportset.new(self._createLibraryFileAlias(
+            csv_file, 'RequestDistribution'))
+        self.txn.commit()
+
+        self.txn.begin()
         csv_file = requestset.generateCountryBasedReport()
         reportset.new(self._createLibraryFileAlias(csv_file, 'OrdersByCountry'))
+        self.txn.commit()
 
+        self.txn.begin()
         csv_file = requestset.generateShipmentSizeBasedReport()
         reportset.new(self._createLibraryFileAlias(csv_file, 'OrdersBySize'))
+        self.txn.commit()
 
-        # XXX: For now this will be hardcoded as the date when a new ShipIt is
-        # opened. -- Guilherme Salgado, 2005-11-24
-        start_date = date(2006, 5, 17)
+        self.txn.begin()
+        # XXX: salgado 2005-11-24:
+        # For now this will be hardcoded as the date when a new ShipIt is
+        # opened.
+        start_date = date(2007, 4, 5)
         csv_file = requestset.generateWeekBasedReport(start_date, date.today())
         reportset.new(self._createLibraryFileAlias(csv_file, 'OrdersByWeek'))
         self.txn.commit()
@@ -57,6 +69,6 @@ class ShipitReporter(LaunchpadScript):
 
 
 if __name__ == '__main__':
-    script = ShipitReporter('shipit-reporter')
+    script = ShipitReporter('shipit-reporter', dbuser=config.shipit.dbuser)
     script.lock_and_run(implicit_begin=False)
 

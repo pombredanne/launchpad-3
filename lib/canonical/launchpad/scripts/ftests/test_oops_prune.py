@@ -81,7 +81,7 @@ class TestOopsPrune(unittest.TestCase):
                 SET statusexplanation='foo OOPS1BugTaskStatusExplanation666'
             """)
         cur.execute("""
-            UPDATE Ticket SET
+            UPDATE Question SET
                 title='OOPS - 1TicketTitle666 bar',
                 description='http://foo.com OOPS-1TicketDescription666',
                 whiteboard='OOPS-1TicketWhiteboard666'
@@ -90,7 +90,7 @@ class TestOopsPrune(unittest.TestCase):
         # Add a question entry with a NULL whiteboard to ensure the SQL query
         # copes.
         cur.execute("""
-            UPDATE Ticket SET
+            UPDATE Question SET
                 title='OOPS - 1TicketTitle666 bar',
                 description='http://foo.com OOPS-1TicketDescription666',
                 whiteboard=NULL

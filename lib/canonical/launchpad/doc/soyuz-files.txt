@@ -10,7 +10,7 @@ object via a BinaryPackageFile or SourcePackageReleaseFile.
 SourcePackageReleaseFile or BinaryPackageFile are available via the
 'files' attribute on its parent.
 
- >>> from zope.interface.verify import verifyObject
+ >>> from canonical.launchpad.webapp.testing import verifyObject
  >>> from zope.component import getUtility
 
  >>> from canonical.launchpad.interfaces import (
@@ -55,13 +55,13 @@ instalable debian-format file:
 
    * An '.deb'
 
- >>> warty_i386_firefox_binpkg = warty['i386'].getBinaryPackage(
- ...    'mozilla-firefox').currentrelease
+ >>> warty_i386_pmount_binpkg = warty['i386'].getBinaryPackage(
+ ...    'pmount').currentrelease
 
- >>> warty_i386_firefox_binpkg.name
- u'mozilla-firefox'
+ >>> warty_i386_pmount_binpkg.name
+ u'pmount'
 
- >>> debfile = warty_i386_firefox_binpkg.files[0]
+ >>> debfile = warty_i386_pmount_binpkg.files[0]
 
  >>> verifyObject(IBinaryPackageFile, debfile)
  True
@@ -70,7 +70,7 @@ instalable debian-format file:
  True
 
  >>> debfile.libraryfile.filename
- u'mozilla-firefox_0.9_i386.deb'
+ u'pmount_1.9-1_all.deb'
 
  >>> debfile.libraryfile.http_url
- 'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb'
+ 'http://localhost:58000/37/pmount_1.9-1_all.deb'

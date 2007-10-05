@@ -10,7 +10,7 @@ import os
 
 from canonical.config import config
 from canonical.launchpad.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.scripts.oops import (
         unwanted_oops_files, prune_empty_oops_directories
         )
@@ -19,7 +19,7 @@ from canonical.lp import AUTOCOMMIT_ISOLATION
 
 default_lock_filename = '/var/lock/oops-prune.lock'
 
-class OOPSPruner(LaunchpadScript):
+class OOPSPruner(LaunchpadCronScript):
     def add_my_options(self):
         self.parser.add_option(
                 '-n', '--dry-run', default=False, action='store_true',
@@ -40,7 +40,7 @@ class OOPSPruner(LaunchpadScript):
 
         self.txn.set_isolation_level(AUTOCOMMIT_ISOLATION)
         for oops_directory in oops_directories:
-            for oops_path in unwanted_oops_files(oops_directory, 90, self.logger):
+            for oops_path in unwanted_oops_files(oops_directory, 40, self.logger):
                 self.logger.info("Removing %s", oops_path)
                 if not self.options.dry_run:
                     os.unlink(oops_path)

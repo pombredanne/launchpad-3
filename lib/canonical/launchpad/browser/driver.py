@@ -27,8 +27,8 @@ class AppointDriverView(LaunchpadEditFormView):
             "context should provide IHasAppointedDriver.")
         for interface in providedBy(self.context):
             if interface.isOrExtends(IHasAppointedDriver):
-                # XXX matsubara 20070213: removeSecurityProxy() is a
-                # workaround for bug https://launchpad.net/bugs/84940
+                # XXX matsubara 2007-02-13 bug=84940:
+                # removeSecurityProxy() is a workaround.
                 return removeSecurityProxy(interface)
 
     @action('Change', name='change')

@@ -1,34 +1,39 @@
 = Forwarding bugs upstream =
 
-There are two pages that deal with adding an upstream task:
-+choose-affected-product and +add-affected-product. The former deals
-with choosing which product that is affected by the bug, and the latter
-display some information about the chosen product and adds the actual
-bugtask.
+The +choose-affected-product page is, in fact, a wizard-like page which
+allows the user to select the affected product, specify a remote bug URL
+and create the actual bugtask/watch (also creating the bugtracker if
+necessary).
 
-If we add go to the page from an Ubuntu evolution task, we get
-redirected to +add-affected-product directly.
+Trying to add an upstream task to a bug on the evolution package in Ubuntu
+will cause the product-selection step to be skipped because the package is
+linked to the evolution upstream product.
 
     >>> user_browser.open(
     ...  'http://launchpad.dev/ubuntu/+source/evolution/+bug/6')
     >>> user_browser.getLink(url='+choose-affected-product').click()
-    >>> user_browser.url
-    'http://launchpad.dev/ubuntu/+source/evolution/+bug/6/+add-affected-product?field.product=evolution'
+    >>> user_browser.getControl('Project').value
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Project'
+    >>> user_browser.getControl(name='field.product').value
+    'evolution'
 
 If this wasn't what we intended, we can go back to choose another
-product.
+product, though.
 
     >>> user_browser.getLink('Choose another project').click()
     >>> user_browser.url
-    'http://launchpad.dev/ubuntu/+source/evolution/+bug/6/+choose-affected-product?field.product=evolution'
+    'http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/6/+choose-affected-product?field.product=evolution'
 
-    >>> user_browser.getControl('Product').value
+    >>> user_browser.getControl('Project').value
     'evolution'
 
-    >>> user_browser.getControl('Product').value = 'thunderbird'
+    >>> user_browser.getControl('Project').value = 'thunderbird'
     >>> user_browser.getControl('Continue').click()
 
-Since Thunderbird doesn't use  Malone, there's a widget for entering a bug URL.
+Since Thunderbird doesn't use Launchpad, there's a widget for entering 
+a bug URL.
 
     >>> user_browser.getControl('URL').value
     ''
@@ -37,19 +42,18 @@ If we leave it empty, a notification will be shown when trying to add
 the task, asking us to confirm that we want to add the task without a
 bug watch.
 
-    >>> user_browser.getControl('Indicate bug in Mozilla Thunderbird').click()
+    >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
-    'http://launchpad.dev/ubuntu/+source/evolution/+bug/6/+add-affected-product'
+    'http://.../ubuntu/+source/evolution/+bug/6/+choose-affected-product'
 
-    >>> for notification in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print notification.renderContents()
-    Mozilla Thunderbird doesn't use Malone as its bug tracker...
+    >>> print get_feedback_messages(user_browser)
+    [u"Mozilla Thunderbird doesn't use Launchpad as its bug tracker...]
 
 Let's confirm adding the task.
 
     >>> user_browser.getControl('Yes').click()
     >>> user_browser.url
-    'http://launchpad.dev/thunderbird/+bug/6'
+    'http://bugs.launchpad.dev/thunderbird/+bug/6'
 
 Let's add the evolution task as well.
 
@@ -57,12 +61,12 @@ Let's add the evolution task as well.
     ...  'http://launchpad.dev/ubuntu/+source/evolution/+bug/6')
     >>> user_browser.getLink(url='+choose-affected-product').click()
     >>> user_browser.url
-    'http://launchpad.dev/ubuntu/+source/evolution/+bug/6/+add-affected-product?field.product=evolution'
+    'http://.../ubuntu/+source/evolution/+bug/6/+choose-affected-product'
 
-    >>> user_browser.getControl('Indicate bug in Evolution').click()
+    >>> user_browser.getControl('Add to Bug Report').click()
 
     >>> user_browser.url
-    'http://launchpad.dev/evolution/+bug/6'
+    'http://bugs.launchpad.dev/evolution/+bug/6'
 
 == Error messages ==
 
@@ -72,32 +76,29 @@ If we try to add an upstream task without specifying a product:
     ...     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3')
     >>> user_browser.getLink(url='+choose-affected-product').click()
     >>> user_browser.url
-    'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
+    'http://.../debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
 
-    >>> user_browser.getControl('Product').value
+    >>> user_browser.getControl('Project').value
     ''
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
+    'http://.../debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
 
 We get a nice error message.
 
-  >>> 'Required input is missing' in user_browser.contents
-  True
+    >>> print get_feedback_messages(user_browser)
+    [u'There is 1 error.', u'Required input is missing.']
 
 If we enter a product name that doesn't exist, we inform the user
 about this and ask him to search for the product.
 
-    >>> user_browser.getControl('Product').value = 'no-such-product'
+    >>> user_browser.getControl('Project').value = 'no-such-product'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
-    >>> for message_tag in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print message_tag.renderContents()
-    There is 1 error.
-    There is no product in Launchpad named "no-such-product". You may
-    want to <a ...>search for it</a>, or <a ...>register it</a> if you
-    can't find it.
+    'http://.../debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
+    >>> print get_feedback_messages(user_browser)
+    [u'There is 1 error.',
+     u'There is no project in Launchpad named "no-such-product"...]
 
     >>> search_link = user_browser.getLink('search for it')
     >>> search_link.url
@@ -113,7 +114,7 @@ so let's extract the real URL and open it manually.
     ...  'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/'
     ...   + search_url)
     >>> user_browser.title
-    'Select a Product'
+    'Select a project'
 
 If we go back again, we see that we also give the user the possibility
 to register the product if he doesn't find it.
@@ -121,10 +122,10 @@ to register the product if he doesn't find it.
     >>> user_browser.open(
     ...     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/'
     ...     '+choose-affected-product')
-    >>> user_browser.getControl('Product').value = 'no-such-product'
+    >>> user_browser.getControl('Project').value = 'no-such-product'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
+    'http://.../debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
 
     >>> user_browser.getLink('register it').click()
     >>> user_browser.title
@@ -137,18 +138,13 @@ need to make sure that everything is quoted before displaying the input.
     ...     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3'
     ...     '/+choose-affected-product')
 
-    >>> user_browser.getControl('Product').value = 'N\xc3\xb6 Such Product&<>'
+    >>> user_browser.getControl('Project').value = 'N\xc3\xb6 Such Product&<>'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
-    >>> [message_tag.renderContents()
-    ...  for message_tag in find_tags_by_class(user_browser.contents, 'message')]
-    ['There is 1 error.',
-     'There is no product in Launchpad named
-      "N\xc3\xb6 Such Product&amp;&lt;&gt;". You may want to
-      <a ...>search for it</a>, or <a ...>register it</a> if you can\'t
-      find it.']
-
+    'http://.../debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
+    >>> print get_feedback_messages(user_browser)
+    [u'There is 1 error.',
+     u'There is no project in Launchpad named "N\xf6 Such Product&amp;&lt...]
 
 == Linking to bug watches ==
 
@@ -156,68 +152,67 @@ Now we add an upstream task, while adding this new bugtask we can also
 specify a bug watch. If we inadvertently left some leading or trailing white
 space in the bug URL it will be stripped.
 
-  >>> user_browser.open(
-  ...     'http://launchpad.dev/debian/+source/mozilla-firefox/'
-  ...     '+bug/3/+choose-affected-product')
-  >>> user_browser.getControl('Product').value = 'alsa-utils'
-  >>> user_browser.getControl('Continue').click()
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/debian/+source/mozilla-firefox/'
+    ...     '+bug/3/+choose-affected-product')
+    >>> user_browser.getControl('Project').value = 'alsa-utils'
+    >>> user_browser.getControl('Continue').click()
+ 
+    >>> user_browser.getControl('URL').value = (
+    ...     '   https://bugzilla.mozilla.org/show_bug.cgi?id=1234   ')
+    >>> user_browser.getControl('Add to Bug Report').click()
 
-  >>> user_browser.getControl('URL').value = (
-  ...     '   https://bugzilla.mozilla.org/show_bug.cgi?id=1234   ')
-  >>> user_browser.getControl('Indicate bug in alsa-utils').click()
+Launchpad redirects to the newly created bugtask page, with a row for the
+new bug watch.
 
-Redirected to the newly created bugtask page
-
-  >>> user_browser.url
-  'http://launchpad.dev/alsa-utils/+bug/3'
-
-  >>> print user_browser.contents
-  <...
-  ...alsa-utils (upstream)...
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/alsa-utils/+bug/3'
+    >>> affects_table = find_tags_by_class(user_browser.contents, 'listing')[0]
+    >>> target_cell = affects_table.tbody.tr.td
+    >>> extract_text(target_cell)
+    u'alsa-utils'
 
 And we can check that the remote bug number was stripped.
 
-  >>> user_browser.getLink('mozilla.org #1234')
-  <Link text='Linked to [IMG] mozilla.org #1234'
-    url='https://bugzilla.mozilla.org/show_bug.cgi?id=1234'>
+    >>> user_browser.getLink('mozilla.org #1234')
+    <Link text='Linked to [IMG] mozilla.org #1234'
+      url='https://bugzilla.mozilla.org/show_bug.cgi?id=1234'>
 
 And now we try to add the same upstream again.
 
     >>> user_browser.getLink(url='+choose-affected-product').click()
     >>> user_browser.url
-    'http://launchpad.dev/alsa-utils/+bug/3/+choose-affected-product'
+    'http://bugs.launchpad.dev/alsa-utils/+bug/3/+choose-affected-product'
 
-    >>> user_browser.getControl('Product').value = 'alsa-utils'
+    >>> user_browser.getControl('Project').value = 'alsa-utils'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://launchpad.dev/alsa-utils/+bug/3/+choose-affected-product'
+    'http://bugs.launchpad.dev/alsa-utils/+bug/3/+choose-affected-product'
 
 We get a nice error message.
 
-    >>> print user_browser.contents
-    <...A fix for this bug has already been requested for alsa-utils...
+    >>> print get_feedback_messages(user_browser)
+    [u'There is 1 error.',
+     u'A fix for this bug has already been requested for alsa-utils']
 
 We can add another upstream to the bug.
 
-    >>> user_browser.getControl('Product').value = 'evolution'
+    >>> user_browser.getControl('Project').value = 'evolution'
     >>> user_browser.getControl('Continue').click()
-    >>> user_browser.getControl('Indicate bug in Evolution').click()
+    >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
-    'http://launchpad.dev/evolution/+bug/3'
+    'http://bugs.launchpad.dev/evolution/+bug/3'
 
 But if we try to change it to the target of an existing upstream bugtask,
 our validator springs into action.
 
-    >>> user_browser.getLink("evolution (upstream)").click()
+    >>> user_browser.getLink(url='evolution/+bug/3/+editstatus').click()
     >>> user_browser.url
-    'http://launchpad.dev/evolution/+bug/3/+editstatus'
-    >>> user_browser.getControl('Product').value = 'alsa-utils'
+    'http://bugs.launchpad.dev/evolution/+bug/3/+editstatus'
+    >>> user_browser.getControl('Project').value = 'alsa-utils'
     >>> user_browser.getControl('Save Changes').click()
     >>> user_browser.url
-    'http://launchpad.dev/evolution/+bug/3/+editstatus'
-    >>> print user_browser.contents
-    <...
-    ...Please fix them and try again...
-    ...
-    ...A fix for this bug has already been requested for alsa-utils...
-    ...
+    'http://bugs.launchpad.dev/evolution/+bug/3/+editstatus'
+    >>> print get_feedback_messages(user_browser)
+     [u'There is 1 error in the data you entered...
+      u'A fix for this bug has already been requested for alsa-utils']

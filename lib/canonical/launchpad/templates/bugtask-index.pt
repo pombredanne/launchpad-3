@@ -1,38 +1,62 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="malone"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone"
 >
   <body>
+    <metal:portlets fill-slot="portlets">
 
-<metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-subscribers" />
-    <div tal:replace="structure context/@@+portlet-questions" />
-    <div tal:replace="structure context/@@+portlet-duplicates" />
-    <div tal:replace="structure context/target/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/bug/@@+portlet-duplicates" />
+    <div tal:replace="structure context/bug/@@+portlet-subscribers" />
+    <div tal:replace="structure context/bug/@@+portlet-questions" />
+    <div tal:replace="structure context/bug/@@+portlet-specs" />
+    <div tal:replace="structure context/bug/@@+portlet-attachments" />
+    <div tal:replace="structure context/bug/@@+portlet-cve" />
+    <div tal:replace="structure context/bug/@@+portlet-reference" />
+    <div tal:replace="structure context/bug/@@+portlet-watch" />
     <div tal:replace="structure context/@@+portlet-search" />
-    <div tal:replace="structure context/@@+portlet-specs" />
-    <div tal:replace="structure context/@@+portlet-attachments" />
-    <div tal:replace="structure context/@@+portlet-cve" />
-    <div tal:replace="structure context/@@+portlet-reference" />
-    <div tal:replace="structure context/@@+portlet-watch" />
-</metal:rightportlets>
+    
+    </metal:portlets>
 
 <div metal:fill-slot="main">
 
-      <div>
-        <tal:icon replace="structure context/fmt:icon" />
-        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>,
-        first reported by
-        <a tal:attributes="href context/bug/owner/fmt:url"
-           tal:content="context/bug/owner/browsername">Foo Bar</a>
-        on <tal:date content="context/bug/datecreated/fmt:date" />
+      <div style="float: left;">
+        <tal:icon replace="structure context/image:icon" />
+        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug><tal:nickname
+        condition="context/bug/name">
+        (<tal:nicknametext replace="context/bug/name" />)</tal:nickname>,
+        first reported
+        <span
+          tal:attributes="title context/bug/datecreated/fmt:datetime"
+          tal:content="context/bug/datecreated/fmt:displaydate" />
+        by <tal:reporter replace="structure context/bug/owner/fmt:link" />
       </div>
-      <h1 tal:content="context/bug/title">Foo doesn't work</h1>
+      <div id="bug-properties" style="float: right;">
+        <img
+          tal:condition="context/bug/security_related"
+          alt="(Security vulnerability)"
+          src="/@@/security-large"
+          title="This bug report is about a security vulnerability"
+        />
+        <img src="/@@/mentoring-large" title="(Mentoring available)"
+             tal:condition="context/bug/mentoring_offers/count" />
+        <img src="/@@/branch-large" title="(Branch available)"
+             tal:condition="context/bug/bug_branches/count" />
+        <img
+          tal:condition="context/bug/private"
+          alt="(Private)"
+          id="privatebadge"
+          src="/@@/private-large"
+          title="This bug report is private"
+        />
+      </div>
+      <h1 style="clear: left;" tal:content="context/bug/title">Bug summary</h1>
 
   <tal:block condition="view/reportBugInContext" />
 
@@ -53,12 +77,17 @@
        >2 duplicates</tal:num-dupes>
     </p>
 
-  <p tal:condition="context/bug/duplicateof" class="informational message">
-    This report is a duplicate of
-    <a tal:attributes="href context/bug/duplicateof/fmt:url;
-                       title context/bug/duplicateof/title"
-       tal:content="string:bug #${context/bug/duplicateof/id}">bug 42</a>
-  </p>
+  <tal:duplicate-of define="duplicateof context/bug/duplicateof"
+                    condition="duplicateof">
+    <p class="informational message">
+      This report is a duplicate of
+      <a tal:condition="duplicateof/required:launchpad.View"
+         tal:attributes="href duplicateof/fmt:url; title duplicateof/title"
+         tal:content="string:bug #${duplicateof/id}">bug #42</a>
+      <span tal:condition="not:duplicateof/required:launchpad.View"
+            tal:replace="string:bug #${duplicateof/id}" />
+    </p>
+  </tal:duplicate-of>
 
       <form
         tal:condition="not:view/isReportedInContext"
@@ -67,14 +96,9 @@
         method="POST"
       >
 
-    This bug is not recorded as needing to be fixed in the
+    This bug is not recorded as needing to be fixed in
     <a tal:attributes="href string:${context/target/fmt:url}/+bugs"
-       tal:content="context/targetname">upstream firefox</a>
-    <tal:product condition="context/product">project.</tal:product>
-    <tal:package condition="context/sourcepackagename">package.</tal:package>
-    <tal:distribution
-      condition="python: (not context.product) and (not context.sourcepackagename)"
-    >distribution.</tal:distribution>
+       tal:content="context/bugtargetdisplayname">Mozilla Firefox</a>.
 
     <tal:loggedin condition="request/lp:person">
 
@@ -85,7 +109,8 @@
         />
     </tal:loggedin>
     <tal:notloggedin condition="not:request/lp:person">
-      If you wish report it in <tal:block content="context/targetname" />,
+      If you wish report it in <tal:block
+      content="context/bugtargetdisplayname" />,
       you must <a href="+login">log in</a> first.
     </tal:notloggedin>
 
@@ -93,59 +118,83 @@
 
   <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
+      <tal:branches define="bug_branches view/bug_branches"
+                  condition="bug_branches">
+        <p tal:condition="context/bug/private" class="warning message"
+        >This bug is private, so avoid adding public branches here.</p>
+        <table class="listing" id="bug_branch_details">
+          <thead>
+            <tr>
+              <th>Related branch</th>
+              <th>Developer</th>
+              <th>Status for this bug</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="bug_branch bug_branches">
+              <td>
+                <img alt="" src="/@@/branch" />
+                <a
+                  tal:attributes="href bug_branch/branch/fmt:url"
+                  tal:content="bug_branch/branch/displayname"
+                >Integration branch</a>
+              </td>
+              <td tal:content="structure bug_branch/branch/owner/fmt:link" />
+              <td>
+                <a
+                  tal:attributes="href string:${bug_branch/fmt:url}/+status"
+                  tal:content="bug_branch/status/title"
+                >Under Development</a>
+              </td>
+              </tr>
+          </tbody>
+        </table>
+      </tal:branches>
       <div class="report">
-        <h2>Bug description <small>(<a href="+edit">edit</a>)</small></h2>
+        <h2>Bug description
+          <a href="+edit"
+          ><img src="/@@/edit" alt="[edit]" title="Edit this description"
+          /></a></h2>
 
-    <div id="bug-description" style="font-family: monospace;"
-         tal:content="structure context/bug/description/fmt:text-to-html" />
-
-    <div id="bug-tags"
-         tal:define="tags context/bug/tags"
-         tal:condition="tags"
-         style="text-align: right; font-size: smaller; margin: 0; padding: 0">
+    <div id="bug-tags" tal:define="tags context/bug/tags" tal:condition="tags">
       <b>Tags:</b>
       <a tal:repeat="tag tags"
          tal:content="tag"
            tal:attributes="
              href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
     </div>
+
+    <div id="bug-description"
+         tal:content="structure context/bug/description/fmt:text-to-html" />
+
   </div>
 
   <div style="margin-bottom: 1em; text-align: center">
-    <span tal:condition="view/wasDescriptionModified" 
-          class="discreet lesser">
+    <span tal:condition="view/wasDescriptionModified">
       This description was updated. <a href="comments/0">View original description</a>.</span>
   </div>
 
-  <tal:branches define="bug_branches context/bug/bug_branches"
-              condition="bug_branches">
-    <p tal:condition="context/bug/private"
-         class="warning message">
-      This bug is private, so avoid adding public branches here.
+  <tal:mentors define="mentoring_offers context/bug/mentoring_offers"
+               condition="mentoring_offers">
+    <p>
+      <img src="/@@/mentoring" alt="Mentoring"
+           title="People have offered to mentor this work" />
+      <b>Mentors:</b>
+      <tal:block repeat="mentoring_offer mentoring_offers">
+        <a tal:replace="structure mentoring_offer/owner/fmt:link">foobar</a>
+      </tal:block>
     </p>
+    <tal:block condition="not: context/bug/is_complete">
+      <p tal:condition="view/userIsMentor">
+        &raquo;
+        <a href="+retractmentoring">Retract my offer of mentorship</a>
+      </p>
+    </tal:block>
+  </tal:mentors>
 
-    <table class="listing">
-      <thead>
-        <tr>
-          <th>Related Branch</th>
-          <th>Developer</th>
-          <th>Revision Hint</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr tal:repeat="bug_branch bug_branches">
-          <td>
-            <a href="#"
-               tal:attributes="href string:${bug_branch/fmt:url}/+status"
-               tal:content="bug_branch/status/title">Under Development</a>
-          </td>
-          <td tal:content="bug_branch/branch/owner/displayname"></td>
-          <td tal:content="bug_branch/revision_hint"></td>
-        </tr>
-      </tbody>
-    </table>
-  </tal:branches>
-
+  <p tal:condition="view/userCanMentor">
+    &raquo; <a href="+mentor">Offer to mentor someone fixing this bug</a>
+  </p>
 
   <tal:comment repeat="comment view/getBugCommentsForDisplay">
     <metal:comment-box
@@ -164,6 +213,23 @@
     </div>
   </tal:not-logged-in>
 
-</div>
-</body>
+      <div class="related">
+        <h2>What next?</h2>
+        <ul>
+          <li>
+            <a
+              tal:attributes="href string:${context/target/fmt:url}/+filebug"
+            >Report another bug</a>
+            about <tal:context replace="context/target/displayname" />
+          </li>
+          <li>
+            <a
+              tal:attributes="href string:${context/target/fmt:url}/+bugs"
+            >List open bugs</a>
+            for <tal:context replace="context/target/displayname" />
+          </li>
+        </ul>
+      </div>
+    </div>
+  </body>
 </html>

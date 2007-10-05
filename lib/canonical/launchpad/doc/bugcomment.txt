@@ -95,6 +95,39 @@ Note that multi-chunk comments are only created by the email interface
 itself; adding comments through the web UI always places them in the
 same chunk.
 
+
+Comment titles
+--------------
+
+This function also eliminates redundant message titles. We have a policy of
+only displaying message titles when these are "new" to the bug. That means
+they are different to the bug title, and different to the previous message.
+
+The function sets a comment.display_title to True if the title should be
+displayed.
+
+    >>> bug_11 = getUtility(IBugSet).get(11)
+    >>> all_comments = get_comments_for_bugtask(bug_11.bugtasks[0])
+    >>> for comment in all_comments:
+    ...     print comment.display_title, comment.title
+    False Make Jokosher use autoaudiosink
+    False Re: Make Jokosher use autoaudiosink
+    False Re: Make Jokosher use autoaudiosink
+    True Autoaudiosink is no longer under development
+    False Re: Autoaudiosink is no longer under development
+    True This is a really new title
+    False Re: Make Jokosher use autoaudiosink
+    >>> bug_12 = getUtility(IBugSet).get(12)
+    >>> all_comments = get_comments_for_bugtask(bug_12.bugtasks[0])
+    >>> for comment in all_comments:
+    ...     print comment.display_title, comment.title
+    False Copy, Cut and Delete operations should work on selections
+    False Re: Copy, Cut and Delete operations should work on selections
+    False Re: Copy, Cut and Delete operations should work on selections
+    False Re: Copy, Cut and Delete operations should work on selections
+    False Re: Copy, Cut and Delete operations should work on selections
+
+
 Comment omission
 ----------------
 

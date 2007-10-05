@@ -1,17 +1,14 @@
 Hello %(importer)s,
 
-On %(dateimport)s (%(elapsedtime)s), you uploaded a file with
-%(language)s translations for %(template)s in Rosetta.
+On %(dateimport)s (%(elapsedtime)s), you uploaded a file with %(language)s translations for %(template)s in Launchpad.
 
-We didn't import it because you didn't update its header to note
-the time stamp when you added your translations.
+We were unable to import your translations because you did not update the time stamp in its header to state when you added your translations.
 
-To fix this problem, please upload again this file with the
-'PO-Revision-Date' field updated.
+To fix this problem, please upload the file again, but with the 'PO-Revision-Date' field updated.
 
 For your convenience, you can get the file you uploaded at:
 %(file_link)s
 
-Thanks for using Rosetta.
+Thank you,
 
-The Rosetta SWAT Team
+The Launchpad team

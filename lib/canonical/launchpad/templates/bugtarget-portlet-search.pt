@@ -1,8 +1,11 @@
-<div class="portlet">
-  <h2 tal:content="string:Search ${context/targetname} bugs"
-  >Search Mozilla Firefox bugs</h2>
-  <div class="portletBody portletContent"
-       tal:define="bugs_url string:${context/target/fmt:url}/+bugs">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-search">
+  <h2>Search</h2>
+  <div class="portletBody"
+    tal:define="bugs_url string:${context/target/fmt:url}/+bugs">
     <b>Enter bug ID or keywords:</b><br /><br />
     <form name="bugtask_search" method="GET"
           tal:attributes="action bugs_url">

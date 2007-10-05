@@ -1,64 +1,109 @@
-The launchpad usage flags (whether the product uses Malone or
-Rosetta officially) are controlled by the +launchpad page. Only the
-product registrant and the admins have access to this page, so let's
-use Sample Person, the registrant of Firefox..
+= Product Launchpad usage =
 
-  >>> registrant_browser = browser
-  >>> registrant_browser.addHeader(
-  ...     'Authorization', 'Basic test@canonical.com:test')
+The launchpad usage flags (whether the product uses Bugs, Answers or
+Translations officially) are found on the +edit page. 
 
-  >>> registrant_browser.open('http://launchpad.dev/firefox')
-  >>> registrant_browser.getLink('Define Launchpad usage').click()
-  >>> registrant_browser.url
-  'http://launchpad.dev/firefox/+launchpad'
+    >>> anon_browser.open('http://launchpad.dev/firefox')
+    >>> print anon_browser.title
+    Mozilla Firefox in Launchpad
 
+    >>> content = find_main_content(anon_browser.contents)
+    >>> status_label = content.find('th', text='Status:')
+    >>> print extract_text(status_label.findNext())
+    Active
+    Uses Bugs
+    Doesn&rsquo;t use Translations
+    Uses Answers
 
-Firefox is currently marked as using Malone. Let's specify that it
+    >>> label_cell = content.find('th', text='Bug tracker:')
+    >>> print extract_text(label_cell.findNext())
+    Launchpad
+
+Only the product registrant and the admins have access to this page. 
+
+    >>> anon_browser.getLink('Change details')
+    Traceback (most recent call last):
+      ...
+    LinkNotFound...    
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/+edit')
+    Traceback (most recent call last):
+      ...
+    Unauthorized...
+
+so let's use Sample Person, the registrant of Firefox..
+
+    >>> registrant_browser = setupBrowser(
+    ...     auth='Basic test@canonical.com:test')
+    >>> registrant_browser.open('http://launchpad.dev/firefox')
+    >>> registrant_browser.getLink('Change details').click()
+    >>> registrant_browser.url
+    'http://launchpad.dev/firefox/+edit'
+
+Firefox is currently marked as using Bugs. Let's specify that it
 doesn't use any bug tracker at all.
 
-  >>> registrant_browser.getControl('Uses Rosetta Officially').selected
-  False
+    >>> registrant_browser.getControl(
+    ...     'Translations for this project are done in Launchpad').selected
+    False
+    >>> registrant_browser.getControl(
+    ...     'Let people use Launchpad Answers to ask questions').selected
+    True
+    >>> registrant_browser.getControl(
+    ...     'In Launchpad').selected
+    True
+    >>> registrant_browser.getControl('Somewhere else').selected = True
 
-  >>> registrant_browser.getControl('Bugs are tracked in Malone').selected
-  True
-
-  >>> registrant_browser.getControl('No bug tracker').selected = True
-
-  >>> registrant_browser.getControl('Change').click()
+    >>> registrant_browser.getControl('Change').click()
 
 On the product page, we can see that the product doesn't use any bug
 tracker, not even Launchpad.
+  
+    >>> content = find_main_content(registrant_browser.contents)
+    >>> status_label = content.find('th', text='Status:')
+    >>> print extract_text(status_label.findNext())
+    Active
+    Doesn&rsquo;t use Bugs
+    Doesn&rsquo;t use Translations
+    Uses Answers
 
-  >>> print registrant_browser.contents
-  <...
-  ...Doesn&rsquo;t use Bugs...
-  ...<th>Bug tracker:</th>...
-  ...None specified...
+    >>> label_cell = content.find('th', text='Bug tracker:')
+    >>> print extract_text(label_cell.findNext())
+    None specified
 
 Now let's go back and choose to use a specific bug tracker.
 
-  >>> registrant_browser.getLink('Define Launchpad usage').click()
-  >>> registrant_browser.getControl('No bug tracker').selected
-  True
-  >>> registrant_browser.getControl('External bug tracker').selected = True
-  >>> registrant_browser.getControl(
-  ...     name='field.bugtracker.bugtracker').displayValue = [
-  ...         'GnomeGBug GTracker']
-  >>> registrant_browser.getControl('Change').click()
-  >>> print registrant_browser.contents
-  <...
-  ...Doesn&rsquo;t use Bugs...
-  ...<th>Bug tracker:</th>
-  ...<a href=".../gnome-bugzilla">GnomeGBug GTracker</a>
-  ...
+    >>> registrant_browser.getLink('Change details').click()
+    >>> registrant_browser.getControl('Somewhere else').selected
+    True
+    >>> registrant_browser.getControl(
+    ...     'In a registered bug tracker:').selected = True
+    >>> registrant_browser.getControl(
+    ...     name='field.bugtracker.bugtracker').displayValue = [
+    ...         'GnomeGBug GTracker']
+    >>> registrant_browser.getControl('Change').click()
+    >>> content = find_main_content(registrant_browser.contents)
+    >>> status_label = content.find('th', text='Status:')
+    >>> print extract_text(status_label.findNext())
+    Active
+    Doesn&rsquo;t use Bugs
+    Doesn&rsquo;t use Translations
+    Uses Answers
 
+    >>> label_cell = content.find('th', text='Bug tracker:')
+    >>> print extract_text(label_cell.findNext())
+    GnomeGBug GTracker
+  
 Let's reset it to the way it was before.
 
-  >>> registrant_browser.getLink('Define Launchpad usage').click()
-  >>> registrant_browser.getControl('External bug tracker').selected
-  True
-  >>> registrant_browser.getControl(
-  ...     'Bugs are tracked in Malone').selected = True
-  >>> registrant_browser.getControl('Change').click()
-  >>> 'Doesn&rsquo;t use Bugs' in registrant_browser.contents
-  False
+    >>> registrant_browser.getLink('Change details').click()
+    >>> registrant_browser.getControl('In a registered bug tracker:').selected
+    True
+    >>> registrant_browser.getControl('In Launchpad').selected = True
+    >>> registrant_browser.getControl('Change').click()
+    >>> content = find_main_content(registrant_browser.contents)
+    >>> status_label = content.find('th', text='Status:')
+    >>> print extract_text(status_label.findNext())
+    Active
+    Uses Bugs
+    Doesn&rsquo;t use Translations
+    Uses Answers

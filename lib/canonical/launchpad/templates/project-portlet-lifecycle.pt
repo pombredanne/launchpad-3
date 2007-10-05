@@ -1,18 +1,24 @@
-<div class="portlet">
+<div class="portlet" id="portlet-lifecycle">
   <h2>Lifecycle</h2>
   <table class="portletBody">
     <tbody>
       <tr>
-        <th>Registered:</th>
-        <td tal:content="context/datecreated/fmt:date">2006-07-21</td>
-      </tr>
-      <tr>
-        <th>by:</th>
+        <th>Registered by:</th>
         <td>
           <a
             tal:content="context/owner/browsername"
             tal:attributes="href context/owner/fmt:url"
           >Foo Bar</a>
+        </td>
+      </tr>
+      <tr>
+        <th>When:</th>
+        <td>
+          <span
+            tal:attributes="title context/datecreated/fmt:datetime"
+            tal:content="context/datecreated/fmt:approximatedate">
+            2006-07-21
+          </span>
         </td>
       </tr>
     </tbody>

@@ -1,0 +1,94 @@
+== The Product Bugs Page ==
+
+The front page for a product on the bugs domain presents some basic
+information the bugs in it. It doesn't display the list of bugs.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> anon_browser.title
+    'Bugs in Mozilla Firefox'
+    >>> find_tag_by_id(anon_browser.contents, 'buglisting') is None
+    True
+
+The page has a link to see all open bugs.
+
+    >>> anon_browser.getLink('List all open bugs').click()
+    >>> anon_browser.url
+    'http://bugs.launchpad.dev/firefox/+bugs'
+    >>> find_tag_by_id(anon_browser.contents, 'buglisting') is not None
+    True
+
+== Bugs Fixed Elsewhere ==
+
+The Bugs frontpage includes the number of bugs that are fixed in some
+other context.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> fixed_elsewhere_link = anon_browser.getLink('bugs fixed elsewhere')
+    >>> fixed_elsewhere_link.text
+    '0 bugs fixed elsewhere'
+
+The link takes you to the list of the bugs fixed elsewhere.
+
+    >>> fixed_elsewhere_link.click()
+    >>> anon_browser.url
+    'http://.../+bugs?field.status_upstream=resolved_upstream'
+
+    >>> print find_main_content(anon_browser.contents)
+    <...
+    <p>There are currently no open bugs.</p>
+    ...
+
+== Open Bugs Statistics ==
+
+There's also some statistics about the open bugs.  This is displayed as
+a chart, which is generated using Javascript, but for those browsers not
+supporting Javascript, the statistics are displayed as normal text:
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> stats_div = find_tag_by_id(anon_browser.contents, 'bugs-chart')
+    >>> for li_tag in stats_div.noscript.ul('li'):
+    ...     print li_tag.renderContents()
+    3 New bugs
+    0 Incomplete bugs
+    0 Confirmed bugs
+    0 Triaged bugs
+    0 In Progress bugs
+    0 Fix Committed bugs
+
+== Tags and Filters ==
+
+There's also portlets for easy searching by tags and filters.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> tags_portlet = find_portlet(anon_browser.contents, 'Tags')
+    >>> for tag_link in tags_portlet('a'):
+    ...     print tag_link.renderContents()
+    doc
+    layout-test
+
+
+They are there to provide easy navigation for bugs with a certain
+tag...
+
+
+    >>> from canonical.launchpad.ftests.bug import print_bugtasks
+    >>> anon_browser.getLink('layout-test').click()
+    >>> print_bugtasks(anon_browser.contents)
+    4  Reflow problems with complex page layouts
+       Medium New
+
+
+... and for bugs with a certain status, importance, etc.
+
+    >>> anon_browser.goBack()
+    >>> filter_portlet = find_portlet(anon_browser.contents, 'Filters')
+    >>> for filter_link in filter_portlet('a'):
+    ...     print filter_link.renderContents()
+    Open
+    Critical
+    ...
+
+    >>> anon_browser.getLink('Critical').click()
+    >>> print_bugtasks(anon_browser.contents)
+    5 Firefox install instructions should be complete
+      Critical New

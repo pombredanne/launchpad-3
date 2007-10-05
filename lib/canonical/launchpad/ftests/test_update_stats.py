@@ -1,6 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Test updates to Distroseries stats."""
 
 __metaclass__ = type
 
@@ -10,63 +10,70 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
 from canonical.launchpad.ftests.harness import (
-    LaunchpadTestCase, LaunchpadFunctionalTestCase)
+    LaunchpadFunctionalTestCase, LaunchpadTestSetup)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IDistroReleaseSet, ILanguageSet, IPOTemplateSet,
+    IDistributionSet, IDistroSeriesSet, ILanguageSet, IPOTemplateSet,
     IPersonSet)
 from canonical.config import config
 
 def get_script():
+    """Return the path to update-stats.py."""
     script = os.path.join(config.root, 'cronscripts', 'update-stats.py')
     assert os.path.exists(script), '%s not found' % script
     return script
 
-class UpdateStatsTest(LaunchpadTestCase):
-
+class UpdateStatsTest(LaunchpadFunctionalTestCase):
+    """Test the update-stats.py script."""
+    # XXX sinzui 2007-07-12 bug=125569:
+    # This test should subclass unittest.TestCase. Some reworking
+    # is required to migrate this test.
     dbuser = 'statistician'
 
     def tearDown(self):
-        con = self.connect()
-        # Force a commit here so test harness optimizations know the database
-        # has been messed with by a subprocess.
-        con.commit()
-        LaunchpadTestCase.tearDown(self)
+        """Tear down this test and recycle the database."""
+        # XXX sinzui 2007-07-12 bug=125569:
+        # Use the DatabaseLayer mechanism to tear this test down.
+        LaunchpadTestSetup().force_dirty_database()
+        LaunchpadFunctionalTestCase.tearDown(self)
 
     def test_basic(self):
+        """Test insert and update operations to LaunchpadStatistic."""
         # Nuke some stats so we know that they are updated
         con = self.connect()
         cur = con.cursor()
 
         # Destroy the LaunchpadStatistic entries so we can confirm they are
         # updated.
-        cur.execute("DELETE FROM LaunchpadStatistic WHERE name='pofile_count'")
+        cur.execute(
+            "DELETE FROM LaunchpadStatistic WHERE name='pofile_count'")
         cur.execute("""
             UPDATE LaunchpadStatistic
             SET value=-1, dateupdated=now()-'10 weeks'::interval
             """)
 
-        # Destroy the messagecount caches on distrorelease so we can confirm
+        # Destroy the messagecount caches on distroseries so we can confirm
         # they are all updated.
         cur.execute("UPDATE DistroRelease SET messagecount=-1")
 
-        # Delete half the entries in the DistroReleaseLanguage cache so we
+        # Delete half the entries in the DistroSeriesLanguage cache so we
         # can confirm they are created as required, and set the remainders
         # to invalid values so we can confirm they are updated.
         cur.execute("""
-            DELETE FROM DistroReleaseLanguage 
+            DELETE FROM DistroReleaseLanguage
             WHERE id > (SELECT max(id) FROM DistroReleaseLanguage)/2
             """)
         cur.execute("""
             UPDATE DistroReleaseLanguage
             SET
                 currentcount=-1, updatescount=-1, rosettacount=-1,
-                contributorcount=-1, dateupdated=now()-'10 weeks'::interval
+                unreviewed_count=-1,contributorcount=-1,
+                dateupdated=now()-'10 weeks'::interval
             """)
 
-        # Update stats should create missing distroreleaselanguage,
+        # Update stats should create missing distroserieslanguage,
         # so remember how many there are before the run.
         cur.execute("SELECT COUNT(*) FROM DistroReleaseLanguage")
-        num_distroreleaselanguage = cur.fetchone()[0]
+        num_distroserieslanguage = cur.fetchone()[0]
 
         # Commit our changes so the subprocess can see them
         con.commit()
@@ -74,37 +81,34 @@ class UpdateStatsTest(LaunchpadTestCase):
         # Run the update-stats.py script
         cmd = [sys.executable, get_script(), '--quiet']
         process = subprocess.Popen(
-                cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT
-                )
+            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
         (stdout, empty_stderr) = process.communicate()
 
         # Ensure it returned a success code
         self.failUnlessEqual(
-                process.returncode, 0,
-                'update-stats.py exited with return code %d. Output was %r' % (
-                    process.returncode, stdout
-                    )
-                )
+            process.returncode, 0,
+            'update-stats.py exited with return code %d. Output was %r' % (
+                process.returncode, stdout))
         # With the -q option, it should produce no output if things went
         # well.
         self.failUnlessEqual(
-                stdout, '',
-                'update-stats.py was noisy. Emitted:\n%s' % stdout
-                )
+            stdout, '',
+            'update-stats.py was noisy. Emitted:\n%s' % stdout)
 
         # Now confirm it did stuff it is supposed to
         cur = con.cursor()
 
-        # Make sure all DistroRelease.messagecount entries are updated
-        cur.execute("SELECT COUNT(*) FROM DistroRelease WHERE messagecount=-1")
+        # Make sure all DistroSeries.messagecount entries are updated
+        cur.execute(
+            "SELECT COUNT(*) FROM DistroRelease WHERE messagecount=-1")
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
-        # Make sure we have created missing DistroReleaseLanguage entries
+        # Make sure we have created missing DistroSeriesLanguage entries
         cur.execute("SELECT COUNT(*) FROM DistroReleaseLanguage")
-        self.failUnless(cur.fetchone()[0] > num_distroreleaselanguage)
+        self.failUnless(cur.fetchone()[0] > num_distroserieslanguage)
 
-        # Make sure existing DistroReleaseLanauge entries have been updated.
+        # Make sure existing DistroSeriesLangauge entries have been updated.
         cur.execute("""
             SELECT COUNT(*) FROM DistroReleaseLanguage, Language
             WHERE DistroReleaseLanguage.language = Language.id AND
@@ -123,6 +127,13 @@ class UpdateStatsTest(LaunchpadTestCase):
             SELECT COUNT(*) FROM DistroReleaseLanguage, Language
             WHERE DistroReleaseLanguage.language = Language.id AND
                   Language.visible = TRUE AND rosettacount = -1
+            """)
+        self.failUnlessEqual(cur.fetchone()[0], 0)
+
+        cur.execute("""
+            SELECT COUNT(*) FROM DistroReleaseLanguage, Language
+            WHERE DistroReleaseLanguage.language = Language.id AND
+                  Language.visible = TRUE AND unreviewed_count = -1
             """)
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
@@ -155,10 +166,11 @@ class UpdateStatsTest(LaunchpadTestCase):
 
         keys = [
             'potemplate_count', 'pofile_count', 'pomsgid_count',
-            'translator_count', 'language_count', 'bug_count', 'bugtask_count',
-            'people_count', 'teams_count', 'rosetta_translator_count',
-            'products_with_potemplates', 'products_with_bugs',
-            'products_using_malone', 'products_using_rosetta',
+            'translator_count', 'language_count', 'bug_count',
+            'bugtask_count', 'people_count', 'teams_count',
+            'rosetta_translator_count', 'products_with_potemplates',
+            'projects_with_bugs', 'products_using_malone',
+            'products_using_rosetta', 'shared_bug_count',
             ]
 
         for key in keys:
@@ -170,14 +182,14 @@ class UpdateStatsTest(LaunchpadTestCase):
             self.failUnless(row[0] >= 0, '%s is invalid' % key)
 
 
-class UpdateTranslationStatsWithDisabledTemplateTest(
-    LaunchpadFunctionalTestCase):
-
+class UpdateTranslationStatsTest(LaunchpadFunctionalTestCase):
+    """Test exceptional update-stats.py rules."""
     def setUp(self):
+        """Setup the Distroseries related objects for these tests."""
         LaunchpadFunctionalTestCase.setUp(self)
 
         self.distribution = getUtility(IDistributionSet)
-        self.distroreleaseset = getUtility(IDistroReleaseSet)
+        self.distroseriesset = getUtility(IDistroSeriesSet)
         self.languageset = getUtility(ILanguageSet)
         self.potemplateset = getUtility(IPOTemplateSet)
         self.personset = getUtility(IPersonSet)
@@ -185,20 +197,27 @@ class UpdateTranslationStatsWithDisabledTemplateTest(
         # This test needs to do some changes that require admin permissions.
         login('carlos@canonical.com')
 
+    def tearDown(self):
+        """Tear down this test and recycle the database."""
+        # XXX sinzui 2007-07-12 bug=125569:
+        # Use the DatabaseLayer mechanism to tear this test down.
+        LaunchpadTestSetup().force_dirty_database()
+        LaunchpadFunctionalTestCase.tearDown(self)
 
-    def test_basic(self):
+    def test_disabled_template(self):
+        """Test that Distroseries stats do not include disabled templates."""
         # First, we check current values of cached statistics.
 
         # We get some objects we will need for this test.
         ubuntu = self.distribution['ubuntu']
-        hoary = self.distroreleaseset.queryByName(ubuntu, 'hoary')
+        hoary = self.distroseriesset.queryByName(ubuntu, 'hoary')
         spanish = self.languageset['es']
-        spanish_hoary = hoary.getDistroReleaseLanguage(spanish)
+        spanish_hoary = hoary.getDistroSeriesLanguage(spanish)
         # We need pmount's template.
         templates = self.potemplateset.getAllByName('pmount')
         pmount_template = None
         for template in templates:
-            if template.distrorelease == hoary:
+            if template.distroseries == hoary:
                 pmount_template = template
 
         self.failIfEqual(pmount_template, None)
@@ -217,7 +236,7 @@ class UpdateTranslationStatsWithDisabledTemplateTest(
                 assert pofile.variant is None
                 currentcount += pofile.currentCount()
         contributor_count = (
-            self.personset.getPOFileContributorsByDistroRelease(
+            self.personset.getPOFileContributorsByDistroSeries(
                 hoary, spanish).count())
 
         # As noted in the for loop, we don't count IPOFile objects with
@@ -246,8 +265,8 @@ class UpdateTranslationStatsWithDisabledTemplateTest(
         # Commit the current transaction because the script will run in
         # another transaction and thus it won't see the changes done on this
         # test unless we commit.
-        # XXX CarlosPerelloMarin 20070122: Unecessary flush_database_updates
-        # required. See bug #3989 for more info.
+        # XXX CarlosPerelloMarin 2007-01-22 bug=3989:
+        # Unecessary flush_database_updates required.
         from canonical.database.sqlbase import flush_database_updates
         flush_database_updates()
         import transaction
@@ -257,18 +276,15 @@ class UpdateTranslationStatsWithDisabledTemplateTest(
         # information in that template anymore.
         cmd = [sys.executable, get_script(), '--quiet']
         process = subprocess.Popen(
-                cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT
-                )
+            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
         (stdout, empty_stderr) = process.communicate()
 
         # Ensure it returned a success code
         self.failUnlessEqual(
-                process.returncode, 0,
-                'update-stats.py exited with return code %d. Output was %r' % (
-                    process.returncode, stdout
-                    )
-                )
+            process.returncode, 0,
+            'update-stats.py exited with return code %d. Output was %r' % (
+                process.returncode, stdout))
 
         # Now confirm it did stuff it is supposed to
 
@@ -279,9 +295,9 @@ class UpdateTranslationStatsWithDisabledTemplateTest(
 
         # The transaction changed, we need to refetch SQLObjects.
         ubuntu = self.distribution['ubuntu']
-        hoary = self.distroreleaseset.queryByName(ubuntu, 'hoary')
+        hoary = self.distroseriesset.queryByName(ubuntu, 'hoary')
         spanish = self.languageset['es']
-        spanish_hoary = hoary.getDistroReleaseLanguage(spanish)
+        spanish_hoary = hoary.getDistroSeriesLanguage(spanish)
 
         # Let's recalculate the statistics ourselved to validate what the
         # script run recalculated.
@@ -294,7 +310,7 @@ class UpdateTranslationStatsWithDisabledTemplateTest(
                 new_currentcount += pofile.currentCount()
 
         new_contributor_count = (
-            self.personset.getPOFileContributorsByDistroRelease(
+            self.personset.getPOFileContributorsByDistroSeries(
                 hoary, spanish).count())
 
         # The amount of messages to translate in Hoary is now lower because we
@@ -316,11 +332,58 @@ class UpdateTranslationStatsWithDisabledTemplateTest(
             spanish_hoary.contributor_count, new_contributor_count)
         self.failIf(contributor_count <= new_contributor_count)
 
+    def test_english(self):
+        """Test that English is handled correctly by DistroSeries.
+
+        English exists in the POFile data, but it cannot be used by Launchpad
+        since the messages that are to be translated are stored as English.
+        A DistroSeriesLanguage can never be English since it represents a
+        translation.
+        """
+        ubuntu = self.distribution['ubuntu']
+        hoary = self.distroseriesset.queryByName(ubuntu, 'hoary')
+
+        # Check that we have English data in the templates.
+        moz_templates = self.potemplateset.getAllByName('pkgconf-mozilla')
+        moz_template = None
+        for template in moz_templates:
+            if template.distroseries == hoary:
+                moz_template = template
+        self.failIfEqual(
+            moz_template, None,
+            'The pkgconf-mozilla template for hoary is None.')
+        moz_english_count = moz_template.getPOFileByLang('en').messageCount()
+        self.failIf(
+            0 == moz_english_count,
+            'moz_english_pofile should have messages translated')
+
+        # Run update-stats.py script to see that we don't count the
+        # information in the moz_english_pofile template.
+        cmd = [sys.executable, get_script(), '--quiet']
+        process = subprocess.Popen(
+            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
+        (stdout, empty_stderr) = process.communicate()
+        self.failUnlessEqual(
+            process.returncode, 0,
+            'update-stats.py exited with return code %d. Output was %r' % (
+                process.returncode, stdout))
+
+        # Check that we do not have an English DistroSeriesLangauge because
+        # of the moz_english_pofile template.
+        english = self.languageset['en']
+        english_dsl = hoary.getDistroSeriesLanguage(english)
+        self.failUnlessEqual(
+            None, english_dsl, 'The English DistroSeriesLangauge must '
+            'not exist.')
+
+
 def test_suite():
+    """Return this module's test suite."""
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(UpdateStatsTest))
     suite.addTest(
-        unittest.makeSuite(UpdateTranslationStatsWithDisabledTemplateTest))
+        unittest.makeSuite(UpdateTranslationStatsTest))
     return suite
 
 

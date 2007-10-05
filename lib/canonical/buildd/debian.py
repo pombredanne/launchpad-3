@@ -16,10 +16,10 @@ from canonical.buildd.slave import (
 
 class DebianBuildState:
     """States for the DebianBuildManager."""
-    
     UNPACK = "UNPACK"
     MOUNT = "MOUNT"
     OGRE = "OGRE"
+    SOURCES = "SOURCES"
     UPDATE = "UPDATE"
     SBUILD = "SBUILD"
     REAP = "REAP"
@@ -38,17 +38,17 @@ class SBuildExitCodes:
 
 class BuildLogRegexes:
     """Build log regexes for performing actions based on regexes, and extracting dependencies for auto dep-waits"""
-    GIVENBACK=[
-      (" terminated by signal 4"),
-      ("^E: There are problems and -y was used without --force-yes"),
-      ("^make.* Illegal instruction"),
-    ]
-    DEPFAIL=[
-      ("(?P<pk>[\-+.\w]+)\(inst [^ ]+ ! >> wanted (?P<v>[\-.+\w:]+)\)","\g<pk> (>> \g<v>)"),
-      ("(?P<pk>[\-+.\w]+)\(inst [^ ]+ ! >?= wanted (?P<v>[\-.+\w:]+)\)","\g<pk> (>= \g<v>)"),
-      ("(?s)^E: Couldn't find package (?P<pk>[\-+.\w]+)(?!.*^E: Couldn't find package)","\g<pk>"),
-      ("(?s)^E: Package (?P<pk>[\-+.\w]+) has no installation candidate(?!.*^E: Package)","\g<pk>"),
-    ]
+    GIVENBACK = [
+        (" terminated by signal 4"),
+        ("^E: There are problems and -y was used without --force-yes"),
+        ("^make.* Illegal instruction"),
+        ]
+    DEPFAIL = [
+        ("(?P<pk>[\-+.\w]+)\(inst [^ ]+ ! >> wanted (?P<v>[\-.+\w:~]+)\)","\g<pk> (>> \g<v>)"),
+        ("(?P<pk>[\-+.\w]+)\(inst [^ ]+ ! >?= wanted (?P<v>[\-.+\w:~]+)\)","\g<pk> (>= \g<v>)"),
+        ("(?s)^E: Couldn't find package (?P<pk>[\-+.\w]+)(?!.*^E: Couldn't find package)","\g<pk>"),
+        ("(?s)^E: Package (?P<pk>[\-+.\w]+) has no installation candidate(?!.*^E: Package)","\g<pk>"),
+        ]
 
 
 class DebianBuildManager(BuildManager):
@@ -62,6 +62,7 @@ class DebianBuildManager(BuildManager):
         self._sbuildargs = slave._config.get("debianmanager",
                                              "sbuildargs").split(" ")
         self._ogrepath = slave._config.get("debianmanager", "ogrepath")
+        self._sourcespath = slave._config.get("debianmanager", "sourcespath")
         self._cachepath = slave._config.get("slave","filecache")
         self._state = DebianBuildState.UNPACK
         slave.emptyLog()
@@ -82,17 +83,32 @@ class DebianBuildManager(BuildManager):
             self.ogre = extra_args['ogrecomponent']
         else:
             self.ogre = False
+        if 'archives' in extra_args and extra_args['archives']:
+            self.sources_list = extra_args['archives']
+        else:
+            self.sources_list = None
         if 'arch_indep' in extra_args:
             self.arch_indep = extra_args['arch_indep']
         else:
             self.arch_indep = False
-        
+
         BuildManager.initiate(self, files, chroot, extra_args)
 
     def doOgreModel(self):
         """Perform the ogre model activation."""
         self.runSubProcess(self._ogrepath,
                            ["apply-ogre-model", self._buildid, self.ogre])
+
+    def doSourcesList(self):
+        """Override apt/sources.list.
+
+        Mainly used for PPA builds.
+        """
+        # XXX cprov 2007-05-17: It 'undo' ogre-component changes.
+        # for PPAs it must be re-implemented on builddmaster side.
+        args = ["override-sources-list", self._buildid]
+        args.extend(self.sources_list)
+        self.runSubProcess(self._sourcespath, args)
 
     def doUpdateChroot(self):
         """Perform the chroot upgrade."""
@@ -116,7 +132,7 @@ class DebianBuildManager(BuildManager):
     @staticmethod
     def _parseChangesFile(linesIter):
         """A generator that iterates over files listed in a changes file.
-        
+
         :param linesIter: an iterable of lines in a changes file.
         """
         seenfiles = False
@@ -137,7 +153,7 @@ class DebianBuildManager(BuildManager):
         The primary file we care about is the .changes file. We key from there.
         """
         changes = self._dscfile[:-4] + "_" + self._slave.getArch() + ".changes"
-        # XXX: dsilvers: 20050317: This join thing needs to be split out
+        # XXX: dsilvers 2005-03-17: This join thing needs to be split out
         # into a method and unit tested.
         path = os.path.join(os.environ["HOME"], "build-"+self._buildid,
                             changes)
@@ -157,7 +173,7 @@ class DebianBuildManager(BuildManager):
         self._slave.waitingfiles = filemap
 
     def iterate(self, success):
-        # When a Twisted ProcessControl class is killed by SIGTERM, 
+        # When a Twisted ProcessControl class is killed by SIGTERM,
         # which we call 'build process aborted', 'None' is returned as
         # exit_code.
         print ("Iterating with success flag %s against stage %s"
@@ -179,7 +195,7 @@ class DebianBuildManager(BuildManager):
         else:
             self._state = DebianBuildState.MOUNT
             self.doMounting()
-            
+
     def iterate_MOUNT(self, success):
         """Just finished doing the mounts."""
         if success != 0:
@@ -193,12 +209,31 @@ class DebianBuildManager(BuildManager):
             if self.ogre:
                 self._state = DebianBuildState.OGRE
                 self.doOgreModel()
+            elif self.sources_list is not None:
+                self._state = DebianBuildState.SOURCES
+                self.doSourcesList()
             else:
                 self._state = DebianBuildState.UPDATE
                 self.doUpdateChroot()
 
     def iterate_OGRE(self, success):
         """Just finished running the ogre applicator."""
+        if success != 0:
+            if not self.alreadyfailed:
+                self._slave.chrootFail()
+                self.alreadyfailed = True
+            self._state = DebianBuildState.REAP
+            self.doReapProcesses()
+        else:
+            if self.sources_list is not None:
+                self._state = DebianBuildState.SOURCES
+                self.doSourcesList()
+            else:
+                self._state = DebianBuildState.UPDATE
+                self.doUpdateChroot()
+
+    def iterate_SOURCES(self, success):
+        """Just finished overwriting sources.list."""
         if success != 0:
             if not self.alreadyfailed:
                 self._slave.chrootFail()
@@ -220,14 +255,15 @@ class DebianBuildManager(BuildManager):
         else:
             self._state = DebianBuildState.SBUILD
             self.doRunSbuild()
-            
+
     def iterate_SBUILD(self, success):
         """Finished the sbuild run."""
         if success != SBuildExitCodes.OK:
             tmpLogHandle = open(os.path.join(self._cachepath, "buildlog"))
             tmpLog = tmpLogHandle.read()
             tmpLogHandle.close()
-            if success == SBuildExitCodes.DEPFAIL or success == SBuildExitCodes.PACKAGEFAIL:
+            if (success == SBuildExitCodes.DEPFAIL or
+                success == SBuildExitCodes.PACKAGEFAIL):
                 for rx in BuildLogRegexes.GIVENBACK:
                     mo=re.search(rx, tmpLog, re.M)
                     if mo:

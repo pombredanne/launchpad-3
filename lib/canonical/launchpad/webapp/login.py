@@ -19,10 +19,10 @@ from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
 from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 from canonical.launchpad.webapp.error import SystemErrorView
+from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.interfaces import (
-    ILoginTokenSet, IPersonSet, UBUNTU_WIKI_URL, ShipItConstants)
+    ILoginTokenSet, IPersonSet, LoginTokenType, UBUNTU_WIKI_URL, ShipItConstants)
 from canonical.launchpad.interfaces.validation import valid_password
-from canonical.lp.dbschema import LoginTokenType
 from canonical.config import config
 
 
@@ -56,7 +56,13 @@ class UnauthorizedView(SystemErrorView):
             query_string = self.request.get('QUERY_STRING', '')
             if query_string:
                 query_string = '?' + query_string
-            target = self.request.getURL() + '/+login' + query_string
+            target = self.request.getURL()
+            while True:
+                nextstep = self.request.stepstogo.consume()
+                if nextstep is None:
+                    break
+                target = urlappend(target, nextstep)
+            target = urlappend(target, '+login' + query_string)
             self.request.response.addNoticeNotification(_(
                     'To continue, you must log in to Launchpad.'
                     ))
@@ -129,10 +135,10 @@ class LoginOrRegister:
     submitted = False
     email = None
 
-    # XXX: If you add a new origin here, you must also add a new entry on
-    # NewAccountView.urls_and_rationales in browser/logintoken.py. Ideally,
-    # we should be storing the rationale in the logintoken too, but this
-    # should do for now. -- Guilherme Salgado, 2006-09-27
+    # XXX Guilherme Salgado 2006-09-27: If you add a new origin here, you
+    # must also add a new entry on NewAccountView.urls_and_rationales in
+    # browser/logintoken.py. Ideally, we should be storing the rationale in
+    # the logintoken too, but this should do for now.
     registered_origins = {
         'shipit-ubuntu': ShipItConstants.ubuntu_url,
         'shipit-edubuntu': ShipItConstants.edubuntu_url,
@@ -163,10 +169,10 @@ class LoginOrRegister:
         elif self.request.form.get(self.submit_registration):
             self.process_registration_form()
 
-    def getApplicationURL(self): 
-        # XXX: This method is needed because this view is used on shipit and
-        # we have to use an application URL different than the one we have in
-        # the request. -- Guilherme Salgado 2005-12-09
+    def getApplicationURL(self):
+        # XXX Guilherme Salgado 2005-12-09: This method is needed because
+        # this view is used on shipit and we have to use an application URL
+        # different than the one we have in the request.
         return self.request.getApplicationURL()
 
     def getRedirectionURL(self):
@@ -204,10 +210,9 @@ class LoginOrRegister:
             self.login_error = _("Enter your email address and password.")
             return
 
-        # XXX matsubara 2006-05-08: This class should inherit from
+        # XXX matsubara 2006-05-08 bug=43675: This class should inherit from
         # GeneralFormView, that way we could take advantage of Zope's widget
         # validation, instead of checking manually for password validity.
-        # https://launchpad.net/products/launchpad/+bug/43675
         if not valid_password(password):
             self.login_error = _(
                 "The password provided contains non-ASCII characters.")
@@ -258,8 +263,8 @@ class LoginOrRegister:
         if isinstance(redirection_url, list):
             # Remove blank entries.
             redirection_url_list = [url for url in redirection_url if url]
-            # XXX: Shouldn't this be an UnexpectedFormData?
-            # -- Guilherme Salgado, 2006-09-27
+            # XXX Guilherme Salgado 2006-09-27:
+            # Shouldn't this be an UnexpectedFormData?
             assert len(redirection_url_list) == 1, redirection_url_list
             redirection_url = redirection_url_list[0]
 
@@ -294,12 +299,12 @@ class LoginOrRegister:
 
     def login_success(self):
         return (self.submitted and
-                self.request.form.get(self.submit_login) and 
+                self.request.form.get(self.submit_login) and
                 not self.login_error)
 
     def registration_success(self):
-        return (self.submitted and 
-                self.request.form.get(self.submit_registration) and 
+        return (self.submitted and
+                self.request.form.get(self.submit_registration) and
                 not self.registration_error)
 
     def redirectMinusLogin(self):
@@ -319,9 +324,9 @@ class LoginOrRegister:
         want such as '-C' and things starting with self.form_prefix.
         """
         for name, value in self.request.form.items():
-            # XXX: Exclude '-C' because this is left in from sys.argv in Zope3
-            #      using python's cgi.FieldStorage to process requests.
-            # -- SteveAlexander, 2005-04-11
+            # XXX SteveAlexander 2005-04-11: Exclude '-C' because this is
+            #     left in from sys.argv in Zope3 using python's
+            #     cgi.FieldStorage to process requests.
             if name == '-C' or name == 'loggingout':
                 continue
             if name.startswith(self.form_prefix):

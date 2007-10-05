@@ -43,6 +43,10 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://launchpad.dev/
     althosts: localhost
     ----
+    openid @ openid.launchpad.dev
+    rooturl: http://openid.launchpad.dev/
+    althosts:
+    ----
     shipitedubuntu @ shipit.edubuntu.dev
     rooturl: http://shipit.edubuntu.dev/
     althosts:
@@ -63,6 +67,31 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://launchpad.dev/
     althosts:
     ----
+    xmlrpc_private @ xmlrpc-private.launchpad.dev
+    rooturl: http://xmlrpc-private.launchpad.dev/
+    althosts:
+    ----
+
+
+The hostnames and alternative hostnames for all virtual hosts are
+collected into a set.  This provides a quick way to determine if a
+hostname is handled by this Launchpad instance:
+
+    >>> for hostname in sorted(allvhosts.hostnames):
+    ...     print hostname
+    answers.launchpad.dev
+    blueprints.launchpad.dev
+    bugs.launchpad.dev
+    code.launchpad.dev
+    launchpad.dev
+    localhost
+    openid.launchpad.dev
+    shipit.edubuntu.dev
+    shipit.kubuntu.dev
+    shipit.ubuntu.dev
+    translations.launchpad.dev
+    xmlrpc-private.launchpad.dev
+    xmlrpc.launchpad.dev
 
 
 LaunchpadRequestPublicationFactory chooses the right request and publication to
@@ -122,12 +151,12 @@ chosen.
     True
 
     >>> from canonical.launchpad.webapp.servers import (
-    ...     LaunchpadXMLRPCRequest, XMLRPCLaunchpadPublication
+    ...     PublicXMLRPCRequest, PublicXMLRPCPublication
     ...     )
     >>> requestfactory, publicationfactory = factory()
-    >>> publicationfactory is XMLRPCLaunchpadPublication
+    >>> publicationfactory is PublicXMLRPCPublication
     True
-    >>> requestfactory.requestfactory is LaunchpadXMLRPCRequest
+    >>> requestfactory.requestfactory is PublicXMLRPCRequest
     True
 
 If the given host name isn't one of the configured host names,

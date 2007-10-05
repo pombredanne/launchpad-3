@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
 from zope.schema import Choice
 
 from canonical.launchpad import _
@@ -26,20 +26,20 @@ class IAnswerContact(Interface):
         description=_(
             "The person receiving notifications about all questions."),
         vocabulary='ValidPersonOrTeam')
-    product = Choice(title=_('Product'), required=False,
+    product = Choice(title=_('Project'), required=False,
         description=_(
-            "The person want to receive notifications about this product's "
+            "The person wants to receive notifications about this project's "
             "questions."),
         vocabulary='Product')
 
     distribution = Choice(title=_('Distribution'), required=False,
         description=_(
-            "The person want to receive notifications about this "
+            "The person wants to receive notifications about this "
             "distribution's questions."),
         vocabulary='Distribution')
 
     sourcepackagename = Choice(title=_('Source Package'), required=False,
         description=_(
-            "The person want to receive notifications about this "
+            "The person wants to receive notifications about this "
             "sourcepackage's questions."),
         vocabulary='SourcePackageName')

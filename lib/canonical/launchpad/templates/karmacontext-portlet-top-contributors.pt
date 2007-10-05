@@ -1,13 +1,21 @@
-<div class="portlet" tal:condition="view/getTopFiveContributors">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-top-contributors"
+  tal:condition="view/getTopFiveContributors">
   <h2>Top contributors</h2>
   <div class="portletBody portletContent">
-    <ul class="person">
-      <li tal:repeat="contributor view/getTopFiveContributors">
-        <a tal:content="contributor/person/browsername"
-           tal:attributes="href contributor/person/fmt:url">Guilherme Salgado</a>
-        (<span tal:replace="contributor/karmavalue" /> points)
-      </li>
-    </ul>
+    <table>
+      <tr tal:repeat="contributor view/getTopFiveContributors">
+        <td>
+          <a tal:replace="structure contributor/person/fmt:link">
+            Guilherme Salgado
+          </a>
+        </td>
+        <td><span tal:replace="contributor/karmavalue" /> points</td>
+      </tr>
+    </table>
   </div>
 
 </div>

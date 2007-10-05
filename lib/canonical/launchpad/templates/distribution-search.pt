@@ -1,16 +1,18 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
       <h1>Search results</h1>
     </metal:heading>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
 
 <div metal:fill-slot="main">
 
@@ -43,10 +45,11 @@
         <li tal:repeat="dsp batch">
           <a tal:attributes="href dsp/fmt:url;
                              title dsp/title"
+             class="packagetitle"
              tal:content="dsp/title"/>
           <ul tal:condition="view/detailed">
             <li tal:repeat="pubrec dsp/current_publishing_records">
-              <a tal:content="pubrec/distrorelease/name"
+              <a tal:content="pubrec/distroseries/name"
                  tal:attributes="href pubrec/meta_sourcepackage/fmt:url;
                                  title pubrec/meta_sourcepackage/title" />
               (<span tal:replace="pubrec/section/name"/>):
@@ -56,14 +59,16 @@
 
               <div style="font-size: 80%;"
                    tal:define="meta_binaries 
-                               pubrec/sourcepackagerelease/meta_binaries">
+                               pubrec/meta_distroseriessourcepackagerelease/meta_binaries">
 
                 <tal:has_bin condition="meta_binaries">
                    Binary Packages:
-                   <tal:binaries repeat="bin meta_binaries">
-                    <a tal:content="bin/name"
-                       tal:attributes="href bin/fmt:url; title bin/title" />
-                  </tal:binaries>
+                   <div id="binaries">
+                     <tal:binaries repeat="bin meta_binaries">
+                      <a id="binlink" tal:content="bin/name"
+                         tal:attributes="href bin/fmt:url; title bin/title" />
+                     </tal:binaries>
+                   </div>
                 </tal:has_bin>
 
                 <tal:has_no_bin condition="not:meta_binaries">

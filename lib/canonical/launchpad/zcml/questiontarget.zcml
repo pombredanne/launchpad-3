@@ -14,21 +14,24 @@
     layer="canonical.launchpad.layers.AnswersLayer"
     name="+tickets"
     />
-
   <browser:page
     for="canonical.launchpad.interfaces.IQuestionCollection"
     class="canonical.launchpad.browser.SearchQuestionsView"
-    name="+tickets"
+    name="+questions"
     permission="zope.Public"
     />
-
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IQuestionCollection"
+    name="+tickets"
+    new_name="+questions"
+    rootsite="answers"
+    />
   <browser:page
     for="canonical.launchpad.interfaces.IQuestionCollection"
     class="canonical.launchpad.browser.QuestionCollectionOpenCountView"
     name="+open_questions_count"
     permission="zope.Public"
     />
-
   <browser:page
     for="canonical.launchpad.interfaces.IQuestionCollection"
     class="canonical.launchpad.browser.QuestionCollectionLatestQuestionsView"
@@ -39,8 +42,14 @@
   <browser:page
     for="canonical.launchpad.interfaces.ISearchableByQuestionOwner"
     class="canonical.launchpad.browser.QuestionCollectionMyQuestionsView"
-    name="+mytickets"
+    name="+myquestions"
     permission="launchpad.AnyPerson"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.ISearchableByQuestionOwner"
+    name="+mytickets"
+    new_name="+myquestions"
+    rootsite="answers"
     />
   <browser:page
     for="canonical.launchpad.interfaces.ISearchableByQuestionOwner"
@@ -48,26 +57,49 @@
     name="+need-attention"
     permission="launchpad.AnyPerson"
     />
-
   <browser:page
     for="canonical.launchpad.interfaces.IQuestionTarget"
-    name="+support-contact"
+    class="canonical.launchpad.browser.QuestionCollectionByLanguageView"
+    name="+by-language"
+    permission="launchpad.AnyPerson"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IQuestionTarget"
+    name="+unsupported"
+    new_name="+questions"
+    rootsite="answers"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IQuestionTarget"
+    name="+answer-contact"
     permission="launchpad.AnyPerson"
     class="canonical.launchpad.browser.ManageAnswerContactView"
-    template="../templates/questiontarget-manage-answercontacts.pt" />
-
+    template="../templates/questiontarget-manage-answercontacts.pt"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IQuestionTarget"
+    name="+support-contact"
+    new_name="+answer-contact"
+    rootsite="answers"
+    />
   <browser:page
-      for="canonical.launchpad.interfaces.IQuestionTarget"
-      name="+portlet-answercontacts"
-      permission="zope.Public"
-      template="../templates/questiontarget-portlet-answercontacts.pt" />
-
+    for="canonical.launchpad.interfaces.IQuestionTarget"
+    name="+portlet-answercontacts"
+    permission="zope.Public"
+    template="../templates/questiontarget-portlet-answercontacts.pt"
+    />
   <browser:page
-    name="+addticket"
+    name="+addquestion"
     for="canonical.launchpad.interfaces.IQuestionTarget"
     class="canonical.launchpad.browser.QuestionAddView"
-    permission="launchpad.AnyPerson" />
-
+    permission="launchpad.AnyPerson"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IQuestionTarget"
+    name="+addticket"
+    new_name="+addquestion"
+    rootsite="answers"
+    />
   <browser:page
     name="+ask-a-question-button"
     for="canonical.launchpad.interfaces.IQuestionTarget"

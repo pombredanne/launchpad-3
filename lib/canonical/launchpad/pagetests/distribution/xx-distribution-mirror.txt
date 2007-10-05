@@ -1,171 +1,246 @@
-  First of all we'll create a new mirror for the Ubuntu distribution...
+= Distribution mirrors =
 
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/ubuntu/+newmirror')
+First of all we'll create a new mirror for the Ubuntu distribution...
 
-  ...but every mirror must have at least one of HTTP, FTP or Rsync URL, and
-  the form will raise an error message if this is not provided by the user.
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/ubuntu/+newmirror')
+    >>> http_url = 'http://my.mirror.com/pub'
+    >>> browser.getControl('Description').value = 'My own mirror'
+    >>> browser.getControl('Link Speed').displayValue = ['1 Mbps']
+    >>> browser.getControl('Location').displayValue =  ['Antarctica']
+    >>> browser.getControl('Content').displayValue = ['Archive']
+    >>> browser.getControl('HTTP URL').value = http_url
+    >>> browser.getControl('Create Mirror').click()
+ 
+    >>> browser.url
+    'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive'
+    >>> print extract_text(find_tag_by_id(browser.contents, 'mirror-details'))
+    Speed: 1 Mbps
+    Country: Antarctica
+    Content: Archive
 
-  >>> browser.getControl('Link Speed').value = ['1 Mbps']
-  >>> browser.getControl('Location (Country)').value =  ['9']
-  >>> browser.getControl('Content').value = ['Archive']
-  >>> browser.getControl('Continue').click()
+Note that even though the http_url we used didn't contain a trailing slash,
+the value stored in our database will contain it.
+ 
+    >>> browser.getLink('Change details').click()
+    >>> http_url + "/" == browser.getControl('HTTP URL').value
+    True
+ 
+It's possible to change the auto-generated mirror name, if we want, but
+the name is unique, and so we can't use a name that is already in use by
+another mirror.
+ 
+    >>> browser.url
+    'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/+edit'
+    >>> browser.getControl(name='field.name').value = 'archive-mirror'
+    >>> browser.getControl('Save').click()
+ 
+    >>> message = "is already in use by another distribution mirror."
+    >>> message in browser.contents
+    True
+ 
+Like the name, we can also change the URLs of a mirror:
 
-  >>> message = 'All mirrors require at least an HTTP or FTP URL'
-  >>> message in browser.contents
-  True
+    >>> browser.getLink('Change details').click()
+    >>> browser.url
+    'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/+edit'
+    
+    >>> browser.getControl('HTTP URL').value = 'http://foo.bar/baz'
+    >>> browser.getControl('FTP URL').value = 'ftp://foo.bar/baz'
+    >>> browser.getControl('Rsync URL').value = 'rsync://foo.bar/baz'
+    >>> browser.getControl('Save').click()
 
-  If we try to register the mirror using the same HTTP URL of a existing one,
-  we should also get a nice error message. (Even if we forget to add the
-  trailing slash in the new URL by mistake)
+    >>> browser.url
+    'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive'
 
-  >>> http_url = 'http://localhost:11375/invalid-mirror'
-  >>> browser.getControl('HTTP URL').value = http_url
-  >>> browser.getControl('Continue').click()
+    >>> print extract_text(find_tag_by_id(browser.contents, 'mirror-urls'))
+    Web: http://foo.bar/baz/
+    FTP: ftp://foo.bar/baz/
+    Rsync: rsync://foo.bar/baz/
 
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> for message in soup.findAll(attrs={'class': 'message'}):
-  ...     print message.renderContents()
-  The distribution mirror ... is already registered with this URL.
+The mirror can't be probed before it's marked as official by one of the
+distribution owners.
+ 
+    >>> browser.open(
+    ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'last-probe'))
+    Last probe
+    This mirror is an unofficial Ubuntu Linux mirror, and will not be
+    verified.
 
-  We'll have to add some URLs to sample data to test the validator for FTP and
-  Rsync URLs.
+To make a mirror official, one has to go to the +mark-official page, which
+is accessible only to mirror admins of that distribution and the
+distribution owner.
+ 
+    >>> browser.open(
+    ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/'
+    ...     '+mark-official')
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+ 
+Now one of the mirror administrators goes and make this an official mirror,
+leaving a comment on the whiteboard (which is visible to mirror admins and to
+the mirror owner, but can only be edited by mirror admins).
+ 
+    >>> karl_browser = setupBrowser(
+    ...     auth='Basic karl@canonical.com:test')
+    >>> karl_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
+    >>> karl_browser.getLink('Mark as official').click()
+ 
+    >>> official_approved = karl_browser.getControl(
+    ...     'This is one of the official mirrors of this distribution')
+    >>> official_approved.selected = True
+    >>> karl_browser.getControl('Whiteboard').value = 'This is a good mirror'
+    >>> karl_browser.getControl('Save').click()
+ 
+    >>> karl_browser.url
+    'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive'
+    >>> print extract_text(find_tag_by_id(karl_browser.contents, 'whiteboard'))
+    This is a good mirror 
+    >>> print extract_text(find_tag_by_id(karl_browser.contents, 'status'))
+    Official Ubuntu Linux Mirror registered by Sample Person ... 
 
-  >>> from zope.component import getUtility
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> from canonical.launchpad.interfaces import IDistributionMirrorSet
-  >>> from canonical.launchpad.ftests import login, logout
-  >>> login("mark@hbd.com")
-  >>> mirrorset = getUtility(IDistributionMirrorSet)
-  >>> example_mirror = mirrorset.getByName('invalid-mirror')
-  >>> ftp_url = 'ftp://localhost:11375/invalid-mirror'
-  >>> example_mirror.ftp_base_url = ftp_url
-  >>> rsync_url = 'rsync://localhost:11375/invalid-mirror'
-  >>> example_mirror.rsync_base_url = rsync_url
-  >>> flush_database_updates()
-  >>> logout()
+The whiteboard can also be seen by the mirror owner, but not by anybody
+else.
 
-  And now we test the validator for the FTP URL
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open(
+    ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'whiteboard'))
+    This is a good mirror 
 
-  >>> browser.getControl('FTP URL').value = ftp_url
-  >>> browser.getControl('Continue').click()
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
+    >>> print find_tag_by_id(anon_browser.contents, 'whiteboard')
+    None
 
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> for message in soup.findAll(attrs={'class': 'message'}):
-  ...     print message.renderContents()
-  The distribution mirror ... is already registered with this URL.
+== Deleting mirrors ==
 
-  And for the Rsync URL
+If a mirror has never been probed we can be sure that it was never marked as
+an official one and thus it can be deleted by the mirror admins.
 
-  >>> browser.getControl('Rsync URL').value = rsync_url
-  >>> browser.getControl('Continue').click()
+    >>> karl_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
+    >>> karl_browser.getLink('Delete this mirror').click()
+    >>> karl_browser.url
+    'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/+delete'
+    >>> karl_browser.getControl('Delete Mirror').click()
+    >>> karl_browser.url
+    'http://launchpad.dev/ubuntu'
+    >>> for tag in find_tags_by_class(
+    ...         karl_browser.contents, 'informational message'):
+    ...     print tag.renderContents()
+    Mirror My.mirror.com-archive has been deleted.
 
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> for message in soup.findAll(attrs={'class': 'message'}):
-  ...     print message.renderContents()
-  The distribution mirror ... is already registered with this URL.
+For mirrors that have been probed, though, there's no menu option to delete
+it and the +delete page will only explain why it can't be deleted.
 
-  Note also that neither query strings nor fragments are allowed in the URLs.
+    >>> karl_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+mirror/archive-mirror2')
+    >>> print extract_text(find_tag_by_id(karl_browser.contents, 'last-probe'))
+    Last probe
+    This mirror was last verified ...
+    >>> karl_browser.getLink('Delete this mirror')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+    >>> karl_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+mirror/archive-mirror2/+delete')
+    >>> print extract_text(find_tag_by_id(
+    ...     karl_browser.contents, 'maincontent'))
+    This mirror can't be deleted because it has been probed already.
 
-  >>> browser.getControl('HTTP URL').value = 'http://foo.bar/baz#someid'
-  >>> browser.getControl('Continue').click()
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> for message in soup.findAll(attrs={'class': 'message'}):
-  ...     print message.renderContents()
-  URIs with fragment identifiers are not allowed.
+Also, the page in which a mirror can be deleted is only accessible to mirror
+admins --not even the mirror owner can see it.
 
-  >>> browser.getControl('HTTP URL').value = 'http://foo.bar/baz?q=string'
-  >>> browser.getControl('Continue').click()
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> for message in soup.findAll(attrs={'class': 'message'}):
-  ...     print message.renderContents()
-  URIs with query strings are not allowed.
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open(
+    ...     'http://launchpad.dev/ubuntu/+mirror/archive-mirror2/+delete')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
 
-  Now we provide everything that is needed...
+== Error checking ==
 
-  >>> http_url = 'http://my.mirror.com/pub'
-  >>> browser.getControl('Link Speed').value = ['1 Mbps']
-  >>> browser.getControl('Location (Country)').value =  ['9']
-  >>> browser.getControl('Content').value = ['Archive']
-  >>> browser.getControl('HTTP URL').value = http_url
-  >>> browser.getControl('FTP URL').value = ''
-  >>> browser.getControl('Rsync URL').value = ''
-  >>> browser.getControl('Continue').click()
+When creating a new mirror, at least an HTTP or FTP URL must be given.
 
-  ...and the mirror is created just fine.
-
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive'
-
-  Note that even though the http_url we used didn't contain a trailing slash,
-  the value stored in our database will contain it.
-
-  >>> browser.getLink('Change details').click()
-  >>> http_url + "/" == browser.getControl('HTTP URL').value
-  True
-
-  It's possible to change the auto-generated mirror name, if we want, but
-  the name is unique, and so we can't use a name that is already in use by
-  another mirror.
-
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/+edit'
-  >>> browser.getControl(name='field.name').value = 'archive-mirror'
-  >>> browser.getControl('Change').click()
-
-  >>> message = "is already in use by another distribution mirror."
-  >>> message in browser.contents
-  True
-
-  The mirror can't be probed before it's marked as official by one of the
-  distribution owners.
-
-  >>> browser.open(
-  ...   'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/')
-  >>> 'mirror "My.mirror.com-archive"' in browser.contents
-  True
-
-  >>> "This mirror is an unofficial" in browser.contents
-  True
-  >>> "and will not be verified" in browser.contents
-  True
-
-  To make a mirror official, one has to go to the +mark-official page, which
-  is accessible only to mirror admins of that distribution and the
-  distribution owner.
-
-  >>> browser.open(
-  ...   'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/+mark-official')
-  Traceback (most recent call last):
-  ...
-  Unauthorized...
-
-  Now one of the mirror administrators goes and make this an official mirror.
-
-  # XXX: matsubara 2006-05-18: We need to reset the Browser object to reset the
-  # headers.
-  # https://launchpad.net/launchpad/+bug/45226
-
-  >>> from zope.testbrowser.testing import Browser
-  >>> browser = Browser()
-  >>> browser.handleErrors = False
-
-  >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
-  >>> browser.open(
-  ...   'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/+mark-official')
-
-  >>> official_approved = browser.getControl(
-  ...     'This is one of the official mirrors of this distribution')
-  >>> official_approved.selected = True
-  >>> browser.getControl('Change').click()
-
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive'
-
-
-  And in the mirror's main page we can now see that it's an official mirror.
-
-  >>> 'Official' in browser.contents
-  True
-
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/ubuntu/+newmirror')
+    >>> browser.getControl('Link Speed').displayValue = ['1 Mbps']
+    >>> browser.getControl('Location').displayValue =  ['Antarctica']
+    >>> browser.getControl('Content').displayValue = ['Archive']
+    >>> browser.getControl('Create Mirror').click()
+ 
+    >>> for tag in find_tags_by_class(browser.contents, 'error message'):
+    ...     print tag.renderContents()
+    There is 1 error.
+    A mirror must have at least an HTTP or FTP URL.
+ 
+If we try to register the mirror using the same HTTP URL of a existing one,
+we should also get a nice error message. (Even if we forget to add the
+trailing slash in the new URL by mistake)
+ 
+    >>> http_url = 'http://localhost:11375/invalid-mirror'
+    >>> browser.getControl('HTTP URL').value = http_url
+    >>> browser.getControl('Create Mirror').click()
+ 
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print tag.renderContents()
+    There is 1 error.
+    The distribution mirror ... is already registered with this URL.
+ 
+We'll have to add some URLs to sample data to test the validator for FTP and
+Rsync URLs.
+ 
+    >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import IDistributionMirrorSet
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login("mark@hbd.com")
+    >>> mirrorset = getUtility(IDistributionMirrorSet)
+    >>> example_mirror = mirrorset.getByName('invalid-mirror')
+    >>> ftp_url = 'ftp://localhost:11375/invalid-mirror'
+    >>> example_mirror.ftp_base_url = ftp_url
+    >>> rsync_url = 'rsync://localhost:11375/invalid-mirror'
+    >>> example_mirror.rsync_base_url = rsync_url
+    >>> flush_database_updates()
+    >>> logout()
+ 
+And now we test the validator for the FTP URL
+ 
+    >>> browser.getControl('FTP URL').value = ftp_url
+    >>> browser.getControl('Create Mirror').click()
+ 
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print tag.renderContents()
+    There is 1 error.
+    The distribution mirror ... is already registered with this URL.
+ 
+And for the Rsync URL
+ 
+    >>> browser.getControl('Rsync URL').value = rsync_url
+    >>> browser.getControl('Create Mirror').click()
+ 
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print tag.renderContents()
+    There is 1 error.
+    The distribution mirror ... is already registered with this URL.
+ 
+Note also that neither query strings nor fragments are allowed in the URLs.
+ 
+    >>> browser.getControl('HTTP URL').value = 'http://foo.bar/baz#someid'
+    >>> browser.getControl('Create Mirror').click()
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print tag.renderContents()
+    There is 1 error.
+    URIs with fragment identifiers are not allowed.
+ 
+    >>> browser.getControl('HTTP URL').value = 'http://foo.bar/baz?q=string'
+    >>> browser.getControl('Create Mirror').click()
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print tag.renderContents()
+    There is 1 error.
+    URIs with query strings are not allowed.
+ 

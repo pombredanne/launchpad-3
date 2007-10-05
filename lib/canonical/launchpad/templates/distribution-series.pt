@@ -1,0 +1,51 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <h1>Versions</h1>
+  <p>
+    <a href=".">&laquo;back</a>
+  </p>
+  <tal:has-serieses condition="context/serieses">
+    <ul>
+      <li class="distroseries" tal:repeat="series context/serieses">
+        <strong><a tal:attributes="href series/fmt:url">
+          <tal:version replace="series/version" />
+          "<tal:codename replace="series/displayname" />"
+        </a></strong>
+        &mdash; <span tal:replace="series/status/title" />
+        <div tal:content="series/summary" />
+        <div tal:condition="series/parentseries">
+          Derives from
+          <a tal:attributes="href series/parentseries/fmt:url">
+            <tal:distro
+              replace="series/parentseries/distribution/displayname" />
+            <tal:distroseries replace="series/parentseries/version" />
+          </a>
+        </div>
+        <br />
+      </li>
+    </ul>
+  </tal:has-serieses>
+
+  <tal:no-serieses condition="not: context/serieses">
+    <p><tal:name replace="context/displayname" /> has no versions registered
+      yet.
+    </p>
+  </tal:no-serieses>
+</div>
+</body>
+</html>
+

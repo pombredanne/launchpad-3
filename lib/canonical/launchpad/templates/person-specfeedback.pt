@@ -14,7 +14,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Mark Shuttleworth</h3>
   <h1>Feature feedback requests</h1>
 </metal:heading>
 

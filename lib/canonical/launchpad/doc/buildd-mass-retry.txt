@@ -6,7 +6,7 @@
   >>> from canonical.config import config
 
 'buildd-mass-retry' is a tool designed to retry a group of 'failed'
-build records in a distrorelease and/or architecture.
+build records in a distroseries and/or architecture.
 
   >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
   ...                       "buildd-mass-retry.py")

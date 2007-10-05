@@ -1,8 +1,13 @@
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/freeform"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -28,6 +33,8 @@
     * Do I need a translation team?
     * Can I add my KikoLinux distro to Soyuz?
     -->
+
+      <h1>Frequently asked questions</h1>
 
     <dl class="faq" style="max-width: 60em">
 
@@ -159,57 +166,38 @@
             </ul>
             </dd>
 
-        <dt>Is Launchpad open source? Will it be?</dt>
-
-            <dd>
-            <p>
-            Our goal is to release all of Launchpad as free software, though it
-            will take some time (potentially, years) before that happens.
-            </p><p>
-            We are doing so in a piecemeal approach. Parts of Launchpad have already
-            been released as free software where they would be particularly useful to
-            other projects. And very few, if any, Launchpad modifications to upstream
-            code are not immediately published to those upstream projects.
-            </p><p>
-            Launchpad is a large, monolithic, web application. We would
-            be happy to release the code for the Registry, for example,
-            which keeps track of all upstream projects and their series
-            and releases; however, that code will not run without the
-            distribution management code, which is part of of the
-            service that Canonical provides to other companies that make
-            their own distributions.
-            </p><p>
-            If you are keen on seeing Launchpad components published as
-            free software sooner, rather than later, and you have good
-            Python and Zope3 skills, we are happy to provide code access
-            and accept patches that use Zope 3's component architecture
-            to factor out individual Launchpad applications and make it
-            easier to release chunks of Launchpad.  That is a lot of
-            hard work, but it would make it possible to release the
-            Registry, and the parts of Rosetta that are used for
-            upstream translation.
-            </p>
-            </dd>
-
-        <dt>Launchpad is down for maintenance.  How long before it comes back?</dt>
-            <dd>
-            <p>
-            Normally, Launchpad is updated every Tuesday, generally
-            around 10:00 UTC. This normally results in 30 minutes of
-            downtime as the production servers are upgraded.
-            </p>
-            <p>
-            There are other -- exceptional -- situations in which
-            Launchpad may become unavailable. When it is a planned
-            outage, email is sent to the <a
-            href="https://lists.ubuntu.com/mailman/listinfo/launchpad-users">Launchpad
-            users mailing list</a> notifying when, and how long.
-            Unpredictable outages are unfortunately, well,
-            unpredictable; however, the servers are maintained by a
-            dedicated team that is very responsive, and downtime is
-            normally minimal.
-            </p>
-            </dd>
+        <dt>Is Launchpad Free Software/open source? If not, why not?</dt>
+        <dd>
+          <p>
+            Like Sourceforge and Google Code Hosting,
+            Launchpad is not open source.
+            Unlike those other services,
+            we have committed to making Launchpad Free Software.
+          </p>
+          <p>
+            Launchpad exists not just to make development easier within
+            projects,
+            but also to encourage collaboration between projects.
+            With Launchpad, distributors and upstream developers can share
+            bug reports, translations, and code.
+            Until there are standards and APIs
+            that let standalone sites send these things to each other,
+            having a single Launchpad instance is the most practical way of
+            maximizing the collaboration that Launchpad is designed to achieve.
+            It also helps in funding Launchpad development in the short term.
+          </p>
+          <p>
+            We have released the code for 
+            <a href="https://launchpad.net/launchpad-cscvs">CSCVS</a>,
+            which Launchpad uses to mirror CVS/Subversion trees to Bazaar.
+            We also make many contributions to other Free Software components
+            we use, including
+            <a href="http://zope.org/">Zope</a>,
+            <a href="http://bazaar-vcs.org/">Bazaar</a>,
+            <a href="http://sqlobject.org/">SQLObject</a>,
+            and <a href="http://twistedmatrix.com/trac/">Twisted</a>.
+          </p>
+        </dd>
 
         <dt>Can I translate Launchpad itself into my language?</dt>
             <dd>
@@ -227,7 +215,7 @@
             href="http://www.ubuntu.com/support/faq?action=show&amp;redirect=support%2Fdocumentation%2Ffaq%2Fshipit#head-7eef2db63e0a75424cdd663ee6f7b8eedcf19607">Shipit FAQ</a>.
             </dd>
 
-        <dt>What are the copyright terms for contributing to Rosetta?</dt>
+        <dt>What are the copyright terms for contributing to Translations?</dt>
 
             <dd>
             See our <a href="/legal">legal details page</a>.
@@ -235,15 +223,21 @@
 
         <dt>How do I contact a Launchpad administrator?</dt>
 
-            <dd>The <a href="/people/admins">Launchpad
-            administrators</a> are a group of people that have
-            special powers inside Launchpad; they are usually able to
-            solve most simple problems related to user accounts.
-            <p>
-            The best way to get prompt attention from an administrator
-            is though IRC, as detailed in our <a
-            href="/feedback">feedback page</a>. You can also resort to
-            emailing them directly.</dd>
+            <dd>
+              <p>
+                The <a href="/people/admins">Launchpad
+                administrators</a> are a group of people that have
+                special powers inside Launchpad; they are usually able to
+                solve most simple problems related to user accounts.
+              </p>
+            
+              <p>
+                The best way to get prompt attention from an administrator
+                is though IRC, as detailed in our <a
+                href="/feedback">feedback page</a>. You can also resort to
+                emailing them directly.
+              </p>
+            </dd>
 
     </dl>
 
@@ -251,4 +245,3 @@
 
 </body>
 </html>
-</tal:layout>

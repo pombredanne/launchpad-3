@@ -1,16 +1,16 @@
 = PocketChroot =
 
-PocketChroot records combine DistroArchRelease, Pocket and a Chroot.
+PocketChroot records combine DistroArchSeries, Pocket and a Chroot.
 
 Chroot are identified per LibraryFileAlias and we offer three method
-based on IDistroArchRelease to handle them: get, add and update.
+based on IDistroArchSeries to handle them: get, add and update.
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
   >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
   >>> from canonical.lp.dbschema import PackagePublishingPocket
 
 
-Grab a distroarchrelease:
+Grab a distroarchseries:
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
@@ -42,7 +42,7 @@ record in PocketChroot:
   ...      pocket=PackagePublishingPocket.UPDATES, chroot=chroot1)
   >>> print p_chroot.id
   1
-  >>> print p_chroot.distroarchrelease.architecturetag
+  >>> print p_chroot.distroarchseries.architecturetag
   i386
   >>> print p_chroot.chroot.id,
   1
@@ -56,7 +56,7 @@ the chroot:
   ...      pocket=PackagePublishingPocket.UPDATES, chroot=chroot2)
   >>> print p_chroot.id
   1
-  >>> print p_chroot.distroarchrelease.architecturetag
+  >>> print p_chroot.distroarchseries.architecturetag
   i386
   >>> print p_chroot.chroot.id,
   2
@@ -90,7 +90,7 @@ PocketChroot record:
   ...      pocket=PackagePublishingPocket.RELEASE, chroot=chroot1)
   >>> print p_chroot.id
   2
-  >>> print p_chroot.distroarchrelease.architecturetag
+  >>> print p_chroot.distroarchseries.architecturetag
   i386
   >>> print p_chroot.chroot.id,
   1

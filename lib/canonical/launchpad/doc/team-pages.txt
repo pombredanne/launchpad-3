@@ -4,6 +4,7 @@
     ...     IPersonSet, ITeamMembershipSet)
     >>> from zope.component import getView
     >>> from zope.publisher.browser import TestRequest
+    >>> personset = getUtility(IPersonSet)
     >>> def create_view(context, name, form=None):
     ...     view = getView(context, name, TestRequest(form=form))
     ...     view.initialize()
@@ -12,7 +13,7 @@
 On a team home page, we show up to the latest five members who were approved
 as well as the up to five latest members who proposed themselves.
 
-    >>> ubuntu_team = getUtility(IPersonSet).getByName('name18')
+    >>> ubuntu_team = personset.getByName('name18')
     >>> team_home = create_view(ubuntu_team, '+index')
     >>> membershipset = getUtility(ITeamMembershipSet)
     >>> for member in team_home.recently_approved_members:
@@ -30,11 +31,10 @@ as well as the up to five latest members who proposed themselves.
 
 If new members are added/proposed, they'll show up at the top of the lists.
 
-    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> sample_person = personset.getByName('name12')
     >>> sample_person.join(ubuntu_team)
-    True
-    >>> salgado = getUtility(IPersonSet).getByName('salgado')
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> salgado = personset.getByName('salgado')
+    >>> sabdfl = personset.getByName('sabdfl')
     >>> ubuntu_team.addMember(salgado, reviewer=sabdfl)
 
     >>> team_home = create_view(ubuntu_team, '+index')
@@ -51,3 +51,4 @@ If new members are added/proposed, they'll show up at the top of the lists.
     ...     print "%s: %s" % (member.name, membership.status.title)
     name12: Proposed
     justdave: Proposed
+

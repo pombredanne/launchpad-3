@@ -1,0 +1,42 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <h2 tal:content="view/pagetitle">Page Title</h2>
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+
+  </div>
+
+</div>
+
+<div metal:fill-slot="help">
+  <p>The branch visibility policy is used to define the default visibility
+  of branches when they are created.</p>
+
+  <p>Both projects and products can define a branch visibility policy.  If a
+  policy does not exist for a product, it uses the policy defined by its
+  project (if it exists).</p>
+
+  <p>There is an implicit policy defined for both products and projects.
+  The implicit policy is that everyone can create public branches.
+  In order to override this implicit policy you need to explicitly
+  define a policy for everyone, and this is done by
+  not specifying a team when adding a new policy.</p>
+</div>
+
+</body>
+</html>
+

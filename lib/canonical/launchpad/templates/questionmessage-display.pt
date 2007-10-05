@@ -2,20 +2,32 @@
       i18n:domain="launchpad">
 
   <div class="boardCommentDetails">
-    <a href="#"
-        tal:attributes="href context/owner/fmt:url"
-        tal:content="context/owner/browsername">
-      $Person.browsername</a>
-    <span tal:replace="context/datecreated/fmt:datetime">Thursday
-    13:21</span>
-    <tal:bestanswer condition="view/isBestAnswer"><br />
-      <strong i18n:translate="">Marked as best answer.</strong>
+    <tal:bestanswer condition="view/isBestAnswer">
+      <img src="/@@/favourite-yes" style="float:right;" alt="Best"
+           title="Marked as best answer" />
     </tal:bestanswer>
+    <tal:comment_has_owner>
+      <tal:comment_owner replace="structure context/owner/fmt:link" />
+    </tal:comment_has_owner>
+    said
+    <span
+      tal:attributes="title context/datecreated/fmt:datetime"
+      tal:content="context/datecreated/fmt:displaydate">Thursday
+    13:21</span>:
   </div>
 
   <div class="boardCommentBody"
-       tal:attributes="class view/getBodyCSSClass"
-       tal:content="structure context/text_contents/fmt:text-to-html">
+    tal:attributes="class view/getBodyCSSClass"
+    tal:condition="view/user"
+    tal:content="structure context/text_contents/fmt:email-to-html">
+    Message text.
+  </div>
+
+  <div class="boardCommentBody"
+    tal:attributes="class view/getBodyCSSClass"
+    tal:condition="not:view/user"
+    tal:content="structure
+      context/text_contents/fmt:obfuscate-email/fmt:email-to-html">
     Message text.
   </div>
 
@@ -28,7 +40,7 @@
       <input type="hidden" name="field.message" value="" />
       <input type="submit"
               name="field.actions.confirm"
-              value="This Solved my Problem"
+              value="This Solved My Problem"
               i18n:attributes="value" />
     </form>
   </div>

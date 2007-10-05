@@ -1,0 +1,19 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
+
+<facet facet="answers">
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IFAQCollection"
+    class="canonical.launchpad.browser.SearchFAQsView"
+    name="+faqs"
+    permission="zope.Public"
+    template="../templates/faq-listing.pt"
+    />
+
+</facet>
+
+</configure>

@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" id="portlet-details">
 
   <h2>Meeting details</h2>
 
@@ -11,7 +11,7 @@
         External Web page
       </a><br />
     </tal:has_home_page>
-    <b>Registrant:</b><br />
+    <b>Registered by:</b><br />
     <a tal:replace="structure context/owner/fmt:link" /><br />
     <tal:has_driver condition="context/driver">
       <b>Driver:</b><br />

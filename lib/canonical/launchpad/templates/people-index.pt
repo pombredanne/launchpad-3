@@ -1,9 +1,6 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
->
+<html metal:use-macro="view/macro:page/pillarindex" i18n:domain="launchpad">
   <body>
+    <h1 metal:fill-slot="heading">People and teams</h1>
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-about" />
@@ -13,8 +10,9 @@
     <div tal:replace="structure context/@@+portlet-stats" />
   </metal:rightportlets>
 
+    <h1 metal:fill-slot="application-heading">People and teams</h1>
+
     <div metal:fill-slot="main">
-      <h1>People and teams</h1>
       <tal:block define="bn view/searchPeopleBatchNavigator">
         <div align="center">
           <form class="central" name="search" action="." method="GET">
@@ -145,7 +143,7 @@
                   </td>
                   <td tal:content="person/name">foobar</td>
                   <td class="amount" tal:content="person/karma">34</td>
-                </tr>    
+                </tr>
               </tbody>
             </table>
           </tal:block>

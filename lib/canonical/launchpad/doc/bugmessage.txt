@@ -1,5 +1,4 @@
-Bug Messages
-============
+= Bug Messages =
 
 Bug messages are messages associated with bugs. A bug message is
 described by the IBugMessage interface.
@@ -7,8 +6,7 @@ described by the IBugMessage interface.
 One IMessage can be associated with many IBugs, but one IBugMessage is
 always associated with exactly one bug.
 
-Retrieving bug messages
------------------------
+== Retrieving bug messages ==
 
 IBugMessageSet represents the set of all IBugMessages in the
 system.
@@ -23,8 +21,7 @@ IBugMessageSet.get:
     >>> bugmessage_four.message.subject
     u"Fantastic idea, I'd really like to see this"
 
-Creating bug messages
----------------------
+== Creating bug messages ==
 
 To create a bug message, use IBugMessageSet.createMessage:
 
@@ -44,3 +41,85 @@ The parent gets set to the initial message of the bug:
 
     >>> test_message.message.parent == bug_one.initial_message
     True
+
+
+== Links and CVEs in bug messages ==
+
+If a bug message contains links to an external bug report or a CVE,
+bugwatches resp. CVE watches are automatically created.
+
+    >>> for cve in bug_one.cves:
+    ...     print cve.displayname
+    CVE-1999-8979
+    >>> for bugwatch in bug_one.watches:
+    ...     print bugwatch.url
+    https://bugzilla.mozilla.org/show_bug.cgi?id=123543
+    https://bugzilla.mozilla.org/show_bug.cgi?id=2000
+    https://bugzilla.mozilla.org/show_bug.cgi?id=42
+    http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=304014
+    >>> test_message = bug_one.newMessage(
+    ...     owner=sample_person,
+    ...     subject="test message subject",
+    ...     content="""This is a test comment. This bug is the same as the 
+    ...                one described here 
+    ...                http://some.bugzilla/show_bug.cgi?id=9876
+    ...                See also CVE-1991-9911
+    ...             """)
+    >>> for cve in bug_one.cves:
+    ...     print cve.displayname
+    CVE-1991-9911
+    CVE-1999-8979
+    >>> for bugwatch in bug_one.watches:
+    ...     print bugwatch.url
+    https://bugzilla.mozilla.org/show_bug.cgi?id=123543
+    https://bugzilla.mozilla.org/show_bug.cgi?id=2000
+    https://bugzilla.mozilla.org/show_bug.cgi?id=42
+    http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=304014
+    http://some.bugzilla/show_bug.cgi?id=9876
+
+CVE watches and bug watches are also created, when a message is imported from
+an external bug tracker.
+
+    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> message = getUtility(IMessageSet).fromText(
+    ...    'subject',
+    ...    """This is a comment from an external tracker. It has a link
+    ...       to even another tracker
+    ...        http://some.bugzilla/show_bug.cgi?id=1234 and mentions
+    ...        CVE-1991-3333
+    ...    """,
+    ...    sample_person)
+    >>> bug_one.linkMessage(message)
+    <BugMessage at...
+    >>> for cve in bug_one.cves:
+    ...     print cve.displayname
+    CVE-1991-3333
+    CVE-1991-9911
+    CVE-1999-8979
+    >>> for bugwatch in bug_one.watches:
+    ...     print bugwatch.url
+    https://bugzilla.mozilla.org/show_bug.cgi?id=123543
+    https://bugzilla.mozilla.org/show_bug.cgi?id=2000
+    https://bugzilla.mozilla.org/show_bug.cgi?id=42
+    http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=304014
+    http://some.bugzilla/show_bug.cgi?id=1234
+    http://some.bugzilla/show_bug.cgi?id=9876
+
+
+== Last message date ==
+
+For each bug, we cache the date of the last message linked to it using
+the sttribute `date_last_message` in order to optimize searches the need
+to compare this value for every bug in a large set.
+
+    >>> test_message = bug_one.newMessage(
+    ...     owner=sample_person,
+    ...     subject="test message subject",
+    ...     content="This is a test comment.")
+
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+
+    >>> bug_one.date_last_message == test_message.datecreated
+    True
+

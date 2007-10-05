@@ -73,6 +73,33 @@ def _safestr(obj):
                    lambda match: '\\x%02x' % ord(match.group(0)), value)
     return value
 
+def _is_sensitive(request, name):
+    """Return True if the given request variable name is sensitive.
+
+    Sensitive request variables should not be recorded in OOPS
+    reports.  Currently we consider the following to be sensitive:
+     * any name containing 'password' or 'passwd'
+     * cookies
+     * the HTTP_COOKIE header.
+    """
+    upper_name = name.upper()
+    # Block passwords
+    if ('PASSWORD' in upper_name or 'PASSWD' in upper_name):
+        return True
+
+    # Block HTTP_COOKIE
+    if name == 'HTTP_COOKIE':
+        return True
+
+    # Allow remaining UPPERCASE names and remaining form variables.  Note that
+    # XMLRPC requests won't have a form attribute.
+    form = getattr(request, 'form', [])
+    if name == upper_name or name in form:
+        return False
+
+    # Block everything else
+    return True
+
 
 class ErrorReport:
     implements(IErrorReport)
@@ -87,13 +114,7 @@ class ErrorReport:
         self.username = username
         self.url = url
         self.duration = duration
-        self.req_vars = []
-        # hide passwords that might be present in the request variables
-        for (name, value) in req_vars:
-            if ('password' in name.lower() or 'passwd' in name.lower()):
-                self.req_vars.append((name, '<hidden>'))
-            else:
-                self.req_vars.append((name, value))
+        self.req_vars = req_vars
         self.db_statements = db_statements
 
     def __repr__(self):
@@ -158,7 +179,7 @@ class ErrorReport:
 class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
-    _ignored_exceptions = set(['Unauthorized'])
+    _ignored_exceptions = set(['Unauthorized', 'TranslationUnavailable'])
     copy_to_zlog = False
 
     lasterrordate = None
@@ -274,12 +295,13 @@ class ErrorReportingUtility:
             req_vars = []
 
             if request:
-                # XXX: Temporary fix, which Steve should undo. URL is
-                #      just too HTTPRequest-specific.
+                # XXX jamesh 2005-11-22: Temporary fix, which Steve should
+                #      undo. URL is just too HTTPRequest-specific.
                 if hasattr(request, 'URL'):
                     url = request.URL
                 try:
-                    # XXX: UnauthenticatedPrincipal does not have getLogin()
+                    # XXX jamesh 2005-11-22: UnauthenticatedPrincipal
+                    # does not have getLogin()
                     if hasattr(request.principal, 'getLogin'):
                         login = request.principal.getLogin()
                     else:
@@ -290,19 +312,25 @@ class ErrorReportingUtility:
                                                 request.principal.title,
                                                 request.principal.description
                                                 ))))
+                # XXX jamesh 2005-11-22:
                 # When there's an unauthorized access, request.principal is
-                # not set, so we get an AttributeError
-                # XXX is this right? Surely request.principal should be set!
-                # XXX Answer: Catching AttributeError is correct for the
-                #             simple reason that UnauthenticatedUser (which
-                #             I always use during coding), has no 'getLogin()'
-                #             method. However, for some reason this except
-                #             does **NOT** catch these errors.
+                # not set, so we get an AttributeError.
+                # Is this right? Surely request.principal should be set!
+                # Answer: Catching AttributeError is correct for the
+                #         simple reason that UnauthenticatedUser (which
+                #         I always use during coding), has no 'getLogin()'
+                #         method. However, for some reason this except
+                #         does **NOT** catch these errors.
                 except AttributeError:
                     pass
 
-                req_vars = sorted((_safestr(key), _safestr(value))
-                                  for (key, value) in request.items())
+                req_vars = []
+                for key, value in request.items():
+                    if _is_sensitive(request, key):
+                        req_vars.append((_safestr(key), '<hidden>'))
+                    else:
+                        req_vars.append((_safestr(key), _safestr(value)))
+                req_vars.sort()
             strv = _safestr(info[1])
 
             strurl = _safestr(url)
@@ -385,6 +413,10 @@ class ScriptRequest(ErrorReportRequest):
 
     def items(self):
         return self._data
+
+    @property
+    def form(self):
+        return dict(self.items())
 
 
 class SoftRequestTimeout(RequestExpired):

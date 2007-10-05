@@ -1,28 +1,27 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Provides an SFTP server which Launchpad users can use to host their Bazaar
-branches. For more information, see lib/canonical/supermirrorsftp/README.
+branches. For more information, see lib/canonical/codehosting/README.
 """
 
 __metaclass__ = type
-__all__ = ['SFTPService']
+__all__ = ['SSHService']
 
 
 import os
-import shutil
 
 from twisted.cred.portal import Portal
 from twisted.conch.ssh import keys
 from twisted.application import service, strports
 
 from canonical.config import config
-from canonical.launchpad.daemons import tachandler
 from canonical.authserver.client.twistedclient import TwistedAuthServer
 
-from canonical.supermirrorsftp import sftponly
+from canonical.codehosting import sshserver
+from canonical.codehosting.transport import set_up_logging
 
 
-class SFTPService(service.Service):
+class SSHService(service.Service):
     """A Twisted service for the supermirror SFTP server."""
 
     def __init__(self):
@@ -30,20 +29,19 @@ class SFTPService(service.Service):
 
     def makeRealm(self):
         """Create and return an authentication realm for the authserver."""
-        homedirs = config.supermirrorsftp.branches_root
-        authserver = TwistedAuthServer(config.supermirrorsftp.authserver)
-        return sftponly.Realm(homedirs, authserver)
+        homedirs = config.codehosting.branches_root
+        authserver = TwistedAuthServer(config.codehosting.authserver)
+        return sshserver.Realm(homedirs, authserver)
 
     def makeFactory(self, hostPublicKey, hostPrivateKey):
         """Create and return an SFTP server that uses the given public and
         private keys.
         """
-        homedirs = config.supermirrorsftp.branches_root
-        authserver = TwistedAuthServer(config.supermirrorsftp.authserver)
+        authserver = TwistedAuthServer(config.codehosting.authserver)
         portal = Portal(self.makeRealm())
         portal.registerChecker(
-            sftponly.PublicKeyFromLaunchpadChecker(authserver))
-        sftpfactory = sftponly.Factory(hostPublicKey, hostPrivateKey)
+            sshserver.PublicKeyFromLaunchpadChecker(authserver))
+        sftpfactory = sshserver.Factory(hostPublicKey, hostPrivateKey)
         sftpfactory.portal = portal
         return sftpfactory
 
@@ -53,7 +51,7 @@ class SFTPService(service.Service):
         """
         hostPublicKey, hostPrivateKey = self.makeKeys()
         sftpfactory = self.makeFactory(hostPublicKey, hostPrivateKey)
-        return strports.service(config.supermirrorsftp.port, sftpfactory)
+        return strports.service(config.codehosting.port, sftpfactory)
 
     def makeKeys(self):
         """Load the public and private host keys from the configured key pair
@@ -61,7 +59,7 @@ class SFTPService(service.Service):
 
         :return: (hostPublicKey, hostPrivateKey)
         """
-        keydir = config.supermirrorsftp.host_key_pair_path
+        keydir = config.codehosting.host_key_pair_path
         hostPublicKey = keys.getPublicKeyString(
             data=open(os.path.join(keydir,
                                    'ssh_host_key_rsa.pub'), 'rb').read())
@@ -72,10 +70,11 @@ class SFTPService(service.Service):
 
     def startService(self):
         """Start the SFTP service."""
+        set_up_logging()
         service.Service.startService(self)
         self.service.startService()
 
     def stopService(self):
         """Stop the SFTP service."""
         service.Service.stopService(self)
-        self.service.stopService()
+        return self.service.stopService()

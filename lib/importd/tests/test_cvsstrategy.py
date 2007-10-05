@@ -165,8 +165,8 @@ class TestCvsStrategy(CvsStrategyTestCase):
         self.assertEqual(cvspath, self.cvspath)
 
     def testSyncArgsSanityChecks(self):
-        # XXX: I am not sure what these tests are for
-        # -- David Allouche 2006-06-06
+        # XXX David Allouche 2006-06-06:
+        #  I am not sure what these tests are for
         strategy = self.strategy
         logger = self.logger
         self.assertRaises(AssertionError, strategy.sync, None, ".", None)
@@ -331,15 +331,15 @@ class CvsWorkingTreeTestsMixin:
         self.assertSourceFile('import')
         self.assertEqual(self.working_tree.cvsTreeHasChanges(), False)
         self.assertCatalog('Magic Cookie!\n')
-        # XXX: would also need to check that cvsReCheckOut uses the provided
+        # XXX: David Allouche 2005-05-31: 
+        # would also need to check that cvsReCheckOut uses the provided
         # repository and not the old repository, and that the old checkout is
         # untouched in case of failure, but it looks like it would be
         # complicated to implement in the fake environment.
-        # -- David Allouche 2005-05-31
 
     def testRepositoryHasChanged(self):
-        # TODO: break this test into smaller more focused tests (bug 49694)
-        # -- David Allouche 2006-06-06
+        # XXX: David Allouche 2006-06-06 bug=49694:
+        # break this test into smaller more focused tests.
 
         self.setUpCvsImport()
         # CvsWorkingTree.repositoryHasChanged fails if there is no checkout

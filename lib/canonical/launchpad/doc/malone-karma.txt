@@ -80,25 +80,28 @@ Add watch for external bug to the bug:
 
 Mark a bug task as fixed:
 
-    >>> from canonical.launchpad.interfaces import IDistroBugTask
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskStatus, IDistroBugTask)
     >>> bugtask = bug.bugtasks[0]
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
-    >>> bugtask.transitionToStatus(BugTaskStatus.FIXRELEASED)
+    >>> bugtask.transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['status']))
     Karma added: action=bugfixed, distribution=debian
 
 Reject a bug task:
 
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
-    >>> bugtask.transitionToStatus(BugTaskStatus.REJECTED)
+    >>> bugtask.transitionToStatus(
+    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
     >>> notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['status']))
     Karma added: action=bugrejected, distribution=debian
 
 Accept a bug task:
 
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
-    >>> bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> bugtask.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['status']))
     Karma added: action=bugaccepted, distribution=debian
 
@@ -111,19 +114,19 @@ Change a bug task's importance:
     ...     bugtask.importance = importance
     ...     print importance.name
     ...     notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['importance']))
-    UNDECIDED
-    Karma added: action=bugtaskimportancechanged, distribution=debian
-    WISHLIST
-    Karma added: action=bugtaskimportancechanged, distribution=debian
-    LOW
-    Karma added: action=bugtaskimportancechanged, distribution=debian
-    MEDIUM
-    Karma added: action=bugtaskimportancechanged, distribution=debian
-    HIGH
+    UNKNOWN
     Karma added: action=bugtaskimportancechanged, distribution=debian
     CRITICAL
     Karma added: action=bugtaskimportancechanged, distribution=debian
-    UNKNOWN
+    HIGH
+    Karma added: action=bugtaskimportancechanged, distribution=debian
+    MEDIUM
+    Karma added: action=bugtaskimportancechanged, distribution=debian
+    LOW
+    Karma added: action=bugtaskimportancechanged, distribution=debian
+    WISHLIST
+    Karma added: action=bugtaskimportancechanged, distribution=debian
+    UNDECIDED
     Karma added: action=bugtaskimportancechanged, distribution=debian
 
 Create a new bug task on a product:
@@ -143,31 +146,35 @@ Create a new bug task on a product series:
     >>> notify(SQLObjectCreatedEvent(evolution_trunk_task))
     Karma added: action=bugtaskcreated, product=evolution
 
-Create a new bug task on a distrorelease:
+Create a new bug task on a distroseries:
 
-    >>> debian_woody = debian.getRelease("woody")
+    >>> debian_woody = debian.getSeries("woody")
     >>> debian_woody_task = getUtility(IBugTaskSet).createTask(
-    ...     bug, distrorelease=debian_woody, owner=foo_bar)
+    ...     bug, distroseries=debian_woody, owner=foo_bar)
     >>> notify(SQLObjectCreatedEvent(debian_woody_task))
     Karma added: action=bugtaskcreated, distribution=debian
 
-Accept a distro release task.
+Accept a distro series task.
 
-    >>> debian_woody_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
-    >>> from canonical.launchpad.interfaces import IDistroReleaseBugTask
+    >>> debian_woody_task.transitionToStatus(
+    ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
+    >>> from canonical.launchpad.interfaces import IDistroSeriesBugTask
     >>> old_bugtask = Snapshot(
-    ...     debian_woody_task, providing=IDistroReleaseBugTask)
-    >>> debian_woody_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    ...     debian_woody_task, providing=IDistroSeriesBugTask)
+    >>> debian_woody_task.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> notify(SQLObjectModifiedEvent(debian_woody_task, old_bugtask, ['status']))
     Karma added: action=bugaccepted, distribution=debian
 
 Accept a productseries task.
 
-    >>> evolution_trunk_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
+    >>> evolution_trunk_task.transitionToStatus(
+    ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
     >>> from canonical.launchpad.interfaces import IProductSeriesBugTask
     >>> old_bugtask = Snapshot(
     ...     evolution_trunk_task, providing=IProductSeriesBugTask)
-    >>> evolution_trunk_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> evolution_trunk_task.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> notify(SQLObjectModifiedEvent(
     ...     evolution_trunk_task, old_bugtask, ['status']))
     Karma added: action=bugaccepted, product=evolution

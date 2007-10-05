@@ -93,10 +93,10 @@ class PlacelessAuthUtility:
             # on each request.
             principal = login_src.getPrincipal(personid)
             if principal is None:
+                # XXX Stuart Bishop 2006-05-26 bug=33427:
                 # User is authenticated in session, but principal is not"
                 # available in login source. This happens when account has
-                # become invalid for some reason, such as being merged
-                # (as per Bug #33427)
+                # become invalid for some reason, such as being merged.
                 return None
             elif getUtility(IPersonSet).get(principal.id).is_valid_person:
                 request.setPrincipal(principal)
@@ -115,8 +115,8 @@ class PlacelessAuthUtility:
         # totally, and all the time.  If there is any basic auth at all,
         # then cookie auth won't even be considered.
 
-        # TODO: allow authentication scheme to be put into a view; for
-        #       now, use basic auth by specifying ILoginPassword.
+        # XXX daniels 2004-12-14: allow authentication scheme to be put into
+        #     a view; for now, use basic auth by specifying ILoginPassword.
         credentials = ILoginPassword(request, None)
         if credentials is not None and credentials.getLogin() is not None:
             return self._authenticateUsingBasicAuth(credentials, request)
@@ -205,7 +205,7 @@ class LaunchpadLoginSource:
 
     def getPrincipal(self, id):
         """Return a principal based on the person with the provided id.
-        
+
         Note that we currently need to be able to retrieve principals for
         invalid People, as the login machinery needs the principal to
         validate the password against so it may then email a validation

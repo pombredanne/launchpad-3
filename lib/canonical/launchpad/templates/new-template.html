@@ -1,8 +1,17 @@
-<metal:page define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
+<metal:page
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <metal:block define-slot="top_slot" />
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
-    tal:attributes="lang default_language|default;
-                    xml:lang default_language|default;">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  tal:attributes="lang default_language|default;
+                  xml:lang default_language|default;">
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad JS code -->
@@ -220,12 +229,12 @@ Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium dolor
         <li>sibling</li>
       </ul>
     </div>
-    
+
     <div id="helppanel" style="display: none;">
       <h2>Help</h2>
       <p>Help goes here.</p>
     </div>
-    
+
     <div id="globalfooter"
     style="clear: both; width: 100%; background-color: #999; color: #fff;">
       globalfooter. Copyright&nbsp;2004-2006&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>

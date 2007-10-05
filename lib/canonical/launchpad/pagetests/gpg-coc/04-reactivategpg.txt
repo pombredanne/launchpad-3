@@ -58,7 +58,7 @@ token type (+validategpg).
 
 Now Sample Person confirms the reactivation.
 
-    >>> browser.getControl('Confirm').click()
+    >>> browser.getControl('Continue').click()
     >>> browser.url
     'http://launchpad.dev/~name12'
 

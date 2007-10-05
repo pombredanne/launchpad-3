@@ -1,0 +1,111 @@
+ <tal:root
+   xmlns:tal="http://xml.zope.org/namespaces/tal"
+   xmlns:metal="http://xml.zope.org/namespaces/metal"
+   omit-tag="">
+<metal:branch-link define-macro="branch-heading-link">
+  <div id="branch-back-link">
+    <img src="/@@/branch" alt="" />
+    <a tal:attributes="href branch/fmt:url"
+       tal:content="branch/displayname" />
+    <tal:not-junk condition="branch/product">
+      for the
+      <a tal:attributes="href branch/product/fmt:url"
+         tal:content="branch/product/displayname" />
+      project
+    </tal:not-junk>
+  </div>
+</metal:branch-link>
+
+<metal:merge-proposal define-macro="merge-proposal">
+
+  <tal:comment condition="nothing">
+    This macro requires the following defined variables:
+      mergeproposal - the proposal to show
+      branch - one of the branches of the merge proposal
+    The following variables define what is shown and are optional.
+      dependent_branch - the dependent branch to link to
+      show_associations - show the bugs and specs
+      show_lifecycle - show the branch lifecycle status
+  </tal:comment>
+
+  <dl class="mergeproposal">
+  <tal:mp condition="branch/required:launchpad.View">
+    <dt>
+      <tal:branch-link replace="structure branch/fmt:link" />
+
+      <tal:show-lifecycle condition="show_lifecycle|nothing">
+        (<span tal:content="branch/lifecycle_status/title"
+               tal:attributes="
+               class string:branchstatus${branch/lifecycle_status/name}"
+               >Experimental</span>)
+      </tal:show-lifecycle>
+
+      <a tal:condition="mergeproposal/required:launchpad.Edit"
+         tal:attributes="href mergeproposal/fmt:url">
+        <img alt="" src="/@@/edit"/>
+      </a>
+    </dt>
+    <dd>
+      <tal:whiteboard content="structure mergeproposal/whiteboard/fmt:text-to-html">
+        The whiteboard.
+      </tal:whiteboard>
+      <div tal:condition="mergeproposal/show_registrant|nothing">
+        Merge proposed by
+        <tal:registrant replace="structure mergeproposal/registrant/fmt:link"/>
+      </div>
+      <tal:show-dependent condition="dependent_branch|nothing">
+        <div tal:condition="dependent_branch/required:launchpad.View">
+          Dependent on
+          <tal:dependent replace="structure dependent_branch/fmt:link" />
+        </div>
+      </tal:show-dependent>
+      <div tal:condition="mergeproposal/date_merged" class="branchstatusMERGED">
+        Merged
+        <tal:merged replace="mergeproposal/date_merged/fmt:approximatedate">
+          2007-06-04
+        </tal:merged>
+        <tal:have-revno condition="mergeproposal/merged_revno">
+          as revision <tal:revno replace="mergeproposal/merged_revno"/>
+        </tal:have-revno>
+      </div>
+
+      <tal:show-links condition="show_associations|nothing">
+
+        <tal:branch-link define="branch mergeproposal/source_branch">
+          <metal:branch-link use-macro="branch/@@+macros/bug-branch-links"/>
+        </tal:branch-link>
+
+        <div tal:repeat="spec_link mergeproposal/source_branch/spec_links">
+          <img src="/@@/blueprint"
+               tal:replace="structure spec_link/specification/image:icon" />
+          <a tal:attributes="href spec_link/specification/fmt:url"
+             tal:content="spec_link/specification/title" />
+        </div>
+
+      </tal:show-links>
+    </dd>
+  </tal:mp>
+
+  </dl>
+</metal:merge-proposal>
+
+
+<metal:branch-bug-links define-macro="bug-branch-links">
+
+  <tal:bug-tasks repeat="bugtask branch/related_bug_tasks">
+    <div tal:condition="bugtask/bug/required:launchpad.View">
+      <tal:link replace="structure bugtask/fmt:link" />
+      (<span tal:content="bugtask/importance/title"
+             tal:attributes="class string:importance${bugtask/importance/name}">
+         Critical
+       </span>
+       &ndash;
+       <span tal:content="bugtask/status/title"
+             tal:attributes="class string:status${bugtask/status/name}">
+         Confirmed
+       </span>)
+    </div>
+  </tal:bug-tasks>
+
+</metal:branch-bug-links>
+</tal:root>
