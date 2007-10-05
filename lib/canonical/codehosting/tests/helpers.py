@@ -122,6 +122,15 @@ class BranchTestCase(TestCaseWithTransport):
         self.cursor = cursor()
         self.branch_set = getUtility(IBranchSet)
 
+    def createTemporaryBazaarBranchAndTree(self, base_directory='.'):
+        """Create a local branch with one revision, return the working tree."""
+        tree = self.make_branch_and_tree(base_directory)
+        self.local_branch = tree.branch
+        self.build_tree([os.path.join(base_directory, 'foo')])
+        tree.add('foo')
+        tree.commit('Added foo', rev_id='rev1')
+        return tree
+
     def emptyPullQueues(self):
         transaction.begin()
         self.cursor.execute("UPDATE Branch SET mirror_request_time = NULL")
