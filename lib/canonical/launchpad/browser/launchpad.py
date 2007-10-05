@@ -419,7 +419,7 @@ class LaunchpadRootNavigation(Navigation):
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
         'distros': IDistributionSet,
-        'hwdb': IHWDBApplication,
+        '+hwdb': IHWDBApplication,
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
