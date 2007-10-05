@@ -44,6 +44,8 @@ class DebianBugImportScript(LaunchpadScript):
 
     New bugs will be filed against the Debian source package in
     Launchpad, with the real Debian bug linked as a bug watch.
+
+    An Ubuntu task will be created for each imported bug.
     """
 
     usage = "%(prog)s [options] <debian-bug-1> ... <debian-bug-n>"
