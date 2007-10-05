@@ -557,10 +557,6 @@ class ProductSeriesSet:
         return ProductSeries.select(
             query, distinct=True, clauseTables=['Product', 'Project'])
 
-    def importcount(self, status=None):
-        """See `IProductSeriesSet`."""
-        return self.searchImports(importstatus=status).count()
-
     def composeQueryString(self, text=None, importstatus=None):
         """Build SQL "where" clause for `ProductSeries` search.
 

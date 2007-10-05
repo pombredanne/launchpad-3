@@ -57,7 +57,7 @@ class BazaarApplicationView(LaunchpadView):
         return getUtility(IBranchSet).countBranchesWithAssociatedBugs()
 
     def import_count(self):
-        return self.series_set.importcount()
+        return self.series_set.searchImports().count()
 
     @cachedproperty
     def recently_changed_branches(self):
