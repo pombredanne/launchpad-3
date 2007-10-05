@@ -16,8 +16,8 @@
 
   <div tal:condition="context/potemplates">
     <p>
-      This will export <em>all</em> translations for the
-      <tal:name replace="context/name">trunk</tal:name> product series.  They
+      This will export <em>all</em> translations for package
+      <tal:name replace="context/name">trunk</tal:name>.  They
       will be made available for download as a single tarball.
     </p>
 
@@ -49,7 +49,7 @@
   </div>
 
   <p tal:condition="not: context/potemplates" class="informational message">
-    This product series does not have any translation files available for
+    This source package does not have any translation files available for
     download.
   </p>
 

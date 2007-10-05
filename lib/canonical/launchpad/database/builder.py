@@ -32,7 +32,7 @@ from canonical.launchpad.interfaces import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotResetHost,
     IBuildQueueSet, IBuildSet, IBuilder, IBuilderSet, IDistroArchSeriesSet,
     IHasBuildRecords, NotFoundError,
-    ProtocolVersionMismatch)
+    ProtocolVersionMismatch, pocketsuffix)
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
@@ -197,8 +197,6 @@ class Builder(SQLBase):
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
-        from canonical.archivepublisher.publishing import suffixpocket
-
         logger.info("startBuild(%s, %s, %s, %s)", self.url,
                     build_queue_item.name, build_queue_item.version,
                     build_queue_item.build.pocket.title)
@@ -277,11 +275,18 @@ class Builder(SQLBase):
             archive_url = build_queue_item.build.archive.archive_url
 
             if build_queue_item.build.archive.purpose == ArchivePurpose.PPA:
-                ubuntu_source_line = (
+                ubuntu_source_lines = [
                     'deb http://archive.ubuntu.com/ubuntu %s %s'
-                    % (dist_name, ogre_components))
+                    % (dist_name, ogre_components)]
             else:
                 ubuntu_components = ogre_components
+                # A list of pockets that we are allowed to use for
+                # dependencies.
+                ubuntu_pockets = [
+                    PackagePublishingPocket.RELEASE,
+                    PackagePublishingPocket.SECURITY,
+                    PackagePublishingPocket.UPDATES,
+                    ]
                 if (build_queue_item.build.archive.purpose ==
                         ArchivePurpose.PARTNER):
                     # XXX julian 2007-08-07 - this is a greasy hack.
@@ -289,20 +294,25 @@ class Builder(SQLBase):
                     # Partner is a very special case because the partner
                     # component is only in the partner archive, so we have
                     # to be careful with the sources.list archives.
-                    ubuntu_components = 'main restricted'
-                ubuntu_source_line = (
-                    'deb http://ftpmaster.internal/ubuntu %s %s'
-                    % (dist_name, ubuntu_components))
-                # Add the pocket to the distro to make the full suite name.
-                # PPA always builds in RELEASE so it does not need this code.
-                pocket = build_queue_item.build.pocket
-                if pocket != PackagePublishingPocket.RELEASE:
-                    dist_name += suffixpocket[pocket]
+                    ubuntu_components = 'main restricted universe multiverse'
+
+                # Here we build a list of sources.list lines for each pocket
+                # required in the primary archive.
+                ubuntu_source_lines = []
+                for pocket in ubuntu_pockets:
+                    if pocket == PackagePublishingPocket.RELEASE:
+                        dist_pocket = dist_name
+                    else:
+                        dist_pocket = dist_name + pocketsuffix[pocket]
+                    ubuntu_source_lines.append(
+                        'deb http://ftpmaster.internal/ubuntu %s %s'
+                        % (dist_pocket, ubuntu_components))
 
             source_line = (
                 'deb %s %s %s'
                 % (archive_url, dist_name, ogre_components))
-            args['archives'] = [source_line, ubuntu_source_line]
+            args['archives'] = [source_line]
+            args['archives'].extend(ubuntu_source_lines)
 
         chroot_sha1 = chroot.content.sha1
         # store DB information
