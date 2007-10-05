@@ -45,8 +45,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
-from canonical.launchpad.event import (
-    SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.helpers import (
     is_english_variant, preferred_or_request_languages)
 

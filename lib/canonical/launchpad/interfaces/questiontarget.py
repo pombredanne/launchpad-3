@@ -12,7 +12,7 @@ __all__ = [
 
 import sets
 
-from zope.interface import Attribute, Interface
+from zope.interface import Interface
 from zope.schema import Choice, List, Set, TextLine
 
 from canonical.launchpad import _

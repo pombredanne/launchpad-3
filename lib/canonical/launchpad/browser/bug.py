@@ -202,7 +202,8 @@ class BugContextMenu(ContextMenu):
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def createquestion(self):
-        text= 'Is a question'
+        """Create a question from this bug."""
+        text = 'Is a question'
         enabled = self.context.bug.canBeAQuestion()
         return Link('+create-question', text, icon='edit', enabled=enabled)
 
