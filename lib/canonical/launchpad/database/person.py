@@ -2049,7 +2049,14 @@ class PersonSet:
 
 
     def merge(self, from_person, to_person):
-        """See `IPersonSet`."""
+        """Merge a person into another.
+
+        The old user (from_person) will be left as an atavism
+
+        We are not yet game to delete the `from_person` entry from the
+        database yet. We will let it roll for a while and see what cruft
+        develops -- StuartBishop 20050812
+        """
         # Sanity checks
         if ITeam.providedBy(from_person):
             raise TypeError('Got a team as from_person.')
