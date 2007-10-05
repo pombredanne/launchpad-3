@@ -26,6 +26,10 @@ source record) PPAs are presented.
     packages to help my friends.
     3
     3
+    Mark Shuttleworth
+    packages to help the humanity (you know, ubuntu)
+    1
+    1
 
 We have a checkbox to allow inactive PPA results.
 
@@ -44,8 +48,8 @@ We have a checkbox to allow inactive PPA results.
     0
     Mark Shuttleworth
     packages to help the humanity (you know, ubuntu)
-    0
-    0
+    1
+    1
 
 This checkbox value is propagated to subsequent searches:
 
@@ -82,10 +86,27 @@ and estimated size).
     >>> results = find_tag_by_id(browser.contents,'package_counters')
     >>> text = extract_text(results)
     >>> print text
-    3 Sources
+    3 source packages
     (9.5 MiB)
-    3 Binaries
+    3 binary packages
     (3 bytes)
+    Estimated archive size:
+    9.5 MiB
+
+Just quickly check if the singular form of this section is handled
+properly.
+
+    >>> anon_browser.open("http://launchpad.dev/~sabdfl/+archive")
+    >>> anon_browser.title
+    'Personal Package Archive for Mark Shuttleworth'
+
+    >>> results = find_tag_by_id(anon_browser.contents,'package_counters')
+    >>> text = extract_text(results)
+    >>> print text
+    1 source package
+    (9.5 MiB)
+    1 binary package
+    (0 bytes)
     Estimated archive size:
     9.5 MiB
 
@@ -98,6 +119,25 @@ will be presented to user containing:
  * target Pocket,
  * original Component and
  * original Section
+
+The headings:
+
+    >>> print find_tag_by_id(browser.contents, 'packages_list')
+    <table class="listing sortable" id="packages_list">
+    <thead>
+    <tr>
+    <th>Source</th>
+    <th>Published</th>
+    <th>Status</th>
+    <th>Target</th>
+    <th>Pocket</th>
+    <th>Component</th>
+    <th>Section</th>
+    </tr>
+    </thead>
+    ...
+
+The data:
 
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
@@ -122,7 +162,6 @@ will be presented to user containing:
     Release
     main
     editors
-
 
 == Searching an archive ==
 
@@ -156,3 +195,69 @@ allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
 
     >>> len(find_tags_by_class(browser.contents, 'ppa_batch_row'))
     0
+
+== Team PPA pages ==
+
+Team PPA pages contain an extra column showing which team member uploaded
+the package. First we need to set up a team PPA and publish something to it.
+
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
+    >>> browser.open("http://launchpad.dev/~ubuntu-team/+activate-ppa")
+    >>> browser.getControl(name="field.accepted").value = True
+    >>> browser.getControl('Activate').click()
+    >>> ubuntu_ppa_url = browser.url
+
+Publish mozilla-firefox to ubuntu-team's PPA and ensure that it is signed
+by name16 (Foo Bar) who is a member - the signer is presented as the uploader
+in the list.
+
+    >>> from canonical.launchpad.ftests.ppa import publishToTeamPPA
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> login(ANONYMOUS)
+    >>> publishToTeamPPA(team_name="ubuntu-team")
+    >>> logout()
+    >>> import transaction
+    >>> transaction.commit()
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+Access ubuntu-team's PPA page:
+
+    >>> browser.open(ubuntu_ppa_url)
+
+The package row headings show an Uploader column:
+
+    >>> print find_tag_by_id(browser.contents, 'packages_list')
+    <table class="listing sortable" id="packages_list">
+    <thead>
+    <tr>
+    <th>Source</th>
+    <th>Uploader</th>
+    <th>Published</th>
+    <th>Status</th>
+    <th>Target</th>
+    <th>Pocket</th>
+    <th>Component</th>
+    <th>Section</th>
+    </tr>
+    </thead>
+    ...
+
+The package row data shows the uploader:
+
+    >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
+    ...    print extract_text(ppa_row)
+    mozilla-firefox - 0.9
+    name16
+    <BLANKLINE>
+    Pending
+    hoary
+    Release
+    main
+    base
+
+The uploader name is linkified to that user's home page:
+
+    >>> browser.getLink(id="uploader").click()
+    >>> browser.url
+    'http://launchpad.dev/~name16'

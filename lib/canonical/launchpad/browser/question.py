@@ -106,10 +106,16 @@ class QuestionSetView(LaunchpadFormView):
     @action('Find Answers', name="search")
     def search_action(self, action, data):
         """Redirect to the proper search page based on the scope widget."""
-        scope = data['scope']
-        if scope is None:
+        # For the scope to be absent from the form, the user must
+        # build the query string themselves - most likely because they
+        # are a bot. In that case we just assume they want to search
+        # all projects.
+        scope = self.widgets['scope'].getScope()
+        if scope is None or scope == 'all':
             # Use 'All projects' scope.
             scope = self.context
+        else:
+            scope = self.widgets['scope'].getInputValue()
         self.next_url = "%s/+tickets?%s" % (
             canonical_url(scope), self.request['QUERY_STRING'])
 
@@ -362,7 +368,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     # The similar items will be held in the following properties.
     similar_questions = None
     similar_faqs = None
-    
+
     def setUpFields(self):
         """Set up the form_fields from the schema and custom_widgets."""
         # Add our language field with a vocabulary specialized for
@@ -415,7 +421,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
                 self.form_fields.select('description'), self.prefix,
                  self.context, self.request, data=self.initial_values,
                  ignore_request=False)
-        
+
         faqs = IFAQTarget(self.question_target).findSimilarFAQs(data['title'])
         self.similar_faqs = list(faqs[:self._MAX_SIMILAR_FAQS])
 
@@ -676,6 +682,12 @@ class QuestionWorkflowView(LaunchpadFormView):
         self.context.addComment(self.user, data['message'])
         self._addNotificationAndHandlePossibleSubscription(
             _('Thanks for your comment.'), data)
+
+    @property
+    def show_call_to_answer(self):
+        """Return whether the call to answer should be displayed."""
+        return (self.user != self.context.owner and
+                self.context.can_give_answer)
 
     def canAddAnswer(self, action):
         """Return whether the answer action should be displayed."""
@@ -998,7 +1010,7 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
     searchDisplayWidth = 30
 
     searchButtonLabel = _('Search')
-    
+
     @property
     def search_field_name(self):
         """Return the name to use for the search field."""

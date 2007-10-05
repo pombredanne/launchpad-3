@@ -142,7 +142,7 @@ class PackageUpload(SQLBase):
         """See IPackageUpload."""
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks for 'ubuntu' main distro.
-        if self.archive.purpose != ArchivePurpose.PPA:
+        if not self.archive.allowUpdatesToReleasePocket():
             assert self.distroseries.canUploadToPocket(self.pocket), (
                 "Not permitted acceptance in the %s pocket in a "
                 "series in the '%s' state." % (
@@ -284,7 +284,7 @@ class PackageUpload(SQLBase):
             "Can not publish a non-ACCEPTED queue record (%s)" % self.id)
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks
-        if self.archive.purpose != ArchivePurpose.PPA:
+        if not self.archive.allowUpdatesToReleasePocket():
             assert self.distroseries.canUploadToPocket(self.pocket), (
                 "Not permitted to publish to the %s pocket in a "
                 "series in the '%s' state." % (
@@ -409,7 +409,11 @@ class PackageUpload(SQLBase):
             "CHANGESFILE": guess_encoding("".join(changes_lines)),
         }
         debug(self.logger, "Sending rejection email.")
-        rejection_template = get_email_template('upload-rejection.txt')
+        if self.isPPA():
+            rejection_template = get_email_template(
+                'ppa-upload-rejection.txt')
+        else:
+            rejection_template = get_email_template('upload-rejection.txt')
         sender = format_address(config.uploader.default_sender_name,
                                 config.uploader.default_sender_address)
         self._sendMail(
@@ -418,7 +422,7 @@ class PackageUpload(SQLBase):
             "%s rejected" % self.changesfile.filename,
             rejection_template % interpolations)
 
-    def _sendSuccessNotification(self, recipients, announce_list, 
+    def _sendSuccessNotification(self, recipients, announce_list,
             changes_lines, changes, summarystring):
         """Send a success email."""
         interpolations = {
@@ -447,15 +451,13 @@ class PackageUpload(SQLBase):
                 new_template % interpolations)
             return
 
-        # Every message sent from here onwards uses the accepted template.
-        accepted_template = get_email_template('upload-accepted.txt')
-
         if self.isPPA():
             # PPA uploads receive an acceptance message.
+            accepted_template = get_email_template('ppa-upload-accepted.txt')
             interpolations["STATUS"] = "[PPA %s] Accepted" % (
                 self.archive.owner.name)
             subject = "[PPA %s] Accepted %s %s (%s)" % (
-                self.archive.owner.name, self.displayname, 
+                self.archive.owner.name, self.displayname,
                 self.displayversion, self.displayarchs)
             self._sendMail(
                 uploader_address,
@@ -463,6 +465,9 @@ class PackageUpload(SQLBase):
                 subject,
                 accepted_template % interpolations)
             return
+
+        # Every message sent from here onwards uses the accepted template.
+        accepted_template = get_email_template('upload-accepted.txt')
 
         # Auto-approved uploads to backports skips the announcement,
         # they are usually processed with the sync policy.
@@ -577,7 +582,7 @@ class PackageUpload(SQLBase):
 
         # If we need to send a rejection, do it now and return early.
         if self.status == PackageUploadStatus.REJECTED:
-            self._sendRejectionNotification(recipients, changes_lines, 
+            self._sendRejectionNotification(recipients, changes_lines,
                 summary_text)
             return
 
@@ -594,21 +599,24 @@ class PackageUpload(SQLBase):
             # This is a signed upload.
             signer = self.signing_key.owner
             candidate_recipients.append(signer)
+        else:
+            debug(self.logger,
+                "Changes file is unsigned, adding changer as recipient")
+            candidate_recipients.append(changer)
 
+        # PPA uploads only email the uploader but for everything else
+        # we consider maintainer and changed-by also.
+        if self.signing_key and not self.isPPA():
             maintainer = self._emailToPerson(changes['maintainer'])
             if (maintainer and maintainer != signer and
                     maintainer.isUploader(self.distroseries.distribution)):
                 debug(self.logger, "Adding maintainer to recipients")
                 candidate_recipients.append(maintainer)
 
-            if (changer and changer != signer and 
+            if (changer and changer != signer and
                     changer.isUploader(self.distroseries.distribution)):
                 debug(self.logger, "Adding changed-by to recipients")
                 candidate_recipients.append(changer)
-        else:
-            debug(self.logger,
-                "Changes file is unsigned, adding changer as recipient")
-            candidate_recipients.append(changer)
 
         # Now filter list of recipients for persons only registered in
         # Launchpad to avoid spamming the innocent.
@@ -616,7 +624,7 @@ class PackageUpload(SQLBase):
         for person in candidate_recipients:
             if person is None or person.preferredemail is None:
                 continue
-            recipient = format_address(person.displayname, 
+            recipient = format_address(person.displayname,
                 person.preferredemail.email)
             debug(self.logger, "Adding recipient: '%s'" % recipient)
             recipients.append(recipient)
@@ -658,8 +666,8 @@ class PackageUpload(SQLBase):
         """
         extra_headers = { 'X-Katie' : 'Launchpad actually' }
 
-        # `simple_sendmail`, despite handling unicode message bodies, can't 
-        # cope with non-ascii sender/recipient addresses, so ascii_smash 
+        # `simple_sendmail`, despite handling unicode message bodies, can't
+        # cope with non-ascii sender/recipient addresses, so ascii_smash
         # is used on all addresses.
 
         # All emails from here have a Bcc to the default recipient.
@@ -685,10 +693,10 @@ class PackageUpload(SQLBase):
             from_addr.encode('ascii')
 
         simple_sendmail(
-            from_addr, 
+            from_addr,
             recipients,
-            subject, 
-            mail_text, 
+            subject,
+            mail_text,
             extra_headers
         )
 
@@ -748,7 +756,7 @@ class PackageUploadBuild(SQLBase):
                     binary.version))
             for each_target_dar in target_dars:
                 # XXX: dsilvers 2005-10-20 bug=3408:
-                # What do we do about embargoed binaries here? 
+                # What do we do about embargoed binaries here?
                 sbpph = SecureBinaryPackagePublishingHistory(
                     binarypackagerelease=binary,
                     distroarchseries=each_target_dar,

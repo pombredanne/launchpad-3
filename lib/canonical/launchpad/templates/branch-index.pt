@@ -1,10 +1,25 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
-      xmlns:tal="http://xml.zope.org/namespaces/tal"
-      xmlns:metal="http://xml.zope.org/namespaces/metal"
-      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 <body>
+
+<style metal:fill-slot="head_epilogue">
+div.revision {
+  padding-bottom: 1em;
+}
+
+div.revision p {
+  margin-left: 2.5em;
+}
+</style>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -35,10 +50,6 @@
   </p>
 
   <table id="branch-details-table">
-    <caption style="margin-top:1ex" class="discreet">
-      These URLs are intended for use with the
-      <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
-    </caption>
     <tbody>
       <tal:not-junk-branch tal:condition="context/product">
         <tr>
@@ -51,12 +62,8 @@
           </td>
         </tr>
       </tal:not-junk-branch>
-    <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
-      <tal:comment condition="nothing">
-        <!-- This is a mirror branch, display two URLs -->
-      </tal:comment>
+      <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
         <tr><th>Location:</th><td tal:content="context/url" /></tr>
-        <tr><th>Mirror:</th><td tal:content="view/supermirror_url" /></tr>
         <tal:mirrored-yet tal:condition="context/last_mirrored">
           <tr>
             <th>Last mirrored:</th>
@@ -77,17 +84,107 @@
             </tal:mirror-in-past>
           </tal:mirror-enabled>
         </tr>
-    </tal:mirrored-branch>
-    <tal:hosted-or-imported-branch 
-        tal:condition="not: context/branch_type/enumvalue:MIRRORED">
-      <tal:comment condition="nothing">
-        <!-- This is a hosted or import branch, one URL -->
-      </tal:comment>
-      <tr>
-        <th>Hosted on Launchpad:</th>
-        <td tal:content="view/supermirror_url" />
-      </tr>
-    </tal:hosted-or-imported-branch>
+      </tal:mirrored-branch>
+      <tal:remote-branch tal:condition="context/branch_type/enumvalue:REMOTE">
+        <tr>
+          <th>Location:</th>
+          <td tal:condition="context/url" tal:content="context/url" />
+          <td tal:condition="not: context/url" >Not specified</td>
+        </tr>
+      </tal:remote-branch>
+
+      <tal:show-download-url condition="view/bzr_download_url">
+        <tr>
+          <th>Download URL:</th>
+          <td tal:content="view/bzr_download_url"/>
+        </tr>
+        <tr class="lesser">
+          <th>Example:</th>
+          <td>bzr branch <tal:url replace="view/bzr_user_download_url"/></td>
+        </tr>
+      </tal:show-download-url>
+
+      <tal:hosted-branch condition="view/is_hosted_branch">
+        <tal:comment condition="nothing">
+          <!-- This is a hosted branch, display upload directions -->
+        </tal:comment>
+
+        <tal:not-logged-in condition="not:view/user">
+          <tal:comment condition="nothing">
+            <!-- The user is not logged in -->
+          </tal:comment>
+          <tr>
+            <th>Upload URL:</th>
+            <td id="upload-directions" tal:condition="not:context/owner/isTeam">
+              Only
+              <a tal:attributes="href context/owner/fmt:url"
+                 tal:content="context/owner/browsername">Person</a>
+              can upload to this branch. If you are
+              <tal:branch-owner replace="context/owner/browsername"/>
+              please <a href="+login">log in</a> for upload directions.
+            </td>
+            <td id="upload-directions" tal:condition="context/owner/isTeam">
+              Members of
+              <a tal:attributes="href context/owner/fmt:url"
+                 tal:content="context/owner/browsername">Team</a>
+              can upload to this branch. <a href="+login">Log in</a> for directions.
+            </td>
+          </tr>
+        </tal:not-logged-in>
+
+        <tal:logged-in condition="view/user">
+          <tal:cannot-upload condition="not:view/user_can_upload">
+            <tal:comment condition="nothing">
+              <!-- The user is logged in but cannot upload to the branch -->
+            </tal:comment>
+            <tr>
+              <th>Upload URL:</th>
+              <td id="upload-directions" tal:condition="not:context/owner/isTeam">
+                You cannot upload to this branch. Only
+                <a tal:attributes="href context/owner/fmt:url"
+                   tal:content="context/owner/browsername">Person</a>
+                can upload to this branch.
+              </td>
+              <td id="upload-directions" tal:condition="context/owner/isTeam">
+                You cannot upload to this branch. Members of
+                <a tal:attributes="href context/owner/fmt:url"
+                   tal:content="context/owner/browsername">Team</a>
+                can upload to this branch. You may want to
+                <a tal:attributes="href string:${context/owner/fmt:url}/+join">join
+                the team</a>.
+              </td>
+            </tr>
+          </tal:cannot-upload>
+
+          <tal:can-upload condition="view/user_can_upload">
+            <tal:comment condition="nothing">
+              <!-- The user is logged in and can upload to the branch -->
+            </tal:comment>
+
+            <tr>
+              <th>Upload URL:</th>
+              <td>
+                <tal:url replace="view/bzr_upload_url"/>
+                <tal:comment condition="nothing">
+                  <!-- Directions to set the SSH key -->
+                </tal:comment>
+                <p tal:condition="not:view/user/sshkeys" id="ssh-key-directions">
+                  To authenticate with the Launchpad branch upload service, you need
+                  to <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+                  register a SSH key </a>.
+                </p>
+              </td>
+            </tr>
+            <tr class="lesser">
+              <th>Example:</th>
+              <td id="upload-directions">
+                bzr push <tal:url replace="view/bzr_user_upload_url"/>
+              </td>
+            </tr>
+            </tal:can-upload>
+          </tal:logged-in>
+      </tal:hosted-branch>
+
     </tbody>
   </table>
 
@@ -96,75 +193,6 @@
     $Branch.summary goes here. This should be quite short, just a single
     paragraph of text really, giving the branch highlights.
   </p>
-
-  <tal:hosted-branch condition="view/is_hosted_branch">
-    <tal:comment condition="nothing">
-      <!-- This is a hosted branch, display upload directions -->
-    </tal:comment>
-    <tal:not-logged-in condition="not:view/user">
-      <tal:comment condition="nothing">
-        <!-- The user is not logged in -->
-      </tal:comment>
-      <p id="upload-directions" tal:condition="not:context/owner/isTeam">
-        Only
-        <a tal:attributes="href context/owner/fmt:url"
-           tal:content="context/owner/browsername">Person</a>
-        can upload to this branch. If this is you,
-        <a href="+login">log in</a> for directions.
-      </p>
-      <p id="upload-directions" tal:condition="context/owner/isTeam">
-        Members of
-        <a tal:attributes="href context/owner/fmt:url"
-           tal:content="context/owner/browsername">Team</a>
-        can upload to this branch. <a href="+login">Log in</a> for directions.
-      </p>
-    </tal:not-logged-in>
-
-    <tal:logged-in condition="view/user">
-      <tal:cannot-upload condition="not:view/user_can_upload">
-        <tal:comment condition="nothing">
-          <!-- The user is logged in but cannot upload to the branch -->
-        </tal:comment>
-        <p id="upload-directions" tal:condition="not:context/owner/isTeam">
-          You cannot upload to this branch. Only
-          <a tal:attributes="href context/owner/fmt:url"
-             tal:content="context/owner/browsername">Person</a>
-          can upload to this branch.
-        </p>
-        <p id="upload-directions" tal:condition="context/owner/isTeam">
-          You cannot upload to this branch. Members of
-          <a tal:attributes="href context/owner/fmt:url"
-             tal:content="context/owner/browsername">Team</a>
-          can upload to this branch.
-          <a tal:attributes="href string:${context/owner/fmt:url}/+join">Join
-            the team</a>.
-        </p>
-      </tal:cannot-upload>
-
-      <tal:can-upload condition="view/user_can_upload">
-        <tal:comment condition="nothing">
-          <!-- The user is logged in and can upload to the branch -->
-        </tal:comment>
-        <p id="upload-directions">
-          You can <b>upload</b> to this branch at:
-          <span tal:content="view/upload_url">
-            sftp://name12@bazaar.launchpad.net/~name12/gnome-terminal/pushed
-          </span>
-        </p>
-        <tal:comment condition="nothing">
-          <!-- Directions to set the SSH key -->
-        </tal:comment>
-        <p tal:condition="not:view/user/sshkeys" id="ssh-key-directions">
-          To authenticate with the Launchpad branch upload service, you need
-          to <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
-            register a SSH key </a>.
-        </p>
-      </tal:can-upload>
-    </tal:logged-in>
-    <tal:comment condition="nothing">
-      <!-- End of upload directions -->
-    </tal:comment>
-  </tal:hosted-branch>
 
   <tal:comment condition="nothing">
     <!-- XXX This David Allouche 2006-04-09
@@ -238,9 +266,9 @@
     <a href="+landing-candidates">more&#8230;</a>
   </div>
 
-  <h2 style="clear: both;">Recent revisions</h2>
-
   <div id="recent-revisions">
+  <h2 style="clear: both">Recent revisions</h2>
+
   <p tal:condition="not:context/revision_count">
     <tal:not-mirrored condition="not:context/last_mirrored">
       <tal:mirror condition="context/url">
@@ -261,10 +289,21 @@
   </p>
 
   <tal:history-available condition="context/revision_count">
-  <ol>
-    <li tal:repeat="rev_no context/latest_revisions"
-        tal:attributes="value rev_no/sequence; id string:rev${rev_no/sequence}">
+    <div class="revision"
+         tal:repeat="rev_no context/latest_revisions"
+         tal:attributes="id string:rev${rev_no/sequence}">
       <div>
+        <tal:comment condition="nothing">
+          The end of the anchor and the start of the next tal expression
+          has no whitespace between the elements as we do not want any
+          space between the number and the fullstop.
+        </tal:comment>
+        <a tal:attributes="href string:${view/codebrowse_url}/revision/${rev_no/sequence}"
+           tal:content="rev_no/sequence"
+           tal:condition="context/code_is_browseable">
+          1
+        </a><tal:revno condition="not: context/code_is_browseable"
+                       replace="rev_no/sequence">1</tal:revno>.
         By
         <strong>
           <tal:not-anonymous condition="view/user">
@@ -288,8 +327,7 @@
       <p tal:replace="structure rev_no/revision/log_body/fmt:text-to-html">
         The revision commit message.
       </p>
-    </li>
-  </ol>
+    </div>
   </tal:history-available>
   </div>
 
@@ -359,17 +397,22 @@
     team, the URL will change.</p>
 
   <p>Subscribing to a branch will make it appear in your personal branch
-    listings.</p>
+    listings, and if you choose to, Launchpad will email you when the branch
+    is updated.</p>
 
-  <p>Once you have registered or uploaded a branch, it cannot be deleted. But
-    you can set its status to &ldquo;Abandoned&rdquo;.</p>
+  <p>A branch that has no revisions, and is not linked to any other branches,
+    bugs or blueprints, and has no subscribers may be deleted.  If the branch
+    cannot be deleted, you can set its status to
+    &ldquo;<strong><span class="branchstatusABANDONED">Abandoned</span></strong>&rdquo;,
+    and this will stop the branch appearing by default in listing views.</p>
 
   <p>A mirror branch cannot be converted to an upload branch, and conversely,
     you cannot convert an upload branch to a mirror branch. However you can
-    rename a branch and create a new one in its place.<p>
+    rename a branch and create a new one in its place.</p>
 
-  <p>There no browsable web content on <code>bazaar.launchpad.net<code>. This
-    host only serves data for use with the Bazaar version control system.</p>
+  <p>There is no browsable web content on <code>bazaar.launchpad.net</code>.
+    This host only serves data for use with the Bazaar version control system.
+  </p>
 
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
 

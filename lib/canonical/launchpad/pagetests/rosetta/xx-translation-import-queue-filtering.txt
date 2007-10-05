@@ -13,7 +13,7 @@ Let's add 100 files to the queue so we have enough entries to play with.
   ...     'pagetests/rosetta/xx-translation-import-queue-filtering.tar.gz')
   >>> tarball = open(test_file_name)
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
   >>> browser.open(
   ...     'http://translations.launchpad.dev/evolution/trunk/'
   ...     '+translations-upload')

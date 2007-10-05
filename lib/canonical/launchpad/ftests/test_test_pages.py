@@ -14,7 +14,7 @@ class TestMakeStoryTest(unittest.TestCase):
     layer = PageTestLayer
 
     def setUp(self):
-        # we need an empty story to test with, and it has to be in the 
+        # we need an empty story to test with, and it has to be in the
         # testing namespace
         self.tempdir = tempfile.mkdtemp(dir=os.path.dirname(__file__))
         unittest.TestCase.setUp(self)
@@ -22,7 +22,7 @@ class TestMakeStoryTest(unittest.TestCase):
     def tearDown(self):
         unittest.TestCase.tearDown(self)
         shutil.rmtree(self.tempdir)
-        
+
     def test_dir_construction_and_trivial_running(self):
         test_filename = os.path.join(self.tempdir, '10-foo.txt')
         test_file = open(test_filename, 'wt')

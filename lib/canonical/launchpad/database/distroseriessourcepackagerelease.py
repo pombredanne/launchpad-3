@@ -67,6 +67,11 @@ class DistroSeriesSourcePackageRelease:
         return pub_hist[0]
 
     @property
+    def version(self):
+        """See IDistroSeriesSourcePackageRelease."""
+        return self.sourcepackagerelease.version
+
+    @property
     def pocket(self):
         """See IDistroSeriesSourcePackageRelease."""
         currpub = self.current_publishing_record
@@ -124,7 +129,6 @@ class DistroSeriesSourcePackageRelease:
     def binaries(self):
         """See IDistroSeriesSourcePackageRelease."""
         clauseTables = [
-            'SourcePackageRelease',
             'BinaryPackageRelease',
             'DistroArchRelease',
             'Build',
@@ -132,7 +136,6 @@ class DistroSeriesSourcePackageRelease:
         ]
 
         query = """
-        SourcePackageRelease.id=Build.sourcepackagerelease AND
         BinaryPackageRelease.build=Build.id AND
         DistroArchRelease.id =
             BinaryPackagePublishingHistory.distroarchrelease AND
@@ -147,7 +150,7 @@ class DistroSeriesSourcePackageRelease:
 
         return BinaryPackageRelease.select(
                 query, prejoinClauseTables=['Build'],
-                clauseTables=clauseTables)
+                clauseTables=clauseTables, distinct=True)
 
     @property
     def meta_binaries(self):
@@ -217,7 +220,7 @@ class DistroSeriesSourcePackageRelease:
             new_section == current.section):
             return
 
-        # See if the archive has changed by virtue of the component 
+        # See if the archive has changed by virtue of the component
         # changing:
         new_archive = self.distribution.getArchiveByComponent(
             new_component.name)

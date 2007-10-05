@@ -28,7 +28,7 @@ from canonical.launchpad.components.rosettastats import RosettaStats
 
 class DistroSeriesLanguage(SQLBase, RosettaStats):
     """See `IDistroSeriesLanguage`.
-    
+
     A SQLObject based implementation of IDistroSeriesLanguage.
     """
     implements(IDistroSeriesLanguage)
@@ -206,6 +206,9 @@ class DummyDistroSeriesLanguage(RosettaStats):
     def untranslatedCount(self):
         return self.messageCount
 
+    def unreviewedCount(self):
+        return 0
+
     def currentPercentage(self):
         return 0.0
 
@@ -227,7 +230,7 @@ class DummyDistroSeriesLanguage(RosettaStats):
 
 class DistroSeriesLanguageSet:
     """See `IDistroSeriesLanguageSet`.
-    
+
     Implements a means to get a DummyDistroSeriesLanguage.
     """
     implements(IDistroSeriesLanguageSet)

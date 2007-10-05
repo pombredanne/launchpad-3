@@ -19,9 +19,8 @@ from canonical.launchpad import helpers
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
 from canonical.launchpad.interfaces import (
-    IPOMsgSet, TranslationConflict, IPOSubmissionSet)
-from canonical.lp.dbschema import (RosettaTranslationOrigin,
-    TranslationValidationStatus)
+    IPOMsgSet, TranslationConflict, IPOSubmissionSet,
+    RosettaTranslationOrigin, TranslationValidationStatus)
 
 
 class POMsgSetMixIn:
@@ -76,7 +75,7 @@ class POMsgSetMixIn:
         return subs[self]
 
     def initializeSubmissionsCaches(self, related_submissions=None):
-        """See `IPOMsgSet`.""" 
+        """See `IPOMsgSet`."""
         if self._hasSubmissionsCaches():
             return
 

@@ -28,7 +28,7 @@ instance here:
     42: FUBAR
     >>> issuezilla.updateBugWatches(mozilla_bugzilla.watches)
     WARNING:root:Didn't find bug u'42' on https://bugzilla.mozilla.org
-    (local bugs: 1, 2)
+    (local bugs: 1, 2).
     >>> for bug_watch in mozilla_bugzilla.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     2000: RESOLVED FIXED
@@ -63,7 +63,7 @@ We support them just fine:
 
     >>> old_bugzilla.updateBugWatches(mozilla_bugzilla.watches)
     WARNING:root:Didn't find bug u'2000' on https://bugzilla.mozilla.org
-    (local bugs: 1)
+    (local bugs: 1).
     >>> for bug_watch in mozilla_bugzilla.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     2000: UNKNOWN
@@ -99,7 +99,7 @@ Yet everything still works as expected:
 
     >>> weird_bugzilla.updateBugWatches(mozilla_bugzilla.watches)
     WARNING:root:Didn't find bug u'42' on https://bugzilla.mozilla.org
-    (local bugs: 1, 2)
+    (local bugs: 1, 2).
     >>> for bug_watch in mozilla_bugzilla.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     2000: ASSIGNED

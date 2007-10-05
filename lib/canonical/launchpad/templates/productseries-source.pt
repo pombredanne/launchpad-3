@@ -10,15 +10,14 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h1>Upstream source import</h1>
+  <h1>Upstream source details</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_form/form">
     <p metal:fill-slot="extra_info" tal:condition="not:view/errors">
-      Once you enter the details of the
-      <abbr title="revision control system">RCS</abbr> you use for
+      Once you enter the details of the revision control system you use for
       this release series, Launchpad Administrators will attempt to import that
       code and publish it as a Bazaar branch.
     </p>
@@ -98,10 +97,10 @@
               break;
             }
           }
-          form['field.cvsroot'].disabled = (rcstype != 'Concurrent Version System');
-          form['field.cvsbranch'].disabled = (rcstype != 'Concurrent Version System');
-          form['field.cvsmodule'].disabled = (rcstype != 'Concurrent Version System');
-          form['field.svnrepository'].disabled = (rcstype != 'Subversion');
+          form['field.cvsroot'].disabled = (rcstype != 'CVS');
+          form['field.cvsbranch'].disabled = (rcstype != 'CVS');
+          form['field.cvsmodule'].disabled = (rcstype != 'CVS');
+          form['field.svnrepository'].disabled = (rcstype != 'SVN');
         }
         updateWidgets();
       </script>

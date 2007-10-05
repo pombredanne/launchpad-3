@@ -9,13 +9,13 @@ __all__ = [
     'ICodeImportSet',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Datetime, Choice, Int, TextLine
+from zope.interface import Interface
+from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces.productseries import (
-    validate_cvs_module, validate_cvs_root)
+    validate_cvs_module, validate_cvs_root, RevisionControlSystems)
 from canonical.lp.dbschema import CodeImportReviewStatus
 
 
@@ -26,7 +26,7 @@ class ICodeImport(Interface):
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
 
-    # XXX DavidAllouche 2007-07-04: 
+    # XXX DavidAllouche 2007-07-04:
     # Branch should really be readonly, but there is a corner case of the
     # code-import-sync script where we have a need to change it. The readonly
     # parameter should be set back to True after the transition to the new
@@ -68,7 +68,7 @@ class ICodeImport(Interface):
             " Only reviewed imports are processed."))
 
     rcs_type = Choice(title=_("Type of RCS"),
-        required=True, vocabulary='RevisionControlSystems',
+        required=True, vocabulary=RevisionControlSystems,
         description=_("The revision control system used by the import source. "
         "Can be CVS or Subversion."))
 
@@ -93,9 +93,19 @@ class ICodeImport(Interface):
             " Usually, it is the name of the project."))
 
     date_last_successful = Datetime(title=_("Last successful"), required=False)
-    update_interval = Attribute(_("The time between automatic updates of this"
-        " import. If unspecified, the import will be updated at a default"
-        " interval selected by Launcphad administrators."))
+
+    update_interval = Timedelta(
+        title=_("Update interval"), required=False, description=_(
+        "The user-specified time between automatic updates of this import. "
+        "If this is unspecified, the effective update interval is a default "
+        "value selected by Launchpad administrators."))
+
+    effective_update_interval = Timedelta(
+        title=_("Effective update interval"), required=True, readonly=True,
+        description=_(
+        "The effective time between automatic updates of this import. "
+        "If the user did not specify an update interval, this is a default "
+        "value selected by Launchpad adminstrators."))
 
 
 class ICodeImportSet(Interface):
@@ -105,7 +115,7 @@ class ICodeImportSet(Interface):
             cvs_root=None, cvs_module=None):
         """Create a new CodeImport."""
 
-    # XXX DavidAllouche 2007-07-05: 
+    # XXX DavidAllouche 2007-07-05:
     # newWithId is only needed for code-import-sync-script. This method
     # should be removed after the transition to the new code import system is
     # complete.

@@ -11,6 +11,7 @@ __all__ = [
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchType',
+    'BranchTypeError',
     'CannotDeleteBranch',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
@@ -18,6 +19,8 @@ __all__ = [
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchLifecycleFilter',
+    'UICreatableBranchType',
+    'UnknownBranchTypeError'
     ]
 
 from zope.interface import Interface, Attribute
@@ -131,6 +134,11 @@ class BranchType(DBEnumeratedType):
         """)
 
 
+class UICreatableBranchType(EnumeratedType):
+    """The types of branches that can be created through the web UI."""
+    use_template(BranchType, exclude='IMPORTED')
+
+
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.NEW,
     BranchLifecycleStatus.EXPERIMENTAL,
@@ -146,6 +154,10 @@ class CannotDeleteBranch(Exception):
     """The branch cannot be deleted at this time."""
 
 
+class UnknownBranchTypeError(Exception):
+    """Raised when the user specifies an unrecognized branch type."""
+
+
 class BranchCreationForbidden(BranchCreationException):
     """A Branch visibility policy forbids branch creation.
 
@@ -159,6 +171,15 @@ class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
 
     Raised when a user is attempting to create a branch and set the owner of
     the branch to a team that they are not a member of.
+    """
+
+
+class BranchTypeError(Exception):
+    """An operation cannot be performed for a particular branch type.
+
+    Some branch operations are only valid for certain types of branches.  The
+    BranchTypeError exception is raised if one of these operations is called
+    with a branch of the wrong type.
     """
 
 
@@ -178,14 +199,14 @@ class BranchURIField(URIField):
 
         # URIField has already established that we have a valid URI
         uri = URI(value)
-        supermirror_root = URI(config.launchpad.supermirror_root)
+        supermirror_root = URI(config.codehosting.supermirror_root)
         launchpad_domain = config.launchpad.vhosts.mainsite.hostname
-        if (supermirror_root.contains(uri)
-            or uri.underDomain(launchpad_domain)):
+        if uri.underDomain(launchpad_domain):
             message = _(
-                "Don't manually register a bzr branch on "
-                "<code>%s</code>. Create it by SFTP, and it "
-                "is registered automatically." % uri.host)
+                "For Launchpad to mirror a branch, the original branch cannot "
+                "be on <code>%s</code>. Did you want to "
+                '<a href="https://help.launchpad.net/CreatingAHostedBranch">'
+                "create a hosted branch</a> instead?" % launchpad_domain)
             raise LaunchpadValidationError(message)
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
@@ -213,12 +234,26 @@ class IBranch(IHasOwner):
     """A Bazaar branch."""
 
     id = Int(title=_('ID'), readonly=True, required=True)
+
+    # XXX: TimPenhey 2007-08-31
+    # The vocabulary set for branch_type is only used for the creation
+    # of branches through the automatically generated forms, and doesn't
+    # actually represent the complete range of real values that branch_type
+    # may actually hold.  Import branches are not created in the same
+    # way as Hosted, Mirrored or Remote branches.
+    # There are two option:
+    #   1) define a separate schema to use in the UI (sledgehammer solution)
+    #   2) work out some way to specify a restricted vocabulary in the view
+    # Personally I'd like a LAZR way to do number 2.
     branch_type = Choice(
-        title=_("Branch type"), required=True, vocabulary=BranchType,
+        title=_("Branch Type"), required=True,
+        vocabulary=UICreatableBranchType,
         description=_("Hosted branches have Launchpad code hosting as the "
                       "primary location and can be pushed to.  Mirrored "
                       "branches are pulled from the remote location "
-                      "specified and cannot be pushed to."))
+                      "specified and cannot be pushed to.  Remote branches "
+                      "are not mirrored by Launchpad, nor can they be "
+                      "pushed to."))
     name = TextLine(
         title=_('Name'), required=True, description=_("Keep very "
         "short, unique, and descriptive, because it will be used in URLs. "
@@ -233,7 +268,7 @@ class IBranch(IHasOwner):
         "single-paragraph description of the branch. This will be "
         "displayed on the branch page."))
     url = BranchURIField(
-        title=_('Branch URL'), required=True,
+        title=_('Branch URL'), required=False,
         allowed_schemes=['http', 'https', 'ftp', 'sftp', 'bzr+ssh'],
         allow_userinfo=False,
         allow_query=False,
@@ -410,6 +445,23 @@ class IBranch(IHasOwner):
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
 
+    def getBzrUploadURL(person=None):
+        """Return the URL for this person to push to the branch.
+
+        If user is None a placeholder is used for the username if
+        one is required.
+        """
+
+    def getBzrDownloadURL(person=None):
+        """Return the URL for this person to branch the branch.
+
+        If the branch is public, the anonymous http location is used,
+        otherwise the url uses the smartserver.
+
+        If user is None a placeholder is used for the username if
+        one is required.
+        """
+
     def canBeDeleted():
         """Can this branch be deleted in its current state.
 
@@ -487,6 +539,9 @@ class IBranch(IHasOwner):
                the corresponding BranchRevision rows for this branch.
         """
 
+    def getPullURL():
+        """Return the URL used to pull the branch into the mirror area."""
+
     def requestMirror():
         """Request that this branch be mirrored on the next run of the branch
         puller.
@@ -547,6 +602,9 @@ class IBranchSet(Interface):
 
         Raises BranchCreationForbidden if the creator is not allowed
         to create a branch for the specified product.
+
+        If product is None (indicating a +junk branch) then the owner must not
+        be a team, except for the special case of the ~vcs-imports celebrity.
         """
 
     def delete(branch):
@@ -769,6 +827,24 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
+    def getBranchesForProject(
+        project, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
+        """Branches associated with project with appropriate lifecycle.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
+        """
+
     def getHostedBranchesForPerson(person):
         """Return the hosted branches that the given person can write to."""
 
@@ -787,17 +863,11 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
-    def getHostedPullQueue():
-        """Return the queue of hosted branches to mirror using the puller."""
+    def getPullQueue(branch_type):
+        """Return a queue of branches to mirror using the puller.
 
-    def getMirroredPullQueue():
-        """Return the queue of mirrored branches to mirror using the puller."""
-
-    def getImportedPullQueue():
-        """Return the queue of imported branches to mirror using the puller."""
-
-    def getPullQueue():
-        """Return the entire queue of branches to mirror using the puller."""
+        :param branch_type: A value from the `BranchType` enum.
+        """
 
 
 class IBranchDelta(Interface):

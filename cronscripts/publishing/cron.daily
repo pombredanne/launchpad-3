@@ -1,5 +1,12 @@
 #!/bin/sh
 
+# LPCONFIG will come from the environment so this script can run unaltered
+# on dogfood.
+if [ -z $LPCONFIG ]; then
+    echo LPCONFIG must be set to run this script.
+    exit 1
+fi
+
 set -x
 set -e
 set -u
@@ -13,19 +20,26 @@ OVERRIDEROOT=$ARCHIVEROOT/../ubuntu-overrides
 CACHEROOT=$ARCHIVEROOT/../ubuntu-cache
 DISTSCOPYROOT=$ARCHIVEROOT/../ubuntu-distscopy
 INDICES=$ARCHIVEROOT/indices
+PRODUCTION_CONFIG=ftpmaster
+
+if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
+    ARCHIVEROOT_PARTNER=/srv/launchpad.net/ubuntu-archive/ubuntu-partner
+    GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
+else
+    # GNUPGHOME does not need to be set, keys can come from ~/.gnupg
+    ARCHIVEROOT_PARTNER=/srv/launchpad.net/ppa/ubuntu-partner
+fi
+DISTSROOT_PARTNER=$ARCHIVEROOT_PARTNER/dists
 
 # Configuration options
-LPCONFIG=ftpmaster
 LAUNCHPADROOT=/srv/launchpad.net/codelines/current
 LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
 DISTRONAME=ubuntu
-GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
 TOUCHLIST=$ARCHIVEROOT/project/trace/$(hostname --fqdn)
 DSYNCLIST=$CACHEROOT/dsync.list
 MD5LIST=$INDICES/md5sums.gz
 
 # Manipulate the environment
-export LPCONFIG
 export GNUPGHOME
 PATH=$PATH:$LAUNCHPADROOT/scripts:$LAUNCHPADROOT/cronscripts:$LAUNCHPADROOT/cronscripts/publishing
 
@@ -81,18 +95,21 @@ rsync -aH --delete ${DISTSROOT}/ ${ARCHIVEROOT}/dists.new
 # satisfactory correction in the publisher we just touch the Packages
 # files to ensure that the Release files get generated properly.
 
-for DIST in dapper breezy; do
-  for COMP in restricted universe; do
-   for ARCH in i386 amd64 powerpc hppa sparc ia64; do
-     touch ${DISTSROOT}.new/${DIST}-updates/$COMP/debian-installer/binary-$ARCH/Packages
-   done
-  done
-done
+if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
+    for DIST in dapper breezy; do
+      for COMP in restricted universe; do
+       for ARCH in i386 amd64 powerpc hppa sparc ia64; do
+         touch ${DISTSROOT}.new/${DIST}-updates/$COMP/debian-installer/binary-$ARCH/Packages
+       done
+      done
+    done
+fi
 
-# Publish the results.
+# Publish the results for all archives (except PPA).
+# (the -R only affects the primary archive)
 publish-distro.py -v -v -d $DISTRONAME -R ${DISTSROOT}.new
 
-# Process death row
+# Process death row for all archives (except PPA).
 process-death-row.py -v -v -d $DISTRONAME
 
 set +x
@@ -110,30 +127,51 @@ for CANDIDATE in $(find ${DISTSROOT}.new -maxdepth 2 -name Release) \
     echo "Not re-signing $CANDIDATE"
   fi
 done
+SIGNLIST_PARTNER=$(find ${DISTSROOT_PARTNER} -maxdepth 2 -name Release)
+for CANDIDATE in $SIGNLIST_PARTNER; do
+  #  [ Release.gpg missing   ] or [ Release is newer than Release.gpg ]
+  if [ ! -f $CANDIDATE.gpg ] || [ $CANDIDATE -nt $CANDIDATE.gpg ]; then
+    echo "(re-)signing $CANDIDATE"
+    gpg --yes --detach-sign --armor -o $CANDIDATE.gpg --sign $CANDIDATE
+  else
+    echo "Not re-signing $CANDIDATE"
+  fi
+done
+
+# Generate the -commercial pocket for backwards compatibility with
+# dapper, edgy and feisty releases.  Don't fail the whole script if it
+# fails.
+commercial-compat.sh || true
 
 # The Packages and Sources files are very large and would cripple our
 # mirrors, so we remove them now that the uncompressed MD5SUMS are in the
 # Release files.
 echo Removing uncompressed Packages and Sources files
 find ${DISTSROOT}.new \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
+find ${DISTSROOT_PARTNER} \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
 
 # Copy in the indices
-echo Copying the indices into place.
-rm -f $INDICES/override.*
-cp $OVERRIDEROOT/override.* $INDICES
+if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
+    echo Copying the indices into place.
+    rm -f $INDICES/override.*
+    cp $OVERRIDEROOT/override.* $INDICES
+fi
 
 set -x 
 
-# As close to atomically as possible, put the new dists into place
+# As close to atomically as possible, put the new dists into place for the
+# primary archive.
 mv $DISTSROOT ${DISTSROOT}.old
 mv ${DISTSROOT}.new $DISTSROOT
 DONEPUB=yes
 mv ${DISTSROOT}.old ${DISTSCOPYROOT}/dists
 
 # Touch everything you asked us to do
-for FILE in $TOUCHLIST; do
-  touch "$FILE"
-done
+if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
+    for FILE in $TOUCHLIST; do
+      touch "$FILE"
+    done
+fi
 
 # Make the lslr because we all love those
 LSLR=ls-lR.gz
@@ -141,21 +179,28 @@ LSLR=ls-lR.gz
   rm -f .$LSLR.new ; \
   TZ=UTC ls -lR  | gzip -9n > .$LSLR.new ; \
   mv -f .$LSLR.new $LSLR )
+( cd $ARCHIVEROOT_PARTNER ; \
+  rm -f .$LSLR.new ; \
+  TZ=UTC ls -lR  | gzip -9n > .$LSLR.new ; \
+  mv -f .$LSLR.new $LSLR )
 
-# Run dsync
+# Run dsync over primary archive only.
 
 ( cd $ARCHIVEROOT ; \
-  dsync-flist -q generate $DSYNCLIST --md5 ; \
-  dsync-flist -q md5sums $DSYNCLIST | gzip -9n > ${MD5LIST} ; \
-  ) #dsync-flist -q link-dups $DSYNCLIST || true )
+  dsync-flist -q generate $DSYNCLIST -e 'Packages*' -e 'Sources*' -e 'Release*' --md5 ; \
+  (dsync-flist -q md5sums $DSYNCLIST; find dists '(' -name 'Packages*' -o -name 'Sources*' -o -name 'Release*' ')' -print | xargs -r md5sum) | gzip -9n > ${MD5LIST} ; \
+  dsync-flist -q link-dups $DSYNCLIST || true )
 
 # Clear out empty and thus redundant dirs
 find $ARCHIVEROOT -type d -empty | xargs -r rmdir
+find $ARCHIVEROOT_PARTNER -type d -empty | xargs -r rmdir
 
 # invoke cron.germinate to fill ubuntu tasks
 cron.germinate
 
 # Trigger master mirrors
-
-ssh archvsync@syowa
-ssh archvsync@frei
+if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
+    ssh archvsync@syowa
+    ssh archvsync@frei
+    ssh archvsync@rockhopper
+fi

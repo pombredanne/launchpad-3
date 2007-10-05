@@ -50,8 +50,15 @@ class FakeLogger:
     def warning(self, *stuff, **kw):
         self.message('WARNING', *stuff, **kw)
 
+    def error(self, *stuff, **kw):
+        self.message('ERROR', *stuff, **kw)
+
     def info(self, *stuff, **kw):
         self.message('INFO', *stuff, **kw)
+
+    def debug(self, *stuff, **kw):
+        self.message('DEBUG', *stuff, **kw)
+
 
 class LibrarianFormatter(logging.Formatter):
     """A logging.Formatter that stores tracebacks in the Librarian and emits
@@ -62,7 +69,7 @@ class LibrarianFormatter(logging.Formatter):
     """
     def formatException(self, ei):
         """Format the exception and store it in the Librian.
-        
+
         Returns the URL, or the formatted exception if the Librarian is
         not available.
         """
@@ -82,7 +89,7 @@ class LibrarianFormatter(logging.Formatter):
             pass
         if not exception_string:
             exception_string = str(ei[0]).split('.')[-1]
-  
+
         expiry = datetime.now().replace(tzinfo=utc) + timedelta(days=90)
         try:
             filename = base(
@@ -250,7 +257,7 @@ def _logger(level, out_stream, name=None):
     # reset state of root logger
     reset_root_logger()
 
-    # Make it print output in a standard format, suitable for 
+    # Make it print output in a standard format, suitable for
     # both command line tools and cron jobs (command line tools often end
     # up being run from inside cron, so this is a good thing).
     hdlr = logging.StreamHandler(strm=out_stream)
