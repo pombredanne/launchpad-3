@@ -1,6 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
-"""Unit tests for branchtomirror.py."""
+"""Unit tests for comparing Bazaar formats."""
 
 __metaclass__ = type
 
@@ -81,28 +81,6 @@ class IdenticalFormatsTestCase(unittest.TestCase):
             branchtomirror.identical_formats(
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA()),
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatB())))
-
-
-class TestCanonicalUrl(unittest.TestCase):
-    """Test cases for rendering the canonical url of a branch."""
-
-    layer = LaunchpadZopelessLayer
-
-    def testCanonicalUrlConsistent(self):
-        # BranchToMirror._canonical_url is consistent with
-        # webapp.canonical_url, if the provided unique_name is correct.
-        branch = Branch.get(15)
-        # Check that the unique_name used in this test is consistent with the
-        # sample data. This is an invariant of the test, so use a plain assert.
-        unique_name = 'name12/gnome-terminal/main'
-        assert branch.unique_name == '~' + unique_name
-        branch_to_mirror = branchtomirror.BranchToMirror(
-            src=None, dest=None, branch_status_client=None,
-            branch_id=None, unique_name=unique_name, branch_type=None)
-        # Now check that our implementation of canonical_url is consistent with
-        # the canonical one.
-        self.assertEqual(
-            branch_to_mirror._canonical_url(), canonical_url(branch))
 
 
 def test_suite():

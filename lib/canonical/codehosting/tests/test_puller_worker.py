@@ -28,8 +28,10 @@ from bzrlib.errors import (
 
 import transaction
 from canonical.launchpad import database
+from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
+from canonical.launchpad.webapp import canonical_url
 from canonical.codehosting.tests.helpers import create_branch
 from canonical.codehosting.puller.branchtomirror import (
     BranchToMirror, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
@@ -37,6 +39,7 @@ from canonical.codehosting.puller.branchtomirror import (
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.testing import LaunchpadFunctionalLayer, reset_logging
+from canonical.testing import LaunchpadZopelessLayer
 
 
 class TestBranchToMirror(unittest.TestCase):
@@ -774,6 +777,28 @@ class TestErrorHandling(ErrorHandlingTestCase):
         self.branch._openSourceBranch = stubOpenSourceBranch
         expected_msg = 'A generic bzr error'
         self.runMirrorAndAssertErrorEquals(expected_msg)
+
+
+class TestCanonicalUrl(unittest.TestCase):
+    """Test cases for rendering the canonical url of a branch."""
+
+    layer = LaunchpadZopelessLayer
+
+    def testCanonicalUrlConsistent(self):
+        # BranchToMirror._canonical_url is consistent with
+        # webapp.canonical_url, if the provided unique_name is correct.
+        branch = Branch.get(15)
+        # Check that the unique_name used in this test is consistent with the
+        # sample data. This is an invariant of the test, so use a plain assert.
+        unique_name = 'name12/gnome-terminal/main'
+        assert branch.unique_name == '~' + unique_name
+        branch_to_mirror = BranchToMirror(
+            src=None, dest=None, branch_status_client=None,
+            branch_id=None, unique_name=unique_name, branch_type=None)
+        # Now check that our implementation of canonical_url is consistent with
+        # the canonical one.
+        self.assertEqual(
+            branch_to_mirror._canonical_url(), canonical_url(branch))
 
 
 def test_suite():
