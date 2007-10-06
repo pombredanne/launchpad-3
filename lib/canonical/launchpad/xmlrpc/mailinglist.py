@@ -111,7 +111,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             if mailing_list is None:
                 return faults.NoSuchTeamMailingList(team_name)
             members = []
-            for address in mailing_list.addresses:
+            for address in mailing_list.getAddresses():
                 email_address = emailset.getByEmail(address)
                 real_name = email_address.person.displayname
                 # Hard code flags to 0 currently, meaning the member will get
