@@ -30,8 +30,9 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, ILaunchpadCelebrities, ISourcePackageRelease,
-    ITranslationImportQueue, UNRESOLVED_BUGTASK_STATUSES, NotFoundError
+    BugTaskSearchParams, IArchiveSet, ILaunchpadCelebrities,
+    ISourcePackageRelease, ITranslationImportQueue,
+    UNRESOLVED_BUGTASK_STATUSES, NotFoundError
     )
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
@@ -318,12 +319,17 @@ class SourcePackageRelease(SQLBase):
         queries.append(
             "Build.distroarchrelease IN %s" % sqlvalues(architectures))
 
-        # Follow archive inheritance across PRIMARY archives, for example:
-        # guadalinex/foobar was initialised from ubuntu/dapper
+        # Follow archive inheritance across MAIN archives, for example:
+        # guadalinex/foobar/PRIMARY was initialised from ubuntu/dapper/PRIMARY
+        # guadalinex/foobar/PARTNER was initialised from ubuntu/dapper/PARTNER
+        # and so on
         if archive.purpose != ArchivePurpose.PPA:
             parent_archives = set()
+            archive_set = getUtility(IArchiveSet)
             for series in parent_series:
-                parent_archives.add(series.main_archive)
+                target_archive = archive_set.getByDistroPurpose(
+                    series.distribution, archive.purpose)
+                parent_archives.add(target_archive)
             archives = [archive.id for archive in parent_archives]
         else:
             archives = [archive.id, ]
