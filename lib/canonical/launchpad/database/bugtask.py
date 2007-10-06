@@ -1,4 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+
 """Classes that implement IBugTask and its related interfaces."""
 
 __metaclass__ = type
@@ -40,7 +41,10 @@ from canonical.lazr.enum import DBItem
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.interfaces import (
+    BUG_CONTACT_BUGTASK_STATUSES,
     BugTaskSearchParams,
+    BugTaskStatus,
+    BugTaskStatusSearch,
     ConjoinedBugTaskEditError,
     IBugTask,
     IBugTaskDelta,
@@ -58,11 +62,7 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask,
     NotFoundError,
     RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES,
-    BUG_CONTACT_BUGTASK_STATUSES,
-    BugTaskStatus,
-    BugTaskStatusSearch,
-    )
+    UNRESOLVED_BUGTASK_STATUSES,)
 from canonical.launchpad.helpers import shortlist
 # XXX: kiko 2006-06-14 bug=49029
 

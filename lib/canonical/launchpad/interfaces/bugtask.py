@@ -437,7 +437,10 @@ class IBugTaskSearchBase(Interface):
     searchtext = TextLine(title=_("Bug ID or text:"), required=False)
     status = List(
         title=_('Status'),
-        value_type=Choice(title=_('Status'), vocabulary=BugTaskStatusSearch, default=BugTaskStatusSearch.NEW),
+        value_type=Choice(
+            title=_('Status'),
+            vocabulary=BugTaskStatusSearch,
+            default=BugTaskStatusSearch.NEW),
         default=list(DEFAULT_SEARCH_BUGTASK_STATUSES),
         required=False)
     importance = List(
@@ -844,10 +847,11 @@ class IBugTaskSet(Interface):
 
 
 def valid_remote_bug_url(value):
+    """Verify that the URL is to a bug to a known bug tracker."""
     from canonical.launchpad.interfaces.bugwatch import (
         IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
     try:
-        tracker, bug = getUtility(IBugWatchSet).extractBugTrackerAndBug(value)
+        getUtility(IBugWatchSet).extractBugTrackerAndBug(value)
     except NoBugTrackerFound:
         pass
     except UnrecognizedBugTrackerURL:
