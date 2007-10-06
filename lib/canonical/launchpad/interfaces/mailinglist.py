@@ -338,7 +338,7 @@ class IMailingList(Interface):
         :param person: The person to subscribe to the mailing list.  The
             person must be a member (either direct or indirect) of the team
             linked to this mailing list.
-        :param address: The IEmailAddress to use for the subscription.  The
+        :param address: The `IEmailAddress` to use for the subscription.  The
             address must be owned by `person`.  If None (the default), then
             the person's preferred email address is used.  If the person's
             preferred address changes, their subscription address will change
@@ -373,11 +373,12 @@ class IMailingList(Interface):
             not own the given email address.
         """
 
-    addresses = Set(
-        title=_('Addresses'),
-        description=_('The set of subscribed email addresses.'),
-        value_type=Object(schema=IEmailAddress),
-        readonly=True)
+    def getAddresses():
+        """Return the set of subscribed email addresses.
+
+        :return: an iterator over the IEmailAddresses for all subscribed
+            members of the mailing list, in no particular order.
+        """
 
 
 class IMailingListSet(Interface):
@@ -543,9 +544,10 @@ class IMailingListSubscription(Interface):
             'preferred email address, even if that changes.'),
         required=True)
 
-    email = TextLine(
+    subscribed_address = Object(
+        schema=IEmailAddress,
         title=_('Email Address'),
-        description=_('The text address this person is subscribed with.'),
+        description=_('The IEmailAddress this person is subscribed with.'),
         readonly=True)
 
 

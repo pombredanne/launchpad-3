@@ -55,6 +55,10 @@ The active mailing lists vocabulary matches and returns only those mailing
 lists which are active.
 
     >>> list_vocabulary = vocabulary_registry.get(None, 'ActiveMailingList')
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+    >>> verifyObject(IHugeVocabulary, list_vocabulary)
+    True
     >>> list_vocabulary.displayname
     'Select an active mailing list.'
 
@@ -70,9 +74,9 @@ At first, there are no active mailing lists.
 Mailing lists are not active when they are first registered.
 
     >>> # These are the convoluted steps to create some mailing lists.  We
-    >>> # can't use the shortcuts in other tests because those leave the list
-    >>> # in the ACTIVE state and we want to check things before they get to
-    >>> # that state.
+    >>> # can't use the shortcuts that other related tests use because those
+    >>> # leave the list in the ACTIVE state and we want to check things
+    >>> # before they get to that state.
     >>> personset = getUtility(IPersonSet)
     >>> ddaa = personset.getByName('ddaa')
     >>> carlos = personset.getByName('carlos')
@@ -139,54 +143,74 @@ If given, the search term matches the team name.
     ...        for mailing_list in list_vocabulary.search('player'))
     [u'Bass Players', u'Guitar Players']
 
-The vocabulary supports accessing mailing lists by 'term', where the term can
-be either a team or a mailing list.  The returned term's value is the mailing
-list object, the token is the team name and the title is the team's display
-name.
+The IHugeVocabulary interface also requires a search method that returns a
+CountableIterator.
 
-    >>> term_1 = list_vocabulary.getTerm(team_one)
+    >>> iter = list_vocabulary.searchForTerms('player')
+    >>> from canonical.launchpad.webapp.vocabulary import CountableIterator
+    >>> isinstance(iter, CountableIterator)
+    True
+    >>> sorted((term.value.team.name, term.token, term.title)
+    ...         for term in iter)
+    [(u'bass-players', 'bass-players', u'Bass Players'),
+     (u'guitar-players', 'guitar-players', u'Guitar Players')]
+
+The vocabulary supports accessing mailing lists by 'term', where the term must
+be a mailing list.  The returned term's value is the mailing list object, the
+token is the team name and the title is the team's display name.
+
+    >>> term_1 = list_vocabulary.getTerm(list_two)
     >>> term_1.value.team.displayname
-    u'Bass Players'
+    u'Guitar Players'
     >>> term_1.token
-    'bass-players'
-    >>> term_1.title
-    u'Bass Players'
-
-We can also get a term by mailing list.
-
-    >>> term_2 = list_vocabulary.getTerm(list_two)
-    >>> term_2.value.team.displayname
-    u'Guitar Players'
-    >>> term_2.token
     'guitar-players'
-    >>> term_2.title
+    >>> term_1.title
     u'Guitar Players'
+
+You cannot get a term by an other object, such as a team.
+
+    >>> list_vocabulary.getTerm(team_one)
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ...
 
 Given a token, we can get back the term.
 
-    >>> term_3 = list_vocabulary.getTermByToken(term_1.token)
-    >>> term_3.value.team.displayname
-    u'Bass Players'
-    >>> term_4 = list_vocabulary.getTermByToken(term_2.token)
-    >>> term_4.value.team.displayname
+    >>> term_2 = list_vocabulary.getTermByToken(term_1.token)
+    >>> term_2.value.team.displayname
     u'Guitar Players'
+    >>> term_3 = list_vocabulary.getTerm(list_one)
+    >>> term_4 = list_vocabulary.getTermByToken(term_3.token)
+    >>> term_4.value.team.displayname
+    u'Bass Players'
 
-You can also ask whether a team or mailing list is contained in the
-vocabulary.
+If you try to get the term by a token not represented in the vocabulary, you
+get an exception.
 
-    >>> team_three in list_vocabulary
-    True
+    >>> list_vocabulary.getTermByToken('turntablists')
+    Traceback (most recent call last):
+    ...
+    LookupError: turntablists
+
+You can also ask whether a mailing list is contained in the vocabulary.
+
     >>> list_three in list_vocabulary
     True
 
-But non-ACTIVE mailing lists (and their teams) are not in the vocabulary.
+You are not allowed to ask whether a non-mailing list object is contained in
+this vocabulary.
+
+    >>> team_three in list_vocabulary
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ...
+
+Non-ACTIVE mailing lists are also not contained in the vocabulary.
 
     >>> team_four = personset.newTeam(
     ...     ddaa, 'flautists', 'Flautists',
     ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
     >>> list_four = listset.new(team_four)
-    >>> team_four in list_vocabulary
-    False
     >>> list_four in list_vocabulary
     False
 
@@ -1152,15 +1176,31 @@ But any person without a single email address can't.
     False
 
 Any person that's already merged is not part of this vocabulary:
-# XXX kiko 2007-01-18: Here we cheat because IPerson.merged is a
-# readonly attribute.
 
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov in vocab
+    True
+
+    # Here we cheat because IPerson.merged is a readonly attribute.
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(fooperson).merged = 1
-    >>> flush_database_updates()
-    >>> fooperson in vocab
+    >>> naked_cprov = removeSecurityProxy(cprov)
+    >>> naked_cprov.merged = 1
+    >>> naked_cprov.syncUpdate()
+    >>> cprov in vocab
     False
 
+A person whose account_status is any of the statuses of
+INACTIVE_ACCOUNT_STATUSES is part of the vocabulary, though.
+
+    >>> from canonical.launchpad.interfaces import INACTIVE_ACCOUNT_STATUSES
+    >>> naked_cprov.merged = None
+    >>> checked_count = 0
+    >>> for status in INACTIVE_ACCOUNT_STATUSES:
+    ...     naked_cprov.account_status = status
+    ...     naked_cprov.syncUpdate()
+    ...     checked_count += int(cprov in vocab)
+    >>> checked_count == len(INACTIVE_ACCOUNT_STATUSES)
+    True
 
 === NonMergedPeopleAndTeams ===
 

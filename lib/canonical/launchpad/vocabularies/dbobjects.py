@@ -541,7 +541,8 @@ class PersonAccountToMergeVocabulary(
         return obj in self._select()
 
     def _select(self, text=""):
-        return getUtility(IPersonSet).findPerson(text)
+        return getUtility(IPersonSet).findPerson(
+            text, exclude_inactive_accounts=False)
 
     def search(self, text):
         """Return people whose fti or email address match :text."""
@@ -768,33 +769,40 @@ class ActiveMailingListVocabulary:
         """See `IIterableVocabulary`."""
         return getUtility(IMailingListSet).active_lists.count()
 
-    def _getTeamList(self, team_or_list):
-        """Return the IMailingList for `team_or_list`."""
-        if IMailingList.providedBy(team_or_list):
-            return team_or_list
-        elif ITeam.providedBy(team_or_list):
-            return getUtility(IMailingListSet).get(team_or_list.name)
-        else:
-            return None
-
-    def __contains__(self, obj):
+    def __contains__(self, team_list):
         """See `ISource`."""
-        team_list = self._getTeamList(obj)
-        return (team_list is not None and
-                team_list.status == MailingListStatus.ACTIVE)
+        # Unlike other __contains__() implementations in this module, and
+        # somewhat contrary to the interface definition, this method does not
+        # return False when team_list is not an IMailingList.  No interface
+        # check of the argument is done here.  Doing the interface check and
+        # returning False when we get an unexpected type would be more
+        # Pythonic, but we deliberately break that rule because it is
+        # considered more helpful to generate an OOPS when the wrong type of
+        # object is used in a containment test.  The __contains__() methods in
+        # this module that type check their arguments is considered incorrect.
+        # This also implies that .getTerm(), contrary to its interface
+        # definition, will not always raise LookupError when the term isn't in
+        # the vocabulary, because an exceptions from the containment test it
+        # does will just be passed on up the call stack.
+        return team_list.status == MailingListStatus.ACTIVE
 
-    def getTerm(self, obj):
-        """See `IBaseVocabulary`."""
-        team_list = self._getTeamList(obj)
-        if team_list is None or team_list.status != MailingListStatus.ACTIVE:
-            raise LookupError(obj)
+    def toTerm(self, team_list):
+        """Turn the team mailing list into a SimpleTerm."""
         return SimpleTerm(team_list, team_list.team.name,
                           team_list.team.displayname)
 
+    def getTerm(self, team_list):
+        """See `IBaseVocabulary`."""
+        if team_list not in self:
+            raise LookupError(team_list)
+        return self.toTerm(team_list)
+
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        # token.token should be the team name as a string.
+        # token should be the team name as a string.
         team_list = getUtility(IMailingListSet).get(token)
+        if team_list is None:
+            raise LookupError(token)
         return self.getTerm(team_list)
 
     def search(self, text=None):
@@ -804,24 +812,24 @@ class ActiveMailingListVocabulary:
             name.  This actually matches against the name of the team to which
             the mailing list is linked.  If None (the default), all active
             mailing lists are returned.
-        :return: The list of active mailing lists matching the query.
+        :return: An iterator over the active mailing lists matching the query.
         """
         if text is None:
             return getUtility(IMailingListSet).active_lists
-        # Implementation largely stolen from ValidPersonOrTeamVocabulary and
-        # ValidTeamVocabulary, except that this only searches on name (not
-        # email address or IRC nickname).  Note that because there is no FTI
-        # on mailing lists, we search for matching teams and then map that
-        # back to active mailing lists.  This seems reasonable given that
-        # every mailing list is mapped to exactly one team.
-        name_matches = MailingList.select("""
+        # The mailing list name, such as it has one, is really the name of the
+        # team to which it is linked.
+        return MailingList.select("""
             MailingList.team = Person.id
             AND Person.fti @@ ftq(%s)
             AND Person.teamowner IS NOT NULL
             AND MailingList.status = %s
             """ % sqlvalues(text, MailingListStatus.ACTIVE),
             clauseTables=['Person'])
-        return name_matches
+
+    def searchForTerms(self, query=None):
+        """See `IHugeVocabulary`."""
+        results = self.search(query)
+        return CountableIterator(results.count(), results, self.toTerm)
 
 
 def person_team_participations_vocabulary_factory(context):
