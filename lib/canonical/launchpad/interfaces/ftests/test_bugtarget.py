@@ -7,6 +7,7 @@ Project, DistributionSourcePackage, and DistroSeries implementations
 IBugTarget. It runs the bugtarget-bugcount.txt, and
 bugtarget-questiontarget.txt tests.
 """
+# pylint: disable-msg=C0103
 
 __metaclass__ = type
 

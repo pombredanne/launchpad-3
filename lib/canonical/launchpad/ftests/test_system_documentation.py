@@ -3,6 +3,7 @@
 Test the examples included in the system documentation in
 lib/canonical/launchpad/doc.
 """
+# pylint: disable-msg=C0103
 
 import unittest
 import logging
