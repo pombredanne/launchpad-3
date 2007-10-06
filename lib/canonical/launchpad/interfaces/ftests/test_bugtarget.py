@@ -45,6 +45,7 @@ def invalidate_distribution_bugtask(bugtasks):
 
 
 def productSetUp(test):
+    """Setup the `IProduct` test."""
     setUp(test)
     test.globs['bugtarget'] = getUtility(IProductSet).getByName('firefox')
     test.globs['filebug'] = bugtarget_filebug
@@ -63,6 +64,7 @@ def project_filebug(project, summary, status=None):
 
 
 def projectSetUp(test):
+    """Setup the `IProject` test."""
     setUp(test)
     test.globs['bugtarget'] = getUtility(IProjectSet).getByName('mozilla')
     test.globs['filebug'] = project_filebug
@@ -83,6 +85,7 @@ def productseries_filebug(productseries, summary, status=None):
 
 
 def productSeriesSetUp(test):
+    """Setup the `IProductSeries` test."""
     setUp(test)
     firefox = getUtility(IProductSet).getByName('firefox')
     test.globs['bugtarget'] = firefox.getSeries('trunk')
@@ -90,12 +93,14 @@ def productSeriesSetUp(test):
 
 
 def distributionSetUp(test):
+    """Setup the `IDistribution` test."""
     setUp(test)
     test.globs['bugtarget'] = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['filebug'] = bugtarget_filebug
 
 
 def distributionSourcePackageSetUp(test):
+    """Setup the `IDistributionSourcePackage` test."""
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['bugtarget'] = ubuntu.getSourcePackage('mozilla-firefox')
@@ -120,6 +125,7 @@ def distroseries_filebug(distroseries, summary, sourcepackagename=None,
 
 
 def distributionSeriesSetUp(test):
+    """Setup the `IDistroSeries` test."""
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['bugtarget'] = ubuntu.getSeries('warty')
@@ -137,6 +143,7 @@ def sourcepackage_filebug(source_package, summary, status=None):
 
 
 def sourcePackageSetUp(test):
+    """Setup the `ISourcePackage` test."""
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     warty = ubuntu.getSeries('warty')
@@ -145,6 +152,7 @@ def sourcePackageSetUp(test):
 
 
 def test_suite():
+    """Return the `IBugTarget` TestSuite."""
     suite = unittest.TestSuite()
 
     setUpMethods = [

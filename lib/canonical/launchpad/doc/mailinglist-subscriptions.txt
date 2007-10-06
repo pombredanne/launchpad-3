@@ -1,0 +1,403 @@
+= Team mailing list subscriptions =
+
+Members of a team, either direct or indirect, may subscribe to that team's
+mailing list, if it has one.  To illustrate, we'll first create a bunch of
+people, a team and its team mailing list.
+
+    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> address_set = getUtility(IEmailAddressSet)
+    >>> def get_alternative_email(person):
+    ...     """Return a non-preferred IEmailAddress for a person.
+    ...
+    ...     This assumes and asserts that there is exactly one non-preferred
+    ...     email address for the person.
+    ...     """
+    ...     alternatives = list(person.validatedemails)
+    ...     assert len(alternatives) == 1, (
+    ...         'Unexpected email count: %d' % len(alternatives))
+    ...     return alternatives[0]
+
+    >>> # new_person() and new_team() are helpers added by this doctest's
+    >>> # setup.
+    >>> anne = new_person('Anne')
+    >>> flush_database_updates()
+
+Anne gets two email addresses.  One is her preferred address...
+
+    >>> anne.preferredemail.email
+    u'anne.person@example.com'
+
+...and the other is her alternative address.
+
+    >>> get_alternative_email(anne).email
+    u'aperson@example.org'
+
+    >>> bart = new_person('Bart')
+    >>> flush_database_updates()
+    >>> team_one, list_one = new_team('team-one', with_list=True)
+    >>> anne.join(team_one)
+    >>> bart.join(team_one)
+    >>> # David Allouche shows up as a team member because he created the team
+    >>> # (in the doctest infrastructure).
+    >>> sorted(member.displayname for member in team_one.allmembers)
+    [u'Anne Person', u'Bart Person', u'David Allouche']
+
+Anne subscribes to the mailing list for team one.  Because Anne does not
+provide an email address when she subscribes, her preferred address is used.
+
+    >>> list_one.subscribe(anne)
+    >>> sorted(list_one.getAddresses())
+    [u'anne.person@example.com']
+
+Now Bart also subscribes to the mailing list, but he does so with something
+other than his preferred email address.
+
+    >>> alternative_email = get_alternative_email(bart)
+    >>> alternative_email.email
+    u'bperson@example.org'
+    >>> list_one.subscribe(bart, alternative_email)
+    >>> sorted(list_one.getAddresses())
+    [u'anne.person@example.com', u'bperson@example.org']
+
+Someone who is not a member of the team may not subscribe to the team's list.
+
+    >>> cris = new_person('Cris')
+    >>> list_one.subscribe(cris)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Cris Person is not a member of team Team One
+
+Neither can a team subscribe to a mailing list.
+
+    >>> list_one.subscribe(team_one)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Teams cannot be mailing list members: Team One
+
+
+== Nested teams ==
+
+Indirect members can subscribe to a team's mailing list.  To illustrate this,
+we first create team-two as a subteam of team-one.
+
+    >>> team_two = new_team('team-two')
+    >>> # Teams cannot join, they must use addMember.  We need salgado as the
+    >>> # reviewer for adding team-two to team-one.
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> team_one.addMember(team_two, salgado, force_team_add=True)
+    >>> sorted(member.displayname for member in team_one.allmembers)
+    [u'Anne Person', u'Bart Person', u'David Allouche', u'Team Two']
+
+Cris joins team-two, becoming a direct member of team-two and an indirect
+member of team-one.
+
+    >>> cris.join(team_two)
+    >>> sorted(member.displayname for member in team_two.allmembers)
+    [u'Cris Person', u'David Allouche']
+    >>> sorted(member.displayname for member in team_one.allmembers)
+    [u'Anne Person', u'Bart Person', u'Cris Person', u'David Allouche',
+     u'Team Two']
+
+Now, by virtue of her indirect membership in team-one, Cris can subscribe to
+team-one's mailing list.
+
+    >>> list_one.subscribe(cris)
+    >>> sorted(list_one.getAddresses())
+    [u'anne.person@example.com', u'bperson@example.org',
+     u'cris.person@example.com']
+
+People can subscribe to both a superteam's mailing list and a subteam's
+mailing list.
+
+    >>> super_team, super_team_list = new_team('super-team', with_list=True)
+    >>> sub_team, sub_team_list = new_team('sub-team', with_list=True)
+    >>> super_team.addMember(sub_team, salgado, force_team_add=True)
+    >>> lars = new_person('Lars')
+    >>> lars.join(super_team)
+    >>> lars.join(sub_team)
+    >>> super_team_list.subscribe(lars)
+    >>> sub_team_list.subscribe(lars)
+    >>> sorted(super_team_list.getAddresses())
+    [u'lars.person@example.com']
+    >>> sorted(sub_team_list.getAddresses())
+    [u'lars.person@example.com']
+
+This is true even if the person's subscription in the superteam's list is
+allowed due to indirect membership in the superteam.
+    
+    >>> team_three, list_three = new_team('team-three', with_list=True)
+    >>> team_one.addMember(team_three, salgado, force_team_add=True)
+    >>> dirk = new_person('Dirk')
+    >>> dirk.join(team_two)
+    >>> dirk.join(team_three)
+    >>> list_one.subscribe(dirk)
+    >>> list_three.subscribe(dirk)
+    >>> sorted(list_one.getAddresses())
+    [u'anne.person@example.com', u'bperson@example.org',
+     u'cris.person@example.com', u'dirk.person@example.com']
+    >>> sorted(list_three.getAddresses())
+    [u'dirk.person@example.com']
+
+Once the subteam is deactivated from the superteam, subteam members who have
+no other indirect membership in the superteam cannot subscribe to the
+superteam's mailing list.
+
+    >>> dirk.leave(team_two)
+    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
+    >>> team_one.setMembershipData(team_three,
+    ...     TeamMembershipStatus.DEACTIVATED, salgado)
+    >>> sorted(list_one.getAddresses())
+    [u'anne.person@example.com', u'bperson@example.org',
+     u'cris.person@example.com']
+
+    >>> list_one.subscribe(dirk)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Dirk Person is not a member of team Team One
+
+Teams, even subteams, cannot subscribe to mailing lists.
+
+    >>> list_one.subscribe(team_two)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Teams cannot be mailing list members: Team Two
+
+
+== Subscribed email addresses ==
+
+As shown above, a person can subscribe either with their preferred email
+address or any other email address they own.  If they choose to use their
+preferred email address, this will automatically track changes to their
+preferred address.
+
+    >>> elle = new_person('Elle')
+    >>> flush_database_updates()
+    >>> elle.preferredemail.email
+    u'elle.person@example.com'
+    >>> elle_alternative = get_alternative_email(elle)
+    >>> elle_alternative.email
+    u'eperson@example.org'
+    >>> team_four, list_four = new_team('team-four', with_list=True)
+    >>> elle.join(team_four)
+    >>> list_four.subscribe(elle)
+    >>> sorted(list_four.getAddresses())
+    [u'elle.person@example.com']
+    >>> elle.setPreferredEmail(elle_alternative)
+    >>> sorted(list_four.getAddresses())
+    [u'eperson@example.org']
+
+A person cannot subscribe an email address they do not own.
+
+    >>> fred = new_person('Fred')
+    >>> anne.join(team_four)
+    >>> list_four.subscribe(anne, fred.preferredemail)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Anne Person does not own the email address:
+        fred.person@example.com
+
+
+== Unsubscribing ==
+
+Any list member can unsubscribe from the mailing list.
+
+    >>> sorted(list_one.getAddresses())
+    [u'anne.person@example.com', u'bperson@example.org',
+     u'cris.person@example.com']
+    >>> list_one.unsubscribe(anne)
+    >>> sorted(list_one.getAddresses())
+    [u'bperson@example.org', u'cris.person@example.com']
+
+But someone who is not a member cannot unsubscribe.
+
+    >>> list_one.unsubscribe(fred)
+    Traceback (most recent call last):
+    ...
+    CannotUnsubscribe: Fred Person is not a member of the mailing list:
+        Team One
+
+When someone leaves a direct team, they automatically get unsubscribed.
+
+    >>> bart.leave(team_one)
+    >>> sorted(list_one.getAddresses())
+    [u'cris.person@example.com']
+
+When the person re-joins a team that gives them indirect membership in a team
+with a mailing list that they were previously subscribed to, they get
+re-subscribed to that mailing list automatically.  See the section on
+persistence of preferences below for more examples of this.
+
+    >>> bart.join(team_two)
+    >>> sorted(list_one.getAddresses())
+    [u'bperson@example.org', u'cris.person@example.com']
+
+When someone is a member of a mailing list through an indirect team, and they
+leave that indirect team, they also get unsubscribed from the mailing list.
+
+    >>> cris.leave(team_two)
+    >>> sorted(list_one.getAddresses())
+    [u'bperson@example.org']
+
+It's also the case that if a subteam leaves its superteam, all members who
+have no other indirect membership in the super team will get unsubscribed from
+the mailing list.  To illustrate, we set up a new subteam and join a few new
+members to that team.  Only Iona will have a path to the superteam through
+more than one subteam.
+
+    >>> team_five = new_team('team-five')
+    >>> team_one.addMember(team_five, salgado, force_team_add=True)
+    >>> gwen = new_person('Gwen')
+    >>> hank = new_person('Hank')
+    >>> iona = new_person('Iona')
+
+    >>> gwen.join(team_five)
+    >>> hank.join(team_five)
+    >>> iona.join(team_five)
+    >>> iona.join(team_two)
+
+    >>> sorted(list_one.getAddresses())
+    [u'bperson@example.org']
+
+    >>> list_one.subscribe(gwen)
+    >>> list_one.subscribe(hank)
+    >>> list_one.subscribe(iona)
+
+    >>> sorted(list_one.getAddresses())
+    [u'bperson@example.org', u'gwen.person@example.com',
+     u'hank.person@example.com', u'iona.person@example.com']
+
+Now remove one of the subteams from the superteam.  All of the subteams'
+members that have no other path to membership in the superteam will be
+unsubscribed from the superteam's mailing list.
+
+    >>> team_one.setMembershipData(team_five,
+    ...     TeamMembershipStatus.DEACTIVATED, salgado)
+    >>> sorted(list_one.getAddresses())
+    [u'bperson@example.org', u'iona.person@example.com']
+
+
+== Double subscriptions ==
+
+A list member may only be subscribed once, with a single email address.
+
+    >>> list_one.subscribe(iona)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Iona Person is already subscribed to list Team One
+
+A current subscriber is not even allowed to subscribe multiple times with a
+different email address.
+
+    >>> iona_alternative = get_alternative_email(iona)
+    >>> list_one.subscribe(iona, iona_alternative)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Iona Person is already subscribed to list Team One
+
+
+== List deactivation ==
+
+When a team's mailing list is deactivated, all subscriptions to that mailing
+list are dropped.
+
+    >>> sorted(list_one.getAddresses())
+    [u'bperson@example.org', u'iona.person@example.com']
+    >>> # Deactivation isn't complete until the list's status is transitioned
+    >>> # to INACTIVE.
+    >>> list_one.deactivate()
+    >>> from canonical.launchpad.interfaces import MailingListStatus
+    >>> list_one.transitionToStatus(MailingListStatus.INACTIVE)
+    >>> sorted(list_one.getAddresses())
+    []
+
+A list that is not active cannot be subscribed to.
+
+    >>> list_one.subscribe(anne)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not active: Team One
+
+
+== Persistence of preferences ==
+
+When someone gets unsubscribed because they leave a team, their subscription
+preferences are preserved, so that if they re-join the team, their
+subscription gets re-instated.  Currently, the subscribed email address is the
+only relevant preference.
+
+    >>> team_six, list_six = new_team('team-six', with_list=True)
+    >>> jack = new_person('Jack')
+    >>> jack.join(team_six)
+    >>> list_six.subscribe(jack)
+    >>> sorted(list_six.getAddresses())
+    [u'jack.person@example.com']
+    >>> jack.leave(team_six)
+    >>> sorted(list_six.getAddresses())
+    []
+    >>> jack.join(team_six)
+    >>> sorted(list_six.getAddresses())
+    [u'jack.person@example.com']
+
+This is true even if they subscribe with an address that's different than
+their preferred email address.
+
+    >>> kara = new_person('Kara')
+    >>> flush_database_updates()
+    >>> kara.join(team_six)
+    >>> kara_alternative = get_alternative_email(kara)
+    >>> kara_alternative.email
+    u'kperson@example.org'
+    >>> list_six.subscribe(kara, kara_alternative)
+    >>> sorted(list_six.getAddresses())
+    [u'jack.person@example.com', u'kperson@example.org']
+    >>> kara.leave(team_six)
+    >>> sorted(list_six.getAddresses())
+    [u'jack.person@example.com']
+    >>> kara.join(team_six)
+    >>> sorted(list_six.getAddresses())
+    [u'jack.person@example.com', u'kperson@example.org']
+
+
+== Changing subscribed email address ==
+
+A member of a mailing list can request to change certain aspects of their
+subscription.  Currently the only thing they can change is their subscribed
+address.  Let's say for example that Kara wants to change the address that
+she is subscribed to List Six with.
+
+    >>> list_six.unsubscribe(jack)
+    >>> for address in address_set.getByPerson(kara):
+    ...     list_six.changeAddress(kara, address)
+    ...     print address.email, sorted(list_six.getAddresses())
+    kara.person@example.com [u'kara.person@example.com']
+    kperson@example.org [u'kperson@example.org']
+
+Kara can also change her email address to None, which uses and tracks any
+changes to her preferred email address.
+
+    >>> list_six.changeAddress(kara, None)
+    >>> sorted(list_six.getAddresses())
+    [u'kara.person@example.com']
+    >>> for address in address_set.getByPerson(kara):
+    ...     kara.setPreferredEmail(address)
+    ...     print address.email, sorted(list_six.getAddresses())
+    kara.person@example.com [u'kara.person@example.com']
+    kperson@example.org [u'kperson@example.org']
+
+Kara cannot change her email address to one she does not own.
+
+    >>> list_six.changeAddress(kara, fred.preferredemail)
+    Traceback (most recent call last):
+    ...
+    CannotChangeSubscription: Kara Person does not own the email address:
+        fred.person@example.com
+
+Someone who is not a member of the mailing list of course cannot change their
+subscription address.
+
+    >>> list_six.changeAddress(anne, None)
+    Traceback (most recent call last):
+    ...
+    CannotChangeSubscription: Anne Person is not a member of
+        the mailing list: Team Six
