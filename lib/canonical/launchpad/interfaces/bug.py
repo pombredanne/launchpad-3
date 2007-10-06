@@ -482,7 +482,7 @@ class IBugSet(Interface):
 
     def queryByRemoteBug(bugtracker, remotebug):
         """Find one or None bugs for the BugWatch and bug tracker.
-        
+
         Find one or None bugs in Launchpad that have a BugWatch matching
         the given bug tracker and remote bug id.
         """

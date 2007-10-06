@@ -1077,7 +1077,7 @@ class BugTaskSet:
 
         extra_clauses = ['Bug.id = BugTask.bug']
         clauseTables = ['BugTask', 'Bug']
-        
+
         # These arguments can be processed in a loop without any other
         # special handling.
         standard_args = {
@@ -1307,7 +1307,7 @@ class BugTaskSet:
                 # belong to a product that does not use Malone.
                 pending_bugwatch_elsewhere_clause = """
                     EXISTS (
-                        SELECT TRUE 
+                        SELECT TRUE
                         FROM BugTask AS RelatedBugTask
                             LEFT OUTER JOIN Product AS OtherProduct
                                 ON RelatedBugTask.product = OtherProduct.id
@@ -1323,10 +1323,10 @@ class BugTaskSet:
                 # watch.
                 pending_bugwatch_elsewhere_clause = """
                     EXISTS (
-                        SELECT TRUE 
+                        SELECT TRUE
                         FROM BugTask AS RelatedBugTask
                             LEFT OUTER JOIN Distribution AS OtherDistribution
-                                ON RelatedBugTask.distribution = 
+                                ON RelatedBugTask.distribution =
                                     OtherDistribution.id
                             LEFT OUTER JOIN Product AS OtherProduct
                                 ON RelatedBugTask.product = OtherProduct.id
@@ -1547,7 +1547,7 @@ class BugTaskSet:
 
     def findExpirableBugTasks(self, min_days_old):
         """See `IBugTaskSet`.
-        
+
         This implementation returns the master of the master-slave conjoined
         pairs of bugtasks. Slave conjoined bugtasks are not included in the
         list because they can only be expired by calling the master bugtask's

@@ -1160,7 +1160,7 @@ class BugTaskListingView(LaunchpadView):
     @property
     def status(self):
         """Return an HTML representation of the bugtask status.
-        
+
         The assignee is included.
         """
         bugtask = self.context
@@ -1458,7 +1458,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
 
     def initialize(self):
         """Initialize the view with the request.
-        
+
         Look for old status names and redirect to a new location if found.
         """
         query_string = self.request.get('QUERY_STRING')

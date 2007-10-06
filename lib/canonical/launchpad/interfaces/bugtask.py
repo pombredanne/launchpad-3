@@ -516,7 +516,7 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
 
 class IUpstreamProductBugTaskSearch(IBugTaskSearch):
     """The schema used by the bug task search form for upstream products.
-    
+
     This schema is the same as IBugTaskSearch, except that it has only
     one choice for Status Upstream.
     """
@@ -626,7 +626,7 @@ class IProductSeriesBugTask(IBugTask):
 # the bug that makes this hackery necessary.
 class ISelectResultsSlicable(ISelectResults):
     """ISelectResults (from SQLOS) should be specifying __getslice__.
-    
+
     This interface defines the missing __getslice__ method.
     """
     def __getslice__(i, j):
@@ -799,7 +799,7 @@ class IBugTaskSet(Interface):
 
     def findExpirableBugTasks(min_days_old):
         """Return a list of bugtasks that are at least min_days_old.
-        
+
         An Expirable bug task is unassigned, in the INCOMPLETE status,
         and belongs to a Product or Distribtion that uses Malone.
         """
