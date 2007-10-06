@@ -311,15 +311,21 @@ class IBug(IMessageTarget, ICanBeMentored):
         3. The bug was not made into a question previously.
         """
 
-    def createQuestionFromBug(question_target, person, comment):
+    def createQuestionFromBug(person, comment):
         """Create and return a Question from this Bug.
 
-        The question_target, or its distribution, must have official_malone
-        set to True. All the bug's bugtasks will be set to Invalid status with
-        an explanation that the bug is a question in the statusexplanation.
+        Bugs that are also in external bug trackers cannot be converted
+        to questions. This is also true for bugs that are being developed.
+ 
+        The `IQuestionTarget` is provided by the `IBugTask` that is not
+        Invalid and is not a conjoined slave. Only one question can be
+        made from a bug.
+        
+        An AssertionError is raised if the bug has zero or many BugTasks
+        that can provide a QuestionTarget. It will also be raised if a
+        question was previously created from the bug.
 
-        :question_target: An IQuestionTarget.
-        :person: The IPerson creating a question from this bug
+        :person: The `IPerson` creating a question from this bug
         :comment: A string. An explaination of why the bug is a question.
         """
 
