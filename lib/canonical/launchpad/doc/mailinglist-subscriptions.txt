@@ -17,8 +17,8 @@ people, a team and its team mailing list.
     ...         'Unexpected email count: %d' % len(alternatives))
     ...     return alternatives[0]
 
-    >>> # new_person() and new_team() are helpers added by this doctest's
-    >>> # setup.
+    >>> # new_person() and new_team() are helpers added in
+    >>> # test_system_documentation.py by this doctest's setup.
     >>> anne = new_person('Anne')
     >>> flush_database_updates()
 
