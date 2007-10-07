@@ -432,7 +432,8 @@ class Branch(SQLBase):
             raise BranchTypeError
         self.mirror_failures += 1
         self.mirror_status_message = reason
-        if self.mirror_failures < MAXIMUM_MIRROR_FAILURES:
+        if (self.branch_type == BranchType.MIRRORED
+            and self.mirror_failures < MAXIMUM_MIRROR_FAILURES):
             self.mirror_request_time = (
                 datetime.now(pytz.timezone('UTC'))
                 + MIRROR_TIME_INCREMENT * 2 ** (self.mirror_failures - 1))
