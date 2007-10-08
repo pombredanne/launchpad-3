@@ -272,7 +272,9 @@ class IMailingList(Interface):
                       'MODIFIED.')
         )
 
-    address = TextLine(title=_("This list's email address."))
+    address = TextLine(
+        title=_("This list's email address."), required=True, readonly=True,
+        description=_("The text representation of this team's email address."))
 
     def review(reviewer, status):
         """Review the mailing list's registration.
@@ -338,7 +340,7 @@ class IMailingList(Interface):
             mailing list is not `MailingListStatus.INACTIVE`.
         """
 
-    def destroySelf():
+    def cancelRegistration():
         """Delete this mailing list from the database.
 
         Only mailing lists in the REGISTERED state can be deleted.

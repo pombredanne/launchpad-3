@@ -1593,6 +1593,14 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):
+        """Set this person's preferred email to the given email address.
+
+        If the person already has an email address, then its status is
+        changed to VALIDATED and the given one is made its preferred one.
+
+        The given email address must implement IEmailAddress and be owned by
+        this person.
+        """
         if not IEmailAddress.providedBy(email):
             raise TypeError, (
                 "Any person's email address must provide the IEmailAddress "

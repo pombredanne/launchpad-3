@@ -15,8 +15,8 @@ send notifications to that team.  The possible contact methods are:
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> browser.getLink('Change contact address').click()
-    >>> browser.url
-    'http://launchpad.dev/~landscape-developers/+contactaddress'
+    >>> browser.title
+    'Landscape Developers contact address'
 
 As we can see, the landscape-developers team has no contact address.
 
@@ -27,18 +27,20 @@ Changing it to an external address will require the user to go through
 the email address confirmation process.
 
     >>> browser.getControl('Another e-mail address').selected = True
-    >>> browser.getControl(name='field.contact_address').value = 'foo@baz.com'
+    >>> browser.getControl(
+    ...     name='field.contact_address').value = 'foo@example.com'
     >>> browser.getControl('Change').click()
 
-    >>> browser.url
-    'http://launchpad.dev/~landscape-developers'
+    >>> browser.title
+    'Landscape Developers in Launchpad'
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
     A confirmation message has been sent to...
 
     >>> from canonical.launchpad.mail import stub
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-    >>> assert not stub.test_emails
+    >>> stub.test_emails
+    []
 
     # Extract the link (from the email we just sent) the user will have to
     # use to finish the registration process.
@@ -48,28 +50,28 @@ the email address confirmation process.
     >>> token_url
     'http://launchpad.dev/token/...'
     >>> to_addrs
-    ['foo@baz.com']
+    ['foo@example.com']
 
 Follow the token link, to confirm the new email address.
 
     >>> browser.open(token_url)
-    >>> browser.url
-    'http://launchpad.dev/token/.../+validateteamemail'
+    >>> browser.title
+    'Confirm e-mail address'
     >>> browser.getControl('Continue').click()
 
-    >>> browser.url
-    'http://launchpad.dev/~landscape-developers'
+    >>> browser.title
+    'Landscape Developers in Launchpad'
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
     Email address successfully confirmed.
 
     >>> browser.getLink('Change contact address').click()
-    >>> browser.url
-    'http://launchpad.dev/~landscape-developers/+contactaddress'
+    >>> browser.title
+    'Landscape Developers contact address'
     >>> browser.getControl(name='field.contact_method').displayValue
     ['\xa0Another e-mail address']
     >>> browser.getControl(name='field.contact_address').value
-    'foo@baz.com'
+    'foo@example.com'
 
 To change that to a hosted mailing list, we first need to request the
 mailing list to be activated.
@@ -82,15 +84,14 @@ mailing list to be activated.
     AttributeError: item is disabled
 
     >>> browser.getControl('Apply for Mailing List').click()
-    >>> browser.url
-    'http://launchpad.dev/~landscape-developers'
+    >>> browser.title
+    'Landscape Developers in Launchpad'
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
     Mailing list requested and queued for approval.
 
-    >>> from canonical.launchpad.database import MailingList, Person
-    >>> mailing_list = MailingList.selectOneBy(
-    ...     team=Person.byName('landscape-developers'))
+    >>> from canonical.launchpad.database import MailingListSet, Person
+    >>> mailing_list = MailingListSet().get('landscape-developers')
     >>> mailing_list.status
     <...MailingListStatus.REGISTERED...>
 
@@ -112,32 +113,60 @@ not shown anymore.
     ...
     LookupError: ...
 
+If the application is declined, the button won't be shown either. Instead,
+we'll ask the user to contact a Launchpad admin.
+
+    >>> from canonical.launchpad.interfaces import MailingListStatus
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
+    >>> foobar = Person.byName('name16')
+    >>> mailing_list.review(foobar, MailingListStatus.DECLINED)
+    >>> mailing_list.syncUpdate()
+    >>> logout()
+
+    >>> browser.reload()
+    >>> browser.getControl('Apply for Mailing List')
+    Traceback (most recent call last):
+    ...
+    LookupError: ...
+    >>> for msg in get_feedback_messages(browser):
+    ...     print msg
+
+    # Here we manually change its status back to REGISTERED so that we can
+    # move on testing as if it wasn't declined.
+    >>> mailing_list.status = MailingListStatus.REGISTERED
+    >>> mailing_list.syncUpdate()
+
 Any time before the mailing list is approved, the application can be
 cancelled (and then re-requested afterwards).
 
     >>> browser.getLink('Change contact address').click()
     >>> browser.getControl('Cancel Application').click()
-    >>> browser.url
-    'http://launchpad.dev/~landscape-developers'
+    >>> browser.title
+    'Landscape Developers in Launchpad'
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
     Mailing list application cancelled.
+    >>> print MailingListSet().get('landscape-developers')
+    None
+
+    >>> import transaction
+    >>> transaction.commit()
 
     >>> browser.getLink('Change contact address').click()
     >>> browser.getControl('Apply for Mailing List').click()
-    >>> browser.url
-    'http://launchpad.dev/~landscape-developers'
+    >>> browser.title
+    'Landscape Developers in Launchpad'
+    >>> mailing_list = MailingListSet().get('landscape-developers')
+    >>> mailing_list
+    <MailingList for team "landscape-developers"; status=REGISTERED...
 
 The mailing list can be used as the team's contact address only when its
-status is ACTIVE.
+status is ACTIVE. The process of activating a mailing list is invisible to
+users, so we'll simulate it here by directly accessing our database code.
 
-    >>> from canonical.launchpad.interfaces import MailingListStatus
-    >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
-    >>> mailing_list = MailingList.selectOneBy(
-    ...     team=Person.byName('landscape-developers'))
-    >>> mailing_list.review(
-    ...     Person.byName('name16'), MailingListStatus.APPROVED)
+    >>> mailing_list.review(foobar, MailingListStatus.APPROVED)
     >>> mailing_list.syncUpdate()
     >>> logout()
     >>> browser.getLink('Change contact address').click()
@@ -153,6 +182,7 @@ status is ACTIVE.
     Not available because mailing list is being constructed.
 
     >>> mailing_list.startConstructing()
+    >>> mailing_list.syncUpdate()
     >>> browser.reload()
     >>> browser.getControl('The Launchpad mailing list').disabled
     True
@@ -190,17 +220,17 @@ the team's contact address.
 
 XXX: We don't really want all this functionality to be visible to users
 when this code lands on mainline, so there's a config variable which
-control its visibility.  That variable is named expose_hosted_mailing_lists
+controls its visibility.  That variable is named expose_hosted_mailing_lists
 and if it's set to False the option to use a hosted mailing list is not
 visible.  This test will go away as soon as we decide to deploy that
 functionality on production. -- Guilherme Salgado 2007-09-20
+(https://launchpad.net/launchpad/+spec/team-mailing-list-beta-program)
 
     >>> from canonical.config import config
     >>> config.mailman.expose_hosted_mailing_lists
     True
 
-    >>> radio = browser.getControl(name='field.contact_method')
-    >>> radio.displayOptions
+    >>> browser.getControl(name='field.contact_method').displayOptions
     ['\xa0The Launchpad mailing list for this team -
       landscape-developers@lists.launchpad.net',
      '\xa0Each member individually',
@@ -208,8 +238,15 @@ functionality on production. -- Guilherme Salgado 2007-09-20
 
     >>> config.mailman.expose_hosted_mailing_lists = False
     >>> browser.reload()
-    >>> radio = browser.getControl(name='field.contact_method')
-    >>> radio.displayOptions
+    >>> browser.getControl(name='field.contact_method').displayOptions
     ['\xa0Each member individually',
+     '\xa0Another e-mail address']
+
+    >>> config.mailman.expose_hosted_mailing_lists = True
+    >>> browser.reload()
+    >>> browser.getControl(name='field.contact_method').displayOptions
+    ['\xa0The Launchpad mailing list for this team -
+      landscape-developers@lists.launchpad.net',
+     '\xa0Each member individually',
      '\xa0Another e-mail address']
 

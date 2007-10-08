@@ -98,65 +98,100 @@ class TeamContactAddressView(LaunchpadFormView):
     custom_widget(
         'contact_method', LaunchpadRadioWidget, orientation='vertical')
 
+    def getListInState(self, *statuses):
+        """Return this team's mailing list if it's in one of the given states.
+
+        :param statuses: The states that the mailing list must be in for it to
+            be returned.
+        :return: This team's IMailingList or None if the team doesn't have
+            a mailing list, or if it isn't in one of the given states.
+        """
+        mailing_list = getUtility(IMailingListSet).get(self.context.name)
+        if mailing_list is not None and mailing_list.status in statuses:
+            return mailing_list
+        return None
+
     def shouldRenderHostedListOptionManually(self):
+        """Should the HOSTED_LIST option be rendered manually?
+
+        It's rendered manually only if mailman.expose_hosted_mailing_lists
+        is False and this team doesn't have an active mailing list yet. In
+        this case we'll render it as a disabled radio button with a submit
+        button which allows the user to request the mailing list creation.
+
+        If expose_hosted_mailing_lists is True and the team has an active
+        mailing list, then the option will be rendered by zope3 as an
+        enabled radio button, which means we don't need to do anything.
+        """
         if not config.mailman.expose_hosted_mailing_lists:
             return False
-        mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        if (mailing_list is not None 
-            and mailing_list.status == MailingListStatus.ACTIVE):
-            return False
-        return True
+        if self.getListInState(MailingListStatus.ACTIVE) is None:
+            return True
+        return False
 
     @property
     def mailing_list_status_message(self):
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        if mailing_list is not None:
-            msg = "Not available because "
-            if mailing_list.status in [MailingListStatus.APPROVED,
-                                       MailingListStatus.CONSTRUCTING]:
-                msg += "mailing list is being constructed."
-            elif mailing_list.status == MailingListStatus.REGISTERED:
-                msg += ("the application for a mailing list is pending "
-                        "approval.")
-            elif mailing_list.status == MailingListStatus.DECLINED:
-                msg += "the application for a mailing list has been declined."
-            elif mailing_list.status == MailingListStatus.INACTIVE:
-                msg += "mailing list is currently deactivated."
-            elif mailing_list.status == MailingListStatus.FAILED:
-                msg += "mailing list is creation failed."
-            else:
-                return ''
-            return msg
-        else:
+        if mailing_list is None:
             return ("Not available because you haven't applied for a "
                     "mailing list.")
 
+        msg = "Not available because "
+        if mailing_list.status in [MailingListStatus.APPROVED,
+                                   MailingListStatus.CONSTRUCTING]:
+            msg += "mailing list is being constructed."
+        elif mailing_list.status == MailingListStatus.REGISTERED:
+            msg += ("the application for a mailing list is pending "
+                    "approval.")
+        elif mailing_list.status == MailingListStatus.DECLINED:
+            msg += "the application for a mailing list has been declined."
+        elif mailing_list.status in [MailingListStatus.INACTIVE,
+                                     MailingListStatus.DEACTIVATING]:
+            msg += "mailing list is currently deactivated."
+        elif mailing_list.status == MailingListStatus.FAILED:
+            msg += "mailing list creation failed."
+        elif mailing_list.status in [MailingListStatus.MODIFIED,
+                                     MailingListStatus.UPDATING]:
+            msg += "mailing list is undergoing some maintenance."
+        elif mailing_list.status == MailingListStatus.ACTIVE:
+            # Mailing list is active and the option will be enabled; there's
+            # no need to display a status message.
+            msg = ''
+        else:
+            raise AssertionError(
+                "Unknown mailing list status: %s" % mailing_list.status)
+        return msg
+
     @property
     def list_application_can_be_cancelled(self):
-        mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        if (mailing_list is not None
-            and mailing_list.status == MailingListStatus.REGISTERED):
-            return True
-        return False
+        return self.getListInState(MailingListStatus.REGISTERED) is not None
 
     @property
     def list_can_be_requested(self):
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        statuses = [MailingListStatus.DECLINED, MailingListStatus.INACTIVE]
-        if mailing_list is None or mailing_list.status in statuses:
-            return True
-        return False
+        return (mailing_list is None
+                or mailing_list.status == MailingListStatus.INACTIVE)
 
     @property
     def mailinglist_address(self):
         return '%s@lists.launchpad.net' % self.context.name
 
     def setUpWidgets(self, context=None):
+        """Check if the HOSTED_LIST option of our contact_method widget
+        should be rendered by zope3, manually (by ourselves) in the
+        template or not rendered at all and change the vocabulary
+        accordingly.
+        """
         vocab_items = TeamContactMethod.items.items[:]
         if (not config.mailman.expose_hosted_mailing_lists
             or self.shouldRenderHostedListOptionManually()):
+            # Either we'll render the HOSTED_LIST option manually or not
+            # render it at all, so remove it from vocab_items.
             vocab_items.remove(TeamContactMethod.HOSTED_LIST)
         else:
+            # The HOSTED_LIST option will be rendered normally by zope3, so
+            # we just need to change its title to include the actual email
+            # address of the mailing list.
             index = vocab_items.index(TeamContactMethod.HOSTED_LIST)
             item = vocab_items.pop(index)
             item.title = ('The Launchpad mailing list for this team - '
@@ -172,9 +207,12 @@ class TeamContactAddressView(LaunchpadFormView):
         super(TeamContactAddressView, self).setUpWidgets(context=context)
 
     def validate(self, data):
-        # Only validate the email address if the user wants to use an external
-        # address and the given email address is not already in use by this
-        # team.
+        """Validate the email address only if the user wants to use an external
+        address and the given email address is not already in use by this team.
+
+        Also ensures the mailing list is active if the HOSTED_LIST option
+        has been chosen.
+        """
         if data['contact_method'] == TeamContactMethod.EXTERNAL_ADDRESS:
             email = data['contact_address']
             if not email:
@@ -194,16 +232,15 @@ class TeamContactAddressView(LaunchpadFormView):
             if (mailing_list is None
                 or mailing_list.status != MailingListStatus.ACTIVE):
                 self.addError(
-                    "This team's mailing list must be active to be used as "
-                    "its contact address")
+                    "This team's mailing list is not active and may not be "
+                    "used as its contact address yet")
         else:
             # Nothing to validate!
             pass
 
     def request_list_creation_validator(self, action, data):
-        mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        statuses = [MailingListStatus.DECLINED, MailingListStatus.INACTIVE]
-        if mailing_list is not None and mailing_list.status not in statuses:
+        if self.getListInState(MailingListStatus.DECLINED,
+                               MailingListStatus.INACTIVE):
             self.addError(
                 "There is an application for a mailing list already.")
 
@@ -215,21 +252,23 @@ class TeamContactAddressView(LaunchpadFormView):
 
     @property
     def initial_values(self):
+        """Infer the contact method from this team's preferredemail and
+        return a dict representing that in terms of the fields we use here.
+        """
         context = self.context
-        if context.preferredemail is not None:
-            mailing_list = getUtility(IMailingListSet).get(context.name)
-            if (mailing_list is not None 
-                and mailing_list.address == context.preferredemail.email):
-                return dict(contact_method=TeamContactMethod.HOSTED_LIST)
-            return dict(contact_address=context.preferredemail.email,
-                        contact_method=TeamContactMethod.EXTERNAL_ADDRESS)
-        else:
+        if context.preferredemail is None:
             return dict(contact_method=TeamContactMethod.NONE)
+        mailing_list = getUtility(IMailingListSet).get(context.name)
+        if (mailing_list is not None 
+            and mailing_list.address == context.preferredemail.email):
+            return dict(contact_method=TeamContactMethod.HOSTED_LIST)
+        return dict(contact_address=context.preferredemail.email,
+                    contact_method=TeamContactMethod.EXTERNAL_ADDRESS)
 
     @action('Cancel Application', name='cancel_list_creation',
             validator=cancel_list_creation_validator)
     def cancel_list_creation(self, action, data):
-        getUtility(IMailingListSet).get(self.context.name).destroySelf()
+        getUtility(IMailingListSet).get(self.context.name).cancelRegistration()
         self.request.response.addInfoNotification(
             "Mailing list application cancelled.")
         self.next_url = canonical_url(self.context)
@@ -244,14 +283,10 @@ class TeamContactAddressView(LaunchpadFormView):
             self.request.response.addInfoNotification(
                 "Mailing list requested and queued for approval.")
         else:
-            if mailing_list.status == MailingListStatus.INACTIVE:
-                mailing_list.reactivate()
-                self.request.response.addInfoNotification(
-                    "This team's Launchpad mailing list is currently "
-                    "inactive and will be reactivated shortly.")
-            else:
-                raise AssertionError(
-                    "Only inactive mailing lists can be re-requested.")
+            mailing_list.reactivate()
+            self.request.response.addInfoNotification(
+                "This team's Launchpad mailing list is currently "
+                "inactive and will be reactivated shortly.")
         self.next_url = canonical_url(self.context)
 
     @action('Change', name='change')

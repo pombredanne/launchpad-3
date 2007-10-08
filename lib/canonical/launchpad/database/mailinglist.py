@@ -128,15 +128,18 @@ class MailingList(SQLBase):
 
     def reactivate(self):
         """See `IMailingList`."""
+        # XXX: The mailman side of this is not yet implemented, although it
+        # will be implemented soon. -- Guilherme Salgado, 2007-10-08
+        # https://launchpad.net/launchpad/+spec/team-mailing-lists-reactivate
         assert self.status == MailingListStatus.INACTIVE, (
             'Only inactive mailing lists may be reactivated')
         self.status = MailingListStatus.APPROVED
 
-    def destroySelf(self):
+    def cancelRegistration(self):
         """See `IMailingList`."""
         assert self.status == MailingListStatus.REGISTERED, (
-            "Only mailing lists in the REGISTERED state can be deleted.")
-        super(MailingList, self).destroySelf()
+            "Only mailing lists in the REGISTERED state can be canceled.")
+        self.destroySelf()
 
     def _get_welcome_message(self):
         return self.welcome_message_text

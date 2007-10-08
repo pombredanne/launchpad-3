@@ -84,7 +84,7 @@ a user account when its first email address is confirmed)
 
 In the case of teams, though, the account_status is not changed as their
 account_status must always be set to NOACCOUNT. (Notice how we use
-setContactAddress rather than setPreferredEmail here, since the latter
+setContactAddress() rather than setPreferredEmail() here, since the latter
 can be used only for people and the former only for teams)
 
     >>> shipit_admins = personset.getByName('shipit-admins')
@@ -310,6 +310,7 @@ each direct member of that team.
     >>> sorted(contactEmailAddresses(vcs_imports))
     ['david.allouche@canonical.com', 'foo.bar@canonical.com',
      'robertc@robertcollins.net']
+
 
 == Deactivating user accounts ==
 
