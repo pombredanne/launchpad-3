@@ -7,8 +7,8 @@ from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScriptError, SoyuzScript)
 
 
-class TestPackageRemover(LaunchpadZopelessTestCase):
-    """Test the PackageRemover class."""
+class TestSoyuzScript(LaunchpadZopelessTestCase):
+    """Test the SoyuzScript class."""
 
     class QuietLogger:
         """A logger that doesn't log anything.
@@ -84,7 +84,8 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
     def testFindSource(self):
         """Check findSource helper method.
 
-        XXX
+        Probe source package lookup and additional predicate checks (
+        component and pocket)
         """
         soyuz = self.getSoyuz()
         src = soyuz.findSource('mozilla-firefox')
@@ -105,18 +106,35 @@ class TestPackageRemover(LaunchpadZopelessTestCase):
         soyuz = self.getSoyuz(component='multiverse')
         self.assertRaises(SoyuzScriptError, soyuz.findSource, 'mozilla-firefox')
 
+        soyuz = self.getSoyuz(suite='warty-security')
+        self.assertRaises(SoyuzScriptError, soyuz.findSource, 'mozilla-firefox')
 
     def testFindBinaries(self):
         """Check findBinaries helper method.
 
-        XXX
+        Probe binary package lookup and additional predicate checks (
+        component and pocket)        
         """
         soyuz = self.getSoyuz()
 
         binaries = soyuz.findBinaries('mozilla-firefox')
         self.assertEqual(len(binaries), 2)
+        binary_names = set([b.name for b in binaries])
+        self.assertEqual(list(binary_names), ['mozilla-firefox'])
 
         self.assertRaises(SoyuzScriptError, soyuz.findBinaries, 'marvin')
+
+        soyuz = self.getSoyuz(version='666')
+        self.assertRaises(
+            SoyuzScriptError, soyuz.findBinaries, 'mozilla-firefox')
+
+        soyuz = self.getSoyuz(component='multiverse')
+        self.assertRaises(
+            SoyuzScriptError, soyuz.findBinaries, 'mozilla-firefox')
+
+        soyuz = self.getSoyuz(suite='warty-security')
+        self.assertRaises(
+            SoyuzScriptError, soyuz.findBinaries, 'mozilla-firefox')
 
 
 def test_suite():
