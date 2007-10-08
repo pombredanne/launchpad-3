@@ -351,16 +351,15 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         return sorted(packages, key=lambda p: (p.distroseries.name, p.name))
 
     @property
-    def translatable_series(self):
+    def translatable_serieses(self):
         """See `IProduct`."""
-        series = ProductSeries.select('''
-            POTemplate.productseries = ProductSeries.id AND
-            ProductSeries.product = %d
-            ''' % self.id,
-            clauseTables=['POTemplate'],
-            orderBy='datecreated', distinct=True)
-        return list(series)
+        translatable_product_serieses = set(
+            product_series for product_series in self.serieses
+            if len(product_series.getCurrentTranslationTemplates()) > 0)
+        return sorted(
+            translatable_product_serieses, key=lambda s: s.datecreated)
 
+    @property
     def obsolete_translatable_serieses(self):
         """See `IProduct`."""
         obsolete_product_serieses = set(
@@ -374,7 +373,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         packages = self.translatable_packages
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         targetseries = ubuntu.currentseries
-        product_series = self.translatable_series
+        product_series = self.translatable_serieses
 
         # First, go with development focus branch
         if product_series and self.development_focus in product_series:

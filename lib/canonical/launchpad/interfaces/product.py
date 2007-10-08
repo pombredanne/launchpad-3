@@ -273,7 +273,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         "A list of the source packages for this product that can be "
         "translated sorted by distroseries.name and sourcepackage.name.")
 
-    translatable_series = Attribute(
+    translatable_serieses = Attribute(
         "A list of the series of this product for which we have translation "
         "templates.")
 

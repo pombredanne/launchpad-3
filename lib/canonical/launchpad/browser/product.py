@@ -508,6 +508,8 @@ class ProductView(LaunchpadView):
             warn("Got an unknown type object as primary translatable",
                  RuntimeWarning)
 
+        return object_translatable
+
     def requestCountry(self):
         return ICountry(self.request, None)
 
