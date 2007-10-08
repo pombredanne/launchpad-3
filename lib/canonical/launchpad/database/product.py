@@ -130,7 +130,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         dbName='calendar', foreignKey='Calendar', default=None,
         forceDBName=True)
 
-    license_info = StringCol(dbName='license_info')
+    license_info = StringCol(dbName='license_info', default=None)
 
     def _getLicenses(self):
         """Get the licenses as a tuple."""
@@ -673,7 +673,7 @@ class ProductSet:
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       reviewed=False, mugshot=None, logo=None,
-                      icon=None, license_info=None):
+                      icon=None, licenses=(), license_info=None):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         product = Product(
             owner=owner, name=name, displayname=displayname,
@@ -684,6 +684,7 @@ class ProductSet:
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang, reviewed=reviewed,
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
+        product.licenses = licenses
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '

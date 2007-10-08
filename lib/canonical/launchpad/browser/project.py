@@ -403,8 +403,8 @@ class ProjectAddProductView(ProductAddViewBase):
             programminglang=data['programminglang'],
             project=self.context,
             owner=self.user,
+            licenses = data['licenses'],
             license_info=data['license_info'])
-        self.product.licenses = data['licenses']
         self.notifyFeedbackMailingList(self.product)
         notify(ObjectCreatedEvent(self.product))
 

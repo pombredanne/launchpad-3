@@ -962,10 +962,12 @@ class ProductAddViewBase(LaunchpadFormView):
 
     def setUpWidgets(self):
         super(ProductAddViewBase, self).setUpWidgets()
-        self.non_custom_widgets = [
-            self.widgets[field_name]
-            for field_name in self.field_names
-            if field_name not in self.custom_layout_field_names]
+        self.non_custom_widgets = []
+        for field_name in self.field_names:
+            if field_name not in self.custom_layout_field_names:
+                w = self.widgets.get(field_name)
+                if w is not None:
+                    self.non_custom_widgets.append(w)
 
     def notifyFeedbackMailingList(self, product):
         if (License.OTHER_PROPRIETARY in product.licenses
@@ -1051,8 +1053,8 @@ class ProductAddView(ProductAddViewBase):
             project=data['project'],
             owner=data['owner'],
             reviewed=data['reviewed'],
+            licenses = data['licenses'],
             license_info=data['license_info'])
-        self.product.licenses = data['licenses']
         self.notifyFeedbackMailingList(self.product)
         notify(ObjectCreatedEvent(self.product))
 

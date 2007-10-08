@@ -29,6 +29,8 @@ Tests if the validator is working for the URL fields
 >>> user_browser.getControl(
 ...     'Programming Language').value = 'Visual Python++, C'
 >>> user_browser.getControl('Summary').value = 'This is the summary'
+>>> user_browser.getControl(name='field.licenses').value = ['GPL']
+>>> user_browser.getControl(name='field.license_info').value = 'foo'
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
 'http://launchpad.dev/projects/+new'
@@ -97,6 +99,8 @@ since the field is not required.
 >>> user_browser.getControl(
 ...     'Programming Language').value = 'Visual Python++, C'
 >>> user_browser.getControl('Summary').value = 'This is the summary'
+>>> user_browser.getControl(name='field.licenses').value = ['GPL']
+>>> user_browser.getControl(name='field.license_info').value = 'foo'
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
 'http://launchpad.dev/testing2'
@@ -116,6 +120,8 @@ Now let's try to insert a product with the same name (testing).
 ...     'short but sweet.'
 ...     )
 >>> user_browser.getControl('Summary').value = 'This is the summary'
+>>> user_browser.getControl(name='field.licenses').value = ['GPL']
+>>> user_browser.getControl(name='field.license_info').value = 'foo'
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
 'http://launchpad.dev/projects/+new'
@@ -150,6 +156,8 @@ the reviewed value should be on.
   >>> browser.getControl('Title').value = 'title'
   >>> browser.getControl('Summary').value = 'summary'
   >>> browser.getControl('Description').value = 'description'
+  >>> browser.getControl(name='field.licenses').value = ['GPL']
+  >>> browser.getControl(name='field.license_info').value = 'foo'
   >>> browser.getControl('Reviewed').click()
   >>> browser.getControl('Add').click()
   >>> print browser.url
@@ -189,6 +197,8 @@ It's also possible to set the product's icon/emblem at creation time.
 ...     'short but sweet.'
 ...     )
 >>> user_browser.getControl('Summary').value = 'This is the summary'
+>>> user_browser.getControl(name='field.licenses').value = ['GPL']
+>>> user_browser.getControl(name='field.license_info').value = 'foo'
 
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
