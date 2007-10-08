@@ -175,8 +175,7 @@ state of the the code import.
     >>> assert_raises(AssertionError, event_set.beginModify, None)
     >>> token = event_set.beginModify(svn_import)
 
-Then changes can be applied. In the simplest case, a single attribute is
-changed.
+Then changes can be applied.
 
     >>> from canonical.lp.dbschema import CodeImportReviewStatus
     >>> svn_import.review_status = CodeImportReviewStatus.REVIEWED
@@ -199,7 +198,7 @@ details the changes that have been applied.
     True
 
 The event records all the current values, and the old value of
-attributes which have changed. This produces redundant data that makes
+attributes that have changed. This produces redundant data that makes
 it possible to validate the historical trail for integrity and to detect
 when changes were made without creating a correponding event.
 
@@ -223,8 +222,8 @@ If no change of interest were found, no event is created.
 
 In most events, only the source details for the selected version control
 system are recorded. If the rcs_type changes, we record old and new
-values for all changed attributes to unambiguously represent transitions
-to None and from None.
+values for all changed attributes to explicitly represent transitions to
+None and from None.
 
     >>> token = event_set.beginModify(cvs_import)
     >>> cvs_import.rcs_type = RevisionControlSystems.SVN
@@ -245,9 +244,9 @@ to None and from None.
     SVN_BRANCH_URL u'svn://svn.example.com/from-cvs'
     OLD_SVN_BRANCH_URL None
 
-Aside from source details changes, MODIFY events can record changes in
-to the owner, the review_status, the assignee and the update_interval of
-a code import.
+Aside from source details changes, MODIFY events can record changes to
+the owner, the review_status, the assignee, and the update_interval of a
+code import.
 
     >>> from datetime import timedelta
     >>> sample_owner = getUtility(IPersonSet).getByName('name12')

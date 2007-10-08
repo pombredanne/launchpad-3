@@ -256,7 +256,7 @@ class ICodeImportEventSet(Interface):
         Should only be called by CodeImport methods.
 
         :param code_import: `CodeImport` that will be modified.
-        :return: `CodeImportJournalToken` to give to `newModify`.
+        :return: `CodeImportEventToken` to pass to `newModify`.
         """
 
     def newModify(code_import, person, token):
@@ -265,13 +265,13 @@ class ICodeImportEventSet(Interface):
         Should only be called by CodeImport methods.
 
         If no change is found between the code import and the data saved in
-        the token, the modification is considered not-significant and no
-        journal entry is created.
+        the token, the modification is considered non-significant and no
+        event object is created.
 
         :param code_import: Modified `CodeImport`.
         :param person: `Person` who requested the change.
-        :param token: `CodeImportJournalToken` created by `beginModify`.
-        :return: `CodeImportJournalEntry` of MODIFY type, or None.
+        :param token: `CodeImportEventToken` created by `beginModify`.
+        :return: `CodeImportEvent` of MODIFY type, or None.
         """
 
 

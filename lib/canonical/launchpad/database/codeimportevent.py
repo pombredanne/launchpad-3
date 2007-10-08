@@ -160,7 +160,7 @@ class CodeImportEventSet:
                 "Unknown RCS type: %s" % (code_import.rcs_type,))
 
     def _findModifications(self, code_import, token):
-        """Find modifications done to the code import since token was created.
+        """Find modifications made to the code import.
 
         If no change was found, return None. Otherwise return a list of items
         that describe the old and new state of the modified code import.
