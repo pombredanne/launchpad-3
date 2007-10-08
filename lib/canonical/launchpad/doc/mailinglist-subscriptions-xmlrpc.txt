@@ -1,0 +1,121 @@
+= XMLRPC access to mailing list memberships =
+
+Just like the creation and deactivation of mailing lists, membership changes
+to mailing lists must be communicated to Mailman over XMLRPC.  Because the
+bandwidth involved is not expected to be overwhelming, a simplified interface
+was chosen.
+
+The communication pattern is initiated by Mailman in all cases; in other
+words, Mailman polls Launchpad to see if there is any work for Mailman to do.
+
+    >>> # Note that this test is run multiple times, with the harness
+    >>> # providing several globals including `mailinglist_api`,
+    >>> # `print_actions`, `new_team`, and `commit`.
+
+
+== Requesting membership information ==
+
+Mailman requests membership information for specific list of teams.  Let's
+create and populate some teams to demonstrate.
+
+    >>> team_one, list_one = new_team('team-one', with_list=True)
+    >>> anne = new_person('Anne')
+    >>> bart = new_person('Bart')
+    >>> cris = new_person('Cris')
+    >>> dirk = new_person('Dirk')
+    >>> elle = new_person('Elle')
+    >>> fred = new_person('Fred')
+    >>> gwen = new_person('Gwen')
+    >>> hank = new_person('Hank')
+    >>> people = [anne, bart, cris, dirk, elle, fred, gwen, hank]
+    >>> for person in people:
+    ...     person.join(team_one)
+    ...     list_one.subscribe(person)
+    >>> flush_database_updates()
+
+Asking for the membership information for team-one's list returns all the
+above people.
+
+    >>> info = mailinglist_api.getMembershipInformation(('team-one',))
+    >>> print_info(info)
+    team-one
+        anne.person@example.com Anne Person 0 0
+        bart.person@example.com Bart Person 0 0
+        cris.person@example.com Cris Person 0 0
+        dirk.person@example.com Dirk Person 0 0
+        elle.person@example.com Elle Person 0 0
+        fred.person@example.com Fred Person 0 0
+        gwen.person@example.com Gwen Person 0 0
+        hank.person@example.com Hank Person 0 0
+
+We can also ask for the membership information for more than one mailing list
+at a time.  Mix things up for the fun of it.
+
+    >>> team_two, list_two = new_team('team-two', with_list=True)
+    >>> fred.leave(team_one)
+    >>> gwen.leave(team_one)
+    >>> for person in people:
+    ...     if person is bart:
+    ...         continue
+    ...     person.join(team_two)
+    ...     list_two.subscribe(person)
+    >>> info = mailinglist_api.getMembershipInformation(
+    ...     ('team-one', 'team-two'))
+    >>> print_info(info)
+    team-one
+        anne.person@example.com Anne Person 0 0
+        bart.person@example.com Bart Person 0 0
+        cris.person@example.com Cris Person 0 0
+        dirk.person@example.com Dirk Person 0 0
+        elle.person@example.com Elle Person 0 0
+        hank.person@example.com Hank Person 0 0
+    team-two
+        anne.person@example.com Anne Person 0 0
+        cris.person@example.com Cris Person 0 0
+        dirk.person@example.com Dirk Person 0 0
+        elle.person@example.com Elle Person 0 0
+        fred.person@example.com Fred Person 0 0
+        gwen.person@example.com Gwen Person 0 0
+        hank.person@example.com Hank Person 0 0
+
+
+== Membership tests ==
+
+Mailman may also occasionally ask whether a specific email address is
+registered with Launchpad.  It does this as a simple line-of-defense against
+spam.  Email from addresses not registered with Launchpad are summarily
+discarded.
+
+    >>> mailinglist_api.isRegisteredInLaunchpad('dirk.person@example.com')
+    True
+    >>> mailinglist_api.isRegisteredInLaunchpad('dperson@example.org')
+    True
+    >>> mailinglist_api.isRegisteredInLaunchpad('geddy.lee@canonical.com')
+    False
+
+Similarly, email addresses with an unvalidated status are not considered
+registered either.
+
+    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> emailset = getUtility(IEmailAddressSet)
+    >>> new_address = emailset.new('frederick@example.com', fred)
+    >>> new_address.email, new_address.statusname
+    (u'frederick@example.com', 'New Email Address')
+    >>> sorted((email_address.email, email_address.statusname)
+    ...        for email_address in emailset.getByPerson(fred))
+    [(u'fperson@example.org', 'Validated Email Address'),
+     (u'fred.person@example.com', 'Preferred Email Address'),
+     (u'frederick@example.com', 'New Email Address')]
+    >>> mailinglist_api.isRegisteredInLaunchpad('frederick@example.com')
+    False
+
+
+== Error cases ==
+
+If Mailman requests the membership information for a team that doesn't exist,
+the method will raise a fault.
+
+    >>> mailinglist_api.getMembershipInformation(('no-such-team',))
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 140: 'No such team mailing list: no-such-team'>

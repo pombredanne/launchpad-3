@@ -8,10 +8,10 @@ __all__ = [
     'CannotSubscribe',
     'CannotUnsubscribe',
     'IMailingList',
+    'IMailingListAPIView',
     'IMailingListApplication',
     'IMailingListSet',
     'IMailingListSubscription',
-    'IRequestedMailingListAPI',
     'MailingListAutoSubscribePolicy',
     'MailingListStatus',
     'PersonalStanding',
@@ -445,7 +445,7 @@ class IMailingListSet(Interface):
         readonly=True)
 
 
-class IRequestedMailingListAPI(Interface):
+class IMailingListAPIView(Interface):
     """XMLRPC API that Mailman polls for mailing list actions."""
 
     def getPendingActions():
@@ -488,6 +488,31 @@ class IRequestedMailingListAPI(Interface):
 
         :param statuses: A dictionary mapping team names to result strings.
             The result strings may be either 'success' or 'failure'.
+        """
+
+    def getMembershipInformation(teams):
+        """Return membership information for the listed teams.
+
+        :param teams: The list of team names for which Mailman is requesting
+            membership information.
+        :return: A data structure representing the requested information.  See
+            below for the format of that data structure.  The records in
+            values are sorted by email address.
+
+        The return value is of the format:
+
+        {team_name: [(address, realname, flags, status), ...], ...}
+
+        And each value contains an entry for all addresses that are subscribed
+        to the mailing list linked to the named team.
+        """
+
+    def isRegisteredInLaunchpad(address):
+        """Return whether the address is a Launchpad member or not.
+
+        :param address: The text email address to check.
+        :return: True if the address is a validated or preferred email address
+            owned by a Launchpad member.
         """
 
 
