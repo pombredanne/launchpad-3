@@ -186,7 +186,7 @@ class TestPublishDistro(TestNativePublishingBase):
         rc, out, err = self.runPublishDistro(
             ['-A', '-s', 'hoary-test-updates', '-s', 'hoary-test-backports'])
 
-        self.assertEqual(0, rc)
+        self.assertEqual(0, rc, "Publisher failed with:\n%s\n%s" % (out, err))
 
         # Check "Release" files
         release_path = "%s/hoary-test-updates/Release" % self.config.distsroot

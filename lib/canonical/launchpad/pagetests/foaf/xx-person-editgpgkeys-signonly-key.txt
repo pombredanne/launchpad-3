@@ -15,12 +15,7 @@ Setup the stub KeyServer
 
 Sign only keys are registered on the standard +editpgpkeys page.
 
-  >>> from zope.testbrowser.testing import Browser
-
-  >>> browser = Browser()
-  >>> browser.handleErrors = False
-  >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
-
+  >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
   >>> browser.open('http://launchpad.dev/~name12/+editpgpkeys')
   >>> browser.title
   "Sample Person's OpenPGP keys"

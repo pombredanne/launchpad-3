@@ -293,23 +293,28 @@ class DistributionSourcePackageBugContactsView(LaunchpadFormView):
 
 class DistributionSourcePackageView(LaunchpadView):
 
-    def published_versions(self):
+    def version_listing(self):
         result = []
         for sourcepackage in self.context.get_distroseries_packages():
-            pockets = []
+            series_result = []
             for published in \
                 sourcepackage.published_by_pocket.iteritems():
-                if len(published[1]) > 0:
-                    pockets.append(
-                        {'pocket': published[0].name.lower(),
-                         'dsprs': published[1]
-                         })
-            result.append(
-                {'distroseries': sourcepackage.distroseries.name,
-                 'pockets': pockets,
-                 'packaging': sourcepackage.direct_packaging,
-                 'sp': sourcepackage
-                 })
+                for drspr in published[1]:
+                    series_result.append({
+                        'series': sourcepackage.distroseries,
+                        'pocket': published[0].name.lower(),
+                        'package': drspr,
+                        'packaging': sourcepackage.direct_packaging,
+                        'sourcepackage': sourcepackage
+                        })
+            for row in range(len(series_result)-1, 0, -1):
+                for column in ['series', 'pocket', 'package', 'packaging',
+                               'sourcepackage']:
+                    if series_result[row][column] == \
+                       series_result[row-1][column]:
+                       series_result[row][column] = None
+            for row in series_result:
+                result.append(row)
         return result
 
 
