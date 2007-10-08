@@ -30,7 +30,7 @@ CONTENTHEADER="Contents.top"
 suites='gutsy'
 
 # target architectures
-archs='i386 amd64 hppa powerpc ia64 sparc'
+archs='i386 amd64 hppa powerpc ia64 sparc lpia'
 
 # target components
 components='main restricted universe multiverse'
