@@ -11,10 +11,10 @@
           tal:attributes="href link/url; title link/summary"
           tal:content="structure link/escapedtext"
         >link text</a>
-        <span tal:condition="not: link/linked"
+        <strong tal:condition="not: link/linked"
               tal:content="structure link/escapedtext">
           Unlinked text
-        </span>
+        </strong>
       </li>
     </tal:block>
     <tal:block repeat="link view/applicationmenuitems">
