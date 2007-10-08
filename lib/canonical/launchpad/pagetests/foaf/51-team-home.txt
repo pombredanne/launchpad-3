@@ -29,7 +29,7 @@ details about the team.
     Team and membership summary
     Team owner: Mark Shuttleworth
     Membership: ... (Moderated Team)
-    Wiki: UbuntuTeam
+    Wiki: https://wiki.ubuntu.com/UbuntuTeam
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subteam-of'))
