@@ -575,7 +575,6 @@ class TestCheckBranchReference(unittest.TestCase):
             assert self.testcase.can_traverse_references is not None
             return self.testcase.can_traverse_references
 
-
     def setUp(self):
         client = BranchStatusClient()
         self.branch = TestCheckBranchReference.StubbedBranchToMirror(
