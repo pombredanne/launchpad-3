@@ -2196,11 +2196,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasTranslationTemplates`."""
         result = POTemplate.select('''
             distrorelease = %s AND
-            (iscurrent IS FALSE OR
-             (distrorelease = DistroRelease.id AND
-              DistroRelease.distribution = Distribution.id AND
-              Distribution.official_rosetta IS FALSE))
-            ''' % sqlvalues(self.distroseries),
+            distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = Distribution.id AND
+            (iscurrent IS FALSE OR Distribution.official_rosetta IS FALSE)
+            ''' % sqlvalues(self),
             clauseTables = ['DistroRelease', 'Distribution'])
         result = result.prejoin(['potemplatename'])
         return sorted(

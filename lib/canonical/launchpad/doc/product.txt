@@ -374,7 +374,8 @@ Firefox has two serieses, but no translatable series either:
 
     >>> firefox = productset.getByName('firefox')
     >>> for firefoxseries in firefox.serieses:
-    ...     print firefoxseries.displayname, firefoxseries.potemplates
+    ...     print '%s %s' % (firefoxseries.displayname,
+    ...                      firefoxseries.getCurrentTranslationTemplates())
     1.0 []
     trunk []
     >>> print firefox.primary_translatable
