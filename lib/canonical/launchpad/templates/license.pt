@@ -18,7 +18,7 @@
       <!-- Checkbox matrix -->
       <th style="text-align: left">
       <label tal:attributes="for matrix_name">
-          Licenses that this software project falls under:
+          This project consists of code licensed under:
       </label>
       </th>
     </tr>
@@ -29,11 +29,11 @@
               Error message
           </div>
           <div style="color: black">
+              <input tal:replace="structure licenses" />
               Launchpad.net is free to use for software projects 
               that comply with 
               <a href="http://www.ubuntu.com/community/ubuntustory/licensing">
               these licensing policies.</a>
-              <input tal:replace="structure licenses" />
           </div>
       </td>
     </tr>

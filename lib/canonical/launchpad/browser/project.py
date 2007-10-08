@@ -42,6 +42,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IBranchSet, ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
     NotFoundError)
+from canonical.launchpad.browser import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
@@ -374,8 +375,6 @@ class ProjectReviewView(ProjectEditView):
     field_names = ['name', 'owner', 'active', 'reviewed']
 
 
-from canonical.launchpad.browser import ProductAddViewBase
-
 class ProjectAddProductView(ProductAddViewBase):
 
     label = "Register a new project that is part of this initiative"
@@ -406,6 +405,7 @@ class ProjectAddProductView(ProductAddViewBase):
             owner=self.user,
             license_info=data['license_info'])
         self.product.licenses = data['licenses']
+        self.notifyFeedbackMailingList(self.product)
         notify(ObjectCreatedEvent(self.product))
 
 

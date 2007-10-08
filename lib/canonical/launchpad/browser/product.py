@@ -78,6 +78,7 @@ from canonical.launchpad.browser.questiontarget import (
 from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
+from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadView, LaunchpadEditFormView,
@@ -966,6 +967,34 @@ class ProductAddViewBase(LaunchpadFormView):
             for field_name in self.field_names
             if field_name not in self.custom_layout_field_names]
 
+    def notifyFeedbackMailingList(self, product):
+        if (License.OTHER_PROPRIETARY in product.licenses
+                or License.OTHER_OPEN_SOURCE in product.licenses):
+            user = getUtility(ILaunchBag).user
+            subject = 'Project Registration'
+            fromaddress = format_address("Launchpad", 
+                                         config.noreply_from_address)
+            license_titles = '\n'.join([ 
+                lic.title for lic in product.licenses])
+            def indent(text):
+                text = '\n    '.join([ line for line in text.split('\n') ])
+                text = '    ' + text
+                return text
+            message = ('User: %s (%s)\n\n' % (user.browsername, user.name)
+                + 'Project Name: %s\n\n' % product.name
+                + 'Project Summary:\n%s\n\n' % indent(product.summary)
+                + 'Licenses:\n%s\n\n' % indent(license_titles)
+                + 'License info:\n%s\n\n' % indent(product.license_info))
+
+            simple_sendmail(fromaddress, 
+                            #config.launchpad.launchpad_team_address,
+                            'feedback@launchpad.net',
+                            subject, message)
+
+            self.request.response.addInfoNotification(_(
+              "Launchpad is free to use for software under approved licenses."
+              " The Launchpad team will be in contact with you soon."))
+
     @property
     def next_url(self):
         assert self.product is not None, 'No product has been created'
@@ -1024,6 +1053,7 @@ class ProductAddView(ProductAddViewBase):
             reviewed=data['reviewed'],
             license_info=data['license_info'])
         self.product.licenses = data['licenses']
+        self.notifyFeedbackMailingList(self.product)
         notify(ObjectCreatedEvent(self.product))
 
 
