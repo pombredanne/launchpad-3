@@ -183,11 +183,16 @@ appropriate default value for the RCS type.
 
 If the update interval is set, then it overrides the default value.
 
-    >>> cvs_import.update_interval = timedelta(seconds=7200)
+As explained in the "Modify CodeImports" section, the interface does not allow
+direct attribute modification. So we use removeSecurityProxy in this example.
+
+    >>> removeSecurityProxy(cvs_import).update_interval = (
+    ...     timedelta(seconds=7200))
     >>> cvs_import.effective_update_interval
     datetime.timedelta(0, 7200)
 
-    >>> svn_import.update_interval = timedelta(seconds=3600)
+    >>> removeSecurityProxy(svn_import).update_interval = (
+    ...     timedelta(seconds=3600))
     >>> svn_import.effective_update_interval
     datetime.timedelta(0, 3600)
 
