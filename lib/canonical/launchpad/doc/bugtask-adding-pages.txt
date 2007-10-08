@@ -400,6 +400,21 @@ the bug watch's status later.
     >>> alsa_task.importance.title
     'Unknown'
 
+ADD DUPLICATE BUG WATCH
+
+    >>> bug_five = getUtility(IBugSet).get(5)
+    >>> bug_five_task = bug_five.bugtasks[0]
+    >>> add_task_view = get_and_setup_view(
+    ...     bug_five_task, '+choose-affected-product', form)
+    SQLObjectCreatedEvent: <BugWatch at ...>
+    SQLObjectCreatedEvent: <BugTask at ...>
+
+    >>> add_task_view.request.response.getHeader('Location')
+    'http://.../+bug/5'
+
+    >>> for notification in add_task_view.request.response.notifications:
+    ...     print notification.message
+    <a href="...">Bug #4</a> also links to GnomeGBug GTracker #84.
 
 There's a property for easily retrieving the target for use on the
 confirmation page.

@@ -375,6 +375,17 @@ class BugTaskCreationStep(AlsoAffectsStep):
         if extracted_bug:
             assert extracted_bugtracker is not None, (
                 "validate() should have ensured that bugtracker is not None.")
+            bugs_already_watching = extracted_bugtracker.getBugsWatching(
+                extracted_bug)
+            if len(bugs_already_watching) > 0:
+                bug = bugs_already_watching[0]
+                # Simply choose the first 
+                self.request.response.addInfoNotification(
+                    '<a href="%(bug_url)s">Bug #%(bug_id)s</a> also links to'
+                    ' %(bugtracker_name)s #%(remote_bug)s.',
+                    bug_url=canonical_url(bug), bug_id=bug.id,
+                    bugtracker_name=extracted_bugtracker.title,
+                    remote_bug=extracted_bug)
             # Make sure that we don't add duplicate bug watches.
             bug_watch = task_added.bug.getBugWatch(
                 extracted_bugtracker, extracted_bug)
