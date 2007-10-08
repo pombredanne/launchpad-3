@@ -1,42 +1,12 @@
-Introduction
-============
+= Bug Activity =
 
 Bugs are problems that occur in software. In Malone, various things can be
 added to, edited and removed from a bug over the course of a bug's lifetime. We
 call this stuff bug activity. This document is about bug activity.
 
-Bug Activity
-============
-
-During a bug's lifetime, one may:
-
-o assign the bug to a source package
-
-o assign the bug to a upstream product
-
-o document a source package infestation
-
-o document a product infestation
-
-o add a cve reference number that relates to this bug
-
-o add a subscriber to this bug
-
-o add a web link related to this bug
-
-o add a reference to a bug on an external bugtracker to track the status of the
-  same bug as reported on other bug trackers
-
-o add an attachment to this bug
-
-o mark the bug as a duplicate of another bug
-
-Each of these can happen more than once to a bug over the course of its
+Each activity can happen more than once to a bug over the course of its
 lifetime. For auditing reasons, it's useful to track when these happen, why
 these things happen, and who made them happen.
-
-Tracking Bug Activity in Launchpad
-==================================
 
 Before going any further--because editing a bug requires an
 authenticated user--let's login:
@@ -56,13 +26,10 @@ are simple little functions.
   >>> from canonical.launchpad.interfaces import (
   ...     IUpstreamBugTask, IDistroBugTask, IProductSet, IBugTaskSet)
   >>> from canonical.launchpad.webapp.snapshot import Snapshot
-
-Here's a list of events that happen, and the resulting activity
-logged:
-
   >>> user = getUtility(ILaunchBag).user
 
-EVENT: user files a bug
+
+== User files a bug ==
 
   >>> from canonical.launchpad.interfaces import CreateBugParams
   >>> firefox = getUtility(IProductSet)['firefox']
@@ -82,7 +49,8 @@ EVENT: user files a bug
   >>> latest_activity.message
   u'added bug'
 
-EVENT: bug edited
+
+== Bug title edited ==
 
   >>> from canonical.launchpad.interfaces import IBug
   >>> old_state = Snapshot(bug, providing=IBug)
@@ -98,7 +66,8 @@ EVENT: bug edited
   >>> latest_activity.newvalue
   u'new bug title'
 
-EVENT: bug gets assigned to a source package
+
+== Bug gets assigned to a source package ==
 
   >>> from canonical.launchpad.interfaces import (
   ...     ISourcePackageNameSet, IDistributionSet)
@@ -116,7 +85,8 @@ EVENT: bug gets assigned to a source package
   >>> latest_activity.message
   u'assigned to mozilla-firefox (Ubuntu)'
 
-EVENT: source package assignment edited
+
+== Source package assignment edited ==
 
   >>> from canonical.launchpad.webapp.snapshot import Snapshot
   >>> from canonical.launchpad.interfaces import BugTaskStatus, IBugTask
@@ -138,7 +108,8 @@ EVENT: source package assignment edited
   >>> latest_activity.newvalue == BugTaskStatus.CONFIRMED.title
   True
 
-EVENT: bug gets assigned to an upstream product
+
+== Bug gets assigned to an upstream product ==
 
   >>> product_assignment = getUtility(IBugTaskSet).createTask(
   ...   bug=bug, product=getUtility(IProductSet)['thunderbird'], owner=user)
@@ -150,7 +121,8 @@ EVENT: bug gets assigned to an upstream product
   >>> latest_activity.message
   u'assigned to thunderbird'
 
-EVENT: upstream product assignment edited
+
+== Upstream product assignment edited ==
 
   >>> edit_fields = [
   ...     "product", "milestone", "status", "assignee", "bugwatch",
@@ -170,7 +142,8 @@ EVENT: upstream product assignment edited
   >>> latest_activity.newvalue == BugTaskStatus.INVALID.title
   True
 
-EVENT: source package infestation gets documented
+
+== Source package infestation gets documented ==
 
   >>> from canonical.lp.dbschema import BugInfestationStatus
   >>> right_now = UTC_NOW
@@ -188,7 +161,8 @@ EVENT: source package infestation gets documented
   >>> latest_activity.message
   u'added infestation of package release mozilla-firefox 0.9'
 
-EVENT: source package infestation edited
+
+== Source package infestation edited ==
 
   >>> edit_fields = ["sourcepackagerelease", "infestationstatus"]
   >>> old_package_infestation = Snapshot(
@@ -205,7 +179,8 @@ EVENT: source package infestation edited
   >>> latest_activity.newvalue == BugInfestationStatus.VICTIMIZED.title
   True
 
-EVENT: product infestation gets documented
+
+== Product infestation gets documented ==
 
   >>> right_now = UTC_NOW
   >>> product_infestation = BugProductInfestation(
@@ -223,7 +198,8 @@ EVENT: product infestation gets documented
   >>> latest_activity.message
   u'added infestation of product release firefox 0.9.1'
 
-EVENT: product infestation edited
+
+== Product infestation edited ==
 
   >>> edit_fields = ["productrelease", "infestationstatus"]
   >>> old_product_infestation = Snapshot(
@@ -240,7 +216,8 @@ EVENT: product infestation edited
   >>> latest_activity.newvalue == BugInfestationStatus.UNKNOWN.title
   True
 
-EVENT: this bug report is marked as a duplicate of another bug report
+
+== Bug report is marked as a duplicate of another bug report ==
 
   >>> edit_fields = [
   ...     "id", "title", "description", "name",
@@ -257,8 +234,8 @@ EVENT: this bug report is marked as a duplicate of another bug report
   >>> latest_activity.newvalue == u'1'
   True
 
-EVENT: the same bug report has his duplicate marker changed to another
-bug report
+
+== Bug report has itss duplicate marker changed to another bug report ==
 
   >>> edit_fields = [
   ...     "id", "title", "description", "name", "private", "duplicateof",
@@ -275,7 +252,8 @@ bug report
   >>> latest_activity.newvalue == u'2'
   True
 
-EVENT: the bug report is now un-duplicated
+
+== The bug report is un-duplicated ==
 
   >>> edit_fields = [
   ...     "id", "title", "description", "name", "private", "duplicateof",
@@ -292,7 +270,8 @@ EVENT: the bug report is now un-duplicated
   >>> latest_activity.newvalue is None
   True
 
-EVENT: add a subscriber to this bug
+
+== Add a subscriber to the bug ==
 
   >>> from canonical.launchpad.database import BugSubscription
   >>> from canonical.launchpad.interfaces import IPersonSet
@@ -305,7 +284,8 @@ EVENT: add a subscriber to this bug
   >>> latest_activity.message
   u'added subscriber Foo Bar'
 
-EVENT: add an attachment to this bug
+
+== Add an attachment to the bug ==
 
 First we have to create the file itself, and upload it to the Librarian:
 
@@ -327,14 +307,3 @@ First we have to create the file itself, and upload it to the Librarian:
   u'bug'
   >>> latest_activity.message
   u"added attachment 'foo.txt' (title)"
-
-
-For the future?
-===============
-
-At some point, we may find it useful to track the following events as well:
-
-
-EVENT: add a web link related to this bug
-
-EVENT: add a reference to a bug on an external bugtracker
