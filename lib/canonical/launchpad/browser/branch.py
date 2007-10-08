@@ -538,13 +538,9 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                     self.setFieldError(
                         'url',
                         'Branch URLs are required for Mirrored branches.')
-        elif self.context.branch_type == BranchType.HOSTED:
-            if url is not None:
-                self.setFieldError(
-                    'url',
-                    'Branch URLs cannot be set for Hosted branches.')
         else:
-            # We don't care about REMOTE or IMPORT branches.
+            # We don't care about whether the URL is set for REMOTE branches,
+            # and the URL field is not shown for IMPORT or HOSTED branches.
             pass
 
 

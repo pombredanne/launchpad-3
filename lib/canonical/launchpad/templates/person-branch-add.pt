@@ -45,15 +45,11 @@
   <p>The URL of the branch is based on the nickname of the registrant,
     not the author.</p>
 
-  <p>Do not use this page to:</p>
-
-  <ul>
-    <li>Request a <em>VCS import</em>, that is a Bazaar mirror of a CVS or
-      Subversion branch. Instead, edit the source details of the trunk release
-      series of this project.  See the
-      <a href="https://help.launchpad.net/VcsImports">VCS Imports</a> help page.
-    </li>
-  </ul>
+  <p>Do not use this page to request a <em>VCS import</em>, that is a
+    Bazaar mirror of a CVS or Subversion branch. Instead, edit the source
+    details of the trunk release series of this project.  See the
+    <a href="https://help.launchpad.net/VcsImports">VCS Imports</a> help page.
+  </p>
 
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
 </body>

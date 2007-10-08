@@ -263,3 +263,13 @@ Edit forms do the same URL validation checks as the add forms.
     For Launchpad to mirror a branch, the original branch cannot be
     on launchpad.dev.
 
+Check that when editing a hosted branch the URL field is not shown.
+
+    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/scanned')
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Branch URL').value = (
+    ...     'http://acme.example.com/~foo/bar/baz')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Branch URL'
+
