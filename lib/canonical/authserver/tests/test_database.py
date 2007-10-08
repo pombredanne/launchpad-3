@@ -392,11 +392,18 @@ class HostedBranchStorageTest(DatabaseTest):
         self.assertEqual(
             ['sabdfl', None, 'foo', None, None, 1], cur.fetchone())
 
-    def test_createBranch_badproduct(self):
+    def test_createBranch_bad_product(self):
         # Test that creating a branch for a non-existant product fails.
         storage = DatabaseUserDetailsStorageV2(None)
         branchID = storage._createBranchInteraction(
             1, 'sabdfl', 'no-such-product', 'foo')
+        self.assertEqual(branchID, '')
+
+    def test_createBranch_other_user(self):
+        # Test that creating a branch under another user's directory fails.
+        storage = DatabaseUserDetailsStorageV2(None)
+        branchID = storage._createBranchInteraction(
+            1, 'no-priv', 'firefox', 'foo')
         self.assertEqual(branchID, '')
 
     def test_fetchProductID(self):
