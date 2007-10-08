@@ -201,6 +201,24 @@ however.
     http://code.launchpad.dev/~vcs-imports/firefox/trunk-svn/+code-import
 
 
+== Modifying CodeImports ==
+
+The ICodeImport interface does not allow setting any attribute.
+Modifications to security-proxied CodeImport objects must be done using
+setter methods that can create CodeImportEvent objects when appropriate.
+
+Even though David can access CodeImportObjects, he cannot set attributes
+on those objects.
+
+    >>> login('david.allouche@canonical.com')
+    >>> svn_import.svn_branch_url
+    u'svn://svn.example.com/trunk'
+    >>> svn_import.svn_branch_url = 'svn://svn.example.com/branch/1.0'
+    Traceback (most recent call last):
+      ...
+    ForbiddenAttribute: ('svn_branch_url', <CodeImport at 0x...>)
+
+
 == Security ==
 
 As we've seen above, David has access to all methods defined by

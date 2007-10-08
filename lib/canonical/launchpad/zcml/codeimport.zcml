@@ -12,10 +12,10 @@
       permission="launchpad.View"
       interface="canonical.launchpad.interfaces.ICodeImport"
       />
-    <require
-      permission="launchpad.Edit"
-      set_schema="canonical.launchpad.interfaces.ICodeImport"
-      />
+
+    <!-- ICodeImport has no set_schema, because all modifications should be
+      done through methods that create CodeImportEvent objects when
+      appropriate. -->
   </content>
 
   <browser:url
