@@ -10,13 +10,9 @@ First a helper to set up a browser object that doesn't handle the
 mechanize browser object here because Zope's test browser does not
 expose the required functionality:
 
-  >>> from zope.testbrowser.testing import Browser
   >>> def setupBrowserWithReferrer(referrer):
-  ...      browser = Browser()
-  ...      browser.handleErrors = False
+  ...      browser = setupBrowser("Basic no-priv@canonical.com:test")
   ...      browser.mech_browser.set_handle_referer(False)
-  ...      browser.addHeader("Authorization",
-  ...                        "Basic no-priv@canonical.com:test")
   ...      if referrer is not None:
   ...          browser.addHeader("Referer", referrer)
   ...      return browser

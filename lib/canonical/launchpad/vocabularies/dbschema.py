@@ -34,6 +34,8 @@ __all__ = [
 from canonical.lp import dbschema
 
 from canonical.launchpad.webapp.vocabulary import vocab_factory
+from canonical.launchpad.interfaces import (
+    TranslationFileFormat, TranslationPermission)
 
 
 # DB Schema Vocabularies
@@ -61,5 +63,5 @@ SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
 SpecificationDefinitionStatusVocabulary =  vocab_factory(dbschema.SpecificationDefinitionStatus)
 SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStatus)
 SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
-TranslationFileFormatVocabulary = vocab_factory(dbschema.TranslationFileFormat)
-TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
+TranslationFileFormatVocabulary = vocab_factory(TranslationFileFormat)
+TranslationPermissionVocabulary = vocab_factory(TranslationPermission)

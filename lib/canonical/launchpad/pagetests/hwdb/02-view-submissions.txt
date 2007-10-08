@@ -64,7 +64,7 @@ The owner of a submission sees a complete lists of his own submissions.
 He also gets an additional column in the listing, showing the "private"
 status of each submission.
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~name12/+hwdb-submissions')
     >>> [content_table] = find_tags_by_class(browser.contents, 'listing')
     >>> print extract_text(content_table)
@@ -110,10 +110,7 @@ visible for members of the team and admins.
     Submissions to the Hardware Database
     Ubuntu Team has posted no submissions.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization',
-    ...                   'Basic celso.providelo@canonical.com:cprov')
+    >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+hwdb-submissions')
     >>> print extract_text(find_main_content(browser.contents))
     Submissions to the Hardware Database
@@ -149,9 +146,7 @@ Private submissions can't be viewed anonymously:
 
 But they can with the right permissions.
 
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization',
-    ...                   'Basic celso.providelo@canonical.com:cprov')
+    >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
     >>> browser.open(
     ...     'http://launchpad.dev/hwdb/+submission/unique-id-3a/+text')
     >>> print browser.contents
@@ -199,9 +194,7 @@ is False.
 
 Private submissions are only displayed for the owner.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open(
     ...     'http://launchpad.dev/hwdb/+fingerprint/Fujitsu%20CY26')
     >>> [content_table] = find_tags_by_class(browser.contents, 'listing')

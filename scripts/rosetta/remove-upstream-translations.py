@@ -11,15 +11,13 @@ import logging
 from optparse import OptionParser
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.config import config
 from canonical.lp import initZopeless
-from canonical.lp.dbschema import RosettaTranslationOrigin
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.interfaces import (
     IProductSet, IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet,
-    IPOTemplateSet, ILaunchpadCelebrities)
+    IPOTemplateSet, ILaunchpadCelebrities, RosettaTranslationOrigin)
 
 logger_name = 'remove-upstream-translations'
 

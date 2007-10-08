@@ -45,8 +45,6 @@ __all__ = (
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'PackagePublishingPocket',
-'RosettaImportStatus',
-'RosettaTranslationOrigin',
 'ShippingRequestStatus',
 'ShippingService',
 'SourcePackageFileType',
@@ -61,10 +59,6 @@ __all__ = (
 'SpecificationSort',
 'SpecificationDefinitionStatus',
 'SprintSpecificationStatus',
-'TranslationFileFormat',
-'TranslationPriority',
-'TranslationPermission',
-'TranslationValidationStatus',
 'PackageUploadStatus',
 'PackageUploadCustomFormat',
 )
@@ -978,89 +972,6 @@ class SourcePackageFileType(DBSchema):
         used in the build process for this source package.  """)
 
 
-class TranslationPriority(DBSchema):
-    """Translation Priority
-
-    Translations in Rosetta can be assigned a priority. This is used in a
-    number of places. The priority stored on the translation itself is set
-    by the upstream project maintainers, and used to identify the
-    translations they care most about. For example, if Apache were nearing a
-    big release milestone they would set the priority on those POTemplates
-    to 'high'. The priority is also used by TranslationEfforts to indicate
-    how important that POTemplate is to the effort. And lastly, an
-    individual translator can set the priority on his personal subscription
-    to a project, to determine where it shows up on his list.  """
-
-    HIGH = Item(1, """
-        High
-
-        This translation should be shown on any summary list of translations
-        in the relevant context. For example, 'high' priority projects show
-        up on the home page of a TranslationEffort or Project in Rosetta.
-        """)
-
-    MEDIUM = Item(2, """
-        Medium
-
-        A medium priority POTemplate should be shown on longer lists and
-        dropdowns lists of POTemplates in the relevant context.  """)
-
-    LOW = Item(3, """
-        Low
-
-        A low priority POTemplate should only show up if a comprehensive
-        search or complete listing is requested by the user.  """)
-
-
-class TranslationPermission(DBSchema):
-    """Translation Permission System
-
-    Projects, products and distributions can all have content that needs to
-    be translated. In this case, Launchpad Translations allows them to decide
-    how open they want that translation process to be. At one extreme, anybody
-    can add or edit any translation, without review. At the other, only the
-    designated translator for that group in that language can add or edit its
-    translation files. This schema enumerates the options.
-    """
-
-    OPEN = Item(1, """
-        Open
-
-        This group allows totally open access to its translations. Any
-        logged-in user can add or edit translations in any language, without
-        any review.""")
-
-    STRUCTURED = Item(20, """
-        Structured
-
-        This group has designated translators for certain languages. In
-        those languages, people who are not designated translators can only
-        make suggestions. However, in languages which do not yet have a
-        designated translator, anybody can edit the translations directly,
-        with no further review.""")
-
-    RESTRICTED = Item(100, """
-        Restricted
-
-        This group allows only designated translators to edit the
-        translations of its files. You can become a designated translator
-        either by joining an existing language translation team for this
-        project, or by getting permission to start a new team for a new
-        language. People who are not designated translators can still make
-        suggestions for new translations, but those suggestions need to be
-        reviewed before being accepted by the designated translator.""")
-
-    CLOSED = Item(200, """
-        Closed
-
-        This group allows only designated translators to edit or add
-        translations. You can become a designated translator either by
-        joining an existing language translation team for this
-        project, or by getting permission to start a new team for a new
-        language. People who are not designated translators will not be able
-        to add suggestions.""")
-
-
 class PackageUploadStatus(DBSchema):
     """Distro Release Queue Status
 
@@ -1701,77 +1612,6 @@ class BugAttachmentType(DBSchema):
         """)
 
 
-class RosettaTranslationOrigin(DBSchema):
-    """Rosetta Translation Origin
-
-    Translation sightings in Rosetta can come from a variety
-    of sources. We might see a translation for the first time
-    in CVS, or we might get it through the web, for example.
-    This schema documents those options.
-    """
-
-    SCM = Item(1, """
-        Source Control Management Source
-
-        This translation sighting came from a PO File we
-        analysed in a source control managements sytem first.
-        """)
-
-    ROSETTAWEB = Item(2, """
-        Rosetta Web Source
-
-        This translation was presented to Rosetta via
-        the community web site.
-        """)
-
-
-class RosettaImportStatus(DBSchema):
-    """Rosetta Import Status
-
-    Define the status of an import on the Import queue. It could have one
-    of the following states: approved, imported, deleted, failed, needs_review
-    or blocked.
-    """
-
-    APPROVED = Item(1, """
-        Approved
-
-        The entry has been approved by a Rosetta Expert or was able to be
-        approved by our automatic system and is waiting to be imported.
-        """)
-
-    IMPORTED = Item(2, """
-        Imported
-
-        The entry has been imported.
-        """)
-
-    DELETED = Item(3, """
-        Deleted
-
-        The entry has been removed before being imported.
-        """)
-
-    FAILED = Item(4, """
-        Failed
-
-        The entry import failed.
-        """)
-
-    NEEDS_REVIEW = Item(5, """
-        Needs Review
-
-        A Rosetta Expert needs to review this entry to decide whether it will
-        be imported and where it should be imported.
-        """)
-
-    BLOCKED = Item(6, """
-        Blocked
-
-        The entry has been blocked to be imported by a Rosetta Expert.
-        """)
-
-
 class BuildStatus(DBSchema):
     """Build status type
 
@@ -1849,66 +1689,6 @@ class BuildStatus(DBSchema):
         In those cases all the build historic information will be stored (
         buildlog, datebuilt, duration, builder, etc) and the buildd admins
         will be notified via process-upload about the reason of the rejection.
-        """)
-
-
-class TranslationFileFormat(DBSchema):
-    """Translation File Format
-
-    This is an enumeration of the different sorts of file that Launchpad
-    Translations knows about.
-    """
-
-    PO = Item(1, """
-        PO format
-
-        Gettext's standard text file format.
-        """)
-
-    MO = Item(2, """
-        MO format
-
-        Gettext's standard binary file format.
-        """)
-
-    XPI = Item(3, """
-        Mozilla XPI format
-
-        The .xpi format as used by programs from Mozilla foundation.
-        """)
-
-    KDEPO = Item(4, """
-        KDE PO format
-
-        Legacy KDE PO format which embeds context and plural forms inside
-        messages itself instead of using gettext features.
-        """)
-
-
-class TranslationValidationStatus(DBSchema):
-    """Translation Validation Status
-
-    Every time a translation is added to Rosetta we should checked that
-    follows all rules to be a valid translation inside a .po file.
-    This schema documents the status of that validation.
-    """
-
-    UNKNOWN = Item(0, """
-        Unknown
-
-        This translation has not been validated yet.
-        """)
-
-    OK = Item(1, """
-        Ok
-
-        This translation has been validated and no errors were discovered.
-        """)
-
-    UNKNOWNERROR = Item(2, """
-        Unknown Error
-
-        This translation has an unknown error.
         """)
 
 

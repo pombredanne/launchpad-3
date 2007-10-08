@@ -634,6 +634,11 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
 
     def assertEmail(self, contents=None, recipients=None):
         """Check email last email content and recipients."""
+        if contents is None:
+            contents = []
+        if recipients is None:
+            recipients = []
+
         if not recipients:
             recipients = [self.name16_recipient]
         if not contents:
