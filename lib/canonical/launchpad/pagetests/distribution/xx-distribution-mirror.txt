@@ -41,6 +41,8 @@ another mirror.
  
 Like the name, we can also change the URLs of a mirror:
 
+    >>> browser.open(
+    ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
     >>> browser.getLink('Change details').click()
     >>> browser.url
     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/+edit'
