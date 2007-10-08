@@ -56,8 +56,8 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.failUnless(stat.S_ISDIR(transport.stat('bar').st_mode))
 
         # Try to remove a branch directory, which is not allowed.
-        self.assertTransportRaises(errors.PermissionDenied,
-                                   transport.rmdir, 'foo')
+        self.assertTransportRaises(
+            errors.PermissionDenied, transport.rmdir, 'foo')
 
         # The 'foo' directory is still listed.
         self.assertTrue(transport.has('bar'))
@@ -69,16 +69,16 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         # sometimes a transport will ask to look at files that aren't of that
         # form. In that case, the transport is denied permission.
         transport = self.getTransport()
-        self.assertTransportRaises(errors.PermissionDenied,
-                                   transport.mkdir, 'apple')
+        self.assertTransportRaises(
+            errors.PermissionDenied, transport.mkdir, 'apple')
 
     @deferToThread
     def test_make_valid_user_directory(self):
         # Making a top-level directory is not supported by the Launchpad
         # transport.
         transport = self.getTransport()
-        self.assertTransportRaises(errors.PermissionDenied,
-                                   transport.mkdir, '~apple')
+        self.assertTransportRaises(
+            errors.PermissionDenied, transport.mkdir, '~apple')
 
     @deferToThread
     def test_make_existing_user_directory(self):
@@ -86,8 +86,8 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         # the error is, but it should be one of FileExists,
         # TransportNotPossible or NoSuchFile
         transport = self.getTransport()
-        self.assertTransportRaises(errors.PermissionDenied,
-                                   transport.mkdir, '~testuser')
+        self.assertTransportRaises(
+            errors.PermissionDenied, transport.mkdir, '~testuser')
 
     @deferToThread
     def test_mkdir_not_team_member_error(self):
