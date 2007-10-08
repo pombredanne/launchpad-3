@@ -355,6 +355,8 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             product = None
         else:
             product = getUtility(IProductSet).getByName(productName)
+            if product is None:
+                return ''
 
         person_set = getUtility(IPersonSet)
         owner = person_set.getByName(personName)
