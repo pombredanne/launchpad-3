@@ -176,7 +176,8 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         # a branch. Other directories are strictly forbidden.
         transport = self.getTransport()
         transport.mkdir('~testuser/+junk/banana')
-        self.assertPermissionDenied(
+        self.assertTransportRaises(
+            errors.PermissionDenied,
             transport.mkdir, '~testuser/+junk/banana/republic')
 
     @deferToThread
