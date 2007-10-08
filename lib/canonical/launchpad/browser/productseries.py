@@ -263,12 +263,13 @@ class ProductSeriesTranslationsExportView(BaseExportView):
     def processForm(self):
         """Process form submission requesting translations export."""
         pofiles = []
-        for potemplate in self.context.getTranslationTemplates():
-            pofiles += list(potemplate.pofiles)
-        return (self.context.getTranslationTemplates(), pofiles)
+        translation_templates = self.context.getCurrentTranslationTemplates()
+        for translation_template in translation_templates:
+            pofiles += list(translation_template.pofiles)
+        return (translation_templates, pofiles)
 
     def getDefaultFormat(self):
-        templates = self.context.getTranslationTemplates()
+        templates = self.context.getCurrentTranslationTemplates()
         if len(templates) == 0:
             return None
         return templates[0].source_file_format

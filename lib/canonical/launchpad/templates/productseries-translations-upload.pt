@@ -10,7 +10,8 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:condition="not: context/potemplates" class="portlet">
+  <div tal:condition="not: context/getCurrentTranslationTemplates"
+       class="portlet">
     <h2>No templates yet for <span tal:replace="context/name">1.0</span></h2>
     <div class="portletBody portletContent">
 
@@ -23,7 +24,7 @@
     
     </div>
   </div>
-  <tal:per_template repeat="template context/potemplates">
+  <tal:per_template repeat="template context/getCurrentTranslationTemplates">
     <div tal:replace="structure template/@@+portlet-langstats" />
   </tal:per_template>
 </metal:rightportlets>
