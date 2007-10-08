@@ -1016,6 +1016,8 @@ class QuestionTargetMixin:
         question = self.newQuestion(bug.owner, bug.title, bug.description)
         question.linkBug(bug)
         for message in bug.messages[1:]:
+            # Bug.message[0] is the original message, and probably a duplicate
+            # of Bug.message[1]
             question.addCommentWithoutNotify(
                 message.owner, message.text_contents,
                 datecreated=message.datecreated)

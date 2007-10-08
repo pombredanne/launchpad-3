@@ -2355,12 +2355,7 @@ class BugCreateQuestionView(LaunchpadFormView):
                 'A question could not created from this bug.')
             return
 
-        question = self.context.bug.createQuestionFromBug(
-            self.user, data['comment'])
-        self.request.response.addNotification(
-            'A question was created from this bug: Question #%s: '
-            '<a href="%s">%s</a>.' %
-            (question.id, canonical_url(question), question.title))
+        self.context.bug.createQuestionFromBug(self.user, data['comment'])
 
     @action('Cancel', name='cancel')
     def cancel_action(self, action, data):

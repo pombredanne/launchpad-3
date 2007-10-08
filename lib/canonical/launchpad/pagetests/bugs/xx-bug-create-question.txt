@@ -59,20 +59,22 @@ He decides to create the question.
     >>> user_browser.getControl('Comment').value = 'This bug is a question.'
     >>> user_browser.getControl('Create a Question from this Bug').click()
 
-No Privileges Person is shown the bug page again. There is a notice
-confirming that the question was created. The question has the same
-title and the bug. The bug status is Invalid for 'linux-source-2.6.15
-(Ubuntu)', and the comment about the last change states that the bug is
-a question.
+No Privileges Person is shown the bug page again. There is a permanent
+informational message stating that a question was was created from the
+bug.
 
     >>> user_browser.title
     'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
 
-    >>> get_feedback_messages(user_browser)
-    [...A question was created from this bug:
-     Question #...: another test bug...]
-
     >>> content = find_main_content(user_browser.contents)
+    >>> content.find(id="bug-is-question")
+    <p...This report is a question:
+     Question #...: <a ...>another test bug</a>. </p>
+
+The bug status is Invalid for 'linux-source-2.6.15
+(Ubuntu)', and the comment about the last change states that the bug is
+a question.
+
     >>> print extract_text(content(['table'], {'class' : 'listing'})[0])
     Affects                       Status   Importance  Assigned to
     linux-source-2.6.15 (Ubuntu)  Invalid  Medium      &mdash;...

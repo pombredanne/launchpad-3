@@ -637,15 +637,14 @@ class Bug(SQLBase):
 
     def getQuestionCreatedFromBug(self):
         """See `IBug`."""
-        # XXX sinzui 2007-09-06:
-        # Checking the questions for the same owner, title, and
-        # description is not reliable. A schema change may be required
-        # to check that a bug can only be made into a question once.
         for question in self.questions:
-            if (question.owner == self.owner
-                and question.title == self.title
-                and question.description == self.description):
-                return question
+            if question.owner == self.owner:
+                # Questions do not save orignal descriptions; the message
+                # indexes will be off by 1.
+                bug_description_date = self.messages[1].datecreated
+                question_description_date = question.messages[0].datecreated
+                if bug_description_date == question_description_date:
+                    return question
         return None
 
     def canMentor(self, user):
