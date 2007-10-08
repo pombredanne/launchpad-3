@@ -471,7 +471,9 @@ class PackageUpload(SQLBase):
 
         # Auto-approved uploads to backports skips the announcement,
         # they are usually processed with the sync policy.
-        if self.pocket == PackagePublishingPocket.BACKPORTS:
+        if (self.pocket == PackagePublishingPocket.BACKPORTS
+            and self.status in (PackageUploadStatus.ACCEPTED,
+                                PackageUploadStatus.DONE)):
             debug(self.logger, "Skipping announcement, it is a BACKPORT.")
             subject = "Accepted %s %s (%s)" % (
                 self.displayname, self.displayversion, self.displayarchs)
