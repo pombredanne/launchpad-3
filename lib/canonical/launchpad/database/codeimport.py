@@ -81,6 +81,14 @@ class CodeImport(SQLBase):
         seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
 
+    def updateFromData(self, data, user):
+        """See `ICodeImport`."""
+        event_set = getUtility(ICodeImportEventSet)
+        token = event_set.beginModify(self)
+        for name, value in data.items():
+            setattr(self, name, value)
+        event_set.newModify(self, user, token)
+
 
 class CodeImportSet:
     """See `ICodeImportSet`."""

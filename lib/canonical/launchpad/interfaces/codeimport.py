@@ -107,6 +107,17 @@ class ICodeImport(Interface):
         "If the user did not specify an update interval, this is a default "
         "value selected by Launchpad adminstrators."))
 
+    def updateFromData(data, user):
+        """Modify attributes of the CodeImport.
+
+        Create a MODIFY CodeImportEvent if needed.
+
+        :param data: dict whose keys are attribute names and values are
+            attribute values.
+        :param user: user who made the change, to record in the
+            CodeImportEvent.
+        """
+
 
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
