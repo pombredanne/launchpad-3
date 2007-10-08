@@ -41,7 +41,7 @@ from canonical.launchpad.browser.potemplate import (
     POTemplateFacets, POTemplateSOP)
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
-    IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
+    ILaunchBag, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
     IPOSubmissionSet, TranslationConflict)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Link, LaunchpadView, canonical_url)
@@ -592,7 +592,7 @@ class BaseTranslationView(LaunchpadView):
 
     def _initializeAltLanguage(self):
         """Initialize the alternative language widget and check form data."""
-        initial_values = {}
+        alternative_language = None
         second_lang_code = self.request.form.get("field.alternative_language")
         fallback_language = self.pofile.language.alt_suggestion_language
         if isinstance(second_lang_code, list):
@@ -608,22 +608,44 @@ class BaseTranslationView(LaunchpadView):
                     None, 'TranslatableLanguage')
                 language_term = (
                     translatable_vocabulary.getTermByToken(second_lang_code))
-                initial_values['alternative_language'] = language_term.value
+                alternative_language = language_term.value
             except LookupError:
                 # Oops, a bogus code was provided in the request.
                 # This is UnexpectedFormData caused by a hacked URL, or an
                 # old URL. The alternative_language field used to use
                 # LanguageVocabulary that contained untranslatable languages.
                 second_lang_code = None
-        elif second_lang_code is None and fallback_language is not None:
+        elif fallback_language is not None:
             # If there's a standard alternative language and no
             # user-specified language was provided, preselect it.
-            initial_values['alternative_language'] =  fallback_language
+            alternative_language =  fallback_language
             second_lang_code = fallback_language.code
         else:
             # The second_lang_code is None and there is no fallback_language.
             # This is probably a parent language or an English variant.
             pass
+
+        # Whatever alternative language choice came out of all that, ignore it
+        # if the user has preferred languages and the alternative language
+        # isn't among them.  Otherwise we'd be initializing this dropdown to a
+        # choice it didn't in fact contain, resulting in an oops.
+        if alternative_language is not None:
+            user = getUtility(ILaunchBag).user
+            if user is not None:
+                choices = set(user.translatable_languages)
+                if choices and alternative_language not in choices:
+                    self.request.response.addInfoNotification(
+                        u"Not showing suggestions from selected alternative "
+                        "language %s.  If you wish to see suggestions from "
+                        "this language, add it to your preferred languages "
+                        "first."
+                        % alternative_language.displayname)
+                    alternative_language = None
+                    second_lang_code = None
+
+        initial_values = {}
+        if alternative_language is not None:
+            initial_values['alternative_language'] = alternative_language
 
         self.alternative_language_widget = CustomWidgetFactory(
             CustomDropdownWidget)
@@ -803,24 +825,17 @@ class BaseTranslationView(LaunchpadView):
             query_parts = cgi.parse_qsl(
                 old_query_string, strict_parsing=False)
 
-            # Override whatever current query string values we have with the
-            # ones added by _buildRedirectParams.
-            final_parameters = []
+            # Combine parameters provided by _buildRedirectParams with those
+            # that came with our page request.  The latter take precedence.
+            combined_parameters = {}
+            combined_parameters.update(parameters)
             for (key, value) in query_parts:
-                for (par_key, par_value) in parameters.items():
-                    if par_key == key:
-                        final_parameters.append((par_key, par_value))
-                    else:
-                        final_parameters.append((key, value))
-
+                combined_parameters[key] = value
+            parameters = combined_parameters
         else:
             base_url = new_url
-            final_parameters = []
-            for (key, value) in parameters.items():
-                final_parameters.append((key, value))
 
-        new_query = urllib.urlencode(
-            [(key, value) for (key, value) in final_parameters])
+        new_query = urllib.urlencode(sorted(parameters.items()))
 
         if new_query:
             new_url = '%s?%s' % (base_url, new_query)

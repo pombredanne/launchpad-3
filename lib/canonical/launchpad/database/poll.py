@@ -1,8 +1,16 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Poll', 'PollSet', 'PollOption', 'PollOptionSet',
-           'VoteCast', 'Vote', 'VoteSet', 'VoteCastSet']
+__all__ = [
+    'Poll',
+    'PollOption',
+    'PollOptionSet',
+    'PollSet',
+    'VoteCast',
+    'Vote',
+    'VoteSet',
+    'VoteCastSet',
+    ]
 
 import pytz
 import random
@@ -14,15 +22,14 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND)
 
-from canonical.lp.dbschema import PollSecrecy, PollAlgorithm
-
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IPoll, IPollSet, IPollOption, IPollOptionSet, IVote, IVoteCast,
-    PollStatus, IVoteCastSet, IVoteSet, OptionIsNotFromSimplePoll)
+    PollStatus, IVoteCastSet, IVoteSet, PollAlgorithm, PollSecrecy,
+    OptionIsNotFromSimplePoll)
 
 
 class Poll(SQLBase):
@@ -45,12 +52,12 @@ class Poll(SQLBase):
 
     proposition = StringCol(dbName='proposition',  notNull=True)
 
-    type = EnumCol(dbName='type', schema=PollAlgorithm,
+    type = EnumCol(dbName='type', enum=PollAlgorithm,
                    default=PollAlgorithm.SIMPLE)
 
     allowspoilt = BoolCol(dbName='allowspoilt', default=True, notNull=True)
 
-    secrecy = EnumCol(dbName='secrecy', schema=PollSecrecy,
+    secrecy = EnumCol(dbName='secrecy', enum=PollSecrecy,
                       default=PollSecrecy.SECRET)
 
     def newOption(self, name, title, active=True):

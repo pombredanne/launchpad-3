@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -19,38 +26,47 @@
   <h1><span tal:replace="context/name" /> in
       <span tal:replace="context/distribution/displayname" /></h1>
 
-  <h2>Upstream associations</h2>
+  <h2>Published versions and upstream associations</h2>
 
   <table class="listing">
     <thead>
       <tr>
-        <th><span tal:replace="context/distribution/displayname" /> version</th>
+        <th colspan="4">
+          <span tal:replace="context/distribution/displayname" /> version
+        </th>
         <th>Upstream version</th>
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="sp context/get_distroseries_packages">
-        <td>
-          <span tal:replace="sp/distroseries/displayname">Hoary</span>:
-          <span tal:replace="sp/name" />
-          <span tal:replace="sp/currentrelease/version" />
+      <tr tal:repeat="row view/version_listing">
+        <td><span tal:condition="row/series"
+                  tal:content="row/series/name">hoary</span></td>
+        <td><span tal:condition="row/series"
+                  tal:content="row/series/status/name/fmt:lower" /></td>
+        <td tal:content="row/pocket">release</td>
+        <td><a tal:content="row/package/version"
+               tal:attributes="href row/package/fmt:url">2.2.1-1</a>
         </td>
-        <tal:pkg_def define="pkging sp/direct_packaging">
-          <td>
-            <span tal:condition="pkging"
-                  tal:replace="pkging/productseries/title" />
-            <tal:no_direct condition="not: pkging">
-            None defined
+        <td>
+          <tal:distroseries_row condition="row/series">
+            <span tal:condition="row/packaging"
+                  tal:replace="row/packaging/productseries/title" />
+            <tal:no_direct condition="not: row/packaging">
+              None defined
             </tal:no_direct>
-            <a tal:attributes="href string:${sp/fmt:url}/+edit-packaging"
-               title="Edit association with upstream version">
+            <a tal:attributes="
+               href string:${row/sourcepackage/fmt:url}/+edit-packaging"
+               title="Edit upstream association">
               <img src="/@@/edit" />
             </a>
-          </td>
-        </tal:pkg_def>
+          </tal:distroseries_row>
+        </td>
       </tr>
     </tbody>
   </table>
+  <p style="text-align: right">
+    <a href="+publishinghistory">See full publishing history...</a>
+  </p>
 
   <h2>Version history</h2>
 

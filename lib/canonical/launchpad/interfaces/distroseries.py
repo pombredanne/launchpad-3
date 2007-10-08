@@ -187,6 +187,14 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     main_archive = Attribute('Main Archive')
 
+    supported = Attribute(
+        "Whether or not this series is currently supported.")
+
+    active = Attribute(
+        "Whether or not this series is stable and supported, or under "
+        "current development. This excludes series which are experimental "
+        "or obsolete.")
+
     def isUnstable():
         """Return True if in unstable (or "development") phase, False otherwise.
 

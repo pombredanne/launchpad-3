@@ -45,6 +45,7 @@ from canonical.launchpad.interfaces.build import *
 from canonical.launchpad.interfaces.builder import *
 from canonical.launchpad.interfaces.buildqueue import *
 from canonical.launchpad.interfaces.codeimport import *
+from canonical.launchpad.interfaces.codeimportevent import *
 from canonical.launchpad.interfaces.codeimportmachine import *
 from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.component import *
@@ -144,6 +145,7 @@ from canonical.launchpad.interfaces.temporaryblobstorage import *
 from canonical.launchpad.interfaces.translationcommonformat import *
 from canonical.launchpad.interfaces.translationexporter import *
 from canonical.launchpad.interfaces.translationimporter import *
+from canonical.launchpad.interfaces.translationfileformat import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *
 from canonical.launchpad.interfaces.questioncollection import *

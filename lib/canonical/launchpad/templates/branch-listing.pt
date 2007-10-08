@@ -1,4 +1,6 @@
-<div>
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+>
   <form method="get" name="filter" id="filter_form"
         style="padding-bottom: 0.5em"
         tal:attributes="action context/request/URL">

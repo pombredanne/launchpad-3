@@ -37,11 +37,9 @@ Let's log in and the link should appear:
   ...Retry Build...'
 
 We'll also set up a second browser pointing at this page, for later.
+XXX: waiting for bug #68655's cloneBrowser function.
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> admin_browser_2 = Browser()
-  >>> admin_browser_2.addHeader(
-  ...    "Authorization", "Basic foo.bar@canonical.com:test")
+  >>> admin_browser_2 = setupBrowser(auth="Basic foo.bar@canonical.com:test")
   >>> admin_browser_2.open("http://localhost/+builds/+build/17")
   >>> admin_browser_2.getLink("Retry build").click()
 
@@ -119,11 +117,8 @@ Check if buildd-celebrity is working as expected, try to access protected
 pages as cprov (launchpad-buildd-admins member). Not using the better login
 method here, as don't know the password.
 
-  >>> cprov_browser = Browser()
-  >>> cprov_browser.handleErrors = False
-  >>> cprov_browser.addHeader(
-  ...    'Authorization', 'Basic celso.providelo@canonical.com:cprov')
-
+  >>> cprov_browser = setupBrowser(
+  ...       auth='Basic celso.providelo@canonical.com:cprov')
   >>> cprov_browser.open("http://localhost/+builds/+build/12")
   >>> cprov_browser.getLink("Retry build").click()
   >>> cprov_browser.getControl("Retry Build").click()
@@ -153,13 +148,11 @@ Administration of a builder:
 
 Adding new builder still denied for non-members (Edgar, no membership):
 
-  >>> one_browser = Browser()
-  >>> one_browser.addHeader(
-  ...    "Authorization", "Basic one-membership@test.com:test")
+  >>> one_browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> one_browser.open("http://localhost/+builds/+new")
   Traceback (most recent call last):
   ...
-  HTTPError: HTTP Error 403: Forbidden
+  Unauthorized:...
 
 Adding a new builder is also denied for anonymous:
 
@@ -195,7 +188,7 @@ the archive) are not allowed to modify the build record.
   ...     "http://localhost/ubuntu/+source/cdrkit/1.0/+build/24/+retry")
   Traceback (most recent call last):
   ...
-  HTTPError: HTTP Error 403: Forbidden
+  Unauthorized:...
 
   >>> anon_browser.open(
   ...     "http://localhost/ubuntu/+source/cdrkit/1.0/+build/24/+retry")
@@ -216,10 +209,7 @@ lp-buildd-admins) have access for retrying PPA build.
 
 PPA owner can 'retry' a build.
 
-  >>> no_priv_browser = Browser()
-  >>> no_priv_browser.addHeader(
-  ...    "Authorization", "Basic no-priv@canonical.com:test")
-
+  >>> no_priv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
   >>> no_priv_browser.open(
   ...     "http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
   >>> no_priv_browser.getLink('Retry build').click()

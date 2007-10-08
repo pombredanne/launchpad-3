@@ -453,6 +453,11 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
 
     @action('Sign In', name='auth')
     def auth_action(self, action, data):
+        # If the user is not logged in (e.g. if they used the back
+        # button in their browser, send them to the login page).
+        if self.user is None:
+            return LoginServiceLoginView(
+                self.context, self.request, self.nonce)()
         self.trashRequest()
         return self.renderOpenIdResponse(self.createPositiveResponse())
 
