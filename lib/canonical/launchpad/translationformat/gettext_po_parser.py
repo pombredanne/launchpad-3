@@ -165,7 +165,7 @@ class POHeader:
         try:
             text = unicode(text, charset)
         except UnicodeError:
-            logging.warning(POSyntaxWarning(
+            logging.info(POSyntaxWarning(
                 msg='string is not in declared charset %r' % charset
                 ))
             text = unicode(text, charset, 'replace')
@@ -190,7 +190,7 @@ class POHeader:
                         # There are some po files with bad headers that have a
                         # non numeric value here and sometimes an empty value.
                         # In that case, set the default value.
-                        logging.warning(
+                        logging.info(
                             POSyntaxWarning(
                                 msg=("The plural form header has an unknown"
                                     " error. Using the default value...")))
@@ -857,7 +857,7 @@ class POParser(object):
 
         l = l.strip()
         if not l:
-            logging.warning(
+            logging.info(
                 POSyntaxWarning(
                     self._lineno,
                     'line has no content; this is not supported by'

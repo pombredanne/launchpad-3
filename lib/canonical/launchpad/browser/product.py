@@ -688,6 +688,13 @@ class ProductReviewView(ProductEditView):
     field_names = ["name", "owner", "active", "autoupdate", "reviewed",
                    "private_bugs"]
 
+    def validate(self, data):
+        if data.get('private_bugs') and self.context.bugcontact is None:
+            self.setFieldError('private_bugs',
+                'Set a <a href="%s/+bugcontact">bug contact</a> '
+                'for this project first.' %
+                canonical_url(self.context, rootsite="bugs"))
+
 
 class ProductAddSeriesView(LaunchpadFormView):
     """A form to add new product series"""

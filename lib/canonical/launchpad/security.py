@@ -700,6 +700,16 @@ class SeeCodeImports(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImport
 
 
+class EditCodeImports(OnlyVcsImportsAndAdmins):
+    """Control who can edit the object view of a CodeImport.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = ICodeImport
+
+
 class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):
     """Control who can see the CodeImportMachine listing page.
 
