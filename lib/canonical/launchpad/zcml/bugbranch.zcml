@@ -22,17 +22,6 @@
       for="canonical.launchpad.interfaces.IBugBranch"
       name="+status" />
 
-  <browser:generalform
-      name="+status"
-      for="canonical.launchpad.interfaces.IBugBranch"
-      schema="canonical.launchpad.interfaces.IBugBranch"
-      class="canonical.launchpad.browser.bugbranch.BugBranchStatusView"
-      label="Edit bug branch status"
-      fields="status whiteboard"
-      keyword_arguments="status whiteboard"
-      permission="launchpad.View"
-      template="../templates/bugbranch-status.pt" />
-
   <browser:page
       name="+edit"
       for="canonical.launchpad.interfaces.IBugBranch"
@@ -40,6 +29,22 @@
       facet="branches"
       permission="launchpad.Edit"
       template="../templates/bugbranch-edit.pt" />
+
+  <browser:page
+      name="+branch-edit"
+      for="canonical.launchpad.interfaces.IBugBranch"
+      class="canonical.launchpad.browser.BugBranchBranchInlineEditView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/bugbranch-inline-edit.pt" />
+
+  <browser:page
+      name="+bug-edit"
+      for="canonical.launchpad.interfaces.IBugBranch"
+      class="canonical.launchpad.browser.BugBranchBugInlineEditView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/bugbranch-inline-edit.pt" />
 
   <!-- BugBranchSet -->
   <content class="canonical.launchpad.database.BugBranchSet">

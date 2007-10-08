@@ -11,12 +11,13 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Int, Text, TextLine, Choice
+from zope.schema import Choice, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import BugField
 from canonical.launchpad.interfaces import (
     IHasBug, IHasDateCreated, non_duplicate_branch)
+from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -70,6 +71,14 @@ class IBugBranch(IHasDateCreated, IHasBug):
         description=_(
             'Additional information about the status of the bugfix '
             'in this branch.'))
+
+    bug_task = Object(
+        schema=IBugTask, title=_("The bug task that the branch fixes"),
+        description=_(
+            "the bug task reported against this branch's product or the "
+            "first bug task (in case where there is no task reported "
+            "against the branch's product)."),
+        readonly=True)
 
 
 class IBugBranchSet(Interface):

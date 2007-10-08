@@ -33,6 +33,15 @@ class BugBranch(SQLBase):
         default=BugBranchStatus.INPROGRESS)
     whiteboard = StringCol(notNull=False, default=None)
 
+    @property
+    def bug_task(self):
+        """See `IBugBranch`."""
+        task = self.bug.getBugTask(self.branch.product)
+        if task is None:
+            # Just choose the first task for the bug.
+            task = self.bug.bugtasks[0]
+        return task
+
 
 class BugBranchSet:
 

@@ -118,41 +118,70 @@
 
   <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
-      <tal:branches define="bug_branches view/bug_branches"
-                  condition="bug_branches">
-        <p tal:condition="context/bug/private" class="warning message"
-        >This bug is private, so avoid adding public branches here.</p>
-        <table class="listing" id="bug_branch_details">
-          <thead>
-            <tr>
-              <th>Related branch</th>
-              <th>Developer</th>
-              <th>Status for this bug</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr tal:repeat="bug_branch bug_branches">
-              <td>
-                <img alt="" src="/@@/branch" />
-                <a
-                  tal:attributes="href bug_branch/branch/fmt:url"
-                  tal:content="bug_branch/branch/displayname"
-                >Integration branch</a>
-              </td>
-              <td tal:content="structure bug_branch/branch/owner/fmt:link" />
-              <td>
-                <a tal:condition="bug_branch/required:launchpad.Edit"
-                  tal:attributes="href string:${bug_branch/fmt:url}/+edit"
-                  tal:content="bug_branch/status/title"
-                >Under Development</a>
-                <a tal:condition="not: bug_branch/required:launchpad.Edit"
-                  tal:attributes="href string:${bug_branch/fmt:url}/+status"
-                  tal:content="bug_branch/status/title"
-                >Under Development</a>
-              </td>
-              </tr>
-          </tbody>
-        </table>
+  <tal:branches define="bug_branches view/bug_branches"
+                condition="bug_branches">
+    <h2>Related branches</h2>
+
+<script type="text/javascript">
+  function switchFormAndWhiteboard(id) {
+    var div = document.getElementById('bugbranch' + id);
+    var wb = document.getElementById('bugbranch' + id + '-wb');
+
+    if (div.style.display == "none") {
+      /* Expanding the form */
+      if (wb != null) {
+        wb.style.display = "none";
+      }
+      div.style.display = "block";
+      /* Use two focus calls to get the browser to scroll to the end of the
+       * form first, then focus back to the first field of the form.
+       */
+      document.getElementById('field'+id+'.actions.update').focus();
+      document.getElementById('field'+id+'.status').focus();
+    } else {
+      if (wb != null) {
+        wb.style.display = "block";
+      }
+      div.style.display = "none";
+    }
+    return false;
+  }
+</script>
+
+<tal:bug-branches repeat="bug_branch bug_branches">
+  <div tal:define="show_edit bug_branch/required:launchpad.Edit"
+       tal:condition="bug_branch/branch/required:launchpad.View">
+    <tal:branch-ref replace="structure bug_branch/branch/fmt:link"/>
+    (<span tal:content="bug_branch/branch/lifecycle_status/title"
+    tal:attributes="class string:branchstatus${bug_branch/branch/lifecycle_status/name}"
+    >Experimental</span>) -
+    <tal:bug_branch_status condition="not: show_edit|nothing"
+                           replace="bug_branch/status/title"/>
+    <a tal:condition="show_edit"
+       tal:attributes="href string:${bug_branch/branch/fmt:url}/+bug/${bug_branch/bug/id}/+edit;
+                       onclick string:return switchFormAndWhiteboard('${bug_branch/id}')">
+      <tal:bug_branch_status replace="bug_branch/status/title"/>
+      <img src="/@@/expand"/>
+    </a>
+    <dl tal:condition="bug_branch/whiteboard"
+        tal:attributes="id string:bugbranch${bug_branch/id}-wb">
+      <dd>
+        <tal:whiteboard content="structure bug_branch/whiteboard/fmt:text-to-html">
+          The whiteboard.
+        </tal:whiteboard>
+      </dd>
+    </dl>
+    <div tal:condition="show_edit|nothing"
+         tal:attributes="id string:bugbranch${bug_branch/id}"
+         style="display: none"
+         >
+      <dl><dd>
+        <tal:edit-form replace="structure bug_branch/@@+bug-edit"/>
+      </dd></dl>
+    </div>
+  </div>
+</tal:bug-branches>
+
       </tal:branches>
       <div class="report">
         <h2>Bug description

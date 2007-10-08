@@ -7,14 +7,16 @@ __all__ = [
     "BranchLinkToBugView",
     "BugBranchAddView",
     "BugBranchEditView",
-    "BugBranchStatusView",
+    "BugBranchBranchInlineEditView",
+    "BugBranchBugInlineEditView",
     ]
 
 from zope.app.form.interfaces import IInputWidget, IDisplayWidget
 from zope.app.form.utility import setUpWidgets
 from zope.event import notify
 
-from canonical.launchpad.event import SQLObjectModifiedEvent
+from canonical.launchpad.event import (
+    SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import IBugBranch
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
@@ -23,6 +25,7 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.authorization import check_permission
 
 from canonical.widgets.link import LinkWidget
+
 
 class BugBranchAddView:
     """Browser view for linking a bug to a branch."""
@@ -36,56 +39,6 @@ class BugBranchAddView:
 
     def nextURL(self):
         return canonical_url(self.context)
-
-
-class BugBranchStatusView:
-    """Browser view for editing branch status."""
-
-    @property
-    def initial_values(self):
-        return {
-            'status': self.context.status,
-            'whiteboard': self.context.whiteboard}
-
-    def _setUpWidgets(self):
-        # The same form is reused for both viewing and editing the
-        # branch, so render the form with edit widgets when the user
-        # can edit the form values, otherwise render a read-only form.
-        #
-        # XXX, Brad Bollenbach, 2006-03-21: When Zope 3.2 lands, this
-        # form should be redone if the new form machinery can make it
-        # simpler.
-        if check_permission("launchpad.Edit", self.context):
-            interface = IInputWidget
-        else:
-            interface = IDisplayWidget
-
-        setUpWidgets(
-            self, self.schema, interface, names=self.fieldNames,
-            initial=self.initial_values)
-
-    def process(self, status, whiteboard):
-        bug_branch = self.context
-        bug_branch_before_modification = Snapshot(
-            bug_branch, providing=IBugBranch)
-
-        # If either field has changed, update both for simplicity.
-        if ((status != bug_branch.status) or
-            (whiteboard != bug_branch.whiteboard)):
-            bug_branch.status = status
-            bug_branch.whiteboard = whiteboard
-
-            bug_branch_changed = SQLObjectModifiedEvent(
-                bug_branch, bug_branch_before_modification,
-                ["status", "whiteboard"])
-
-            notify(bug_branch_changed)
-
-            self.request.response.addNotification(
-                "Successfully updated branch status.")
-
-    def nextURL(self):
-        return canonical_url(self.context.bug)
 
 
 class BugBranchEditView(LaunchpadEditFormView):
@@ -111,7 +64,46 @@ class BugBranchEditView(LaunchpadEditFormView):
 
     @action('Delete', name='delete')
     def delete_action(self, action, data):
+        notify(SQLObjectDeletedEvent(self.context, user=self.user))
         self.context.destroySelf()
+
+
+class BugBranchBranchInlineEditView(BugBranchEditView):
+    """Inline edit view for bug branch details."""
+    schema = IBugBranch
+    field_names = ['status', 'whiteboard']
+    initial_focus_widget = None
+
+    def initialize(self):
+        self.branch = self.context.branch
+        super(BugBranchBranchInlineEditView, self).initialize()
+
+    @property
+    def prefix(self):
+        return "field%s" % self.context.id
+
+    @property
+    def action_url(self):
+        return "%s/+branch-edit" % canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.branch)
+
+
+class BugBranchBugInlineEditView(BugBranchEditView):
+    """Inline edit view for bug branch details."""
+    schema = IBugBranch
+    field_names = ['status', 'whiteboard']
+    initial_focus_widget = None
+
+    @property
+    def prefix(self):
+        return "field%s" % self.context.id
+
+    @property
+    def action_url(self):
+        return "%s/+bug-edit" % canonical_url(self.context)
 
 
 class BranchLinkToBugView(LaunchpadFormView):
@@ -143,3 +135,4 @@ class BranchLinkToBugView(LaunchpadFormView):
                 self.setFieldError(
                     'bug',
                     'Bug #%s is already linked to this branch' % bug.id)
+

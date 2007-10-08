@@ -92,8 +92,47 @@
 
 <metal:branch-bug-links define-macro="bug-branch-links">
 
-  <tal:bug-tasks repeat="bugtask branch/related_bug_tasks">
-    <div tal:condition="bugtask/bug/required:launchpad.View">
+  <tal:comment condition="nothing">
+    This macro requires the following defined variables:
+      branch - the branch that has the bug branch links
+    The following variables define what is shown and are optional.
+      show_whiteboard - show the whiteboard for the bug branch
+      show_edit - show the edit form
+  </tal:comment>
+
+<script type="text/javascript" tal:condition="show_edit|nothing">
+  function switchFormAndWhiteboard(id) {
+    var div = document.getElementById('bugbranch' + id);
+    var wb = document.getElementById('bugbranch' + id + '-wb');
+
+    if (div.style.display == "none") {
+      /* Expanding the form */
+      if (wb != null) {
+        wb.style.display = "none";
+      }
+      div.style.display = "block";
+      /* Use two focus calls to get the browser to scroll to the end of the
+       * form first, then focus back to the first field of the form.
+       */
+      document.getElementById('field'+id+'.actions.update').focus();
+      document.getElementById('field'+id+'.status').focus();
+    } else {
+      if (wb != null) {
+        wb.style.display = "block";
+      }
+      div.style.display = "none";
+    }
+    return false;
+  }
+</script>
+
+  <tal:bug-tasks repeat="bug_branch branch/bug_branches">
+    <div tal:condition="bug_branch/bug/required:launchpad.View"
+         tal:define="bugtask bug_branch/bug_task;
+                     has_edit_permission bug_branch/required:launchpad.Edit;
+                     show_edit show_edit|nothing;
+                     show_edit python: show_edit and has_edit_permission;
+                     ">
       <tal:link replace="structure bugtask/fmt:link" />
       (<span tal:content="bugtask/importance/title"
              tal:attributes="class string:importance${bugtask/importance/name}">
@@ -103,7 +142,31 @@
        <span tal:content="bugtask/status/title"
              tal:attributes="class string:status${bugtask/status/name}">
          Confirmed
-       </span>)
+       </span>) - <tal:bug_branch_status condition="not: show_edit|nothing" replace="bug_branch/status/title"/>
+       <tal:show-edit condition="show_edit|nothing">
+         <a tal:condition="bug_branch/required:launchpad.Edit"
+            tal:attributes="href string:+bug/${bug_branch/bug/id}/+edit;
+                            onclick string:return switchFormAndWhiteboard('${bug_branch/id}')">
+<tal:bug_branch_status replace="bug_branch/status/title"/>         <img src="/@@/expand"/></a>
+       </tal:show-edit>
+       <tal:show-whiteboard condition="show_whiteboard|nothing">
+       <dl tal:condition="bug_branch/whiteboard"
+           tal:attributes="id string:bugbranch${bug_branch/id}-wb">
+         <dd>
+           <tal:whiteboard content="structure bug_branch/whiteboard/fmt:text-to-html">
+             The whiteboard.
+           </tal:whiteboard>
+         </dd>
+       </dl>
+       </tal:show-whiteboard>
+       <div tal:condition="show_edit|nothing"
+            tal:attributes="id string:bugbranch${bug_branch/id}"
+            style="display: none"
+            >
+         <dl><dd>
+         <tal:edit-form replace="structure bug_branch/@@+branch-edit"/>
+       </dd></dl>
+       </div>
     </div>
   </tal:bug-tasks>
 
