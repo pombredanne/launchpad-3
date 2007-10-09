@@ -104,28 +104,19 @@ fetched as a batch:
 
 First, we create some bug watches to test with:
 
-    >>> from canonical.launchpad.database import BugTracker
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
     >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
     >>> from canonical.lp.dbschema import BugTrackerType
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
-    >>> example_bug_tracker = BugTracker(
-    ...     name="example-bugs",
-    ...     title="Example.com Roundup",
-    ...     bugtrackertype=BugTrackerType.ROUNDUP,
-    ...     baseurl="http://bugs.example.com",
-    ...     summary="Contains bugs for Example.com",
-    ...     contactdetails="foo.bar@example.com",
-    ...     owner=sample_person)
-
-    >>> login('test@canonical.com')
+    >>> example_bug_tracker = new_bugtracker(BugTrackerType.ROUNDUP)
 
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, 1, sample_person)
 
-    >>> login('no-priv@canonical.com')
 
 Collect the Example.com watches:
 
@@ -168,7 +159,7 @@ We'll add some more watches now.
 
     >>> roundup.trace_calls = True
     >>> roundup.updateBugWatches(example_bug_tracker.watches)
-    CALLED urlopen(u'http://bugs.example.com/issue?...@startwith=0')
+    CALLED urlopen(u'http://.../issue?...@startwith=0')
 
     >>> print_bugwatches(example_bug_tracker.watches,
     ...     roundup.convertRemoteStatus)
