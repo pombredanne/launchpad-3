@@ -45,9 +45,7 @@ class TestBranchView(unittest.TestCase):
     def testMirrorStatusMessage(self):
         """mirror_status_message on the view is the same as on the branch."""
         branch = getUtility(IBranchSet).get(5)
-        self.assertTrue(
-            branch.mirror_status_message is not None,
-            "branch.mirror_status_message is None. Expected it to be set.")
+        branch.mirrorFailed("This is a short error message.")
         branch_view = BranchView(branch, self.request)
         self.assertTrue(
             len(branch.mirror_status_message)
@@ -56,6 +54,9 @@ class TestBranchView(unittest.TestCase):
             % (branch.mirror_status_message,))
         self.assertEqual(
             branch.mirror_status_message, branch_view.mirror_status_message())
+        self.assertEqual(
+            "This is a short error message.",
+            branch_view.mirror_status_message())
 
     def testBranchAddRequestsMirror(self):
         """Registering a mirrored branch requests a mirror."""
