@@ -276,7 +276,8 @@ subscribers.
     ...     SQLObjectToBeModifiedEvent(linux_source_bug, {"private": True}))
 
     >>> bug_before_modification = Snapshot(linux_source_bug, providing=IBug)
-    >>> linux_source_bug.private = True
+    >>> linux_source_bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
 
     >>> notify(
     ...     SQLObjectModifiedEvent(

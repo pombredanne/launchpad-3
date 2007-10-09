@@ -777,17 +777,28 @@ class Bug(SQLBase):
         took place.
         """
         if self.private != private:
+            if private:
+                # Change indirect subscribers into direct subscribers
+                # *before* setting private because
+                # getIndirectSubscribers() behaves differently when
+                # the bug is private.
+                for person in self.getIndirectSubscribers():
+                    self.subscribe(person)
+            else:
+                pass
+
             self.private = private
+
             if private:
                 self.who_made_private = who
                 self.date_made_private = UTC_NOW
             else:
                 self.who_made_private = None
                 self.date_made_private = None
-            return True
+
+            return True # Changed.
         else:
-            # No change, do nothing.
-            return False
+            return False # Not changed.
 
     def getBugTask(self, target):
         """See `IBug`."""

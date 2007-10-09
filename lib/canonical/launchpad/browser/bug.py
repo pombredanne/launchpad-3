@@ -451,15 +451,18 @@ class BugSecrecyEditView(BugEditViewBase):
 
     @action('Change', name='change')
     def change_action(self, action, data):
+        data = dict(data)
+        private = data.pop('private')
+
         # We handle privacy changes by hand instead of leaving it to
         # the usual machinery because we must use bug.setPrivate() to
         # ensure auditing information is recorded.
         bug = self.context.bug
         bug_before_modification = Snapshot(
             bug, providing=providedBy(bug))
-        notify(SQLObjectToBeModifiedEvent(bug, data))
+        notify(SQLObjectToBeModifiedEvent(bug, dict(private=private)))
         private_changed = bug.setPrivate(
-            data['private'], getUtility(ILaunchBag).user)
+            private, getUtility(ILaunchBag).user)
         if private_changed:
             # Although the call to updateBugFromData later on will
             # send notification of changes, it will only do so if it
