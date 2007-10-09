@@ -558,6 +558,11 @@ permission to complete the operation will be denied.)
     >>> bug_four.private
     True
 
+(Flush caches to ensure that the timestamp is set.)
+
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+
 A timestamp and the user that sets the bug private is also recorded:
 
     >>> bug_four.date_made_private
@@ -571,12 +576,12 @@ The bug report can also be made public:
     >>> bug_four.private
     False
 
-The timestamp and user are left as they are:
+The timestamp and user are cleared:
 
-    >>> bug_four.date_made_private
-    datetime.datetime(...)
-    >>> bug_four.who_made_private.name
-    u'name12'
+    >>> print bug_four.date_made_private
+    None
+    >>> print bug_four.who_made_private
+    None
 
 Specifying something else than 'yes' or 'no' produces an error:
 
