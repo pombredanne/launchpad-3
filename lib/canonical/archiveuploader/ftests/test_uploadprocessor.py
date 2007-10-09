@@ -142,7 +142,8 @@ class TestUploadProcessorBase(unittest.TestCase):
         :param recipients: A list of recipients that must be on the email.
                            Supply an empty list if you don't want them
                            checked.  Default action is to check that the
-                           recipient is foo.bar@canonical.com.
+                           recipient is foo.bar@canonical.com, which is the
+                           signer on most of the test data uploads.
         """
         if recipients is None:
             recipients = [self.name16_recipient]
@@ -161,7 +162,9 @@ class TestUploadProcessorBase(unittest.TestCase):
         if recipients != []:
             clean_recipients = [r.strip() for r in to_addrs]
             for recipient in list(recipients):
-                self.assertTrue(recipient in clean_recipients)
+                self.assertTrue(
+                    recipient in clean_recipients,
+                    "%s not found in %s" % (recipients, clean_recipients))
             self.assertEqual(
                 len(recipients), len(clean_recipients),
                 "Email recipients do not match exactly. Expected %s, got %s" %
@@ -643,7 +646,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1_bad_section")
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Check it is accepted and the section is converted to misc..
+        # Check it is accepted and the section is converted to misc.
         contents = [
             "Subject: bar_1.0-1_source.changes is NEW",
             ]

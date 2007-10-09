@@ -292,7 +292,7 @@ class PackageUploadFile(NascentUploadFile):
             # sections now get put into misc -- cprov 20060119
             if self.policy.archive.purpose == ArchivePurpose.PPA:
                 # PPA uploads should not override because it will probably
-                # make the section inconsistent with the one in the .dsc
+                # make the section inconsistent with the one in the .dsc.
                 raise UploadError(
                     "%s: Section %r is not valid" % (
                     self.filename, self.section_name))
