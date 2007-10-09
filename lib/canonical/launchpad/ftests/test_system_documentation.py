@@ -338,6 +338,21 @@ def mailingListSubscriptionSetUp(test):
     test.globs['new_person'] = mailingListNewPerson
 
 
+def zopelessLaunchpadSecuritySetUp(test):
+    setGlobs(test)
+    # To be able to use LaunchpadZopelessLayer.switchDbUser in a test, we need
+    # to run in the Zopeless environment. The Zopeless environment normally
+    # runs using the PermissiveSecurityPolicy. If we want the test to cover
+    # functionality used in the webapp, it needs to use the
+    # LaunchpadSecurityPolicy.
+    test.old_security_policy = getSecurityPolicy()
+    setSecurityPolicy(LaunchpadSecurityPolicy)
+    login(ANONYMOUS)
+
+def zopelessLaunchpadSecurityTearDown(test):
+    setSecurityPolicy(test.old_security_policy)
+
+
 def LayeredDocFileSuite(*args, **kw):
     '''Create a DocFileSuite with a layer.'''
     # Set stdout_logging keyword argument to True to make
@@ -612,6 +627,12 @@ special = {
             tearDown=tearDown,
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer,
+            ),
+    'codeimport-machine.txt': LayeredDocFileSuite(
+            '../doc/codeimport-machine.txt',
+            setUp=zopelessLaunchpadSecuritySetUp,
+            tearDown=zopelessLaunchpadSecurityTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
             ),
     }
 

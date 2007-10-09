@@ -100,6 +100,15 @@ class ICodeImportMachine(Interface):
         description=_("When the controller deamon last recorded it was"
                       " running."))
 
+    def setOnline():
+        """Set state to ONLINE, and record the corresponding event."""
+
+    def setOffline(reason):
+        """See state to OFFLINE, and record the corresponding event.
+
+        :param reason: CodeImportMachineOfflineReason enum value.
+        """
+
 
 class ICodeImportMachineSet(Interface):
     """The set of machines that can perform imports."""

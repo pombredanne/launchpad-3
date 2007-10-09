@@ -7,8 +7,11 @@ is, currently capable of performing imports).
     >>> from canonical.launchpad.interfaces import (
     ...     ICodeImportMachine, ICodeImportMachineSet, CodeImportMachineState)
 
-Adding new machines is considered an admin task, so requires that we switch to
-a database administrator.
+
+== Creating CodeImportMachine ==
+
+Adding new machines is considered an admin task, so requires that we
+switch to a database administrator.
 
 Adding a machine is very simple SQL, for which there will probably be a
 shell script.
@@ -21,6 +24,9 @@ shell script.
     ...     VALUES ('frobisher.example.com', %s)
     ...     """ % quote(CodeImportMachineState.OFFLINE))
     >>> connection.commit()
+
+
+== Retrieving CodeImportMachine ==
 
 The webapp only has rights to examine, not modify, the CodeImportMachine
 table.  The table is represented by an utility that provides the
@@ -75,42 +81,94 @@ hostname and online state information.
     >>> print machine.state.name
     OFFLINE
 
-The web app cannot edit this information.
+
+== Modifying CodeImportMachine ==
+
+The web app cannot edit this information, because it does not have
+UPDATE rights on the CodeImportMachine table.
 
     >>> from canonical.launchpad.interfaces import CodeImportMachineState
+    >>> removeSecurityProxy(machine).state = CodeImportMachineState.ONLINE
+    >>> removeSecurityProxy(machine).syncUpdate()
+    Traceback (most recent call last):
+      ...
+    ProgrammingError: ERROR:  permission denied for relation codeimportmachine
+    ...
+    >>> from canonical.database.sqlbase import begin
+    >>> begin()
+
+Jobs running on the machine itself will connect as the 'importd' user,
+which has rights to update the table so it can update the machine state.
+
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> LaunchpadZopelessLayer.switchDbUser('importd')
+
+The importd database user is only used by zopeless scripts that run
+under the PermissiveSecurityPolicy.
+
+    >>> from zope.security.management import setSecurityPolicy
+    >>> from zope.security.simplepolicies import PermissiveSecurityPolicy
+    >>> _ = setSecurityPolicy(PermissiveSecurityPolicy)
+    >>> login(ANONYMOUS)
+
+Even scripts cannot directly set attributes of CodeImportMachine
+objects. Instead, they must use methods that create the appropriate
+CodeImportEvent records.
+
+    >>> machine = machine_set.getByHostname('frobisher.example.com')
+    >>> print machine.state.name
+    OFFLINE
     >>> machine.state = CodeImportMachineState.ONLINE
     Traceback (most recent call last):
       ...
     ForbiddenAttribute: ...
 
-Jobs running on the machine itself will connect as the 'importd' user,
-which has rights to update the table so it can update the machine state.
+The following helpers are useful to demonstrate that appropriate
+CodeImportEvent objects are indeed created.
 
-XXX: MichaelHudson 2007-07-03, it would be nice to be able to use
-SQLObject here.  But the test framework doesn't appear to support this
-(see bug #123785).
+    >>> from canonical.launchpad.database import CodeImportEvent
+    >>> 
+    >>> def list_events_for_machine(machine):
+    ...     """List all events for the given machine."""
+    ...     return list(
+    ...         CodeImportEvent.selectBy(machine=machine).orderBy(['id']))
+    >>> 
+    >>> def list_event_types_for_machine(machine):
+    ...     """List the types of all events for the given machine."""
+    ...     return [event.event_type.name
+    ...             for event in list_events_for_machine(machine)]
 
-    >>> connection = connect('importd')
-    >>> cur = connection.cursor()
-    >>> cur.execute("""
-    ...     UPDATE CodeImportMachine SET state=%s
-    ...     WHERE hostname='frobisher.example.com'
-    ...     """ % quote(CodeImportMachineState.ONLINE))
-    >>> connection.commit()
 
-Now we abort the implicit transaction and flush SQLObject's caches so
-we can see the above changes.
+=== setOnline ===
 
-    >>> import transaction
-    >>> transaction.abort()
-    >>> from canonical.database.sqlbase import flush_database_caches
-    >>> flush_database_caches()
+When a code-import-controller daemon starts, it must call the setOnline
+method of its associated CodeImportMachine.
 
-So when we check again from the web apps point of view, we see that
-the status is indeed updated.
-
-    >>> machine_set = getUtility(ICodeImportMachineSet)
-    >>> machine = machine_set.getByHostname('frobisher.example.com')
+    >>> list_event_types_for_machine(machine)
+    []
+    >>> machine.setOnline()
     >>> print machine.state.name
     ONLINE
+    >>> list_event_types_for_machine(machine)
+    ['ONLINE']
+
+
+=== setOffline ===
+
+When a code-import-controller daemon stops, or when the watchdog detects
+that it has not updated its heartbeat for some time, it must call the
+setOffline method.
+
+    >>> list_event_types_for_machine(machine)
+    ['ONLINE']
+    >>> from canonical.launchpad.interfaces import (
+    ...     CodeImportEventDataType, CodeImportMachineOfflineReason)
+    >>> machine.setOffline(CodeImportMachineOfflineReason.STOPPED)
+    >>> print machine.state.name
+    OFFLINE
+    >>> list_event_types_for_machine(machine)
+    ['ONLINE', 'OFFLINE']
+    >>> OFFLINE_REASON = CodeImportEventDataType.OFFLINE_REASON
+    >>> dict(list_events_for_machine(machine)[-1].items())[OFFLINE_REASON]
+    u'STOPPED'
 
