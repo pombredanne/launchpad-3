@@ -24,7 +24,7 @@ from canonical.authserver.interfaces import READ_ONLY
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bazaarfs import (
-    ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR)
+    ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR, is_lock_directory)
 from canonical.config import config
 
 
@@ -124,29 +124,13 @@ class LaunchpadServer(Server):
         self.logger = logging.getLogger(
             'codehosting.lpserve.%s' % self.user_name)
 
-    def dirty(self, virtual_path):
-        """Mark the branch containing virtual_path as dirty."""
-        # XXX: JonathanLange 2007-06-18 bugs=120949:
-        # Note that we only mark branches as
-        # dirty if they end up calling VFS (i.e. Transport) methods. If a
-        # client does a writing smart operation that doesn't use VFS, we won't
-        # catch it. (e.g. Branch.set_last_revision). This problem will become
-        # more severe in Bazaar 0.18 and later.
-        #
-        # Instead we should register our own smart request handlers to override
-        # the builtin ones.
-
-        # XXX: JonathanLange 2007-09-05 bugs=139030: By translating paths here
-        # we are doing an extra, unnecessary database query per file
-        # operation. Instead, we should store the unique name of the branch in
-        # set and translate the paths during the calls to request mirror. This
-        # changes the code from one query per write operation to one query per
-        # changed branch.
-        self.logger.debug("Marking %r as dirty", virtual_path)
+    def requestMirror(self, virtual_path):
+        """Request that the branch that owns 'virtual_path' be mirrored."""
         branch_id, ignored, path = self._translate_path(virtual_path)
-        self._dirty_branch_ids.add(branch_id)
+        self.logger.info('Requesting mirror for: %r', branch_id)
+        self.authserver.requestMirror(branch_id)
 
-    def mkdir(self, virtual_path):
+    def make_branch_dir(self, virtual_path):
         """Make a new directory for the given virtual path.
 
         If the request is to make a user or a product directory, fail with
@@ -279,7 +263,6 @@ class LaunchpadServer(Server):
     def setUp(self):
         """See Server.setUp."""
         self.scheme = 'lp-%d:///' % id(self)
-        self._dirty_branch_ids = set()
         register_transport(self.scheme, self._factory)
         self._is_set_up = True
 
@@ -288,10 +271,6 @@ class LaunchpadServer(Server):
         if not self._is_set_up:
             return
         self._is_set_up = False
-        self.logger.info('Requesting mirror for: %r', self._dirty_branch_ids)
-        for branch_id in self._dirty_branch_ids:
-            self.authserver.requestMirror(branch_id)
-        self._dirty_branch_ids = None
         unregister_transport(self.scheme, self._factory)
 
 
@@ -344,12 +323,6 @@ class LaunchpadTransport(Transport):
         method = getattr(transport, methodname)
         return method(path, *args, **kwargs)
 
-    def _writing_call(self, methodname, relpath, *args, **kwargs):
-        """As for _call but mark the branch being written to as dirty."""
-        result = self._call(methodname, relpath, *args, **kwargs)
-        self.server.dirty(self._abspath(relpath))
-        return result
-
     def _translate_virtual_path(self, relpath):
         """Translate a virtual path into a path on the backing transport.
 
@@ -369,7 +342,7 @@ class LaunchpadTransport(Transport):
         return urlutils.join(self.server.scheme, relpath)
 
     def append_file(self, relpath, f, mode=None):
-        return self._writing_call('append_file', relpath, f, mode)
+        return self._call('append_file', relpath, f, mode)
 
     def clone(self, relpath):
         self.server.logger.debug('clone(%s)', relpath)
@@ -377,10 +350,10 @@ class LaunchpadTransport(Transport):
             self.server, urlutils.join(self.base, relpath))
 
     def delete(self, relpath):
-        return self._writing_call('delete', relpath)
+        return self._call('delete', relpath)
 
     def delete_tree(self, relpath):
-        return self._writing_call('delete_tree', relpath)
+        return self._call('delete_tree', relpath)
 
     def get(self, relpath):
         return self._call('get', relpath)
@@ -405,32 +378,35 @@ class LaunchpadTransport(Transport):
         return self._call('lock_read', relpath)
 
     def lock_write(self, relpath):
-        return self._writing_call('lock_write', relpath)
+        return self._call('lock_write', relpath)
 
     def mkdir(self, relpath, mode=None):
         # If we can't translate the path, then perhaps we are being asked to
         # create a new branch directory. Delegate to the server, as it knows
         # how to deal with absolute virtual paths.
         try:
-            return self._writing_call('mkdir', relpath, mode)
+            return self._call('mkdir', relpath, mode)
         except NoSuchFile:
-            return self.server.mkdir(self._abspath(relpath))
+            return self.server.make_branch_dir(self._abspath(relpath))
 
     def put_file(self, relpath, f, mode=None):
-        return self._writing_call('put_file', relpath, f, mode)
+        return self._call('put_file', relpath, f, mode)
 
     def rename(self, rel_from, rel_to):
         path, permissions = self._translate_virtual_path(rel_to)
         if permissions == READ_ONLY:
             raise TransportNotPossible('readonly transport')
-        return self._writing_call('rename', rel_from, path)
+        abs_from = self._abspath(rel_from)
+        if is_lock_directory(abs_from):
+            self.server.requestMirror(abs_from)
+        return self._call('rename', rel_from, path)
 
     def rmdir(self, relpath):
         virtual_path = self._abspath(relpath)
         path_segments = path = virtual_path.lstrip('/').split('/')
         if len(path_segments) <= 3:
             raise NoSuchFile(virtual_path)
-        return self._writing_call('rmdir', relpath)
+        return self._call('rmdir', relpath)
 
     def stat(self, relpath):
         return self._call('stat', relpath)
