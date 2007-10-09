@@ -19,7 +19,7 @@ Define a helper function for parsing the entries:
 
 == Latest bugs for a product ==
 
-    >>> browser.open('http://launchpad.dev/jokosher/latest-bugs.atom')
+    >>> browser.open('http://feed.launchpad.dev/jokosher/latest-bugs.atom')
     >>> browser.title
     'Bugs in Jokosher'
     >>> browser.url
