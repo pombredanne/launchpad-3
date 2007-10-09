@@ -23,7 +23,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchLifecycleStatusFilter,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchSet, IBugBranchSet, IBranchBatchNavigator, IBranchLifecycleFilter)
+    IBranchSet, IBugBranchSet, IBranchBatchNavigator, IBranchListingFilter)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
@@ -113,8 +113,8 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
 class BranchListingView(LaunchpadFormView):
     """A base class for views of branch listings."""
-    schema = IBranchLifecycleFilter
-    field_names = ['search_criteria', 'lifecycle', 'sort_by']
+    schema = IBranchListingFilter
+    field_names = ['lifecycle', 'sort_by']
     custom_widget('lifecycle', LaunchpadDropdownWidget)
     custom_widget('sort_by', LaunchpadDropdownWidget)
     extra_columns = []

@@ -10,6 +10,7 @@ __all__ = [
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
+    'BranchListingSort',
     'BranchType',
     'BranchTypeError',
     'CannotDeleteBranch',
@@ -18,7 +19,7 @@ __all__ = [
     'IBranchSet',
     'IBranchDelta',
     'IBranchBatchNavigator',
-    'IBranchLifecycleFilter',
+    'IBranchListingFilter',
     'UICreatableBranchType',
     'UnknownBranchTypeError'
     ]
@@ -887,9 +888,10 @@ class IBranchDelta(Interface):
     last_scanned_id = Attribute("The revision id of the tip revision.")
 
 
-# XXX: thumper 2007-07-23 bug=66950:
-# Both BranchLifecycleStatusFilter and IBranchLifecycleFilter
-# are used only in browser/branchlisting.py.
+# XXX: TimPenhey 2007-07-23 bug=66950: The enumerations and interface
+# to do with branch listing/filtering/ordering are used only in
+# browser/branchlisting.py.
+
 class BranchLifecycleStatusFilter(EnumeratedType):
     """Branch Lifecycle Status Filter
 
@@ -915,25 +917,60 @@ class BranchLifecycleStatusFilter(EnumeratedType):
         """)
 
 
-class BranchLifecycleSortBy(EnumeratedType):
-    SOMETHING = Item("""
-        Something
+class BranchListingSort(EnumeratedType):
+    PRODUCT = Item("""
+        Product
 
-        Show all the branches.
+        Sort branches by the product the branch is for.
         """)
 
-    NOTHING = Item("""
-        Nothing
+    LIFECYCLE = Item("""
+        Lifecycle
 
-        Show all the branches.
+        Sort branches by the lifecycle status.
+        """)
+
+    NEWEST_FIRST = Item("""
+        Newest First
+
+        Sort branches from newest to oldest.
+        """)
+
+    OLDEST_FIRST = Item("""
+        Oldest First
+
+        Sort branches from oldest to newest.
+        """)
+
+    MOST_RECENTLY_CHANGED_FIRST = Item("""
+        Most Recently Changed First
+
+        Sort branches from the most recently to the least recently
+        changed.
+        """)
+
+    LEAST_RECENTLY_CHANGED_FIRST = Item("""
+        Least Recently Changed First
+
+        Sort branches from the least recently to the most recently
+        changed.
+        """)
+
+    REGISTRANT = Item("""
+        Registrant
+
+        Sort branches by the display name of the registrant.
+        """)
+
+    AUTHOR = Item("""
+        Author
+
+        Sort branches by the display name of the author.
         """)
 
 
-
-class IBranchLifecycleFilter(Interface):
-    """A helper interface to render lifecycle filter choice."""
-
-    search_criteria = TextLine()
+class IBranchListingFilter(Interface):
+    """The schema for the branch listing filtering/ordering form."""
 
     # Stats and status attributes
     lifecycle = Choice(
@@ -949,6 +986,6 @@ class IBranchLifecycleFilter(Interface):
         " New: unspecified maturity."))
 
     sort_by = Choice(
-        title=_('Sort By'), vocabulary=BranchLifecycleSortBy,
-        default=BranchLifecycleSortBy.SOMETHING)
+        title=_('Sort By'), vocabulary=BranchListingSort,
+        default=BranchListingSort.LIFECYCLE)
 
