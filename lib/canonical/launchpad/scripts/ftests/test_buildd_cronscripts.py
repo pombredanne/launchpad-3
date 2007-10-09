@@ -50,25 +50,25 @@ class TestCronscriptBase(TestCase):
         lockfile_path = os.path.join(LOCK_PATH, builddmaster_lockfilename)
         return GlobalLock(lockfile_path)
 
-    def assertRuns(self, runner, *args):
+    def assertRuns(self, runner, **kw_args):
         """Invokes given runner with given arguments.
 
         Asserts the result code is 0 (zero) and returns a triple containing:
         (result_code, standart_output, error_output).
         """
-        rc, out, err = runner()
+        rc, out, err = runner(**kw_args)
         self.assertEqual(0, rc, "Err:\n%s" % err)
         return rc, out, err
 
-    def assertLocked(self, runner, *args):
+    def assertLocked(self, runner, **kw_args):
         """Acquire build-master lockfile and run the given runner.
 
         Asserts the output mentions only the lockfile conflict.
         Before return releases the locally acquired lockfile.
         """
-        lock = self.getBuilddMasterLock(*args)
+        lock = self.getBuilddMasterLock(**kw_args)
         lock.acquire()
-        rc, out, err = self.assertRuns(runner, *args)
+        rc, out, err = self.assertRuns(runner,  **kw_args)
         self.assertEqual(
             ['INFO    creating lockfile',
              'INFO    Lockfile /var/lock/build-master in use'],
@@ -87,6 +87,10 @@ class TestCronscriptBase(TestCase):
     def testRunQueueBuilder(self):
         """Check if buildd-queue-builder runs without errors."""
         self.assertRuns(runner=self.runBuilddQueueBuilder)
+
+    def testDryRunQueueBuilder(self):
+        """Check if buildd-queue-builder runs in 'dry-run' mode."""
+        self.assertRuns(runner=self.runBuilddQueueBuilder, extra_args=['-n'])
 
     def testRunQueueBuilderLocked(self):
         """Check is buildd-queue-builder.py respect build-master lock."""

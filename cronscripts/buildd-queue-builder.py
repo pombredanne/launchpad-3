@@ -42,6 +42,15 @@ class QueueBuilder(LaunchpadCronScript):
         if self.args:
             raise LaunchpadScriptFailure("Unhandled arguments %r" % self.args)
 
+        # XXX cprov 2007-03-21: In order to avoid the partial commits inside
+        # BuilddMaster to happen we pass a FakeZtm instance
+        class _FakeZTM:
+            """A fake transaction manager."""
+            def begin(self):
+                pass
+            def commit(self):
+                pass
+
         if self.options.dryrun:
             self.logger.info("Dry run: changes will not be committed.")
             self.txn = _FakeZTM()
@@ -53,13 +62,6 @@ class QueueBuilder(LaunchpadCronScript):
         """Look for and initialise new build jobs."""
 
         self.logger.info("Rebuilding Build Queue.")
-
-        # XXX cprov 2007-03-21: In order to avoid the partial commits inside
-        # BuilddMaster to happen we pass a FakeZtm instance
-        class _FakeZTM:
-            """A fake transaction manager."""
-            def commit(self):
-                pass
 
         buildMaster = BuilddMaster(self.logger, self.txn)
 
