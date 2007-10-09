@@ -20,13 +20,15 @@
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <div metal:fill-slot="extra_info">
-       <tal:block replace="structure context/@@+ppa-tos" />
+       <p> Read the current version of <a 
+           href="https://help.launchpad.net/PPATermsofUse"
+           >PPA Terms of Use</a> before activating your PPA.</p>
     </div>
 
     <div class="form" metal:fill-slot="widgets">
 
       <div tal:define="widget nocall:view/widgets/accepted|nothing"
-           tal:condition="widget" style="padding: 1em">
+           tal:condition="widget" style="padding-bottom: 1em">
         <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
       </div>
 

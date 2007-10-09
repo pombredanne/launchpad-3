@@ -100,7 +100,8 @@ class BugWatch(SQLBase):
             linked_bugtask.transitionToAssignee(None)
             if linked_bugtask.status != old_bugtask.status:
                 event = SQLObjectModifiedEvent(
-                    linked_bugtask, old_bugtask, ['status'])
+                    linked_bugtask, old_bugtask, ['status'],
+                    user=getUtility(ILaunchpadCelebrities).bug_watch_updater)
                 notify(event)
 
     def destroySelf(self):

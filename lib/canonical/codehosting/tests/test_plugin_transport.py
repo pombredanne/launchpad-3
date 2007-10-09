@@ -105,6 +105,13 @@ class TestLaunchpadServer(TestCase):
         self.server.tearDown()
         self.assertFalse(self.server.scheme in _get_protocol_handlers().keys())
 
+    def test_noMirrorsRequestedIfNoBranchesChanged(self):
+        # Starting up and shutting down the server will send no mirror
+        # requests.
+        self.server.setUp()
+        self.server.tearDown()
+        self.assertEqual([], self.authserver._request_mirror_log)
+
     def test_get_url(self):
         # The URL of the server is 'lp-<number>:///', where <number> is the
         # id() of the server object. Including the id allows for multiple
@@ -112,32 +119,6 @@ class TestLaunchpadServer(TestCase):
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
         self.assertEqual('lp-%d:///' % id(self.server), self.server.get_url())
-
-    def test_nothing_dirty_by_default(self):
-        # If a server is set up then torn down without any operations, then no
-        # branches should be marked as dirty.
-        self.server.setUp()
-        self.server.tearDown()
-        self.assertEqual([], self.server.authserver._request_mirror_log)
-
-    def test_mark_as_dirty(self):
-        # If a given file is flagged as modified then the branch owning that
-        # file should be flagged as dirty.
-        self.server.setUp()
-        self.server.dirty('/~testuser/firefox/baz/.bzr')
-        self.server.tearDown()
-        self.assertEqual([1], self.server.authserver._request_mirror_log)
-
-    def test_tearDown_clears_dirty_flags(self):
-        # A branch is marked as dirty only for as long as the server is set up.
-        # Once tearDown requests mirrors for all the dirty branches, the
-        # branches are considered clean again, and thus not mirrored.
-        self.server.setUp()
-        self.server.dirty('/~testuser/firefox/baz/.bzr')
-        self.server.tearDown()
-        self.server.setUp()
-        self.server.tearDown()
-        self.assertEqual([1], self.server.authserver._request_mirror_log)
 
 
 class TestLaunchpadTransport(TestCase):
@@ -157,7 +138,8 @@ class TestLaunchpadTransport(TestCase):
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
         self.backing_transport.mkdir_multi(
-            ['00', '00/00', '00/00/00', '00/00/00/01', '00/00/00/01/.bzr'])
+            ['00', '00/00', '00/00/00', '00/00/00/01', '00/00/00/01/.bzr',
+             '00/00/00/01/.bzr/branch', '00/00/00/01/.bzr/branch/lock'])
         self.backing_transport.put_bytes(
             '00/00/00/01/.bzr/hello.txt', 'Hello World!')
 
@@ -245,13 +227,18 @@ class TestLaunchpadTransport(TestCase):
         # We can use the transport to rename files where both the source and
         # target are virtual paths.
         transport = get_transport(self.server.get_url())
+        dir_contents = set(transport.list_dir('~testuser/firefox/baz/.bzr'))
         transport.rename(
             '~testuser/firefox/baz/.bzr/hello.txt',
             '~testuser/firefox/baz/.bzr/goodbye.txt')
+        dir_contents.remove('hello.txt')
+        dir_contents.add('goodbye.txt')
         self.assertEqual(
-            ['goodbye.txt'], transport.list_dir('~testuser/firefox/baz/.bzr'))
-        self.assertEqual(['goodbye.txt'],
-                         self.backing_transport.list_dir('00/00/00/01/.bzr'))
+            set(transport.list_dir('~testuser/firefox/baz/.bzr')),
+            dir_contents)
+        self.assertEqual(
+            set(self.backing_transport.list_dir('00/00/00/01/.bzr')),
+            dir_contents)
 
     def test_iter_files_recursive(self):
         # iter_files_recursive doesn't take a relative path but still needs to
@@ -273,15 +260,27 @@ class TestLaunchpadTransport(TestCase):
         self.assertTrue(transport.has('~testuser/thunderbird/banana'))
         self.assertTrue(transport.has('~testuser/thunderbird/orange'))
 
-    def test_make_directory_under_branch_marks_as_dirty(self):
-        transport = get_transport(self.server.get_url())
-        transport.mkdir('~testuser/firefox/baz/.bzr/some-directory')
-        self.assertEqual(set([1]), self.server._dirty_branch_ids)
+    def lockBranch(self, unique_name):
+        """Simulate locking a branch."""
+        transport = get_transport(self.server.get_url() + unique_name)
+        transport = transport.clone('.bzr/branch/lock')
+        transport.mkdir('temporary')
+        # It's this line that actually locks the branch.
+        transport.rename('temporary', 'held')
 
-    def test_read_operation_doesnt_mark_as_dirty(self):
-        transport = get_transport(self.server.get_url())
-        transport.has('~testuser/firefox/baz/.bzr/hello.txt')
-        self.assertEqual(set([]), self.server._dirty_branch_ids)
+    def unlockBranch(self, unique_name):
+        """Simulate unlocking a branch."""
+        transport = get_transport(self.server.get_url() + unique_name)
+        transport = transport.clone('.bzr/branch/lock')
+        # Actually unlock the branch.
+        transport.rename('held', 'temporary')
+        transport.rmdir('temporary')
+
+    def test_unlock_requests_mirror(self):
+        # Unlocking a branch requests a mirror.
+        self.lockBranch('~testuser/firefox/baz')
+        self.unlockBranch('~testuser/firefox/baz')
+        self.assertEqual([1], self.server.authserver._request_mirror_log)
 
 
 class TestLaunchpadTransportReadOnly(TestCase):
