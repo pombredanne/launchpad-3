@@ -156,7 +156,7 @@ method of its associated CodeImportMachine.
 === setOffline ===
 
 When a code-import-controller daemon stops, or when the watchdog detects
-that it has not updated its heartbeat for some time, it must call the
+that it has not updated its heartbeat for some time, they must call the
 setOffline method.
 
     >>> list_event_types_for_machine(machine)
