@@ -94,6 +94,10 @@
           />
           <span tal:replace="context/bugwatch/bugtracker/name">Zilla</span>
           #<span tal:replace="context/bugwatch/remotebug">123</span>
+          <img tal:condition="context/bugwatch/lasterror"
+            alt="Error updating bug watch"
+            src="/@@/warning"
+          />
         </a>
       </tal:has_watch>
       <tal:has_no_watch condition="not: context/bugwatch">
