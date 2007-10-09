@@ -6,7 +6,8 @@ __metaclass__ = type
 __all__ = [
     'AvatarTestCase', 'CodeHostingTestProviderAdapter',
     'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
-    'ServerTestCase', 'adapt_suite', 'deferToThread']
+    'ServerTestCase', 'adapt_suite', 'deferToThread',
+    'make_bazaar_branch_and_tree']
 
 import os
 import shutil
@@ -16,12 +17,16 @@ import unittest
 
 import transaction
 
+from bzrlib.bzrdir import BzrDir
+from bzrlib.errors import FileExists
 from bzrlib.tests import TestCaseWithTransport
 
 from zope.component import getUtility
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 
+from canonical.codehosting.transport import branch_id_to_path
+from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces import (
     BranchType, IBranchSet, IPersonSet, IProductSet, PersonCreationRationale,
@@ -346,6 +351,25 @@ class CodeHostingTestProviderAdapter:
             new_test = self.adaptForServer(test, server)
             result.addTest(new_test)
         return result
+
+
+def make_bazaar_branch_and_tree(db_branch):
+    assert db_branch.branch_type == BranchType.HOSTED, (
+        "Can only create branches for HOSTED branches: %r"
+        % db_branch)
+    branch_dir = os.path.join(
+        config.codehosting.branches_root, branch_id_to_path(db_branch.id))
+
+    if not os.path.exists(branch_dir):
+        os.makedirs(branch_dir)
+    try:
+        tree = BzrDir.create_standalone_workingtree(branch_dir)
+    except FileExists:
+        return
+    f = open(os.path.join(branch_dir, 'hello'), 'w')
+    f.write('foo')
+    f.close()
+    tree.commit('message')
 
 
 def adapt_suite(adapter, base_suite):

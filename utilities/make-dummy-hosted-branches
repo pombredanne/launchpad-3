@@ -1,0 +1,37 @@
+#!/usr/bin/python2.4
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+
+import _pythonpath
+
+import sys
+
+from bzrlib import config
+
+from zope.component import getUtility
+
+from canonical.codehosting.tests.helpers import make_bazaar_branch_and_tree
+from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.database import Branch
+from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.lp import initZopeless
+
+
+def main(argv):
+    execute_zcml_for_scripts()
+    ztm = initZopeless()
+    conf = config.GlobalConfig()
+    signing_policy = conf.get_user_option('create_signatures')
+    conf.set_user_option('create_signatures', 'never')
+    try:
+        branches = Branch.select(
+            "Branch.branch_type = %s" % sqlvalues(BranchType.HOSTED))
+        for branch in branches:
+            make_bazaar_branch_and_tree(branch)
+    finally:
+        conf.set_user_option('create_signatures', signing_policy)
+        ztm.abort()
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
