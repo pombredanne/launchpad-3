@@ -4,7 +4,25 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- Feed -->
+    <securedutility
+        class="canonical.launchpad.systemhomes.FeedsApplication"
+        provides="canonical.launchpad.interfaces.IFeedsApplication">
+        <allow
+            interface="canonical.launchpad.interfaces.IFeedsApplication" />
+    </securedutility>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IFeedsApplication"
+        name="+dims"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.BrowserWindowDimensions"
+        attribute="__call__"
+        />
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="FeedsNavigation"
+        />
 
     <!-- Macros -->
     <browser:page
@@ -14,51 +32,9 @@
         template="../../lazr/feed/templates/feed-entry-atom.pt"
         />
 
-    <!-- Pages -->
-    <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
-        name="latest-bugs.atom"
-        permission="zope.Public"
-        class="canonical.launchpad.feed.BugTargetBugsFeed"
+    <!-- Feeds -->
+    <browser:feeds
+        module="canonical.launchpad.feed"
+        classes="BugFeed BugTargetFeed PersonBugsFeed SearchBugsFeed"
         />
-    <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
-        name="latest-bugs.html"
-        permission="zope.Public"
-        class="canonical.launchpad.feed.BugTargetBugsFeed"
-        />
-    <browser:page
-        for="canonical.launchpad.interfaces.IPerson"
-        name="latest-bugs.atom"
-        permission="zope.Public"
-        class="canonical.launchpad.feed.PersonBugsFeed"
-        />
-    <browser:page
-        for="canonical.launchpad.interfaces.IPerson"
-        name="latest-bugs.html"
-        permission="zope.Public"
-        class="canonical.launchpad.feed.PersonBugsFeed"
-        />
-    <!-- Single bug -->
-    <browser:page
-        for="canonical.launchpad.interfaces.IBug"
-        name="bug.atom"
-        permission="zope.Public"
-        class="canonical.launchpad.feed.BugFeed"
-        />
-
-    <!-- Search page -->
-    <browser:page
-        for="*"
-        name="search-bugs.atom"
-        permission="zope.Public"
-        class="canonical.launchpad.feed.SearchBugsFeed"
-        />
-    <browser:page
-        for="*"
-        name="search-bugs.html"
-        permission="zope.Public"
-        class="canonical.launchpad.feed.SearchBugsFeed"
-        />
-
 </configure>

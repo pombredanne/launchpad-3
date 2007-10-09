@@ -96,3 +96,4 @@ class ShipItEdUbuntuLayer(ShipItLayer):
 
 class FeedsLayer(LaunchpadLayer):
     """The `Feeds` Layer."""
+
