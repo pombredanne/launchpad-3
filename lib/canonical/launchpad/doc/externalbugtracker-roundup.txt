@@ -13,8 +13,13 @@ implements IExternalBugTracker.
     >>> from canonical.launchpad.components.externalbugtracker import Roundup
     >>> from canonical.launchpad.interfaces.externalbugtracker import (
     ...     IExternalBugtracker)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+    >>> from canonical.lp.dbschema import BugTrackerType
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> verifyObject(IExternalBugtracker, Roundup('http://roundup.foo.com'))
+    >>> verifyObject(
+    ...     IExternalBugtracker,
+    ...     Roundup(new_bugtracker(BugTrackerType.ROUNDUP)))
     True
 
 
@@ -22,7 +27,7 @@ implements IExternalBugTracker.
 
 The basic Roundup bug statuses (i.e. those available by default in new Roundup instances) map to Launchpad bug statuses. Roundup.convertRemoteStatus() handles the conversion.
 
-    >>> roundup = Roundup('http://spam.eggs')
+    >>> roundup = Roundup(new_bugtracker(BugTrackerType.ROUNDUP))
     >>> roundup.convertRemoteStatus(1).title
     'New'
     >>> roundup.convertRemoteStatus(2).title
@@ -68,7 +73,8 @@ working network connection.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestRoundup, print_bugwatches)
-    >>> roundup = TestRoundup('http://test.roundup')
+    >>> roundup = TestRoundup(new_bugtracker(
+    ...     BugTrackerType.ROUNDUP, base_url=u'http://test.roundup/'))
     >>> roundup.initializeRemoteBugDB([1])
     >>> sorted(roundup.bugs.keys())
     [1]
@@ -86,29 +92,25 @@ fetched one-at-a-time:
 
     >>> roundup.trace_calls = True
     >>> roundup.initializeRemoteBugDB([6, 7, 8, 9, 10])
-    CALLED urlopen('http://test.roundup/issue?...&id=6')
-    CALLED urlopen('http://test.roundup/issue?...&id=7')
-    CALLED urlopen('http://test.roundup/issue?...&id=8')
-    CALLED urlopen('http://test.roundup/issue?...&id=9')
-    CALLED urlopen('http://test.roundup/issue?...&id=10')
+    CALLED urlopen(u'http://test.roundup/issue?...&id=6')
+    CALLED urlopen(u'http://test.roundup/issue?...&id=7')
+    CALLED urlopen(u'http://test.roundup/issue?...&id=8')
+    CALLED urlopen(u'http://test.roundup/issue?...&id=9')
+    CALLED urlopen(u'http://test.roundup/issue?...&id=10')
 
 If there are more than batch_query_threshold bugs to update then they are
 fetched as a batch:
 
     >>> roundup.batch_query_threshold = 4
     >>> roundup.initializeRemoteBugDB([6, 7, 8, 9, 10])
-    CALLED urlopen('http://test.roundup/issue?...@startwith=0')
+    CALLED urlopen(u'http://test.roundup/issue?...@startwith=0')
 
 
 == Updating Bug Watches ==
 
 First, we create some bug watches to test with:
 
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     new_bugtracker)
     >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
-    >>> from canonical.lp.dbschema import BugTrackerType
-
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.ROUNDUP)
@@ -125,7 +127,7 @@ Collect the Example.com watches:
 
 And have a Roundup instance process them:
 
-    >>> roundup = TestRoundup(example_bug_tracker.baseurl)
+    >>> roundup = TestRoundup(example_bug_tracker)
     >>> roundup.updateBugWatches(example_bug_tracker.watches)
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1: 1

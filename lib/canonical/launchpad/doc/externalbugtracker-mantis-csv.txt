@@ -16,8 +16,11 @@ stores a base URL which it will use to construct URLs to pull a CSV
 export from.
 
     >>> from canonical.launchpad.components.externalbugtracker import Mantis
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+    >>> from canonical.lp.dbschema import BugTrackerType
     >>> alsa_mantis = Mantis(
-    ...     "https://bugtrack.alsa-project.org/alsa-bug/",
+    ...     new_bugtracker(BugTrackerType.MANTIS),
     ...     use_csv_export=True)
 
 As with all ExternalBugTrackers, Mantis contains a function for converting one
@@ -58,8 +61,7 @@ Tracker:
 
     >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
     >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     new_bugtracker, TestMantis)
-    >>> from canonical.lp.dbschema import BugTrackerType
+    ...     TestMantis)
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
@@ -72,7 +74,7 @@ We use a specially hacked Mantis instance that doesn't do network
 calls to verify here:
 
     >>> example_ext_bug_tracker = TestMantis(
-    ...     example_bug_tracker.baseurl, use_csv_export=True)
+    ...     example_bug_tracker, use_csv_export=True)
 
 Collect the Example.com watches:
 
