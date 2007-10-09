@@ -197,32 +197,51 @@ class EditEmailCommand(EmailCommand):
         setattr(context, attr_name, attr_value)
 
 
-class PrivateEmailCommand(EditEmailCommand):
-    """Marks a bug public or private."""
+class PrivateEmailCommand(EmailCommand):
+    """Marks a bug public or private.
+
+    We do not subclass `EditEmailCommand` because we must call
+    `IBug.setPrivate` to update privacy settings, rather than just
+    updating an attribute.
+    """
 
     implements(IBugEditEmailCommand)
 
     _numberOfArguments = 1
 
     def execute(self, context, current_event):
-        """If the bug is made private we also record who and when."""
-        context, current_event = EditEmailCommand.execute(self, context, current_event)
-        if isinstance(current_event, SQLObjectModifiedEvent):
-            if 'private' in current_event.edited_fields and context.private:
-                context.date_made_private = context.date_last_updated
-                context.who_made_private = getUtility(ILaunchBag).user
-        return context, current_event
-
-    def convertArguments(self, context):
-        """See EmailCommand."""
+        """See `IEmailCommand`. Much of this method has been lifted from
+        `EditEmailCommand.execute`.
+        """
+        # Parse args.
+        self._ensureNumberOfArguments()
         private_arg = self.string_args[0]
         if private_arg == 'yes':
-            return {'private': True}
+            private = True
         elif private_arg == 'no':
-            return {'private': False}
+            private = False
         else:
             raise EmailProcessingError(
                 get_error_message('private-parameter-mismatch.txt'))
+
+        # Snapshot.
+        edited_fields = set()
+        if ISQLObjectModifiedEvent.providedBy(current_event):
+            context_snapshot = current_event.object_before_modification
+            edited_fields.update(current_event.edited_fields)
+        else:
+            context_snapshot = Snapshot(context, providing=providedBy(context))
+
+        # Apply requested changes.
+        edited = context.setPrivate(private, getUtility(ILaunchBag).user)
+
+        # Update the current event.
+        if edited and not ISQLObjectCreatedEvent.providedBy(current_event):
+            edited_fields.add('private')
+            current_event = SQLObjectModifiedEvent(
+                context, context_snapshot, list(edited_fields))
+
+        return context, current_event
 
 
 class SecurityEmailCommand(EditEmailCommand):

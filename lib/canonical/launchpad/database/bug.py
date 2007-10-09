@@ -772,6 +772,23 @@ class Bug(SQLBase):
 
         return bugtask
 
+    def setPrivate(self, private, who):
+        """See `IBug`. We also record who made the change and when the change
+        took place.
+        """
+        if self.private != private:
+            self.private = private
+            if private:
+                self.who_made_private = who
+                self.date_made_private = UTC_NOW
+            else:
+                self.who_made_private = None
+                self.date_made_private = None
+            return True
+        else:
+            # No change, do nothing.
+            return False
+
     def getBugTask(self, target):
         """See `IBug`."""
         for bugtask in self.bugtasks:

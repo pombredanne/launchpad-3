@@ -43,7 +43,7 @@
                         linkCVE unlinkCVE findCvesInText newMessage
                         linkMessage addBranch addAttachment unsubscribeFromDupes
                         subscribe unsubscribe addNomination
-                        expireNotifications setStatus"
+                        expireNotifications setStatus setPrivate"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore

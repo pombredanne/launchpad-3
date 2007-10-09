@@ -370,6 +370,15 @@ class IBug(IMessageTarget, ICanBeMentored):
         Return None if no bugtask was edited.
         """
 
+    def setPrivate(private, who):
+        """Set bug privacy.
+
+            :private: True/False.
+            :who: The IPerson who is making the change.
+
+        Return True if a change is made, False otherwise.
+        """
+
     def getBugTask(target):
         """Return the bugtask with the specified target.
 
