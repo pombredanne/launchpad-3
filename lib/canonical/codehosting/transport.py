@@ -232,6 +232,16 @@ class LaunchpadServer(Server):
         """
         self.logger.debug('translate_virtual_path(%r)', virtual_path)
         segments = get_path_segments(virtual_path)
+        # XXX: JamesHenstridge 2007-10-09
+        # We trim the segments list so that we don't raise
+        # PermissionDenied when the client tries to read
+        # /~user/project/.bzr/branch-format when checking for a shared
+        # repository (instead, we'll fail to look up the branch, and
+        # return UntranslatablePath).  This whole function will
+        # probably need refactoring when we move to actually
+        # supporting shared repos.
+        if '.bzr' in segments:
+            segments = segments[:segments.index('.bzr')]
         if (len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES):
             raise PermissionDenied(FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
 
