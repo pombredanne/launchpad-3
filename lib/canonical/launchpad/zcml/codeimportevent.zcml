@@ -1,0 +1,22 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  xmlns:zope="http://namespaces.zope.org/zope"
+  i18n_domain="launchpad">
+
+  <!-- CodeImportEvent -->
+
+  <content class="canonical.launchpad.database.CodeImportEvent">
+    <allow interface="canonical.launchpad.interfaces.ICodeImportEvent" />
+  </content>
+
+  <!-- CodeImportEventSet -->
+
+  <securedutility
+    class="canonical.launchpad.database.CodeImportEventSet"
+    provides="canonical.launchpad.interfaces.ICodeImportEventSet" >
+    <allow interface="canonical.launchpad.interfaces.ICodeImportEventSet" />
+  </securedutility>
+
+</configure>

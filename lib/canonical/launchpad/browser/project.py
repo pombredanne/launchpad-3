@@ -346,7 +346,7 @@ class ProjectTranslationsMenu(ApplicationMenu):
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
 
-    label = "Change project details"
+    label = "Change project group details"
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
