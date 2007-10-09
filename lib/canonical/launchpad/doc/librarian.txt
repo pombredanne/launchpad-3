@@ -1,8 +1,7 @@
-Librarian Access
-================
+= Librarian Access =
 
-High Level
-----------
+== High Level ==
+
     >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
     >>> from StringIO import StringIO
     >>> data = 'This is some data'
@@ -76,7 +75,7 @@ https one, depending on a config value.
     ...     ) is not None
     True
 
-# Let's reset the value of use_https to avoid problems in future tests
+    # Let's reset the value of use_https to avoid problems in future tests
     >>> config.launchpad.vhosts.use_https = False
 
 However, we can't access its contents until we have committed
@@ -122,9 +121,7 @@ more:
     True
 
 
-
-Low Level
----------
+== Low Level ==
 
 We can also use the ILibrarianClient Utility directly to store and access
 files in the Librarian.
@@ -187,8 +184,8 @@ client can't see the database records yet).
     >>> print alias.expires.isoformat()
     2005-09-01T12:00:00+00:00
 
-Buildd mechanism
-----------------
+
+== Buildd mechanism ==
 
     >>> temp_url = config.librarian.buildd_download_url
     >>> config.librarian.buildd_download_url = "http://NOT.VALID.COM/"
@@ -215,8 +212,8 @@ buildd_download_url does not interfere with the normal URL generation.
 
     >>> config.librarian.buildd_download_url = temp_url
 
-Odds and Sods
--------------
+
+== Odds and Sods ==
 
 An UploadFailed will be raised if you try to create a file with no content
 
@@ -274,8 +271,8 @@ will be given None
     True
 
 
-Default View
-------------
+== Default View ==
+
 A librarian file has a default view that should redirect to the download URL.
 
     >>> from zope.component import getMultiAdapter
