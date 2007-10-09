@@ -44,7 +44,8 @@ cur.execute("""
     SELECT (extract(epoch FROM CURRENT_TIMESTAMP)
         - extract(epoch FROM min(last_accessed)))/(60*60) FROM SessionData
     """)
-oldest_access_in_hours = int(cur.fetchone()[0])
+#oldest_access_in_hours = int(cur.fetchone()[0])
+oldest_access_in_hours = 60*24
 print '%f days' % (oldest_access_in_hours / 24.0,)
 
 step_mins = 15 # We trash this many minutes worth of session data each query
@@ -68,16 +69,20 @@ for minutes in range(
             print '%d mins (%0.3f days)...' % (
                     minutes, minutes / (60.0*24.0)
                     ),
-            cur.execute("""
-                DELETE FROM SessionData
-                WHERE
-                    last_accessed < CURRENT_TIMESTAMP
-                        - '%(minutes)s minutes'::interval
+            until_mins = minutes
+            from_mins = minutes - step_mins
+            query = """
+                DELETE FROM SessionData WHERE (
+                    last_accessed BETWEEN CURRENT_TIMESTAMP
+                        - '%(from_mins)d minutes'::interval AND
+                        CURRENT_TIMESTAMP - '%(until_mins)d minutes'::interval
+                    )
                     AND NOT EXISTS (
                         SELECT TRUE FROM UsedSessions
                         WHERE UsedSessions.client_id = SessionData.client_id
                         )
-                """, vars())
+                """ % vars()
+            cur.execute(query)
             break
         except psycopg.Error:
             print 'oops'
