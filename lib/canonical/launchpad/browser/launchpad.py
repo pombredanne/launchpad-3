@@ -467,7 +467,12 @@ class LaunchpadRootNavigation(Navigation):
 
         # Allow traversal to ~foo for People
         if name.startswith('~'):
-            person = getUtility(IPersonSet).getByName(name[1:].lower())
+            # redirect to the lower() version before doing the lookup
+            if name.lower() != name:
+                return self.redirectSubTree(
+                    canonical_url(self.context) + name.lower(), status=301)
+            else:
+                person = getUtility(IPersonSet).getByName(name[1:].lower())
             return person
 
         # Dapper and Edgy shipped with https://launchpad.net/bazaar hard coded
@@ -480,7 +485,12 @@ class LaunchpadRootNavigation(Navigation):
             return getUtility(IBazaarApplication)
 
         try:
-            return getUtility(IPillarNameSet)[name.lower()]
+            # redirect to the lower() version before doing the lookup
+            if name.lower() != name:
+                return self.redirectSubTree(
+                    canonical_url(self.context) + name.lower(), status=301)
+            else:
+                return getUtility(IPillarNameSet)[name]
         except NotFoundError:
             return None
 
