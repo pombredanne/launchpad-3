@@ -3,13 +3,16 @@
 
 import _pythonpath
 
+import os
+import shutil
 import sys
 
-from bzrlib import config
+from bzrlib.config import GlobalConfig
 
 from zope.component import getUtility
 
 from canonical.codehosting.tests.helpers import make_bazaar_branch_and_tree
+from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces import BranchType
@@ -18,9 +21,11 @@ from canonical.lp import initZopeless
 
 
 def main(argv):
+    if os.path.exists(config.codehosting.branches_root):
+        shutil.rmtree(config.codehosting.branches_root)
     execute_zcml_for_scripts()
     ztm = initZopeless()
-    conf = config.GlobalConfig()
+    conf = GlobalConfig()
     signing_policy = conf.get_user_option('create_signatures')
     conf.set_user_option('create_signatures', 'never')
     try:
