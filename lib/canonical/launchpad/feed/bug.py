@@ -146,11 +146,12 @@ class BugsFeedBase(FeedBase):
     def renderHTML(self):
         return ViewPageTemplateFile('templates/bug-html.pt')(self)
 
+
 class BugFeed(BugsFeedBase):
     """Bug feeds for single bug."""
 
     usedfor = IBug
-    feed_name = "bug.atom"
+    feedname = "bug"
 
     def initialize(self):
         super(BugFeed, self).initialize()
@@ -172,7 +173,7 @@ class BugTargetBugsFeed(BugsFeedBase):
     """Bug feeds for projects and products."""
 
     usedfor = IBugTarget
-    feed_name = "latest-bugs.atom"
+    feedname = "latest-bugs"
 
     def initialize(self):
         super(BugTargetBugsFeed, self).initialize()
@@ -192,7 +193,7 @@ class PersonBugsFeed(BugsFeedBase):
     """Bug feeds for a person."""
 
     usedfor = IPerson
-    feed_name = "latest-bugs.atom"
+    feedname = "latest-bugs"
 
     def initialize(self):
         super(PersonBugsFeed, self).initialize()
@@ -219,7 +220,7 @@ class SearchBugsFeed(BugsFeedBase):
     """
 
     usedfor = IBugTaskSet
-    feed_name = "search-bugs.atom"
+    feedname = "search-bugs"
 
     def initialize(self):
         super(SearchBugsFeed, self).initialize()
