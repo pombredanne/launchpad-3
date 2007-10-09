@@ -403,8 +403,8 @@ def allow_sequential_scans(cur, permission):
 
     cur.execute("SET enable_seqscan=%s" % permission_value)
 
-def acquire_advisory_lock(cur, lock_id):
-    """Try to acquire a advisory lock for the given 'lock_id'.
+def acquire_advisory_lock(cur, key):
+    """Try to acquire a advisory lock for the given 'key'.
 
     Return True if the lock was successfully acquired, otherwise return False.
 
@@ -414,7 +414,7 @@ def acquire_advisory_lock(cur, lock_id):
      * file:///usr/share/doc/postgresql-doc-8.2/html/functions-admin.html#FUNCTIONS-ADVISORY-LOCKS
 
     A advisory lock can be 'acquired' anytime (and multiple times) inside
-    the current connection using the given identifier (an int):
+    the current connection using the given key (an int):
     
     >>> acquire_advisory_lock(cur, 12345)
     True
@@ -452,8 +452,49 @@ def acquire_advisory_lock(cur, lock_id):
     
     >>> cur.execute("SELECT pg_advisory_unlock_all()")
     """
-    cur.execute('SELECT pg_try_advisory_lock(%s)' % lock_id)
-    return (cur.fetchall()[0][0] != 0)
+    cur.execute('SELECT pg_try_advisory_lock(%s)' % key)
+    return (cur.fetchone()[0] != 0)
+
+def release_advisory_lock(cur, key):
+    """Release a advisory lock for the given 'key';
+
+    Return True if the 'release' procedure succeeded, otherwise False is
+    returned.
+
+    Lock releasing failures (when False is returned) are not concerning, in the
+    sense, the lock will be released at the end of the connection anyway, but
+    such occurencies should be investigated ad-hoc.
+
+    Obviously trying to release a non-acquired lock will result in a failure.
+    
+    >>> release_advisory_lock(cur, 12345)
+    False
+
+    Once the lock is acquired it can be successfully release:
+    
+    >>> cur.execute("SELECT pg_advisory_lock(12345)")
+    >>> release_advisory_lock(cur, 12345)
+    True
+
+    Trying to release a lock not acquired in the same connection also results
+    in a failure.
+
+    >>> from canonical.ftests.pgsql import PgTestSetup
+    >>> new_con = PgTestSetup().connect()
+    >>> new_cur = new_con.cursor()
+    >>> new_cur.execute("SELECT pg_advisory_lock(12345)")
+    >>> trash = new_cur.fetchall()
+
+    >>> release_advisory_lock(cur, 12345)
+    False
+
+    Lock can be successfully released in the right connection.
+    
+    >>> release_advisory_lock(new_cur, 12345)
+    True
+    """
+    cur.execute('SELECT pg_advisory_unlock(%s)' % key)
+    return (cur.fetchone()[0] != 0)
 
 
 if __name__ == '__main__':
