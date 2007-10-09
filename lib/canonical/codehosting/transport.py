@@ -3,8 +3,8 @@
 """Bazaar transport for the Launchpad code hosting file system."""
 
 __metaclass__ = type
-__all__ = ['branch_id_to_path', 'LaunchpadServer', 'LaunchpadTransport',
-           'set_up_logging', 'UntranslatablePath']
+__all__ = ['LaunchpadServer', 'LaunchpadTransport', 'set_up_logging',
+           'UntranslatablePath']
 
 import logging
 import os
@@ -23,17 +23,10 @@ from bzrlib.transport import (
 
 from canonical.authserver.interfaces import READ_ONLY
 
+from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bazaarfs import (
     ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR, is_lock_directory)
 from canonical.config import config
-
-
-def branch_id_to_path(branch_id):
-    """Convert the given branch ID into NN/NN/NN/NN form, where NN is a two
-    digit hexadecimal number.
-    """
-    h = "%08x" % int(branch_id)
-    return '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
 
 
 def split_with_padding(a_string, splitter, num_fields, padding=None):
