@@ -50,7 +50,7 @@ for distro in ubuntu kubuntu edubuntu xubuntu gobuntu; do
   fi
   # We use the STRUCTURE file to figure out which tasks to generate.
   wget -q -O "$DISTRO-STRUCTURE" "$SEEDS/$germinate_suite/STRUCTURE"
-  for arch in i386 amd64 lpia powerpc sparc ia64; do
+  for arch in i386 amd64 lpia powerpc sparc ia64 hppa; do
     # Grab local copy of Packages and InstallerPackages files
     for component in main universe restricted; do
       zcat $ARCHIVEROOT/dists/"$suite"/"$component"/binary-$arch/Packages.gz > "$suite"_"$component"_Packages

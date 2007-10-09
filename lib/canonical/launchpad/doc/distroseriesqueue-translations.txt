@@ -94,9 +94,7 @@ queue:
   >>> success = pmount_upload.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Build ... found
-  DEBUG: Building recipients list.
-  DEBUG: Changes file is unsigned, adding changer as recipient
-  DEBUG: No recipients on email, not sending.
+  ...
 
   # And all things worked.
   >>> success

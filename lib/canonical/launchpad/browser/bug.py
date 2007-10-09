@@ -1,5 +1,7 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
+"""IBug related view classes."""
+
 __metaclass__ = type
 
 __all__ = [
@@ -56,7 +58,7 @@ from canonical.widgets.project import ProjectScopeWidget
 
 
 class BugNavigation(Navigation):
-
+    """Navigation for the `IBug`."""
     # It would be easier, since there is no per-bug sequence for a BugWatch
     # and we have to leak the BugWatch.id anyway, to hang bugwatches off a
     # global /bugwatchs/nnnn
@@ -72,13 +74,14 @@ class BugNavigation(Navigation):
 
     @stepthrough('+watch')
     def traverse_watches(self, name):
+        """Retrieve a BugWatch by name."""
         if name.isdigit():
             # in future this should look up by (bug.id, watch.seqnum)
             return getUtility(IBugWatchSet)[name]
 
 
 class BugFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an IBug.
+    """The links that will appear in the facet menu for an `IBug`.
 
     However, we never show this, but it does apply to things like
     bug nominations, by 'acquisition'.
@@ -90,11 +93,12 @@ class BugFacets(StandardLaunchpadFacets):
 
 
 class BugSetNavigation(Navigation):
-
+    """Navigation for the IBugSet."""
     usedfor = IBugSet
 
     @stepthrough('+text')
     def text(self, name):
+        """Retrieve a bug by name."""
         try:
             return getUtility(IBugSet).getByNameOrID(name)
         except (NotFoundError, ValueError):
@@ -102,6 +106,7 @@ class BugSetNavigation(Navigation):
 
 
 class BugContextMenu(ContextMenu):
+    """Context menu of actions that can be performed upon a Bug."""
     usedfor = IBug
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
@@ -114,26 +119,32 @@ class BugContextMenu(ContextMenu):
         ContextMenu.__init__(self, getUtility(ILaunchBag).bugtask)
 
     def editdescription(self):
+        """Return the 'Edit description/tags' Link."""
         text = 'Edit description/tags'
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
+        """Return the 'Set privacy/security' Link."""
         text = 'Set privacy/security'
         return Link('+secrecy', text, icon='edit')
 
     def markduplicate(self):
+        """Return the 'Mark as duplicate' Link."""
         text = 'Mark as duplicate'
         return Link('+duplicate', text, icon='edit')
 
     def addupstream(self):
+        """Return the 'lso affects project' Link."""
         text = 'Also affects project'
         return Link('+choose-affected-product', text, icon='add')
 
     def adddistro(self):
+        """Return the 'Also affects distribution' Link."""
         text = 'Also affects distribution'
         return Link('+distrotask', text, icon='add')
 
     def subscription(self):
+        """Return the 'Subscribe/Unsubscribe' Link."""
         user = getUtility(ILaunchBag).user
         if user is None:
             text = 'Subscribe/Unsubscribe'
@@ -156,10 +167,12 @@ class BugContextMenu(ContextMenu):
         return Link('+subscribe', text, icon=icon)
 
     def addsubscriber(self):
+        """Return the 'Subscribe someone else' Link."""
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
     def nominate(self):
+        """Return the 'Target/Nominate for release' Link."""
         launchbag = getUtility(ILaunchBag)
         target = launchbag.product or launchbag.distribution
         if check_permission("launchpad.Driver", target):
@@ -170,14 +183,17 @@ class BugContextMenu(ContextMenu):
         return Link('+nominate', text, icon='milestone')
 
     def addcomment(self):
+        """Return the 'Comment or attach file' Link."""
         text = 'Comment or attach file'
         return Link('+addcomment', text, icon='add')
 
     def addbranch(self):
+        """Return the 'Add branch' Link."""
         text = 'Add branch'
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
+        """Return the 'Link tp CVE' Link."""
         text = structured(
             'Link to '
             '<abbr title="Common Vulnerabilities and Exposures Index">'
@@ -186,17 +202,20 @@ class BugContextMenu(ContextMenu):
         return Link('+linkcve', text, icon='add')
 
     def unlinkcve(self):
+        """Return 'Remove CVE link' Link."""
         enabled = bool(self.context.bug.cves)
         text = 'Remove CVE link'
         return Link('+unlinkcve', text, icon='remove', enabled=enabled)
 
     def offermentoring(self):
+        """Return the 'Offer mentorship' Link."""
         text = 'Offer mentorship'
         user = getUtility(ILaunchBag).user
         enabled = self.context.bug.canMentor(user)
         return Link('+mentor', text, icon='add', enabled=enabled)
 
     def retractmentoring(self):
+        """Return the 'Retract mentorship' Link."""
         text = 'Retract mentorship'
         user = getUtility(ILaunchBag).user
         enabled = (self.context.bug.isMentor(user) and
@@ -205,6 +224,7 @@ class BugContextMenu(ContextMenu):
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def activitylog(self):
+        """Return the 'Activity log' Link."""
         text = 'View activity log'
         return Link('+activity', text, icon='list')
 
@@ -235,6 +255,7 @@ class MaloneView(LaunchpadFormView):
         return self.getWidgetError('scope')
 
     def initialize(self):
+        """Initialize the view to handle the request."""
         LaunchpadFormView.initialize(self)
         bug_id = self.request.form.get("id")
         if bug_id:
@@ -282,7 +303,7 @@ class MaloneView(LaunchpadFormView):
 
 
 class BugView(LaunchpadView):
-    """View class for presenting information about an IBug.
+    """View class for presenting information about an `IBug`.
 
     Since all bug pages are registered on IBugTask, the context will be
     adapted to IBug in order to make the security declarations work
@@ -294,7 +315,7 @@ class BugView(LaunchpadView):
     """
 
     def currentBugTask(self):
-        """Return the current IBugTask.
+        """Return the current `IBugTask`.
 
         'current' is determined by simply looking in the ILaunchBag utility.
         """
@@ -353,7 +374,8 @@ class BugWithoutContextView:
     def redirectToNewBugPage(self):
         """Redirect the user to the 'first' report of this bug."""
         # An example of practicality beating purity.
-        bugtasks = sorted(self.context.bugtasks, key=operator.attrgetter('id'))
+        bugtasks = sorted(
+            self.context.bugtasks, key=operator.attrgetter('id'))
         self.request.response.redirect(canonical_url(bugtasks[0]))
 
 
@@ -373,6 +395,7 @@ class BugEditViewBase(LaunchpadEditFormView):
 
     @property
     def next_url(self):
+        """Return the next URL to call when this call completes."""
         return canonical_url(self.context)
 
 
@@ -417,12 +440,14 @@ class BugEditView(BugEditViewBase):
 
     @action('Change', name='change')
     def edit_bug_action(self, action, data):
+        """Update the bug with submitted changes."""
         if not self._confirm_new_tags:
             self.updateBugFromData(data)
             self.next_url = canonical_url(self.context)
 
     @action('Yes, define new tag', name='confirm_tag')
     def confirm_tag_action(self, action, data):
+        """Define a new tag."""
         self.actions['field.actions.change'].success(data)
 
     def render(self):
@@ -440,6 +465,7 @@ class BugMarkAsDuplicateView(BugEditViewBase):
 
     @action('Change', name='change')
     def change_action(self, action, data):
+        """Update the bug."""
         self.updateBugFromData(data)
 
 
@@ -451,6 +477,7 @@ class BugSecrecyEditView(BugEditViewBase):
 
     @action('Change', name='change')
     def change_action(self, action, data):
+        """Update the bug."""
         data = dict(data)
         private = data.pop('private')
 
@@ -503,11 +530,11 @@ class DeprecatedAssignedBugsView:
     FOAF URL.
     """
     def __init__(self, context, request):
-        """Redirect the user to their assigned bugs report."""
         self.context = context
         self.request = request
 
     def redirect_to_assignedbugs(self):
+        """Redirect the user to their assigned bugs report."""
         self.request.response.redirect(
             canonical_url(getUtility(ILaunchBag).user) +
             "/+assignedbugs")
@@ -517,9 +544,11 @@ class BugTextView(LaunchpadView):
     """View for simple text page displaying information for a bug."""
 
     def person_text(self, person):
+        """Return a Person for text display."""
         return '%s (%s)' % (person.displayname, person.name)
 
     def bug_text(self, bug):
+        """Return the bug information for text display."""
         text = []
         text.append('bug: %d' % bug.id)
         text.append('title: %s' % bug.title)
@@ -544,6 +573,7 @@ class BugTextView(LaunchpadView):
         return ''.join(line + '\n' for line in text)
 
     def bugtask_text(self, task):
+        """Return a BugTask for text display."""
         text = []
         text.append('task: %s' % task.bugtargetname)
         text.append('status: %s' % task.status.title)
@@ -564,6 +594,7 @@ class BugTextView(LaunchpadView):
         return ''.join(line + '\n' for line in text)
 
     def render(self):
+        """Return a text representation of the Bug."""
         self.request.response.setHeader('Content-type', 'text/plain')
         texts = (
             [self.bug_text(self.context)] +
@@ -572,6 +603,7 @@ class BugTextView(LaunchpadView):
 
 
 class BugURL:
+    """Bug URL creation rules."""
     implements(ICanonicalUrlData)
 
     inside = None
@@ -582,5 +614,6 @@ class BugURL:
 
     @property
     def path(self):
+        """Return the path component of the URL."""
         return u"bugs/%d" % self.context.id
 

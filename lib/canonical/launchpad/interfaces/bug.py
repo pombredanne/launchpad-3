@@ -93,13 +93,16 @@ class CreateBugParams:
 
 
 class BugNameField(ContentNameField):
+    """Provides a a way to retrieve bugs by name."""
     errormessage = _("%s is already in use by another bug.")
 
     @property
     def _content_iface(self):
+        """Return the `IBug` interface."""
         return IBug
 
     def _getByName(self, name):
+        """Return a bug by name, or None."""
         try:
             return getUtility(IBugSet).getByNameOrID(name)
         except NotFoundError:
@@ -493,8 +496,11 @@ class IBugSet(Interface):
         """
 
     def queryByRemoteBug(bugtracker, remotebug):
-        """Find one or None bugs in Launchpad that have a BugWatch matching the
-        given bug tracker and remote bug id."""
+        """Find one or None bugs for the BugWatch and bug tracker.
+
+        Find one or None bugs in Launchpad that have a BugWatch matching
+        the given bug tracker and remote bug id.
+        """
 
     def createBug(bug_params):
         """Create a bug and return it.
