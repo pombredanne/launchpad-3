@@ -14,10 +14,13 @@ import sys
 from zope.component import getUtility
 
 from canonical.archivepublisher.debversion import Version
-from canonical.lp import READ_COMMITTED_ISOLATION
-from canonical.config import config
 from canonical.buildmaster.master import (
-    BuilddMaster, builddmaster_lockfilename)
+    BuilddMaster, builddmaster_lockfilename, builddmaster_advisory_lock_key)
+from canonical.config import config
+from canonical.database.postgresql import (
+    acquire_advisory_lock, release_advisory_lock)
+from canonical.database.sqlbase import cursor
+from canonical.lp import READ_COMMITTED_ISOLATION
 
 from canonical.launchpad.interfaces import IDistroArchSeriesSet
 from canonical.launchpad.scripts.base import (LaunchpadCronScript,
@@ -36,11 +39,17 @@ class QueueBuilder(LaunchpadCronScript):
         """Invoke rebuildQueue.
 
         Check if the cron.daily is running, quietly exits if true.
-        Force isolation level to READ_COMMITTED_ISOLATION.
         Deals with the current transaction according the dry-run option.
+        Acquire and Release a postgres advisory lock for the entire procedure.
         """
         if self.args:
             raise LaunchpadScriptFailure("Unhandled arguments %r" % self.args)
+
+        local_cursor = cursor()
+        if not acquire_advisory_lock(
+            local_cursor, builddmaster_advisory_lock_key):
+            raise LaunchpadScriptFailure(
+                "Another builddmaster script is already running")
 
         # XXX cprov 2007-03-21: In order to avoid the partial commits inside
         # BuilddMaster to happen we pass a FakeZtm instance
@@ -57,6 +66,11 @@ class QueueBuilder(LaunchpadCronScript):
 
         self.rebuildQueue()
         self.txn.commit()
+
+        local_cursor = cursor()
+        if not release_advisory_lock(
+            local_cursor, builddmaster_advisory_lock_key):
+            self.logger.debug("Could not release advisory lock.")
 
     def rebuildQueue(self):
         """Look for and initialise new build jobs."""
@@ -97,6 +111,7 @@ class QueueBuilder(LaunchpadCronScript):
 if __name__ == '__main__':
     script = QueueBuilder('queue-builder', dbuser=config.builddmaster.dbuser)
     script.lock_or_quit()
+    # Force isolation level to READ_COMMITTED_ISOLATION.
     try:
         script.run(isolation=READ_COMMITTED_ISOLATION)
     finally:

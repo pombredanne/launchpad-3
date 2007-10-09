@@ -31,8 +31,11 @@ from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.buildmaster.buildergroup import BuilderGroup
 
 
-# builddmaster shared lockfile
+# Builddmaster shared lockfile
 builddmaster_lockfilename = 'build-master'
+
+# Builddmaster advisory-lock key
+builddmaster_advisory_lock_key = 666
 
 # Constants used in build scoring
 SCORE_SATISFIEDDEP = 5

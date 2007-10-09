@@ -9,16 +9,18 @@ import sys
 from unittest import TestCase, TestLoader
 
 from canonical.config import config
+from canonical.buildmaster.master import (
+    builddmaster_lockfilename, builddmaster_advisory_lock_key)
+from canonical.database.sqlbase import cursor
+from canonical.database.postgresql import acquire_advisory_lock
+from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
+from canonical.launchpad.scripts.base import LOCK_PATH
 from canonical.testing import LaunchpadLayer
 
 from contrib.glock import GlobalLock
 
-class TestCronscriptBase(TestCase):
-    """Buildd cronscripts test classes."""
-    layer = LaunchpadLayer
 
-    def setUp(self):
-        self.layer.setUp()
+class TestBuilddCronscriptBase(TestCase):
 
     def runCronscript(self, name, extra_args):
         """Run given cronscript, returning the result and output.
@@ -45,8 +47,6 @@ class TestCronscriptBase(TestCase):
 
     def getBuilddMasterLock(self):
         """Returns a GlobalLock instance for build-master default lockfile."""
-        from canonical.launchpad.scripts.base import LOCK_PATH
-        from canonical.buildmaster.master import builddmaster_lockfilename
         lockfile_path = os.path.join(LOCK_PATH, builddmaster_lockfilename)
         return GlobalLock(lockfile_path)
 
@@ -76,6 +76,14 @@ class TestCronscriptBase(TestCase):
             "Not expected output:\n%s" % err)
         lock.release()
 
+
+class TestBuilddCronscripts(TestBuilddCronscriptBase):
+    """Buildd cronscripts test classes."""
+    layer = LaunchpadLayer
+
+    def setUp(self):
+        self.layer.setUp()
+
     def testRunSlaveScanner(self):
         """Check if buildd-slave-scanner runs without errors."""
         self.assertRuns(runner=self.runBuilddSlaveScanner)
@@ -93,8 +101,33 @@ class TestCronscriptBase(TestCase):
         self.assertRuns(runner=self.runBuilddQueueBuilder, extra_args=['-n'])
 
     def testRunQueueBuilderLocked(self):
-        """Check is buildd-queue-builder.py respect build-master lock."""
+        """Check if buildd-queue-builder.py respect build-master lock."""
         self.assertLocked(runner=self.runBuilddQueueBuilder)
+
+
+class TestBuilddCronscriptsAdvisoryLock(
+    TestBuilddCronscriptBase, LaunchpadZopelessTestCase):
+
+    def acquireBuilddmasterAdvisoryLock(self):
+        """Acquire builddmaster postgres advisory lock."""
+        local_cursor = cursor()
+        lock_acquired = acquire_advisory_lock(
+            local_cursor, builddmaster_advisory_lock_key) 
+        self.assertTrue(lock_acquired)
+
+    def testAdvisoryLockForQueueBuilder(self):
+        """Check if buildd-queue-builder respects build-master advisory lock."""
+        self.acquireBuilddmasterAdvisoryLock()
+        rc, out, err = self.runBuilddQueueBuilder()
+        self.assertEqual(rc, 1)
+        self.assertTrue('script is already running' in err)
+
+    def testAdvisoryLockForSlaveScanner(self):
+        """Check if buildd-slave-scanner respects build-master advisory lock."""
+        self.acquireBuilddmasterAdvisoryLock()
+        rc, out, err = self.runBuilddSlaveScanner()
+        self.assertEqual(rc, 1)
+        self.assertTrue('script is already running' in err)
 
 
 def test_suite():

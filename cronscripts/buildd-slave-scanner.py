@@ -15,7 +15,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.buildmaster.master import (
-    BuilddMaster, builddmaster_lockfilename)
+    BuilddMaster, builddmaster_lockfilename, builddmaster_advisory_lock_key)
+from canonical.database.postgresql import (
+    acquire_advisory_lock, release_advisory_lock)
+from canonical.database.sqlbase import cursor
 
 from canonical.launchpad.scripts.base import (LaunchpadCronScript,
     LaunchpadScriptFailure)
@@ -30,11 +33,22 @@ class SlaveScanner(LaunchpadCronScript):
             raise LaunchpadScriptFailure(
                 "Unhandled arguments %s" % repr(self.args))
 
+        local_cursor = cursor()
+        if not acquire_advisory_lock(
+            local_cursor, builddmaster_advisory_lock_key):
+            raise LaunchpadScriptFailure(
+                "Another builddmaster script is already running")
+
         builder_set = getUtility(IBuilderSet)
         buildMaster = builder_set.pollBuilders(self.logger, self.txn)
         # XXX: lifeless 2007-05-25:
         # Only needed until the soyuz buildmaster class is fully deleted.
         builder_set.dispatchBuilds(self.logger, removeSecurityProxy(buildMaster))
+
+        local_cursor = cursor()
+        if not release_advisory_lock(
+            local_cursor, builddmaster_advisory_lock_key):
+            self.logger.debug("Could not release advisory lock.")
 
     @property
     def lockfilename(self):
