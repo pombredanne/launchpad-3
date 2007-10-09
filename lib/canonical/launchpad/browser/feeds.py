@@ -22,8 +22,8 @@ class FeedsNavigation(Navigation):
 
     def traverse(self, name):
         try:
-            # XXX: statik 2007-10-05  Redirect to lowercase before doing
-            # the lookup bug 56646
+            # XXX: statik 2007-10-05 bug=56646 Redirect to lowercase before 
+            # doing the lookup
             return getUtility(IPillarNameSet)[name.lower()]
         except NotFoundError:
             return None

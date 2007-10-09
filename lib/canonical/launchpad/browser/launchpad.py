@@ -468,6 +468,9 @@ class LaunchpadRootNavigation(Navigation):
             return getUtility(IBazaarApplication)
 
         try:
+            # XXX: statik 2007-10-05 bug=56646 Redirect to lowercase
+            # before doing the lookup
+
             return getUtility(IPillarNameSet)[name.lower()]
         except NotFoundError:
             return None
