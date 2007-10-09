@@ -33,6 +33,12 @@ it is no longer referenced in the database.
     >>> alias.expires is None
     True
 
+The creation timestamp of the LibraryFileAlias is available in the
+date_created attribute.
+
+    >>> alias.date_created
+    datetime.datetime(...)
+
 We can retrieve the LibraryFileAlias we just created using its ID or sha1.
 
     >>> org_alias_id = alias.id
