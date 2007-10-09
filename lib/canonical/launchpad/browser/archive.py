@@ -63,7 +63,7 @@ class ArchiveOverviewMenu(ApplicationMenu):
 
     usedfor = IArchive
     facet = 'overview'
-    links = ['admin', 'edit', 'builds', 'view_tos']
+    links = ['admin', 'edit', 'builds']
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -78,10 +78,6 @@ class ArchiveOverviewMenu(ApplicationMenu):
     def builds(self):
         text = 'View build records'
         return Link('+builds', text, icon='info')
-
-    def view_tos(self):
-        text = 'View Terms of Service'
-        return Link('+view-tos', text, icon='info')
 
 
 class ArchiveView(LaunchpadView):
@@ -100,6 +96,17 @@ class ArchiveView(LaunchpadView):
         self.batchnav = BatchNavigator(publishing, self.request)
         self.search_results = self.batchnav.currentBatch()
 
+    def source_count_text(self):
+        if self.context.number_of_sources == 1:
+            return '%s source package' % self.context.number_of_sources
+        else:
+            return '%s source packages' % self.context.number_of_sources
+
+    def binary_count_text(self):
+        if self.context.number_of_binaries == 1:
+            return '%s binary package' % self.context.number_of_binaries
+        else:
+            return '%s binary packages' % self.context.number_of_binaries
 
 class ArchiveActivateView(LaunchpadFormView):
     """PPA activation view class.

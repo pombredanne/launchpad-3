@@ -40,18 +40,17 @@
         class="canonical.launchpad.browser.TranslationImportQueueEntryView"
         permission="launchpad.Admin"
         template="../templates/translationimportqueueentry-index.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
-    <browser:pages
+    <browser:page
         for="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
         facet="translations"
-        permission="zope.Public">
-        <!-- TranslationImportQueueEntry Portlets -->
-        <browser:page
-            name="+portlet-details"
-            template="../templates/translationimportqueueentry-portlet-details.pt"
-            />
-    </browser:pages>
+        permission="zope.Public"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        name="+portlet-details"
+        template="../templates/translationimportqueueentry-portlet-details.pt"
+        />
 
     <!-- TranslationImportQueue -->
     <securedutility

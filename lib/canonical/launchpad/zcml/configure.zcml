@@ -40,6 +40,7 @@
     <include file="builder.zcml" />
     <include file="calendar.zcml" />
     <include file="codeimport.zcml" />
+    <include file="codeimportevent.zcml" />
     <include file="codeimportmachine.zcml" />
     <include file="codeofconduct.zcml" />
     <include file="country.zcml" />
@@ -68,11 +69,12 @@
     <include file="faqcollection.zcml" />
     <include file="files.zcml" />
     <include file="gpgkey.zcml" />
-    <include file="hastranslationimports.zcml" />
+    <include file="hwdb.zcml" />
     <include file="ircid.zcml" />
     <include file="jabberid.zcml" />
     <include file="karma.zcml" />
     <include file="language.zcml" />
+    <include file="languagepack.zcml" />
     <include file="launchpad.zcml" />
     <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />
@@ -88,7 +90,6 @@
     <include file="packaging.zcml" />
     <include file="pillar.zcml" />
     <include file="person.zcml" />
-    <include file="poexport.zcml" />
     <include file="poexportrequest.zcml" />
     <include file="pofile.zcml" />
     <include file="poll.zcml" />
@@ -130,12 +131,14 @@
     <include file="teamparticipation.zcml" />
     <include file="team-subscriptions.zcml" />
     <include file="temporaryblobstorage.zcml" />
-    <include file="translationimportexport.zcml" />
+    <include file="translationexport.zcml" />
+    <include file="translationimport.zcml" />
     <include file="question.zcml" />
     <include file="question-events.zcml" />
     <include file="questionreopening.zcml" />
     <include file="questionsubscription.zcml" />
     <include file="questiontarget.zcml" />
+    <include file="translationcommonformat.zcml" />
     <include file="translationgroup.zcml" />
     <include file="translationimportqueue.zcml" />
     <include file="translator.zcml" />

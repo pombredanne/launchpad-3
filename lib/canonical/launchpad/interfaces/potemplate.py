@@ -1,27 +1,78 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Text, TextLine, Bytes, Datetime, Int
+from zope.interface import Attribute, Interface
+from zope.schema import (
+    Bool, Bytes, Choice, Datetime, Int, Object, Text, TextLine)
 
-from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.rosettastats import IRosettaStats
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageName)
 from canonical.launchpad import _
+from canonical.lazr import DBEnumeratedType, DBItem
+
 
 __metaclass__ = type
 
-__all__ = (
-    'LanguageNotFound', 'IPOTemplateSubset', 'IPOTemplateSet', 'IPOTemplate',
-    'IPOTemplateWithContent')
+__all__ = [
+    'IPOTemplate',
+    'IPOTemplateSet',
+    'IPOTemplateSubset',
+    'IPOTemplateWithContent',
+    'LanguageNotFound',
+    'TranslationPriority',
+    ]
 
 
 class LanguageNotFound(NotFoundError):
     """Raised when a a language does not exist in the database."""
 
 
-class IPOTemplate(IRosettaStats):
-    """A PO template. For example 'nautilus/po/nautilus.pot'."""
+class TranslationPriority(DBEnumeratedType):
+    """Translation Priority
 
-    id = Attribute("A unique ID number")
+    Translations in Rosetta can be assigned a priority. This is used in a
+    number of places. The priority stored on the translation itself is set
+    by the upstream project maintainers, and used to identify the
+    translations they care most about. For example, if Apache were nearing a
+    big release milestone they would set the priority on those POTemplates
+    to 'high'. The priority is also used by TranslationEfforts to indicate
+    how important that POTemplate is to the effort. And lastly, an
+    individual translator can set the priority on his personal subscription
+    to a project, to determine where it shows up on his list.  """
+
+    HIGH = DBItem(1, """
+        High
+
+        This translation should be shown on any summary list of translations
+        in the relevant context. For example, 'high' priority projects show
+        up on the home page of a TranslationEffort or Project in Rosetta.
+        """)
+
+    MEDIUM = DBItem(2, """
+        Medium
+
+        A medium priority POTemplate should be shown on longer lists and
+        dropdowns lists of POTemplates in the relevant context.  """)
+
+    LOW = DBItem(3, """
+        Low
+
+        A low priority POTemplate should only show up if a comprehensive
+        search or complete listing is requested by the user.  """)
+
+
+class IPOTemplate(IRosettaStats):
+    """A translation template."""
+
+    id = Int(
+        title=u"The translation template id.",
+        required=True, readonly=True)
 
     potemplatename = Choice(
         title=_("Template Name"),
@@ -47,9 +98,7 @@ class IPOTemplate(IRosettaStats):
 
     header = Text(
         title=_('Header'),
-        description=_(
-            "The standard template header as gettext creates it. It's used "
-            "to get some default values when creating a new PO file."),
+        description=_("The standard template header in its native format."),
         required=True)
 
     iscurrent = Bool(
@@ -119,7 +168,9 @@ class IPOTemplate(IRosettaStats):
         title=_("Path of the template in the source tree, including filename."),
         required=False)
 
-    source_file = Attribute("Source file for this template, if needed.")
+    source_file = Object(
+        title=_('Source file for this translation template'),
+        readonly=True, schema=ILibraryFileAlias)
 
     source_file_format = Choice(
         title=_("File format for the source file"),
@@ -137,58 +188,87 @@ class IPOTemplate(IRosettaStats):
             'translated first. Pick any number - higher priority '
             'templates will generally be listed first.'))
 
-    copyright = Attribute("The copyright information for this template.")
+    datecreated = Datetime(
+        title=_('When this translation template was created.'), required=True,
+        readonly=True)
 
-    license = Attribute("The license that applies to this template.")
+    translationgroups = Attribute(
+        _('''
+            The `ITranslationGroup` objects that handle translations for this
+            template.
+            There can be several because they can be inherited from project to
+            product, for example.
+            '''))
 
-    datecreated = Attribute("When this template was created.")
+    translationpermission = Choice(
+        title=_('Translation permission'),
+        required=True,
+        readonly=True,
+        description=_('''
+            The permission system which is used for this translation template.
+            This is inherited from the product, project and/or distro in which
+            the translation template is found.
+            '''),
+        vocabulary='TranslationPermission')
 
-    translationgroups = Attribute("The translation groups that have "
-        "been selected to apply to this template. There can be several "
-        "because they can be inherited from project to product, for "
-        "example.")
+    pofiles = Attribute(
+        _('All `IPOFile` that exist for this template.'))
 
-    translationpermission = Attribute("The permission system which "
-        "is used for this potemplate. This is inherited from the product, "
-        "project and/or distro in which the pofile is found.")
+    relatives_by_name = Attribute(
+        _('''
+            All `IPOTemplate` objects that have the same template name as
+            this one.
+            '''))
 
-    pofiles = Attribute("An iterator over the PO files that exist for "
-        "this template.")
+    relatives_by_source = Attribute(
+        _('''All `IPOTemplate` objects that have the same source.
+            For example those that came from the same productseries or the
+            same source package.
+            '''))
 
-    relatives_by_name = Attribute("An iterator over other PO templates "
-        "that have the same potemplate name as this one.")
+    displayname = TextLine(
+        title=_('The translation template brief name.'), required=True,
+        readonly=True)
 
-    relatives_by_source = Attribute("An iterator over other PO templates "
-        "that have the same source, for example those that came from the "
-        "same productseries or the same source package.")
+    title = TextLine(
+        title=_('The translation template title.'), required=True,
+        readonly=True)
 
-    displayname = Attribute("A brief name for this template, generated.")
+    product = Object(
+        title=_('The `IProduct` to which this translation template belongs.'),
+        required=False, readonly=True, schema=IProduct)
 
-    title = Attribute("A title for this template, generated.")
+    distribution = Object(
+        title=_(
+            'The `IDistribution` to which this translation template belongs.'
+            ),
+        readonly=True, schema=IDistribution)
 
-    product = Attribute("The project to which this template belongs.")
+    language_count = Int(
+        title=_('The number of languages for which we have translations.'),
+        required=True, readonly=True)
 
-    distribution = Attribute("The distribution to which this template belongs.")
-
-    language_count = Attribute("The number of languages for which we have "
-        "some number of translations.")
-
-    translationtarget = Attribute("The object for which this template is "
-        "a translation. This will either be a SourcePackage or an upstream "
-        "Series.")
+    translationtarget = Attribute(
+        _('''
+            The direct object in which this template is attached.
+            This will either be an `ISourcePackage` or an `IProductSeries`.
+            '''))
 
     date_last_updated = Datetime(
             title=_('Date for last update'),
             required=True)
 
     def __iter__():
-        """Return an iterator over current IPOTMsgSets in this template."""
+        """Return an iterator over current `IPOTMsgSet` in this template."""
+
+    def getHeader():
+        """Return an `ITranslationHeader` representing its header."""
 
     def getPOTMsgSetByMsgIDText(msgidtext, only_current=False, context=None):
-        """Return the IPOTMesgSet indexed by msgidtext from this template.
+        """Return the `IPOTMesgSet` indexed by msgidtext from this template.
 
         If the key is a string or a unicode object, returns the
-        IPOTMsgSet in this template that has a primary message ID
+        `IPOTMsgSet` in this template that has a primary message ID
         with the given text.
 
         If only_current is True, then get only current message sets.
@@ -196,19 +276,19 @@ class IPOTemplate(IRosettaStats):
         If context is not None, look for a message set with that context
         value.
 
-        If no IPOTMsgSet is found, return None.
+        If no `IPOTMsgSet` is found, return None.
         """
 
     def getPOTMsgSetBySequence(sequence):
-        """Return the IPOTMsgSet with the given sequence or None.
+        """Return the `IPOTMsgSet` with the given sequence or None.
 
-        :arg sequence: The sequence number when the IPOTMsgSet appears.
+        :arg sequence: The sequence number when the `IPOTMsgSet` appears.
 
         The sequence number must be > 0.
         """
 
     def getPOTMsgSets(current=True, slice=None):
-        """Return an iterator over IPOTMsgSet objects in this template.
+        """Return an iterator over `IPOTMsgSet` objects in this template.
 
         The 'current' argument is used to select only current POTMsgSets or
         all of them.
@@ -244,7 +324,7 @@ class IPOTemplate(IRosettaStats):
     def getPOFileByPath(path):
         """Get the PO file of the given path.
 
-        Return None if there is no such IPOFile.
+        Return None if there is no such `IPOFile`.
         """
 
     def getPOFileByLang(language_code, variant=None):
@@ -267,26 +347,32 @@ class IPOTemplate(IRosettaStats):
         """Invalidate the cached export for all pofiles."""
 
     def export():
-        """Return as a string the .pot file."""
+        """Return a serialized version as a string using its native format."""
+
+    def exportWithTranslations():
+        """Return an ExportedTranslationFile using its native format.
+
+        It include all translations available.
+        """
 
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""
 
     def newPOFile(language_code, variant=None, requester=None):
-        """Return a new IPOFile for the given language. The variant is
+        """Return a new `IPOFile` for the given language. The variant is
         optional.
 
         Raise LanguageNotFound if the language does not exist in the
         database.
 
-        We should not have already an IPOFile for the given language_code and
+        We should not have already an `IPOFile` for the given language_code and
         variant.
         """
 
     def getDummyPOFile(language_code, variant=None, requester=None):
-        """Return a DummyPOFile if there isn't already a persistent IPOFile
+        """Return a DummyPOFile if there isn't already a persistent `IPOFile`
 
-        Raise LanguageNotFound if the language does not exist in the
+        Raise `LanguageNotFound` if the language does not exist in the
         database.
 
         This method is designed to be used by read only actions. This way you
@@ -329,22 +415,29 @@ class IPOTemplate(IRosettaStats):
 class IPOTemplateSubset(Interface):
     """A subset of POTemplate."""
 
-    sourcepackagename = Attribute(
-        "The sourcepackagename associated with this subset of POTemplates.")
+    sourcepackagename = Object(
+        title=_(
+            'The `ISourcePackageName` associated with this subset.'),
+        schema=ISourcePackageName)
 
-    distroseries = Attribute(
-        "The distroseries associated with this subset of POTemplates.")
+    distroseries = Object(
+        title=_(
+            'The `IDistroSeries` associated with this subset.'),
+        schema=IDistroSeries)
 
-    productseries = Attribute(
-        "The productseries associated with this subset of POTemplates.")
+    productseries = Object(
+        title=_(
+            'The `IProductSeries` associated with this subset.'),
+        schema=IProductSeries)
 
-    title = Attribute("Title - use for launchpad pages")
+    title = TextLine(
+        title=_('The translation file title.'), required=True, readonly=True)
 
     def __iter__():
         """Return an iterator over all POTemplate for this subset."""
 
     def __len__():
-        """Return the number of IPOTemplate objects in this subset."""
+        """Return the number of `IPOTemplate` objects in this subset."""
 
     def __getitem__(name):
         """Get a POTemplate by its name."""
@@ -353,21 +446,21 @@ class IPOTemplateSubset(Interface):
         """Create a new template for the context of this Subset."""
 
     def getPOTemplateByName(name):
-        """Return the IPOTemplate with the given name or None.
+        """Return the `IPOTemplate` with the given name or None.
 
-        The IPOTemplate is restricted to this concrete IPOTemplateSubset.
+        The `IPOTemplate` is restricted to this concrete `IPOTemplateSubset`.
         """
 
     def getPOTemplateByTranslationDomain(translation_domain):
-        """Return the IPOTemplate with the given translation_domain or None.
+        """Return the `IPOTemplate` with the given translation_domain or None.
 
-        The IPOTemplate is restricted to this concrete IPOTemplateSubset.
+        The `IPOTemplate` is restricted to this concrete `IPOTemplateSubset`.
         """
 
     def getPOTemplateByPath(path):
-        """Return the IPOTemplate from this subset that has the given path.
+        """Return the `IPOTemplate` from this subset that has the given path.
 
-        Return None if there is no such IPOTemplate.
+        Return None if there is no such `IPOTemplate`.
         """
 
     def getAllOrderByDateLastUpdated():
@@ -377,10 +470,10 @@ class IPOTemplateSubset(Interface):
         """
 
     def getClosestPOTemplate(path):
-        """Return a IPOTemplate with a path closer to the given path or None.
+        """Return a `IPOTemplate` with a path closer to the given path or None.
 
-        If there is no IPOTemplate with a common path with the given argument,
-        or if there are more than one IPOTemplate with the same common path,
+        If there is no `IPOTemplate` with a common path with the given argument,
+        or if there are more than one `IPOTemplate` with the same common path,
         and both are the closer ones, returns None.
         """
 
@@ -412,15 +505,15 @@ class IPOTemplateSet(Interface):
 
     def getPOTemplateByPathAndOrigin(path, productseries=None,
         distroseries=None, sourcepackagename=None):
-        """Return an IPOTemplate that is stored at 'path' in source code and
+        """Return an `IPOTemplate` that is stored at 'path' in source code and
            came from the given arguments.
 
-        Return None if there is no such IPOTemplate.
+        Return None if there is no such `IPOTemplate`.
         """
 
 
 class IPOTemplateWithContent(IPOTemplate):
-    """Interface for an IPOTemplate used to create the new POTemplate form."""
+    """Interface for an `IPOTemplate` used to create the new POTemplate form."""
 
     content = Bytes(
         title=_("PO Template File to Import"),

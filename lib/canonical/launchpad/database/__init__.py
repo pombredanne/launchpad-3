@@ -1,6 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from canonical.launchpad.database.codeimport import *
+from canonical.launchpad.database.codeimportevent import *
 from canonical.launchpad.database.codeimportmachine import *
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
@@ -65,13 +66,11 @@ from canonical.launchpad.database.distroarchseriesbinarypackage import *
 from canonical.launchpad.database.distroarchseriesbinarypackagerelease import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.language import *
+from canonical.launchpad.database.languagepack import *
 from canonical.launchpad.database.translationgroup import *
 from canonical.launchpad.database.translationimportqueue import *
 from canonical.launchpad.database.translator import *
 from canonical.launchpad.database.processor import *
-from canonical.launchpad.database.manifest import *
-from canonical.launchpad.database.manifestentry import *
-from canonical.launchpad.database.manifestancestry import *
 from canonical.launchpad.database.branch import *
 from canonical.launchpad.database.branchmergeproposal import *
 from canonical.launchpad.database.branchrevision import *
@@ -118,7 +117,6 @@ from canonical.launchpad.database.questionmessage import *
 from canonical.launchpad.database.questionreopening import *
 from canonical.launchpad.database.questionsubscription import *
 from canonical.launchpad.database.poexportrequest import *
-from canonical.launchpad.database.developmentmanifest import *
 from canonical.launchpad.database.distrocomponentuploader import *
 from canonical.launchpad.database.revision import *
 from canonical.launchpad.database.gpgkey import *
@@ -127,3 +125,4 @@ from canonical.launchpad.database.emailaddress import *
 from canonical.launchpad.database.openidserver import *
 from canonical.launchpad.database.entitlement import *
 from canonical.launchpad.database.mailinglist import *
+from canonical.launchpad.database.hwdb import *

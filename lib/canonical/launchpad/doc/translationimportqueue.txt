@@ -1,11 +1,9 @@
-TranslationImportQueueEntry
-===========================
+= TranslationImportQueueEntry =
 
 The TranslationImportQueueEntry is an entry of the queue that will be imported
 into Rosetta.
 
-getGuessedPOFile
-------------------
+== getGuessedPOFile ==
 
 This property gives us the IPOFile where we think we should import this entry.
 
@@ -18,11 +16,11 @@ Here we have some imports and utility fetch.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import ITranslationImportQueue
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces import RosettaImportStatus
     >>> from canonical.launchpad.database import ProductSeries
     >>> from canonical.launchpad.database import DistroSeries
     >>> from canonical.launchpad.database import SourcePackageName
     >>> from canonical.launchpad.ftests import login
-    >>> from canonical.lp.dbschema import RosettaImportStatus
     >>> translationimportqueue = getUtility(ITranslationImportQueue)
     >>> rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
 
@@ -35,7 +33,8 @@ means that we are going to use the ProductSeries.id = 3
 
     >>> evolution_productseries = ProductSeries.get(3)
 
-Attach the file to the product series, without associate it with any potemplate.
+Attach the file to the product series, without associating it with any
+potemplate.
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
     ...     u'po/sr.po', 'foo', True, rosetta_expert,
@@ -206,8 +205,7 @@ we set a couple of lines ago (u'po/sr-old.pot'):
     >>> pofile.path
     u'po/sr.po'
 
-getGuessedPOFile with KDE
--------------------------
+=== getGuessedPOFile with KDE ===
 
 Official KDE packages have a non standard layout where the .pot files are
 stored inside the sourcepackage with the binaries that will use it and the
@@ -354,8 +352,7 @@ Finally, we abort the transaction to undo all changes done.
     >>> transaction.abort()
 
 
-getGuessedPOFile with KOffice
------------------------------
+=== getGuessedPOFile with KOffice ===
 
 Like official KDE packages, KOffice stores the .pot and .po files in different
 packages, the only difference it has is that there is just one source package
@@ -445,8 +442,7 @@ Finally, we abort the transaction to undo all changes done.
     >>> transaction.abort()
 
 
-getGuessedPOFile with .po files in different directories
---------------------------------------------------------
+=== getGuessedPOFile with .po files in different directories ===
 
 Some packages have translations and templates inside the same package, but
 they don't have them inside the same directory. The layout is:
@@ -747,8 +743,7 @@ Finally, we abort the transaction to undo all changes done.
     >>> transaction.abort()
 
 
-executeOptimisticBlock
----------------------
+== executeOptimisticBlock ==
 
 This method looks on the queue to find entries to block based on other .pot
 entries that are stored on the same directory and are already blocked.
@@ -827,8 +822,8 @@ And the .pot entry is still blocked.
     >>> entry5.status == RosettaImportStatus.BLOCKED
     True
 
-getElapsedTimeText
-------------------
+
+== getElapsedTimeText ==
 
 This method returns a string representing the elapsed time since the entry
 was added to the queue.
@@ -867,15 +862,13 @@ And this method gets the right text.
     '2 days 13 hours 5 minutes ago'
 
 
-TranslationImportQueue
-======================
+= TranslationImportQueue =
 
 The translation import queue is the place where the new translation imports
 end before being imported into Rosetta.
 
 
-getTemplatesOnSameDirectory
----------------------------
+== getTemplatesOnSameDirectory ==
 
 This method allows us to get the set of .pot files we have on the same
 directory that a given entry.
@@ -1007,3 +1000,156 @@ review.
     >>> print entry3.status.name
     NEEDS_REVIEW
 
+
+== addOrUpdateEntry() ==
+
+addOrUpdateEntry adds a new entry to the import queue so we can handle it
+later with poimport script.
+
+    >>> from canonical.launchpad.translationformat import (
+    ...     LaunchpadWriteTarFile)
+    >>> from canonical.launchpad.interfaces import IPOTemplateSet
+    >>> potemplate_set = getUtility(IPOTemplateSet)
+    >>> potemplate_subset = potemplate_set.getSubset(
+    ...     productseries=evolution_productseries)
+    >>> evolution_22_test_template = potemplate_subset.getPOTemplateByName(
+    ...     'evolution-2.2-test')
+    >>> evolution_22_template = potemplate_subset.getPOTemplateByName(
+    ...     'evolution-2.2')
+
+We get a sample tarball to be uploaded into the system.
+
+    >>> test_tar_content = {
+    ...     'foo.pot': 'Foo template',
+    ...     'es.po': 'Spanish translation',
+    ...     'fr.po': 'French translation',
+    ...     }
+    >>> tarfile_content = LaunchpadWriteTarFile.files_to_string(
+    ...     test_tar_content)
+    >>> is_published = True
+
+We will need this helper function to print the queue content.
+
+    >>> def print_queue_entries():
+    ...     translationimportqueue = getUtility(ITranslationImportQueue)
+    ...     for entry in translationimportqueue:
+    ...         if entry.productseries is not None:
+    ...             context = entry.productseries.product.name
+    ...         else:
+    ...             context = '%s %s' % (
+    ...                 entry.distroseries.name, entry.sourcepackagename.name)
+    ...         template = 'None'
+    ...         if entry.potemplate is not None:
+    ...             template = entry.potemplate.name
+    ...         print '%s | %s | %s' % (context, template, entry.path)
+
+Current entries in the queue are:
+
+    >>> print_queue_entries()
+    hoary evolution | None               | po/sr.po
+    firefox         | None               | foo/bar.pot
+    evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
+    evolution       | evolution-2.2-test | po/pt_BR.po
+    firefox         | None               | foo/bar.po
+    evolution       | None               | po/sr.po
+    hoary evolution | None               | po/evolution-2.2.pot
+    warty evolution | None               | po/sr.po
+
+Attach the sample tarball to the 'evolution-2.2-test' template in evolution
+product. There will be three new entries from the tarball.
+
+    >>> translationimportqueue.addOrUpdateEntriesFromTarball(
+    ...     tarfile_content, is_published, rosetta_expert,
+    ...     productseries=evolution_productseries,
+    ...     potemplate=evolution_22_test_template)
+    3
+
+And those new entries in the queue appear in the list.
+
+    >>> print_queue_entries()
+    hoary evolution | None               | po/sr.po
+    firefox         | None               | foo/bar.pot
+    evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
+    evolution       | evolution-2.2-test | po/pt_BR.po
+    firefox         | None               | foo/bar.po
+    evolution       | None               | po/sr.po
+    hoary evolution | None               | po/evolution-2.2.pot
+    warty evolution | None               | po/sr.po
+    evolution       | evolution-2.2-test | es.po
+    evolution       | evolution-2.2-test | foo.pot
+    evolution       | evolution-2.2-test | fr.po
+
+Now, attaching the same layout to a different template for the same product,
+we get again three more entries.
+
+    >>> translationimportqueue.addOrUpdateEntriesFromTarball(
+    ...     tarfile_content, is_published, rosetta_expert,
+    ...     productseries=evolution_productseries,
+    ...     potemplate=evolution_22_template)
+    3
+
+And the import queue gets three new entries too. This part of the test is
+important to prevent problems like bug #133611, in which case were not getting
+the extra three entries.
+
+    >>> print_queue_entries()
+    hoary evolution | None               | po/sr.po
+    firefox         | None               | foo/bar.pot
+    evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
+    evolution       | evolution-2.2-test | po/pt_BR.po
+    firefox         | None               | foo/bar.po
+    evolution       | None               | po/sr.po
+    hoary evolution | None               | po/evolution-2.2.pot
+    warty evolution | None               | po/sr.po
+    evolution       | evolution-2.2-test | es.po
+    evolution       | evolution-2.2-test | foo.pot
+    evolution       | evolution-2.2-test | fr.po
+    evolution       | evolution-2.2      | es.po
+    evolution       | evolution-2.2      | foo.pot
+    evolution       | evolution-2.2      | fr.po
+
+
+= Invalid data =
+
+If administrators fail to correct certain errors in requests while approving
+them, and the admin user interface mistakenly accepts the approval, we may
+end up with an approved but incomplete entry that has no place to go (see
+bug 138650 for an example).
+
+If such bad requests do end up on the import queue, the import queue code will
+raise errors about them.
+
+    >>> entry = translationimportqueue.addOrUpdateEntry(
+    ...     u'po/sr.po', 'foo', True, rosetta_expert,
+    ...      productseries=evolution_productseries)
+
+    >>> entry.import_into is None
+    True
+
+    >>> entry.status = RosettaImportStatus.APPROVED
+
+    >>> import logging
+    >>> from canonical.launchpad.scripts.po_import import ImportProcess
+    >>> ImportProcess(transaction, logging).run()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Broken translation import queue entry 4 (for evolution):
+    ...
+
+    >>> entry = translationimportqueue.addOrUpdateEntry(
+    ...     u'po/th.po', 'bar', False, rosetta_expert,
+    ...     distroseries=hoary_distroseries,
+    ...     sourcepackagename=evolution_sourcepackagename)
+
+    >>> entry.import_into is None
+    True
+
+    >>> entry.status = RosettaImportStatus.APPROVED
+
+    >>> import logging
+    >>> from canonical.launchpad.scripts.po_import import ImportProcess
+    >>> ImportProcess(transaction, logging).run()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Broken translation import queue entry 4 (for evolution):
+    ...

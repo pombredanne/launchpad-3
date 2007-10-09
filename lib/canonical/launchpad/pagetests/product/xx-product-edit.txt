@@ -1,7 +1,6 @@
 Page to edit a product - does the page load as the product owner?
 
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox')
   >>> browser.getLink('Change details').click()
   >>> print browser.url

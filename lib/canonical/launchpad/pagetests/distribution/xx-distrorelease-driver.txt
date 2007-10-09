@@ -2,8 +2,7 @@
 
 Appoint Sample Person as the driver of the Ubuntu Hoary distro series.
 
-  >>> browser.addHeader(
-  ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
   >>> browser.open('http://launchpad.dev/ubuntu/hoary')
   >>> browser.getLink('Appoint driver').click()
 

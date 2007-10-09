@@ -211,7 +211,7 @@ class Publisher(object):
                                    (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        self.archive.purpose != ArchivePurpose.PPA):
+                        not self.archive.allowUpdatesToReleasePocket):
                         # We're not doing a full run and the
                         # distroseries is now 'stable': if we try to
                         # write a release file for it, we're doing
@@ -239,7 +239,7 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        self.archive.purpose != ArchivePurpose.PPA):
+                        not self.archive.allowUpdatesToReleasePocket):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
                             "Oops, indexing stable distroseries.")
@@ -269,7 +269,7 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        self.archive.purpose != ArchivePurpose.PPA):
+                        not self.archive.allowUpdatesToReleasePocket):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
                             "Oops, indexing stable distroseries.")
@@ -280,6 +280,11 @@ class Publisher(object):
         if not (distroseries.name, pocket) in self.dirty_pockets:
             return False
         return True
+
+    def _makeFileGroupWriteableAndWorldReadable(self, file_path):
+        """Make the file group readable/writable and world readable."""
+        mode = stat.S_IMODE(os.stat(file_path).st_mode)
+        os.chmod(file_path, mode | stat.S_IWGRP | stat.S_IRGRP | stat.S_IROTH)
 
     def _writeComponentIndexes(self, distroseries, pocket, component):
         """Write Index files for single distroseries + pocket + component.
@@ -294,9 +299,20 @@ class Publisher(object):
                        % (suite_name, component.name))
 
         self.log.debug("Generating Sources")
-        fd_gz, temp_index_gz = tempfile.mkstemp(prefix='source-index_')
+
+        source_index_basepath = os.path.join(
+            self._config.distsroot, suite_name, component.name, 'source')
+        if os.path.exists(source_index_basepath):
+            assert os.access(source_index_basepath, os.W_OK), \
+                    "%s not writeable!" % source_index_basepath
+        else:
+            os.makedirs(source_index_basepath)
+
+        fd_gz, temp_index_gz = tempfile.mkstemp(
+            dir=self._config.temproot, prefix='source-index-gz_')
         source_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, 'wb'))
-        fd, temp_index = tempfile.mkstemp(prefix='source-index_')
+        fd, temp_index = tempfile.mkstemp(
+            dir=self._config.temproot, prefix='source-index_')
         source_index = open(temp_index, 'wb')
 
         for spp in distroseries.getSourcePackagePublishing(
@@ -309,10 +325,6 @@ class Publisher(object):
         source_index.close()
         source_index_gz.close()
 
-        source_index_basepath = os.path.join(
-            self._config.distsroot, suite_name, component.name, 'source')
-        if not os.path.exists(source_index_basepath):
-            os.makedirs(source_index_basepath)
         source_index_gz_path = os.path.join(source_index_basepath, "Sources.gz")
         source_index_path = os.path.join(source_index_basepath, "Sources")
 
@@ -320,19 +332,29 @@ class Publisher(object):
         os.rename(temp_index, source_index_path)
         os.rename(temp_index_gz, source_index_gz_path)
 
-        # Make the files group writable.
-        mode = stat.S_IMODE(os.stat(source_index_path).st_mode)
-        os.chmod(source_index_path, mode | stat.S_IWGRP)
-        mode = stat.S_IMODE(os.stat(source_index_gz_path).st_mode)
-        os.chmod(source_index_gz_path, mode | stat.S_IWGRP)
+        # XXX julian 2007-10-03
+        # This is kinda papering over a problem somewhere that causes the
+        # files to get created with permissions that don't allow group/world
+        # read access.  See https://bugs.launchpad.net/soyuz/+bug/148471
+        self._makeFileGroupWriteableAndWorldReadable(source_index_path)
+        self._makeFileGroupWriteableAndWorldReadable(source_index_gz_path)
 
         for arch in distroseries.architectures:
             arch_path = 'binary-%s' % arch.architecturetag
             self.log.debug("Generating Packages for %s" % arch_path)
 
-            temp_prefix = '%s-index_' % arch_path
-            fd_gz, temp_index_gz = tempfile.mkstemp(prefix=temp_prefix)
-            fd, temp_index = tempfile.mkstemp(prefix=temp_prefix)
+            package_index_basepath = os.path.join(
+                self._config.distsroot, suite_name, component.name, arch_path)
+            if os.path.exists(package_index_basepath):
+                assert os.access(package_index_basepath, os.W_OK), \
+                        "%s not writeable!" % package_index_basepath
+            else:
+                os.makedirs(package_index_basepath)
+
+            fd_gz, temp_index_gz = tempfile.mkstemp(
+                dir=self._config.temproot, prefix='%s-index-gz_' % arch_path)
+            fd, temp_index = tempfile.mkstemp(
+                dir=self._config.temproot, prefix='%s-index_' % arch_path)
             package_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, "wb"))
             package_index = open(temp_index, "wb")
 
@@ -346,10 +368,6 @@ class Publisher(object):
             package_index.close()
             package_index_gz.close()
 
-            package_index_basepath = os.path.join(
-                self._config.distsroot, suite_name, component.name, arch_path)
-            if not os.path.exists(package_index_basepath):
-                os.makedirs(package_index_basepath)
             package_index_gz_path = os.path.join(
                 package_index_basepath, "Packages.gz")
             package_index_path = os.path.join(
@@ -359,11 +377,9 @@ class Publisher(object):
             os.rename(temp_index, package_index_path)
             os.rename(temp_index_gz, package_index_gz_path)
 
-            # Make the files group writable.
-            mode = stat.S_IMODE(os.stat(package_index_path).st_mode)
-            os.chmod(package_index_path, mode | stat.S_IWGRP)
-            mode = stat.S_IMODE(os.stat(package_index_gz_path).st_mode)
-            os.chmod(package_index_gz_path, mode | stat.S_IWGRP)
+            # Make the files group writable and world readable.
+            self._makeFileGroupWriteableAndWorldReadable(package_index_path)
+            self._makeFileGroupWriteableAndWorldReadable(package_index_gz_path)
 
         # Inject static requests for Release files into self.apt_handler
         # in a way which works for NoMoreAptFtpArchive without changing
@@ -461,12 +477,13 @@ class Publisher(object):
         # Only the primary archive has uncompressed and bz2 archives.
         if self.archive.purpose == ArchivePurpose.PRIMARY:
             index_suffixes = ('', '.gz', '.bz2')
-        elif self.archive.purpose == ArchivePurpose.COMMERCIAL:
-            # The commercial archive needs uncompressed files for
-            # compatibility with signed Release files.
-            index_suffixes = ('', '.gz')
         else:
-            index_suffixes = ('.gz',)
+            # We don't generate bz2 indexes for other archives for
+            # simplicity (they use NoMoreAptFtparchive approach).
+            # The plain index has to be listed in the Release, but not
+            # necessarily has to be on disk, its checksum is used for
+            # verification in client applications like dpkg/apt/smart.
+            index_suffixes = ('', '.gz')
 
         self.log.debug("Writing Release file for %s/%s/%s" % (
             full_name, component, architecture))

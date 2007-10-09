@@ -92,6 +92,7 @@
     <sectiontype name="shipitkubuntu" extends="virtual_host" />
     <sectiontype name="shipitedubuntu" extends="virtual_host" />
     <sectiontype name="xmlrpc" extends="virtual_host" />
+    <sectiontype name="xmlrpc-private" extends="virtual_host" />
 
     <sectiontype name="virtual_hosts">
         <key name="use_https" datatype="boolean" required="yes">
@@ -111,6 +112,8 @@
         <section name="*" type="shipitkubuntu" attribute="shipitkubuntu" required="yes" />
         <section name="*" type="shipitedubuntu" attribute="shipitedubuntu" required="yes" />
         <section name="*" type="xmlrpc" attribute="xmlrpc" required="yes" />
+        <section name="*" type="xmlrpc-private" attribute="xmlrpc_private"
+                          required="yes" />
     </sectiontype>
 
     <sectiontype name="launchpad_errorreports">
@@ -198,32 +201,6 @@ k            </description>
         </key>
         <key name="browser_notification_level" required="no"
             datatype="canonical.config.loglevel" default="info" />
-        <key name="supermirror_root" datatype="canonical.config.urlbase"
-            default="http://bazaar.launchpad.net/">
-            <description>
-                The prefix of the URL for the public area of the Supermirror.
-                This value is usually not meaningful to change, so it should
-                generally not be set explicitly so the default value is used.
-
-                This should end with a slash.
-
-                If that value is changed in production, the
-                branch_url_constraint_not_supermirror database constraint
-                should be updated.
-            </description>
-            <example>http://bazaar.launchpad.net/</example>
-        </key>
-        <key name="smartserver_root" datatype="canonical.config.urlbase"
-            default="bzr+ssh://bazaar.launchpad.net/">
-            <description>
-                The prefix of the URL for the codehosting smart server.
-                This value is usually not meaningful to change, so it should
-                generally not be set explicitly so the default value is used.
-
-                This should end with a slash.
-            </description>
-            <example>bzr+ssh://bazaar.launchpad.net/</example>
-        </key>
         <key name="bzr_imports_root_url" datatype="canonical.config.urlbase"
             default="http://escudero.ubuntu.com:680/">
             <description>
@@ -231,15 +208,6 @@ k            </description>
                 other RCSes like CVS.  Used to generate URLs for the branch
                 puller to use, not for public URLs.
             </description>
-        </key>
-        <key name="codebrowse_root" datatype="canonical.config.urlbase"
-             default="http://codebrowse.launchpad.net/">
-            <description>
-                The URL prefix for links to the Bazaar code browser.
-                Links are formed by appending the branch's unique name
-                to the root URL.
-            </description>
-            <example>http://codebrowse.launchpad.net/</example>
         </key>
         <key name="default_blob_expiry" datatype="integer" default="10800">
             <description>
@@ -575,6 +543,19 @@ k            </description>
               page.
           </description>
         </key>
+        <key name="expiration_dbuser" datatype="string" 
+            default="bugnotification">
+            <description>
+                The database user that will be used to expire bugtask.
+            </description>
+        </key>
+        <key name="days_before_expiration" datatype="integer"
+             default="60">
+            <description>
+                The number of days of inactivity required before an unassigned
+                bugtask with the status of INCOMPLETE is expired.
+            </description>
+        </key>
         <key name="search_comments" datatype="boolean" required="no"
              default="no">
           <description>
@@ -588,6 +569,8 @@ k            </description>
             Shipit-specific configuration options.
         </description>
         <key name="dbuser" datatype="string" default="shipit" />
+        <key name="max_cds_for_auto_approval" datatype="integer"
+             required="no" default="39" />
         <key name="admins_email_address" datatype="string"
              default="info@shipit.ubuntu.com"/>
         <key name="ubuntu_from_email_address" datatype="string"
@@ -596,6 +579,9 @@ k            </description>
              default="noreply@shipit.edubuntu.com" />
         <key name="kubuntu_from_email_address" datatype="string"
              default="noreply@shipit.kubuntu.com" />
+        <key name="prerelease_mode" datatype="boolean" default="true" />
+        <key name="beta_download_link" datatype="string"
+             default="http://www.ubuntu.com/testing/gutsybeta" />
     </sectiontype>
 
     <sectiontype name="rosettaadmin" extends="database_options">
@@ -948,8 +934,6 @@ k            </description>
 
     <sectiontype name="codehosting">
         <key name="authserver" datatype="string" />
-        <key name="upload_url_base" datatype="string"
-             default="sftp://%s@bazaar.launchpad.net" />
         <key name="host_key_pair_path" datatype="string" />
         <key name="branches_root" datatype="string" />
         <key name="banner" datatype="string" />
@@ -957,6 +941,42 @@ k            </description>
         <key name="launch" datatype="boolean" required="no" default="no" />
         <key name="spew" datatype="boolean" required="no" default="no" />
         <key name="logfile" datatype="string" required="no" default="-" />
+        <key name="debug_logfile" datatype="string" required="no" />
+        <key name="smartserver_root" datatype="canonical.config.urlbase"
+            default="bzr+ssh://%(user)s@bazaar.launchpad.net/">
+            <description>
+                The prefix of the URL for the codehosting smart server.
+                This value is usually not meaningful to change, so it should
+                generally not be set explicitly so the default value is used.
+
+                This should end with a slash.
+            </description>
+            <example>bzr+ssh://bazaar.launchpad.net/</example>
+        </key>
+        <key name="supermirror_root" datatype="canonical.config.urlbase"
+            default="http://bazaar.launchpad.net/">
+            <description>
+                The prefix of the URL for the public area of the Supermirror.
+                This value is usually not meaningful to change, so it should
+                generally not be set explicitly so the default value is used.
+
+                This should end with a slash.
+
+                If that value is changed in production, the
+                branch_url_constraint_not_supermirror database constraint
+                should be updated.
+            </description>
+            <example>http://bazaar.launchpad.net/</example>
+        </key>
+        <key name="codebrowse_root" datatype="canonical.config.urlbase"
+             default="http://codebrowse.launchpad.net/">
+            <description>
+                The URL prefix for links to the Bazaar code browser.
+                Links are formed by appending the branch's unique name
+                to the root URL.
+            </description>
+            <example>http://codebrowse.launchpad.net/</example>
+        </key>
     </sectiontype>
 
     <sectiontype name="authserver" extends="database_options">
@@ -980,6 +1000,23 @@ k            </description>
             attribute="production_errorreports" required="no" />
         <section name="*" type="autotest_errorreports"
             attribute="autotest_errorreports" required="no" />
+    </sectiontype>
+
+    <sectiontype name="codeimport">
+        <key name="default_interval_cvs" datatype="integer"
+             required="no" default="43200">
+          <description>
+              The default value of the update interval of a code import from
+              CVS, in seconds.
+          </description>
+        </key>
+        <key name="default_interval_subversion" datatype="integer"
+             required="no" default="21600">
+          <description>
+              The default value of the update interval of a code import from
+              Subversion, in seconds.
+          </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="personalpackagearchive">
@@ -1036,6 +1073,7 @@ k            </description>
 
     <sectiontype name="checkwatches">
         <key name="batch_query_threshold" datatype="integer" default="10" />
+        <key name="default_socket_timeout" datatype="integer" default="30" />
     </sectiontype>
 
     <sectiontype name="canonical" extends="database_options">
@@ -1082,6 +1120,7 @@ k            </description>
         <section name="*" type="codehosting" attribute="codehosting" />
         <section name="*" type="authserver" attribute="authserver" />
         <section name="*" type="importd" attribute="importd" />
+        <section name="*" type="codeimport" attribute="codeimport" />
         <section name="*" type="personalpackagearchive"
             attribute="personalpackagearchive" />
         <section name="*" type="mailman" attribute="mailman" />

@@ -27,9 +27,8 @@ The distribution's registrant can access the page, but even he/she can't change
 the usage.
 
     >>> from zope.testbrowser.testing import Browser
-    >>> registrant = Browser()
-    >>> registrant.addHeader(
-    ...     'Authorization', 'Basic celso.providelo@canonical.com:cprov')
+    >>> registrant = setupBrowser(
+    ...     auth='Basic celso.providelo@canonical.com:cprov')
     >>> registrant.open('http://launchpad.dev/ubuntu/+edit')
     >>> print registrant.url
     http://launchpad.dev/ubuntu/+edit

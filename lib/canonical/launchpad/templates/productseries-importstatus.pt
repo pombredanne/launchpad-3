@@ -32,22 +32,22 @@
 	  </tr>
 	  <tr>
             <th>Root:</th>
-            <td tal:content="context/cvsroot">
+            <td id="cvs-root" tal:content="context/cvsroot">
               :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome</td>
 	  </tr>
 	  <tr>
 	    <th>Module:</th>
-	    <td tal:content="context/cvsmodule">evolution</td>
+	    <td id="cvs-module" tal:content="context/cvsmodule">evolution</td>
           </tr>
           <tr>
             <th>Branch:</th>
-            <td tal:content="context/cvsbranch">MAIN</td>
+            <td id="cvs-branch" tal:content="context/cvsbranch">MAIN</td>
           </tr>
         </tal:block>
         <tal:block condition="context/rcstype/enumvalue:SVN">
           <tr>
             <th>Subversion:</th>
-            <td tal:content="context/svnrepository">http://svn.gnome.org/evolution/trunk</td>
+            <td id="svn-url" tal:content="context/svnrepository">http://svn.gnome.org/evolution/trunk</td>
           </tr>
         </tal:block>
         <tr tal:condition="context/importstatus">

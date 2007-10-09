@@ -25,6 +25,7 @@ __all__ = [
     'DistributionArchiveMirrorsRSSView',
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
+    'DistributionLanguagePackAdminView',
     'DistributionSetFacets',
     'DistributionSetNavigation',
     'DistributionSetContextMenu',
@@ -363,7 +364,7 @@ class DistributionTranslationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'translations'
-    links = ['edit', 'imports']
+    links = ['edit', 'imports', 'language_pack_admin']
 
     def imports(self):
         text = 'See import queue'
@@ -372,6 +373,11 @@ class DistributionTranslationsMenu(ApplicationMenu):
     def edit(self):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
+
+    @enabled_with_permission('launchpad.TranslationsAdmin')
+    def language_pack_admin(self):
+        text = 'Change language pack admins'
+        return Link('+select-language-pack-admin', text, icon='edit')
 
 
 class DistributionView(BuildRecordsView):
@@ -562,6 +568,18 @@ class DistributionBugContactEditView(SQLObjectEditView):
                 "contact again whenever you want to.")
 
         self.request.response.redirect(canonical_url(distribution))
+
+
+class DistributionLanguagePackAdminView(LaunchpadEditFormView):
+    """Browser view to change the language pack administrator."""
+
+    schema = IDistribution
+    label = "Change the language pack administrator"
+    field_names = ['language_pack_admin']
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
 
 
 class DistributionCountryArchiveMirrorsView(LaunchpadView):
