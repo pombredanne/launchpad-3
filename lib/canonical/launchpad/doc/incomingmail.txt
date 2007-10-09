@@ -52,16 +52,17 @@ pass through the authentication stage:
 
 Now we send a few test mails to foo.com, bar.com, and baz.com:
 
-    >>> import transaction
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.mail.ftests import read_test_message
     >>> from canonical.launchpad.mail import sendmail
 
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> msgids = {'foo.com': [], 'bar.com': [], 'baz.com': []}
     >>> for domain in ('foo.com', 'bar.com', 'foo.com', 'baz.com'):
     ...     msg = read_test_message('signed_detached.txt')
     ...     msg.replace_header('To', '123@%s' % domain)
     ...     msgids[domain].append("<%s>" % sendmail(msg))
-    ...     transaction.commit()
 
 The test mails are now in Launchpad's mail box, so now we can call
 handleMail, so that every mail gets handled by the correct handler.
@@ -70,20 +71,21 @@ import the keys first.
 
     >>> from canonical.launchpad.ftests import import_public_test_keys
     >>> import_public_test_keys()
-    >>> transaction.commit()
-
-    >>> handleMail()
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> zopeless_transaction = LaunchpadZopelessLayer.txn
+    >>> handleMail(zopeless_transaction)
     WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
     WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
     WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
     WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
 
-Now we can see that each handler handled that mails sent to its domain:
+Now we can see that each handler handled the emails sent to its domain:
 
-    >>> foo_handler.handledMails == msgids['foo.com']
-    True
-    >>> bar_handler.handledMails == msgids['bar.com']
-    True
+    >>> set(foo_handler.handledMails) ^ set(msgids['foo.com'])
+    set([])
+    >>> set(bar_handler.handledMails) ^ set(msgids['bar.com'])
+    set([])
 
 
 == Unhandled Mail ==
@@ -95,7 +97,7 @@ errors_address.
 
     >>> len(error_handler.handledMails)
     0
-    >>> handleMail()
+    >>> handleMail(zopeless_transaction)
     WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
     >>> len(error_handler.handledMails)
     1
@@ -112,8 +114,7 @@ most of the time reject the email:
     >>> moin_change = read_test_message('moin-change.txt')
     >>> moin_change['X-Original-To'] = '123@foo.com'
     >>> msgid = "<%s>" % sendmail(moin_change)
-    >>> transaction.commit()
-    >>> handleMail()
+    >>> handleMail(zopeless_transaction)
     >>> msgid not in foo_handler.handledMails
     True
 
@@ -128,8 +129,7 @@ So if we send the mail to bar.com, bar_handler will handle the mail:
 
     >>> moin_change.replace_header('X-Original-To', '123@bar.com')
     >>> msgid = "<%s>" % sendmail(moin_change)
-    >>> transaction.commit()
-    >>> handleMail()
+    >>> handleMail(zopeless_transaction)
     >>> msgid in bar_handler.handledMails
     True
 
@@ -141,15 +141,12 @@ So if we send the mail to bar.com, bar_handler will handle the mail:
 If available, the X-Original-To header is used to determine to which
 address the email was sent to:
 
-    >>> from canonical.launchpad.mail import raw_sendmail
     >>> msg = read_test_message('signed_detached.txt')
     >>> msg.replace_header('To', '123@foo.com')
     >>> msg['CC'] = '123@foo.com'
     >>> msg['X-Original-To'] = '123@bar.com'
-    >>> msgid = '<%s>' % raw_sendmail (
-    ...     msg['From'], ['123@bar.com'], msg.as_string())
-    >>> transaction.commit()
-    >>> handleMail()
+    >>> msgid = '<%s>' % sendmail (msg, ['123@bar.com'])
+    >>> handleMail(zopeless_transaction)
     >>> msgid in bar_handler.handledMails
     True
 
@@ -168,30 +165,26 @@ be printed, and the mail should be deleted from the queue.
 
 Let's create and register a handler which violates a DB constraint:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.database.sqlbase import cursor
     >>> class DBExceptionRaiser:
     ...     implements(IMailHandler)
     ...     def process(self, mail, to_addr, filealias):
-    ...         firefox = getUtility(IProductSet)['firefox']
-    ...         firefox.name = 'invalid name'
-    ...         flush_database_updates()
-
+    ...         cur = cursor()
+    ...         cur.execute('SELECT 1/0')
     >>> mail_handlers.add('except.com', DBExceptionRaiser())
 
 Now we send a mail to the handler, which will cause an exception:
 
-    >>> exception_raiser = """From: Foo Bar <foo.bar@canonical.com>
+    >>> import email
+    >>> exception_raiser = email.message_from_string(
+    ... """From: Foo Bar <foo.bar@canonical.com>
     ... To: something@except.com
     ... X-Original-To: something@except.com
     ... Subject: Raise an exception
     ...
     ... This part is not important.
-    ... """
-    >>> raw_sendmail(
-    ...     'foo.bar@canonical.com', ['something@exception.com'],
-    ...     exception_raiser)
-    '...'
-    >>> transaction.commit()
+    ... """)
+    >>> msgid = sendmail(exception_raiser, ['something@exception.com'])
 
 We send another mail as well, in order to make sure that it gets
 processed as well:
@@ -199,19 +192,18 @@ processed as well:
     >>> msg = read_test_message('signed_detached.txt')
     >>> msg.replace_header('To', '123@foo.com')
     >>> msgid = '<%s>' % sendmail(msg)
-    >>> transaction.commit()
-
 
 If we call handleMail(), we'll see some useful error messages printed
 out:
 
-    >>> handleMail(transaction)
+    >>> handleMail(zopeless_transaction)
     ERROR:...:An exception was raised inside the handler: http://...
-    ERROR: new row for relation "product" violates check constraint "valid_name"
+    Traceback (most recent call last):
+    ...
+    ProgrammingError: ERROR:  division by zero
     <BLANKLINE>
-    UPDATE Product SET name = 'invalid name' WHERE id = 4
+    SELECT 1/0
     WARNING...
-
 
 The second mail we sent got handled despite the exception:
 
@@ -237,7 +229,6 @@ logged.
     >>> msg = read_test_message('signed_detached.txt')
     >>> msg.replace_header('To', '123@foo.com')
     >>> msgid = '<%s>' % sendmail(msg)
-    >>> transaction.commit()
     >>> len(stub.test_emails)
     1
 
@@ -267,8 +258,7 @@ Emails with an empty Return-Path header should be dropped:
     >>> msg.replace_header('To', '123@foo.com')
     >>> msg['Return-Path'] = '<>'
     >>> msgid = '<%s>' % sendmail(msg)
-    >>> transaction.commit()
-    >>> handleMail()
+    >>> handleMail(zopeless_transaction)
     >>> msgid in foo_handler.handledMails
     False
 
@@ -289,8 +279,7 @@ empty Return-Path, but there are some broken mailers out there.
     ...     'multipart/report; report-type=delivery-status;'
     ...     ' boundary="boundary"')
     >>> msgid = '<%s>' % sendmail(msg)
-    >>> transaction.commit()
-    >>> handleMail()
+    >>> handleMail(zopeless_transaction)
     >>> msgid in foo_handler.handledMails
     False
 

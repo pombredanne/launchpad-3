@@ -107,17 +107,6 @@ def branchscannerSetUp(test):
 def branchscannerTearDown(test):
     tearDown(test)
 
-def answerTrackerSetUp(test):
-    setGlobs(test)
-    # The Zopeless environment usually runs using the PermissivePolicy
-    # but the process-mail.py script in which the tested code runs
-    # use the regular web policy.
-    test.old_security_policy = getSecurityPolicy()
-    setSecurityPolicy(LaunchpadSecurityPolicy)
-
-def answerTrackerTearDown(test):
-    setSecurityPolicy(test.old_security_policy)
-
 def peopleKarmaTearDown(test):
     # We can't detect db changes made by the subprocess (yet).
     DatabaseLayer.force_dirty_database()
@@ -441,12 +430,6 @@ special = {
             setUp=branchscannerSetUp, tearDown=branchscannerTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
-    'answer-tracker-emailinterface.txt': LayeredDocFileSuite(
-            '../doc/answer-tracker-emailinterface.txt',
-            setUp=answerTrackerSetUp, tearDown=answerTrackerTearDown,
-            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
-            stdout_logging=False
-            ),
     'person-karma.txt': FunctionalDocFileSuite(
             '../doc/person-karma.txt',
             setUp=setUp, tearDown=peopleKarmaTearDown,
@@ -480,11 +463,6 @@ special = {
     'rosetta-karma.txt': FunctionalDocFileSuite(
             '../doc/rosetta-karma.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
-    'incomingmail.txt': FunctionalDocFileSuite(
-            '../doc/incomingmail.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer,
-            stdout_logging_level=logging.WARNING
             ),
     'launchpadform.txt': FunctionalDocFileSuite(
             '../doc/launchpadform.txt',
@@ -696,6 +674,55 @@ special = {
             layer=LaunchpadZopelessLayer
             ),
     }
+
+
+def processMailSetup(test):
+    setGlobs(test)
+    test._old_policy = getSecurityPolicy()
+    setSecurityPolicy(LaunchpadSecurityPolicy)
+    LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+
+
+def processMailTearDown(test):
+    setSecurityPolicy(test._old_policy)
+
+
+def addProcessMailTestsToSpecial():
+    """Adds all the documentation tests related to process-mail.py."""
+    filenames = [
+        'answer-tracker-emailinterface.txt',
+        'bugs-emailinterface.txt',
+        'bugs-email-affects-path.txt',
+        'emailauthentication.txt',
+        ]
+    for filename in filenames:
+        special[filename] = LayeredDocFileSuite(
+            "../doc/%s" % filename,
+            setUp=processMailSetup, tearDown=processMailTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
+            stdout_logging=False)
+
+    # Tests requiring stdout logging.
+    for filename in ['incomingmail.txt', 'spec-mail-exploder.txt']:
+        special[filename] = LayeredDocFileSuite(
+            "../doc/%s" % filename,
+            setUp=processMailSetup, tearDown=processMailTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
+            stdout_logging_level=logging.WARNING)
+
+    # Adds a copy of bug-set-status.txt that will be run with
+    # the processmail user.
+    def bugSetStatusSetUp(test):
+        processMailSetup(test)
+        test.globs['test_dbuser'] = config.processmail.dbuser
+
+    special['bug-set-status.txt-processmail'] = LayeredDocFileSuite(
+            '../doc/bug-set-status.txt',
+            setUp=bugSetStatusSetUp, tearDown=processMailTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
+            stdout_logging=False)
+
+addProcessMailTestsToSpecial()
 
 
 def test_suite():
