@@ -410,6 +410,18 @@ class LaunchpadRootNavigation(Navigation):
         return self.redirectSubTree(
             'https://help.launchpad.net/Legal', status=301)
 
+    @stepto('faq')
+    def redirect_faq(self):
+        """Redirect /faq to help.launchpad.net/FAQ site."""
+        return self.redirectSubTree(
+            'https://help.launchpad.net/FAQ', status=301)
+
+    @stepto('feedback')
+    def redirect_feedback(self):
+        """Redirect /feedback to help.launchpad.net/Feedback site."""
+        return self.redirectSubTree(
+            'https://help.launchpad.net/Feedback', status=301)
+
     stepto_utilities = {
         'binarypackagenames': IBinaryPackageNameSet,
         'bounties': IBountySet,
