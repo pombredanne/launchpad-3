@@ -33,23 +33,20 @@ the usage.
     >>> print registrant.url
     http://launchpad.dev/ubuntu/+edit
 
-    >>> print registrant.getControl(
-    ...     'Translations for this distribution are done in Launchpad').selected
+    >>> print registrant.getControl(name='field.official_rosetta').value
     Traceback (most recent call last):
     ...
-    LookupError: label...
+    LookupError: name...
 
-    >>> print registrant.getControl(
-    ...     'Bugs in this distribution are tracked in Launchpad').selected
+    >>> print registrant.getControl(name='field.official_malone').value
     Traceback (most recent call last):
     ...
-    LookupError: label...
+    LookupError: name...
 
-    >>> print registrant.getControl(
-    ...     'People can ask questions in Launchpad Answers').selected
+    >>> print registrant.getControl(name='field.official_answers').value
     Traceback (most recent call last):
     ...
-    LookupError: label...
+    LookupError: name...
 
 A Launchpad administrator, however, can see the controls.
 
@@ -57,27 +54,19 @@ A Launchpad administrator, however, can see the controls.
     >>> admin_browser.getLink('Change distribution details').click()
     >>> print admin_browser.title
     Change distribution details
-    >>> print admin_browser.getControl(
-    ...     'Translations for this distribution are done in Launchpad').selected
+    >>> print admin_browser.getControl(name='field.official_rosetta').value
     True
-    >>> print admin_browser.getControl(
-    ...     'Bugs in this distribution are tracked in Launchpad').selected
+    >>> print admin_browser.getControl(name='field.official_malone').value
     True
-    >>> print admin_browser.getControl(
-    ...     'People can ask questions in Launchpad Answers').selected
+    >>> print admin_browser.getControl(name='field.official_answers').value
     True
      
 And if the admin changes the settings, the changes show up on the distribution
 Overview page.
 
-    >>> admin_browser.getControl(
-    ...     'Translations for this distribution are done in ' +
-    ...     'Launchpad').selected = False
-    >>> admin_browser.getControl(
-    ...     'Bugs in this distribution are tracked in Launchpad').selected \
-    ...     = False
-    >>> admin_browser.getControl(
-    ...     'People can ask questions in Launchpad Answers').selected = False
+    >>> admin_browser.getControl(name='field.official_rosetta').value = False
+    >>> admin_browser.getControl(name='field.official_malone').value = False
+    >>> admin_browser.getControl(name='field.official_answers').value = False
     >>> admin_browser.getControl('Change').click()
 
     >>> print admin_browser.url
