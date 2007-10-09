@@ -15,31 +15,20 @@ __all__ = [
     ]
 
 import errno
-import os
 import pytz
-import tempfile
 
 from datetime import datetime
-from email import message_from_string
-from logging import getLogger
 from sha import sha
 
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     NotFoundError, IDistributionSet, IPackageUploadSet,
-    IComponentSet, ISectionSet, QueueInconsistentStateError,
-    IPersonSet)
+    IComponentSet, ISectionSet, QueueInconsistentStateError)
 
-from canonical.archiveuploader.tagfiles import (
-    parse_tagfile, TagFileParseError)
-from canonical.archiveuploader.template_messages import (
-    announce_template, rejection_template)
-from canonical.archiveuploader.utils import safe_fix_maintainer
+from canonical.archiveuploader.tagfiles import TagFileParseError
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.encoding import ascii_smash, guess as guess_encoding
-from canonical.launchpad.mail import sendmail
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
 from canonical.lp.dbschema import (
