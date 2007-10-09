@@ -98,7 +98,7 @@ class CodeImportEventSet:
         return CodeImportEventToken(iter_items)
 
     def newModify(self, code_import, person, token):
-        """See `ICodeImportJournal`."""
+        """See `ICodeImportEventSet`."""
         assert code_import is not None
         assert person is not None
         assert token is not None
