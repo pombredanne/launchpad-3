@@ -524,8 +524,6 @@ class DistributionEditView(LaunchpadEditFormView):
                    'official_malone', 'official_rosetta', 'official_answers']
 
     def isAdmin(self):
-        if self.user is None:
-            return False
         return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)
 
     def setUpFields(self):
