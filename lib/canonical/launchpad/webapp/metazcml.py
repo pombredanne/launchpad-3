@@ -47,7 +47,7 @@ from canonical.launchpad.webapp.interfaces import (
     IBreadcrumbProvider)
 from canonical.launchpad.webapp.launchpadtour import LaunchpadTourView
 from canonical.launchpad.webapp.publisher import RenamedView
-
+from canonical.launchpad.layers import FeedsLayer
 
 class IAuthorizationsDirective(Interface):
     """Set up authorizations as given in a module."""
@@ -174,35 +174,30 @@ class IURLDirective(Interface):
         required=False)
 
 
-class IMenusDirective(Interface):
+class IGlueDirective(Interface):
+    """ZCML glue to register some classes to do something."""
+
+    module = GlobalObject(
+        title=u"Module in which the classes are found."
+        )
+
+    classes = Tokens(
+        value_type=PythonIdentifier(),
+        title=u"Space separated list of classes to register.",
+        required=True
+        )
+
+
+class IMenusDirective(IGlueDirective):
     """Hook up facets and menus."""
 
-    module = GlobalObject(
-        title=u"Module in which menu classes are found.",
-        required=True
-        )
 
-    classes = Tokens(
-        value_type=PythonIdentifier(),
-        title=u"Space separated list of classes to be registered as menus.",
-        required=True
-        )
-
-
-class INavigationDirective(Interface):
+class INavigationDirective(IGlueDirective):
     """Hook up traversal etc."""
 
-    module = GlobalObject(
-        title=u"Module in which menu classes are found.",
-        required=True
-        )
 
-    classes = Tokens(
-        value_type=PythonIdentifier(),
-        title=u"Space separated list of classes to be registered as navigation"
-               " components",
-        required=True
-        )
+class IFeedsDirective(IGlueDirective):
+    """Hook up feeds."""
 
 
 class IFaviconDirective(Interface):
@@ -250,6 +245,33 @@ def menus(_context, module, classes):
         factory = [menuclass]
         adapter(_context, factory, provides, for_, name=name,
                 permission=PublicPermission)
+
+
+def feeds(_context, module, classes):
+    """Handler for the IFeedsDirective."""
+    if not inspect.ismodule(module):
+        raise TypeError("module attribute must be a module: %s, %s" %
+                        module, type(module))
+    for feedclassname in classes:
+        feedclass = getattr(module, feedclassname)
+
+        factory = [feedclass]
+        for_ = [feedclass.usedfor]
+
+        feedname = feedclass.feedname
+
+        atom_name = '%s.atom' % feedname
+        html_fragment_name = '%s.html' % feedname
+        javascript_name = '%s.js' % feedname
+
+        #layer = IDefaultBrowserLayer
+        layer = FeedsLayer
+        provides = IBrowserPublisher
+
+        for name in atom_name, html_fragment_name, javascript_name:
+            view(_context, factory, IBrowserRequest, name, for_, layer,
+                    permission=PublicPermission, provides=provides,
+                    allowed_interface=[IBrowserPublisher])
 
 
 def navigation(_context, module, classes):
@@ -782,4 +804,3 @@ class SchemaDisplayDirective(
 
         zope.app.form.browser.metaconfigure.SchemaDisplayDirective.__call__(
             self)
-
