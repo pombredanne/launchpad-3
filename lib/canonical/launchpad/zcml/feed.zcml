@@ -1,0 +1,27 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <securedutility
+        class="canonical.launchpad.systemhomes.FeedsApplication"
+        provides="canonical.launchpad.interfaces.IFeedsApplication">
+        <allow
+            interface="canonical.launchpad.interfaces.IFeedsApplication" />
+    </securedutility>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IFeedsApplication"
+        name="+dims"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.BrowserWindowDimensions"
+        attribute="__call__"
+        />
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="FeedsNavigation"
+        />
+
+</configure>

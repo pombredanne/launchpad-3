@@ -1,0 +1,13 @@
+= Feeds Navigation =
+
+Feeds are served over HTTP, and are heavily cached. Pages which are not
+registered on the Feeds layer should not be served from the feeds.lp.n
+subdomain. When bug 150941 is fixed, this test should be changed to show 
+that the navigation is fixed and we get a 404 here.
+
+== Index of a product ==
+
+    >>> browser.open('http://feeds.launchpad.dev/jokosher/')
+    >>> browser.url
+    'http://feeds.launchpad.dev/jokosher/'
+
