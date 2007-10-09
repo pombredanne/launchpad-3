@@ -54,7 +54,7 @@ class CodeImportMachineOfflineReason(DBEnumeratedType):
     offline provides useful diagnostic information.
     """
 
-    # Daemon termination.
+    # Daemon termination
 
     STOPPED = DBItem(110, """
         Stopped
@@ -70,7 +70,7 @@ class CodeImportMachineOfflineReason(DBEnumeratedType):
         completed running jobs, and then shut down.
         """)
 
-    # Crash recovery.
+    # Crash recovery
 
     WATCHDOG = DBItem(210, """
         Watchdog

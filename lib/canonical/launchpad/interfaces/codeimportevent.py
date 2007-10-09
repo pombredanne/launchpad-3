@@ -111,6 +111,13 @@ class CodeImportEventDataType(DBEnumeratedType):
     item associated to an event has a type from this enumeration.
     """
 
+    # Generic data
+
+    MESSAGE = DBItem(10, """Message
+
+    User-provided message.
+    """)
+
     # CodeImport attributes
 
     CODE_IMPORT = DBItem(110, """Code Import
@@ -294,6 +301,14 @@ class ICodeImportEventSet(Interface):
         :param machine: `CodeImportMachine` whose state changed to OFFLINE.
         :param reason: `CodeImportMachineOfflineReason` enum value.
         :return: `CodeImportEvent` of OFFLINE type.
+        """
+
+    def newQuiesce(user, message):
+        """Record that user requested the system to quiesce for maintenance.
+
+        :param user: `Person` that requested quiescing.
+        :param message: User-provided message giving the reason for quiescing.
+        :return: `CodeImportEvent` of QUIESCE type.
         """
 
 

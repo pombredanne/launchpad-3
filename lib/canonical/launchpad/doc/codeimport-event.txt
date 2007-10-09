@@ -319,3 +319,24 @@ string, we need to manually check that it is a legal value.
     ...
     AssertionError: reason must be a CodeImportMachineOfflineReason value,
     but was: <DBItem CodeImportReviewStatus.SUSPENDED, (30) Suspended>
+
+
+=== QUIESCE ===
+
+When an operator quiesces the machines, a QUIESCE journal entry should
+be created to record the operator's identity, and an optional message
+explaining why quiescing was requested.
+
+Quiescing is a privileged administrative operation.
+
+    >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
+
+    >>> assert_raises(AssertionError, event_set.newQuiesce, None, 'Message.')
+    >>> assert_raises(AssertionError, event_set.newQuiesce, ddaa, None)
+    >>> quiesce_event = event_set.newQuiesce(ddaa, 'Production rollout.')
+    >>> verify_event(quiesce_event)
+    QUIESCE
+    >>> print quiesce_event.person.name
+    ddaa
+    >>> print_items(quiesce_event)
+    MESSAGE u'Production rollout.'

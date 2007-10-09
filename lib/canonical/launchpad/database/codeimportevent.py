@@ -135,6 +135,18 @@ class CodeImportEventSet:
             data_value=reason.name)
         return event
 
+    def newQuiesce(self, person, message):
+        """See `ICodeImportEventSet`."""
+        assert person is not None
+        assert message is not None
+        event = CodeImportEvent(
+            event_type=CodeImportEventType.QUIESCE,
+            person=person)
+        _CodeImportEventData(
+            event=event, data_type=CodeImportEventDataType.MESSAGE,
+            data_value=message)
+        return event
+
     def _recordSnapshot(self, event, code_import):
         """Record a snapshot of the code import in the event data."""
         self._recordItems(event, self._iterItemsForSnapshot(code_import))
