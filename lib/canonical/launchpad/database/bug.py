@@ -945,11 +945,20 @@ class BugSet:
         if not params.datecreated:
             params.datecreated = UTC_NOW
 
+        extra_params = {}
+        if params.private:
+            # We add some auditing information. After bug creation
+            # time these attributes are updated by Bug.setPrivate().
+            extra_params.update(
+                date_made_private=params.datecreated,
+                who_made_private=params.owner)
+
         bug = Bug(
             title=params.title, description=params.description,
             private=params.private, owner=params.owner,
             datecreated=params.datecreated,
-            security_related=params.security_related)
+            security_related=params.security_related,
+            **extra_params)
 
         bug.subscribe(params.owner)
         if params.tags:
