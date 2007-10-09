@@ -88,6 +88,7 @@ class PillarNameSet:
 
         # Workaround bug #90983.
         # XXX flacoste 20071009 Workaround bug #90983.
+        name = str(name)
 
         # Retrieve information out of the PillarName table.
         cur = cursor()
