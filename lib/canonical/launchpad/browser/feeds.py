@@ -7,16 +7,12 @@ __all__ = [
     ]
 
 from zope.component import getUtility
+from zope.publisher.interfaces import NotFound
 
-from canonical.cachedproperty import cachedproperty
-from canonical.config import config
-from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IFeedsApplication, ILaunchpadRoot, IPillarNameSet, NotFoundError)
+    IFeedsApplication, IPillarNameSet, NotFoundError)
 from canonical.launchpad.layers import FeedsLayer
-from canonical.launchpad.webapp import Navigation, stepto, canonical_url
-from canonical.launchpad.webapp.batching import BatchNavigator
-
+from canonical.launchpad.webapp import Navigation
 
 class FeedsNavigation(Navigation):
 
@@ -26,8 +22,8 @@ class FeedsNavigation(Navigation):
 
     def traverse(self, name):
         try:
-            # XXX: FIXME: Redirect to lowercase before doing the lookup
-            # bug 56646
+            # XXX: statik 2007-10-05  Redirect to lowercase before doing
+            # the lookup bug 56646
             return getUtility(IPillarNameSet)[name.lower()]
         except NotFoundError:
             return None
