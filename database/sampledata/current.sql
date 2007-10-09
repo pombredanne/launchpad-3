@@ -8964,6 +8964,7 @@ iD8DBQFGtzTjWhGlTF8G/HcRAtFsAJ4hHyKhOnsUOQDI+SAk000DmFAnUgCcC84J
 3F4bEPeRcnUjCFI/hjR0kxg=
 =Tjln
 ', 7, 243606, 27, 10, 1, 'Julian Edwards <launchpad@julian-edwards.com>', '3.6.2', '1.0', 'commercialpackage', 12, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright) VALUES (37, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 26, 1, 1, NULL, NULL, NULL, NULL, 11, NULL);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;

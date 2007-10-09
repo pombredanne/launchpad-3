@@ -1674,50 +1674,63 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
-    def latestMaintainedPackages(self):
+    def getLatestMaintainedPackages(self):
         """See `IPerson`."""
         return self._latestSeriesQuery()
 
-    def latestUploadedButNotMaintainedPackages(self):
+    def getLatestUploadedButNotMaintainedPackages(self):
         """See `IPerson`."""
         return self._latestSeriesQuery(uploader_only=True)
 
-    def latestUploadedPPAPackages(self):
+    def getLatestUploadedPPAPackages(self):
         """See `IPerson`."""
         return self._latestSeriesQuery(
             uploader_only=True, ppa_only=True)
 
     def _latestSeriesQuery(self, uploader_only=False, ppa_only=False):
-        # Issues a special query that returns the most recent
-        # sourcepackagereleases that were maintained/uploaded to
-        # distribution series by this person.
+        """Return the sourcepackagereleases (SPRs) related to this person.  
+
+        'uploader_only' flag controls if we are interested in SPRs where the
+        person in question is only the uploader (creator) and not the
+        maintainer (debian-syncs), or, if the flag is False, it returns all
+        SPR maintained by this person.
+
+        'ppa_only' flag controls if we are interested only in source
+        package releases targeted to any PPAs or, if False, sources targeted
+        to primary archives.
+
+        Usually active 'ppa_only' flag is always associated to 'uploader_only',
+        because there shouldn't be any sense of maintainer-ship for packages
+        uploaded to PPAs by someone else than the user himself.
+        """
+        clauses = ['sourcepackagerelease.upload_archive = archive.id']
+
         if uploader_only:
-            extra = """sourcepackagerelease.creator = %d AND
-                       sourcepackagerelease.maintainer != %d""" % (
-                       self.id, self.id)
+            clauses.append('sourcepackagerelease.creator = %d' % self.id)
+            clauses.append('sourcepackagerelease.maintainer != %d' % self.id)
         else:
-            extra = "sourcepackagerelease.maintainer = %d" % self.id
+            clauses.append('sourcepackagerelease.maintainer = %d' % self.id)
 
         if ppa_only:
-            ppa_clause = (
-                """sourcepackagerelease.upload_archive = archive.id AND
-                   archive.purpose = %s""" % sqlvalues(ArchivePurpose.PPA))
+            clauses.append(
+                'archive.purpose = %s' % sqlvalues(ArchivePurpose.PPA))
         else:
-            ppa_clause = (
-                """sourcepackagerelease.upload_archive = archive.id AND
-                   archive.purpose != %s""" % sqlvalues(ArchivePurpose.PPA))
+            clauses.append(
+                'archive.purpose != %s' % sqlvalues(ArchivePurpose.PPA))
 
+        query_clause = " AND ".join(clauses)
         query = """
             SourcePackageRelease.id IN (
-                SELECT DISTINCT ON (uploaddistrorelease,sourcepackagename)
+                SELECT DISTINCT ON (uploaddistrorelease, sourcepackagename,
+                                    upload_archive)
                        sourcepackagerelease.id
                   FROM sourcepackagerelease
-                 WHERE %s AND
-                       %s
-              ORDER BY uploaddistrorelease, sourcepackagename,
+                 WHERE %s
+              ORDER BY uploaddistrorelease, sourcepackagename, upload_archive,
                        dateuploaded DESC
               )
-              """ % (extra, ppa_clause)
+              """ % (query_clause)
+
         return SourcePackageRelease.select(
             query,
             clauseTables=['Archive'],
