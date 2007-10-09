@@ -1195,14 +1195,14 @@ class Roundup(ExternalBugTracker):
     def __init__(self, bugtracker):
         """Create a new Roundup instance.
 
-        :baseurl: The base url (including protocol) for the Roundup
-            bugtracker. Trailing slashes will be removed from this.
+        :bugtracker: The Roundup bugtracker.
 
-        If the baseurl passed is one which points to bugs.python.org,
-        the behaviour of the Roundup bugtracker will be different from
-        that which it exhibits to every other Roundup bug tracker, since
-        the Python Roundup instance is very specific to Python and in
-        fact behaves rather more like SourceForge than Roundup.
+        If the bug tracker's baseurl is one which points to
+        bugs.python.org, the behaviour of the Roundup bugtracker will be
+        different from that which it exhibits to every other Roundup bug
+        tracker, since the Python Roundup instance is very specific to
+        Python and in fact behaves rather more like SourceForge than
+        Roundup.
         """
         ExternalBugTracker.__init__(self, bugtracker)
 
