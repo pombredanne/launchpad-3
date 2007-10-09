@@ -47,6 +47,22 @@ Let's check the complex properties of a build object.
   >>> firefox_build.is_trusted
   True
 
+The currently published component is provided via the 'current_component'
+property.  It looks over the publishing records and finds the current
+publication of the source in question.
+
+ >>> firefox_build.current_component.name
+ u'main'
+
+It is not necessarily the same as:
+
+ >>> firefox_build.sourcepackagerelease.component.name
+ u'main'
+
+which is the component the source was originally uploaded to, before
+any overriding action.
+
+
 The build can report any corresponding uploads using the package_upload
 property:
 
