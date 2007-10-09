@@ -153,6 +153,16 @@ The field `submission_key` may contain only ASCII data.
     >>> [error.doc() for error in submit_view.errors]
     [u'Invalid textual data']
 
+The field `emailaddress` must contain a formally valid email address.
+
+    >>> invalid_form = form.copy()
+    >>> invalid_form['field.emailaddress'] = u'beeblebrox'
+    >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
+    >>> submit_view = getView(app, '+submit', request)
+    >>> submit_view.initialize()
+    >>> [error.doc() for error in submit_view.errors]
+    ['Invalid email address']
+
 All fields are required.
 
     >>> for field in ('field.date_created', 'field.format', 'field.private',

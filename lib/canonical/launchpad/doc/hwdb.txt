@@ -25,7 +25,7 @@ together with the following data:
   * submission_key: A unique submission ID.
   * emailaddress: The email address of the submitter.
   * owner: A reference to the Person table. This value is null, if the email 
-    address does not belong to an entry in Person table.
+    address does not belong (yet) to an entry in Person table.
   * distroarchseries: A reference to the distroarchseries of the submission.
     This value is null, if the submitted values for distribution, 
     distroseries and architecture do not match an existing entry in the 
@@ -122,13 +122,14 @@ with an already existing submission_key raises HWSubmissionError.
     ...
     HWSubmissionKeyNotUnique: A submission with this ID already exists
 
-The field `owner` points to the Person record of the submitter.
+The field `owner` points to the Person record of the submitter, if the
+submitted emailaddress belongs to an existing Launchpad account.
 
     >>> submission.owner.displayname
     u'Sample Person'
 
 If no Person record is yet known for the submitter's email address,
-a new record is created.
+the field `owner` is None.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> beeblebrox = getUtility(IPersonSet).getByEmail(
@@ -148,33 +149,8 @@ a new record is created.
     ...     filename=u'hwinfo.txt',
     ...     filesize=len(submission_data),
     ...     system_fingerprint=u'Acer 6789')
-    >>> print submission.owner.displayname
-    Beeblebrox
-    >>> beeblebrox = getUtility(IPersonSet).getByEmail(
-    ...     'beeblebrox@example.com')
-    >>> print beeblebrox.displayname
-    Beeblebrox
-    >>> print submission.owner.creation_rationale.title
-    Created by a submission to the hardware database.
-
-If an invalid email address is passed to IHWSubmissionSet.createSubmission,
-an HWSubmissionError is raised.
-
-    >>> submission = hw_submission_set.createSubmission(
-    ...     date_created=date_created,
-    ...     format=HWSubmissionFormat.VERSION_1,
-    ...     private=False,
-    ...     contactable=False,
-    ...     submission_key=u'unique-id-3',
-    ...     emailaddress=u'beeblebrox',
-    ...     distroarchseries=None,
-    ...     raw_submission=StringIO(submission_data),
-    ...     filename=u'hwinfo.txt',
-    ...     filesize=len(submission_data),
-    ...     system_fingerprint=u'Acer 6789')
-    Traceback (most recent call last):
-    ...
-    HWSubmissionInvalidEmailAddress: invalid email address
+    >>> print submission.owner
+    None
 
 The submitted data can be retrieved via IHWSubmissionSet.getBySubmissionKey.
 
@@ -310,3 +286,47 @@ to the method, or if the passed parameter is neither the owner nor an admin.
     [(u'unique-id-1', u'Dell Inspiron 1234'),
      (u'unique-id-3', u'Dell Inspiron 1234'),
      (u'test_submission_id_1', u'TONKA TUFFBOOK2600')]
+
+When an anonymous submitter registers later a Launchpad account, the field 
+`owner` is updated.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IEmailAddressSet, PersonCreationRationale)
+    >>> user = getUtility(IPersonSet).ensurePerson(
+    ...     u'beeblebrox@example.com', u'Beeblebrox', 
+    ...     PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+    >>> email = getUtility(IEmailAddressSet).getByEmail(
+    ...     u'beeblebrox@example.com')
+    >>> user.validateAndEnsurePreferredEmail(email)
+    >>> submission = hw_submission_set.getBySubmissionKey(u'unique-id-2')
+    >>> print submission.owner.displayname
+    Beeblebrox
+
+If somebody has a Launchpad account, but submits HWDB test data using
+an email address which he has not added to his account, the submission
+will have the the `owner` field set to None.
+
+    >>> submission = hw_submission_set.createSubmission(
+    ...     date_created=date_created,
+    ...     format=HWSubmissionFormat.VERSION_1,
+    ...     private=False,
+    ...     contactable=False,
+    ...     submission_key=u'unique-id-4',
+    ...     emailaddress=u'beeblebrox@beeblebrox.net',
+    ...     distroarchseries=None,
+    ...     raw_submission=StringIO(submission_data),
+    ...     filename=u'hwinfo.txt',
+    ...     filesize=len(submission_data),
+    ...     system_fingerprint=u'Acer 6789')
+    >>> print submission.owner
+    None
+
+When he adds this email address to his list of addresses in Launchpad,
+the field owner` is updated.
+
+    >>> email = getUtility(IEmailAddressSet).new(
+    ...     u'beeblebrox@beeblebrox.net', user)
+    >>> user.validateAndEnsurePreferredEmail(email)
+    >>> submission = hw_submission_set.getBySubmissionKey(u'unique-id-2')
+    >>> print submission.owner.displayname
+    Beeblebrox
