@@ -23,8 +23,6 @@ have errors recorded against it.
     >>> from canonical.launchpad.database import BugTracker
     >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
     >>> from canonical.lp.dbschema import BugTrackerType
-    >>> from canonical.launchpad.scripts.checkwatches import (
-    ...     BugWatchUpdater)
 
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')

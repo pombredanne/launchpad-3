@@ -1,0 +1,42 @@
+= Displaying Bug Watch Errors to the User =
+
+If an error occurs when importing the remote status of a bug that is
+being watched in Launchpad that error will be displayed to users.
+
+To demonstrate this we first create a dummy bugwatch and add it to bug
+#1.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.database import BugTracker
+    >>> from canonical.launchpad.interfaces import (IBugSet,
+    ...     IBugTrackerSet, IPersonSet)
+
+    >>> login('test@canonical.com')
+
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+    >>> example_bug_tracker = getUtility(IBugTrackerSet).getByName(
+    ...     'mozilla.org')
+    >>> example_bug = getUtility(IBugSet).get(1)
+    >>> example_bugwatch = example_bug.addWatch(
+    ...     example_bug_tracker, 1, sample_person)
+
+We then set our example bug watch's last error to one of the values
+defined in the BugWatchErrorType enumeration.
+
+    >>> from canonical.launchpad.interfaces import BugWatchErrorType
+    >>> example_bugwatch.lasterror = BugWatchErrorType.TIMEOUT
+    >>> logout()
+
+This error will then be displayed to the user when they view the bug in
+their browser.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1'
+
+    >>> for tag in find_tags_by_class('error message', 
+    ...     user_browser.contents):
+    ...     print tag.renderContents()
+    The bug's status could not be imported due to an error:
