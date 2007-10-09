@@ -701,10 +701,42 @@ class Mantis(ExternalBugTracker):
         return self._opener.open(request, data)
 
     def initializeRemoteBugDB(self, bug_ids):
-        if self.use_csv_export:
-            self._fetchCSVExport(bug_ids)
+        """See `ExternalBugTracker`."""
+        super(Mantis, self).initializeRemoteBugDB(bug_ids)
 
-    def _fetchCSVExport(self, bug_ids):
+    def getRemoteBug(self, bug_id):
+        """See `ExternalBugTracker`."""
+        # Only parse tables to save time and memory. If we didn't have
+        # to check for application errors in the page (using
+        # _checkForApplicationError) then we could be much more
+        # specific than this.
+        bug_page = BeautifulSoup(
+            self._getPage('view.php?id=%s' % bug_id),
+            convertEntities=BeautifulSoup.HTML_ENTITIES,
+            parseOnlyThese=SoupStrainer('table'))
+
+        app_error = self._checkForApplicationError(bug_page)
+        if app_error:
+            app_error_code, app_error_message = app_error
+            # 1100 is ERROR_BUG_NOT_FOUND in Mantis (see
+            # mantisbt/core/constant_inc.php) so we raise
+            # BugNotFound.
+            if app_error_code == '1100':
+                raise BugNotFound(bug_id)
+            else:
+                raise BugWatchUpdateError(
+                    "Mantis APPLICATION ERROR #%s: %s" % (
+                    app_error_code, app_error_message))
+
+        bug = {
+            'id': bug_id,
+            'status': self._findValueRightOfKey(bug_page, 'Status'),
+            'resolution': self._findValueRightOfKey(bug_page, 'Resolution')}
+
+        return (int(bug_id), bug)
+
+    def getRemoteBugBatch(self, bug_ids):
+        """See `ExternalBugTracker`."""
         # It's unfortunate that Mantis offers no way of limiting its CSV
         # export to a set of bugs; we end up having to pull the CSV for
         # the entire bugtracker at once (and some of them actually blow
@@ -798,12 +830,17 @@ class Mantis(ExternalBugTracker):
                                      % self.baseurl)
 
         try:
+            bugs = {}
             # Using the CSV reader is pretty much essential since the
             # data that comes back can include title text which can in
             # turn contain field separators -- you don't want to handle
             # the unquoting yourself.
             for bug_line in csv.reader(csv_data):
-                self._processCSVBugLine(bug_line)
+                bug = self._processCSVBugLine(bug_line)
+                bugs[int(bug['id'])] = bug
+
+            return bugs
+
         except csv.Error, e:
             log.warn("Exception parsing CSV file: %s." % e)
 
@@ -833,7 +870,7 @@ class Mantis(ExternalBugTracker):
                 log.warn("Encountered invalid bug ID: %r." % bug['id'])
                 return
 
-        self.bugs[bug_id] = bug
+        return bug
 
     def _checkForApplicationError(self, page_soup):
         """If Mantis does not find the bug it still returns a 200 OK
@@ -954,15 +991,15 @@ class Mantis(ExternalBugTracker):
                 "Mantis (%s) bug number not an integer: %s" % (
                     self.baseurl, bug_id))
 
-        if self.use_csv_export:
-            status, resolution = self._getStatusFromCSV(bug_id)
-        else:
-            status, resolution = self._getStatusFromScrape(bug_id)
+        try:
+            bug = self.bugs[int(bug_id)]
+        except KeyError:
+            raise BugNotFound(bug_id)
 
         # Use a colon and a space to join status and resolution because
         # there is a chance that statuses contain spaces, and because
         # it makes display of the data nicer.
-        return "%s: %s" % (status, resolution)
+        return "%(status)s: %(resolution)s" % bug
 
     def _getStatusFromCSV(self, bug_id):
         try:
@@ -971,34 +1008,6 @@ class Mantis(ExternalBugTracker):
             raise BugNotFound(bug_id)
         else:
             return bug['status'], bug['resolution']
-
-    def _getStatusFromScrape(self, bug_id):
-        # Only parse tables to save time and memory. If we didn't have
-        # to check for application errors in the page (using
-        # _checkForApplicationError) then we could be much more
-        # specific than this.
-        bug_page = BeautifulSoup(
-            self._getPage('view.php?id=%s' % bug_id),
-            convertEntities=BeautifulSoup.HTML_ENTITIES,
-            parseOnlyThese=SoupStrainer('table'))
-
-        app_error = self._checkForApplicationError(bug_page)
-        if app_error:
-            app_error_code, app_error_message = app_error
-            # 1100 is ERROR_BUG_NOT_FOUND in Mantis (see
-            # mantisbt/core/constant_inc.php) so we raise
-            # BugNotFound.
-            if app_error_code == '1100':
-                raise BugNotFound(bug_id)
-            else:
-                raise BugWatchUpdateError(
-                    "Mantis APPLICATION ERROR #%s: %s" % (
-                    app_error_code, app_error_message))
-
-        status = self._findValueRightOfKey(bug_page, 'Status')
-        resolution = self._findValueRightOfKey(bug_page, 'Resolution')
-
-        return status, resolution
 
     def convertRemoteStatus(self, status_and_resolution):
         if (not status_and_resolution or

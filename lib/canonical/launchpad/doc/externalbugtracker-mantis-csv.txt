@@ -81,10 +81,12 @@ Tracker:
     >>> login('no-priv@canonical.com')
 
 We use a specially hacked Mantis instance that doesn't do network
-calls to verify here:
+calls to verify here. We set its batch_query_threshold to 0 so as to
+force it to use the CSV import code:
 
     >>> example_ext_bug_tracker = TestMantis(
     ...     example_bug_tracker.baseurl, use_csv_export=True)
+    >>> example_ext_bug_tracker.batch_query_threshold = 0
 
 Collect the Example.com watches:
 

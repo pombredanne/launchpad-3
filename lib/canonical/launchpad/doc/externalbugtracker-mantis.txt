@@ -109,7 +109,6 @@ Let's add a few more watches:
     ...     (1730, dict(status='assigned', resolution='open')),
     ...     (1738, dict(status='feedback', resolution='open')),
     ...     (1748, dict(status='resolved', resolution='fixed')),
-    ...     (1798, None), # Remote bug doesn't exist.
     ... ]
 
     >>> for remote_bug_id, remote_bug in remote_bugs:
@@ -138,9 +137,6 @@ updateBugWatches() issues only one request to update all watches:
     CALLED _getPage(u'view.php?id=1730')
     CALLED _getPage(u'view.php?id=1738')
     CALLED _getPage(u'view.php?id=1748')
-    CALLED _getPage(u'view.php?id=1798')
-    WARNING:root:Didn't find bug u'1798' on http://bugs.example.com
-    (local bugs: 10).
 
     >>> remote_statuses = dict(
     ...     (int(bug_watch.remotebug), bug_watch.remotestatus)
@@ -168,9 +164,6 @@ updateBugWatches() issues only one request to update all watches:
     Remote bug 1748
      * Expected << resolved: fixed >>
      *      Got << resolved: fixed >>
-    Remote bug 1798
-     * Expected << UNKNOWN >>
-     *      Got << UNKNOWN >>
 
     >>> example_ext_bug_tracker.trace_calls = False
 
