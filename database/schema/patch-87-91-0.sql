@@ -2,11 +2,6 @@ SET client_min_messages=ERROR;
 
 /*
 
-Not all branches can be the targets of a merge proposal. For most projects,
-we'll only want to merge to branches like 'trunk' and 'release-0.x'. Having a
-allow_merge_proposals lets us provide a simple selector for target branches
-whencreating merge proposals.
-
 code_approver is the person (or team) who is allowed to transition merge
 proposals that target this branch from NEEDS_CODE_APPROVAL to CODE_APPROVED. If
 unset, the code approver is the owner of the branch.
@@ -18,8 +13,6 @@ use cases (see below).
 
 */
 
-ALTER TABLE Branch
-  ADD COLUMN allow_merge_proposals BOOL DEFAULT FALSE;
 ALTER TABLE Branch
   ADD COLUMN code_approver INT REFERENCES Person;
 ALTER TABLE Branch
