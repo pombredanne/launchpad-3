@@ -10,7 +10,6 @@ member of the vcs-imports team and can access the objects freely.
 
     >>> login('david.allouche@canonical.com')
 
-
 == Creating Events ==
 
 Events of each type are created by separate methods in the
@@ -268,3 +267,25 @@ code import.
     UPDATE_INTERVAL u'1:00:00'
     OLD_UPDATE_INTERVAL None
     SVN_BRANCH_URL u'svn://svn.example.com/trunk'
+
+
+=== ONLINE ===
+
+Execution of import jobs is controlled by code-import-controller daemons
+on multiple machines.
+
+    >>> from canonical.launchpad.interfaces import ICodeImportMachineSet
+    >>> machine_set = getUtility(ICodeImportMachineSet)
+    >>> machine = machine_set.getByHostname('bazaar-importer')
+
+When a controller daemon starts accepting jobs, it should create an
+ONLINE event to record which machine is now accepting imports.
+
+    >>> online_event = event_set.newOnline(machine)
+    >>> verify_event(online_event)
+    ONLINE
+    >>> print online_event.machine.hostname
+    bazaar-importer
+    >>> print_items(online_event)
+    <nothing>
+

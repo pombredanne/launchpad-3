@@ -274,6 +274,13 @@ class ICodeImportEventSet(Interface):
         :return: `CodeImportEvent` of MODIFY type, or None.
         """
 
+    def newOnline(machine):
+        """Record that an import machine went online.
+
+        :param machine: `CodeImportMachine` whose state changed to ONLINE.
+        :return: `CodeImportEvent` of ONLINE type.
+        """
+
 
 class ICodeImportEventToken(Interface):
     """Opaque structure returned by `ICodeImportEventSet.beginModify`."""

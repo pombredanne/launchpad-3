@@ -111,6 +111,13 @@ class CodeImportEventSet:
         self._recordItems(event, items)
         return event
 
+    def newOnline(self, machine):
+        """See `ICodeImportEvent`."""
+        assert machine is not None
+        return CodeImportEvent(
+            event_type=CodeImportEventType.ONLINE,
+            machine=machine)
+
     def _recordSnapshot(self, event, code_import):
         """Record a snapshot of the code import in the event data."""
         self._recordItems(event, self._iterItemsForSnapshot(code_import))
