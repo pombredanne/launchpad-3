@@ -281,6 +281,7 @@ on multiple machines.
 When a controller daemon starts accepting jobs, it should create an
 ONLINE event to record which machine is now accepting imports.
 
+    >>> assert_raises(AssertionError, event_set.newOnline, None)
     >>> online_event = event_set.newOnline(machine)
     >>> verify_event(online_event)
     ONLINE
@@ -289,3 +290,32 @@ ONLINE event to record which machine is now accepting imports.
     >>> print_items(online_event)
     <nothing>
 
+
+=== OFFLINE ===
+
+When a code import machine goes offline, an OFFLINE journal entry should
+be created to record the affected machine, and the reason why it is
+going offline.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     CodeImportMachineOfflineReason)
+    >>> QUIESCED = CodeImportMachineOfflineReason.QUIESCED
+    >>> assert_raises(AssertionError, event_set.newOffline, None, QUIESCED)
+    >>> assert_raises(AssertionError, event_set.newOffline, machine, None)
+    >>> offline_event = event_set.newOffline(machine, QUIESCED)
+    >>> verify_event(offline_event)
+    OFFLINE
+    >>> print offline_event.machine.hostname
+    bazaar-importer
+    >>> print_items(offline_event)
+    OFFLINE_REASON u'QUIESCED'
+
+The the offline reason must be a value of the
+CodeImportMachineOfflineReason enum. Since it is internally stored as a
+string, we need to manually check that it is a legal value.
+
+    >>> event_set.newOffline(machine, CodeImportReviewStatus.SUSPENDED)
+    Traceback (most recent call last):
+    ...
+    AssertionError: reason must be a CodeImportMachineOfflineReason value,
+    but was: <DBItem CodeImportReviewStatus.SUSPENDED, (30) Suspended>

@@ -195,6 +195,13 @@ class CodeImportEventDataType(DBEnumeratedType):
     Previous Subversion URL, when recording an import source change.
     """)
 
+    # Data related to machine events
+
+    OFFLINE_REASON = DBItem(410, """Offline Reason
+
+    Reason why a code import machine went offline.
+    """)
+
 
 class ICodeImportEvent(Interface):
     """One event in the code-import audit trail."""
@@ -279,6 +286,14 @@ class ICodeImportEventSet(Interface):
 
         :param machine: `CodeImportMachine` whose state changed to ONLINE.
         :return: `CodeImportEvent` of ONLINE type.
+        """
+
+    def newOffline(machine, reason):
+        """Record that an import machine went offline.
+
+        :param machine: `CodeImportMachine` whose state changed to OFFLINE.
+        :param reason: `CodeImportMachineOfflineReason` enum value.
+        :return: `CodeImportEvent` of OFFLINE type.
         """
 
 

@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'ICodeImportMachine',
     'ICodeImportMachineSet',
+    'CodeImportMachineOfflineReason',
     'CodeImportMachineState',
     ]
 
@@ -42,6 +43,40 @@ class CodeImportMachineState(DBEnumeratedType):
 
         The code-import-controller daemon is running on this machine, but has
         been requested to shut down and will not accept any new job.
+        """)
+
+
+class CodeImportMachineOfflineReason(DBEnumeratedType):
+    """Reason why a CodeImportMachine is offline.
+
+    A machine goes offline when a code-import-controller daemon process
+    shutdowns or appears to have crashed. Recording the reason a machine went
+    offline provides useful diagnostic information.
+    """
+
+    # Daemon termination.
+
+    STOPPED = DBItem(110, """
+        Stopped
+
+        The code-import-controller daemon was shut-down, interrupting running
+        jobs.
+        """)
+
+    QUIESCED = DBItem(120, """
+        Quiesced
+
+        The code-import-controller daemon has stopped accepting new jobs,
+        completed running jobs, and then shut down.
+        """)
+
+    # Crash recovery.
+
+    WATCHDOG = DBItem(210, """
+        Watchdog
+
+        The watchdog has detected that the machine's heartbeat has not been
+        updated recently.
         """)
 
 

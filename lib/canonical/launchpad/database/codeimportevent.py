@@ -19,8 +19,10 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
-    CodeImportEventDataType, CodeImportEventType, ICodeImportEvent,
-    ICodeImportEventSet, ICodeImportEventToken, RevisionControlSystems)
+    CodeImportEventDataType, CodeImportEventType,
+    ICodeImportEvent, ICodeImportEventSet, ICodeImportEventToken,
+    CodeImportMachineOfflineReason, RevisionControlSystems)
+from canonical.lazr.enum import DBItem
 
 
 class CodeImportEvent(SQLBase):
@@ -112,11 +114,26 @@ class CodeImportEventSet:
         return event
 
     def newOnline(self, machine):
-        """See `ICodeImportEvent`."""
+        """See `ICodeImportEventSet`."""
         assert machine is not None
         return CodeImportEvent(
             event_type=CodeImportEventType.ONLINE,
             machine=machine)
+
+    def newOffline(self, machine, reason):
+        """See `ICodeImportEventSet`."""
+        assert machine is not None
+        assert (type(reason) == DBItem
+                and reason.enum == CodeImportMachineOfflineReason), (
+            "reason must be a CodeImportMachineOfflineReason value, "
+            "but was: %r" % (reason,))
+        event = CodeImportEvent(
+            event_type=CodeImportEventType.OFFLINE,
+            machine=machine)
+        _CodeImportEventData(
+            event=event, data_type=CodeImportEventDataType.OFFLINE_REASON,
+            data_value=reason.name)
+        return event
 
     def _recordSnapshot(self, event, code_import):
         """Record a snapshot of the code import in the event data."""
