@@ -403,6 +403,58 @@ def allow_sequential_scans(cur, permission):
 
     cur.execute("SET enable_seqscan=%s" % permission_value)
 
+def acquire_advisory_lock(cur, lock_id):
+    """Try to acquire a advisory lock for the given 'lock_id'.
+
+    Return True if the lock was successfully acquired, otherwise return False.
+
+    See further documentation about advisory locks in Postgresql at:
+
+     * file:///usr/share/doc/postgresql-doc-8.2/html/explicit-locking.html#ADVISORY-LOCKS
+     * file:///usr/share/doc/postgresql-doc-8.2/html/functions-admin.html#FUNCTIONS-ADVISORY-LOCKS
+
+    A advisory lock can be 'acquired' anytime (and multiple times) inside
+    the current connection using the given identifier (an int):
+    
+    >>> acquire_advisory_lock(cur, 12345)
+    True
+    >>> acquire_advisory_lock(cur, 12345)
+    True
+
+    Once acquired, it cannot be shared among other connections:
+    
+    >>> from canonical.ftests.pgsql import PgTestSetup
+    >>> new_con = PgTestSetup().connect()
+    >>> new_cur = new_con.cursor()
+
+    >>> acquire_advisory_lock(new_cur, 12345)
+    False
+
+    It is immediately available to other connections once it is released:
+    
+    >>> cur.execute("SELECT pg_advisory_unlock_all()")
+    >>> acquire_advisory_lock(new_cur, 12345)
+    True
+
+    Then becomes unavailable to the original connection:
+    
+    >>> acquire_advisory_lock(cur, 12345)
+    False
+
+    The advisory lock is automatically released when the connection holding it
+    is closed:
+    
+    >>> new_con.close()
+    >>> acquire_advisory_lock(cur, 12345)
+    True
+
+    Releasing all acquired lock in the test connection:
+    
+    >>> cur.execute("SELECT pg_advisory_unlock_all()")
+    """
+    cur.execute('SELECT pg_try_advisory_lock(%s)' % lock_id)
+    return (cur.fetchall()[0][0] != 0)
+
 
 if __name__ == '__main__':
     import psycopg
