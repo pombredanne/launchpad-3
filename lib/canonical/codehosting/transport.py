@@ -10,7 +10,8 @@ import logging
 import os
 
 from bzrlib.errors import (
-    BzrError, InProcessTransport, NoSuchFile, TransportNotPossible)
+    BzrError, InProcessTransport, NoSuchFile, PermissionDenied,
+    TransportNotPossible)
 from bzrlib import trace, urlutils
 from bzrlib.transport import (
     get_transport,
@@ -140,19 +141,19 @@ class LaunchpadServer(Server):
     def make_branch_dir(self, virtual_path):
         """Make a new directory for the given virtual path.
 
-        If the request is to make a user or a product directory, fail with
-        NoSuchFile error. If the request is to make a branch directory, create
-        the branch in the database then create a matching directory on the
-        backing transport.
+        If the request is to make a user or a product directory, fail
+        with PermissionDenied error. If the request is to make a
+        branch directory, create the branch in the database then
+        create a matching directory on the backing transport.
         """
         self.logger.info('mkdir(%r)', virtual_path)
         path_segments = get_path_segments(virtual_path)
         if len(path_segments) != 3:
-            raise NoSuchFile(
-                'This method only for creating branches: %s' % (virtual_path,))
+            raise PermissionDenied(
+                'This method is only for creating branches: %s' % (virtual_path,))
         branch_id = self._make_branch(*path_segments)
         if branch_id == '':
-            raise NoSuchFile(
+            raise PermissionDenied(
                 'Cannot create branch: %s' % (virtual_path,))
         makedirs(self.backing_transport, branch_id_to_path(branch_id))
 
@@ -164,27 +165,22 @@ class LaunchpadServer(Server):
             belongs.
         :param branch: The name of the new branch.
 
-        :raise TransportNotPossible: If 'user' doesn't begin with a '~'.
-        :raise NoSuchFile: If 'product' is not the name of an existing
-            product.
+        :raise PermissionDenied: If 'user' does not begin with a '~' or if
+            'product' is not the name of an existing product.
         :return: The database ID of the new branch.
         """
         self.logger.debug('_make_branch(%r, %r, %r)', user, product, branch)
         if not user.startswith('~'):
-            raise TransportNotPossible(
+            raise PermissionDenied(
                 'Path must start with user or team directory: %r' % (user,))
         user = user[1:]
         if product == '+junk':
             user_dict = self.authserver.getUser(user)
             if not user_dict:
-                raise NoSuchFile("%s doesn't exist" % (user,))
+                raise PermissionDenied("%s doesn't exist" % (user,))
             user_id = user_dict['id']
             if user_id != self.user_id:
-                # XXX: JonathanLange 2007-06-04 bug=118736
-                # This should perhaps be 'PermissionDenied', not 'NoSuchFile'.
-                # However bzrlib doesn't translate PermissionDenied errors.
-                # See _translate_error in bzrlib/transport/remote.py.
-                raise NoSuchFile(
+                raise PermissionDenied(
                     "+junk is only allowed under user directories, not team "
                     "directories.")
         branch_id, permissions = self.authserver.getBranchInformation(
@@ -236,8 +232,18 @@ class LaunchpadServer(Server):
         """
         self.logger.debug('translate_virtual_path(%r)', virtual_path)
         segments = get_path_segments(virtual_path)
+        # XXX: JamesHenstridge 2007-10-09
+        # We trim the segments list so that we don't raise
+        # PermissionDenied when the client tries to read
+        # /~user/project/.bzr/branch-format when checking for a shared
+        # repository (instead, we'll fail to look up the branch, and
+        # return UntranslatablePath).  This whole function will
+        # probably need refactoring when we move to actually
+        # supporting shared repos.
+        if '.bzr' in segments:
+            segments = segments[:segments.index('.bzr')]
         if (len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES):
-            raise NoSuchFile(FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
+            raise PermissionDenied(FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
 
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
@@ -412,7 +418,7 @@ class LaunchpadTransport(Transport):
         virtual_path = self._abspath(relpath)
         path_segments = path = virtual_path.lstrip('/').split('/')
         if len(path_segments) <= 3:
-            raise NoSuchFile(virtual_path)
+            raise PermissionDenied(virtual_path)
         return self._call('rmdir', relpath)
 
     def stat(self, relpath):
