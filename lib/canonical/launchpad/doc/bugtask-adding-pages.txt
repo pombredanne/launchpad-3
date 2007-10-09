@@ -416,7 +416,8 @@ another bug links to the same bug.
 
     >>> for notification in add_task_view.request.response.notifications:
     ...     print notification.message
-    <a href="...">Bug #4</a> also links to GnomeGBug GTracker #84.
+    <a href="...">Bug #4</a> also links to the added bug watch
+    (gnome-bugzilla #84).
 
     >>> for bugwatch in bug_five.watches:
     ...     print "%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug)
