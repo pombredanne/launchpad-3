@@ -77,10 +77,11 @@ class TestQueueTool(TestQueueBase):
 
     def setUp(self):
         """Create contents in disk for librarian sampledata."""
-        # Packageupload.notify() needs real changes file data to send email,
-        # so this nice simple "ed" changes file will do.  It's the /wrong/
-        # changes file for the package in the upload queue, but that doesn't
-        # matter as only email addresses are parsed out of it.
+        # Packageupload.notify() needs real changes file data to send
+        # email, so this nice simple "ed" changes file will do.  It's
+        # the /wrong/ changes file for the package in the upload queue,
+        # but that doesn't matter as only email addresses are parsed out
+        # of it.
         changes_file_obj = open(
             datadir('ed-0.2-21/ed_0.2-21_source.changes'), 'r')
         self.test_changes_file = changes_file_obj.read()
@@ -782,8 +783,7 @@ class TestQueueToolInJail(TestQueueBase):
         queue_action = self.execute_command('fetch pmount')
 
         # Check the files' names.
-        files = self._listfiles()
-        files.sort()
+        files = sorted(self._listfiles())
         self.assertEqual(
             ['netapplet-1.0.0.tar.gz', 'pmount_1.9-1_all.deb'],
             files)

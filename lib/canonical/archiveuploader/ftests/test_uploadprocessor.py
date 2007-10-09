@@ -480,8 +480,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("foocomm_1.0-2")
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Check it is in the DONE queue (pure source uploads with ancestry
-        # skip ACCEPTED).
+        # Check the upload is in the DONE queue since pure source uploads
+        # with ancestry (previously uploaded) will skip the ACCEPTED state.
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.DONE,
             version="1.0-2",
@@ -492,7 +492,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("foocomm_1.0-2_binary")
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Check that it is accepted:
+        # Check that the binary upload was accepted:
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED,
             version="1.0-2",

@@ -469,19 +469,19 @@ Rejections with notify=False will also not generate any emails.
   >>> len(msgs)
   0
 
-The PackageUpload record created by NascentUpload will be in the NEW state
-if the package was not previously uploaded.  When accepted by an archive
-admin using the queue tool, the queue tool will call PackageUpload.notify()
-directly.  One of the arguments it can specify is dry_run, which when True
-will not send any emails.  It will also log at the INFO level what it
-/would/ have sent.
+The PackageUpload record created by NascentUpload will be in the NEW
+state if the package was not previously uploaded.  When accepted by an
+archive admin using the queue tool, the queue tool will call
+PackageUpload.notify() directly.  One of the arguments it can specify is
+dry_run, which when True will not send any emails.  It will also log at
+the INFO level what it /would/ have sent.
 
   >>> from canonical.lp.dbschema import PackageUploadStatus
   >>> random_package_upload = hoary.getQueueItems()[0]
   >>> random_package_upload.notify(dry_run=True, logger=mock_logger)
   DEBUG: Building recipients list.
   ...
-  INFO: Would be sending a mail:
+  INFO: Would have sent a mail:
   INFO:   Subject: Accepted bar 1.0-2 (i386)
   INFO:   Sender: Root <root@localhost>
   INFO:   Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
