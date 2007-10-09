@@ -211,7 +211,10 @@ def print_action_links(content):
     actions = find_portlet(content, 'Actions')
     entries = actions.findAll('li')
     for entry in entries:
-        print '%s: %s' % (entry.a.string, entry.a['href'])
+        if entry.a:
+            print '%s: %s' % (entry.a.string, entry.a['href'])
+        elif entry.strong:
+            print entry.strong.string
 
 
 def setUpGlobs(test):
