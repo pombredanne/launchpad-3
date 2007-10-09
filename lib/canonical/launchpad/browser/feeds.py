@@ -24,6 +24,8 @@ class FeedsNavigation(Navigation):
         try:
             # XXX: statik 2007-10-05 bug=56646 Redirect to lowercase before 
             # doing the lookup
+            # XXX: statik 2007-10-09 bug=150941
+            # Need to block pages not registered on the FeedsLayer
             return getUtility(IPillarNameSet)[name.lower()]
         except NotFoundError:
             return None
