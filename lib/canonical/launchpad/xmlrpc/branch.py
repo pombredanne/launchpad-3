@@ -140,10 +140,14 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         if len(path_segments) == 1:
             [project_name] = path_segments
             project = getUtility(IProductSet).getByName(project_name)
+            if project is None:
+                return faults.NoSuchProduct(project_name)
             series = project.development_focus
         elif len(path_segments) == 2:
             project_name, series_name = path_segments
             project = getUtility(IProductSet).getByName(project_name)
+            if project is None:
+                return faults.NoSuchProduct(project_name)
             series = project.getSeries(series_name)
         else:
             # XXX

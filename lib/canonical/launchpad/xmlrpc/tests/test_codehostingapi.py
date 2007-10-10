@@ -12,6 +12,7 @@ from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.xmlrpc.branch import PublicCodehostingAPI
+from canonical.launchpad.xmlrpc import faults
 
 
 class TestExpandURL(BranchTestCase):
@@ -41,6 +42,15 @@ class TestExpandURL(BranchTestCase):
                 "Expected %r to expand to %r, got %r"
                 % (url, branch.unique_name, path))
 
+    def assertFault(self, lp_url_path, fault_class, **template_values):
+        for prefix in 'lp:', 'lp:///':
+            url = '%s%s' % (prefix, lp_url_path)
+            fault = self.api.expand_lp_url(url)
+            self.assertIsInstance(fault, fault_class)
+            self.assertEqual(
+                fault_class.msg_template % template_values,
+                fault.faultString)
+
 #     def test_hostname(self):
 #         pass
 
@@ -52,6 +62,10 @@ class TestExpandURL(BranchTestCase):
         of the project.
         """
         self.assertExpands(self.project.name, self.trunk)
+
+    def test_projectOnlyNonExistent(self):
+        self.assertFault(
+            'doesntexist', faults.NoSuchProduct, product_name='doesntexist')
 
     def test_projectAndSeries(self):
         """lp:project/series expands to the branch associated with the product
