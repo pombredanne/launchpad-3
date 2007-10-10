@@ -5,24 +5,25 @@ __metaclass__ = type
 __all__ = [
     'MailingList',
     'MailingListSet',
+    'MailingListSubscription',
     ]
 
-import pytz
-
-from datetime import datetime
 from sqlobject import ForeignKey, StringCol
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IMailingList, IMailingListSet, MailingListStatus)
+    CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
+    ILaunchpadCelebrities, IMailingList, IMailingListSet,
+    IMailingListSubscription, MailingListStatus)
 
 
 class MailingList(SQLBase):
-    """'The mailing list for a team.
+    """The mailing list for a team.
 
     Teams may have at most one mailing list, and a mailing list is associated
     with exactly one team.  This table manages the state changes that a team
@@ -66,12 +67,12 @@ class MailingList(SQLBase):
                           MailingListStatus.DECLINED), (
             'Reviewed lists may only be approved or declined')
         # The reviewer must be a Launchpad administrator.
-        assert reviewer is not None and reviewer.inTeam(
-            getUtility(ILaunchpadCelebrities).admin), (
-            'Reviewer must be a Launchpad administrator')
+        assert reviewer is not None and reviewer.hasParticipationEntryFor(
+            getUtility(ILaunchpadCelebrities).mailing_list_experts), (
+            'Reviewer must be a member of the Mailing List Experts team')
         self.reviewer = reviewer
         self.status = status
-        self.date_reviewed = datetime.now(pytz.timezone('UTC'))
+        self.date_reviewed = UTC_NOW
 
     def startConstructing(self):
         """See `IMailingList`."""
@@ -102,6 +103,7 @@ class MailingList(SQLBase):
             assert target_state in (MailingListStatus.INACTIVE,
                                     MailingListStatus.FAILED), (
                 'target_state result must be inactive or failed')
+            self._clearSubscriptions()
         else:
             raise AssertionError('Not a valid state transition')
         self.status = target_state
@@ -135,6 +137,71 @@ class MailingList(SQLBase):
 
     welcome_message = property(_get_welcome_message, _set_welcome_message)
 
+    def subscribe(self, person, address=None):
+        """See `IMailingList`."""
+        if not self.status == MailingListStatus.ACTIVE:
+            raise CannotSubscribe('Mailing list is not active: %s' %
+                                  self.team.displayname)
+        if person.isTeam():
+            raise CannotSubscribe('Teams cannot be mailing list members: %s' %
+                                  person.displayname)
+        if not person.hasParticipationEntryFor(self.team):
+            raise CannotSubscribe('%s is not a member of team %s' %
+                                  (person.displayname, self.team.displayname))
+        if address is not None and address.person != person:
+            raise CannotSubscribe('%s does not own the email address: %s' %
+                                  (person.displayname, address.email))
+        subscription = MailingListSubscription.selectOneBy(
+            person=person, mailing_list=self)
+        if subscription is not None:
+            raise CannotSubscribe('%s is already subscribed to list %s' %
+                                  (person.displayname, self.team.displayname))
+        # Add the subscription for this person to this mailing list.
+        MailingListSubscription(
+            person=person,
+            mailing_list=self,
+            email_address=address)
+
+    def unsubscribe(self, person):
+        """See `IMailingList`."""
+        subscription = MailingListSubscription.selectOneBy(
+            person=person, mailing_list=self)
+        if subscription is None:
+            raise CannotUnsubscribe(
+                '%s is not a member of the mailing list: %s' %
+                (person.displayname, self.team.displayname))
+        subscription.destroySelf()
+
+    def changeAddress(self, person, address):
+        """See `IMailingList`."""
+        subscription = MailingListSubscription.selectOneBy(
+            person=person, mailing_list=self)
+        if subscription is None:
+            raise CannotChangeSubscription(
+                '%s is not a member of the mailing list: %s' %
+                (person.displayname, self.team.displayname))
+        if address is not None and address.person != person:
+            raise CannotChangeSubscription(
+                '%s does not own the email address: %s' %
+                (person.displayname, address.email))
+        subscription.email_address = address
+
+    def _clearSubscriptions(self):
+        subscriptions = MailingListSubscription.selectBy(mailing_list=self)
+        for subscription in subscriptions:
+            subscription.destroySelf()
+
+    def getAddresses(self):
+        """See `IMailingList`."""
+        subscriptions = MailingListSubscription.select(
+            """mailing_list = %s AND
+               team = %s AND
+               TeamParticipation.person = MailingListSubscription.person
+            """ % sqlvalues(self, self.team),
+            distinct=True, clauseTables=['TeamParticipation'])
+        for subscription in subscriptions:
+            yield subscription.subscribed_address.email
+
 
 class MailingListSet:
     implements(IMailingListSet)
@@ -162,7 +229,7 @@ class MailingListSet:
                 raise AssertionError(
                     'registrant is not a team owner or administrator')
         return MailingList(team=team, registrant=registrant,
-                           date_registered=datetime.now(pytz.timezone('UTC')))
+                           date_registered=UTC_NOW)
 
     def get(self, team_name):
         """See `IMailingListSet`."""
@@ -186,6 +253,11 @@ class MailingListSet:
         return MailingList.selectBy(status=MailingListStatus.APPROVED)
 
     @property
+    def active_lists(self):
+        """See `IMailingListSet`."""
+        return MailingList.selectBy(status=MailingListStatus.ACTIVE)
+
+    @property
     def modified_lists(self):
         """See `IMailingListSet`."""
         return MailingList.selectBy(status=MailingListStatus.MODIFIED)
@@ -194,3 +266,28 @@ class MailingListSet:
     def deactivated_lists(self):
         """See `IMailingListSet`."""
         return MailingList.selectBy(status=MailingListStatus.DEACTIVATING)
+
+
+class MailingListSubscription(SQLBase):
+    """A mailing list subscription."""
+
+    implements(IMailingListSubscription)
+
+    person = ForeignKey(dbName='person', foreignKey='Person')
+
+    mailing_list = ForeignKey(dbName='mailing_list', foreignKey='MailingList')
+
+    date_joined = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+
+    email_address = ForeignKey(dbName='email_address',
+                               foreignKey='EmailAddress')
+
+    @property
+    def subscribed_address(self):
+        """See `IMailingListSubscription`."""
+        if self.email_address is None:
+            # Use the person's preferred email address.
+            return self.person.preferredemail
+        else:
+            # Use the subscribed email address.
+            return self.email_address

@@ -306,6 +306,11 @@
     />
 
   <vocabulary
+    name="ActiveMailingList"
+    factory="canonical.launchpad.vocabularies.ActiveMailingListVocabulary"
+    />
+
+  <vocabulary
     name="ValidPersonOrTeam"
     factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
     />

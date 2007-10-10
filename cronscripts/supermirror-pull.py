@@ -8,7 +8,7 @@ from optparse import OptionParser
 from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts import logger_options, logger
-from canonical.launchpad.scripts.supermirror import mirror, jobmanager
+from canonical.codehosting.puller import mirror, jobmanager
 
 import bzrlib.repository
 
