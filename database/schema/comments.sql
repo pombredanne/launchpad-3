@@ -361,7 +361,6 @@ COMMENT ON COLUMN Product.reviewed IS 'Whether or not someone at Canonical has r
 COMMENT ON COLUMN Product.active IS 'Whether or not this product should be considered active.';
 COMMENT ON COLUMN Product.translationgroup IS 'The TranslationGroup that is responsible for translations for this product. Note that the Product may be part of a Project which also has a TranslationGroup, in which case the translators from both the product and project translation group have permission to edit the translations of this product.';
 COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of this product\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
-COMMENT ON COLUMN Product.calendar IS 'The calendar associated with this product.';
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
 COMMENT ON COLUMN Product.official_answers IS 'Whether or not this product upstream uses Answers officialy. This is useful to help indicate whether or not that a question will receive an answer.';
@@ -490,7 +489,6 @@ this project\'s translation process. The enum lists different approaches to
 translation, from the very open (anybody can edit any translation in any
 language) to the completely closed (only designated translators can make any
 changes at all).';
-COMMENT ON COLUMN Project.calendar IS 'The calendar associated with this project.';
 -- COMMENT ON COLUMN Project.bugtracker IS 'The external bug tracker that is used to track bugs primarily for products within this project.';
 COMMENT ON COLUMN Project.homepage_content IS 'A home page for this project in the Launchpad.';
 COMMENT ON COLUMN Project.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a project.';
@@ -680,28 +678,6 @@ COMMENT ON COLUMN DistroReleaseLanguage.updatescount IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.rosettacount IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.unreviewed_count IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.contributorcount IS 'The total number of contributors to the translation of this distrorelease into this language.';
-
--- Calendar
-
-COMMENT ON TABLE Calendar IS 'A Calendar attached to some other Launchpad object (currently People, Projects or Products)';
-COMMENT ON COLUMN Calendar.title IS 'The title of the Calendar';
-COMMENT ON COLUMN Calendar.revision IS 'An monotonically increasing counter indicating a particular version of the calendar';
-
-
--- CalendarSubscription
-COMMENT ON TABLE CalendarSubscription IS 'A subscription relationship between two calendars';
-COMMENT ON COLUMN CalendarSubscription.subject IS 'The subject of the subscription relationship';
-COMMENT ON COLUMN CalendarSubscription.object IS 'The object of the subscription relationship';
-COMMENT ON COLUMN CalendarSubscription.colour IS 'The colour used to display events from calendar \'object\' when in the context of calendar \'subject\'';
-
-COMMENT ON TABLE CalendarEvent IS 'Events belonging to calendars';
-COMMENT ON COLUMN CalendarEvent.uid IS 'A globally unique identifier for the event.  This identifier should be preserved through when importing events from a desktop calendar application';
-COMMENT ON COLUMN CalendarEvent.calendar IS 'The calendar this event belongs to';
-COMMENT ON COLUMN CalendarEvent.dtstart IS 'The start time for the event in UTC';
-COMMENT ON COLUMN CalendarEvent.duration IS 'The duration of the event';
-COMMENT ON COLUMN CalendarEvent.title IS 'A one line description of the event';
-COMMENT ON COLUMN CalendarEvent.description IS 'A multiline description of the event';
-COMMENT ON COLUMN CalendarEvent.location IS 'A location associated with the event';
 
 COMMENT ON COLUMN SourcePackageName.name IS
     'A lowercase name identifying one or more sourcepackages';
@@ -907,7 +883,6 @@ COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will ha
 COMMENT ON COLUMN Person.teamdescription IS 'Informative description of the team. Format and restrictions are as yet undefined.';
 COMMENT ON COLUMN Person.name IS 'Short mneumonic name uniquely identifying this person or team. Useful for url traversal or in places where we need to unambiguously refer to a person or team (as displayname is not unique).';
 COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset for teams). UI should be displayed in this language wherever possible.';
-COMMENT ON COLUMN Person.calendar IS 'The calendar associated with this person.';
 COMMENT ON COLUMN Person.timezone IS 'The name of the time zone this person prefers (if unset, UTC is used).  UI should display dates and times in this time zone wherever possible.';
 COMMENT ON COLUMN Person.homepage_content IS 'A home page for this person in the Launchpad. In short, this is like a personal wiki page. The person will get to edit their own page, and it will be published on /people/foo/. Note that this is in text format, and will migrate to being in Moin format as a sort of mini-wiki-homepage.';
 COMMENT ON COLUMN Person.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to that person.';
