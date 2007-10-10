@@ -29,18 +29,38 @@ class TestExpandURL(BranchTestCase):
         self.owner = self.trunk.owner
         self.project.development_focus.user_branch = self.trunk
 
+    def assertExpands(self, lp_url_path, branch):
+        """Assert that the given lp URL path expands to the unique name of
+        'branch'.
+        """
+        for prefix in 'lp:', 'lp:///':
+            url = '%s%s' % (prefix, lp_url_path)
+            hostname, path, supported_protocols = self.api.expand_lp_url(url)
+            self.assertEqual(
+                branch.unique_name, path,
+                "Expected %r to expand to %r, got %r"
+                % (url, branch.unique_name, path))
+
+#     def test_hostname(self):
+#         pass
+
+#     def test_supportedProtocols(self):
+#         pass
+
     def test_projectOnly(self):
         """lp:project expands to the branch associated with development focus
         of the project.
         """
-        self.assertEqual(
-            ('bazaar.launchpad.dev', self.trunk.unique_name,
-             ('bzr+ssh', 'sftp', 'http')),
-            self.api.expand_lp_url('lp:%s' % self.project.name))
-        self.assertEqual(
-            ('bazaar.launchpad.dev', self.trunk.unique_name,
-             ('bzr+ssh', 'sftp', 'http')),
-            self.api.expand_lp_url('lp:///%s' % self.project.name))
+        self.assertExpands(self.project.name, self.trunk)
+
+    def test_projectAndSeries(self):
+        """lp:project/series expands to the branch associated with the product
+        series 'series' on 'project'.
+        """
+        self.assertExpands(
+            '%s/%s' % (self.project.name,
+                       self.project.development_focus.name),
+            self.trunk)
 
 
 def test_suite():

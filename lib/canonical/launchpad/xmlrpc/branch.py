@@ -136,9 +136,19 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         return URI(config.codehosting.supermirror_root).host
 
     def expand_lp_url(self, url):
-        project_name = URI(url).path.lstrip('/')
-        project = getUtility(IProductSet).getByName(project_name)
+        path_segments = URI(url).path.lstrip('/').split('/')
+        if len(path_segments) == 1:
+            [project_name] = path_segments
+            project = getUtility(IProductSet).getByName(project_name)
+            series = project.development_focus
+        elif len(path_segments) == 2:
+            project_name, series_name = path_segments
+            project = getUtility(IProductSet).getByName(project_name)
+            series = project.getSeries(series_name)
+        else:
+            # XXX
+            raise ValueError("too many path segments")
         return (
             self._get_bazaar_host(),
-            project.development_focus.series_branch.unique_name,
+            series.series_branch.unique_name,
             self.supported_protocols)
