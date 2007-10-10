@@ -3,7 +3,9 @@
 """Branch XMLRPC API."""
 
 __metaclass__ = type
-__all__ = ['IBranchSetAPI', 'BranchSetAPI']
+__all__ = [
+    'BranchSetAPI', 'IBranchSetAPI', 'IPublicCodehostingAPI',
+    'PublicCodehostingAPI']
 
 from zope.component import getUtility
 from zope.interface import Interface, implements
@@ -123,13 +125,15 @@ class BranchSetAPI(LaunchpadXMLRPCView):
 class IPublicCodehostingAPI(Interface):
     """The public codehosting API."""
 
-    def expand_lp_url(url):
+    def resolve_lp_path(path):
         """Expand the given lp: into a hostname and path, along with allowed
         protocols for that resource.
         """
 
 class PublicCodehostingAPI(LaunchpadXMLRPCView):
     """See `IPublicCodehostingAPI`."""
+
+    implements(IPublicCodehostingAPI)
 
     # XXX: Move supported protocols to config param?
     supported_schemes = 'bzr+ssh', 'sftp', 'http'

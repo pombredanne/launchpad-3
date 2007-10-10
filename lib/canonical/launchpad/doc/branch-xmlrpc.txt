@@ -264,3 +264,36 @@ We get an error if we try to specify a non-existant branch or bug:
     Traceback (most recent call last):
     ...
     Fault: <Fault 40: 'No such bug: 99'>
+
+
+resolve_lp_path
+^^^^^^^^^^^^^^
+
+The Bazaar plugin doesn't request any authentication when accessing this
+method.
+
+    >>> branchset_api = xmlrpclib.ServerProxy(
+    ...     'http://xmlrpc.launchpad.dev/bazaar/',
+    ...     transport=XMLRPCTestTransport())
+
+
+resolve_lp_path resolves the path section of an lp:/// URL so that a Bazaar
+client can figure out where and how to get the branch.
+
+    >>> results = branchset_api.resolve_lp_path('evolution')
+    >>> for key, value in sorted(results.iteritems()):
+    ...     print key, value
+    host bazaar.launchpad.dev
+    path ~vcs-imports/evolution/main
+    supported_schemes ['bzr+ssh', 'sftp', 'http']
+
+
+The XML-RPC server returns faults for invalid or missing branches.
+
+    >>> branchset_api.resolve_lp_path('firefox')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 170: 'Series trunk on firefox has no branch associated with it.'>
+
+See the unit tests in canonical.launchpad.xmlrpc.tests.test_codehostingapi for
+more details.

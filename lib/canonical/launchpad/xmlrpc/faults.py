@@ -2,6 +2,9 @@
 
 """Launchpad XMLRPC faults."""
 
+# Note: When you add a fault to this file, be sure to add it to configure.zcml
+# in this directory.
+
 __metaclass__ = type
 
 __all__ = [

@@ -54,5 +54,12 @@
   permission="launchpad.AnyPerson"
   />
 
+<xmlrpc:view
+  for="canonical.launchpad.interfaces.IBazaarApplication"
+  interface="canonical.launchpad.xmlrpc.IPublicCodehostingAPI"
+  class="canonical.launchpad.xmlrpc.PublicCodehostingAPI"
+  permission="zope.Public"
+  />
+
 </configure>
 
