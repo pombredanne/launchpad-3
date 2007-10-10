@@ -199,3 +199,33 @@ We display badges for associated bugs.
   /~name12/gnome-terminal/klingon
   /~launchpad/gnome-terminal/launchpad
   /~name12/gnome-terminal/mirrored
+
+== Sorting Branch Listings ==
+
+Aside from the implicitly sorted listings of recently registered,
+imported and changed branches, all branch listings have a widget that
+allows sorting.
+
+On a listing that can have branches from more than one product (such
+as the listing of branches owned by a person), the default ordering is
+by product.
+
+    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> browser.getControl('ordered by').value
+    ['PRODUCT']
+
+On a listing that can only have branches from one product, the default
+is by lifecycle state.
+
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> browser.getControl('ordered by').value
+    ['LIFECYCLE']
+
+The implicitly sorted listings do not have an ordering at all.
+
+    >>> browser.open('http://code.launchpad.dev/+recently-registered-branches')
+    >>> browser.getControl('ordered by')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'ordered by'
+
