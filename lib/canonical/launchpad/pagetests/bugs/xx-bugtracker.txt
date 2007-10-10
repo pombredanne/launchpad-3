@@ -17,7 +17,6 @@ Anyone logged in is able to register a new bug tracker.
   >>> user_browser.title
   'Register an external bug tracker'
 
-
 Supported external bug tracker types include Bugzilla, Debbugs,
 Roundup, SourceForge and Trac.  We don't provide all of these as
 options to the user.  We don't provide Debbugs because the status
@@ -125,7 +124,7 @@ a nice error message.
   >>> message in user_browser.contents
   True
 
-And lets see if we can edit the newly added bugtracker.
+And let's see if we can edit the newly added bugtracker.
 
   >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/testtrac/')
   >>> user_browser.getLink('Change details').click()
@@ -136,6 +135,7 @@ And lets see if we can edit the newly added bugtracker.
   >>> user_browser.title
   'Change details for \xe2\x80\x9cTest Trac Tracker\xe2\x80\x9d bug tracker'
 
+  >>> user_browser.getControl('Name').value = 'testbugzilla'
   >>> user_browser.getControl('Title').value = 'A test Bugzilla Tracker'
   >>> user_browser.getControl('Bug Tracker Type').getControl('Bugzilla').click()
   >>> user_browser.getControl(
@@ -156,15 +156,15 @@ tracker uses.
   Please fix it and try again.
   http://bugzilla.mozilla.org/ is already registered in Launchpad.
 
-
 After successfully editing the bug tracker information, the user is
-redirect to the bug tracker page.
+redirected to the bug tracker page. Note that the change we made to
+the bugtracker name is reflected in the url.
 
   >>> user_browser.getControl('Base URL').value = url
   >>> user_browser.getControl('Change').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers/testtrac'
+  'http://launchpad.dev/bugs/bugtrackers/testbugzilla'
 
 And now the test tracker should have been updated:
 
@@ -174,7 +174,7 @@ And now the test tracker should have been updated:
   True
 
   >>> login('test@canonical.com')
-  >>> test_tracker = bugtrackerset.getByName('testtrac')
+  >>> test_tracker = bugtrackerset.getByName('testbugzilla')
   >>> test_tracker.bugtrackertype == BugTrackerType.BUGZILLA
   True
 

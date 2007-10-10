@@ -64,7 +64,7 @@
       for="canonical.launchpad.interfaces.IBugTracker"
       schema="canonical.launchpad.interfaces.IBugTracker"
       class="canonical.launchpad.browser.BugTrackerEditView"
-      fields="title bugtrackertype summary baseurl contactdetails"
+      fields="name title bugtrackertype summary baseurl contactdetails"
       permission="launchpad.AnyPerson"
       template="../templates/bugtracker-edit.pt"
       >
