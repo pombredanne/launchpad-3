@@ -212,16 +212,9 @@ class BranchToMirror:
     def _createDestBranch(self):
         """Create the branch to pull to, and copy the source's contents."""
         # XXX AndrewBennetts 2006-05-26:
-        #    sprout builds a working tree we don't need.
-
-        # XXX AndrewBennetts 2006-05-30 Bug=47494:
-        #    sprout also fails to preserve the repository format!
-        #    Here's what it should look like:
-        #        source = self._source_branch
-        #        revision = source.last_revision()
-        #        bzrdir = source.bzrdir.sprout(self.dest, revision_id=revision)
-        #        return bzrdir.open_branch()
-        #    For now, do it the dumb way:
+        #    Bzrdir.sprout is *almost* what we want here, except that sprout
+        #    creates a working tree that we don't need. Instead, we do some
+        #    low-level operations.
         os.makedirs(self.dest)
         bzrdir_format = self._source_branch.bzrdir._format
         bzrdir = bzrdir_format.initialize(self.dest)
