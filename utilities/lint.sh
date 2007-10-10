@@ -47,7 +47,7 @@ fi
 group_lines_by_file() {
     # Format file:line:message output as lines grouped by file.
     file_name=""
-    echo "$1" | sed 's/\(^[^:]*:\)/~~\1\n  /' | while read line; do
+    echo "$1" | sed 's,\(^[^ :<>=+]*:\),~~\1\n,' | while read line; do
         current=`echo $line | sed '/^~~/!d; s/^~~\(.*\):$/\1/;'`
         if [ -z "$current" ]; then
             echo "    $line"
