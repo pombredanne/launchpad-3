@@ -19,15 +19,15 @@ Define a helper function for parsing the entries:
 
 == Latest bugs for a product ==
 
-    >>> browser.open('http://feed.launchpad.dev/jokosher/latest-bugs.atom')
+    >>> browser.open('http://feeds.launchpad.dev/jokosher/latest-bugs.atom')
     >>> browser.title
     'Bugs in Jokosher'
     >>> browser.url
-    'http://launchpad.dev/jokosher/latest-bugs.atom'
+    'http://feeds.launchpad.dev/jokosher/latest-bugs.atom'
 
     >>> soup = BSS(browser.contents)
     >>> print extract_text(soup.find('id'))
-    http://launchpad.dev/jokosher/latest-bugs.atom
+    http://feeds.launchpad.dev/jokosher/latest-bugs.atom
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     2
@@ -50,7 +50,7 @@ Define a helper function for parsing the entries:
 
 == Latest bugs for a project ==
 
-    >>> browser.open('http://launchpad.dev/mozilla/latest-bugs.atom')
+    >>> browser.open('http://feeds.launchpad.dev/mozilla/latest-bugs.atom')
     >>> browser.title
     'Bugs in the Mozilla Project'
     >>> browser.url
