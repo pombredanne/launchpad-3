@@ -179,6 +179,11 @@ COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker en
 COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone bug number, and a CVE entry.';
 
 
+-- BugWatch
+
+COMMENT ON COLUMN BugWatch.last_error_type IS 'The type of error which last prevented this entry from being updated. Legal values are defined by the BugWatchErrorType enumeration.';
+
+
 -- CodeImport
 
 COMMENT ON TABLE CodeImport IS 'The persistent record of an import from a foreign version control system to Bazaar, from the initial request to the regularly updated import branch.';
