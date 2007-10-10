@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Launchpad-Mailman integration test #1
@@ -13,13 +12,10 @@ import base64
 import datetime
 import xmlrpclib
 
-from subprocess import call, Popen, PIPE, STDOUT
 from zope.testbrowser.browser import Browser
 
 
 XMLRPC_URL = 'http://xmlrpc.launchpad.dev:8087/mailinglists'
-MAILMAN_BIN = os.path.normpath(os.path.join(
-    os.path.dirname(sys.argv[0]), '../../../../', 'mailman', 'bin'))
 
 # XXX I don't understand why we have to base64 encode the password here, but
 # the Launchpad page tests don't.
@@ -30,6 +26,7 @@ def auth(user, password):
 def main():
     """Test end-to-end mailing list creation."""
     proxy = xmlrpclib.ServerProxy(XMLRPC_URL)
+    proxy.testStep('reset')
     # Create Team One, whose list will get approved.
     browser = Browser()
     browser.addHeader('Authorization', auth('no-priv@canonical.com', 'test'))
@@ -67,17 +64,9 @@ def main():
             break
     # On the Mailman side, only team-one should exist.
     if team_names == ['team-one']:
-        print 'STEP 1; PASSED; team creation'
+        # The test passed.
+        return
     elif 'team-two' in team_names:
-        print 'STEP 1; FAILED; team-two was created unexpectedly'
+        raise IntegrationTestFailure('team-two was created unexpectedly')
     else:
-        print 'STEP 1; FAILED; unexpected teams:', team_names
-    # We can't clean up totally on the Launchpad side, but we can clean up on
-    # the Mailman side.
-    for team in team_names:
-        call(('./rmlist', '-a', team), cwd=MAILMAN_BIN)
-    print 'YOU MUST RUN "make schema" TO CLEAN UP LAUNCHPAD'
-
-
-if __name__ == '__main__':
-    main()
+        raise IntegrationTestFailure('unexpected teams: %s' % team_names)

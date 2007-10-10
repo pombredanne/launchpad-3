@@ -146,7 +146,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             list_one = listset.new(team_one)
             team_two = personset.getByName('team-two')
             list_two = listset.new(team_two)
-            return True
+            return step
         if step == 'review-lists':
             # Approve team one's list, but decline team two's list.  XXX A
             # future branch will add mailing_list_experts.
@@ -157,4 +157,4 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             list_one.review(lpadmin, MailingListStatus.APPROVED)
             list_two = listset.get('team-two')
             list_two.review(lpadmin, MailingListStatus.DECLINED)
-            return True
+            return step

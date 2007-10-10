@@ -89,6 +89,9 @@ class XMLRPCRunner(Runner):
         except (xmlrpclib.ProtocolError, socket.error), error:
             syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
             return
+        except xmlrpclib.Fault, error:
+            syslog('xmlrpc', 'Launchpad exception: %s', error)
+            return
         if actions:
             syslog('xmlrpc', 'Received actions for these lists: %s',
                    COMMASPACE.join(actions.keys()))
@@ -128,7 +131,10 @@ class XMLRPCRunner(Runner):
         try:
             info = proxy.getMembershipInformation(active_lists)
         except (xmlrpclib.ProtocolError, socket.error), error:
-            syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
+            syslog('xmlrpc', 'Cannot talk to Launchpad: %s', error)
+            return
+        except xmlrpclib.Fault, error:
+            syslog('xmlrpc', 'Launchpad exception: %s', error)
             return
         for list_name in info:
             mlist = MailList(list_name, lock=True)
