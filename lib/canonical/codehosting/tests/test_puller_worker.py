@@ -200,7 +200,7 @@ class TestBranchToMirror(unittest.TestCase):
 
         to_mirror.mirror(logging.getLogger())
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
-        self.assertEqual(None, mirrored_branch.last_revision())
+        self.assertEqual(NULL_REVISION, mirrored_branch.last_revision())
 
         # make sure that the last mirrored revision is recorded as a string
         transaction.abort()
@@ -348,10 +348,15 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
             'missingrevision')
         tree.add(['afile'], ['myid'])
         tree.commit('start')
-        # now we have a good branch with a file called afile and id myid
-        # we need to figure out the actual path for the weave.. or
-        # deliberately corrupt it. like this.
-        tree.branch.repository.weave_store.put_weave(
+        # now we have a good branch with a file called afile and id myid we
+        # need to figure out the actual path for the weave.. or deliberately
+        # corrupt it. like this.
+
+        # XXX: JonathanLange 2007-10-11: _put_weave is an internal function
+        # that we probably shouldn't be using. TODO: Ask author of this test
+        # to better explain which particular repository corruption we are
+        # trying to reproduce here.
+        tree.branch.repository.weave_store._put_weave(
             "myid", Weave(weave_name="myid"),
             tree.branch.repository.get_transaction())
         # now try mirroring this branch.
@@ -733,7 +738,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
             raise NotBranchError('http://example.com/not-branch')
         self.branch._openSourceBranch = stubOpenSourceBranch
         self.branch.branch_type = BranchType.MIRRORED
-        expected_msg = 'Not a branch: http://example.com/not-branch'
+        expected_msg = 'Not a branch: "http://example.com/not-branch".'
         self.runMirrorAndAssertErrorEquals(expected_msg)
 
     def testNotBranchErrorHosted(self):
@@ -747,7 +752,7 @@ class TestErrorHandling(ErrorHandlingTestCase):
                                  % split_id)
         self.branch._openSourceBranch = stubOpenSourceBranch
         self.branch.branch_type = BranchType.HOSTED
-        expected_msg = 'Not a branch: sftp://bazaar.launchpad.net/~%s' % (
+        expected_msg = 'Not a branch: "sftp://bazaar.launchpad.net/~%s".' % (
             self.branch.unique_name,)
         self.runMirrorAndAssertErrorEquals(expected_msg)
 
