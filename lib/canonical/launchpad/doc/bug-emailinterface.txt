@@ -5,8 +5,7 @@ bugs, add comments, and change the details of existing bug reports. Commands
 can be interleaved within a comment, so to distinguish them from the comment,
 they must be indented with at least one space or tab character.
 
-Submit a new bug
-----------------
+== Submit a new bug ==
 
 To report a bug, you send an OpenPGP-signed e-mail message to
 new@bugs.launchpad-domain. You must have registered your key in
@@ -226,8 +225,8 @@ unfolded before the bug subject is assigned.
     >>> bug.title
     u'A folded email subject'
 
-Add a comment
--------------
+
+== Add a comment ==
 
 After a bug has been submitted a notification is sent out. The reply-to
 address is set to the bug address, $bugid@malone-domain. We can send
@@ -266,8 +265,7 @@ parent will be set to the bug's initial message.
     True
 
 
-Edit bugs
----------
+== Edit bugs ==
 
 Sometimes you may want to simply edit a bug, without adding a comment.
 For that you can send mails to edit@malone-domain.
@@ -307,8 +305,7 @@ And the summaries were changed:
     >>> print bug_five.title
     Nicer summary
 
-GPG signing and adding comments
--------------------------------
+== GPG signing and adding comments ==
 
 In order to include commands in the comment, the email has to be GPG
 signed. The key used to sign the email has to be associated with the
@@ -450,8 +447,8 @@ Unmark the principal:
     ...     current_principal,
     ...     provided_interfaces - IWeaklyAuthenticatedPrincipal)
 
-Commands
---------
+
+== Commands == 
 
 Now let's take a closer look at all the commands that are available for
 us to play with. First we define a function to easily submit commands
@@ -469,8 +466,8 @@ to edit bug 4:
     ...     transaction.commit()
 
 
-bug $bugid
-^^^^^^^^^^
+=== bug $bugid ===
+
 Switches what bug you want to edit. Example:
 
     bug 42
@@ -513,8 +510,8 @@ And if we specify neither 'new' or an integer:
     ...
 
 
-summary "$summary"
-^^^^^^^^^^^^^^^^^^
+=== summary "$summary" ===
+
 Changes the summary of the bug. The title has to be enclosed in
 quotes. Example:
 
@@ -545,8 +542,8 @@ If we omit the quotes, there will be an error:
     ...
 
 
-private yes|no
-^^^^^^^^^^^^^^
+=== private yes|no ===
+
 Changes the visibility of the bug. Example:
 
 (We'll subscribe Sample Person to this bug before marking it private, otherwise
@@ -580,8 +577,9 @@ Specifying something else than 'yes' or 'no' produces an error:
         private yes
     ...
 
-security yes|no
-^^^^^^^^^^^^^^^
+
+=== security yes|no ===
+
 Changes the security flag of the bug. Example:
 
     >>> bug_four.private
@@ -627,8 +625,8 @@ Specifying something else than 'yes' or 'no' produces an error:
         security yes
     ...
 
-subscribe [$name|$email]
-^^^^^^^^^^^^^^^^^^^^^^^^
+=== subscribe [$name|$email] ===
+
 Subscribes yourself or someone else to the bug. All arguments are
 optional. If you don't specify a name, the sender of the email will
 be subscribed. Examples:
@@ -668,8 +666,8 @@ If we specify a non-existant user, an error message will be sent:
     non_existant@canonical.com
     ...
 
-unsubscribe [$name|$email]
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+=== unsubscribe [$name|$email] ===
+
 Unsubscribes yourself or someone else from the bug.  If you don't
 specify a name or email, the sender of the email will be
 unsubscribed. Examples:
@@ -751,8 +749,8 @@ one subscriber:
 
     >>> submit_commands(bug_four, 'subscribe test@canonical.com')
 
-tag $tag
-^^^^^^^^
+
+=== tag $tag ===
 
 The 'tag' command assigns a tag to a bug. Using this command we will add the
 tags foo and bar to the bug. Adding a single tag multiple times should
@@ -820,8 +818,8 @@ We will receive the same message if we specify an invalid tag to be removed:
     Tags can only contain alphanumeric characters.
     ...
 
-duplicate $bug_id
-^^^^^^^^^^^^^^^^^
+
+=== duplicate $bug_id ===
 
 The 'duplicate' command marks a bug as a duplicate of another bug.
 
@@ -907,8 +905,8 @@ error message is sent telling you this.
     if you are certain you would like to perform this change.
     ...
 
-cve $cve
-^^^^^^^^
+
+=== cve $cve ===
 
 The 'cve' command associates a bug with a CVE reference.
 
@@ -942,12 +940,12 @@ user.
     Launchpad can't find the CVE "no-such-cve".
     ...
 
+=== affects, assignee, status, importance, milestone ===
 
 affects $path [assignee $name|$email|nobody]
               [status $status]
               [importance $importance]
               [milestone $milestone]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 XXX: This section should be split into four different sections, one for
      each command. It used to be possible to write
@@ -986,7 +984,6 @@ A notification was added:
     >>> print bug_notification.message.text_contents
     ** Also affects: debian
     ...
-
 
 Submitting the same thing again doesn't do anything, since the task
 already exists:
@@ -1291,7 +1288,8 @@ be grouped together:
     >>> print upstream_task.assignee.displayname
     Sample Person
 
-Restricted statuses:
+
+=== Restricted bug statuses ===
 
     >>> email_user = getUtility(ILaunchBag).user
 
@@ -1420,8 +1418,7 @@ Invalid assignee:
 
     >>> stub.test_emails = []
 
-Default 'affects' target
-------------------------
+== Default 'affects' target ==
 
 Most of the time it's not necessary to give the 'affects' command. If
 you omit it, the email interface  tries to guess which bug task you
@@ -1451,8 +1448,7 @@ If the bug has more than one bug task, we try to guess which bug task
 the user wanted to edit. We apply the following heuristics for choosing
 which bug task to edit:
 
-The user is a bug contact of the upstream product
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+=== The user is a bug contact of the upstream product ===
 
     >>> login('test@canonical.com')
     >>> bug_one = getUtility(IBugSet).get(1)
@@ -1474,8 +1470,7 @@ The user is a bug contact of the upstream product
     ...
         Status: New => Confirmed
 
-The user is a package bug contact
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+=== The user is a package bug contact ===
 
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, ISourcePackageNameSet)
@@ -1508,14 +1503,12 @@ The user is a package bug contact
         Assignee: (unassigned) => No Privileges Person
     ...
 
-The user is a bug contact of a distribution
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+=== The user is a bug contact of a distribution ===
 
 XXX: TBD after InitialBugContacts is implemented.
      -- Bjorn Tillenius, 2005-11-30
 
-The user is a distribution member
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+=== The user is a distribution member ===
 
     >>> login('foo.bar@canonical.com')
     >>> submit_commands(
@@ -1537,8 +1530,7 @@ The user is a distribution member
     ...
 
 
-No matching bug task
-^^^^^^^^^^^^^^^^^^^^
+=== No matching bug task ===
 
 If none of the bug tasks can be chosen, an error message is sent to the
 user, telling him that he has to use the 'affects' command.
@@ -1565,8 +1557,8 @@ user, telling him that he has to use the 'affects' command.
     affects command.
     ...
 
-More About Error Handling
--------------------------
+
+== More About Error Handling ==
 
 If an error is encountered, an email is sent to the sender informing
 him about the error. Let's start with trying to submit a bug without
