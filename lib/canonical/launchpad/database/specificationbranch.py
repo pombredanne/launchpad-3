@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces import (
 
 
 class SpecificationBranch(SQLBase):
-    """See canonical.launchpad.interfaces.ISpecificationBranch."""
+    """See `ISpecificationBranch`."""
     implements(ISpecificationBranch)
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
@@ -32,7 +32,7 @@ class SpecificationBranch(SQLBase):
 
 
 class SpecificationBranchSet:
-
+    """See `ISpecificationBranchSet`."""
     implements(ISpecificationBranchSet)
 
     def getSpecificationBranchesForBranches(self, branches, user):

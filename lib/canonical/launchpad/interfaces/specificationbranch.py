@@ -31,6 +31,7 @@ class ISpecificationBranch(IHasDateCreated):
 
 
 class ISpecificationBranchSet(Interface):
+    """Methods that work on the set of all specification branch links."""
 
     def getSpecificationBranchesForBranches(branches, user):
         """Return a sequence of ISpecificationBranch instances associated with

@@ -10,26 +10,30 @@ Badges are shown in two main places:
 __metaclass__ = type
 __all__ = [
     'Badge',
-    'BadgeMethodDelegator',
     'HasBadgeBase',
     'IHasBadges',
     'STANDARD_BADGES',
     ]
 
-from zope.interface import Interface, Attribute, implements
+from zope.interface import Attribute, implements, Interface
 
 
 class Badge:
-    """A badge renders to an HTML image tag of the appropriate size."""
+    """A is badge is used to represent a link between two objects.
 
-    def __init__(self, small_image, large_image, alt='', title='', id=''):
-        self.small_image = small_image
-        self.large_image = large_image
+    This link is then rendered as small icons on the object listing
+    views, and as larger images on the object content pages.
+    """
+
+    def __init__(self, icon_image=None, heading_image=None,
+                 alt='', title='', id=''):
+        self.small_image = icon_image
+        self.large_image = heading_image
         self.alt = alt
         self.title = title
         self.id = id
 
-    def small(self):
+    def renderIconImage(self):
         """Render the small image as an HTML img tag."""
         if self.small_image:
             return ('<img alt="%s" width="14" height="14" src="%s"'
@@ -37,7 +41,7 @@ class Badge:
         else:
             return ''
 
-    def large(self):
+    def renderHeadingImage(self):
         """Render the large image as an HTML img tag."""
         if self.large_image:
             if self.id:
@@ -54,7 +58,9 @@ class Badge:
 STANDARD_BADGES = {
     'bug': Badge('/@@/bug', '/@@/bug-large',
                  'bug', 'Linked to a bug', 'bugbadge'),
-    'blueprint': Badge('/@@/blueprint', None, # No big blueprint exists.
+    # XXX: TimPenhey 2007-10-10
+    # No big blueprint exists, see bug 151171
+    'blueprint': Badge('/@@/blueprint', None,
                        'blueprint', 'Linked to a blueprint'),
     'branch': Badge('/@@/branch', '/@@/branch-large',
                     'branch', 'Linked to a branch', 'branchbadge'),
@@ -64,51 +70,49 @@ STANDARD_BADGES = {
 
 
 class IHasBadges(Interface):
-    """Badges should honour the visibility of the linked objects."""
+    """Provides methods to determine visible badges.
 
-    badges = Attribute('A list of badge names that could be visible.')
+    Badges should honour the visibility of the linked objects.
+    """
 
     def getVisibleBadges():
         """Return a list of `Badge` objects that the logged in user can see."""
 
-    def isBadgeVisible(badge_name):
-        """Is the badge_name badge visible for the logged in user?"""
-
-    def getBadge(badge_name):
-        """Return the badge instance for the name specified."""
-
 
 class HasBadgeBase:
-    """A base implementation"""
+    """The standard base implementation for badge visibility.
+
+    Derived classes need to override at least `isBadgeVisible`.
+    """
     implements(IHasBadges)
+
+    # Derived classes need to provide a sequence of badge names that
+    # could be visible.
+    badges = None
 
     def getVisibleBadges(self):
         """See `IHasBadges`."""
         result = []
         for badge_name in self.badges:
-            if self.isBadgeVisible(badge_name):
+            if self._isBadgeVisible(badge_name):
                 badge = self.getBadge(badge_name)
                 if badge:
                     result.append(badge)
         return result
 
-    def isBadgeVisible(self, badge_name):
-        """See `IHasBadges`."""
-        return False
+    def _isBadgeVisible(self, badge_name):
+        """Is the badge_name badge visible for the logged in user?
 
-    def getBadge(self, badge_name):
-        """See `IHasBadges`."""
-        # Can be overridden to provide non-standard badges.
-        return STANDARD_BADGES.get(badge_name)
-
-
-class BadgeMethodDelegator(HasBadgeBase):
-    """Delegates the visibility check of badges to specific methods."""
-
-    def isBadgeVisible(self, badge_name):
-        """Translate into a method name, and call that."""
+        Delegate the determination to a method based on the name
+        of the badge.
+        """
         method_name = "is%sBadgeVisible" % badge_name.capitalize()
         if hasattr(self, method_name):
             return getattr(self, method_name)()
         else:
             raise NotImplementedError(method_name)
+
+    def getBadge(self, badge_name):
+        """Return the badge instance for the name specified."""
+        # Can be overridden to provide non-standard badges.
+        return STANDARD_BADGES.get(badge_name)

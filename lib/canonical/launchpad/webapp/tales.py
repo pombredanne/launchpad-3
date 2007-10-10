@@ -652,12 +652,14 @@ class BadgeDisplayAPI:
         self.context = IHasBadges(context)
 
     def small(self):
+        """Render the visible badge's icon images."""
         badges = self.context.getVisibleBadges()
-        return ''.join([badge.small() for badge in badges])
+        return ''.join([badge.renderIconImage() for badge in badges])
 
     def large(self):
+        """Render the visible badge's heading images."""
         badges = self.context.getVisibleBadges()
-        return ''.join([badge.large() for badge in badges])
+        return ''.join([badge.renderHeadingImage() for badge in badges])
 
 
 class PersonFormatterAPI(ObjectFormatterAPI):

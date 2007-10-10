@@ -40,12 +40,12 @@ class BranchListingItem(BranchBadges):
     """
     decorates(IBranch, 'branch')
 
-    def __init__(self, branch, last_commit, now, bug_branches, role,
-                 spec_branches):
+    def __init__(self, branch, last_commit, now, role, show_bug_badge,
+                 show_blueprint_badge):
         BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
-        self.bug_branches = bug_branches
-        self.spec_branches = spec_branches
+        self.show_bug_badge = show_bug_badge
+        self.show_blueprint_badge = show_blueprint_badge
         self.role = role
         self._now = now
 
@@ -62,12 +62,10 @@ class BranchListingItem(BranchBadges):
         return self._now - unaware_date
 
     def isBugBadgeVisible(self):
-        # Only show the badge if the bugs are visible by the user.
-        return len(self.bug_branches) > 0
+        return self.show_bug_badge
 
-    def isSpecBadgeVisible(self):
-        # When specs get privacy, this will need to be adjusted.
-        return len(self.spec_branches) > 0
+    def isBlueprintBadgeVisible(self):
+        return self.show_blueprint_badge
 
 
 class BranchListingBatchNavigator(TableBatchNavigator):
@@ -90,35 +88,34 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             self.currentBatch())
 
     @cachedproperty
-    def branch_bug_links(self):
+    def has_bug_branch_links(self):
         """Get all bugs associated the with current batch."""
-        bugbranches = getUtility(IBugBranchSet).getBugBranchesForBranches(
+        bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
             self.batch, self.view.user)
-        result = {}
-        for bugbranch in bugbranches:
-            result.setdefault(
-                bugbranch.branch.id, []).append(bugbranch)
+        result = set()
+        for bug_branch in bug_branches:
+            result.add(bug_branch.branch.id)
         return result
 
     @cachedproperty
-    def branch_spec_links(self):
+    def has_branch_spec_links(self):
         """Get all the specs associated with the current batch."""
         spec_branches = getUtility(
             ISpecificationBranchSet).getSpecificationBranchesForBranches(
             self.batch, self.view.user)
-        result = {}
+        result = set()
         for spec_branch in spec_branches:
-            result.setdefault(
-                spec_branch.branch.id, []).append(spec_branch)
+            result.add(spec_branch.branch.id)
         return result
 
     def _createItem(self, branch):
         last_commit = self.last_commit[branch]
-        bug_branches = self.branch_bug_links.get(branch.id, [])
-        spec_branches = self.branch_spec_links.get(branch.id, [])
+        show_bug_badge = branch.id in self.has_bug_branch_links
+        show_blueprint_badge = branch.id in self.has_branch_spec_links
         role = self.view.roleForBranch(branch)
         return BranchListingItem(
-            branch, last_commit, self._now, bug_branches, role, spec_branches)
+            branch, last_commit, self._now, role, show_bug_badge,
+            show_blueprint_badge)
 
     def branches(self):
         "Return a list of BranchListingItems"
