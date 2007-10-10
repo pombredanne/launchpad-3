@@ -5,6 +5,8 @@ import sys
 import traceback
 import time
 
+SHOW_STATS = True
+
 print 'Opening connection to %s' % sys.argv[1]
 con = psycopg.connect('dbname=%s' % sys.argv[1])
 con.set_isolation_level(0)
@@ -37,17 +39,20 @@ for minutes in range(
                     minutes, minutes / (60.0*24.0)
                     ),
             until_mins = minutes
-            from_mins = minutes + step_mins + step_mins/3 
-            query = """
-                SELECT COUNT(*) FROM SessionData
-                WHERE
-                    last_accessed BETWEEN
-                        CURRENT_TIMESTAMP - '%(from_mins)d minutes'::interval
-                        AND CURRENT_TIMESTAMP
-                                - '%(until_mins)d minutes'::interval
-                """ % vars()
-            cur.execute(query)
-            total = cur.fetchone()[0]
+            from_mins = minutes + step_mins + max(step_mins/4,1)
+            if SHOW_STATS:
+                query = """
+                    SELECT COUNT(*) FROM SessionData
+                    WHERE
+                        last_accessed BETWEEN
+                            CURRENT_TIMESTAMP - '%(from_mins)d minutes'::interval
+                            AND CURRENT_TIMESTAMP
+                                    - '%(until_mins)d minutes'::interval
+                    """ % vars()
+                cur.execute(query)
+                total = cur.fetchone()[0]
+            else:
+                total = '??'
             query = """
                 DELETE FROM SessionData
                 WHERE
@@ -69,7 +74,7 @@ for minutes in range(
                         )
                 """ % vars()
             cur.execute(query)
-            print '%d/%d nuked.' % (cur.rowcount, total)
+            print '%d/%s nuked.' % (cur.rowcount, total)
             break
         except psycopg.Error:
             print 'oops'
