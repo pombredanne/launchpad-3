@@ -281,11 +281,11 @@ resolve_lp_path resolves the path section of an lp:/// URL so that a Bazaar
 client can figure out where and how to get the branch.
 
     >>> results = branchset_api.resolve_lp_path('evolution')
-    >>> for key, value in sorted(results.iteritems()):
-    ...     print key, value
-    host bazaar.launchpad.dev
-    path ~vcs-imports/evolution/main
-    supported_schemes ['bzr+ssh', 'sftp', 'http']
+    >>> for url in results['urls']:
+    ...     print url
+    bzr+ssh://bazaar.launchpad.dev/~vcs-imports/evolution/main
+    sftp://bazaar.launchpad.dev/~vcs-imports/evolution/main
+    http://bazaar.launchpad.dev/~vcs-imports/evolution/main
 
 
 The XML-RPC server returns faults for invalid or missing branches.
