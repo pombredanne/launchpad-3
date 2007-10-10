@@ -135,14 +135,17 @@ class ExternalBugTracker:
             #      testing easier.
             for bug_id in bug_ids:
                 bug_id, remote_bug = self.getRemoteBug(bug_id)
-                self.bugs[bug_id] = remote_bug
+
+                if bug_id is not None:
+                    self.bugs[bug_id] = remote_bug
 
     def getRemoteBug(self, bug_id):
         """Retrieve and return a single bug from the remote database.
 
         The bug is returned as a tuple in the form (id, bug). This ensures
         that bug ids are formatted correctly for the current
-        ExternalBugTracker.
+        ExternalBugTracker. If no data can be found for bug_id, (None,
+        None) will be returned.
 
         A BugTrackerConnectError will be raised if anything goes wrong.
         """
@@ -718,10 +721,9 @@ class Mantis(ExternalBugTracker):
         if app_error:
             app_error_code, app_error_message = app_error
             # 1100 is ERROR_BUG_NOT_FOUND in Mantis (see
-            # mantisbt/core/constant_inc.php) so we raise
-            # BugNotFound.
+            # mantisbt/core/constant_inc.php).
             if app_error_code == '1100':
-                raise BugNotFound(bug_id)
+                return None, None
             else:
                 raise BugWatchUpdateError(
                     "Mantis APPLICATION ERROR #%s: %s" % (
@@ -732,7 +734,7 @@ class Mantis(ExternalBugTracker):
             'status': self._findValueRightOfKey(bug_page, 'Status'),
             'resolution': self._findValueRightOfKey(bug_page, 'Resolution')}
 
-        return (int(bug_id), bug)
+        return int(bug_id), bug
 
     def getRemoteBugBatch(self, bug_ids):
         """See `ExternalBugTracker`."""
