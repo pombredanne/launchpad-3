@@ -8,11 +8,13 @@ __all__ = ['IBranchSetAPI', 'BranchSetAPI']
 from zope.component import getUtility
 from zope.interface import Interface, implements
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchType, IBranch, IBranchSet, IBugSet,
     ILaunchBag, IPersonSet, IProductSet, NotFoundError)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.xmlrpc import faults
 
 
@@ -116,3 +118,27 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         return canonical_url(bug)
 
 
+class IPublicCodehostingAPI(Interface):
+    """The public codehosting API."""
+
+    def expand_lp_url(url):
+        """Expand the given lp: into a hostname and path, along with allowed
+        protocols for that resource.
+        """
+
+class PublicCodehostingAPI(LaunchpadXMLRPCView):
+    """See `IPublicCodehostingAPI`."""
+
+    # XXX: Move supported protocols to config param?
+    supported_protocols = 'bzr+ssh', 'sftp', 'http'
+
+    def _get_bazaar_host(self):
+        return URI(config.codehosting.supermirror_root).host
+
+    def expand_lp_url(self, url):
+        project_name = URI(url).path.lstrip('/')
+        project = getUtility(IProductSet).getByName(project_name)
+        return (
+            self._get_bazaar_host(),
+            project.development_focus.series_branch.unique_name,
+            self.supported_protocols)
