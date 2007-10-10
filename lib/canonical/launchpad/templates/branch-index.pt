@@ -331,14 +331,42 @@ div.revision p {
   </tal:history-available>
   </div>
 
-  <div id="related-bugs" tal:condition="context/related_bugs">
-    <h2>Related Bugs</h2>
-    <tal:bugs tal:define="branch context;
-                          show_edit python:True;
-                          show_whiteboard python:True;">
+  <tal:has-related-bugs condition="context/related_bugs">
+<script type="text/javascript">
+  function switchFormAndWhiteboard(id) {
+    var div = document.getElementById('bugbranch' + id);
+    var wb = document.getElementById('bugbranch' + id + '-wb');
+
+    if (div.style.display == "none") {
+      /* Expanding the form */
+      if (wb != null) {
+        wb.style.display = "none";
+      }
+      div.style.display = "block";
+      /* Use two focus calls to get the browser to scroll to the end of the
+       * form first, then focus back to the first field of the form.
+       */
+      document.getElementById('field'+id+'.actions.update').focus();
+      document.getElementById('field'+id+'.status').focus();
+    } else {
+      if (wb != null) {
+        wb.style.display = "block";
+      }
+      div.style.display = "none";
+    }
+    return false;
+  }
+</script>
+
+    <div id="related-bugs">
+      <h2>Related Bugs</h2>
+      <tal:bugs tal:define="branch context;
+                            show_edit python:True;
+                            show_whiteboard python:True;">
         <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
-    </tal:bugs>
-  </div>
+      </tal:bugs>
+    </div>
+  </tal:has-related-bugs>
 
       <div class="related">
 

@@ -151,26 +151,28 @@
 <tal:bug-branches repeat="bug_branch bug_branches">
   <div tal:define="show_edit bug_branch/required:launchpad.Edit"
        tal:condition="bug_branch/branch/required:launchpad.View">
-    <tal:branch-ref replace="structure bug_branch/branch/fmt:link"/>
-    (<span tal:content="bug_branch/branch/lifecycle_status/title"
-    tal:attributes="class string:branchstatus${bug_branch/branch/lifecycle_status/name}"
-    >Experimental</span>) -
-    <tal:bug_branch_status condition="not: show_edit|nothing"
-                           replace="bug_branch/status/title"/>
-    <a tal:condition="show_edit"
-       tal:attributes="href string:${bug_branch/branch/fmt:url}/+bug/${bug_branch/bug/id}/+edit;
-                       onclick string:return switchFormAndWhiteboard('${bug_branch/id}')">
-      <tal:bug_branch_status replace="bug_branch/status/title"/>
-      <img src="/@@/expand"/>
-    </a>
-    <dl tal:condition="bug_branch/whiteboard"
-        tal:attributes="id string:bugbranch${bug_branch/id}-wb">
-      <dd>
-        <tal:whiteboard content="structure bug_branch/whiteboard/fmt:text-to-html">
-          The whiteboard.
-        </tal:whiteboard>
-      </dd>
-    </dl>
+    <div class="bug-branch-summary">
+      <tal:branch-ref replace="structure bug_branch/branch/fmt:link"/>
+      (<span tal:content="bug_branch/branch/lifecycle_status/title"
+      tal:attributes="class string:branchstatus${bug_branch/branch/lifecycle_status/name}"
+      >Experimental</span>) -
+      <tal:bug_branch_status condition="not: show_edit|nothing"
+                             replace="bug_branch/status/title"/>
+      <a tal:condition="show_edit"
+         tal:attributes="href string:${bug_branch/branch/fmt:url}/+bug/${bug_branch/bug/id}/+edit;
+                         onclick string:return switchFormAndWhiteboard('${bug_branch/id}')">
+        <tal:bug_branch_status replace="bug_branch/status/title"/>
+        <img src="/@@/expand"/>
+      </a>
+      <dl tal:condition="bug_branch/whiteboard"
+          tal:attributes="id string:bugbranch${bug_branch/id}-wb">
+        <dd>
+          <tal:whiteboard content="structure bug_branch/whiteboard/fmt:text-to-html">
+            The whiteboard.
+          </tal:whiteboard>
+        </dd>
+      </dl>
+    </div>
     <div tal:condition="show_edit|nothing"
          tal:attributes="id string:bugbranch${bug_branch/id}"
          style="display: none"

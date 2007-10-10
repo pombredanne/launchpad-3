@@ -100,32 +100,6 @@
       show_edit - show the edit form
   </tal:comment>
 
-<script type="text/javascript" tal:condition="show_edit|nothing">
-  function switchFormAndWhiteboard(id) {
-    var div = document.getElementById('bugbranch' + id);
-    var wb = document.getElementById('bugbranch' + id + '-wb');
-
-    if (div.style.display == "none") {
-      /* Expanding the form */
-      if (wb != null) {
-        wb.style.display = "none";
-      }
-      div.style.display = "block";
-      /* Use two focus calls to get the browser to scroll to the end of the
-       * form first, then focus back to the first field of the form.
-       */
-      document.getElementById('field'+id+'.actions.update').focus();
-      document.getElementById('field'+id+'.status').focus();
-    } else {
-      if (wb != null) {
-        wb.style.display = "block";
-      }
-      div.style.display = "none";
-    }
-    return false;
-  }
-</script>
-
   <tal:bug-tasks repeat="bug_branch branch/bug_branches">
     <div tal:condition="bug_branch/bug/required:launchpad.View"
          tal:define="bugtask bug_branch/bug_task;
@@ -133,6 +107,7 @@
                      show_edit show_edit|nothing;
                      show_edit python: show_edit and has_edit_permission;
                      ">
+      <div class="bug-branch-summary">
       <tal:link replace="structure bugtask/fmt:link" />
       (<span tal:content="bugtask/importance/title"
              tal:attributes="class string:importance${bugtask/importance/name}">
@@ -150,15 +125,16 @@
 <tal:bug_branch_status replace="bug_branch/status/title"/>         <img src="/@@/expand"/></a>
        </tal:show-edit>
        <tal:show-whiteboard condition="show_whiteboard|nothing">
-       <dl tal:condition="bug_branch/whiteboard"
-           tal:attributes="id string:bugbranch${bug_branch/id}-wb">
-         <dd>
-           <tal:whiteboard content="structure bug_branch/whiteboard/fmt:text-to-html">
-             The whiteboard.
-           </tal:whiteboard>
-         </dd>
-       </dl>
+         <dl tal:condition="bug_branch/whiteboard"
+             tal:attributes="id string:bugbranch${bug_branch/id}-wb">
+           <dd>
+             <tal:whiteboard content="structure bug_branch/whiteboard/fmt:text-to-html">
+               The whiteboard.
+             </tal:whiteboard>
+           </dd>
+         </dl>
        </tal:show-whiteboard>
+       </div>
        <div tal:condition="show_edit|nothing"
             tal:attributes="id string:bugbranch${bug_branch/id}"
             style="display: none"

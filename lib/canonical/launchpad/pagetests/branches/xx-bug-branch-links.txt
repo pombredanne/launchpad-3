@@ -20,17 +20,19 @@ if the user is not logged in, they will be asked to log in.
     ...
     Unauthorized: (...launchpad.AnyPerson')
 
-    >>> def printRelatedBugs(browser):
-    ...     tag = find_tag_by_id(browser.contents, 'related-bugs')
-    ...     if tag is None:
-    ...         print tag
+    >>> def printBugBranchLinks(browser):
+    ...     tags = find_tags_by_class(browser.contents, 'bug-branch-summary')
+    ...     if len(tags) == 0:
+    ...         print 'No bug branch links'
     ...     else:
-    ...         print extract_text(tag)
+    ...         for tag in tags:
+    ...             print extract_text(tag)
 
     >>> user_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> printRelatedBugs(user_browser)
-    None
+    >>> printBugBranchLinks(user_browser)
+    No bug branch links
+
     >>> user_browser.getLink('Link to bug report').click()
     >>> user_browser.title
     'Link branch ...Klingon support in GNOME Terminal... to a bug report'
@@ -40,9 +42,8 @@ requires the user to enter a bug number.
 
     >>> user_browser.getControl('The bug that is linked to.').value = "10"
     >>> user_browser.getControl('Link').click()
-    >>> printRelatedBugs(user_browser)
-    Related Bugs
-    Bug #10: another test bug (Medium &ndash; New)
+    >>> printBugBranchLinks(user_browser)
+    Bug #10: another test bug (Medium &ndash; New) - Fix In Progress
 
 Attempting to link to the same bug again gives an error.
 
@@ -60,16 +61,8 @@ The bug-branch link is also shown on the bug page.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> anon_browser.getLink('another test bug').click()
 
-    >>> def printBugsBranches(browser):
-    ...     tag = find_tag_by_id(browser.contents, 'bug_branch_details')
-    ...     if tag is None:
-    ...         print tag
-    ...     else:
-    ...         print extract_text(tag)
-
-    >>> printBugsBranches(anon_browser)
-    Related branch                      Developer       Status for this bug
-    Klingon support in GNOME Terminal   Sample Person   Fix In Progress
+    >>> printBugBranchLinks(anon_browser)
+    ~name12/gnome-terminal/klingon (Experimental) - Fix In Progress
 
 
 == From the bug page ==
@@ -86,40 +79,31 @@ page restricted with the launchpad.AnyPerson permission.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/bugs/11')
-    >>> printBugsBranches(user_browser)
-    None
+    >>> printBugBranchLinks(user_browser)
+    No bug branch links
+
     >>> user_browser.getLink('Add branch').click()
 
     >>> user_browser.getControl('Branch').value = (
     ...     "~name12/gnome-terminal/scanned")
     >>> user_browser.getControl('Continue').click()
 
-    >>> printBugsBranches(user_browser)
-    Related branch                      Developer       Status for this bug
-    ~name12/gnome-terminal/scanned      Sample Person   Fix In Progress
+    >>> printBugBranchLinks(user_browser)
+    ~name12/gnome-terminal/scanned (New) - Fix In Progress
 
     >>> user_browser.getLink('~name12/gnome-terminal/scanned').click()
-    >>> printRelatedBugs(user_browser)
-    Related Bugs
+    >>> printBugBranchLinks(user_browser)
     Bug #11: Make Jokosher use autoaudiosink (Undecided &ndash; New)
+        - Fix In Progress
 
 
 == Editing the bug status ==
 
-# XXX: TimPenhey 2007-09-11
-# Editing bug branch links is only available from the bug page at the moment.
-# Initial design from the branch page would be a pencil icon after the
-# bug branch hyperlink, but the permission that would control the visibility
-# of the pencil is currently too permissive (see lpbug 138805) and would
-# indicate to users who should really not be messing with it that they could.
-# The UI is not currently very intuitive on the bug side, and should also
-# be addressed once the permissions have been tightened.
-
     >>> user_browser.open(
     ...     'http://launchpad.dev/bugs/11')
-    >>> printBugsBranches(user_browser)
-    Related branch                      Developer       Status for this bug
-    ~name12/gnome-terminal/scanned      Sample Person   Fix In Progress
+    >>> printBugBranchLinks(user_browser)
+    ~name12/gnome-terminal/scanned (New) - Fix In Progress
+
     >>> user_browser.getLink('Fix In Progress').click()
     >>> print user_browser.title
     Edit branch fix status
@@ -128,15 +112,28 @@ Bug branch links have two editable fields:
   * The state of the branch with respect to the bug
   * A whiteboard
 
+The whiteboard is shown on both the bug and branch page in the
+"Related branches" and "Related bugs" sections respectively.
+
     >>> user_browser.getControl('State').value = ['FIXAVAILABLE']
     >>> user_browser.getControl('Whiteboard').value = (
     ...     'This is a fix for the problem and involved:\n'
     ...     ' * Fixing the doodad\n'
     ...     ' * Adjusting the lambda probe')
     >>> user_browser.getControl('Update').click()
-    >>> printBugsBranches(user_browser)
-    Related branch                      Developer       Status for this bug
-    ~name12/gnome-terminal/scanned      Sample Person   Fix Available
+    >>> printBugBranchLinks(user_browser)
+    ~name12/gnome-terminal/scanned (New) - Fix Available
+      This is a fix for the problem and involved:
+       * Fixing the doodad
+       * Adjusting the lambda probe
+
+    >>> user_browser.getLink('~name12/gnome-terminal/scanne').click()
+    >>> printBugBranchLinks(user_browser)
+    Bug #11: Make Jokosher use autoaudiosink (Undecided &ndash; New)
+        - Fix Available
+      This is a fix for the problem and involved:
+       * Fixing the doodad
+       * Adjusting the lambda probe
 
 
 == Deleting bug branch links ==
@@ -151,5 +148,5 @@ the bug from the branch.
      * Adjusting the lambda probe
 
     >>> user_browser.getControl('Delete').click()
-    >>> printBugsBranches(user_browser)
-    None
+    >>> printBugBranchLinks(user_browser)
+        No bug branch links
