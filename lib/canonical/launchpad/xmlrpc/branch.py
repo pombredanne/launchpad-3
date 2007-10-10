@@ -146,33 +146,33 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
 
     supported_schemes = 'bzr+ssh', 'sftp', 'http'
 
-    def _get_bazaar_host(self):
+    def _getBazaarHost(self):
         return URI(config.codehosting.supermirror_root).host
 
-    def _get_series_branch(self, series):
+    def _getSeriesBranch(self, series):
         branch = series.series_branch
         if (branch is None
             or not check_permission('launchpad.View', branch)):
             return faults.NoBranchForSeries(series)
         return branch
 
-    def _get_branch_for_project(self, project_name):
+    def _getBranchForProject(self, project_name):
         project = getUtility(IProductSet).getByName(project_name)
         if project is None:
             return faults.NoSuchProduct(project_name)
         series = project.development_focus
-        return self._get_series_branch(series)
+        return self._getSeriesBranch(series)
 
-    def _get_branch_for_series(self, project_name, series_name):
+    def _getBranchForSeries(self, project_name, series_name):
         project = getUtility(IProductSet).getByName(project_name)
         if project is None:
             return faults.NoSuchProduct(project_name)
         series = project.getSeries(series_name)
         if series is None:
             return faults.NoSuchSeries(series_name, project)
-        return self._get_series_branch(series)
+        return self._getSeriesBranch(series)
 
-    def _get_branch(self, unique_name):
+    def _getBranch(self, unique_name):
         if unique_name[0] != '~':
             return faults.InvalidBranchIdentifier(unique_name)
         branch = getUtility(IBranchSet).getByUniqueName(unique_name)
@@ -180,15 +180,12 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             return _NonexistentBranch(unique_name)
         return branch
 
-    def _get_remote_result_dict(self, branch):
-        return dict(urls=[branch.url])
-
-    def _get_result_dict(self, branch):
+    def _getResultDict(self, branch):
         if branch.branch_type == BranchType.REMOTE:
-            return self._get_remote_result_dict(branch)
+            return dict(urls=[branch.url])
         else:
             result = dict(urls=[])
-            host = self._get_bazaar_host()
+            host = self._getBazaarHost()
             for scheme in self.supported_schemes:
                 result['urls'].append(
                     str(URI(host=host, scheme=scheme,
@@ -203,12 +200,12 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         path_segments = strip_path.split('/')
         if len(path_segments) == 1:
             [project_name] = path_segments
-            result = self._get_branch_for_project(project_name)
+            result = self._getBranchForProject(project_name)
         elif len(path_segments) == 2:
             project_name, series_name = path_segments
-            result = self._get_branch_for_series(project_name, series_name)
+            result = self._getBranchForSeries(project_name, series_name)
         elif len(path_segments) == 3:
-            result = self._get_branch(strip_path)
+            result = self._getBranch(strip_path)
         else:
             return faults.InvalidBranchIdentifier(path)
 
@@ -216,6 +213,6 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             return result
         else:
             try:
-                return self._get_result_dict(result)
+                return self._getResultDict(result)
             except Unauthorized:
-                return self._get_result_dict(_NonexistentBranch(strip_path))
+                return self._getResultDict(_NonexistentBranch(strip_path))
