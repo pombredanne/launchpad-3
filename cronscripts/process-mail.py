@@ -1,5 +1,6 @@
 #!/usr/bin/python2.4
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0403
 """Fetches mail from the mail box and feeds them to the handlers."""
 
 import _pythonpath

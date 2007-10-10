@@ -1,4 +1,5 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Source package in Distribution interfaces."""
 
@@ -78,10 +79,15 @@ class IDistributionSourcePackage(IBugTarget):
         version in this distribution.
         """
 
-    def get_distroseries_packages():
+    def get_distroseries_packages(active_only=True):
         """Return a list of DistroSeriesSourcePackage objects, each 
         representing this same source package in the serieses of this
         distribution.
+
+        By default, this will return SourcePackage's in active
+        distroseries only. You can set only_active=False to return a
+        source package for EVERY series where this source package was
+        published.
         """
 
     def bugtasks(quantity=None):

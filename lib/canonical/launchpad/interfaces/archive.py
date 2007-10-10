@@ -1,4 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Archive interfaces."""
 
@@ -104,7 +105,7 @@ class IPPAActivateForm(Interface):
         "be rendered as links."))
 
     accepted = Bool(
-        title=_("I accept the PPA Terms of Service."),
+        title=_("I have read and accepted the PPA Terms of Use."),
         required=True, default=False)
 
 

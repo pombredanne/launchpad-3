@@ -1,4 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702
+
 """Logging setup for scripts.
 
 Don't import from this module. Import it from canonical.scripts.

@@ -1,4 +1,5 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -123,13 +124,12 @@ class POSubmissionSet:
         # Intermediate results are kept in a temporary table.
         # This is not a good thing, and if it's any faster than a single big
         # query, that's pure coincidence.
-        # XXX: JeroenVermeulen 2007-09-02 bug=30602: Evaluate performance with
-        # this change on staging, and roll back if necessary.
         parameters['temp_table'] = 'temp_suggestion_pomsgset'
         postgresql.drop_tables(cur, [parameters['temp_table']])
         cur.execute("""
-            CREATE TEMP TABLE %(temp_table)s AS
-            SELECT DISTINCT POMsgSet.id, POTMsgSet.primemsgid
+            CREATE TEMP TABLE %(temp_table)s
+            ON COMMIT DROP
+            AS SELECT DISTINCT POMsgSet.id, POTMsgSet.primemsgid
             FROM POMsgSet
             JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
             JOIN POFile ON POMsgSet.pofile = POFile.id
@@ -157,7 +157,7 @@ class POSubmissionSet:
                     better.pluralform = pos.pluralform AND
                     better.potranslation = pos.potranslation AND
                     better.active)
-            ORDER BY potranslation, primemsgid, pos.datecreated DESC
+            ORDER BY potranslation, primemsgid, pos.id DESC
             ) AS suggestions
             """ % parameters)
         available.update(dict(cur.fetchall()))

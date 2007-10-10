@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Product series interfaces."""
 
@@ -373,16 +374,27 @@ class IProductSeriesSet(Interface):
         Return the default value if there is no such series.
         """
 
-    def search(ready=None, text=None, forimport=None, importstatus=None,
-               start=None, length=None):
-        """return a list of series matching the arguments, which are passed
-        through to _querystr to generate the query."""
+    def searchImports(text=None, importstatus=None):
+        """Search through all series that have import data.
+
+        This method will never return a series for a deactivated product.
+
+        :param text: If specifed, limit to the results to those that contain
+            ``text`` in the product or project titles and descriptions.
+        :param importstatus: If specified, limit the list to series which have
+            the given import status; if not specified or None, limit to series
+            with non-NULL import status.
+        """
 
     def importcount(status=None):
-        """Return the number of series that are in the process of being
-        imported and published as baz branches. If status is None then all
-        the statuses are included, otherwise the count reflects the number
-        of branches with that importstatus."""
+        """Count the series with import data of a given status.
+
+        This method will not count series for deactivated products.
+
+        :param status: If specified, count the series which have the given
+            import status; if not specified or None, count all series with
+            a defined import status.
+        """
 
     def getByCVSDetails(cvsroot, cvsmodule, cvsbranch, default=None):
         """Return the ProductSeries with the given CVS details.

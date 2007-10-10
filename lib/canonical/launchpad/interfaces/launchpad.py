@@ -1,4 +1,6 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
+
 """Interfaces pertaining to the launchpad application.
 
 Note that these are not interfaces to application content objects.

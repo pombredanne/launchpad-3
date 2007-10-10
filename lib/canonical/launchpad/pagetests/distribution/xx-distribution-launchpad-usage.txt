@@ -25,7 +25,7 @@ using the 'Define Launchpad usage' action.
     
 (Even the registrant doesn't have permission to this page.)
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/ubuntu/+launchpad')
     Traceback (most recent call last):
       ...

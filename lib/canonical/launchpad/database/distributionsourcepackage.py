@@ -1,4 +1,5 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Classes to represent source packages in a distribution."""
 
@@ -205,10 +206,13 @@ class DistributionSourcePackage(BugTargetBase,
             return None
         return cache.binpkgnames
 
-    def get_distroseries_packages(self):
+    def get_distroseries_packages(self, active_only=True):
         """See IDistributionSourcePackage."""
         result = []
         for series in self.distribution.serieses:
+            if active_only:
+                if not series.active:
+                    continue
             candidate = SourcePackage(self.sourcepackagename, series)
             if candidate.currentrelease is not None:
                 result.append(candidate)

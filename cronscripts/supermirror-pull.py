@@ -1,5 +1,6 @@
 #!/usr/bin/python2.4
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0403
 
 import _pythonpath
 

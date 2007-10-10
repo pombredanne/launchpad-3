@@ -1,6 +1,7 @@
 #!/usr/bin/python2.4
 
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0403
 
 """A cron script that fetches the latest database of CVE details and ensures
 that all of the known CVE's are fully registered in Launchpad."""

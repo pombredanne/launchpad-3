@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Database classes for a distribution series."""
 
@@ -872,6 +873,22 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=["SourcePackageName.name"]
             )
         return packagings
+
+    @property
+    def supported(self):
+        return self.status in [
+            DistroSeriesStatus.CURRENT,
+            DistroSeriesStatus.SUPPORTED
+            ]
+
+    @property
+    def active(self):
+        return self.status in [
+            DistroSeriesStatus.DEVELOPMENT,
+            DistroSeriesStatus.FROZEN,
+            DistroSeriesStatus.CURRENT,
+            DistroSeriesStatus.SUPPORTED
+            ]
 
     @property
     def distroserieslanguages(self):

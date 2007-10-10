@@ -19,10 +19,12 @@ from canonical.launchpad.database.publishing import (
 class TestCopyPackageScript(LaunchpadZopelessTestCase):
     """Test the copy-package.py script."""
 
-    def runCopyPackage(self, extra_args=[]):
+    def runCopyPackage(self, extra_args=None):
         """Run copy-package.py, returning the result and output.
         Returns a tuple of the process's return code, stdout output and
         stderr output."""
+        if extra_args is None:
+            extra_args = []
         script = os.path.join(
             config.root, "scripts", "ftpmaster-tools", "copy-package.py")
         args = [sys.executable, script, '-y']

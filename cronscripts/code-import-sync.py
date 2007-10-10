@@ -1,5 +1,6 @@
 #!/usr/bin/python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0403
 
 """Populate and update the CodeImport table from ProductSeries.
 

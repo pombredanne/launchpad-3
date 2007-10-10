@@ -1,4 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Database class for table Archive."""
 

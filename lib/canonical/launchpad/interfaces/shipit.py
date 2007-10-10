@@ -1,4 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IRequestedCDs', 'IShippingRequest', 'IShippingRequestSet',
@@ -17,6 +18,7 @@ from zope.app.form.browser.itemswidgets import DropdownWidget
 
 from canonical.lazr import DBEnumeratedType, DBItem
 
+from canonical.config import config
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.validation import (
     validate_shipit_recipientdisplayname, validate_shipit_phone,
@@ -213,7 +215,7 @@ class ShipItConstants:
     kubuntu_url = 'https://shipit.kubuntu.com'
     edubuntu_url = 'https://shipit.edubuntu.com'
     current_distroseries = ShipItDistroSeries.GUTSY
-    max_size_for_auto_approval = 16
+    max_size_for_auto_approval = config.shipit.max_cds_for_auto_approval
 
 
 class IEmptyDefaultChoice(IChoice):

@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['Build', 'BuildSet']
@@ -136,10 +137,13 @@ class Build(SQLBase):
     @property
     def can_be_retried(self):
         """See `IBuild`."""
-        # check if the build would be properly collected if it was
-        # reset. Do not reset denied builds.
-        if (self.is_trusted and not
-            self.distroseries.canUploadToPocket(self.pocket)):
+        # First check that the slave scanner would pick up the build record
+        # if we reset it.  Untrusted and Partner builds are always ok.
+        if (self.is_trusted and
+            self.archive.purpose != ArchivePurpose.PARTNER and
+            not self.distroseries.canUploadToPocket(self.pocket)):
+            # The slave scanner would not pick this up, so it cannot be
+            # re-tried.
             return False
 
         failed_buildstates = [
@@ -149,6 +153,8 @@ class Build(SQLBase):
             BuildStatus.FAILEDTOUPLOAD,
             ]
 
+        # If the build is currently in any of the failed states,
+        # it may be retried.
         return self.buildstate in failed_buildstates
 
     @property

@@ -1,13 +1,18 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Mailing list interfaces."""
 
 __metaclass__ = type
 __all__ = [
+    'CannotChangeSubscription',
+    'CannotSubscribe',
+    'CannotUnsubscribe',
     'IMailingList',
+    'IMailingListAPIView',
     'IMailingListApplication',
     'IMailingListSet',
-    'IRequestedMailingListAPI',
+    'IMailingListSubscription',
     'MailingListAutoSubscribePolicy',
     'MailingListStatus',
     'PersonalStanding',
@@ -16,9 +21,10 @@ __all__ = [
 
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Object, Set, Text
+from zope.schema import Choice, Datetime, Object, Set, Text, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import IEmailAddress
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 
@@ -327,6 +333,54 @@ class IMailingList(Interface):
             mailing list is not `MailingListStatus.ACTIVE`.
         """
 
+    def subscribe(person, address=None):
+        """Subscribe a person to the mailing list.
+
+        :param person: The person to subscribe to the mailing list.  The
+            person must be a member (either direct or indirect) of the team
+            linked to this mailing list.
+        :param address: The `IEmailAddress` to use for the subscription.  The
+            address must be owned by `person`.  If None (the default), then
+            the person's preferred email address is used.  If the person's
+            preferred address changes, their subscription address will change
+            as well.
+        :raises CannotSubscribe: Raised when the person is not allowed to
+            subscribe to the mailing list with the given address.  For
+            example, this is raised when the person is not a member of the
+            team linked to this mailing list, when `person` is a team, or when
+            `person` does not own the given email address.
+        """
+
+    def unsubscribe(person):
+        """Unsubscribe the person from the mailing list.
+
+        :param person: A member of the mailing list.
+        :raises CannotUnsubscribe: Raised when the person is not a member of
+            the mailing list.
+        """
+
+    def changeAddress(person, address):
+        """Change the address a person is subscribed with.
+
+        :param person: The mailing list subscriber.
+        :param address: The new IEmailAddress to use for the subscription.
+            The address must be owned by `person`.  If None, the person's
+            preferred email address is used.  If the person's preferred
+            address changes, their subscription address will change as well.
+        :raises CannotChangeSubscription: Raised when the person is not a
+            allowed to change their subscription address.  For example, this
+            is raised when the person is not a member of the team linked to
+            this mailing list, when `person` is a team, or when `person` does
+            not own the given email address.
+        """
+
+    def getAddresses():
+        """Return the set of subscribed email addresses.
+
+        :return: an iterator over the IEmailAddresses for all subscribed
+            members of the mailing list, in no particular order.
+        """
+
 
 class IMailingListSet(Interface):
     """A set of mailing lists."""
@@ -370,6 +424,13 @@ class IMailingListSet(Interface):
         value_type=Object(schema=IMailingList),
         readonly=True)
 
+    active_lists = Set(
+        title=_('Active lists'),
+        description=_(
+            'All mailing lists with status `MailingListStatus.ACTIVE`.'),
+        value_type=Object(schema=IMailingList),
+        readonly=True)
+
     modified_lists = Set(
         title=_('Modified lists'),
         description=_(
@@ -385,7 +446,7 @@ class IMailingListSet(Interface):
         readonly=True)
 
 
-class IRequestedMailingListAPI(Interface):
+class IMailingListAPIView(Interface):
     """XMLRPC API that Mailman polls for mailing list actions."""
 
     def getPendingActions():
@@ -429,3 +490,89 @@ class IRequestedMailingListAPI(Interface):
         :param statuses: A dictionary mapping team names to result strings.
             The result strings may be either 'success' or 'failure'.
         """
+
+    def getMembershipInformation(teams):
+        """Return membership information for the listed teams.
+
+        :param teams: The list of team names for which Mailman is requesting
+            membership information.
+        :return: A data structure representing the requested information.  See
+            below for the format of that data structure.  The records in
+            values are sorted by email address.
+
+        The return value is of the format:
+
+        {team_name: [(address, realname, flags, status), ...], ...}
+
+        And each value contains an entry for all addresses that are subscribed
+        to the mailing list linked to the named team.
+        """
+
+    def isRegisteredInLaunchpad(address):
+        """Return whether the address is a Launchpad member or not.
+
+        :param address: The text email address to check.
+        :return: True if the address is a validated or preferred email address
+            owned by a Launchpad member.
+        """
+
+
+class IMailingListSubscription(Interface):
+    """A mailing list subscription."""
+
+    person = Choice(
+        title=_('Person'),
+        description=_('The person who is subscribed to this mailing list.'),
+        vocabulary='ValidTeamMember',
+        required=True, readonly=True)
+
+    mailing_list = Choice(
+        title=_('Mailing list'),
+        description=_('The mailing list for this subscription.'),
+        vocabulary='ActiveMailingList',
+        required=True, readonly=True)
+
+    date_joined = Datetime(
+        title=_('Date joined'),
+        description=_("The date this person joined the team's mailing list."),
+        required=True, readonly=True)
+
+    email_address = Object(
+        schema=IEmailAddress,
+        title=_('Email address'),
+        description=_(
+            "The subscribed email address or None, meaning use the person's "
+            'preferred email address, even if that changes.'),
+        required=True)
+
+    subscribed_address = Object(
+        schema=IEmailAddress,
+        title=_('Email Address'),
+        description=_('The IEmailAddress this person is subscribed with.'),
+        readonly=True)
+
+
+class CannotSubscribe(Exception):
+    """The subscriber is not allowed to subscribe to the mailing list.
+
+    This is raised when the person is not allowed to subscribe to the mailing
+    list with the given address.  For example, this is raised when the person
+    is not a member of the team linked to this mailing list, when `person` is
+    a team, or when `person` does not own the given email address.
+    """
+
+class CannotUnsubscribe(Exception):
+    """The person cannot unsubscribe from the mailing list.
+
+    This is raised when Person who is not a member of the mailing list tries
+    to unsubscribe from the mailing list.
+    """
+
+class CannotChangeSubscription(Exception):
+    """The subscription change cannot be fulfilled.
+
+    This is raised when the person is not a allowed to change their
+    subscription address.  For example, this is raised when the person is not
+    a member of the team linked to this mailing list, when `person` is a team,
+    or when `person` does not own the given email address.
+    """
