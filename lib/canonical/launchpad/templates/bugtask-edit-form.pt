@@ -31,10 +31,10 @@
     and therefore cannot edit this bug's status.
   </p>
   <tal:has_watch condition="context/bugwatch">
-    <p condition="context/bugwatch/lasterror" class="error message">
-      The bug's status could not be imported due to an error:
-      <tal:bugwatch_error content="context/bugwatch/lasterror/description" />
-    </p>
+    <p tal:condition="context/bugwatch/lasterror"
+        class="error message" 
+        tal:content="context/bugwatch/getLastErrorMessage"
+    />
   </tal:has_watch>
   <table class="summary">
     <tr>

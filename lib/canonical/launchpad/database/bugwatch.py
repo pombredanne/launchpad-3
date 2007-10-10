@@ -47,7 +47,7 @@ class BugWatch(SQLBase):
     lastchecked = UtcDateTimeCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    lasterror = EnumCol(dbName='lasterror', schema=BugWatchErrorType, 
+    lasterror = EnumCol(dbName='lasterror', schema=BugWatchErrorType,
         default=None)
 
     # useful joins
@@ -108,6 +108,51 @@ class BugWatch(SQLBase):
         """See IBugWatch."""
         assert self.bugtasks.count() == 0, "Can't delete linked bug watches"
         SQLBase.destroySelf(self)
+
+    def getLastErrorMessage(self):
+        """See `IBugWatch`."""
+
+        if not self.lasterror:
+            return None
+
+        elif self.lasterror == BugWatchErrorType.BUGNOTFOUND:
+            message = ("%(bugtracker)s bug #%(bug)s appears not to "
+                "exist. Check that the bug number is correct.")
+
+        elif self.lasterror == BugWatchErrorType.CONNECTIONERROR:
+            message = "Launchpad couldn't connect to %(bugtracker)s."
+
+        elif self.lasterror == BugWatchErrorType.INVALIDBUGID:
+            message = ("Bug ID %(bug)s isn't valid on %(bugtracker)s. Check "
+                "that the bug ID is correct.")
+
+        elif self.lasterror == BugWatchErrorType.TIMEOUT:
+            message = "Launchpad's connection to %(bugtracker)s timed out."
+
+        elif self.lasterror == BugWatchErrorType.UNPARSABLEBUG:
+            message = ("Launcpad couldn't extract a status from %(bug)s on "
+                "%(bugtracker)s.")
+
+        elif self.lasterror == BugWatchErrorType.UNPARSABLEBUGTRACKER:
+            message = ("Launchpad couldn't determine the version of "
+                "%(bugtrackertype)s running on %(bugtracker)s.")
+
+        elif self.lasterror == BugWatchErrorType.UNSUPPORTEDBUGTRACKER:
+            message = ("Launchpad doesn't support importing bugs from "
+                "%(bugtrackertype)s bug trackers.")
+
+        # We include this just in case an error type gets added without
+        # this method being updated.
+        else:
+            message = ("Launchpad couldn't import bug #%(bug)s from "
+                "%(bugtracker)s.")
+
+        error_data = {
+            'bug': self.remotebug,
+            'bugtracker': self.bugtracker.title,
+            'bugtrackertype': self.bugtracker.bugtrackertype.title}
+
+        return message % error_data
 
 
 class BugWatchSet(BugSetBase):

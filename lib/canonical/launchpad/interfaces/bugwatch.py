@@ -119,6 +119,9 @@ class IBugWatch(IHasBug):
     def destroySelf():
         """Delete this bug watch."""
 
+    def getLastErrorMessage():
+        """Return a string describing the contents of the lasterror field."""
+
 
 class IBugWatchSet(Interface):
     """The set of IBugWatch's."""
