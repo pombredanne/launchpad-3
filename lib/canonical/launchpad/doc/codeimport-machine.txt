@@ -7,6 +7,12 @@ is, currently capable of performing imports).
     >>> from canonical.launchpad.interfaces import (
     ...     ICodeImportMachine, ICodeImportMachineSet, CodeImportMachineState)
 
+This test is running in the ZopelessLayer to allow switching database
+users. Because of bug 3989, we must use transaction commands from
+sqlbase.
+
+    >>> from canonical.database.sqlbase import begin, commit, rollback
+
 
 == Creating CodeImportMachine ==
 
@@ -16,14 +22,16 @@ switch to a database administrator.
 Adding a machine is very simple SQL, for which there will probably be a
 shell script.
 
-    >>> from canonical.database.sqlbase import connect, quote
-    >>> connection = connect('testadmin')
-    >>> cur = connection.cursor()
-    >>> cur.execute("""
-    ...     INSERT INTO CodeImportMachine (hostname, state)
-    ...     VALUES ('frobisher.example.com', %s)
-    ...     """ % quote(CodeImportMachineState.OFFLINE))
-    >>> connection.commit()
+    >>> from canonical.database.sqlbase import connect, sqlvalues
+    >>> def new_machine(hostname):
+    ...     connection = connect('testadmin')
+    ...     cur = connection.cursor()
+    ...     cur.execute("""
+    ...         INSERT INTO CodeImportMachine (hostname, state)
+    ...         VALUES (%s, %s)
+    ...         """ % sqlvalues(hostname, CodeImportMachineState.OFFLINE))
+    ...     connection.commit()
+    >>> new_machine('frobisher')
 
 
 == Retrieving CodeImportMachine ==
@@ -61,7 +69,7 @@ hostname and to all machines.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> verifyObject(ICodeImportMachineSet, removeSecurityProxy(machine_set))
     True
-    >>> machine = machine_set.getByHostname('frobisher.example.com')
+    >>> machine = machine_set.getByHostname('frobisher')
     >>> machine in machine_set.getAll()
     True
 
@@ -77,7 +85,7 @@ hostname and online state information.
     >>> verifyObject(ICodeImportMachine, removeSecurityProxy(machine))
     True
     >>> machine.hostname
-    u'frobisher.example.com'
+    u'frobisher'
     >>> print machine.state.name
     OFFLINE
 
@@ -94,7 +102,6 @@ UPDATE rights on the CodeImportMachine table.
       ...
     ProgrammingError: ERROR:  permission denied for relation codeimportmachine
     ...
-    >>> from canonical.database.sqlbase import begin
     >>> begin()
 
 Jobs running on the machine itself will connect as the 'importd' user,
@@ -115,7 +122,7 @@ Even scripts cannot directly set attributes of CodeImportMachine
 objects. Instead, they must use methods that create the appropriate
 CodeImportEvent records.
 
-    >>> machine = machine_set.getByHostname('frobisher.example.com')
+    >>> machine = machine_set.getByHostname('frobisher')
     >>> print machine.state.name
     OFFLINE
     >>> machine.state = CodeImportMachineState.ONLINE
@@ -124,7 +131,7 @@ CodeImportEvent records.
     ForbiddenAttribute: ...
 
 The following helpers are useful to demonstrate that appropriate
-CodeImportEvent objects are indeed created.
+CodeImportEvent objects are created.
 
     >>> from canonical.launchpad.database import CodeImportEvent
     >>> 
@@ -137,6 +144,31 @@ CodeImportEvent objects are indeed created.
     ...     """List the types of all events for the given machine."""
     ...     return [event.event_type.name
     ...             for event in list_events_for_machine(machine)]
+    >>> 
+    >>> def print_machine_state_and_events(machine):
+    ...     print 'State:', machine.state.name
+    ...     print 'Events:', list_event_types_for_machine(machine)
+
+To make tests simpler and more self-cointained, we will use the
+following helper to reset the sample CodeImportMachine and delete its
+associated events.
+
+    >>> def reset_machine(machine):
+    ...     """Delete events associated to machine and reset state to OFFLINE.
+    ...     """
+    ...     commit()
+    ...     connection = connect('testadmin')
+    ...     cur = connection.cursor()
+    ...     cur.execute("""
+    ...         DELETE FROM CodeImportEvent
+    ...         WHERE machine = %s
+    ...         """ % sqlvalues(machine))
+    ...     connection.commit()
+    ...     begin()
+    ...     machine = machine_set.getByHostname(machine.hostname)
+    ...     removeSecurityProxy(machine).state = (
+    ...         CodeImportMachineState.OFFLINE)
+    ...     return machine
 
 
 === setOnline ===
@@ -144,13 +176,14 @@ CodeImportEvent objects are indeed created.
 When a code-import-controller daemon starts, it must call the setOnline
 method of its associated CodeImportMachine.
 
-    >>> list_event_types_for_machine(machine)
-    []
+    >>> machine = reset_machine(machine)
+    >>> print_machine_state_and_events(machine)
+    State: OFFLINE
+    Events: []
     >>> machine.setOnline()
-    >>> print machine.state.name
-    ONLINE
-    >>> list_event_types_for_machine(machine)
-    ['ONLINE']
+    >>> print_machine_state_and_events(machine)
+    State: ONLINE
+    Events: ['ONLINE']
 
 
 === setOffline ===
@@ -159,16 +192,17 @@ When a code-import-controller daemon stops, or when the watchdog detects
 that it has not updated its heartbeat for some time, they must call the
 setOffline method.
 
-    >>> list_event_types_for_machine(machine)
-    ['ONLINE']
     >>> from canonical.launchpad.interfaces import (
     ...     CodeImportEventDataType, CodeImportMachineOfflineReason)
+    >>> machine = reset_machine(machine)
+    >>> machine.setOnline()
+    >>> print_machine_state_and_events(machine)
+    State: ONLINE
+    Events: ['ONLINE']
     >>> machine.setOffline(CodeImportMachineOfflineReason.STOPPED)
-    >>> print machine.state.name
-    OFFLINE
-    >>> list_event_types_for_machine(machine)
-    ['ONLINE', 'OFFLINE']
-    >>> OFFLINE_REASON = CodeImportEventDataType.OFFLINE_REASON
-    >>> dict(list_events_for_machine(machine)[-1].items())[OFFLINE_REASON]
+    >>> print_machine_state_and_events(machine)
+    State: OFFLINE
+    Events: ['ONLINE', 'OFFLINE']
+    >>> latest_event = list_events_for_machine(machine)[-1]
+    >>> dict(latest_event.items())[CodeImportEventDataType.OFFLINE_REASON]
     u'STOPPED'
-
