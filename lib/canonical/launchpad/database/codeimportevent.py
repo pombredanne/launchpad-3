@@ -135,13 +135,14 @@ class CodeImportEventSet:
             data_value=reason.name)
         return event
 
-    def newQuiesce(self, person, message):
+    def newQuiesce(self, machine, person, message):
         """See `ICodeImportEventSet`."""
+        assert machine is not None
         assert person is not None
         assert message is not None
         event = CodeImportEvent(
             event_type=CodeImportEventType.QUIESCE,
-            person=person)
+            machine=machine, person=person)
         _CodeImportEventData(
             event=event, data_type=CodeImportEventDataType.MESSAGE,
             data_value=message)

@@ -331,11 +331,18 @@ Quiescing is a privileged administrative operation.
 
     >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
 
-    >>> assert_raises(AssertionError, event_set.newQuiesce, None, 'Message.')
-    >>> assert_raises(AssertionError, event_set.newQuiesce, ddaa, None)
-    >>> quiesce_event = event_set.newQuiesce(ddaa, 'Production rollout.')
+    >>> assert_raises(
+    ...     AssertionError, event_set.newQuiesce, None, ddaa, 'Message.')
+    >>> assert_raises(
+    ...     AssertionError, event_set.newQuiesce, machine, None, 'Message.')
+    >>> assert_raises(
+    ...     AssertionError, event_set.newQuiesce, machine, ddaa, None)
+    >>> quiesce_event = event_set.newQuiesce(
+    ...     machine, ddaa, 'Production rollout.')
     >>> verify_event(quiesce_event)
     QUIESCE
+    >>> print quiesce_event.machine.hostname
+    bazaar-importer
     >>> print quiesce_event.person.name
     ddaa
     >>> print_items(quiesce_event)
