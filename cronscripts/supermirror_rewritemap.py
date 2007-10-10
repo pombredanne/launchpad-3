@@ -1,5 +1,6 @@
 #!/usr/bin/python2.4
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0403
 
 """Generate a file mapping ~user/product/branch to on-disk paths, suitable for
 use with Apache's RewriteMap directive.

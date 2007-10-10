@@ -1,5 +1,6 @@
 #!/usr/bin/python2.4
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0403
 # Author: Gustavo Niemeyer <gustavo@niemeyer.net>
 #         David Allouche <david@allouche.net>
 
