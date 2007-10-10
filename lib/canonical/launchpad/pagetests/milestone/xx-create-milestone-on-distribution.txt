@@ -9,7 +9,7 @@ Team (ubuntu-team).
     ...
     Unauthorized: ...
 
-Let's make the sample user an owner of Ubuntu for this test. The owner
+Let's make the sample user the owner of Ubuntu for this test. The owner
 of the distribution should be able to add milestones for it, of course!
 
     >>> admin_browser.open('http://launchpad.dev/ubuntu/+reassign')

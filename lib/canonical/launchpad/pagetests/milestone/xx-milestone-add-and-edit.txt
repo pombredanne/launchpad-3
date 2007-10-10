@@ -1,364 +1,144 @@
 Note: This test does not guarantee full coverage, it is only testing if an
 admin is able to create/edit milestones with duplicate names.
 
-We will test these features as "ubuntu-team" who owns Ubuntu and is the
-registrant of alsa-utils.
+Let's make the sample user the owner of Ubuntu and alsa-utils for this test.
+
+    >>> admin_browser.open('http://launchpad.dev/ubuntu/+reassign')
+    >>> admin_browser.getControl(name='field.owner').value = 'name12'
+    >>> admin_browser.getControl('Change Registrant').click()
+
+    >>> admin_browser.open('http://launchpad.dev/alsa-utils/+reassign')
+    >>> admin_browser.getControl(name='field.owner').value = 'name12'
+    >>> admin_browser.getControl('Change Registrant').click()
 
 First we test the +addmilestone page.  
-  
-  >>> print http(r"""
-  ... GET /ubuntu/hoary/+addmilestone HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+
+    >>> test_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> test_browser.open('http://launchpad.dev/ubuntu/hoary/+addmilestone')
 
 Once authorized, let's create 2 milestones!
 
-  >>> print http(r"""
-  ... POST /ubuntu/hoary/+addmilestone HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------70936480015097772051927203955
-  ... 
-  ... -----------------------------70936480015097772051927203955
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... milestone1
-  ... -----------------------------70936480015097772051927203955
-  ... Content-Disposition: form-data; name="field.dateexpected"
-  ... 
-  ... 
-  ... -----------------------------70936480015097772051927203955
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------70936480015097772051927203955--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  
-  >>> print http(r"""
-  ... GET /ubuntu/+milestone/milestone1 HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+    >>> test_browser.getControl('Name').value = 'milestone1'
+    >>> test_browser.getControl('Add').click()
+    >>> for tag in find_tags_by_class(test_browser.contents, 'milestone'):
+    ...     print extract_text(tag)
+    milestone1
 
-
-  >>> print http(r"""
-  ... POST /ubuntu/hoary/+addmilestone HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------73806245718620212181717230063
-  ... 
-  ... -----------------------------73806245718620212181717230063
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... milestone2
-  ... -----------------------------73806245718620212181717230063
-  ... Content-Disposition: form-data; name="field.dateexpected"
-  ... 
-  ... 
-  ... -----------------------------73806245718620212181717230063
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------73806245718620212181717230063--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-
-  >>> print http(r"""
-  ... GET /ubuntu/+milestone/milestone2 HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+    >>> test_browser.open('http://launchpad.dev/ubuntu/hoary/+addmilestone')
+    >>> test_browser.getControl('Name').value = 'milestone2'
+    >>> test_browser.getControl('Add').click()
+    >>> for tag in find_tags_by_class(test_browser.contents, 'milestone'):
+    ...     print extract_text(tag)
+    milestone1
+    milestone2
 
 Now let's try to create another one named milestone1.
 
-  >>> print http(r"""
-  ... POST /ubuntu/hoary/+addmilestone HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------2560098541154579410319811278
-  ... 
-  ... -----------------------------2560098541154579410319811278
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... milestone1
-  ... -----------------------------2560098541154579410319811278
-  ... Content-Disposition: form-data; name="field.dateexpected"
-  ... 
-  ... 
-  ... -----------------------------2560098541154579410319811278
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------2560098541154579410319811278--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...The name milestone1 is already used by a milestone in Ubuntu...
+    >>> test_browser.open('http://launchpad.dev/ubuntu/hoary/+addmilestone')
+    >>> test_browser.getControl('Name').value = 'milestone1'
+    >>> test_browser.getControl('Add').click()
+    >>> test_browser.url
+    'http://launchpad.dev/ubuntu/hoary/+addmilestone'
+
+    >>> for tag in find_tags_by_class(test_browser.contents, 'message'):
+    ...     print tag
+    <p class="error message">An error occurred.</p>
+    <div class="message">The name milestone1 is already used by a milestone
+    in Ubuntu.</div>
 
 Edit now...
-First we try to change the name of milestone2 to milestone1, wich is already
-in use.
 
-  >>> print http(r"""
-  ... POST /ubuntu/+milestone/milestone2/+edit HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------213577065459040936697430468
-  ... 
-  ... -----------------------------213577065459040936697430468
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... milestone1
-  ... -----------------------------213577065459040936697430468
-  ... Content-Disposition: form-data; name="field.dateexpected"
-  ... 
-  ... 
-  ... -----------------------------213577065459040936697430468
-  ... Content-Disposition: form-data; name="field.visible.used"
-  ... 
-  ... 
-  ... -----------------------------213577065459040936697430468
-  ... Content-Disposition: form-data; name="field.visible"
-  ... 
-  ... on
-  ... -----------------------------213577065459040936697430468
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------213577065459040936697430468--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...The name milestone1 is already used by a milestone in Ubuntu...
+First we try to change the name of milestone2 to milestone1, which is
+already in use.
 
+    >>> test_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+milestone/milestone2/+edit')
+    >>> test_browser.getControl('Name').value = 'milestone1'
+    >>> test_browser.getControl('Change').click()
+    >>> test_browser.url
+    'http://launchpad.dev/ubuntu/+milestone/milestone2/+edit'
+    >>> for tag in find_tags_by_class(test_browser.contents, 'message'):
+    ...     print tag
+    <p class="error message"> There is a problem with the information you
+    entered. Please fix it and try again. </p>
+    <div class="message">The name milestone1 is already used by a milestone
+    in Ubuntu.</div>
 
 Then we try to change milestone2's name to milestone3.
 
-
-  >>> print http(r"""
-  ... POST /ubuntu/+milestone/milestone2/+edit HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------7472362501994754044821794503
-  ... 
-  ... -----------------------------7472362501994754044821794503
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... milestone3
-  ... -----------------------------7472362501994754044821794503
-  ... Content-Disposition: form-data; name="field.dateexpected"
-  ... 
-  ... 
-  ... -----------------------------7472362501994754044821794503
-  ... Content-Disposition: form-data; name="field.visible.used"
-  ... 
-  ... 
-  ... -----------------------------7472362501994754044821794503
-  ... Content-Disposition: form-data; name="field.visible"
-  ... 
-  ... on
-  ... -----------------------------7472362501994754044821794503
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------7472362501994754044821794503--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  
-  >>> print http(r"""
-  ... GET /ubuntu/+milestone/milestone3 HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-
-  >>> print http(r"""
-  ... GET /ubuntu/+milestone/milestone2 HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 404 Not Found
-  ...
-
+    >>> test_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+milestone/milestone2/+edit')
+    >>> test_browser.getControl('Name').value = 'milestone3'
+    >>> test_browser.getControl('Change').click()
+    >>> for tag in find_tags_by_class(test_browser.contents, 'milestone'):
+    ...     print extract_text(tag)
+    milestone1
+    milestone3
 
 Now we do the same for a product instead of a distro.
 
 First we test the +addmilestone page.  
-  
-  >>> print http(r"""
-  ... GET /alsa-utils/trunk/+addmilestone HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+
+    >>> test_browser.open(
+    ...     'http://launchpad.dev/alsa-utils/trunk/+addmilestone')
 
 Once authorized, let's create 2 milestones!
 
-  >>> print http(r"""
-  ... POST /alsa-utils/trunk/+addmilestone HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------70936480015097772051927203955
-  ... 
-  ... -----------------------------70936480015097772051927203955
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... milestone1
-  ... -----------------------------70936480015097772051927203955
-  ... Content-Disposition: form-data; name="field.dateexpected"
-  ... 
-  ... 
-  ... -----------------------------70936480015097772051927203955
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------70936480015097772051927203955--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
+    >>> test_browser.getControl('Name').value = 'milestone1'
+    >>> test_browser.getControl('Add').click()
+    >>> for tag in find_tags_by_class(test_browser.contents, 'milestone'):
+    ...     print extract_text(tag)
+    milestone1
   
-  >>> print http(r"""
-  ... GET /alsa-utils/+milestone/milestone1 HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-
-
-  >>> print http(r"""
-  ... POST /alsa-utils/trunk/+addmilestone HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------73806245718620212181717230063
-  ... 
-  ... -----------------------------73806245718620212181717230063
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... milestone2
-  ... -----------------------------73806245718620212181717230063
-  ... Content-Disposition: form-data; name="field.dateexpected"
-  ... 
-  ... 
-  ... -----------------------------73806245718620212181717230063
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------73806245718620212181717230063--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-
-  >>> print http(r"""
-  ... GET /alsa-utils/+milestone/milestone2 HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+    >>> test_browser.open(
+    ...     'http://launchpad.dev/alsa-utils/trunk/+addmilestone')
+    >>> test_browser.getControl('Name').value = 'milestone2'
+    >>> test_browser.getControl('Add').click()
+    >>> for tag in find_tags_by_class(test_browser.contents, 'milestone'):
+    ...     print extract_text(tag)
+    milestone1
+    milestone2
 
 Now let's try to create another one named milestone1.
 
-  >>> print http(r"""
-  ... POST /alsa-utils/trunk/+addmilestone HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------2560098541154579410319811278
-  ... 
-  ... -----------------------------2560098541154579410319811278
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... milestone1
-  ... -----------------------------2560098541154579410319811278
-  ... Content-Disposition: form-data; name="field.dateexpected"
-  ... 
-  ... 
-  ... -----------------------------2560098541154579410319811278
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------2560098541154579410319811278--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...The name milestone1 is already used by a milestone in alsa-utils...
+    >>> test_browser.open(
+    ...     'http://launchpad.dev/alsa-utils/trunk/+addmilestone')
+    >>> test_browser.getControl('Name').value = 'milestone1'
+    >>> test_browser.getControl('Add').click()
+    >>> test_browser.url
+    'http://launchpad.dev/alsa-utils/trunk/+addmilestone'
+    >>> for tag in find_tags_by_class(test_browser.contents, 'message'):
+    ...     print tag
+    <p class="error message">An error occurred.</p>
+    <div class="message">The name milestone1 is already used by a milestone
+    in alsa-utils.</div>
 
 Edit now...
-First we try to change the name of milestone2 to milestone1, wich is already
-in use.
 
-  >>> print http(r"""
-  ... POST /alsa-utils/+milestone/milestone2/+edit HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------213577065459040936697430468
-  ... 
-  ... -----------------------------213577065459040936697430468
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... milestone1
-  ... -----------------------------213577065459040936697430468
-  ... Content-Disposition: form-data; name="field.dateexpected"
-  ... 
-  ... 
-  ... -----------------------------213577065459040936697430468
-  ... Content-Disposition: form-data; name="field.visible.used"
-  ... 
-  ... 
-  ... -----------------------------213577065459040936697430468
-  ... Content-Disposition: form-data; name="field.visible"
-  ... 
-  ... on
-  ... -----------------------------213577065459040936697430468
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------213577065459040936697430468--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...The name milestone1 is already used by a milestone in alsa-utils...
+First we try to change the name of milestone2 to milestone1, wich is
+already in use.
 
+    >>> test_browser.open(
+    ...     'http://launchpad.dev/alsa-utils/+milestone/milestone2/+edit')
+    >>> test_browser.getControl('Name').value = 'milestone1'
+    >>> test_browser.getControl('Change').click()
+    >>> test_browser.url
+    'http://launchpad.dev/alsa-utils/+milestone/milestone2/+edit'
+    >>> for tag in find_tags_by_class(test_browser.contents, 'message'):
+    ...     print tag
+    <p class="error message"> There is a problem with the information you
+    entered. Please fix it and try again. </p>
+    <div class="message">The name milestone1 is already used by a milestone
+    in alsa-utils.</div>
+    
 Then we try to change milestone2's name to milestone3.
 
-
-  >>> print http(r"""
-  ... POST /alsa-utils/+milestone/milestone2/+edit HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------7472362501994754044821794503
-  ... 
-  ... -----------------------------7472362501994754044821794503
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... milestone3
-  ... -----------------------------7472362501994754044821794503
-  ... Content-Disposition: form-data; name="field.dateexpected"
-  ... 
-  ... 
-  ... -----------------------------7472362501994754044821794503
-  ... Content-Disposition: form-data; name="field.visible.used"
-  ... 
-  ... 
-  ... -----------------------------7472362501994754044821794503
-  ... Content-Disposition: form-data; name="field.visible"
-  ... 
-  ... on
-  ... -----------------------------7472362501994754044821794503
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------7472362501994754044821794503--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  
-  >>> print http(r"""
-  ... GET /alsa-utils/+milestone/milestone3 HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-
-  >>> print http(r"""
-  ... GET /alsa-utils/+milestone/milestone2 HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 404 Not Found
-  ...
+    >>> test_browser.open(
+    ...     'http://launchpad.dev/alsa-utils/+milestone/milestone2/+edit')
+    >>> test_browser.getControl('Name').value = 'milestone3'
+    >>> test_browser.getControl('Change').click()
+    >>> for tag in find_tags_by_class(test_browser.contents, 'milestone'):
+    ...     print extract_text(tag)
+    milestone1
+    milestone3
 
