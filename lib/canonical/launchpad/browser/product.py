@@ -49,18 +49,17 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import alsoProvides, implements
 from zope.formlib import form
-from zope.schema import List, Choice
+from zope.schema import Choice, List
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ILaunchBag, 
-    ILaunchpadCelebrities, IProduct,
-    ICountry, IProductSet, IProductSeries, IProject, ISourcePackage,
-    ICalendarOwner, ITranslationImportQueue, NotFoundError,
-    IBranchSet, RESOLVED_BUGTASK_STATUSES,
-    IPillarNameSet, IDistribution, IHasIcon, UnsafeFormGetSubmissionError)
+    IBranchSet, ICalendarOwner, ICountry, IDistribution, IHasIcon,
+    ILaunchBag, ILaunchpadCelebrities, IPillarNameSet, IProduct,
+    IProductSeries, IProductSet, IProject, ISourcePackage,
+    ITranslationImportQueue, NotFoundError,
+    RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
@@ -78,7 +77,7 @@ from canonical.launchpad.browser.questiontarget import (
 from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
-from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadView, LaunchpadEditFormView,
