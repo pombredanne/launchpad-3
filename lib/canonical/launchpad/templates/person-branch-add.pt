@@ -46,8 +46,7 @@
     not the author.</p>
 
   <p>Do not use this page to request a <em>VCS import</em>, that is a
-    Bazaar mirror of a CVS or Subversion branch. Instead, edit the source
-    details of the trunk release series of this project.  See the
+    Bazaar mirror of a CVS or Subversion branch. See the
     <a href="https://help.launchpad.net/VcsImports">VCS Imports</a> help page.
   </p>
 
