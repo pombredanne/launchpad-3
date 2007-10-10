@@ -418,7 +418,8 @@ distribution_change_mirror_admin = 'Change mirror administrator'
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
 
-distribution_edit = ContextTitle('Edit %s')
+distribution_edit = 'Change distribution details'
+# We don't mention its name here, because that might be what you're changing.
 
 distribution_language_pack_admin = ContextTitle(
     'Change the language pack administrator for %s')
@@ -733,8 +734,6 @@ object_branding = ContextDisplayName('Change the images used to represent '
 
 object_driver = ContextTitle('Appoint the driver for %s')
 
-object_launchpadusage = ContextTitle('Launchpad usage by %s')
-
 object_milestones = ContextTitle(smartquote("%s's milestones"))
 
 # object_pots is a fragment.
@@ -933,7 +932,8 @@ product_code_index = 'Projects with active branches'
 
 product_cvereport = ContextTitle('CVE reports for %s')
 
-product_edit = ContextTitle('%s in Launchpad')
+product_edit = 'Change project details'
+# We don't mention its name here, because that might be what you're changing.
 
 product_index = ContextTitle('%s in Launchpad')
 
@@ -984,7 +984,8 @@ project_branches = ContextTitle(
 
 project_bugs = ContextTitle('Bugs in %s')
 
-project_edit = ContextTitle('%s project group details')
+project_edit = 'Change project group details'
+# We don't mention its name here, because that might be what you're changing.
 
 project_filebug_search = bugtarget_filebug_advanced
 
