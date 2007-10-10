@@ -1,4 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Classes that implement IBugTask and its related interfaces."""
 

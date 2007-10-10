@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 """Launchpad Bug-related Database Table Objects."""
 
 __metaclass__ = type
