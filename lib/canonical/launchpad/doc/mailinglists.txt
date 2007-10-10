@@ -48,6 +48,8 @@ None of these teams have mailing lists yet.
     []
     >>> sorted_lists(list_set.approved_lists)
     []
+    >>> sorted_lists(list_set.active_lists)
+    []
     >>> print list_set.get(team_one.name)
     None
     >>> print list_set.get(team_two.name)
@@ -67,8 +69,7 @@ created right away.
 
     >>> from datetime import datetime
     >>> import pytz
-    >>> utc = pytz.timezone('UTC')
-    >>> registration_date = datetime.now(utc)
+    >>> registration_date = datetime.now(pytz.timezone('UTC'))
     >>> list_one = list_set.new(team_one)
     >>> verifyObject(IMailingList, list_one)
     True
@@ -114,7 +115,11 @@ registration date is set, and its status is set to REGISTERED.
     u'Team One'
     >>> list_one.registrant.name
     u'ddaa'
-    >>> registration_date <= list_one.date_registered <= datetime.now(utc)
+    >>> # We have to compare dates this way because of minor clock skew
+    >>> # between the Python process and the database (which is where
+    >>> # date_registered comes from).  Also, Python's date objects don't
+    >>> # support timezones.
+    >>> list_one.date_registered.date() == registration_date.date()
     True
     >>> list_one.status.name
     'REGISTERED'

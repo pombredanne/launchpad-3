@@ -651,7 +651,7 @@ class ProductEditView(LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
     schema = IProduct
-    label = "Edit details"
+    label = "Change project details"
     field_names = [
         "displayname", "title", "summary", "description", "project",
         "bugtracker", "official_rosetta", "official_answers",
@@ -681,6 +681,13 @@ class ProductReviewView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "reviewed",
                    "private_bugs"]
+
+    def validate(self, data):
+        if data.get('private_bugs') and self.context.bugcontact is None:
+            self.setFieldError('private_bugs',
+                'Set a <a href="%s/+bugcontact">bug contact</a> '
+                'for this project first.' %
+                canonical_url(self.context, rootsite="bugs"))
 
 
 class ProductAddSeriesView(LaunchpadFormView):

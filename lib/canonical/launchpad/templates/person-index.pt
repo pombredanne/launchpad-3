@@ -242,7 +242,7 @@
             <th>Wiki:</th>
             <td>
               <span tal:repeat="wiki context/allwikis">
-                <a tal:content="wiki/wikiname"
+                <a tal:content="wiki/url"
                    tal:attributes="href wiki/url"
                  >WikiName</a><tal:block condition="not: repeat/wiki/end">,
                  </tal:block>
