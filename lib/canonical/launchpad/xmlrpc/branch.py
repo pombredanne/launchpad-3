@@ -130,6 +130,15 @@ class IPublicCodehostingAPI(Interface):
         protocols for that resource.
         """
 
+
+class _NonexistentBranch:
+    """Used to represent a branch that was requested but doesn't exist."""
+
+    def __init__(self, unique_name):
+        self.unique_name = unique_name
+        self.branch_type = None
+
+
 class PublicCodehostingAPI(LaunchpadXMLRPCView):
     """See `IPublicCodehostingAPI`."""
 
@@ -168,7 +177,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             return faults.InvalidBranchIdentifier(unique_name)
         branch = getUtility(IBranchSet).getByUniqueName(unique_name)
         if branch is None:
-            return faults.NoSuchBranch(unique_name)
+            return _NonexistentBranch(unique_name)
         return branch
 
     def _get_remote_result_dict(self, branch):
@@ -202,10 +211,11 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             result = self._get_branch(strip_path)
         else:
             return faults.InvalidBranchIdentifier(path)
+
         if isinstance(result, faults.LaunchpadFault):
             return result
         else:
             try:
                 return self._get_result_dict(result)
             except Unauthorized:
-                return faults.NoSuchBranch(strip_path)
+                return self._get_result_dict(_NonexistentBranch(strip_path))

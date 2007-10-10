@@ -34,13 +34,16 @@ class TestExpandURL(BranchTestCase):
         series = removeSecurityProxy(self.project).development_focus
         series.user_branch = self.trunk
 
-    def assertExpands(self, lp_url_path, branch):
+    def assertResolves(self, lp_url_path, unique_name):
         """Assert that the given lp URL path expands to the unique name of
         'branch'.
         """
         results = self.api.resolve_lp_path(lp_url_path)
+        # This improves the error message if results happens to be a fault.
+        if isinstance(results, faults.LaunchpadFault):
+            raise results
         for url in results['urls']:
-            self.assertEqual('/' + branch.unique_name, URI(url).path)
+            self.assertEqual('/' + unique_name, URI(url).path)
 
     def assertFault(self, lp_url_path, expected_fault):
         """Assert that trying to resolve lp_url_path returns the expected
@@ -65,7 +68,7 @@ class TestExpandURL(BranchTestCase):
         """lp:project expands to the branch associated with development focus
         of the project.
         """
-        self.assertExpands(self.project.name, self.trunk)
+        self.assertResolves(self.project.name, self.trunk.unique_name)
 
     def test_projectDoesntExist(self):
         """Return a NoSuchProduct fault if the product doesn't exist."""
@@ -78,10 +81,10 @@ class TestExpandURL(BranchTestCase):
         """lp:project/series expands to the branch associated with the product
         series 'series' on 'project'.
         """
-        self.assertExpands(
+        self.assertResolves(
             '%s/%s' % (self.project.name,
                        self.project.development_focus.name),
-            self.trunk)
+            self.trunk.unique_name)
 
     def test_seriesHasNoBranch(self):
         """Return a NoBranchForSeries fault if the series has no branch
@@ -106,11 +109,13 @@ class TestExpandURL(BranchTestCase):
         """The unique name of a branch resolves to the unique name of the
         branch.
         """
-        self.assertExpands(self.trunk.unique_name, self.trunk)
+        self.assertResolves(self.trunk.unique_name, self.trunk.unique_name)
 
     def test_noSuchBranch(self):
-        """Return a NoSuchBranch fault if there is no such... branch."""
-        self.assertFault('~foo/bar/baz', faults.NoSuchBranch('~foo/bar/baz'))
+        """We resolve paths to branches even if there is no branch of that
+        name.
+        """
+        self.assertResolves('~foo/bar/baz', '~foo/bar/baz')
 
     def test_tooManySegments(self):
         """A path with more than three segments is invalid."""
@@ -138,18 +143,19 @@ class TestExpandURL(BranchTestCase):
 
     def test_trailingSlashes(self):
         """Trailing slashes are trimmed."""
-        self.assertExpands(self.project.name + '/', self.trunk)
-        self.assertExpands(self.project.name + '//', self.trunk)
-        self.assertExpands(self.trunk.unique_name + '/', self.trunk)
-        self.assertExpands(self.trunk.unique_name + '//', self.trunk)
+        self.assertResolves(self.project.name + '/', self.trunk.unique_name)
+        self.assertResolves(self.project.name + '//', self.trunk.unique_name)
+        self.assertResolves(
+            self.trunk.unique_name + '/', self.trunk.unique_name)
+        self.assertResolves(
+            self.trunk.unique_name + '//', self.trunk.unique_name)
 
     def test_privateBranch(self):
         """If a branch is not visible then it looks like it doesn't exist."""
         naked_trunk = removeSecurityProxy(self.trunk)
         naked_trunk.private = True
-        self.assertFault(
-            naked_trunk.unique_name,
-            faults.NoSuchBranch(naked_trunk.unique_name))
+        self.assertResolves(
+            naked_trunk.unique_name, naked_trunk.unique_name)
         self.assertFault(
             self.project.name,
             faults.NoBranchForSeries(self.project.development_focus))
