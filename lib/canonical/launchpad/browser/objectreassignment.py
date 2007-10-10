@@ -1,6 +1,10 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""A view for changing the owner or registrant of an object.
+
+This view needs to be refactored to use the Launchpad form infrastructure.
+See bug 151161.
+"""
 
 __metaclass__ = type
 __all__ = ["ObjectReassignmentView"]
