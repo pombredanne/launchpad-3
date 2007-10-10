@@ -88,16 +88,16 @@
       <tal:has_watch condition="context/bugwatch">
         <a style="display: block; text-decoration: none; padding: 0.25em"
            tal:attributes="href context/bugwatch/url">
-          <img
+          <img tal:condition="not:context/bugwatch/lasterror"
             alt="Linked to "
             src="/@@/bug-remote"
           />
-          <span tal:replace="context/bugwatch/bugtracker/name">Zilla</span>
-          #<span tal:replace="context/bugwatch/remotebug">123</span>
           <img tal:condition="context/bugwatch/lasterror"
             alt="Error updating bug watch"
             src="/@@/warning"
           />
+          <span tal:replace="context/bugwatch/bugtracker/name">Zilla</span>
+          #<span tal:replace="context/bugwatch/remotebug">123</span>
         </a>
       </tal:has_watch>
       <tal:has_no_watch condition="not: context/bugwatch">
