@@ -203,10 +203,10 @@ And that translatable product is 'Evolution'.
 
 With its 'trunk' series translatable.
 
-  >>> evo_series = evolution.translatable_series
-  >>> len(evo_series)
+  >>> evo_serieses = evolution.translatable_serieses
+  >>> len(evo_serieses)
   1
-  >>> evo_trunk = evo_series[0]
+  >>> evo_trunk = evo_serieses[0]
   >>> print evo_trunk.name
   trunk
 
@@ -227,9 +227,17 @@ Rosetta officially.
   >>> netapplet.official_rosetta
   False
 
+And thus, it doesn't have any translatable series.
+
+  >>> len(netapplet.translatable_serieses)
+  0
+
 Even if it has resources to translate.
 
-  >>> len(netapplet.translatable_series)
+  >>> translation_templates_count = 0
+  >>> for series in netapplet.serieses:
+  ...     translation_templates_count += len(series.getTranslationTemplates())
+  >>> translation_templates_count
   1
 
 

@@ -27,35 +27,33 @@ using Launchpad officially, so it's not in this page.
 
 Let's confirm what we just stated.
 
-  >>> browser.open('http://launchpad.dev/gnome')
-  >>> print browser.url
+  >>> admin_browser.open('http://launchpad.dev/gnome')
+  >>> print admin_browser.url
   http://launchpad.dev/gnome
 
 Netapplet is in fact a product belonging to GNOME project.
 
-  >>> netapplet_link = browser.getLink('Network Applet')
-  >>> netapplet_link.click()
-  >>> print browser.url
-  http://launchpad.dev/netapplet
+  >>> admin_browser.getLink('Network Applet').click()
+  >>> print admin_browser.title
+   Network Applet in Launchpad
 
 It's not using Launchpad Translations officially
 
-  >>> for tag in find_tags_by_class(browser.contents, 'summary'):
-  ...     print tag
-  <...
-  ...Status:...
-  ...Active...
+  >>> for tag in find_tags_by_class(admin_browser.contents, 'summary'):
+  ...     print extract_text(tag)
+  Status: Active
   ...Doesn&rsquo;t use Translations...
 
 And it has translations.
 
-  >>> browser.open('http://translations.launchpad.dev/netapplet')
-  >>> print browser.url
-  http://translations.launchpad.dev/netapplet
+  >>> admin_browser.getLink('Translations').click()
+  >>> print admin_browser.title
+  Translations of Network Applet in Launchpad
 
-  >>> netapplet_template = browser.getLink('View Template & All Languages...')
-  >>> print netapplet_template.url
-  http://translations.launchpad.dev/netapplet/trunk/+pots/netapplet
+  >>> find_portlet(
+  ...     admin_browser.contents,
+  ...     'portlet-obsolete-translatable-branches') is None
+  True
 
 alsa-utils is a product that doesn't belong to GNOME project. It has
 translations and is using Launchpad Translations officially, and it 

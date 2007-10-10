@@ -1,8 +1,28 @@
-First, we set the 'structured' permission for the netapplet product
+First, we state that netapplet is using Launchpad Translations.
+
+
+    >>> admin_browser.open('http://launchpad.dev/netapplet')
+    >>> print admin_browser.title
+    Network Applet in Launchpad
+    >>> admin_browser.getLink('Change details').click()
+    >>> print admin_browser.title
+    Change project details
+    >>> admin_browser.getControl(
+    ...     'Translations for this project are done in Launchpad'
+    ...     ).selected = True
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.title
+    Network Applet in Launchpad
+
+we set the 'structured' permission for the netapplet product
 translations and its associated project, GNOME.
 
-    >>> admin_browser.open(
-    ...     'http://translations.launchpad.dev/netapplet/+changetranslators')
+    >>> admin_browser.getLink('Translations').click()
+    >>> print admin_browser.title
+    Translations of Network Applet in Launchpad
+    >>> admin_browser.getLink('Change translators').click()
+    >>> print admin_browser.title
+    Set translation group for Network Applet
     >>> admin_browser.getControl(
     ...     name='field.translationgroup').value = ['renamed-group']
     >>> admin_browser.getControl(

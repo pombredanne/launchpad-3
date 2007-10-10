@@ -64,7 +64,7 @@ translatable for that product:
 
 We can also see how many translatables it has:
 
-    >>> print [series.displayname for series in evo.translatable_series]
+    >>> print [series.displayname for series in evo.translatable_serieses]
     [u'trunk']
 
 But for a52dec, where we have no translatable series or Ubuntu package, the
@@ -399,6 +399,12 @@ We can create and associate a new potemplate with Firefox 1.0.
     >>> firefox_10_pot = potemplatesubset.new(firefox_potemplatename,
     ...                                       'firefox.pot',
     ...                                       translations_admin)
+
+And set that product as using translations officially. We need it so
+translations are available.
+
+    >>> firefox.official_rosetta = True
+    >>> flush_database_updates()
 
 The primary_translatable now points at firefox 1.0:
 

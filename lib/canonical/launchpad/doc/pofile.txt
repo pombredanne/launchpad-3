@@ -185,8 +185,8 @@ only from the teams set as official translators.
 
 Get the IPOFile we are going to use.
 
-    >>> product_series = product.translatable_series[0]
-    >>> potemplate = product_series.getPOTemplate('evolution-2.2')
+    >>> product_serieses = product.translatable_serieses[0]
+    >>> potemplate = product_serieses.getPOTemplate('evolution-2.2')
     >>> pofile_es = potemplate.getPOFileByLang('es')
 
 A Launchpad admin must have permission always.
