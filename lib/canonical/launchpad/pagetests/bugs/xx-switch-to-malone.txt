@@ -6,7 +6,7 @@ XXX: This test should be restructured into a more general "Switching to
 When project doesn't use Launchpad as its official bugtracker, it's
 possible for its bugs to have an Unknown importance.
 
-    >>> admin_browser.open('http://launchpad.dev/debian/+launchpad')
+    >>> admin_browser.open('http://launchpad.dev/debian/+edit')
     >>> admin_browser.getControl(
     ...     'Bugs in this distribution are tracked in Launchpad').selected
     False
@@ -20,7 +20,7 @@ possible for its bugs to have an Unknown importance.
 If the project switches to use Launchpad as its bug tracker, the importance
 will still have an Unknown value.
 
-    >>> admin_browser.open('http://launchpad.dev/debian/+launchpad')
+    >>> admin_browser.open('http://launchpad.dev/debian/+edit')
     >>> admin_browser.getControl(
     ...     'Bugs in this distribution are tracked in Launchpad').selected = True
     >>> admin_browser.getControl('Change').click()

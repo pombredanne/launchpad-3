@@ -135,19 +135,19 @@ class TestJobManagerInLaunchpad(unittest.TestCase):
     testdir = None
 
     def setUp(self):
-        self.testdir = tempfile.mkdtemp()
+        self.test_dir = tempfile.mkdtemp()
         # Change the HOME environment variable in order to ignore existing
         # user config files.
-        os.environ.update({'HOME': self.testdir})
+        os.environ.update({'HOME': self.test_dir})
         self.authserver = AuthserverTacTestSetup()
         self.authserver.setUp()
 
     def tearDown(self):
-        shutil.rmtree(self.testdir)
+        shutil.rmtree(self.test_dir)
         self.authserver.tearDown()
 
     def _getBranchDir(self, branchname):
-        return os.path.join(self.testdir, branchname)
+        return os.path.join(self.test_dir, branchname)
 
     def assertMirrored(self, branch_to_mirror):
         """Assert that branch_to_mirror's source and destinations have the same
@@ -180,7 +180,7 @@ class TestJobManagerInLaunchpad(unittest.TestCase):
         for branch in branches:
             self.assertMirrored(branch)
 
-    def _makeBranch(self, relativedir, target, branch_status_client,
+    def _makeBranch(self, relative_dir, target, branch_status_client,
                     unique_name=None):
         """Given a relative directory, make a strawman branch and return it.
 
@@ -188,14 +188,15 @@ class TestJobManagerInLaunchpad(unittest.TestCase):
         @output BranchToMirror - A branch object representing the strawman
                                     branch
         """
-        branchdir = os.path.join(self.testdir, relativedir)
-        create_branch(branchdir)
+        branch_dir = os.path.join(self.test_dir, relative_dir)
+        create_branch(branch_dir)
         if target == None:
-            targetdir = None
+            target_dir = None
         else:
-            targetdir = os.path.join(self.testdir, branch_id_to_path(target))
+            target_dir = os.path.join(
+                self.test_dir, branch_id_to_path(target))
         return BranchToMirror(
-                branchdir, targetdir, branch_status_client, target,
+                branch_dir, target_dir, branch_status_client, target,
                 unique_name, branch_type=None)
 
 

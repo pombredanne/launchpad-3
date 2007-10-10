@@ -1,3 +1,11 @@
+= Projects with private-bugs-by-default =
+
+Projects can be configured to default all new bugs to private; the bugs
+will have their bug contacts subscribed, but will otherwise be invisible
+to Launchpad users in general.
+
+== Setting private-bugs-by-default ==
+
 If the private_bugs checkbox on a project's +review page is checked, bugs
 reported about that project will be private by default.
 
@@ -9,7 +17,23 @@ reported about that project will be private by default.
     >>> admin_browser.getControl(name="field.private_bugs").value = True
     >>> admin_browser.getControl("Change").click()
 
-That they will be private is shown using Launchpad's standard "private" style.
+However, the product's bug contact must be set, and if it is not, as is
+the case with Firefox, the user will get an error:
+
+    >>> admin_browser.open("http://launchpad.dev/firefox/+review")
+    >>> admin_browser.getControl(name="field.private_bugs").value = True
+    >>> admin_browser.getControl("Change").click()
+    >>> admin_browser.url
+    'http://launchpad.dev/firefox/+review'
+    >>> for tag in find_tags_by_class(admin_browser.contents, "message"):
+    ...     print tag.renderContents()
+    There is 1 error.
+    <BLANKLINE>
+    Set a <a href="...+bugcontact">bug contact</a> for this project first.
+
+== Visual effects ==
+
+The file-a-bug page uses Launchpad's standard "private" style.
 
     >>> user_browser.open("http://launchpad.dev/redfish/+filebug")
     >>> print find_tag_by_id(user_browser.contents, 'privatestyle')
@@ -17,13 +41,17 @@ That they will be private is shown using Launchpad's standard "private" style.
     >>> print find_tag_by_id(user_browser.contents, 'privatebadge')
     <img...private...>
 
-And the same on the "advanced" bug-reporting page.
+And the same happens on the "advanced" bug-reporting page.
 
     >>> user_browser.open("http://launchpad.dev/redfish/+filebug-advanced")
     >>> print find_tag_by_id(user_browser.contents, 'privatestyle')
     <style...</style>
     >>> print find_tag_by_id(user_browser.contents, 'privatebadge')
     <img...private...>
+
+== Filing a new bug ==
+
+If we file a new bug in redfish:
 
     >>> user_browser.getControl(name="field.title").value = "a test summary"
     >>> user_browser.getControl(name="field.comment").value = (
@@ -32,9 +60,10 @@ And the same on the "advanced" bug-reporting page.
 
     >>> login("foo.bar@canonical.com")
 
+You can see it's been marked private:
+
     >>> redfish = getUtility(IProductSet).getByName("redfish")
     >>> redfish_bugtask = redfish.all_bugtasks[0]
-
     >>> redfish_bugtask.bug.private
     True
 
@@ -44,3 +73,4 @@ But not forced to be security-related, of course.
     False
 
     >>> logout()
+
