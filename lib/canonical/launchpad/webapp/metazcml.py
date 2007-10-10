@@ -27,7 +27,7 @@ from zope.app.pagetemplate.engine import Engine
 from zope.app.component.fields import LayerField
 from zope.app.file.image import Image
 import zope.app.publisher.browser.metadirectives
-from zope.app.publisher.browser.menumeta import menuItemDirective
+from zope.app.publisher.browser.viewmeta import page
 import zope.app.form.browser.metaconfigure
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
@@ -252,11 +252,11 @@ def feeds(_context, module, classes):
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
                         module, type(module))
+
     for feedclassname in classes:
         feedclass = getattr(module, feedclassname)
 
-        factory = [feedclass]
-        for_ = [feedclass.usedfor]
+        for_ = feedclass.usedfor
 
         feedname = feedclass.feedname
 
@@ -264,14 +264,11 @@ def feeds(_context, module, classes):
         html_fragment_name = '%s.html' % feedname
         javascript_name = '%s.js' % feedname
 
-        #layer = IDefaultBrowserLayer
         layer = FeedsLayer
-        provides = IBrowserPublisher
 
         for name in atom_name, html_fragment_name, javascript_name:
-            view(_context, factory, IBrowserRequest, name, for_, layer,
-                    permission=PublicPermission, provides=provides,
-                    allowed_interface=[IBrowserPublisher])
+            original_page(_context, name, PublicPermission, for_,
+                          layer=layer, class_=feedclass)
 
 
 def navigation(_context, module, classes):

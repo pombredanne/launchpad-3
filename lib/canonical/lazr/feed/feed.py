@@ -76,7 +76,9 @@ class FeedBase(LaunchpadFormView):
         raise NotImplementedError
 
     def getSiteURL(self):
-        return self.request.getApplicationURL()
+        from canonical.launchpad.webapp.vhosts import allvhosts
+        return allvhosts.configs['mainsite'].rooturl[:-1]
+        #return self.request.getApplicationURL()
 
     def getItems(self):
         raise NotImplementedError
@@ -197,8 +199,8 @@ class FeedPerson:
     If this class is consistently used we will not accidentally leak email
     addresses.
     """
-    def __init__(self, person):
+    def __init__(self, person, rootsite):
         self.name = person.displayname
         # We don't want to disclose email addresses in public feeds.
         self.email = None
-        self.uri = canonical_url(person)
+        self.uri = canonical_url(person, rootsite=rootsite)

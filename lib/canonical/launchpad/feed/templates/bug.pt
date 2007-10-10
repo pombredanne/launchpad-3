@@ -1,7 +1,7 @@
 <div xmlns="http://www.w3.org/1999/xhtml"
-    xmlns:tal="http://xml.zope.org/namespaces/tal"
-    xmlns:lp="http://api.launchpad.net/schema"
-    xmlns:metal="http://xml.zope.org/namespaces/metal">
+     xmlns:tal="http://xml.zope.org/namespaces/tal"
+     xmlns:lp="http://api.launchpad.net/schema"
+     xmlns:metal="http://xml.zope.org/namespaces/metal">
 
     <style type="text/css">
         a img {
@@ -31,27 +31,27 @@
         <!-- Bugtask -->
         <tr tal:repeat="bugtask context/bugtasks">
             <td tal:condition="bugtask/product">
-                <img src="http://bugs.launchpad.net/@@/product" />
+                <img alt="" src="/@@/product" />
                 <span tal:replace="bugtask/target/name">Fake BugTask Name</span>
             </td>
 
             <td style="padding: 0.3em 0em 0.3em 1.5em"
                 tal:condition="not:bugtask/product">
-                <img src="http://bugs.launchpad.net/@@/milestone" />
+                <img alt="" src="/@@/milestone" />
                 <span tal:replace="bugtask/target/name">Fake BugTask Name</span>
             </td>
             <td tal:content="bugtask/status/title">Won't Fix</td>
             <td tal:content="bugtask/importance/title">Unknown</td>
             <td tal:content="bugtask/assignee/displayname|string:-">Person</td>
             <td tal:condition="bugtask/bugwatch">
-            <a tal:attributes="href bugtask/bugwatch/url" 
+            <a tal:attributes="href bugtask/bugwatch/url"
                tal:content="bugtask/bugwatch/title">bugwatch</a>
             </td>
         </tr>
 
         <!-- Nomination for series in above bugtask -->
         <tr tal:repeat="nomination context/getNominations">
-            <td colspan="4" style="padding-left: 3em">Nominated for 
+            <td colspan="4" style="padding-left: 3em">Nominated for
                 <span tal:replace="nomination/target/title">Trunk</span> by
                 <a tal:replace="structure nomination/owner/fmt:link">
                 Edwin Grubbs</a>

@@ -19,7 +19,7 @@
 
     <title tal:content="view/getTitle">Recently opened bugs</title>
 
-    <id tal:content="view/getURL">http://api.launchpad.net/bugs/</id>
+    <id tal:content="view/getURL">http://feeds.launchpad.net/bugs/</id>
     <link rel="self" tal:attributes="href view/getURL" />
     <link rel="alternate" tal:attributes="href view/getSiteURL" />
     <logo tal:condition="view/getLogo"

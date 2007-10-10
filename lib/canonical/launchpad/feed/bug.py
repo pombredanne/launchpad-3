@@ -64,6 +64,7 @@ class BugsFeedBase(FeedBase):
 
     max_age = 30 * MINUTES
     verbose = False
+    rootsite = "bugs"
 
     def initialize(self):
         super(BugsFeedBase, self).initialize()
@@ -105,7 +106,7 @@ class BugsFeedBase(FeedBase):
 
     def getURL(self):
         """Get the identifying URL for the feed."""
-        return "%s/%s" % (canonical_url(self.context), self.feed_name)
+        return "%s/%s" % (canonical_url(self.context), self.feedname)
 
     def getLogo(self):
         """Get the application-specific logo."""
@@ -131,14 +132,14 @@ class BugsFeedBase(FeedBase):
         bugtask = item
         bug = bugtask.bug
         title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
-        url = canonical_url(bugtask, rootsite="bugs")
+        url = canonical_url(bugtask, rootsite=self.rootsite)
         content_view = BugFeedContentView(bug, self.request, self.verbose)
         entry = FeedEntry(title = title,
                           id_ = url,
                           link_alternate = url,
                           date_updated = bug.date_last_updated,
                           date_published = bugtask.datecreated,
-                          authors = [FeedPerson(bug.owner)],
+                          authors = [FeedPerson(bug.owner, self.rootsite)],
                           content = FeedTypedData(content_view.render(),
                                                   content_type="xhtml"))
         return entry
