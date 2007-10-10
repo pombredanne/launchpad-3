@@ -3,143 +3,142 @@
 # Runs xmlint, pyflakes and pylint on files changed from parent branch.
 # Use '-v' to run pylint under stricter conditions with additional messages.
 
+
+# Fail if any of the required tools are not installed.
+if ! which pylint >/dev/null; then
+    echo "Error: pylint is not installed."
+    echo "    Install the pylint package."
+    exit 1
+elif ! which xmllint >/dev/null; then
+    echo "Error: xmlllint is not installed."
+    echo "    Install the libxml2-utils package."
+    exit 1
+elif ! which pyflakes >/dev/null; then
+    echo "Error: pyflakes is not installed."
+    echo "    Install the pyflakes package."
+    exit 1
+fi
+
+
 VERBOSITY=0
+rules="Using normal rules."
+rcfile="--rcfile=utilities/lp.pylintrc"
 if [ "$1" == "-v" ]; then
     shift
     VERBOSITY=1
+    rules="Using verbose rules."
+    rcfile="--rcfile=utilities/lp-verbose.pylintrc"
+elif [ "$1" == "-vv" ]; then
+    shift
+    VERBOSITY=2
+    rules="Using very verbose rules."
+    rcfile="--rcfile=utilities/lp-very-verbose.pylintrc"
 fi
 
 if [ -z "$1" ]; then
-    rev=`bzr info | sed '/parent branch:/!d; s, .*file://,-r ancestor:,'`
+    rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /-r ancestor:/'`
     files=`bzr st $rev | sed '/^ /!d; /[a-z] /d; /@/d'`
 else
     # Add newlines so grep filters out pyfiles correctly later
     files=`echo $* | tr " " "\n"`
 fi
 
+
+group_lines_by_file() {
+    # Format file:line:message output as lines grouped by file.
+    file_name=""
+    echo "$1" | sed 's/\(^[^:]*:\)/~~\1\n  /' | while read line; do
+        current=`echo $line | sed '/^~~/!d; s/^~~\(.*\):$/\1/;'`
+        if [ -z "$current" ]; then
+            echo "    $line"
+        elif [ "$file_name" != "$current" ]; then
+            file_name="$current"
+            echo ""
+            echo "$file_name"
+        fi
+    done
+}
+
+
 echo "= Launchpad lint ="
 echo ""
 echo "Checking for conflicts. Running xmllint, pyflakes, and pylint."
-echo ""
+echo "$rules"
 
 if [ -z "$files" ]; then
     echo "No changed files detected."
-    exit
+    exit 0
 fi
-echo ""
 
+
+conflicts=""
 for file in $files; do
     # NB. Odd syntax on following line to stop lint.sh detecting conflict
-    # markers in itself.
-    conflicts=""
+    # markers in itself.    
     if grep -q -e '<<<''<<<<' -e '>>>''>>>>' $file; then
         conflicts="$conflicts $file"
     fi
-    if [ $conflicts ]; then
-        echo "== Conflicts =="
-        echo ""
-        for conflict in $conflicts; do
-            echo "$file"
-        done
-        echo ""
-        echo ""
-    fi
 done
 
-if which xmllint >/dev/null; then
-    xmlfiles=`echo "$files" | grep -E '(xml|zcml|pt)$'`
-    output=""
-    if [ ! -z "$xmlfiles" ]; then
-        output=`xmllint --noout $xmlfiles 2>&1 | sed -e '/Entity/,+2d'`
-    fi
-    if [ ! -z "$output" ]; then
-        echo "== XmlLint notices =="
-        echo ""
-        echo "$output"
-        echo ""
-        echo ""
-    fi
+if [ "$conflicts" ]; then
+    echo ""
+    echo ""
+    echo "== Conflicts =="
+    echo ""
+    for conflict in $conflicts; do
+        echo "$conflict"
+    done
 fi
+
+
+xmlfiles=`echo "$files" | grep -E '(xml|zcml|pt)$'`
+xmllint_notices=""
+if [ ! -z "$xmlfiles" ]; then
+    xmllint_notices=`xmllint --noout $xmlfiles 2>&1 | sed -e '/Entity/,+2d'`
+fi
+if [ ! -z "$xmllint_notices" ]; then
+    echo ""
+    echo ""
+    echo "== XmlLint notices =="
+    group_lines_by_file "$xmllint_notices"
+fi
+
 
 pyfiles=`echo "$files" | grep '.py$'`
 if [ -z "$pyfiles" ]; then
-    exit
+    exit 0
 fi
 
-if which pyflakes >/dev/null; then
-    sed_deletes="/detect undefined names/d; /'_pythonpath' .* unused/d;"
-    output=`pyflakes $pyfiles | sed "$sed_deletes"`
-    if [ ! -z "$output" ]; then
-        echo "== Pyflakes notices =="
-        echo ""
-        echo "$output"
-        echo ""
-        echo ""
-    fi
+
+sed_deletes="/detect undefined names/d; /'_pythonpath' .* unused/d;"
+pyflakes_notices=`pyflakes $pyfiles 2>&1 | sed "$sed_deletes"`
+if [ ! -z "$pyflakes_notices" ]; then
+    echo ""
+    echo ""
+    echo "== Pyflakes notices =="
+    group_lines_by_file "$pyflakes_notices"
 fi
 
-pylint=`which pylint`
-if [ -z $pylint ]; then
-    exit
-fi
 
-echo "== Pylint notices =="
-echo ""
-if [ $VERBOSITY -eq 1 ]; then
-    echo "Using verbose rules."
-else
-    echo "Using normal rules."
-fi
-
-pylint="python2.4 -Wi::DeprecationWarning $pylint"
-rcfile="--rcfile=utilities/lp.pylintrc"
+pylint="python2.4 -Wi::DeprecationWarning `which pylint`"
 sed_deletes="/^*/d; /Unused import \(action\|_python\)/d; "
 sed_deletes="$sed_deletes /_action: Undefined variable/d; "
 sed_deletes="$sed_deletes /_getByName: Instance/d; "
 sed_deletes="$sed_deletes /Redefining built-in .id/d;"
 sed_deletes="$sed_deletes /Redefining built-in 'filter'/d;"
+sed_deletes="$sed_deletes s,^/.*lib/canonical/,lib/canonical,;"
+export PYTHONPATH="/usr/share/pycentral/pylint/site-packages:$PYTHONPATH"
 
-if [ $VERBOSITY -eq 1 ]; then
-    rcfile="--rcfile=utilities/lp-verbose.pylintrc"
+# Messages are disabled by directory or file name.
+# Note that you can disable specific tests by placing pylint
+# instruction in a comment:
+# # pylint: disable-msg=W0401,W0612,W0403
+pylint_notices=`$pylint $rcfile $pyfiles | sed "$sed_deletes"`
+
+if [ ! -z "$pylint_notices" ]; then
+    echo ""
+    echo ""
+    echo "== Pylint notices =="
+    group_lines_by_file "$pylint_notices"
 fi
-
-for file in $pyfiles; do
-    # Messages are disabled by directory or file name.
-    # Note that you can disable specific tests by placing pylint
-    # instruction in a comment:
-    # # pylint: disable-msg=W0401,W0612
-
-    opts=""
-    if echo $file | grep -qs "/__init__.py"; then
-        # :W0401: *Wildcard import %s*
-        opts='--disable-msg=W0401'
-    elif echo $file | grep -qs "launchpad/interfaces/"; then
-        # :E0211: *Method has no argument*
-        # :E0213: *Method should have "self" as first argument*
-        opts='--disable-msg=E0211,E0213'
-    elif echo $file | grep -qs "launchpad/database/"; then
-        # sqlobject imports cause:
-        # :E0611: *No name %r in module %r*
-        # :W0212: *Access to a protected member %s of a client class*
-        # :W0622: *Redefining built-in %r*
-        opts='--disable-msg=E0611,W0212,W0622'
-    elif echo $file | grep -qs "cronscripts/"; then
-        # :W0403: *Relative import %r*
-        opts='--disable-msg=W0403'
-    elif echo $file | grep -qs "scripts/"; then
-        # :W0702: *No exception's type specified*
-        # :W0703: *Catch "Exception"*
-        opts='--disable-msg=W0702,W0703'
-    fi
-
-    output=`$pylint $rcfile $opts $file | sed "$sed_deletes"`
-
-    if [ ! -z "$output" ]; then
-        echo ""
-        echo ""
-        echo "=== $file ==="
-        echo ""
-        echo "$output"
-    fi
-done
 

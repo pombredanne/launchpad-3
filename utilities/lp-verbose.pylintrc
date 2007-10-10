@@ -19,7 +19,7 @@ profile=no
 ignore=sourcecode
 
 # Pickle collected data for later comparisons.
-persistent=yes
+persistent=no
 
 # Set the cache size for astng objects.
 cache-size=500
@@ -44,22 +44,19 @@ load-plugins=
 
 # Enable all checker(s) except those with the given id(s). This option conflict
 # with the disable-checker option
-#disable-checker=
+disable-checker=typecheck,design,miscellaneous,similarities
 
 # Enable all messages in the listed categories.
 #enable-msg-cat=
 
 # Disable all messages in the listed categories.
-#disable-msg-cat=
+disable-msg-cat=R
 
 # Enable the message(s) with the given id(s).
 #enable-msg=
 
 # Disable the message(s) with the given id(s).
 # :I0011: *Locally disabling %s*
-# :R0201: *Method could be a function*
-# :R0901: *Too many ancestors (%s/%s)*
-# :R0921: *Abstract class not referenced* (pylint is confused by zope)
 # :W0142: *Used * or ** magic*
 # :W0201: *Attribute %r defined outside __init__*
 # :W0223: *Method %r is abstract in class %r but is not overridden* (StructuralObjectPresentation and  SQLObjectVocabularyBase)
@@ -67,7 +64,7 @@ load-plugins=
 # :W0613: *Unused argument %r* (We get lots of these from interfaces)
 # :W0621: *Redefining name %r from outer scope (line %s)* (pylint does a poor evaluation)
 # :W0704: *Except does not do anything* (Does not check for comment explaining fall-through)
-disable-msg=I0011,R0201,R0901,R0921,W0142,W0201,W0232,W0511,W0613,W0621,W0704
+disable-msg=I0011,C0302,E0202,W0142,W0201,W0221,W0223,W0232,W0511,W0613,W0621,W0622,W0704
 
 
 [REPORTS]
@@ -99,7 +96,7 @@ evaluation=10.0 - ((float(5 * error + warning + refactor + convention) / stateme
 comment=no
 
 # Enable the report(s) with the given id(s).
-#enable-report=
+enable-report=
 
 # Disable the report(s) with the given id(s).
 #disable-report=
