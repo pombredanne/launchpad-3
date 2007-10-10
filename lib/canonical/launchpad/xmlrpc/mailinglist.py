@@ -12,10 +12,9 @@ from operator import itemgetter
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.ftests import xmlrpc_helper
 from canonical.launchpad.interfaces import (
-    IEmailAddressSet, IMailingListAPIView, IMailingListSet, IPersonSet,
-    MailingListStatus)
+    IEmailAddressSet, ILaunchpadCelebrities, IMailingListAPIView,
+    IMailingListSet, IPersonSet, MailingListStatus)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 
@@ -135,24 +134,27 @@ class MailingListAPIView(LaunchpadXMLRPCView):
 
     def testStep(self, step):
         """See `IMailingListAPIView`."""
-        if step == 1:
+        listset = getUtility(IMailingListSet)
+        personset = getUtility(IPersonSet)
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if step == 'register-lists':
             # Create two teams and a list for each team.  Don't pass
             # with_list=True to mailingListNewTeam() because that will
             # construct and activate the list, and we want to let Mailman do
             # that instead (kind of the whole point of this test).
-            listset = getUtility(IMailingListSet)
-            team_one = xmlrpc_helper.mailingListNewTeam('team-one')
+            team_one = personset.getByName('team-one')
             list_one = listset.new(team_one)
-            # Review the list, which approves it.
-            carlos = getUtility(IPersonSet).getByName('carlos')
-            list_one.review(carlos, MailingListStatus.APPROVED)
-            # Create a second list too.
-            team_two = xmlrpc_helper.mailingListNewTeam('team-two')
+            team_two = personset.getByName('team-two')
             list_two = listset.new(team_two)
-            list_two.review(carlos, MailingListStatus.APPROVED)
             return True
-        else:
-            # I really don't want to create a special fault for this case.
-            # It's good enough that providing a bad step will generally cause
-            # an integration test to fail anyway.
-            pass
+        if step == 'review-lists':
+            # Approve team one's list, but decline team two's list.  XXX A
+            # future branch will add mailing_list_experts.
+            experts = getattr(celebrities, 'mailing_list_experts',
+                              celebrities.admin)
+            lpadmin = list(experts.allmembers)[0]
+            list_one = listset.get('team-one')
+            list_one.review(lpadmin, MailingListStatus.APPROVED)
+            list_two = listset.get('team-two')
+            list_two.review(lpadmin, MailingListStatus.DECLINED)
+            return True
