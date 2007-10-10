@@ -176,9 +176,20 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         if unique_name[0] != '~':
             return faults.InvalidBranchIdentifier(unique_name)
         branch = getUtility(IBranchSet).getByUniqueName(unique_name)
-        if branch is None:
-            return _NonexistentBranch(unique_name)
-        return branch
+        if branch is not None:
+            return branch
+        else:
+            return self._getNonexistentBranch(unique_name)
+
+    def _getNonexistentBranch(self, unique_name):
+        owner_name, project_name, branch_name = unique_name[1:].split('/')
+        owner = getUtility(IPersonSet).getByName(owner_name)
+        if owner is None:
+            return faults.NoSuchPerson(owner_name)
+        project = getUtility(IProductSet).getByName(project_name)
+        if project is None:
+            return faults.NoSuchProduct(project_name)
+        return _NonexistentBranch(unique_name)
 
     def _getResultDict(self, branch):
         if branch.branch_type == BranchType.REMOTE:

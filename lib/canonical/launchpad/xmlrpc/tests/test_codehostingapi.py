@@ -115,7 +115,27 @@ class TestExpandURL(BranchTestCase):
         """We resolve paths to branches even if there is no branch of that
         name.
         """
-        self.assertResolves('~foo/bar/baz', '~foo/bar/baz')
+        nonexistent_branch = '~%s/%s/doesntexist' % (
+            self.owner.name, self.project.name)
+        self.assertResolves(nonexistent_branch, nonexistent_branch)
+
+    def test_resolveBranchWithNoSuchProject(self):
+        """If we try to resolve a branch that refers to a non-existent
+        project, then we return a NoSuchProduct fault.
+        """
+        nonexistent_project_branch = "~%s/doesntexist/%s" % (
+            self.owner.name, self.getUniqueString())
+        self.assertFault(
+            nonexistent_project_branch, faults.NoSuchProduct('doesntexist'))
+
+    def test_resolveBranchWithNoSuchOwner(self):
+        """If we try to resolve a branch that refers to a non-existent owner,
+        then we return a NoSuchPerson fault.
+        """
+        nonexistent_owner_branch = "~doesntexist/%s/%s" % (
+            self.getUniqueString(), self.getUniqueString())
+        self.assertFault(
+            nonexistent_owner_branch, faults.NoSuchPerson('doesntexist'))
 
     def test_tooManySegments(self):
         """A path with more than three segments is invalid."""
