@@ -20,27 +20,35 @@ elif ! which pyflakes >/dev/null; then
 fi
 
 
-VERBOSITY=0
 rules="Using normal rules."
 rcfile="--rcfile=utilities/lp.pylintrc"
 if [ "$1" == "-v" ]; then
     shift
-    VERBOSITY=1
     rules="Using verbose rules."
     rcfile="--rcfile=utilities/lp-verbose.pylintrc"
 elif [ "$1" == "-vv" ]; then
     shift
-    VERBOSITY=2
     rules="Using very verbose rules."
     rcfile="--rcfile=utilities/lp-very-verbose.pylintrc"
 fi
 
 if [ -z "$1" ]; then
-    rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /-r ancestor:/'`
-    files=`bzr st $rev | sed '/^ /!d; /[a-z] /d; /@/d'`
+    rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
+    files=`bzr st -r $rev | sed '/^ /!d; /[a-z] /d; /@/d'`
 else
-    # Add newlines so grep filters out pyfiles correctly later
+    # Add newlines so grep filters out pyfiles correctly later.
     files=`echo $* | tr " " "\n"`
+fi
+
+
+echo "= Launchpad lint ="
+echo ""
+echo "Checking for conflicts. Running xmllint, pyflakes, and pylint."
+echo "$rules"
+
+if [ -z "$files" ]; then
+    echo "No changed files detected."
+    exit 0
 fi
 
 
@@ -58,17 +66,6 @@ group_lines_by_file() {
         fi
     done
 }
-
-
-echo "= Launchpad lint ="
-echo ""
-echo "Checking for conflicts. Running xmllint, pyflakes, and pylint."
-echo "$rules"
-
-if [ -z "$files" ]; then
-    echo "No changed files detected."
-    exit 0
-fi
 
 
 conflicts=""
@@ -120,6 +117,7 @@ if [ ! -z "$pyflakes_notices" ]; then
 fi
 
 
+export PYTHONPATH="/usr/share/pycentral/pylint/site-packages:$PYTHONPATH"
 pylint="python2.4 -Wi::DeprecationWarning `which pylint`"
 sed_deletes="/^*/d; /Unused import \(action\|_python\)/d; "
 sed_deletes="$sed_deletes /_action: Undefined variable/d; "
@@ -127,9 +125,7 @@ sed_deletes="$sed_deletes /_getByName: Instance/d; "
 sed_deletes="$sed_deletes /Redefining built-in .id/d;"
 sed_deletes="$sed_deletes /Redefining built-in 'filter'/d;"
 sed_deletes="$sed_deletes s,^/.*lib/canonical/,lib/canonical,;"
-export PYTHONPATH="/usr/share/pycentral/pylint/site-packages:$PYTHONPATH"
 
-# Messages are disabled by directory or file name.
 # Note that you can disable specific tests by placing pylint
 # instruction in a comment:
 # # pylint: disable-msg=W0401,W0612,W0403
