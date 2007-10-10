@@ -135,4 +135,3 @@ class BranchLinkToBugView(LaunchpadFormView):
                 self.setFieldError(
                     'bug',
                     'Bug #%s is already linked to this branch' % bug.id)
-
