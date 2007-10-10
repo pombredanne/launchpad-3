@@ -685,7 +685,6 @@ class MilestoneEmailCommand(EditEmailCommand):
                  check_permission("launchpad.Edit", pillar)))
 
 
-
 class DBSchemaEditEmailCommand(EditEmailCommand):
     """Helper class for edit DBSchema attributes.
 
