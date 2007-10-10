@@ -1,20 +1,22 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Interfaces and enumeratrions for CodeImportJobs.
+
+CodeImportJobs represent pending and running updates of a code import.
+"""
 
 __metaclass__ = type
 __all__ = ['CodeImportJobState', 'ICodeImportJob', 'ICodeImportJobSet']
 
+from zope.interface import Interface
+from zope.schema import Choice, Datetime, Int, Object, Text
+
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.codeimport import ICodeImport
 from canonical.launchpad.interfaces.codeimportmachine import ICodeImportMachine
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.lazr import (
     DBEnumeratedType, DBItem)
-
-from zope.interface import Interface
-from zope.schema import Choice, Datetime, Int, Object, Text
 
 
 class CodeImportJobState(DBEnumeratedType):
@@ -44,13 +46,12 @@ class ICodeImportJob(Interface):
     """A pending or active code import job.
 
     There is always such a row for any active import, but it will not
-    run until date_due is in the past."""
+    run until date_due is in the past.
+    """
 
     # Some of these attributes are not conceptually read-only but are
     # set to be read-only here to force client code to use methods
     # that update the audit trail appropriately.
-
-    id = Int(required=True, readonly=True)
 
     date_created = Datetime(required=True, readonly=True)
 

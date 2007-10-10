@@ -5,16 +5,16 @@
 __metaclass__ = type
 __all__ = ['CodeImportJob', 'CodeImportJobSet']
 
+from sqlobject import ForeignKey, IntCol, StringCol
+
+from zope.interface import implements
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     CodeImportJobState, ICodeImportJob, ICodeImportJobSet)
-
-from sqlobject import ForeignKey, IntCol, StringCol
-
-from zope.interface import implements
 
 class CodeImportJob(SQLBase):
     """See `ICodeImportJob`."""

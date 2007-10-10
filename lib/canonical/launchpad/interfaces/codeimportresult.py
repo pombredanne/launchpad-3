@@ -6,6 +6,9 @@ __metaclass__ = type
 __all__ = [
     'CodeImportResultStatus', 'ICodeImportResult', 'ICodeImportResultSet']
 
+from zope.interface import Interface
+from zope.schema import Choice, Datetime, Int, Object, Text
+
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.codeimport import ICodeImport
 from canonical.launchpad.interfaces.codeimportmachine import ICodeImportMachine
@@ -13,9 +16,6 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.lazr import (
     DBEnumeratedType, DBItem)
-
-from zope.interface import Interface
-from zope.schema import Choice, Datetime, Int, Object, Text
 
 
 class CodeImportResultStatus(DBEnumeratedType):
@@ -26,65 +26,74 @@ class CodeImportResultStatus(DBEnumeratedType):
     conversion step, or in one of the internal house-keeping steps?
     """
 
-    SUCCESS = DBItem(100, """Success
+    SUCCESS = DBItem(100, """
+        Success
 
-    Import job completed successfully.
-    """)
+        Import job completed successfully.
+        """)
 
-    FAILURE = DBItem(200, """Failure
+    FAILURE = DBItem(200, """
+        Failure
 
-    Import job failed.
-    """)
+        Import job failed.
+        """)
 
-    INTERNAL_FAILURE = DBItem(210, """Internal Failure
+    INTERNAL_FAILURE = DBItem(210, """
+        Internal Failure
 
-    An internal error occurred. This is a problem with Launchpad.
-    """)
+        An internal error occurred. This is a problem with Launchpad.
+        """)
 
-    CHECKOUT_FAILURE = DBItem(220, """Source Checkout Failed
+    CHECKOUT_FAILURE = DBItem(220, """
+        Source Checkout Failed
 
-    Unable to checkout from the foreign version control system. The
-    import details are probably incorrect or the remote server is down.
-    """)
+        Unable to checkout from the foreign version control
+        system. The import details are probably incorrect or the
+        remote server is down.
+        """)
 
-    IMPORT_FAILURE = DBItem(230, """Bazaar Import Failed
+    IMPORT_FAILURE = DBItem(230, """
+        Bazaar Import Failed
 
-    The initial import failed to complete. It may be a bug in
-    Launchpad's conversion software or a problem with the remote
-    repository.
-    """)
+        The initial import failed to complete. It may be a bug in
+        Launchpad's conversion software or a problem with the remote
+        repository.
+        """)
 
-    UPDATE_FAILURE = DBItem(240, """Source Update Failed
+    UPDATE_FAILURE = DBItem(240, """
+        Source Update Failed
 
-    Unable to update the foreign version control system tree. This is
-    probably a problem with the remote repository.
-    """)
+        Unable to update the foreign version control system tree. This
+        is probably a problem with the remote repository.
+        """)
 
-    SYNC_FAILURE = DBItem(250, """Bazaar Update Failed
+    SYNC_FAILURE = DBItem(250, """
+        Bazaar Update Failed
 
-    An update to the existing Bazaar import failed to complete. It may
-    be a bug in Launchpad's conversion software or a problem with the
-    remote repository.
-    """)
+        An update to the existing Bazaar import failed to complete. It
+        may be a bug in Launchpad's conversion software or a problem
+        with the remote repository.
+        """)
 
-    RECLAIMED = DBItem(310, """Job reclaimed
+    RECLAIMED = DBItem(310, """
+        Job reclaimed
 
-    The job apparently crashed and was automatically marked as complete to
-    allow further jobs to run for this code import.
-    """)
+        The job apparently crashed and was automatically marked as
+        complete to allow further jobs to run for this code import.
+        """)
 
-    KILLED = DBItem(320, """Job killed
+    KILLED = DBItem(320, """
+        Job killed
 
-    A user action caused this job to be killed before it completed. It could
-    have been an explicit request to kill the job, or the deletion of a
-    CodeImport which had a running job.
-    """)
+        A user action caused this job to be killed before it
+        completed. It could have been an explicit request to kill the
+        job, or the deletion of a CodeImport which had a running job.
+        """)
 
 
 class ICodeImportResult(Interface):
     """A completed code import job."""
 
-    id = Int(readonly=True, required=True)
     date_created = Datetime(readonly=True, required=True)
 
     code_import = Object(
