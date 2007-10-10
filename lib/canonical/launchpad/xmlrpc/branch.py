@@ -7,6 +7,8 @@ __all__ = [
     'BranchSetAPI', 'IBranchSetAPI', 'IPublicCodehostingAPI',
     'PublicCodehostingAPI']
 
+import os
+
 from zope.component import getUtility
 from zope.interface import Interface, implements
 from zope.security.interfaces import Unauthorized
@@ -191,16 +193,18 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             return faults.NoSuchProduct(project_name)
         return _NonexistentBranch(unique_name)
 
-    def _getResultDict(self, branch):
+    def _getResultDict(self, branch, suffix=None):
         if branch.branch_type == BranchType.REMOTE:
             return dict(urls=[branch.url])
         else:
             result = dict(urls=[])
             host = self._getBazaarHost()
             for scheme in self.supported_schemes:
+                path = '/' + branch.unique_name
+                if suffix is not None:
+                    path = os.path.join(path, suffix)
                 result['urls'].append(
-                    str(URI(host=host, scheme=scheme,
-                            path='/' + branch.unique_name)))
+                    str(URI(host=host, scheme=scheme, path=path)))
             return result
 
     def resolve_lp_path(self, path):
@@ -208,7 +212,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         strip_path = path.strip('/')
         if strip_path == '':
             return faults.InvalidBranchIdentifier(path)
-        path_segments = strip_path.split('/')
+        path_segments = strip_path.split('/', 3)
+        suffix = None
         if len(path_segments) == 1:
             [project_name] = path_segments
             result = self._getBranchForProject(project_name)
@@ -218,12 +223,14 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         elif len(path_segments) == 3:
             result = self._getBranch(strip_path)
         else:
-            return faults.InvalidBranchIdentifier(path)
+            suffix = path_segments.pop()
+            result = self._getBranch('/'.join(path_segments))
 
         if isinstance(result, faults.LaunchpadFault):
             return result
         else:
             try:
-                return self._getResultDict(result)
+                return self._getResultDict(result, suffix)
             except Unauthorized:
-                return self._getResultDict(_NonexistentBranch(strip_path))
+                return self._getResultDict(
+                    _NonexistentBranch(strip_path), suffix)

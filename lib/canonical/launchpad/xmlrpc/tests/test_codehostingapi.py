@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = []
 
 
+import os
 import unittest
 
 from zope.component import getUtility
@@ -138,10 +139,11 @@ class TestExpandURL(BranchTestCase):
             nonexistent_owner_branch, faults.NoSuchPerson('doesntexist'))
 
     def test_tooManySegments(self):
-        """A path with more than three segments is invalid."""
-        self.assertFault(
-            'foo/bar/baz/qux',
-            faults.InvalidBranchIdentifier('foo/bar/baz/qux'))
+        """If we have more segments than are necessary to refer to a branch,
+        then attach these segments to the resolved url.
+        """
+        longer_path = os.path.join(self.trunk.unique_name, 'qux')
+        self.assertResolves(longer_path, longer_path)
 
     def test_emptyPath(self):
         """An empty path is an invalid identifier."""
@@ -153,6 +155,11 @@ class TestExpandURL(BranchTestCase):
         """
         self.assertFault(
             'foo/bar/baz', faults.InvalidBranchIdentifier('foo/bar/baz'))
+        self.assertFault(
+            'foo/bar/baz/qux',
+            faults.InvalidBranchIdentifier('foo/bar/baz'))
+
+        # Should be invalid even if the branch exists.
         unique_name = self.trunk.unique_name.lstrip('~')
         self.assertFault(
             unique_name, faults.InvalidBranchIdentifier(unique_name))
