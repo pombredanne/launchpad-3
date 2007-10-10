@@ -39,7 +39,7 @@
             </tal:question>
             <tal:uses-malone
               condition="not: context/pillar/official_malone">
-              <tal:target 
+              <tal:target
                 replace="context/target/displayname">Firefox</tal:target>
               does not use Launchpad to track bugs.
             </tal:uses-malone>
@@ -62,7 +62,7 @@
             tal:condition="view/can_be_a_question" />
           <input
             tal:replace="structure view/cancel_action/render"
-            tal:condition="not: view/can_be_a_question" />         
+            tal:condition="not: view/can_be_a_question" />  
         </div>
       </metal:form>
     </metal:main>
@@ -72,7 +72,7 @@
         A bug must meet a few conditions to be convertible to a question.
         its status must be either New, Incomplete, Confirmed, or Wont Fix
         The bug's project must use Launchpad to track bugs.
-      </p>  
+      </p>
       <p>
         Bugs that are also in external bug trackers cannot be converted
         to questions. This is also true for bugs that are being developed.

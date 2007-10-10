@@ -2172,12 +2172,14 @@ class BugTaskTableRowView(LaunchpadView):
     def canSeeTaskDetails(self):
         """Whether someone can see a task's status details.
 
-        This returns true if this is not a conjoined task, and if the bug is
-        not a duplicate. It is independent of whether they can *change* the
-        status; you need to expand the details to see any milestone set.
+        Return True if this is not a conjoined task, and the bug is
+        not a duplicate, and a question was not made from this report.
+        It is independent of whether they can *change* the status; you
+        need to expand the details to see any milestone set.
         """
         return (self.context.conjoined_master is None and
-                self.context.bug.duplicateof is None)
+                self.context.bug.duplicateof is None and
+                self.context.bug.getQuestionCreatedFromBug() is None)
 
     def getTaskRowCSSClass(self):
         """The appropriate CSS class for the row in the Affects table.

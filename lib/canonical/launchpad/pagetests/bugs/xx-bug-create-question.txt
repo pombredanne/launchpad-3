@@ -71,15 +71,13 @@ bug.
     <p...This report is a question:
      Question #...: <a ...>another test bug</a>. </p>
 
-The bug status is Invalid for 'linux-source-2.6.15
-(Ubuntu)', and the comment about the last change states that the bug is
-a question.
+The bug status is Invalid for 'linux-source-2.6.15 (Ubuntu)'--It
+cannot be editied.
 
     >>> print extract_text(content(['table'], {'class' : 'listing'})[0])
     Affects                       Status   Importance  Assigned to
-    linux-source-2.6.15 (Ubuntu)  Invalid  Medium      &mdash;...
-    Comment on most recent change
-    This bug is a question...
+    linux-source-2.6.15 (Ubuntu)  Invalid  Medium      &mdash;
+
 
 No Privileges Person can see the link to the question in the 'Related
 questions' portlet. After noting that Foo Bar is the bug owner, he
