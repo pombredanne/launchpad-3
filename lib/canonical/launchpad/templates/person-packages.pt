@@ -168,7 +168,7 @@
          tal:content="distroseries/fullseriesname" />
     </td>
     <td tal:content="spr/version">
-      1.0 
+      1.0
     </td>
     <td
       tal:attributes="title spr/dateuploaded/fmt:datetime"

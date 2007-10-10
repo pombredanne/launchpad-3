@@ -1688,35 +1688,36 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             uploader_only=True, ppa_only=True)
 
     def _latestSeriesQuery(self, uploader_only=False, ppa_only=False):
-        """Return the sourcepackagereleases (SPRs) related to this person.  
+        """Return the sourcepackagereleases (SPRs) related to this person.
 
-        'uploader_only' flag controls if we are interested in SPRs where the
-        person in question is only the uploader (creator) and not the
-        maintainer (debian-syncs), or, if the flag is False, it returns all
-        SPR maintained by this person.
+        :param uploader_only: controls if we are interested in SPRs where
+            the person in question is only the uploader (creator) and not the
+            maintainer (debian-syncs), or, if the flag is False, it returns all
+            SPR maintained by this person.
 
-        'ppa_only' flag controls if we are interested only in source
-        package releases targeted to any PPAs or, if False, sources targeted
-        to primary archives.
+        :param ppa_only: controls if we are interested only in source
+            package releases targeted to any PPAs or, if False, sources targeted
+            to primary archives.
 
-        Usually active 'ppa_only' flag is always associated to 'uploader_only',
-        because there shouldn't be any sense of maintainer-ship for packages
+        Active 'ppa_only' flag is usually associated with active 'uploader_only'
+        because there shouldn't be any sense of maintainership for packages
         uploaded to PPAs by someone else than the user himself.
         """
         clauses = ['sourcepackagerelease.upload_archive = archive.id']
 
         if uploader_only:
-            clauses.append('sourcepackagerelease.creator = %d' % self.id)
-            clauses.append('sourcepackagerelease.maintainer != %d' % self.id)
+            clauses.append(
+                'sourcepackagerelease.creator = %s' % quote(self.id))
+            clauses.append(
+                'sourcepackagerelease.maintainer != %s' % quote(self.id))
         else:
-            clauses.append('sourcepackagerelease.maintainer = %d' % self.id)
+            clauses.append(
+                'sourcepackagerelease.maintainer = %s' % quote(self.id))
 
         if ppa_only:
-            clauses.append(
-                'archive.purpose = %s' % sqlvalues(ArchivePurpose.PPA))
+            clauses.append('archive.purpose = %s' % quote(ArchivePurpose.PPA))
         else:
-            clauses.append(
-                'archive.purpose != %s' % sqlvalues(ArchivePurpose.PPA))
+            clauses.append('archive.purpose != %s' % quote(ArchivePurpose.PPA))
 
         query_clause = " AND ".join(clauses)
         query = """

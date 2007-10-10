@@ -518,13 +518,13 @@ Searching only for Teams based on their names or email addresses:
 To obtain the packages a person is related to, we can use:
 
  1. getLatestMaintainedPackages(),
- 2. getLatestUploadedButNotMaintainedPackages(), 
- 3. getLatestUploadedPPAPackages methods of IPersonSet. 
+ 2. getLatestUploadedButNotMaintainedPackages(),
+ 3. getLatestUploadedPPAPackages methods of IPersonSet.
 
 The 1st will return the latest SourcePackageReleases related to a
 person in which he is listed as the Maintainer. The second will return
 the latest SourcePackageReleases a person uploaded (and where he isn't
-the maintainer).  
+the maintainer).
 
 Both, 1st and 2nd methods, only consider sources upload to primary archives.
 
