@@ -308,11 +308,11 @@ class Publisher(object):
         else:
             os.makedirs(source_index_basepath)
 
-        fd_gz, temp_index_gz = tempfile.mkstemp(prefix='source-index_',
-                                                dir=source_index_basepath)
+        fd_gz, temp_index_gz = tempfile.mkstemp(
+            dir=self._config.temproot, prefix='source-index-gz_')
         source_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, 'wb'))
-        fd, temp_index = tempfile.mkstemp(prefix='source-index_',
-                                          dir=source_index_basepath)
+        fd, temp_index = tempfile.mkstemp(
+            dir=self._config.temproot, prefix='source-index_')
         source_index = open(temp_index, 'wb')
 
         for spp in distroseries.getSourcePackagePublishing(
@@ -351,11 +351,10 @@ class Publisher(object):
             else:
                 os.makedirs(package_index_basepath)
 
-            temp_prefix = '%s-index_' % arch_path
-            fd_gz, temp_index_gz = tempfile.mkstemp(prefix=temp_prefix,
-                                                    dir=package_index_basepath)
-            fd, temp_index = tempfile.mkstemp(prefix=temp_prefix,
-                                              dir=package_index_basepath)
+            fd_gz, temp_index_gz = tempfile.mkstemp(
+                dir=self._config.temproot, prefix='%s-index-gz_' % arch_path)
+            fd, temp_index = tempfile.mkstemp(
+                dir=self._config.temproot, prefix='%s-index_' % arch_path)
             package_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, "wb"))
             package_index = open(temp_index, "wb")
 
@@ -478,12 +477,13 @@ class Publisher(object):
         # Only the primary archive has uncompressed and bz2 archives.
         if self.archive.purpose == ArchivePurpose.PRIMARY:
             index_suffixes = ('', '.gz', '.bz2')
-        elif self.archive.purpose == ArchivePurpose.PARTNER:
-            # The partner archive needs uncompressed files for
-            # compatibility with signed Release files.
-            index_suffixes = ('', '.gz')
         else:
-            index_suffixes = ('.gz',)
+            # We don't generate bz2 indexes for other archives for
+            # simplicity (they use NoMoreAptFtparchive approach).
+            # The plain index has to be listed in the Release, but not
+            # necessarily has to be on disk, its checksum is used for
+            # verification in client applications like dpkg/apt/smart.
+            index_suffixes = ('', '.gz')
 
         self.log.debug("Writing Release file for %s/%s/%s" % (
             full_name, component, architecture))
