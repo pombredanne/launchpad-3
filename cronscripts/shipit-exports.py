@@ -1,6 +1,6 @@
 #!/usr/bin/python2.4
 # Copyright 2005 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0403
+# pylint: disable-msg=C0103,W0403
 
 """Script to export ShipIt orders into csv files."""
 
