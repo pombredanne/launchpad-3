@@ -267,7 +267,7 @@ We get an error if we try to specify a non-existant branch or bug:
 
 
 resolve_lp_path
-^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 
 The Bazaar plugin doesn't request any authentication when accessing this
 method.
