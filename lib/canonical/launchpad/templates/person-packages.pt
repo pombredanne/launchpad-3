@@ -16,8 +16,10 @@
 
   <h1>Package maintenance report</h1>
 
-  <table class="listing" id="packages">
+  <div id="packages">
+
   <tal:maintained-packages condition="context/getLatestMaintainedPackages">
+  <table class="listing">
     <thead>
       <tr>
         <td colspan="7"><h2>Maintained packages</h2></td>
@@ -38,10 +40,12 @@
       <div metal:use-macro="template/macros/sourcepackagerelease-rows" />
     </tal:block>
     </tbody>
+  </table>
   </tal:maintained-packages>
 
   <tal:uploaded-packages
     condition="context/getLatestUploadedButNotMaintainedPackages">
+  <table class="listing">
     <thead>
       <tr>
         <td colspan="7"><h2>Uploaded packages</h2></td>
@@ -61,10 +65,12 @@
         sourcepackagereleases context/getLatestUploadedButNotMaintainedPackages">
       <div metal:use-macro="template/macros/sourcepackagerelease-rows" />
     </tal:block>
+  </table>
   </tal:uploaded-packages>
 
   <tal:ppa-packages
     condition="context/getLatestUploadedPPAPackages">
+  <table class="listing">
     <thead>
       <tr>
         <td colspan="7"><h2>PPA packages</h2></td>
@@ -84,9 +90,10 @@
         sourcepackagereleases context/getLatestUploadedPPAPackages">
       <div metal:use-macro="template/macros/sourcepackagerelease-ppa-rows" />
     </tal:block>
+  </table>
   </tal:ppa-packages>
 
-  </table>
+  </div>
 
 </div>
 
