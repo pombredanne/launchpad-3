@@ -14,7 +14,9 @@
   <h1>Milestones</h1>
     <tal:has-milestones condition="context/all_milestones">
     <ul>
-      <li class="milestone" tal:repeat="milestone context/all_milestones">
+      <li class="milestone"
+          tal:attributes="id string:milestone-${milestone/name}"
+          tal:repeat="milestone context/all_milestones">
         <a tal:content="milestone/name"
            tal:attributes="href milestone/fmt:url">
            milestone name
@@ -27,6 +29,11 @@
           For <a tal:attributes="href milestone/series_target/fmt:url"
                  tal:replace="milestone/series_target/title">Feisty</a>
         </div>
+	<div class="description"
+	     tal:condition="milestone/description"
+	     tal:content="structure milestone/description/fmt:text-to-html">
+	  Milestone description.
+	</div>
       </li>
     </ul>
     </tal:has-milestones>

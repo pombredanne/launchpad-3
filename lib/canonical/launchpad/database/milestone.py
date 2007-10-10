@@ -133,6 +133,7 @@ class ProjectMilestone:
         self.visible = visible
         self.target = target
         self.series_target = None
+        self.description = None
 
     @property
     def specifications(self):
