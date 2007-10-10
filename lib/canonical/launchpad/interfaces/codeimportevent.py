@@ -306,9 +306,9 @@ class ICodeImportEventSet(Interface):
     def newQuiesce(machine, user, message):
         """Record that user requested the machine to quiesce for maintenance.
 
-        :param machine: `CodeImportMachine` that was set to quiescing state.
+        :param machine: `CodeImportMachine` whose state changed to QUIESCING.
         :param user: `Person` that requested quiescing.
-        :param message: User-provided message giving the reason for quiescing.
+        :param message: User-provided message.
         :return: `CodeImportEvent` of QUIESCE type.
         """
 

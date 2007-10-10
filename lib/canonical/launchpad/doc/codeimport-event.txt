@@ -10,6 +10,7 @@ member of the vcs-imports team and can access the objects freely.
 
     >>> login('david.allouche@canonical.com')
 
+
 == Creating Events ==
 
 Events of each type are created by separate methods in the
@@ -279,7 +280,7 @@ on multiple machines.
     >>> machine = machine_set.getByHostname('bazaar-importer')
 
 When a controller daemon starts accepting jobs, it should create an
-ONLINE event to record which machine is now accepting imports.
+ONLINE event to record which machine is now online.
 
     >>> assert_raises(AssertionError, event_set.newOnline, None)
     >>> online_event = event_set.newOnline(machine)
@@ -293,9 +294,9 @@ ONLINE event to record which machine is now accepting imports.
 
 === OFFLINE ===
 
-When a code import machine goes offline, an OFFLINE journal entry should
-be created to record the affected machine, and the reason why it is
-going offline.
+When a code import machine goes offline, an OFFLINE event should be
+created to record the affected machine, and the reason why it is going
+offline.
 
     >>> from canonical.launchpad.interfaces import (
     ...     CodeImportMachineOfflineReason)
@@ -318,14 +319,14 @@ string, we need to manually check that it is a legal value.
     Traceback (most recent call last):
     ...
     AssertionError: reason must be a CodeImportMachineOfflineReason value,
-    but was: <DBItem CodeImportReviewStatus.SUSPENDED, (30) Suspended>
+    but was: ...
 
 
 === QUIESCE ===
 
-When an operator quiesces the machines, a QUIESCE journal entry should
-be created to record the operator's identity, and an optional message
-explaining why quiescing was requested.
+When an operator quiesces a machine, a QUIESCE event should be created
+to record the operator's identity, the affected machine, and a
+user-provided message explaining why quiescing was requested.
 
 Quiescing is a privileged administrative operation.
 

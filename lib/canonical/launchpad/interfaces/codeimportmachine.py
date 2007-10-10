@@ -113,7 +113,7 @@ class ICodeImportMachine(Interface):
         """Set state to QUIESCING, and record the corresponding event.
 
         :param user: `Person` that requested the machine to quiesce.
-        :param message: user-provided message.
+        :param message: User-provided message.
         """
 
 

@@ -7,9 +7,8 @@ is, currently capable of performing imports).
     >>> from canonical.launchpad.interfaces import (
     ...     ICodeImportMachine, ICodeImportMachineSet, CodeImportMachineState)
 
-This test is running in the ZopelessLayer to allow switching database
-users. Because of bug 3989, we must use transaction commands from
-sqlbase.
+This test runs in the ZopelessLayer to allow switching database users.
+Because of bug 3989, we must use transaction commands from sqlbase.
 
     >>> from canonical.database.sqlbase import begin, commit, rollback
 
@@ -105,7 +104,7 @@ UPDATE rights on the CodeImportMachine table.
     >>> begin()
 
 Jobs running on the machine itself will connect as the 'importd' user,
-which has rights to update the table so it can update the machine state.
+which has rights to update the CodeImportMachine table.
 
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.switchDbUser('importd')
@@ -149,9 +148,8 @@ CodeImportEvent objects are created.
     ...     print 'State:', machine.state.name
     ...     print 'Events:', list_event_types_for_machine(machine)
 
-To make tests simpler and more self-cointained, we will use the
-following helper to reset the sample CodeImportMachine and delete its
-associated events.
+To make tests simpler and more self-contained, the following helper
+resets the sample CodeImportMachine and delete its associated events.
 
     >>> def reset_machine(machine):
     ...     """Delete events associated to machine and reset state to OFFLINE.
@@ -211,7 +209,8 @@ setOffline method.
 === setQuiescing ===
 
 Setting the state of a CodeImportMachine to QUIESCING will stop it from
-starting new jobs, and will cause it to shutdown after completing.
+starting new jobs, and will cause it to shutdown after completing the
+running jobs.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> machine = reset_machine(machine)
@@ -230,7 +229,7 @@ starting new jobs, and will cause it to shutdown after completing.
     >>> dict(latest_event.items())[CodeImportEventDataType.MESSAGE]
     u'1.1.42 rollout'
 
-=== Allowed state transitions ===
+=== Allowed State Transitions ===
 
 Not all CodeImportMachine.state transitions are allowed.
 

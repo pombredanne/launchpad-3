@@ -13,8 +13,8 @@
       interface="canonical.launchpad.interfaces.ICodeImportMachine"
       />
 
-    <!-- ICodeImportMachine has no set_schema, because all modifications should
-      be done through methods that create CodeImportEvent objects when
+    <!-- ICodeImportMachine has no set_schema, because all modifications
+      should be done through methods that create CodeImportEvent objects when
       appropriate. -->
   </content>
 
