@@ -135,7 +135,6 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
 
     implements(IPublicCodehostingAPI)
 
-    # XXX: Move supported protocols to config param?
     supported_schemes = 'bzr+ssh', 'sftp', 'http'
 
     def _get_bazaar_host(self):
@@ -173,20 +172,22 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         return branch
 
     def _get_remote_result_dict(self, branch):
-        url = URI(branch.url)
-        return dict(
-            host=url.authority, path=url.path, supported_schemes=[url.scheme])
+        return dict(urls=[branch.url])
 
     def _get_result_dict(self, branch):
         if branch.branch_type == BranchType.REMOTE:
             return self._get_remote_result_dict(branch)
         else:
-            return dict(
-                host=self._get_bazaar_host(),
-                path=branch.unique_name,
-                supported_schemes=self.supported_schemes)
+            result = dict(urls=[])
+            host = self._get_bazaar_host()
+            for scheme in self.supported_schemes:
+                result['urls'].append(
+                    str(URI(host=host, scheme=scheme,
+                            path='/' + branch.unique_name)))
+            return result
 
     def resolve_lp_path(self, path):
+        """See `IPublicCodehostingAPI`."""
         strip_path = path.strip('/')
         if strip_path == '':
             return faults.InvalidBranchIdentifier(path)

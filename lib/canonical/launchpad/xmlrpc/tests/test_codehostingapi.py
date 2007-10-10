@@ -39,10 +39,8 @@ class TestExpandURL(BranchTestCase):
         'branch'.
         """
         results = self.api.resolve_lp_path(lp_url_path)
-        self.assertEqual(
-            branch.unique_name, results['path'],
-            "Expected %r to expand to %r, got %r"
-            % (lp_url_path, branch.unique_name, results['path']))
+        for url in results['urls']:
+            self.assertEqual('/' + branch.unique_name, URI(url).path)
 
     def assertFault(self, lp_url_path, expected_fault):
         """Assert that trying to resolve lp_url_path returns the expected
@@ -52,16 +50,16 @@ class TestExpandURL(BranchTestCase):
         self.assertEqual(expected_fault.__class__, fault.__class__)
         self.assertEqual(expected_fault.faultString, fault.faultString)
 
-    def test_hostnameAndSchemes(self):
-        """resolve_lp_path returns a dict that contains the hostname, a list
-        of supported schemes and the unique name of the requested branch.
+    def test_resultDict(self):
+        """resolve_lp_path returns a dict that contains a single key, 'urls',
+        which is a list of URLs ordered by server preference.
         """
         results = self.api.resolve_lp_path(self.project.name)
-        self.assertEqual(
-            dict(host='bazaar.launchpad.dev',
-                 path=self.trunk.unique_name,
-                 supported_schemes=('bzr+ssh', 'sftp', 'http')),
-            results)
+        urls=[
+            'bzr+ssh://bazaar.launchpad.dev/%s' % self.trunk.unique_name,
+            'sftp://bazaar.launchpad.dev/%s' % self.trunk.unique_name,
+            'http://bazaar.launchpad.dev/%s' % self.trunk.unique_name]
+        self.assertEqual(dict(urls=urls), results)
 
     def test_projectOnly(self):
         """lp:project expands to the branch associated with development focus
@@ -161,26 +159,8 @@ class TestExpandURL(BranchTestCase):
         branch URL.
         """
         branch = self.makeBranch(BranchType.REMOTE)
-        url = URI(branch.url)
         result = self.api.resolve_lp_path(branch.unique_name)
-        self.assertEqual(url.host, result['host'])
-        self.assertEqual(url.path, result['path'])
-        self.assertEqual([url.scheme], result['supported_schemes'])
-
-    def test_remoteBranchWithPort(self):
-        """For remote branches, return results that link to the actual remote
-        branch URL, including the port number if provided.
-        """
-        branch = self.makeBranch(BranchType.REMOTE)
-        # Set the port so we can confirm port is included set.
-        url = URI(branch.url)
-        url.port = 8080
-        removeSecurityProxy(branch).url = str(url)
-
-        result = self.api.resolve_lp_path(branch.unique_name)
-        self.assertEqual(url.authority, result['host'])
-        self.assertEqual(url.path, result['path'])
-        self.assertEqual([url.scheme], result['supported_schemes'])
+        self.assertEqual([branch.url], result['urls'])
 
 
 def test_suite():
