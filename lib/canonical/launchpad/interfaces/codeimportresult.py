@@ -7,7 +7,7 @@ __all__ = [
     'CodeImportResultStatus', 'ICodeImportResult', 'ICodeImportResultSet']
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Int, Object, Text
+from zope.schema import Choice, Datetime, Object, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.codeimport import ICodeImport
