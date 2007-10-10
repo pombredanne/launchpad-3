@@ -1,6 +1,6 @@
 Checks that an empty translation is not checked with pygettextpo
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
   >>> browser.open(
   ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/+translate?start=12&batch=1')

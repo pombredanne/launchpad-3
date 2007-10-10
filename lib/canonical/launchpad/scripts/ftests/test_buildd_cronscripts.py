@@ -33,10 +33,14 @@ class TestCronscriptBase(TestCase):
         stdout, stderr = process.communicate()
         return (process.returncode, stdout, stderr)
 
-    def runBuilddQueueBuilder(self, extra_args=[]):
+    def runBuilddQueueBuilder(self, extra_args=None):
+        if extra_args is None:
+            extra_args = []
         return self.runCronscript("buildd-queue-builder.py", extra_args)
 
-    def runBuilddSlaveScanner(self, extra_args=[]):
+    def runBuilddSlaveScanner(self, extra_args=None):
+        if extra_args is None:
+            extra_args = []
         return self.runCronscript("buildd-slave-scanner.py", extra_args)
 
     def getBuilddMasterLock(self):

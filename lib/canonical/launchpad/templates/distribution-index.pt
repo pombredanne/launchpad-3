@@ -1,4 +1,14 @@
-<html metal:use-macro="view/macro:page/default" i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/default"
+  i18n:domain="launchpad"
+>
   <body>
     <metal:portlets fill-slot="portlets">
       <tal:portlet replace="structure context/@@+portlet-lifecycle" />
@@ -55,13 +65,17 @@
         <div class="portlet" tal:condition="context/serieses">
           <h2>Series</h2>
           <ul class="distroseries">
-            <li tal:repeat="series context/serieses">
-              <a tal:attributes="href series/fmt:url">
-                <tal:version replace="series/version" />
-                (<tal:codename replace="series/displayname" />)
-              </a>
-            </li>
+            <tal:per_series repeat="series context/serieses">
+              <li tal:condition="series/active">
+                <a tal:attributes="href series/fmt:url">
+                  <tal:version replace="series/version" />
+                  "<tal:codename replace="series/displayname" />"
+                </a>
+                - <tal:status replace="series/status/name/fmt:lower" />
+              </li>
+            </tal:per_series>
           </ul>
+          <a href="+series">See all versions...</a>
         </div>
         <div class="portlet" tal:condition="context/currentseries">
           <h2>
@@ -76,12 +90,23 @@
             tal:condition="context/currentseries/architectures"
             class="architecture"
           >
-            <li tal:repeat="architecture context/currentseries/architectures">
-              <a
-                tal:attributes="href architecture/fmt:url"
-                tal:content="architecture/displayname"
-              />
+            <tal:official
+                 repeat="architecture context/currentseries/architectures">
+              <li tal:condition="architecture/official">
+                <a tal:attributes="href architecture/fmt:url"
+                   tal:content="architecture/displayname"
+                   />
             </li>
+            </tal:official>
+            <tal:unofficial
+                 repeat="architecture context/currentseries/architectures">
+              <li tal:condition="not: architecture/official">
+                <a tal:attributes="href architecture/fmt:url"
+                   tal:content="architecture/displayname"
+                   />
+                (unofficial)
+            </li>
+            </tal:unofficial>
           </ul>
         </div>
         <div tal:content="structure context/@@+portlet-latestbugs" />
@@ -111,4 +136,3 @@
     </div>
   </body>
 </html>
-<!-- 1-0 in-progress Needs list of latest uploads (bug 74342). -->

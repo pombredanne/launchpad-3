@@ -6,16 +6,10 @@ the Firefox product which was filed by 'Sample Person'.
 
     # We will use one browser objects for the owner, and one for the user
     # providing support, 'No Privileges Person' here.
-    >>> from zope.testbrowser.testing import Browser
-    >>> owner_browser = Browser()
-    >>> owner_browser.handleErrors = False
-    >>> owner_browser.addHeader(
-    ...     "Authorization", 'Basic test@canonical.com:test')
+    >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
 
-    >>> support_browser = Browser()
-    >>> support_browser.handleErrors = False
-    >>> support_browser.addHeader(
-    ...     'Authorization', 'Basic no-priv@canonical.com:test')
+    >>> support_browser = setupBrowser(
+    ...     auth='Basic no-priv@canonical.com:test')
 
     # Define some utility functions to retrieve easily the last comment
     # added and the status of the question.
@@ -364,10 +358,7 @@ He is able to solve the problem on his own, and submits the solution
 for other users with similar problems. He does not see a notice about
 choosing an answer that helped him solve his problem. 
 
-    >>> carlos_browser = Browser()
-    >>> carlos_browser.handleErrors = False
-    >>> carlos_browser.addHeader(
-    ...     'Authorization', 'Basic carlos@canonical.com:test')
+    >>> carlos_browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> carlos_browser.open('http://launchpad.dev/firefox/+question/12')
     >>> print find_request_status(carlos_browser.contents)
     Open

@@ -13,8 +13,8 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    IEmailAddressSet, ILaunchpadCelebrities, IMailingListAPIView,
-    IMailingListSet, IPersonSet, MailingListStatus)
+    EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities,
+    IMailingListAPIView, IMailingListSet, IPersonSet, MailingListStatus)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 
@@ -111,7 +111,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             if mailing_list is None:
                 return faults.NoSuchTeamMailingList(team_name)
             members = []
-            for address in mailing_list.addresses:
+            for address in mailing_list.getAddresses():
                 email_address = emailset.getByEmail(address)
                 real_name = email_address.person.displayname
                 # Hard code flags to 0 currently, meaning the member will get
@@ -128,10 +128,12 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             response[team_name] = sorted(members, key=itemgetter(0))
         return response
 
-    def isLaunchpadMember(self, address):
-        """See `IMailingListAPIView`."""
-        return getUtility(IEmailAddressSet).getByEmail(address) is not None
-
+    def isRegisteredInLaunchpad(self, address):
+        """See `IMailingListAPIView.`."""
+        email_address = getUtility(IEmailAddressSet).getByEmail(address)
+        return (email_address is not None and
+                email_address.status in (EmailAddressStatus.VALIDATED,
+                                         EmailAddressStatus.PREFERRED))
     def testStep(self, step):
         """See `IMailingListAPIView`."""
         listset = getUtility(IMailingListSet)

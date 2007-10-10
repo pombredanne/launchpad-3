@@ -87,9 +87,9 @@
           <ul>
             <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
             <li class="product"><a href="/bzr">Bazaar</a></li>
-            <li class="product"><a href="/jokosher">Jokosher</a></li>
-            <li class="product"><a href="/upstart">Upstart</a></li>
-            <li class="product"><a href="/aptoncd">Apt on CD</a></li>
+            <li class="product"><a href="/awn">Avant Window Navigator</a></li>
+            <li class="product"><a href="/schooltool">SchoolTool</a></li>
+            <li class="product"><a href="/tangocms">TangoCMS</a></li>
           </ul>
         </div>
     </div><!--main-->

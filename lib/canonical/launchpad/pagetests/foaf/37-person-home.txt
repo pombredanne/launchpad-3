@@ -7,7 +7,7 @@ Personal Home Pages
 Carlos can never see name12's email addresses: he has chosen not to disclose
 them.
 
-  >>> browser.addHeader('Authorization', 'Basic marilize@hbd.com:test')
+  >>> browser = setupBrowser(auth='Basic marilize@hbd.com:test')
   >>> browser.open('http://launchpad.dev/~name12')
 
   >>> name12 = Person.get(12)
@@ -36,10 +36,7 @@ If you are not logged in, you will not be able to see it:
 
 If you log in, however, you will:
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> browser = Browser()
-  >>> browser.handleErrors = False
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/~sabdfl')
   >>> str(mark.preferredemail.email) in browser.contents
   True

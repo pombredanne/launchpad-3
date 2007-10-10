@@ -15,7 +15,7 @@ def fault_catcher(func):
 
     When running the same doctest with the ServerProxy, faults are turned into
     exceptions by the XMLRPC machinery, but with the direct view the faults
-    are just returned.  This causes an impedence mismatch with exception
+    are just returned.  This causes an impedance mismatch with exception
     display in the doctest that cannot be papered over by using ellipses.  So
     to make this work in a consistent way, a subclass of the view class is
     used which prints faults to match the output of ServerProxy (proper

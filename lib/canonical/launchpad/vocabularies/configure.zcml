@@ -311,8 +311,8 @@
     />
 
   <vocabulary
-    name="ValidMailingList"
-    factory="canonical.launchpad.vocabularies.ValidMailingListVocabulary"
+    name="ActiveMailingList"
+    factory="canonical.launchpad.vocabularies.ActiveMailingListVocabulary"
     />
 
   <vocabulary

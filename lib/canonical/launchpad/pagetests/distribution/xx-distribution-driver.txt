@@ -2,8 +2,8 @@
 
 Appoint Sample Person as the driver of the Ubuntu distribution.
 
-  >>> browser.addHeader(
-  ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> browser = setupBrowser(
+  ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
   >>> browser.open('http://launchpad.dev/ubuntu')
   >>> browser.getLink('Appoint driver').click()
 
