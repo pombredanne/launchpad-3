@@ -69,7 +69,7 @@ class MailingList(SQLBase):
         # The reviewer must be a Launchpad administrator.
         assert reviewer is not None and reviewer.hasParticipationEntryFor(
             getUtility(ILaunchpadCelebrities).mailing_list_experts), (
-            'Reviewer must be a Mailing List Experts')
+            'Reviewer must be a member of the Mailing List Experts team')
         self.reviewer = reviewer
         self.status = status
         self.date_reviewed = UTC_NOW

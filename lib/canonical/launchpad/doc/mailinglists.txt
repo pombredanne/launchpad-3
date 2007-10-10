@@ -188,7 +188,7 @@ participate in the Mailing List Experts team.
     >>> list_one.review(no_priv, MailingListStatus.APPROVED)
     Traceback (most recent call last):
     ...
-    AssertionError: Reviewer must be a Mailing List Experts
+    AssertionError: Reviewer must be a member of the Mailing List Experts team
 
 A member of the team (like a Launchpad administrator), may approve the
 registration.

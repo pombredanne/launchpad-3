@@ -45,10 +45,11 @@ operations.
     >>> celebs.registry == registry
     True
 
+
 == buildd_admin ==
 
 The buildd_admin celebrity has permission to perform routine task
-in the buildfarm
+in the buildfarm.
 
     >>> buildd_admin = personset.getByName('launchpad-buildd-admins')
     >>> celebs.buildd_admin == buildd_admin

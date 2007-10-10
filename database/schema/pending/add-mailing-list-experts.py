@@ -1,7 +1,7 @@
 #!/usr/bin/python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-# Creates the Mailing List Expers celebrity team.
+# Creates the Mailing List Experts celebrity team.
 
 import _pythonpath
 
@@ -28,6 +28,5 @@ if personset.getByName('mailing-list-experts') is None:
     ztm.commit()
     print "Created mailing-list-experts team."
 else:
-    print "mailing-list-experts team already created."
+    print "mailing-list-experts team already exists."
     ztm.commit()
-    
