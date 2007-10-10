@@ -90,8 +90,12 @@ mailing list to be activated.
     ...     print msg
     Mailing list requested and queued for approval.
 
+    # We don't use getUtility(IMailingListSet) here because we want
+    # non-security-proxied objects so that we can call syncUpdate on them
+    # and change their status at our discretion.
     >>> from canonical.launchpad.database import MailingListSet, Person
-    >>> mailing_list = MailingListSet().get('landscape-developers')
+    >>> list_set = MailingListSet()
+    >>> mailing_list = list_set.get('landscape-developers')
     >>> mailing_list.status
     <...MailingListStatus.REGISTERED...>
 
@@ -130,7 +134,9 @@ we'll ask the user to contact a Launchpad admin.
     ...
     LookupError: ...
     >>> for msg in get_feedback_messages(browser):
-    ...     print msg
+    ...     print extract_text(msg)
+    Not available because the application for a mailing list has been
+    declined. Please contact a Launchpad administrator for further assistance.
 
     # Here we manually change its status back to REGISTERED so that we can
     # move on testing as if it wasn't declined.
@@ -147,7 +153,7 @@ cancelled (and then re-requested afterwards).
     >>> for msg in get_feedback_messages(browser):
     ...     print msg
     Mailing list application cancelled.
-    >>> print MailingListSet().get('landscape-developers')
+    >>> print list_set.get('landscape-developers')
     None
 
     >>> import transaction
@@ -157,7 +163,7 @@ cancelled (and then re-requested afterwards).
     >>> browser.getControl('Apply for Mailing List').click()
     >>> browser.title
     'Landscape Developers in Launchpad'
-    >>> mailing_list = MailingListSet().get('landscape-developers')
+    >>> mailing_list = list_set.get('landscape-developers')
     >>> mailing_list
     <MailingList for team "landscape-developers"; status=REGISTERED...
 

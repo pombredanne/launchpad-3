@@ -29,7 +29,7 @@
               <span tal:replace="view/mailinglist_address">a@b.com</span>
               <div class="informational message" style="margin: 0 0 0 2em"
                    tal:condition="view/mailing_list_status_message">
-                <span tal:content="view/mailing_list_status_message">
+                <span tal:content="structure view/mailing_list_status_message">
                   foo
                 </span>
                 <input tal:replace="structure view/request_list_creation/render"

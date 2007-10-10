@@ -18,8 +18,9 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
-    IEmailAddressSet, ILaunchpadCelebrities, IMailingList, IMailingListSet,
-    IMailingListSubscription, MailingListStatus)
+    EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities, IMailingList,
+    IMailingListSet, IMailingListSubscription, MailingListStatus,
+    MAILING_LISTS_DOMAIN)
 
 
 class MailingList(SQLBase):
@@ -53,7 +54,8 @@ class MailingList(SQLBase):
 
     @property
     def address(self):
-        return '%s@lists.launchpad.net' % self.team.name
+        """See `IMailingList`."""
+        return '%s@%s' % (self.team.name, MAILING_LISTS_DOMAIN)
 
     def __repr__(self):
         return '<MailingList for team "%s"; status=%s at %#x>' % (
@@ -118,6 +120,7 @@ class MailingList(SQLBase):
             email = email_set.getByEmail(self.address)
             if email is None:
                 email = email_set.new(self.address, self.team)
+            email.status = EmailAddressStatus.VALIDATED
             assert email.person == self.team, (
                 "Email already associated with another team.")
 
@@ -126,10 +129,12 @@ class MailingList(SQLBase):
         assert self.status == MailingListStatus.ACTIVE, (
             'Only active mailing lists may be deactivated')
         self.status = MailingListStatus.DEACTIVATING
+        email = getUtility(IEmailAddressSet).getByEmail(self.address)
+        email.status = EmailAddressStatus.NEW
 
     def reactivate(self):
         """See `IMailingList`."""
-        # XXX: The mailman side of this is not yet implemented, although it
+        # XXX: The Mailman side of this is not yet implemented, although it
         # will be implemented soon. -- Guilherme Salgado, 2007-10-08
         # https://launchpad.net/launchpad/+spec/team-mailing-lists-reactivate
         assert self.status == MailingListStatus.INACTIVE, (

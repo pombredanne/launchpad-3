@@ -32,8 +32,8 @@ from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     IEmailAddressSet, ILaunchBag, ILoginTokenSet, IMailingListSet, IPersonSet,
     ITeamContactAddressForm, ITeamCreation, ITeamMember, ITeam,
-    LoginTokenType, MailingListStatus, TeamContactMethod, TeamMembershipStatus,
-    UnexpectedFormData)
+    LoginTokenType, MailingListStatus, MAILING_LISTS_DOMAIN,
+    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
 
@@ -114,20 +114,15 @@ class TeamContactAddressView(LaunchpadFormView):
     def shouldRenderHostedListOptionManually(self):
         """Should the HOSTED_LIST option be rendered manually?
 
-        It's rendered manually only if mailman.expose_hosted_mailing_lists
-        is False and this team doesn't have an active mailing list yet. In
-        this case we'll render it as a disabled radio button with a submit
-        button which allows the user to request the mailing list creation.
-
-        If expose_hosted_mailing_lists is True and the team has an active
-        mailing list, then the option will be rendered by zope3 as an
-        enabled radio button, which means we don't need to do anything.
+        Normally, we let Zope 3 render the radio buttons as it normally would,
+        except under the following specific situation.  When
+        config.mailman.expose_hosted_mailing_lists is True but the team does
+        not yet have an active mailing list, we'll render this as a disabled
+        radio button with a 'submit' button that allows the user to request
+        the mailing list creation.
         """
-        if not config.mailman.expose_hosted_mailing_lists:
-            return False
-        if self.getListInState(MailingListStatus.ACTIVE) is None:
-            return True
-        return False
+        return (config.mailman.expose_hosted_mailing_lists and
+                self.getListInState(MailingListStatus.ACTIVE) is None)
 
     @property
     def mailing_list_status_message(self):
@@ -144,7 +139,11 @@ class TeamContactAddressView(LaunchpadFormView):
             msg += ("the application for a mailing list is pending "
                     "approval.")
         elif mailing_list.status == MailingListStatus.DECLINED:
-            msg += "the application for a mailing list has been declined."
+            msg += ('the application for a mailing list has been declined. '
+                    'Please '
+                    '<a href="https://help.launchpad.net/FAQ#contact-admin">'
+                    'contact a Launchpad administrator</a> for further '
+                    'assistance.')
         elif mailing_list.status in [MailingListStatus.INACTIVE,
                                      MailingListStatus.DEACTIVATING]:
             msg += "mailing list is currently deactivated."
@@ -152,7 +151,7 @@ class TeamContactAddressView(LaunchpadFormView):
             msg += "mailing list creation failed."
         elif mailing_list.status in [MailingListStatus.MODIFIED,
                                      MailingListStatus.UPDATING]:
-            msg += "mailing list is undergoing some maintenance."
+            msg += "mailing list is being updated."
         elif mailing_list.status == MailingListStatus.ACTIVE:
             # Mailing list is active and the option will be enabled; there's
             # no need to display a status message.
@@ -164,21 +163,33 @@ class TeamContactAddressView(LaunchpadFormView):
 
     @property
     def list_application_can_be_cancelled(self):
+        """Can this team's mailing list request be cancelled?
+
+        It can only be cancelled if its state is REGISTERED.
+        """
         return self.getListInState(MailingListStatus.REGISTERED) is not None
 
     @property
     def list_can_be_requested(self):
+        """Can a mailing list be requested for this team?
+
+        It can only be requested if there's no mailing list associated with
+        this team or if the associated one is in the INACTIVE state.
+        """
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
         return (mailing_list is None
                 or mailing_list.status == MailingListStatus.INACTIVE)
 
     @property
     def mailinglist_address(self):
-        return '%s@lists.launchpad.net' % self.context.name
+        """The address for this team's mailing list."""
+        return '%s@%s' % (self.context.name, MAILING_LISTS_DOMAIN)
 
     def setUpWidgets(self, context=None):
-        """Check if the HOSTED_LIST option of our contact_method widget
-        should be rendered by zope3, manually (by ourselves) in the
+        """Set up the widgets for the mailing list contact choices.
+
+        Check if the HOSTED_LIST option of our contact_method widget
+        should be rendered by Zope3, manually (by ourselves) in the
         template or not rendered at all and change the vocabulary
         accordingly.
         """
@@ -207,10 +218,11 @@ class TeamContactAddressView(LaunchpadFormView):
         super(TeamContactAddressView, self).setUpWidgets(context=context)
 
     def validate(self, data):
-        """Validate the email address only if the user wants to use an external
-        address and the given email address is not already in use by this team.
+        """Validate the team contact email address.
 
-        Also ensures the mailing list is active if the HOSTED_LIST option
+        Validation only occurs if the user wants to use an external address,
+        and the given email address is not already in use by this team.
+        This also ensures the mailing list is active if the HOSTED_LIST option
         has been chosen.
         """
         if data['contact_method'] == TeamContactMethod.EXTERNAL_ADDRESS:
@@ -240,7 +252,7 @@ class TeamContactAddressView(LaunchpadFormView):
 
     def request_list_creation_validator(self, action, data):
         if self.getListInState(MailingListStatus.DECLINED,
-                               MailingListStatus.INACTIVE):
+                               MailingListStatus.INACTIVE) is not None:
             self.addError(
                 "There is an application for a mailing list already.")
 
@@ -252,8 +264,10 @@ class TeamContactAddressView(LaunchpadFormView):
 
     @property
     def initial_values(self):
-        """Infer the contact method from this team's preferredemail and
-        return a dict representing that in terms of the fields we use here.
+        """Infer the contact method from this team's preferredemail.
+        
+        Return a dictionary representing the contact_address and
+        contact_method so inferred.
         """
         context = self.context
         if context.preferredemail is None:
