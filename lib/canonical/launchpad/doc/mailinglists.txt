@@ -33,8 +33,6 @@ several teams.
     >>> team_two = new_team('team-two')
     >>> team_three = new_team('team-three')
     >>> team_four = new_team('team-four')
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
 
 Define a helper function that sorts mailing lists alphabetically based on
 their team's name.
@@ -73,6 +71,7 @@ created right away.
     >>> list_one = list_set.new(team_one)
     >>> verifyObject(IMailingList, list_one)
     True
+    >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> list_one
     <MailingList for team "team-one"; status=REGISTERED at 0x...>
@@ -106,6 +105,8 @@ mailing list.
     >>> list_two = list_set.new(team_two, salgado)
     >>> list_two
     <MailingList for team "team-two"; status=REGISTERED at ...>
+    >>> list_two.address
+    u'team-two@lists.launchpad.net'
 
 The newly registered mailing list is linked to its team, and the list's
 registrant is the team owner at the time the list was registered.  The list's
@@ -299,8 +300,15 @@ later.
 
 After Mailman has worked at constructing lists for a while, it reports (again
 through XMLRPC not shown here) on the status of each list construction.  Most,
-if not all will succeed, thus activating the team's mailing list.
+if not all will succeed, thus activating the team's mailing list. Also, once
+a mailing list is made active, its email address is registered in Launchpad
+and associated with the team's mailing list, so that it can be used as the
+team's contact address.
 
+    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> email_set = getUtility(IEmailAddressSet)
+    >>> print email_set.getByEmail(list_one.address)
+    None
     >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
     >>> list_three.transitionToStatus(MailingListStatus.ACTIVE)
     >>> flush_database_updates()
@@ -308,6 +316,8 @@ if not all will succeed, thus activating the team's mailing list.
     'ACTIVE'
     >>> list_three.status.name
     'ACTIVE'
+    >>> email_set.getByEmail(list_one.address).status.name
+    'VALIDATED'
 
 Some list constructions may fail.
 
@@ -354,6 +364,12 @@ and report the deactivation results.
     >>> list_three.status.name
     'INACTIVE'
 
+Once a list's deactivation is complete, its email address' status is set to
+NEW.
+
+    >>> email_set.getByEmail(list_three.address).status.name
+    'NEW'
+
 But lists which are not active may not be deactivated.
 
     >>> list_two.deactivate()
@@ -364,6 +380,47 @@ But lists which are not active may not be deactivated.
     Traceback (most recent call last):
     ...
     AssertionError: Only active mailing lists may be deactivated
+
+
+== Reactivating lists ==
+
+A list which is inactive may be reactivated.
+
+    >>> list_three.status.name
+    'INACTIVE'
+    >>> list_three.reactivate()
+
+This doesn't immediately reactivate the mailing list though.  Mailman still
+needs to query for the requested reactivations, take the necessary actions,
+and report the reactivation results.
+
+    >>> list_three.status.name
+    'APPROVED'
+
+But lists which are not inactive may not be reactivated.
+
+    >>> list_three.reactivate()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only inactive mailing lists may be reactivated
+
+
+== Cancelling registrations ==
+
+Any mailing list in the REGISTERED state can be cancelled.  Mailing lists in
+any other state can't though.
+
+    >>> admins_list = list_set.new(personset.getByName('admins'))
+    >>> admins_list
+    <MailingList for team "admins"; status=REGISTERED...
+    >>> admins_list.cancelRegistration()
+    >>> print list_set.get('admins')
+    None
+
+    >>> list_three.cancelRegistration()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only mailing lists in the REGISTERED state...
 
 
 == Welcome messages ==
@@ -394,7 +451,7 @@ MODIFIED is not allowed.
     >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
     Traceback (most recent call last):
     ...
-    AssertionError: Not a valid state transition
+    AssertionError: Not a valid state transition: Modified -> Active
 
 What really happens is that the list's state is first transitioned to
 UPDATING, and then to ACTIVE or FAILED.
