@@ -7,6 +7,7 @@ __all__ = ['IBranchSetAPI', 'BranchSetAPI']
 
 from zope.component import getUtility
 from zope.interface import Interface, implements
+from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -14,6 +15,7 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, IPersonSet, IProductSet, NotFoundError)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.xmlrpc import faults
 
@@ -130,15 +132,17 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
     """See `IPublicCodehostingAPI`."""
 
     # XXX: Move supported protocols to config param?
-    supported_protocols = 'bzr+ssh', 'sftp', 'http'
+    supported_schemes = 'bzr+ssh', 'sftp', 'http'
 
     def _get_bazaar_host(self):
         return URI(config.codehosting.supermirror_root).host
 
     def _get_series_branch(self, series):
-        if series.series_branch is None:
+        branch = series.series_branch
+        if (branch is None
+            or not check_permission('launchpad.View', branch)):
             return faults.NoBranchForSeries(series)
-        return series.series_branch
+        return branch
 
     def _get_branch_for_project(self, project_name):
         project = getUtility(IProductSet).getByName(project_name)
@@ -157,14 +161,18 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         return self._get_series_branch(series)
 
     def _get_branch(self, unique_name):
+        if unique_name[0] != '~':
+            return faults.InvalidBranchIdentifier(unique_name)
         branch = getUtility(IBranchSet).getByUniqueName(unique_name)
         if branch is None:
             return faults.NoSuchBranch(unique_name)
         return branch
 
     def resolve_lp_path(self, path):
-        path = path.strip('/')
-        path_segments = path.split('/')
+        strip_path = path.strip('/')
+        if strip_path == '':
+            return faults.InvalidBranchIdentifier(path)
+        path_segments = strip_path.split('/')
         if len(path_segments) == 1:
             [project_name] = path_segments
             result = self._get_branch_for_project(project_name)
@@ -172,14 +180,16 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             project_name, series_name = path_segments
             result = self._get_branch_for_series(project_name, series_name)
         elif len(path_segments) == 3:
-            result = self._get_branch(path)
+            result = self._get_branch(strip_path)
         else:
-            # XXX
-            raise ValueError("too many path segments")
+            return faults.InvalidBranchIdentifier(path)
         if isinstance(result, faults.LaunchpadFault):
             return result
         else:
-            return dict(
-                host=self._get_bazaar_host(),
-                path=result.unique_name,
-                supported_schemes=self.supported_protocols)
+            try:
+                return dict(
+                    host=self._get_bazaar_host(),
+                    path=result.unique_name,
+                    supported_schemes=self.supported_schemes)
+            except Unauthorized:
+                return faults.NoSuchBranch(strip_path)

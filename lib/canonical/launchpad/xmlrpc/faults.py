@@ -244,3 +244,14 @@ class NoSuchSeries(LaunchpadFault):
     def __init__(self, series_name, product):
         LaunchpadFault.__init__(
             self, series_name=series_name, product_name=product.name)
+
+
+class InvalidBranchIdentifier(LaunchpadFault):
+    """The branch identifier wasn't even remotely correct."""
+
+    error_code = 190
+    msg_template = (
+        'Invalid branch identifier: %(branch_path)r')
+
+    def __init__(self, branch_path):
+        LaunchpadFault.__init__(self, branch_path=branch_path)
