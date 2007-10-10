@@ -1,4 +1,5 @@
 # Copyright Canonical Limited 2006-2007
+# pylint: disable-msg=W0231
 """Ftpmaster queue tool libraries."""
 
 # XXX StuartBishop 2007-01-31:
