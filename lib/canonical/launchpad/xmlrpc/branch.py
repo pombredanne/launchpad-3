@@ -143,6 +143,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             if project is None:
                 return faults.NoSuchProduct(project_name)
             series = project.development_focus
+            branch = series.series_branch
         elif len(path_segments) == 2:
             project_name, series_name = path_segments
             project = getUtility(IProductSet).getByName(project_name)
@@ -151,13 +152,19 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             series = project.getSeries(series_name)
             if series is None:
                 return faults.NoSuchSeries(series_name, project)
+            branch = series.series_branch
+        elif len(path_segments) == 3:
+            user_name, project_name, branch_name = path_segments
+            unique_name = '/'.join(path_segments)
+            branch = getUtility(IBranchSet).getByUniqueName(unique_name)
+            if branch is None:
+                return faults.NoSuchBranch(unique_name)
         else:
             # XXX
             raise ValueError("too many path segments")
-        branch = series.series_branch
         if branch is None:
             return faults.NoBranchForSeries(series)
-        return (
-            self._get_bazaar_host(),
-            series.series_branch.unique_name,
-            self.supported_protocols)
+        return dict(
+            host=self._get_bazaar_host(),
+            path=branch.unique_name,
+            supported_schemes=self.supported_protocols)

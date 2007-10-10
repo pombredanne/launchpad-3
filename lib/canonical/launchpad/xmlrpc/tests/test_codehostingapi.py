@@ -36,11 +36,11 @@ class TestExpandURL(BranchTestCase):
         """
         for prefix in 'lp:', 'lp:///':
             url = '%s%s' % (prefix, lp_url_path)
-            hostname, path, supported_protocols = self.api.expand_lp_url(url)
+            results = self.api.expand_lp_url(url)
             self.assertEqual(
-                branch.unique_name, path,
+                branch.unique_name, results['path'],
                 "Expected %r to expand to %r, got %r"
-                % (url, branch.unique_name, path))
+                % (url, branch.unique_name, results['path']))
 
     def assertFault(self, lp_url_path, expected_fault):
         for prefix in 'lp:', 'lp:///':
@@ -89,6 +89,18 @@ class TestExpandURL(BranchTestCase):
             '%s/%s' % (self.project.name, "doesntexist"),
             faults.NoSuchSeries("doesntexist", self.project))
 
+    def test_branch(self):
+        self.assertExpands(self.trunk.unique_name, self.trunk)
+
+    def test_noSuchBranch(self):
+        self.assertFault('~foo/bar/baz', faults.NoSuchBranch('~foo/bar/baz'))
+
+    # TODO:
+    # - more than three path segments
+    # - empty URL
+    # - three part URL not starting with tilde
+    # - URL consisting entirely of slashes
+    # - Trailing slashes
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
