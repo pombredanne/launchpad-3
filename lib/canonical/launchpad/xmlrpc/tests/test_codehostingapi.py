@@ -34,20 +34,16 @@ class TestExpandURL(BranchTestCase):
         """Assert that the given lp URL path expands to the unique name of
         'branch'.
         """
-        for prefix in 'lp:', 'lp:///':
-            url = '%s%s' % (prefix, lp_url_path)
-            results = self.api.expand_lp_url(url)
-            self.assertEqual(
-                branch.unique_name, results['path'],
-                "Expected %r to expand to %r, got %r"
-                % (url, branch.unique_name, results['path']))
+        results = self.api.resolve_lp_path(lp_url_path)
+        self.assertEqual(
+            branch.unique_name, results['path'],
+            "Expected %r to expand to %r, got %r"
+            % (lp_url_path, branch.unique_name, results['path']))
 
     def assertFault(self, lp_url_path, expected_fault):
-        for prefix in 'lp:', 'lp:///':
-            url = '%s%s' % (prefix, lp_url_path)
-            fault = self.api.expand_lp_url(url)
-            self.assertEqual(expected_fault.__class__, fault.__class__)
-            self.assertEqual(expected_fault.faultString, fault.faultString)
+        fault = self.api.resolve_lp_path(lp_url_path)
+        self.assertEqual(expected_fault.__class__, fault.__class__)
+        self.assertEqual(expected_fault.faultString, fault.faultString)
 
 #     def test_hostname(self):
 #         pass

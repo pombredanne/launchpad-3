@@ -135,36 +135,51 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
     def _get_bazaar_host(self):
         return URI(config.codehosting.supermirror_root).host
 
-    def expand_lp_url(self, url):
-        path_segments = URI(url).path.lstrip('/').split('/')
+    def _get_series_branch(self, series):
+        if series.series_branch is None:
+            return faults.NoBranchForSeries(series)
+        return series.series_branch
+
+    def _get_branch_for_project(self, project_name):
+        project = getUtility(IProductSet).getByName(project_name)
+        if project is None:
+            return faults.NoSuchProduct(project_name)
+        series = project.development_focus
+        return self._get_series_branch(series)
+
+    def _get_branch_for_series(self, project_name, series_name):
+        project = getUtility(IProductSet).getByName(project_name)
+        if project is None:
+            return faults.NoSuchProduct(project_name)
+        series = project.getSeries(series_name)
+        if series is None:
+            return faults.NoSuchSeries(series_name, project)
+        return self._get_series_branch(series)
+
+    def _get_branch(self, unique_name):
+        branch = getUtility(IBranchSet).getByUniqueName(unique_name)
+        if branch is None:
+            return faults.NoSuchBranch(unique_name)
+        return branch
+
+    def resolve_lp_path(self, path):
+        path = path.strip('/')
+        path_segments = path.split('/')
         if len(path_segments) == 1:
             [project_name] = path_segments
-            project = getUtility(IProductSet).getByName(project_name)
-            if project is None:
-                return faults.NoSuchProduct(project_name)
-            series = project.development_focus
-            branch = series.series_branch
+            result = self._get_branch_for_project(project_name)
         elif len(path_segments) == 2:
             project_name, series_name = path_segments
-            project = getUtility(IProductSet).getByName(project_name)
-            if project is None:
-                return faults.NoSuchProduct(project_name)
-            series = project.getSeries(series_name)
-            if series is None:
-                return faults.NoSuchSeries(series_name, project)
-            branch = series.series_branch
+            result = self._get_branch_for_series(project_name, series_name)
         elif len(path_segments) == 3:
-            user_name, project_name, branch_name = path_segments
-            unique_name = '/'.join(path_segments)
-            branch = getUtility(IBranchSet).getByUniqueName(unique_name)
-            if branch is None:
-                return faults.NoSuchBranch(unique_name)
+            result = self._get_branch(path)
         else:
             # XXX
             raise ValueError("too many path segments")
-        if branch is None:
-            return faults.NoBranchForSeries(series)
-        return dict(
-            host=self._get_bazaar_host(),
-            path=branch.unique_name,
-            supported_schemes=self.supported_protocols)
+        if isinstance(result, faults.LaunchpadFault):
+            return result
+        else:
+            return dict(
+                host=self._get_bazaar_host(),
+                path=result.unique_name,
+                supported_schemes=self.supported_protocols)
