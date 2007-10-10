@@ -206,3 +206,26 @@ setOffline method.
     >>> latest_event = list_events_for_machine(machine)[-1]
     >>> dict(latest_event.items())[CodeImportEventDataType.OFFLINE_REASON]
     u'STOPPED'
+
+
+=== setQuiescing ===
+
+Setting the state of a CodeImportMachine to QUIESCING will stop it from
+starting new jobs, and will cause it to shutdown after completing.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> machine = reset_machine(machine)
+    >>> machine.setOnline()
+    >>> print_machine_state_and_events(machine)
+    State: ONLINE
+    Events: ['ONLINE']
+    >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
+    >>> machine.setQuiescing(ddaa, '1.1.42 rollout')
+    >>> print_machine_state_and_events(machine)
+    State: QUIESCING
+    Events: ['ONLINE', 'QUIESCE']
+    >>> latest_event = list_events_for_machine(machine)[-1]
+    >>> latest_event.person.name
+    u'ddaa'
+    >>> dict(latest_event.items())[CodeImportEventDataType.MESSAGE]
+    u'1.1.42 rollout'

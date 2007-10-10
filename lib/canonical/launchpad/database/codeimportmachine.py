@@ -45,6 +45,11 @@ class CodeImportMachine(SQLBase):
         self.state = CodeImportMachineState.OFFLINE
         getUtility(ICodeImportEventSet).newOffline(self, reason)
 
+    def setQuiescing(self, user, message):
+        """See `ICodeImportMachine`."""
+        self.state = CodeImportMachineState.QUIESCING
+        getUtility(ICodeImportEventSet).newQuiesce(self, user, message)
+
 
 class CodeImportMachineSet(object):
     """See `ICodeImportMachineSet`."""

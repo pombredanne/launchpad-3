@@ -104,9 +104,16 @@ class ICodeImportMachine(Interface):
         """Set state to ONLINE, and record the corresponding event."""
 
     def setOffline(reason):
-        """See state to OFFLINE, and record the corresponding event.
+        """Set state to OFFLINE, and record the corresponding event.
 
         :param reason: CodeImportMachineOfflineReason enum value.
+        """
+
+    def setQuiescing(user, message):
+        """Set state to QUIESCING, and record the corresponding event.
+
+        :param user: `Person` that requested the machine to quiesce.
+        :param message: user-provided message.
         """
 
 
