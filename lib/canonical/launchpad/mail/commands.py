@@ -26,6 +26,7 @@ from canonical.launchpad.event import (
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.lp.dbschema import BugTaskImportance
@@ -640,6 +641,51 @@ class AssigneeEmailCommand(EditEmailCommand):
         context.transitionToAssignee(attr_value)
 
 
+class MilestoneEmailCommand(EditEmailCommand):
+    """Sets the milestone for the bugtask."""
+
+    implements(IBugTaskEditEmailCommand)
+
+    _numberOfArguments = 1
+
+    def convertArguments(self, context):
+        """ """
+        user = getUtility(ILaunchBag).user
+        milestone_name = self.string_args[0]
+
+        if milestone_name == '-':
+            # Remove milestone
+            return {self.name: None}
+        elif self._userCanEditMilestone(user, context):
+            milestone = context.pillar.getMilestone(milestone_name)
+            if milestone is None:
+                raise EmailProcessingError(
+                    "The milestone %s does not exist for %s. Note that "
+                    "milestones are not automatically created from emails; "
+                    "they must be created on the website." % (
+                        milestone_name, context.pillar.title))
+            else:
+                return {self.name: milestone}
+        else:
+            raise EmailProcessingError(
+                "You do not have permission to set the milestone for %s. "
+                "Only owners, drivers and bug contacts may assign "
+                "milestones." % (context.pillar.title,))
+
+    def _userCanEditMilestone(self, user, bugtask):
+        """Can the user edit the Milestone field?
+
+        If yes, return True, otherwise return False.
+
+        Adapted from browser.bugtask.BugTaskEditView.userCanEditMilestone.
+        """
+        pillar = bugtask.pillar
+        return (((pillar.bugcontact and user and
+                  user.inTeam(pillar.bugcontact)) or
+                 check_permission("launchpad.Edit", pillar)))
+
+
+
 class DBSchemaEditEmailCommand(EditEmailCommand):
     """Helper class for edit DBSchema attributes.
 
@@ -779,6 +825,7 @@ class EmailCommands:
         'cve': CVEEmailCommand,
         'affects': AffectsEmailCommand,
         'assignee': AssigneeEmailCommand,
+        'milestone': MilestoneEmailCommand,
         'status': StatusEmailCommand,
         'importance': ImportanceEmailCommand,
         'severity': ReplacedByImportanceCommand,

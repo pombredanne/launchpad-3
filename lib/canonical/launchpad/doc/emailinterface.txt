@@ -946,7 +946,8 @@ user.
 affects $path [assignee $name|$email|nobody]
               [status $status]
               [importance $importance]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+              [milestone $milestone]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 XXX: This section should be split into four different sections, one for
      each command. It used to be possible to write
@@ -1011,6 +1012,67 @@ commands. It's possible to have these sub commands on separate lines:
     CONFIRMED
     >>> print debian_task.assignee.displayname
     Sample Person
+
+And when the task is a product or a distroseries it's possible to
+assign the milestone:
+
+    >>> firefox_task = [bugtask for bugtask in bug_four.bugtasks
+    ...                 if bugtask.pillar.name == 'firefox'][0]
+    >>> print firefox_task.milestone
+    None
+    >>> submit_commands(bug_four, 'milestone 1.0')
+    >>> print firefox_task.milestone.name
+    1.0
+    >>> submit_commands(bug_four, 'milestone -')
+    >>> print firefox_task.milestone
+    None
+
+Trying to set a milestone that does not exist elicits a helpful error
+message:
+
+    >>> submit_commands(bug_four, 'milestone 1.1')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        milestone 1.1
+    ...
+    The milestone 1.1 does not exist for Mozilla Firefox. Note that
+    milestones are not automatically created from emails; they must be
+    created on the website.
+    ...
+
+Attempting to set the milestone for a bug without sufficient
+permissions also elicits an error message:
+
+    >>> login('test@canonical.com')
+    >>> bug = new_firefox_bug()
+    >>> transaction.commit()
+
+    >>> login('no-priv@canonical.com')
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.pillar.title
+    Mozilla Firefox
+    >>> print bug.bugtasks[0].milestone
+    None
+    >>> submit_commands(bug, 'milestone 1.0')
+    >>> print bug.bugtasks[0].milestone
+    None
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: no-priv@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        milestone 1.0
+    ...
+    You do not have permission to set the milestone for Mozilla Firefox.
+    Only owners, drivers and bug contacts may assign milestones.
+    ...
+
+    >>> login('test@canonical.com')
 
 Like the web UI, we can assign a bug to nobody.
 
