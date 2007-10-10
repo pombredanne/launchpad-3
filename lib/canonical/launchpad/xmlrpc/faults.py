@@ -13,6 +13,7 @@ __all__ = [
     'FileBugMissingProductOrDistribution',
     'InvalidBranchUrl',
     'NoSuchBranch',
+    'NoBranchForSeries',
     'NoSuchBug',
     'NoSuchDistribution',
     'NoSuchPackage',
@@ -218,3 +219,28 @@ class BadStatus(LaunchpadFault):
 
     def __init__(self, team_name, status):
         LaunchpadFault.__init__(self, team_name=team_name, status=status)
+
+
+class NoBranchForSeries(LaunchpadFault):
+    """The series has no branch registered with it."""
+
+    error_code = 170
+    msg_template = (
+        'Series %(series_name)s on %(product_name)s has no branch associated '
+        'with it.')
+
+    def __init__(self, series):
+        LaunchpadFault.__init__(
+            self, series_name=series.name, product_name=series.product.name)
+
+
+class NoSuchSeries(LaunchpadFault):
+    """There is no such series on a particular project."""
+
+    error_code = 180
+    msg_template = (
+        'Project %(product_name)s has no series called "%(series_name)s"')
+
+    def __init__(self, series_name, product):
+        LaunchpadFault.__init__(
+            self, series_name=series_name, product_name=product.name)

@@ -149,9 +149,14 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             if project is None:
                 return faults.NoSuchProduct(project_name)
             series = project.getSeries(series_name)
+            if series is None:
+                return faults.NoSuchSeries(series_name, project)
         else:
             # XXX
             raise ValueError("too many path segments")
+        branch = series.series_branch
+        if branch is None:
+            return faults.NoBranchForSeries(series)
         return (
             self._get_bazaar_host(),
             series.series_branch.unique_name,

@@ -42,14 +42,12 @@ class TestExpandURL(BranchTestCase):
                 "Expected %r to expand to %r, got %r"
                 % (url, branch.unique_name, path))
 
-    def assertFault(self, lp_url_path, fault_class, **template_values):
+    def assertFault(self, lp_url_path, expected_fault):
         for prefix in 'lp:', 'lp:///':
             url = '%s%s' % (prefix, lp_url_path)
             fault = self.api.expand_lp_url(url)
-            self.assertIsInstance(fault, fault_class)
-            self.assertEqual(
-                fault_class.msg_template % template_values,
-                fault.faultString)
+            self.assertEqual(expected_fault.__class__, fault.__class__)
+            self.assertEqual(expected_fault.faultString, fault.faultString)
 
 #     def test_hostname(self):
 #         pass
@@ -63,9 +61,11 @@ class TestExpandURL(BranchTestCase):
         """
         self.assertExpands(self.project.name, self.trunk)
 
-    def test_projectOnlyNonExistent(self):
+    def test_projectDoesntExist(self):
         self.assertFault(
-            'doesntexist', faults.NoSuchProduct, product_name='doesntexist')
+            'doesntexist', faults.NoSuchProduct('doesntexist'))
+        self.assertFault(
+            'doesntexist/trunk', faults.NoSuchProduct('doesntexist'))
 
     def test_projectAndSeries(self):
         """lp:project/series expands to the branch associated with the product
@@ -75,6 +75,19 @@ class TestExpandURL(BranchTestCase):
             '%s/%s' % (self.project.name,
                        self.project.development_focus.name),
             self.trunk)
+
+    def test_seriesHasNoBranch(self):
+        project = self.makeProduct()
+        self.assertFault(
+            project.name, faults.NoBranchForSeries(project.development_focus))
+        self.assertFault(
+            '%s/%s' % (project.name, project.development_focus.name),
+            faults.NoBranchForSeries(project.development_focus))
+
+    def test_noSuchSeries(self):
+        self.assertFault(
+            '%s/%s' % (self.project.name, "doesntexist"),
+            faults.NoSuchSeries("doesntexist", self.project))
 
 
 def test_suite():
