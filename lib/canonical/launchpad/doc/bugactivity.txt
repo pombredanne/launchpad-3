@@ -310,3 +310,32 @@ First we have to create the file itself, and upload it to the Librarian:
     u'bug'
     >>> latest_activity.message
     u"added attachment 'foo.txt' (title)"
+
+
+== Target a bug task to a milestone ==
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_1_0 = firefox.getMilestone('1.0')
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> firefox_task = bug_one.getBugTask(firefox)
+    >>> print firefox_task.milestone
+    None
+    >>> old_bugtask = Snapshot(firefox_task, providing=IUpstreamBugTask)
+
+    >>> firefox_task.milestone = firefox_1_0
+    >>> edit_fields = ["milestone"]
+    >>> bugtask_edited = SQLObjectModifiedEvent(
+    ...     firefox_task, old_bugtask, edit_fields, user=no_priv)
+    >>> notify(bugtask_edited)
+
+    >>> latest_activity = bug_one.activity[-1]
+    >>> latest_activity.person.name
+    u'no-priv'
+    >>> latest_activity.whatchanged
+    u'firefox: milestone'
+    >>> print latest_activity.oldvalue
+    None
+    >>> print latest_activity.newvalue
+    1.0
