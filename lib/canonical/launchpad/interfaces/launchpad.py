@@ -6,10 +6,6 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-import zope.exceptions
-import zope.app.publication.interfaces
-import zope.publisher.interfaces.browser
-import zope.app.traversing.interfaces
 from zope.schema import Choice, Int, TextLine
 from persistent import IPersistent
 
