@@ -1,3 +1,5 @@
+# pylint: disable-msg=W0401
+
 """Canonical widgets.
 
 These may be fed back into Zope3 at some point.

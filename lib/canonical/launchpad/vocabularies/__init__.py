@@ -1,3 +1,5 @@
+# pylint: disable-msg=W0401
+
 """Vocabularies for content objects and dbschema items.
 
 Here should vocabularies that represent a set of conent objects or

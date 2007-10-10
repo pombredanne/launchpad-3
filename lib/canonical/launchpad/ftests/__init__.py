@@ -1,3 +1,5 @@
+# pylint: disable-msg=W0401
+
 import os
 
 import canonical.launchpad
