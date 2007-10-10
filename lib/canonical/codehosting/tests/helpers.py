@@ -172,7 +172,7 @@ class BranchTestCase(TestCaseWithTransport):
         product = self.makeProduct()
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
-        elif branch_type == BranchType.MIRRORED:
+        elif branch_type in (BranchType.MIRRORED, BranchType.REMOTE):
             url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(

@@ -14,6 +14,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.interfaces import BranchType
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.xmlrpc.branch import PublicCodehostingAPI
 from canonical.launchpad.xmlrpc import faults
 
@@ -154,6 +155,32 @@ class TestExpandURL(BranchTestCase):
         self.assertFault(
             self.project.name,
             faults.NoBranchForSeries(self.project.development_focus))
+
+    def test_remoteBranch(self):
+        """For remote branches, return results that link to the actual remote
+        branch URL.
+        """
+        branch = self.makeBranch(BranchType.REMOTE)
+        url = URI(branch.url)
+        result = self.api.resolve_lp_path(branch.unique_name)
+        self.assertEqual(url.host, result['host'])
+        self.assertEqual(url.path, result['path'])
+        self.assertEqual([url.scheme], result['supported_schemes'])
+
+    def test_remoteBranchWithPort(self):
+        """For remote branches, return results that link to the actual remote
+        branch URL, including the port number if provided.
+        """
+        branch = self.makeBranch(BranchType.REMOTE)
+        # Set the port so we can confirm port is included set.
+        url = URI(branch.url)
+        url.port = 8080
+        removeSecurityProxy(branch).url = str(url)
+
+        result = self.api.resolve_lp_path(branch.unique_name)
+        self.assertEqual(url.authority, result['host'])
+        self.assertEqual(url.path, result['path'])
+        self.assertEqual([url.scheme], result['supported_schemes'])
 
 
 def test_suite():

@@ -172,6 +172,20 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             return faults.NoSuchBranch(unique_name)
         return branch
 
+    def _get_remote_result_dict(self, branch):
+        url = URI(branch.url)
+        return dict(
+            host=url.authority, path=url.path, supported_schemes=[url.scheme])
+
+    def _get_result_dict(self, branch):
+        if branch.branch_type == BranchType.REMOTE:
+            return self._get_remote_result_dict(branch)
+        else:
+            return dict(
+                host=self._get_bazaar_host(),
+                path=branch.unique_name,
+                supported_schemes=self.supported_schemes)
+
     def resolve_lp_path(self, path):
         strip_path = path.strip('/')
         if strip_path == '':
@@ -191,9 +205,6 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             return result
         else:
             try:
-                return dict(
-                    host=self._get_bazaar_host(),
-                    path=result.unique_name,
-                    supported_schemes=self.supported_schemes)
+                return self._get_result_dict(result)
             except Unauthorized:
                 return faults.NoSuchBranch(strip_path)
