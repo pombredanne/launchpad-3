@@ -87,7 +87,6 @@ from canonical.launchpad.interfaces import (
     ITranslationImportQueue,
     NotFoundError,
     )
-from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
     LaunchpadFormView, Navigation, stepto, canonical_url, custom_widget)
@@ -304,11 +303,6 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         summary = 'The Code Bazaar'
         return Link(target, text, summary)
 
-    def calendar(self):
-        target = 'calendar'
-        text = 'Calendar'
-        return Link(target, text)
-
 
 class MaloneContextMenu(ContextMenu):
     # XXX mpt 2006-03-27: No longer visible on Bugs front page.
@@ -483,11 +477,6 @@ class LaunchpadRootNavigation(Navigation):
             return getUtility(IPillarNameSet)[name.lower()]
         except NotFoundError:
             return None
-
-    @stepto('calendar')
-    def calendar(self):
-        # XXX SteveAlexander 2005-10-06: permission=launchpad.AnyPerson
-        return MergedCalendar()
 
     def _getBetaRedirectionView(self):
         # If the inhibit_beta_redirect cookie is set, don't redirect:

@@ -18,7 +18,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    ICalendarOwner, IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct,
+    IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct,
     IProject, IProjectSet, ISearchableByQuestionOwner, NotFoundError,
     QUESTION_STATUS_DEFAULT_SEARCH, TranslationPermission)
 
@@ -32,7 +32,6 @@ from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
-from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
@@ -52,7 +51,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
               BranchVisibilityPolicyMixin):
     """A Project"""
 
-    implements(ICalendarOwner, IProject, IFAQCollection, IHasIcon, IHasLogo,
+    implements(IProject, IFAQCollection, IHasIcon, IHasLogo,
                IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
@@ -99,19 +98,9 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                             otherColumn='bounty',
                             intermediateTable='ProjectBounty')
 
-    calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
-                          default=None, forceDBName=True)
-
     @property
     def products(self):
         return Product.selectBy(project=self, active=True, orderBy='name')
-
-    def getOrCreateCalendar(self):
-        if not self.calendar:
-            self.calendar = Calendar(
-                title='%s Project Calendar' % self.displayname,
-                revision=0)
-        return self.calendar
 
     def getProduct(self, name):
         return Product.selectOneBy(project=self, name=name)

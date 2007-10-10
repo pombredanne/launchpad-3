@@ -100,7 +100,6 @@ from canonical.launchpad.database.spokenin import *
 from canonical.launchpad.database.sprint import *
 from canonical.launchpad.database.sprintattendance import *
 from canonical.launchpad.database.sprintspecification import *
-from canonical.launchpad.database.cal import *
 from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.codeofconduct import *
 from canonical.launchpad.database.component import *
