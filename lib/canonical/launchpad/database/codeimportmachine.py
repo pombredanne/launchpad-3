@@ -37,16 +37,23 @@ class CodeImportMachine(SQLBase):
 
     def setOnline(self):
         """See `ICodeImportMachine`."""
+        assert self.state == CodeImportMachineState.OFFLINE, (
+            "State of machine %s was %s." % (self.hostname, self.state.name))
         self.state = CodeImportMachineState.ONLINE
         getUtility(ICodeImportEventSet).newOnline(self)
 
     def setOffline(self, reason):
         """See `ICodeImportMachine`."""
+        assert self.state in (CodeImportMachineState.ONLINE,
+                              CodeImportMachineState.QUIESCING), (
+            "State of machine %s was %s." % (self.hostname, self.state.name))
         self.state = CodeImportMachineState.OFFLINE
         getUtility(ICodeImportEventSet).newOffline(self, reason)
 
     def setQuiescing(self, user, message):
         """See `ICodeImportMachine`."""
+        assert self.state == CodeImportMachineState.ONLINE, (
+            "State of machine %s was %s." % (self.hostname, self.state.name))
         self.state = CodeImportMachineState.QUIESCING
         getUtility(ICodeImportEventSet).newQuiesce(self, user, message)
 

@@ -220,7 +220,7 @@ starting new jobs, and will cause it to shutdown after completing.
     State: ONLINE
     Events: ['ONLINE']
     >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
-    >>> machine.setQuiescing(ddaa, '1.1.42 rollout')
+    >>> machine.setQuiescing(ddaa, "1.1.42 rollout")
     >>> print_machine_state_and_events(machine)
     State: QUIESCING
     Events: ['ONLINE', 'QUIESCE']
@@ -229,3 +229,74 @@ starting new jobs, and will cause it to shutdown after completing.
     u'ddaa'
     >>> dict(latest_event.items())[CodeImportEventDataType.MESSAGE]
     u'1.1.42 rollout'
+
+=== Allowed state transitions ===
+
+Not all CodeImportMachine.state transitions are allowed.
+
+From the OFFLINE state, a machine can only go ONLINE, setOffline and
+setQuiescing must fail.
+
+    >>> machine = reset_machine(machine)
+    >>> machine.setOnline()
+    >>> print machine.state.name
+    ONLINE
+
+    >>> machine = reset_machine(machine)
+    >>> machine.setOffline(CodeImportMachineOfflineReason.WATCHDOG)
+    Traceback (most recent call last):
+    ...
+    AssertionError: State of machine frobisher was OFFLINE.
+    >>> machine.setQuiescing(ddaa, "No worky!")
+    Traceback (most recent call last):
+    ...
+    AssertionError: State of machine frobisher was OFFLINE.
+    
+From the ONLINE state, a machine can go OFFLINE or QUIESCING, setOnline
+must fail.
+
+    >>> machine = reset_machine(machine)
+    >>> machine.setOnline()
+    >>> machine.setOffline(CodeImportMachineOfflineReason.STOPPED)
+    >>> print machine.state.name
+    OFFLINE
+
+    >>> machine = reset_machine(machine)
+    >>> machine.setOnline()
+    >>> machine.setQuiescing(ddaa, "Because.")
+    >>> print machine.state.name
+    QUIESCING
+
+    >>> machine = reset_machine(machine)
+    >>> machine.setOnline()
+    >>> machine.setOnline()
+    Traceback (most recent call last):
+    ...
+    AssertionError: State of machine frobisher was ONLINE.
+
+From the QUIESCING state, a machine can only go OFFLINE, setOnline and
+setQuiescing must fail.
+
+It would be meaningful to allow the transition from QUIESCING to ONLINE,
+meaning "oops, I did not want you to quiesce, after all", but it would
+require a new event type. We will add it later if we find we need it.
+
+    >>> machine = reset_machine(machine)
+    >>> machine.setOnline()
+    >>> machine.setQuiescing(ddaa, "Because.")
+    >>> machine.setOffline(CodeImportMachineOfflineReason.QUIESCED)
+    >>> print machine.state.name
+    OFFLINE
+
+    >>> machine = reset_machine(machine)
+    >>> machine.setOnline()
+    >>> machine.setQuiescing(ddaa, "Because.")
+    >>> machine.setOnline()
+    Traceback (most recent call last):
+    ...
+    AssertionError: State of machine frobisher was QUIESCING.
+    >>> machine.setQuiescing(ddaa, "No worky!")
+    Traceback (most recent call last):
+    ...
+    AssertionError: State of machine frobisher was QUIESCING.
+    
