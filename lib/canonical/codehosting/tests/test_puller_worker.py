@@ -28,15 +28,111 @@ from bzrlib.errors import (
 
 import transaction
 from canonical.launchpad import database
+from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
-from canonical.launchpad.scripts.supermirror.tests import createbranch
-from canonical.launchpad.scripts.supermirror.branchtomirror import (
+from canonical.launchpad.webapp import canonical_url
+from canonical.codehosting.tests.helpers import create_branch
+from canonical.codehosting.puller.branchtomirror import (
     BranchToMirror, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
     BranchReferenceForbidden, BranchReferenceValueError)
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.testing import LaunchpadFunctionalLayer, reset_logging
+from canonical.testing import LaunchpadZopelessLayer
+
+
+class StubbedBranchStatusClient(BranchStatusClient):
+    """Partially stubbed subclass of BranchStatusClient, for unit tests."""
+
+    def startMirroring(self, branch_id):
+        pass
+
+
+class StubbedBranchToMirror(BranchToMirror):
+    """Partially stubbed subclass of BranchToMirror, for unit tests."""
+
+    enable_checkBranchReference = False
+    enable_checkSourceUrl = True
+
+    def _checkSourceUrl(self):
+        if self.enable_checkSourceUrl:
+            BranchToMirror._checkSourceUrl(self)
+
+    def _checkBranchReference(self):
+        if self.enable_checkBranchReference:
+            BranchToMirror._checkBranchReference(self)
+
+    def _openSourceBranch(self):
+        self.testcase.open_call_count += 1
+
+    def _mirrorToDestBranch(self):
+        pass
+
+    def _mirrorSuccessful(self, logger):
+        pass
+
+    def _mirrorFailed(self, logger, error_msg):
+        self.testcase.errors.append(error_msg)
+
+
+class ErrorHandlingTestCase(unittest.TestCase):
+    """Base class to test BranchToMirror error reporting."""
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self._errorHandlingSetUp()
+
+    def _errorHandlingSetUp(self):
+        """Setup code that is specific to ErrorHandlingTestCase.
+
+        This is needed because TestReferenceMirroring uses a diamond-shaped
+        class hierarchy and we do not want to end up calling unittest.TestCase
+        twice.
+        """
+        client = StubbedBranchStatusClient()
+        self.branch = StubbedBranchToMirror(
+            src='foo', dest='bar', branch_status_client=client, branch_id=1,
+            unique_name='owner/product/foo', branch_type=None)
+        self.errors = []
+        self.open_call_count = 0
+        self.branch.testcase = self
+        # We set the log level to CRITICAL so that the log messages
+        # are suppressed.
+        logging.basicConfig(level=logging.CRITICAL)
+
+    def tearDown(self):
+        self._errorHandlingTearDown()
+        unittest.TestCase.tearDown(self)
+
+    def _errorHandlingTearDown(self):
+        """Teardown code that is specific to ErrorHandlingTestCase."""
+        reset_logging()
+
+    def runMirrorAndGetError(self):
+        """Run mirror, check that we receive exactly one error, and return its
+        str().
+        """
+        self.branch.mirror(logging.getLogger())
+        self.assertEqual(len(self.errors), 1)
+        error = str(self.errors[0])
+        self.errors = []
+        return error
+
+    def runMirrorAndAssertErrorStartsWith(self, expected_error):
+        """Run mirror and check that we receive exactly one error, the str() of
+        which starts with `expected_error`.
+        """
+        error = self.runMirrorAndGetError()
+        if not error.startswith(expected_error):
+            self.fail('Expected "%s" but got "%s"' % (expected_error, error))
+
+    def runMirrorAndAssertErrorEquals(self, expected_error):
+        """Run mirror and check that we receive exactly one error, the str() of
+        which is equal to `expected_error`.
+        """
+        error = self.runMirrorAndGetError()
+        self.assertEqual(error, expected_error)
 
 
 class TestBranchToMirror(unittest.TestCase):
@@ -72,7 +168,7 @@ class TestBranchToMirror(unittest.TestCase):
         to_mirror = BranchToMirror(
             srcbranchdir, destbranchdir, client, branch_id=1, unique_name=None,
             branch_type=None)
-        tree = createbranch(srcbranchdir)
+        tree = create_branch(srcbranchdir)
         to_mirror.mirror(logging.getLogger())
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(tree.last_revision(),
@@ -272,99 +368,6 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         self.assertEqual(1, branch.mirror_failures)
 
 
-class StubbedBranchStatusClient(BranchStatusClient):
-    """Partially stubbed subclass of BranchStatusClient, for unit tests."""
-
-    def startMirroring(self, branch_id):
-        pass
-
-
-class StubbedBranchToMirror(BranchToMirror):
-    """Partially stubbed subclass of BranchToMirror, for unit tests."""
-
-    enable_checkBranchReference = False
-    enable_checkSourceUrl = True
-
-    def _checkSourceUrl(self):
-        if self.enable_checkSourceUrl:
-            BranchToMirror._checkSourceUrl(self)
-
-    def _checkBranchReference(self):
-        if self.enable_checkBranchReference:
-            BranchToMirror._checkBranchReference(self)
-
-    def _openSourceBranch(self):
-        self.testcase.open_call_count += 1
-
-    def _mirrorToDestBranch(self):
-        pass
-
-    def _mirrorSuccessful(self, logger):
-        pass
-
-    def _mirrorFailed(self, logger, error_msg):
-        self.testcase.errors.append(error_msg)
-
-
-class ErrorHandlingTestCase(unittest.TestCase):
-    """Base class to test BranchToMirror error reporting."""
-
-    def setUp(self):
-        unittest.TestCase.setUp(self)
-        self._errorHandlingSetUp()
-
-    def _errorHandlingSetUp(self):
-        """Setup code that is specific to ErrorHandlingTestCase.
-
-        This is needed because TestReferenceMirroring uses a diamond-shaped
-        class hierarchy and we do not want to end up calling unittest.TestCase
-        twice.
-        """
-        client = StubbedBranchStatusClient()
-        self.branch = StubbedBranchToMirror(
-            src='foo', dest='bar', branch_status_client=client, branch_id=1,
-            unique_name='owner/product/foo', branch_type=None)
-        self.errors = []
-        self.open_call_count = 0
-        self.branch.testcase = self
-        # We set the log level to CRITICAL so that the log messages
-        # are suppressed.
-        logging.basicConfig(level=logging.CRITICAL)
-
-    def tearDown(self):
-        self._errorHandlingTearDown()
-        unittest.TestCase.tearDown(self)
-
-    def _errorHandlingTearDown(self):
-        """Teardown code that is specific to ErrorHandlingTestCase."""
-        reset_logging()
-
-    def runMirrorAndGetError(self):
-        """Run mirror, check that we receive exactly one error, and return its
-        str().
-        """
-        self.branch.mirror(logging.getLogger())
-        self.assertEqual(len(self.errors), 1)
-        error = str(self.errors[0])
-        self.errors = []
-        return error
-
-    def runMirrorAndAssertErrorStartsWith(self, expected_error):
-        """Run mirror and check that we receive exactly one error, the str() of
-        which starts with `expected_error`.
-        """
-        error = self.runMirrorAndGetError()
-        if not error.startswith(expected_error):
-            self.fail('Expected "%s" but got "%s"' % (expected_error, error))
-
-    def runMirrorAndAssertErrorEquals(self, expected_error):
-        """Run mirror and check that we receive exactly one error, the str() of
-        which is equal to `expected_error`.
-        """
-        error = self.runMirrorAndGetError()
-        self.assertEqual(error, expected_error)
-
-
 class TestBadUrl(ErrorHandlingTestCase):
     """Test that BranchToMirror does not try mirroring from bad URLs.
 
@@ -558,25 +561,23 @@ class TestCanTraverseReferences(unittest.TestCase):
         self.assertRaises(AssertionError, bogus_branch._canTraverseReferences)
 
 
-class StubbedBranchToMirrorForCheckBranchReference(BranchToMirror):
-    """Partially stubbed BranchToMirror for checkBranchReference unit tests.
-    """
-
-    def _getBranchReference(self, url):
-        self.testcase.get_branch_reference_calls.append(url)
-        return self.testcase.reference_values[url]
-
-    def _canTraverseReferences(self):
-        assert self.testcase.can_traverse_references is not None
-        return self.testcase.can_traverse_references
-
-
 class TestCheckBranchReference(unittest.TestCase):
     """Unit tests for BranchToMirror._checkBranchReference."""
 
+    class StubbedBranchToMirror(BranchToMirror):
+        """Partially stubbed BranchToMirror."""
+
+        def _getBranchReference(self, url):
+            self.testcase.get_branch_reference_calls.append(url)
+            return self.testcase.reference_values[url]
+
+        def _canTraverseReferences(self):
+            assert self.testcase.can_traverse_references is not None
+            return self.testcase.can_traverse_references
+
     def setUp(self):
         client = BranchStatusClient()
-        self.branch = StubbedBranchToMirrorForCheckBranchReference(
+        self.branch = TestCheckBranchReference.StubbedBranchToMirror(
             'foo', 'bar', client, 1, 'owner/product/foo', None)
         self.branch.testcase = self
         self.get_branch_reference_calls = []
@@ -774,6 +775,28 @@ class TestErrorHandling(ErrorHandlingTestCase):
         self.branch._openSourceBranch = stubOpenSourceBranch
         expected_msg = 'A generic bzr error'
         self.runMirrorAndAssertErrorEquals(expected_msg)
+
+
+class TestCanonicalUrl(unittest.TestCase):
+    """Test cases for rendering the canonical url of a branch."""
+
+    layer = LaunchpadZopelessLayer
+
+    def testCanonicalUrlConsistent(self):
+        # BranchToMirror._canonical_url is consistent with
+        # webapp.canonical_url, if the provided unique_name is correct.
+        branch = Branch.get(15)
+        # Check that the unique_name used in this test is consistent with the
+        # sample data. This is an invariant of the test, so use a plain assert.
+        unique_name = 'name12/gnome-terminal/main'
+        assert branch.unique_name == '~' + unique_name
+        branch_to_mirror = BranchToMirror(
+            src=None, dest=None, branch_status_client=None,
+            branch_id=None, unique_name=unique_name, branch_type=None)
+        # Now check that our implementation of canonical_url is consistent with
+        # the canonical one.
+        self.assertEqual(
+            branch_to_mirror._canonical_url(), canonical_url(branch))
 
 
 def test_suite():
