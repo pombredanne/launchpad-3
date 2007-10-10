@@ -118,7 +118,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             show_blueprint_badge)
 
     def branches(self):
-        "Return a list of BranchListingItems"
+        """Return a list of BranchListingItems."""
         return [self._createItem(branch) for branch in self.currentBatch()]
 
     @cachedproperty
