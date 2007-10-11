@@ -40,10 +40,13 @@ class CodeImportResult(SQLBase):
     status = EnumCol(
         enum=CodeImportResultStatus, notNull=True)
 
-    date_started = UtcDateTimeCol(notNull=True)
+    # XXX MichaelHudson, 2007-10-11
+    # We should rename date_started to date_job_started in the database.
+    # See bug #151583.
+    date_job_started = UtcDateTimeCol(dbName='date_started', notNull=True)
 
     @property
-    def date_finished(self):
+    def date_job_finished(self):
         """See `ICodeImportResult`."""
         return self.date_created
 

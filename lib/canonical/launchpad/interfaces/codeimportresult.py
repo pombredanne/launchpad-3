@@ -127,11 +127,11 @@ class ICodeImportResult(Interface):
         description=_("How the job ended. Success, some kind of failure, or "
                       "some kind of interruption before completion."))
 
-    date_started = Datetime(
+    date_job_started = Datetime(
         readonly=True, required=True,
         description=_("When the job started running."))
 
-    date_finished = Datetime(
+    date_job_finished = Datetime(
         readonly=True, required=True,
         description=_("When the job stopped running."))
 
