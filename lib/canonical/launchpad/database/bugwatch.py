@@ -130,7 +130,7 @@ class BugWatch(SQLBase):
             message = "Launchpad's connection to %(bugtracker)s timed out."
 
         elif self.lasterror == BugWatchErrorType.UNPARSABLEBUG:
-            message = ("Launcpad couldn't extract a status from %(bug)s on "
+            message = ("Launchpad couldn't extract a status from %(bug)s on "
                 "%(bugtracker)s.")
 
         elif self.lasterror == BugWatchErrorType.UNPARSABLEBUGTRACKER:
