@@ -330,6 +330,7 @@
 
   <browser:page
     name="+export"
+    facet="translations"
     for="canonical.launchpad.interfaces.IProductSeries"
     permission="launchpad.AnyPerson"
     template="../templates/productseries-export.pt"
