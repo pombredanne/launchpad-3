@@ -64,6 +64,7 @@ class XMLRPCRunner(Runner):
         # is designed for.
         self._kids = {}
         self._stop = False
+        self._proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
 
     def _oneloop(self):
         """Check to see if there's anything for Mailman to do.
@@ -76,16 +77,15 @@ class XMLRPCRunner(Runner):
         This method always returns 0 to indicate to the base class's main loop
         that it should sleep for a while after calling this method.
         """
-        proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
-        self._check_list_actions(proxy)
-        self._get_subscriptions(proxy)
+        self._check_list_actions()
+        self._get_subscriptions()
         # Snooze for a while.
         return 0
 
-    def _check_list_actions(self, proxy):
+    def _check_list_actions(self):
         """See if there are any list actions to perform."""
         try:
-            actions = proxy.getPendingActions()
+            actions = self._proxy.getPendingActions()
         except (xmlrpclib.ProtocolError, socket.error), error:
             syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
             return
@@ -121,15 +121,15 @@ class XMLRPCRunner(Runner):
             syslog('xmlrpc', 'Invalid xmlrpc action keys: %s',
                    COMMASPACE.join(actions.keys()))
         # Report the statuses to Launchpad.
-        proxy.reportStatus(statuses)
+        self._proxy.reportStatus(statuses)
 
-    def _get_subscriptions(self, proxy):
+    def _get_subscriptions(self):
         """Get the latest subscription information."""
         # First, calculate the names of the active mailing lists.
         active_lists = [list_name for list_name in Utils.list_names()
                         if list_name <> mm_cfg.MAILMAN_SITE_LIST]
         try:
-            info = proxy.getMembershipInformation(active_lists)
+            info = self._proxy.getMembershipInformation(active_lists)
         except (xmlrpclib.ProtocolError, socket.error), error:
             syslog('xmlrpc', 'Cannot talk to Launchpad: %s', error)
             return

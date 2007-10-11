@@ -6,6 +6,8 @@
 
 import os
 import sys
+import base64
+import traceback
 from operator import itemgetter
 
 here = os.path.abspath(os.path.dirname(sys.argv[0]))
@@ -23,6 +25,13 @@ execute_zcml_for_scripts()
 from canonical.lp import initZopeless
 transactionmgr = initZopeless(dbuser='testadmin')
 
+
+# XXX I don't understand why we have to base64 encode the password here, but
+# the Launchpad page tests don't.
+def auth(user, password):
+    return 'Basic ' + base64.encodestring('%s:%s' % (user, password))
+
+
 class IntegrationTestFailure(Exception):
     """An integration test failed."""
 
@@ -33,11 +42,15 @@ def main():
         'transactionmgr': transactionmgr,
         'IntegrationTestFailure': IntegrationTestFailure,
         'MAILMAN_BIN': MAILMAN_BIN,
+        'auth': auth,
+        'HERE': here,
         }
 
     # Search for all sub-tests and run them in order.
     tests = []
     for filename in os.listdir(here):
+        if os.path.splitext(filename)[1] <> '.py':
+            continue
         try:
             index = int(filename[:2])
         except (ValueError, IndexError):
@@ -54,6 +67,10 @@ def main():
             main()
         except IntegrationTestFailure, error:
             print 'FAILED:', error
+            return -1
+        except Exception:
+            print
+            traceback.print_exc()
             return -1
         else:
             print 'PASSED'

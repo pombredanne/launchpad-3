@@ -13,7 +13,10 @@ def main():
     # Start by cleaning up the Launchpad database.
     cursor().execute("""
     CREATE TEMP VIEW DeathRowTeams AS SELECT id FROM Person WHERE name IN
-    ('team-one', 'team-two');
+    ('team-one', 'team-two', 'team-three');
+
+    DELETE FROM EmailAddress
+    WHERE person in (SELECT id FROM DeathRowTeams);
 
     DELETE FROM TeamMembership
     WHERE team IN (SELECT id FROM DeathRowTeams);
@@ -29,7 +32,7 @@ def main():
     """)
     # Now delete any mailing lists still hanging around.  We don't care if
     # this fails because the lists don't exist.
-    for team_name in ('team-one', 'team-two'):
+    for team_name in ('team-one', 'team-two', 'team-three'):
         call(('./rmlist', '-a', team_name),
              stdout=PIPE, stderr=STDOUT,
              cwd=MAILMAN_BIN)

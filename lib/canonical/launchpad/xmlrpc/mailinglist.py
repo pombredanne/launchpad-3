@@ -139,24 +139,23 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         listset = getUtility(IMailingListSet)
         personset = getUtility(IPersonSet)
         celebrities = getUtility(ILaunchpadCelebrities)
-        if step == 'register-lists':
-            # Create two teams and a list for each team.  Don't pass
-            # with_list=True to mailingListNewTeam() because that will
-            # construct and activate the list, and we want to let Mailman do
-            # that instead (kind of the whole point of this test).
-            team_one = personset.getByName('team-one')
-            list_one = listset.new(team_one)
-            team_two = personset.getByName('team-two')
-            list_two = listset.new(team_two)
-            return step
-        if step == 'review-lists':
+        experts = celebrities.mailing_list_experts
+        lpadmin = list(experts.allmembers)[0]
+        if step == '01-review-lists':
             # Approve team one's list, but decline team two's list.  XXX A
             # future branch will add mailing_list_experts.
-            experts = getattr(celebrities, 'mailing_list_experts',
-                              celebrities.admin)
-            lpadmin = list(experts.allmembers)[0]
             list_one = listset.get('team-one')
             list_one.review(lpadmin, MailingListStatus.APPROVED)
             list_two = listset.get('team-two')
             list_two.review(lpadmin, MailingListStatus.DECLINED)
+            return step
+        if step == '02-review-lists':
+            # Approve team one's list so that further tests can proceed.
+            list_one = listset.get('team-three')
+            list_one.review(lpadmin, MailingListStatus.APPROVED)
+            return step
+        if step == '02-deactivate-lists':
+            # At some point this will be possible to do through the web.
+            list_one = listset.get('team-three')
+            list_one.deactivate()
             return step
