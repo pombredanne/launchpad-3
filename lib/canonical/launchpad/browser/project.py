@@ -405,7 +405,7 @@ class ProjectAddProductView(ProductAddViewBase):
             owner=self.user,
             licenses = data['licenses'],
             license_info=data['license_info'])
-        self.notifyFeedbackMailingList(self.product)
+        self.notifyFeedbackMailingList()
         notify(ObjectCreatedEvent(self.product))
 
 

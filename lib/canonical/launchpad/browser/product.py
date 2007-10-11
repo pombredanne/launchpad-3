@@ -665,7 +665,7 @@ class ProductEditView(LaunchpadEditFormView):
         "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
         "programminglang", "development_focus", "licenses", "license_info"]
     custom_widget('licenses', LicenseWidget, column_count=3,
-                  orientation='vertical')
+        orientation='vertical')
     custom_widget('bugtracker', ProductBugTrackerWidget)
 
     @action("Change", name='change')
@@ -884,14 +884,19 @@ class ProductSetView(LaunchpadView):
 
 
 class ProductAddViewBase(LaunchpadFormView):
+    """Abstract class for adding a new product.
+
+    Requires the "product" attribute be set in the child
+    classes' action handler"""
+
     schema = IProduct
-    field_names = ['name', 'displayname', 'title', 'summary', 
-                   'description', 'homepageurl', 'sourceforgeproject', 
-                   'freshmeatproject', 'wikiurl', 'screenshotsurl', 
-                   'downloadurl', 'programminglang', 
+    field_names = ['name', 'displayname', 'title', 'summary',
+                   'description', 'homepageurl', 'sourceforgeproject',
+                   'freshmeatproject', 'wikiurl', 'screenshotsurl',
+                   'downloadurl', 'programminglang',
                    'licenses', 'license_info']
     custom_widget('licenses', LicenseWidget, column_count=3,
-                  orientation='vertical')
+        orientation='vertical')
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('screenshotsurl', TextWidget, displayWidth=30)
     custom_widget('wikiurl', TextWidget, displayWidth=30)
@@ -913,25 +918,28 @@ class ProductAddViewBase(LaunchpadFormView):
                 self.setFieldError('license_info', 
                     'A description of the "Other/Open Source" '
                     'license you checked is required.')
+        else:
+            # Launchpad is ok with all licenses used in this project
+            pass
 
-    def notifyFeedbackMailingList(self, product):
-        if (License.OTHER_PROPRIETARY in product.licenses
-                or License.OTHER_OPEN_SOURCE in product.licenses):
+    def notifyFeedbackMailingList(self):
+        if (License.OTHER_PROPRIETARY in self.product.licenses
+                or License.OTHER_OPEN_SOURCE in self.product.licenses):
             user = getUtility(ILaunchBag).user
             subject = 'Project Registration'
             fromaddress = format_address("Launchpad", 
                                          config.noreply_from_address)
             license_titles = '\n'.join([ 
-                lic.title for lic in product.licenses])
+                lic.title for lic in self.product.licenses])
             def indent(text):
                 text = '\n    '.join([ line for line in text.split('\n') ])
                 text = '    ' + text
                 return text
             message = ('User: %s (%s)\n\n' % (user.browsername, user.name)
-                + 'Project Name: %s\n\n' % product.name
-                + 'Project Summary:\n%s\n\n' % indent(product.summary)
+                + 'Project Name: %s\n\n' % self.product.name
+                + 'Project Summary:\n%s\n\n' % indent(self.product.summary)
                 + 'Licenses:\n%s\n\n' % indent(license_titles)
-                + 'License info:\n%s\n\n' % indent(product.license_info))
+                + 'License info:\n%s\n\n' % indent(self.product.license_info))
 
             simple_sendmail(fromaddress, 
                             #config.launchpad.launchpad_team_address,
@@ -1000,7 +1008,7 @@ class ProductAddView(ProductAddViewBase):
             reviewed=data['reviewed'],
             licenses = data['licenses'],
             license_info=data['license_info'])
-        self.notifyFeedbackMailingList(self.product)
+        self.notifyFeedbackMailingList()
         notify(ObjectCreatedEvent(self.product))
 
 
