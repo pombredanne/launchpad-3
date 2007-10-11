@@ -179,6 +179,8 @@ class BranchListingView(LaunchpadFormView):
 class NoContextBranchListingView(BranchListingView):
     """A branch listing that has no associated product or person."""
 
+    field_names = ['lifecycle']
+
     no_branch_message = (
         'There are no branches that match the current status filter.')
     extra_columns = ('author', 'product', 'date_created')

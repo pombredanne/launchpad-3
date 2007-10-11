@@ -919,13 +919,13 @@ class BranchLifecycleStatusFilter(EnumeratedType):
 
 class BranchListingSort(EnumeratedType):
     PRODUCT = Item("""
-        Product
+        Product Name
 
-        Sort branches by the product the branch is for.
+        Sort branches by name of the product the branch is for.
         """)
 
     LIFECYCLE = Item("""
-        Lifecycle
+        Lifecycle Status
 
         Sort branches by the lifecycle status.
         """)
@@ -974,7 +974,7 @@ class IBranchListingFilter(Interface):
 
     # Stats and status attributes
     lifecycle = Choice(
-        title=_('Lifecycle Filter'), vocabulary=BranchLifecycleStatusFilter,
+        title=_('Show branches with status of'), vocabulary=BranchLifecycleStatusFilter,
         default=BranchLifecycleStatusFilter.CURRENT,
         description=_(
         "The author's assessment of the branch's maturity. "
@@ -986,6 +986,6 @@ class IBranchListingFilter(Interface):
         " New: unspecified maturity."))
 
     sort_by = Choice(
-        title=_('Sort By'), vocabulary=BranchListingSort,
+        title=_('ordered by'), vocabulary=BranchListingSort,
         default=BranchListingSort.LIFECYCLE)
 
