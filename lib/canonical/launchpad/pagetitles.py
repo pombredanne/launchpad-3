@@ -229,6 +229,7 @@ bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 
+bugbranch_edit = "Edit branch fix status"
 bugbranch_status = "Edit branch fix status"
 
 def bugcomment_index(context, view):
