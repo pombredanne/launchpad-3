@@ -1,89 +1,71 @@
 SET client_min_messages=ERROR;
 
 /*
-
-code_approver is the person (or team) who is allowed to transition merge
-proposals that target this branch from NEEDS_CODE_APPROVAL to CODE_APPROVED. If
-unset, the code approver is the owner of the branch.
-
-landing_approver is used to indicate the person (or team) whose approval is
-required to transition from QUEUED to RUNNING. If unset, no one's approval is
-required. This can be used to handle release-critical or land-this-branch-now
-use cases (see below).
-
+The review team are able to transition merge proposals targetted
+a the branch through the CODE_APPROVED stage.
 */
 
 ALTER TABLE Branch
-  ADD COLUMN code_approver INT REFERENCES Person;
+  ADD COLUMN reviewer INT REFERENCES Person;
+
+/*
+The queue status is an enumeration:
+  1: Disabled
+  2: Manual
+  3: Automatic
+*/
 ALTER TABLE Branch
-  ADD COLUMN landing_approver INT REFERENCES Person;
+  ADD COLUMN queue_status INT NOT NULL DEFAULT 1;
 
 
 ALTER TABLE BranchMergeProposal
   ADD COLUMN commit_message TEXT;
-
 ALTER TABLE BranchMergeProposal
-  ADD COLUMN status INT NOT NULL DEFAULT 1;
+  ADD COLUMN queue_position INT;
+ALTER TABLE BranchMergeProposal
+  ADD COLUMN queue_status INT NOT NULL DEFAULT 1;
+
 /*
-  1: New
-  2: Code Needs Approval
-  3: Code Approved
+  1: Work in progress
+  2: Review requested
+  3: Reviewed
   4: Queued
-  5: Running
+  5: Merge in progress
   6: Failed
   7: Merged
 */
 
 /*
-The date that the merge proposal enters the NEEDS_CODE_APPROVAL state. This is
+The date that the merge proposal enters the REVIEW_REQUESTED state. This is
 stored so that we can determine how long a branch has been waiting for code
 approval.
 */
 ALTER TABLE BranchMergeProposal
-  ADD COLUMN date_code_needs_approval TIMESTAMP WITHOUT TIME ZONE;
+  ADD COLUMN date_review_requested TIMESTAMP WITHOUT TIME ZONE;
 
 /*
 The individual who said that the code in this branch is OK to land.
 */
 ALTER TABLE BranchMergeProposal
-  ADD COLUMN code_approver INT REFERENCES Person;
-
-/*
-The date when the code in this branch was approved for landing.
-*/
+  ADD COLUMN reviewer INT REFERENCES Person;
 ALTER TABLE BranchMergeProposal
-  ADD COLUMN date_code_approved TIMESTAMP WITHOUT TIME ZONE;
-
+  ADD COLUMN date_reviewed TIMESTAMP WITHOUT TIME ZONE;
 /*
 The Bazaar revision ID that was approved to land.
 */
 ALTER TABLE BranchMergeProposal
-  ADD COLUMN approved_revision_id TEXT;
-
-/* The individual who submitted the branch to the merge queue. This is usually
-the merge proposal registrant.  */
-
-ALTER TABLE BranchMergeProposal
-  ADD COLUMN submitter INT REFERENCES Person;
-ALTER TABLE BranchMergeProposal
-  ADD COLUMN date_submitted TIMESTAMP WITHOUT TIME ZONE;
-ALTER TABLE BranchMergeProposal
-  ADD COLUMN submitted_revision_id TEXT;
+  ADD COLUMN reviewed_revision_id TEXT;
 
 /*
-Under normal circumstances, the landing_approver is not needed.
-If the target branch has specified a landing_approver, then the
-function that gets the next branch approved for landing will only
-return the queued branches where the landing_approver is in the
-landing approval team specified.  This allows a branch to be put
-into "release-critical" mode, or to effectively pause the queue
-to land a particular branch.
+The individual who submitted the branch to the merge queue. This is usually
+the merge proposal registrant.
 */
 ALTER TABLE BranchMergeProposal
-  ADD COLUMN landing_approver INT REFERENCES Person;
+  ADD COLUMN queuer INT REFERENCES Person;
 ALTER TABLE BranchMergeProposal
-  ADD COLUMN date_landing_approved TIMESTAMP WITHOUT TIME ZONE;
-
+  ADD COLUMN date_queued TIMESTAMP WITHOUT TIME ZONE;
+ALTER TABLE BranchMergeProposal
+  ADD COLUMN queued_revision_id TEXT;
 
 /*
 The merger is the person who merged the branch.
@@ -108,7 +90,7 @@ two fields will be populated, otherwise they will stay null.
 ALTER TABLE BranchMergeProposal
   ADD COLUMN date_merge_started TIMESTAMP WITHOUT TIME ZONE;
 ALTER TABLE BranchMergeProposal
-  ADD COLUMN log_file INT REFERENCES LibraryFileAlias;
+  ADD COLUMN merge_log_file INT REFERENCES LibraryFileAlias;
 
 /*
 Moving to revision ids rather than solely revision numbers.
