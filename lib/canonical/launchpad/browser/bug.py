@@ -496,7 +496,7 @@ class BugRelatedObjectEditView(LaunchpadEditFormView):
 
     @action('Change', name='change')
     def change_action(self, action, data):
-        self.updateContextFromData(data, self.context)
+        self.updateContextFromData(data)
 
     @property
     def next_url(self):
