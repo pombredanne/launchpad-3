@@ -20,8 +20,7 @@ export from.
     ...     new_bugtracker)
     >>> from canonical.lp.dbschema import BugTrackerType
     >>> alsa_mantis = Mantis(
-    ...     new_bugtracker(BugTrackerType.MANTIS),
-    ...     use_csv_export=True)
+    ...     new_bugtracker(BugTrackerType.MANTIS))
 
 As with all ExternalBugTrackers, Mantis contains a function for converting one
 of its own status to a Malone status. Mantis' function takes a string
@@ -74,8 +73,7 @@ We use a specially hacked Mantis instance that doesn't do network
 calls to verify here. We set its batch_query_threshold to 0 so as to
 force it to use the CSV import code:
 
-    >>> example_ext_bug_tracker = TestMantis(
-    ...     example_bug_tracker, use_csv_export=True)
+    >>> example_ext_bug_tracker = TestMantis(example_bug_tracker)
     >>> example_ext_bug_tracker.batch_query_threshold = 0
 
 Collect the Example.com watches:
