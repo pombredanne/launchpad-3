@@ -837,11 +837,18 @@ Batching of the branch pages relies (ideally) on a quick simple query
 that can have the result set limited in order to only return a partial
 result set.  The getBranchesForPerson method on IBranchSet will
 return all branches associated with that person:
+
   - subscribed branches by person
   - person is author or owner of the branch
 
+The default sort order is by product, lifecycle, author and finally
+name, but any value from the BranchListingSort enumeration can be used
+(when a sort order is specified, it only affects the initial ordering
+-- so when BranchListingSort.LIFECYCLE is specified as the sort order,
+the sort is by lifecycle, product, author, name).
+
     >>> from canonical.launchpad.interfaces import (
-    ...     DEFAULT_BRANCH_STATUS_IN_LISTING)
+    ...     BranchListingSort, DEFAULT_BRANCH_STATUS_IN_LISTING)
     >>> branches = branchset.getBranchesForPerson(
     ...     personset.getByName('ddaa'), DEFAULT_BRANCH_STATUS_IN_LISTING)
     >>> for branch in branches:
@@ -851,22 +858,23 @@ return all branches associated with that person:
 
     >>> sample_person = personset.getByName('name12')
     >>> branches = branchset.getBranchesForPerson(
-    ...     sample_person, visible_by_user=sample_person)
+    ...     sample_person, visible_by_user=sample_person,
+    ...     sort_by=BranchListingSort.LIFECYCLE)
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
-    New ~name12/firefox/main
     Abandoned ~name12/gnome-terminal/2.4
     Merged ~name12/gnome-terminal/slowness
     Mature ~name12/gnome-terminal/2.6
     Development ~name12/gnome-terminal/main
     Experimental ~name12/gnome-terminal/klingon
+    Experimental ~name12/+junk/junk.dev
+    New ~name12/firefox/main
     New ~launchpad/gnome-terminal/launchpad
     New ~name12/gnome-terminal/mirrored
     New ~name12/gnome-terminal/pushed
     New ~name12/gnome-terminal/scanned
     New ~name12/landscape/feature-x
     New ~landscape-developers/landscape/trunk
-    Experimental ~name12/+junk/junk.dev
     New ~name12/+junk/junk.contrib
 
     >>> branches = branchset.getBranchesAuthoredByPerson(

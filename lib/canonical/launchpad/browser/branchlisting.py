@@ -180,6 +180,7 @@ class BranchListingView(LaunchpadFormView):
 
     @property
     def branch_listing_sort_values(self):
+        # This is pretty painful.
         vocab_items = BranchListingSort.items.items[:]
         for item in self.no_sort_by:
             vocab_items.remove(item)

@@ -3,9 +3,9 @@
 Pages that want to display lists of branches use the branch-listing
 page template, and views derived from BranchListingView.
 
-The branch listing page template and associated view provides
-batching of the branches, and filtering of the lifecycle statuses,
-and badge decoration.
+The branch listing page template and associated view provides batching
+of the branches, filtering of the lifecycle statuses, ordering of
+various kinds and badge decoration.
 
 == Branch Batching ==
 
@@ -215,15 +215,14 @@ by product name.
     ['Product Name']
 
 On a listing that can only have branches from one product, the default
-is by lifecycle status.
+is to sort by lifecycle status.
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal')
     >>> browser.getControl('ordered by').value
     ['Lifecycle Status']
 
-If you filter by a specific lifecycle status, then ordering by
-lifecycle ceases to be relevant, and the default is then to sort by
-person.
+If you filter by a specific lifecycle status then ordering by
+lifecycle ceases to be relevant, and the default is to sort by author.
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal')
     >>> status_control = browser.getControl('Show branches with status of')

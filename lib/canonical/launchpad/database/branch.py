@@ -29,11 +29,11 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchLifecycleStatus, BranchType, BranchTypeError, BranchVisibilityRule,
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal,
-    NotFoundError)
+    BranchLifecycleStatus, BranchListingSort, BranchType, BranchTypeError,
+    BranchVisibilityRule, BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel, CannotDeleteBranch,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
+    ILaunchpadCelebrities, InvalidBranchMergeProposal, NotFoundError)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -455,6 +455,17 @@ class Branch(SQLBase):
             datetime.now(pytz.timezone('UTC')) + timedelta(hours=6))
         self.syncUpdate()
 
+
+LISTINGSORT_TO_COLUMN = {
+    BranchListingSort.PRODUCT: 'product',
+    BranchListingSort.LIFECYCLE: '-lifecycle_status',
+    BranchListingSort.AUTHOR: 'author',
+    BranchListingSort.NEWEST_FIRST: 'date_created',
+    BranchListingSort.OLDEST_FIRST: '-date_created',
+    BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: 'last_scanned',
+    BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: '-last_scanned',
+    BranchListingSort.REGISTRANT: 'owner'
+    }
 
 class BranchSet:
     """The set of all branches."""
@@ -878,8 +889,26 @@ class BranchSet:
                 quote(lifecycle_statuses))
         return lifecycle_clause
 
+    @staticmethod
+    def _listingSortToOrderBy(sort_by):
+        if sort_by is None:
+            return Branch._defaultOrder
+        else:
+            order_by = list(Branch._defaultOrder)
+            column = LISTINGSORT_TO_COLUMN[sort_by]
+            if column.startswith('-'):
+                variant_column = column[1:]
+            else:
+                variant_column = '-' + column
+            if column in order_by:
+                order_by.remove(column)
+            if variant_column in order_by:
+                order_by.remove(variant_column)
+            order_by.insert(0, column)
+            return order_by
+
     def getBranchesForPerson(self, person, lifecycle_statuses=None,
-                             visible_by_user=None):
+                             visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         query_params = {
             'person': person.id,
@@ -906,7 +935,8 @@ class BranchSet:
             % query_params)
 
         return Branch.select(
-            self._generateBranchClause(query, visible_by_user))
+            self._generateBranchClause(query, visible_by_user),
+            orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesAuthoredByPerson(self, person, lifecycle_statuses=None,
                                     visible_by_user=None):
