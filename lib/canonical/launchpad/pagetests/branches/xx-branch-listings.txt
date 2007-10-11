@@ -221,6 +221,17 @@ is by lifecycle status.
     >>> browser.getControl('ordered by').value
     ['Lifecycle Status']
 
+If you filter by a specific lifecycle status, then ordering by
+lifecycle ceases to be relevant, and the default is then to sort by
+person.
+
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> status_control = browser.getControl('Show branches with status of')
+    >>> status_control.value = ['MATURE']
+    >>> browser.getControl('Filter').click()
+    >>> browser.getControl('ordered by').value
+    ['Author']
+
 The implicitly sorted listings do not have an ordering widget at all.
 
     >>> browser.open('http://code.launchpad.dev/+recently-registered-branches')
