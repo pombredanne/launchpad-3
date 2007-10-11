@@ -164,7 +164,6 @@ updateBugWatches() issues only one request to update all watches:
      * Expected << UNKNOWN >>
      *      Got << UNKNOWN >>
 
-
     >>> example_ext_bug_tracker.trace_calls = False
 
 updateBugWatches() updates the lastchecked attribute on the watches, so

@@ -676,23 +676,6 @@ class Mantis(ExternalBugTracker):
     # Mantis if (and only if) needed.
     _opener = ClientCookie.build_opener(MantisLoginHandler)
 
-    def __init__(self, bugtracker, use_csv_export=False):
-        ExternalBugTracker.__init__(self, bugtracker)
-
-        # Use the CSV export method to get bug statuses. This is
-        # disabled by default because there have been problems with
-        # some Mantis installations sending empty exports.
-        self.use_csv_export = use_csv_export
-        if self.use_csv_export:
-            # Bugs maps an integer bug ID to a dictionary with bug
-            # data that we snarf from the CSV. We use an integer bug
-            # ID because the bug ID for mantis comes prefixed with a
-            # bunch of zeroes and it could get hard to match if we
-            # really wanted to format it exactly the same (and also
-            # because of the way we split lines below in
-            # initializeRemoteBugDB().
-            self.bugs = {}
-
     def urlopen(self, request, data=None):
         # We use ClientCookie to make following cookies transparent.
         # This is required for certain bugtrackers that require
@@ -765,7 +748,7 @@ class Mantis(ExternalBugTracker):
             return csv_data
 
     def canUseCSVExports(self):
-        """Return True if a Mantis instance does CSV exports.
+        """Return True if a Mantis instance supports CSV exports.
 
         If the Mantis instance cannot or does not support CSV exports,
         False will be returned.
@@ -785,11 +768,6 @@ class Mantis(ExternalBugTracker):
             self.canUseCSVExports()):
             self.bugs = self.getRemoteBugBatch(bug_ids)
         else:
-            # XXX: 2007-08-24 Graham Binns
-            #      It might be better to do this synchronously for the sake of
-            #      handling timeouts nicely. For now, though, we do it
-            #      sequentially for the sake of easing complexity and making
-            #      testing easier.
             for bug_id in bug_ids:
                 bug_id, remote_bug = self.getRemoteBug(bug_id)
 
