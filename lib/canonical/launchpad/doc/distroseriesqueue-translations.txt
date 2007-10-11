@@ -7,7 +7,8 @@ uploaded into the system.
   ...     ProcessorFamily, Component, GPGKey, Section,
   ...     SecureSourcePackagePublishingHistory)
   >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet)
+  ...     IComponentSet, IDistributionSet, IDistroSeriesSet,
+  ...     ISourcePackageNameSet)
   >>> from canonical.lp.dbschema import PackagePublishingPocket
 
   >>> from canonical.archiveuploader.nascentupload import NascentUpload
@@ -172,6 +173,45 @@ But an upload to the UPDATE pocket will add items to the import queue:
   # pocket.
   >>> transaction.abort()
 
+Uploads to restricted component are accepted too.
+
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> dapper = distro_series_set.queryByName(ubuntu, 'dapper')
+  >>> restricted_component = getUtility(IComponentSet)['restricted']
+  >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
+
+  # Change the component where this package was attached.
+  >>> queue_item.builds[0].build.sourcepackagerelease.override(
+  ...     component=restricted_component)
+  >>> queue_item.customfiles[0].publish()
+
+  # And we get 10 new entries imported.
+  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
+  10
+
+  # Let's abort the transaction so we can check the same upload in a different
+  # component.
+  >>> transaction.abort()
+
+But the ones into universe are not accepted.
+
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> dapper = distro_series_set.queryByName(ubuntu, 'dapper')
+  >>> universe_component = getUtility(IComponentSet)['universe']
+  >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
+
+  # Change the component where this package was attached.
+  >>> queue_item.builds[0].build.sourcepackagerelease.override(
+  ...     component=universe_component)
+  >>> queue_item.customfiles[0].publish()
+
+This time, we don't get any entry in the import queue.
+  >>> translation_import_queue.getAllEntries(target=ubuntu).count()
+  0
+
+  # Let's abort the transaction so we can check the same upload in a different
+  # component.
+  >>> transaction.abort()
 
 == Translations from PPA build ==
 
