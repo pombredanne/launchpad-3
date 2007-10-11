@@ -3339,7 +3339,8 @@ class PersonBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForPerson(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, self.selected_lifecycle_status, self.user,
+            self.sort_by)
 
     @cachedproperty
     def _subscribed_branches(self):
@@ -3367,7 +3368,8 @@ class PersonAuthoredBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesAuthoredByPerson(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, self.selected_lifecycle_status, self.user,
+            self.sort_by)
 
 
 class PersonRegisteredBranchesView(BranchListingView):
@@ -3379,18 +3381,20 @@ class PersonRegisteredBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, self.selected_lifecycle_status, self.user,
+            self.sort_by)
 
 
 class PersonSubscribedBranchesView(BranchListingView):
-    """View for branch listing for a subscribed's authored branches."""
+    """View for branch listing for a person's subscribed  branches."""
 
     extra_columns = ('author', 'product')
     title_prefix = 'Subscribed'
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, self.selected_lifecycle_status, self.user,
+            self.sort_by)
 
 
 class PersonTeamBranchesView(LaunchpadView):

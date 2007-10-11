@@ -207,6 +207,14 @@ class BranchListingView(LaunchpadFormView):
                       title=orig_field.title,
                       required=True, values=values, default=values[0])
 
+    @property
+    def sort_by(self):
+        widget = self.widgets['sort_by']
+        if widget.hasValidInput():
+            return widget.getInputValue()
+        else:
+            return None
+
     def setUpWidgets(self, context=None):
         fields = []
         for field_name in self.field_names:

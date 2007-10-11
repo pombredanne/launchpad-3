@@ -585,7 +585,8 @@ class ProjectBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForProject(
-            self.context, self.selected_lifecycle_status, self.user)
+            self.context, self.selected_lifecycle_status, self.user,
+            self.sort_by)
 
     @property
     def no_branch_message(self):
