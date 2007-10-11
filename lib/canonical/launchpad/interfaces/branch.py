@@ -379,6 +379,9 @@ class IBranch(IHasOwner):
         "See doc/bazaar for more information about the branch warehouse.")
 
     # Bug attributes
+    bug_branches = Attribute(
+        "The bug-branch link objects that link this branch to bugs. ")
+
     related_bugs = Attribute(
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
