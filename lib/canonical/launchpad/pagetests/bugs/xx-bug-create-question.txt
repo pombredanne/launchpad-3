@@ -14,7 +14,7 @@ a bug. An anonymous user cannot create a question.
     ...     '/ubuntu/+source/linux-source-2.6.15/+bug/10')
     >>> anon_browser.title
     'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
-    >>> anon_browser.getLink('Is a question').click()
+    >>> anon_browser.getLink('This is a question').click()
     Traceback (most recent call last):
     ...
     Unauthorized: ...
@@ -27,7 +27,7 @@ is really a question. He chooses to make a question from it.
     ...     '/ubuntu/+source/linux-source-2.6.15/+bug/10')
     >>> user_browser.title
     'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
-    >>> user_browser.getLink('Is a question').click()
+    >>> user_browser.getLink('This is a question').click()
     >>> user_browser.title
     'Bug #10 - Create a question from this bug'
 
@@ -132,29 +132,23 @@ used the link the email to view the page in his browser.
 == When a question cannot be created from a bug  ==
 
 Thunderbird does not use Launchpad to track bugs. Questions cannot
-be made from its bugs. The link is not available from the Bug Actions
-menu.
+be made from its bugs. When No Privileges Person uses the link in
+the Bug Actions menu, the page explains why he cannot make the bug
+into a question.
 
     >>> user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/9')
     >>> user_browser.title
     'Bug #9 in Mozilla Thunderbird: ...Thunderbird crashes...'
-    >>> user_browser.getLink('Is a question')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-If No Priveleges Person were to hack the URL, the page explains
-that he cannot make a question. The Cancel button is present that
-will return to the bug report page.
-
-    >>> user_browser.open(
-    ...     'http://bugs.launchpad.dev/thunderbird/+bug/9/+create-question')
+    >>> user_browser.getLink('This is a question').click()
     >>> user_browser.title
     'Bug #9 - Create a question from this bug'
     >>> find_main_content(user_browser.contents).p
     <p>
     A question cannot be created from this bug.
     Mozilla Thunderbird does not use Launchpad to track bugs. ...
+
+The form is present, but without a button to create the question.
+No Privileges Person chooses the Cancel button.
 
     >>> user_browser.getControl('Create a Question from this Bug').click()
     Traceback (most recent call last):
@@ -165,9 +159,9 @@ will return to the bug report page.
     >>> user_browser.title
     'Bug #9 in Mozilla Thunderbird: ...Thunderbird crashes...'
 
-If No Privileges Person were to return to the create a question
-from a bug page using his back button or a bookmark, he sees that
-he cannot create the question again.
+IF No Privileges Person were to create a question from a bug, then
+return to the create a question from a bug page using his back button
+or a bookmark, he sees that he cannot create the question again.
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev'
@@ -193,7 +187,7 @@ could not be created.
     ...     'http://bugs.launchpad.dev/jokosher/+bug/12')
     >>> user_browser.title
     'Bug #12 in Jokosher: ...Copy, Cut and Delete operations should work...'
-    >>> user_browser.getLink('Is a question').click()
+    >>> user_browser.getLink('This is a question').click()
     >>> user_browser.getControl('Comment').value = 'This will succede.'
     >>> user_browser.getControl('Create a Question from this Bug').click()
     >>> user_browser.title

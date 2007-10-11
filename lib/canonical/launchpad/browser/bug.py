@@ -108,7 +108,7 @@ class BugContextMenu(ContextMenu):
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
              'nominate', 'addbranch', 'linktocve', 'unlinkcve',
              'offermentoring', 'retractmentoring', 'createquestion',
-             'activitylog']
+             'removequestion', 'activitylog']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -222,9 +222,15 @@ class BugContextMenu(ContextMenu):
 
     def createquestion(self):
         """Create a question from this bug."""
-        text = 'Is a question'
-        enabled = self.context.bug.canBeAQuestion()
+        text = 'This is a question'
+        enabled = self.context.bug.getQuestionCreatedFromBug() is None
         return Link('+create-question', text, icon='edit', enabled=enabled)
+
+    def removequestion(self):
+        """Remove the created question from this bug."""
+        text = 'This is not a question'
+        enabled = self.context.bug.getQuestionCreatedFromBug() is not None
+        return Link('+remove-question', text, icon='edit', enabled=enabled)
 
     def activitylog(self):
         """Return the 'Activity log' Link."""
