@@ -548,9 +548,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         result = POTemplate.select('''
             productseries = %s AND
             productseries = ProductSeries.id AND
-            (iscurrent IS FALSE OR
-             (ProductSeries.product = Product.id AND
-              Product.official_rosetta IS FALSE))
+            ProductSeries.product = Product.id AND
+            (iscurrent IS FALSE OR Product.official_rosetta IS FALSE)
             ''' % sqlvalues(self),
             clauseTables = ['ProductSeries', 'Product'])
         result = result.prejoin(['potemplatename'])

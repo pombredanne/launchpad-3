@@ -50,10 +50,10 @@ And it has translations.
   >>> print admin_browser.title
   Translations of Network Applet in Launchpad
 
-  >>> find_portlet(
+  >>> find_tag_by_id(
   ...     admin_browser.contents,
   ...     'portlet-obsolete-translatable-branches') is None
-  True
+  False
 
 alsa-utils is a product that doesn't belong to GNOME project. It has
 translations and is using Launchpad Translations officially, and it 
