@@ -159,6 +159,14 @@
         permission="zope.Public"
         />
 
+    <browser:page
+        name="+translation-group-and-permission-info"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.TranslationGroupAndPermissionInfoView"
+        permission="zope.Public"
+        />
+
+
   <browser:pages
     for="canonical.launchpad.interfaces.IProject"
     class="canonical.launchpad.browser.HasSpecificationsView"

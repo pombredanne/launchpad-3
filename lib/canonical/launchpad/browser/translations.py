@@ -7,6 +7,7 @@ __all__ = [
     'RosettaApplicationView',
     'RosettaStatsView',
     'RosettaApplicationNavigation',
+    'TranslationGroupAndPermissionInfoView',
     'TranslateRedirectView',
     'TranslationsMixin',
     'TranslationsRedirectView',
@@ -38,6 +39,31 @@ class HelpTranslateButtonView:
                 />
               </a>
         """ % canonical_url(self.context, rootsite='translations')
+
+
+class TranslationGroupAndPermissionInfoView:
+    """View that renders the translation group information."""
+
+    def __call__(self):
+        if self.context.translationgroup is None:
+            translation_group_content = 'Not assigned'
+        else:
+            translation_group_content = '<a href="%s">%s</a>' % (
+                canonical_url(self.context.translationgroup,
+                              rootsite='translations'),
+                self.context.translationgroup.title)
+
+        return '''
+            <tr>
+              <th>Translation group:</th>
+              <td>%s</td>
+            </tr>
+            <tr>
+              <th>Translations:</th>
+              <td>%s</td>
+            </tr>''' % (
+                translation_group_content,
+                self.context.translationpermission.title)
 
 
 class TranslationsMixin:

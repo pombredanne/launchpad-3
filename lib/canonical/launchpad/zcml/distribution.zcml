@@ -404,12 +404,19 @@
     />
 
   <browser:page
-      name="+help-translate-button"
-      facet="translations"
-      for="canonical.launchpad.interfaces.IDistribution"
-      class="canonical.launchpad.browser.HelpTranslateButtonView"
-      permission="zope.Public"
-      />
+    name="+help-translate-button"
+    facet="translations"
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.HelpTranslateButtonView"
+    permission="zope.Public"
+    />
+
+  <browser:page
+    name="+translation-group-and-permission-info"
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.TranslationGroupAndPermissionInfoView"
+    permission="zope.Public"
+    />
 
   <browser:editform
     name="+changetranslators"

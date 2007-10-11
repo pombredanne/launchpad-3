@@ -43,20 +43,8 @@
             <tal:none condition="not:context/bugtracker">None specified</tal:none>
           </td>
         </tr>
-        <tr>
-          <th>Translation group:</th>
-          <td tal:condition="not: context/translationgroup">Not assigned</td>
-          <td tal:condition="context/translationgroup">
-            <a tal:attributes="
-              href string:/rosetta/groups/${context/translationgroup/name}/"
-              tal:content="context/translationgroup/title"
-            >Group</a>
-          </td>
-        </tr>
-        <tr>
-          <th>Translations:</th>
-          <td tal:content="context/translationpermission/title">Open</td>
-        </tr>
+        <tal:translation-group
+          replace="structure context/@@+translation-group-and-permission-info" />
       </tbody>
     </table>
   </div>
