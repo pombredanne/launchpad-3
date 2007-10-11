@@ -12,6 +12,7 @@
     <div tal:replace="structure context/bug/@@+portlet-watch" />
     <div tal:replace="structure context/@@+portlet-search" />
     
+      <div tal:replace="structure context/target/@@+portlet-details" />
     </metal:portlets>
 
 <div metal:fill-slot="main">
