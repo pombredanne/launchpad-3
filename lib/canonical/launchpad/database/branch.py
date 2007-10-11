@@ -29,7 +29,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchLifecycleStatus, BranchType, BranchVisibilityRule,
+    BranchLifecycleStatus, BranchType, BranchTypeError, BranchVisibilityRule,
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal,
@@ -179,10 +179,44 @@ class Branch(SQLBase):
         """See `IBranch`."""
         return self.revision_count > 0 and not self.private
 
+    def _getNameDict(self, person):
+        """Return a simple dict with the person name or placeholder."""
+        if person is not None:
+            name = person.name
+        else:
+            name = "<name>"
+        return {'user': name}
+
+    def getBzrUploadURL(self, person=None):
+        """See `IBranch`."""
+        root = config.codehosting.smartserver_root % self._getNameDict(person)
+        return root + self.unique_name
+
+    def getBzrDownloadURL(self, person=None):
+        """See `IBranch`."""
+        if self.private:
+            root = config.codehosting.smartserver_root
+        else:
+            root = config.codehosting.supermirror_root
+        root = root % self._getNameDict(person)
+        return root + self.unique_name
+
     @property
     def related_bugs(self):
         """See `IBranch`."""
         return [bug_branch.bug for bug_branch in self.bug_branches]
+
+    @property
+    def related_bug_tasks(self):
+        """See `IBranch`."""
+        tasks = []
+        for bug in self.related_bugs:
+            task = bug.getBugTask(self.product)
+            if task is None:
+                # Just choose the first task for the bug.
+                task = bug.bugtasks[0]
+            tasks.append(task)
+        return tasks
 
     @property
     def warehouse_url(self):
@@ -243,19 +277,16 @@ class Branch(SQLBase):
 
     def canBeDeleted(self):
         """See `IBranch`."""
-        # XXX: TimPenhey 2007-07-30
-        # ManifestEntries are deliberately being ignored here.
-        # They are part of HCT which is in active rot, and should
-        # be removed.
-
         # CodeImportSet imported here to avoid circular imports.
         from canonical.launchpad.database.codeimport import CodeImportSet
         code_import = CodeImportSet().getByBranch(self)
         if (code_import is not None or
-            self.revision_history.count() > 0 or
             self.subscriptions.count() > 0 or
             self.bug_branches.count() > 0 or
             self.spec_links.count() > 0 or
+            self.landing_targets.count() > 0 or
+            self.landing_candidates.count() > 0 or
+            self.dependent_branches.count() > 0 or
             self.associatedProductSeries().count() > 0):
             # Can't delete if the branch is associated with anything.
             return False
@@ -382,7 +413,7 @@ class Branch(SQLBase):
     def requestMirror(self):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
-            raise BranchTypeError
+            raise BranchTypeError(self.unique_name)
         self.mirror_request_time = UTC_NOW
         self.syncUpdate()
         return self.mirror_request_time
@@ -390,14 +421,14 @@ class Branch(SQLBase):
     def startMirroring(self):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
-            raise BranchTypeError
+            raise BranchTypeError(self.unique_name)
         self.last_mirror_attempt = UTC_NOW
         self.syncUpdate()
 
     def mirrorComplete(self, last_revision_id):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
-            raise BranchTypeError
+            raise BranchTypeError(self.unique_name)
         assert self.last_mirror_attempt != None, (
             "startMirroring must be called before mirrorComplete.")
         self.last_mirrored = self.last_mirror_attempt
@@ -417,7 +448,7 @@ class Branch(SQLBase):
     def mirrorFailed(self, reason):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
-            raise BranchTypeError
+            raise BranchTypeError(self.unique_name)
         self.mirror_failures += 1
         self.mirror_status_message = reason
         self.mirror_request_time = (
@@ -608,6 +639,11 @@ class BranchSet:
     def delete(self, branch):
         """See `IBranchSet`."""
         if branch.canBeDeleted():
+            # Delete any branch revisions.
+            branch_ancestry = BranchRevision.selectBy(branch=branch)
+            for branch_revision in branch_ancestry:
+                BranchRevision.delete(branch_revision.id)
+            # Now delete the branch itself.
             Branch.delete(branch.id)
         else:
             raise CannotDeleteBranch(
@@ -616,7 +652,7 @@ class BranchSet:
     def getByUrl(self, url, default=None):
         """See `IBranchSet`."""
         assert not url.endswith('/')
-        prefix = config.launchpad.supermirror_root
+        prefix = config.codehosting.supermirror_root
         if url.startswith(prefix):
             branch = self.getByUniqueName(url[len(prefix):])
         else:
@@ -916,6 +952,19 @@ class BranchSet:
 
         return Branch.select(
             self._generateBranchClause(query, visible_by_user))
+
+    def getBranchesForProject(self, project, lifecycle_statuses=None,
+                              visible_by_user=None):
+        """See `IBranchSet`."""
+        assert project is not None, "Must have a valid project."
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+
+        query = 'Branch.product = Product.id AND Product.project = %s %s' % (
+            project.id, lifecycle_clause)
+
+        return Branch.select(
+            self._generateBranchClause(query, visible_by_user),
+            clauseTables=['Product'])
 
     def getHostedBranchesForPerson(self, person):
         """See `IBranchSet`."""

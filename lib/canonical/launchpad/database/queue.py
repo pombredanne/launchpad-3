@@ -55,6 +55,7 @@ def debug(logger, msg):
     if logger is not None:
         logger.debug(msg)
 
+
 class PackageUploadQueue:
 
     implements(IPackageUploadQueue)
@@ -125,24 +126,24 @@ class PackageUpload(SQLBase):
             'provided methods to set it.')
 
     def setNew(self):
-        """See IPackageUpload."""
+        """See `IPackageUpload`."""
         if self.status == PackageUploadStatus.NEW:
             raise QueueInconsistentStateError(
                 'Queue item already new')
         self._SO_set_status(PackageUploadStatus.NEW)
 
     def setUnapproved(self):
-        """See IPackageUpload."""
+        """See `IPackageUpload`."""
         if self.status == PackageUploadStatus.UNAPPROVED:
             raise QueueInconsistentStateError(
                 'Queue item already unapproved')
         self._SO_set_status(PackageUploadStatus.UNAPPROVED)
 
     def setAccepted(self):
-        """See IPackageUpload."""
+        """See `IPackageUpload`."""
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks for 'ubuntu' main distro.
-        if self.archive.purpose != ArchivePurpose.PPA:
+        if not self.archive.allowUpdatesToReleasePocket():
             assert self.distroseries.canUploadToPocket(self.pocket), (
                 "Not permitted acceptance in the %s pocket in a "
                 "series in the '%s' state." % (
@@ -173,14 +174,14 @@ class PackageUpload(SQLBase):
         self._SO_set_status(PackageUploadStatus.ACCEPTED)
 
     def setDone(self):
-        """See IPackageUpload."""
+        """See `IPackageUpload`."""
         if self.status == PackageUploadStatus.DONE:
             raise QueueInconsistentStateError(
                 'Queue item already done')
         self._SO_set_status(PackageUploadStatus.DONE)
 
     def setRejected(self):
-        """See IPackageUpload."""
+        """See `IPackageUpload`."""
         if self.status == PackageUploadStatus.REJECTED:
             raise QueueInconsistentStateError(
                 'Queue item already rejected')
@@ -190,12 +191,12 @@ class PackageUpload(SQLBase):
     # reduce the duplicated code.
     @cachedproperty
     def containsSource(self):
-        """See IPackageUpload."""
+        """See `IPackageUpload`."""
         return self.sources
 
     @cachedproperty
     def containsBuild(self):
-        """See IPackageUpload."""
+        """See `IPackageUpload`."""
         return self.builds
 
     @cachedproperty
@@ -205,36 +206,36 @@ class PackageUpload(SQLBase):
 
     @cachedproperty
     def containsInstaller(self):
-        """See IPackageUpload."""
+        """See `IPackageUpload`."""
         return (PackageUploadCustomFormat.DEBIAN_INSTALLER
                 in self._customFormats)
 
     @cachedproperty
     def containsTranslation(self):
-        """See IPackageUpload."""
+        """See `IPackageUpload`."""
         return (PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
                 in self._customFormats)
 
     @cachedproperty
     def containsUpgrader(self):
-        """See IPackageUpload."""
+        """See `IPackageUpload`."""
         return (PackageUploadCustomFormat.DIST_UPGRADER
                 in self._customFormats)
 
     @cachedproperty
     def containsDdtp(self):
-        """See IPackageUpload."""
+        """See `IPackageUpload`."""
         return (PackageUploadCustomFormat.DDTP_TARBALL
                 in self._customFormats)
 
     @cachedproperty
     def datecreated(self):
-        """See IPackageUpload."""
+        """See `IPackageUpload`."""
         return self.changesfile.content.datecreated
 
     @cachedproperty
     def displayname(self):
-        """See IPackageUpload"""
+        """See `IPackageUpload`"""
         names = []
         for queue_source in self.sources:
             names.append(queue_source.sourcepackagerelease.name)
@@ -246,7 +247,7 @@ class PackageUpload(SQLBase):
 
     @cachedproperty
     def displayarchs(self):
-        """See IPackageUpload"""
+        """See `IPackageUpload`"""
         archs = []
         for queue_source in self.sources:
             archs.append('source')
@@ -258,7 +259,7 @@ class PackageUpload(SQLBase):
 
     @cachedproperty
     def displayversion(self):
-        """See IPackageUpload"""
+        """See `IPackageUpload`"""
         if self.sources:
             return self.sources[0].sourcepackagerelease.version
         if self.builds:
@@ -279,12 +280,12 @@ class PackageUpload(SQLBase):
             return self.builds[0].build.sourcepackagerelease
 
     def realiseUpload(self, logger=None):
-        """See IPackageUpload."""
+        """See `IPackageUpload`."""
         assert self.status == PackageUploadStatus.ACCEPTED, (
             "Can not publish a non-ACCEPTED queue record (%s)" % self.id)
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks
-        if self.archive.purpose != ArchivePurpose.PPA:
+        if not self.archive.allowUpdatesToReleasePocket():
             assert self.distroseries.canUploadToPocket(self.pocket), (
                 "Not permitted to publish to the %s pocket in a "
                 "series in the '%s' state." % (
@@ -302,27 +303,28 @@ class PackageUpload(SQLBase):
             try:
                 customfile.publish(logger)
             except CustomUploadError, e:
-                logger.error("Queue item ignored: %s" % e)
+                if logger is not None:
+                    logger.error("Queue item ignored: %s" % e)
                 return
 
         self.setDone()
 
     def addSource(self, spr):
-        """See IPackageUpload."""
+        """See `IPackageUpload`."""
         return PackageUploadSource(
             packageupload=self,
             sourcepackagerelease=spr.id
             )
 
     def addBuild(self, build):
-        """See IPackageUpload."""
+        """See `IPackageUpload`."""
         return PackageUploadBuild(
             packageupload=self,
             build=build.id
             )
 
     def addCustom(self, library_file, custom_type):
-        """See IPackageUpload."""
+        """See `IPackageUpload`."""
         return PackageUploadCustom(
             packageupload=self,
             libraryfilealias=library_file.id,
@@ -330,7 +332,7 @@ class PackageUpload(SQLBase):
             )
 
     def isPPA(self):
-        """See IPackageUpload."""
+        """See `IPackageUpload`."""
         return self.archive.purpose == ArchivePurpose.PPA
 
     def _getChangesDict(self, changes_file_object=None):
@@ -395,7 +397,7 @@ class PackageUpload(SQLBase):
         return summary
 
     def _sendRejectionNotification(self, recipients, changes_lines,
-                                   summary_text):
+                                   summary_text, dry_run):
         """Send a rejection email."""
 
         default_recipient = "%s <%s>" % (
@@ -409,17 +411,22 @@ class PackageUpload(SQLBase):
             "CHANGESFILE": guess_encoding("".join(changes_lines)),
         }
         debug(self.logger, "Sending rejection email.")
-        rejection_template = get_email_template('upload-rejection.txt')
+        if self.isPPA():
+            rejection_template = get_email_template(
+                'ppa-upload-rejection.txt')
+        else:
+            rejection_template = get_email_template('upload-rejection.txt')
         sender = format_address(config.uploader.default_sender_name,
                                 config.uploader.default_sender_address)
         self._sendMail(
             sender,
             recipients,
             "%s rejected" % self.changesfile.filename,
-            rejection_template % interpolations)
+            rejection_template % interpolations,
+            dry_run)
 
     def _sendSuccessNotification(self, recipients, announce_list,
-            changes_lines, changes, summarystring):
+            changes_lines, changes, summarystring, dry_run):
         """Send a success email."""
         interpolations = {
             "SUMMARY": summarystring,
@@ -444,14 +451,13 @@ class PackageUpload(SQLBase):
                 uploader_address,
                 recipients,
                 "%s is NEW" % self.changesfile.filename,
-                new_template % interpolations)
+                new_template % interpolations,
+                dry_run)
             return
-
-        # Every message sent from here onwards uses the accepted template.
-        accepted_template = get_email_template('upload-accepted.txt')
 
         if self.isPPA():
             # PPA uploads receive an acceptance message.
+            accepted_template = get_email_template('ppa-upload-accepted.txt')
             interpolations["STATUS"] = "[PPA %s] Accepted" % (
                 self.archive.owner.name)
             subject = "[PPA %s] Accepted %s %s (%s)" % (
@@ -461,8 +467,12 @@ class PackageUpload(SQLBase):
                 uploader_address,
                 recipients,
                 subject,
-                accepted_template % interpolations)
+                accepted_template % interpolations,
+                dry_run)
             return
+
+        # Every message sent from here onwards uses the accepted template.
+        accepted_template = get_email_template('upload-accepted.txt')
 
         # Auto-approved uploads to backports skips the announcement,
         # they are usually processed with the sync policy.
@@ -474,7 +484,8 @@ class PackageUpload(SQLBase):
                 uploader_address,
                 recipients,
                 subject,
-                accepted_template % interpolations)
+                accepted_template % interpolations,
+                dry_run)
             return
 
         # Auto-approved binary uploads to security skips the announcement,
@@ -489,7 +500,8 @@ class PackageUpload(SQLBase):
                 uploader_address,
                 recipients,
                 subject,
-                accepted_template % interpolations)
+                accepted_template % interpolations,
+                dry_run)
             return
 
         # Unapproved uploads coming from an insecure policy only send
@@ -505,7 +517,8 @@ class PackageUpload(SQLBase):
                 uploader_address,
                 recipients,
                 subject,
-                accepted_template % interpolations)
+                accepted_template % interpolations,
+                dry_run)
             return
 
         # Fallback, all the rest coming from insecure, secure and sync
@@ -516,7 +529,8 @@ class PackageUpload(SQLBase):
             uploader_address,
             recipients,
             subject,
-            accepted_template % interpolations)
+            accepted_template % interpolations,
+            dry_run)
         if announce_list:
             sender = ""
             if not self.signing_key:
@@ -530,14 +544,23 @@ class PackageUpload(SQLBase):
                 [str(announce_list)],
                 subject,
                 announce_template % interpolations,
+                dry_run,
                 bcc="%s_derivatives@packages.qa.debian.org" % self.displayname)
         return
 
     def notify(self, announce_list=None, summary_text=None,
-               changes_file_object=None, logger=None):
-        """See `IDistroSeriesQueue`."""
+               changes_file_object=None, logger=None, dry_run=False):
+        """See `IPackageUpload`."""
 
         self.logger = logger
+
+        # If this is a binary or mixed upload, we don't send *any* emails
+        # provided it's not a rejection or a security upload:
+        if(self.containsBuild and
+           self.status != PackageUploadStatus.REJECTED and
+           self.pocket != PackagePublishingPocket.SECURITY):
+            debug(self.logger, "Not sending email, upload contains binaries.")
+            return
 
         # Get the changes file from the librarian and parse the tags to
         # a dictionary.  This can throw exceptions but since the tag file
@@ -577,12 +600,13 @@ class PackageUpload(SQLBase):
 
         # If we need to send a rejection, do it now and return early.
         if self.status == PackageUploadStatus.REJECTED:
-            self._sendRejectionNotification(recipients, changes_lines,
-                summary_text)
+            self._sendRejectionNotification(
+                recipients, changes_lines, summary_text, dry_run)
             return
 
-        self._sendSuccessNotification(recipients, announce_list, changes_lines,
-            changes, summarystring)
+        self._sendSuccessNotification(
+            recipients, announce_list, changes_lines, changes, summarystring,
+            dry_run)
 
     def _getRecipients(self, changes):
         """Return a list of recipients for notification emails."""
@@ -647,7 +671,8 @@ class PackageUpload(SQLBase):
         debug(self.logger, "Decision: %s" % uploader)
         return uploader
 
-    def _sendMail(self, from_addr, to_addrs, subject, mail_text, bcc=None):
+    def _sendMail(self, from_addr, to_addrs, subject, mail_text, dry_run,
+                  bcc=None):
         """Send an email to to_addrs with the given text and subject.
 
         :from_addr: The email address to be used as the sender.  Must be a
@@ -674,26 +699,36 @@ class PackageUpload(SQLBase):
         extra_headers['Bcc'] = ascii_smash(bcc_text)
 
         recipients = ascii_smash(", ".join(to_addrs))
-        debug(self.logger, "Sent a mail:")
-        debug(self.logger, "    Subject: %s" % subject)
-        debug(self.logger, "    Recipients: %s" % recipients)
-        debug(self.logger, "    Body:")
-        for line in mail_text.splitlines():
-            debug(self.logger, line)
-
         if isinstance(from_addr, unicode):
             # ascii_smash only works on unicode strings.
             from_addr = ascii_smash(from_addr)
         else:
             from_addr.encode('ascii')
 
-        simple_sendmail(
-            from_addr,
-            recipients,
-            subject,
-            mail_text,
-            extra_headers
-        )
+        if dry_run and self.logger is not None:
+            self.logger.info("Would have sent a mail:")
+            self.logger.info("  Subject: %s" % subject)
+            self.logger.info("  Sender: %s" % from_addr)
+            self.logger.info("  Recipients: %s" % recipients)
+            self.logger.info("  Bcc: %s" % extra_headers['Bcc'])
+            self.logger.info("  Body:")
+            for line in mail_text.splitlines():
+                self.logger.info(line)
+        else:
+            debug(self.logger, "Sent a mail:")
+            debug(self.logger, "    Subject: %s" % subject)
+            debug(self.logger, "    Recipients: %s" % recipients)
+            debug(self.logger, "    Body:")
+            for line in mail_text.splitlines():
+                debug(self.logger, line)
+
+            simple_sendmail(
+                from_addr,
+                recipients,
+                subject,
+                mail_text,
+                extra_headers
+            )
 
 
 class PackageUploadBuild(SQLBase):
@@ -710,7 +745,7 @@ class PackageUploadBuild(SQLBase):
     build = ForeignKey(dbName='build', foreignKey='Build')
 
     def checkComponentAndSection(self):
-        """See IPackageUploadBuild."""
+        """See `IPackageUploadBuild`."""
         distroseries = self.packageupload.distroseries
         for binary in self.build.binarypackages:
             if binary.component not in distroseries.upload_components:
@@ -723,7 +758,7 @@ class PackageUploadBuild(SQLBase):
                                                            distroseries.name))
 
     def publish(self, logger=None):
-        """See IPackageUploadBuild."""
+        """See `IPackageUploadBuild`."""
         # Determine the build's architecturetag
         build_archtag = self.build.distroarchseries.architecturetag
         # Determine the target arch series.
@@ -833,7 +868,7 @@ class PackageUploadSource(SQLBase):
                 filename, self.packageupload.distroseries.name))
 
     def checkComponentAndSection(self):
-        """See IPackageUploadSource."""
+        """See `IPackageUploadSource`."""
         distroseries = self.packageupload.distroseries
         component = self.sourcepackagerelease.component
         section = self.sourcepackagerelease.section
@@ -849,7 +884,7 @@ class PackageUploadSource(SQLBase):
                                                        distroseries.name))
 
     def publish(self, logger=None):
-        """See IPackageUploadSource."""
+        """See `IPackageUploadSource`."""
         # Publish myself in the distroseries pointed at by my queue item.
         # XXX: dsilvers: 2005-10-20 bug=3408:
         # What do we do here to support embargoed sources?
@@ -890,7 +925,7 @@ class PackageUploadCustom(SQLBase):
                                   notNull=True)
 
     def publish(self, logger=None):
-        """See IPackageUploadCustom."""
+        """See `IPackageUploadCustom`."""
         # This is a marker as per the comment in dbschema.py.
         ##CUSTOMFORMAT##
         # Essentially, if you alter anything to do with what custom formats
@@ -911,7 +946,7 @@ class PackageUploadCustom(SQLBase):
                 self.customformat.name))
 
     def temp_filename(self):
-        """See IPackageUploadCustom."""
+        """See `IPackageUploadCustom`."""
         temp_dir = tempfile.mkdtemp()
         temp_file_name = os.path.join(temp_dir, self.libraryfilealias.filename)
         temp_file = file(temp_file_name, "wb")
@@ -921,7 +956,7 @@ class PackageUploadCustom(SQLBase):
 
     @property
     def archive_config(self):
-        """See IPackageUploadCustom."""
+        """See `IPackageUploadCustom`."""
         archive = self.packageupload.archive
         return archive.getPubConfig()
 
@@ -943,7 +978,7 @@ class PackageUploadCustom(SQLBase):
             shutil.rmtree(os.path.dirname(temp_filename))
 
     def publish_DEBIAN_INSTALLER(self, logger=None):
-        """See IPackageUploadCustom."""
+        """See `IPackageUploadCustom`."""
         # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.debian_installer import (
@@ -952,7 +987,7 @@ class PackageUploadCustom(SQLBase):
         self._publishCustom(process_debian_installer)
 
     def publish_DIST_UPGRADER(self, logger=None):
-        """See IPackageUploadCustom."""
+        """See `IPackageUploadCustom`."""
         # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.dist_upgrader import (
@@ -961,7 +996,7 @@ class PackageUploadCustom(SQLBase):
         self._publishCustom(process_dist_upgrader)
 
     def publish_DDTP_TARBALL(self, logger=None):
-        """See IPackageUploadCustom."""
+        """See `IPackageUploadCustom`."""
         # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.ddtp_tarball import (
@@ -970,7 +1005,7 @@ class PackageUploadCustom(SQLBase):
         self._publishCustom(process_ddtp_tarball)
 
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
-        """See IPackageUploadCustom."""
+        """See `IPackageUploadCustom`."""
         # XXX: dsilvers 2005-11-15: We should be able to get a
         # sourcepackagerelease directly.
         sourcepackagerelease = (
@@ -1005,29 +1040,29 @@ class PackageUploadCustom(SQLBase):
 
 
 class PackageUploadSet:
-    """See IPackageUploadSet"""
+    """See `IPackageUploadSet`"""
     implements(IPackageUploadSet)
 
     def __iter__(self):
-        """See IPackageUploadSet."""
+        """See `IPackageUploadSet`."""
         return iter(PackageUpload.select())
 
     def __getitem__(self, queue_id):
-        """See IPackageUploadSet."""
+        """See `IPackageUploadSet`."""
         try:
             return PackageUpload.get(queue_id)
         except SQLObjectNotFound:
             raise NotFoundError(queue_id)
 
     def get(self, queue_id):
-        """See IPackageUploadSet."""
+        """See `IPackageUploadSet`."""
         try:
             return PackageUpload.get(queue_id)
         except SQLObjectNotFound:
             raise NotFoundError(queue_id)
 
     def count(self, status=None, distroseries=None, pocket=None):
-        """See IPackageUploadSet."""
+        """See `IPackageUploadSet`."""
         clauses = []
         if status:
             clauses.append("status=%s" % sqlvalues(status))

@@ -250,9 +250,23 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.IBug"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IBranch"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BranchFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBugTask"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugTaskFormatterAPI"
         name="fmt"
         />
 

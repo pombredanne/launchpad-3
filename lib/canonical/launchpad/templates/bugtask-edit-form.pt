@@ -1,4 +1,6 @@
 <form
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   action="#"
   tal:attributes="action string:${context/fmt:url}/+editstatus"
   method="post"
@@ -189,7 +191,8 @@
         </td>
       </tr>
       <tr>
-        <td nowrap tal:content="structure view/widgets/assignee" colspan="2" />
+        <td tal:content="structure view/widgets/assignee"
+          colspan="2" style="white-space: nowrap" />
       </tr>
     </table>
     <table tal:condition="not:context/target_uses_malone">
@@ -202,7 +205,8 @@
         </td>
       </tr>
       <tr>
-        <td nowrap tal:content="structure view/widgets/bugwatch" colspan="2" />
+        <td tal:content="structure view/widgets/bugwatch"
+          colspan="2" style="white-space: nowrap" />
       </tr>
       <tr>
         <td class="formHelp" colspan="2">

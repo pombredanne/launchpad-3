@@ -96,7 +96,8 @@ class BugWatch(SQLBase):
             linked_bugtask.transitionToAssignee(None)
             if linked_bugtask.status != old_bugtask.status:
                 event = SQLObjectModifiedEvent(
-                    linked_bugtask, old_bugtask, ['status'])
+                    linked_bugtask, old_bugtask, ['status'],
+                    user=getUtility(ILaunchpadCelebrities).bug_watch_updater)
                 notify(event)
 
     def destroySelf(self):
@@ -268,7 +269,8 @@ class BugWatchSet(BugSetBase):
         return the global SF instance. This makes it possible for people
         to use alternative host names, like sf.net.
         """
-        if not path.startswith('/tracker/'):
+        if (not path.startswith('/support/tracker.php') and
+            not path.startswith('/tracker/index.php')):
             return None
         if not query.get('aid'):
             return None

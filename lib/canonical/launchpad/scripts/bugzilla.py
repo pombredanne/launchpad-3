@@ -28,13 +28,13 @@ import pytz
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, IBugSet, IBugTaskSet,
-    IBugExternalRefSet, IBugAttachmentSet, IMessageSet,
-    ILibraryFileAliasSet, ICveSet, IBugWatchSet, PersonCreationRationale,
-    ILaunchpadCelebrities, NotFoundError, CreateBugParams)
+    BugTaskStatus, IPersonSet, IEmailAddressSet, IBugSet, IBugTaskSet,
+    IBugExternalRefSet, IBugAttachmentSet, IMessageSet, ILibraryFileAliasSet,
+    ICveSet, IBugWatchSet, PersonCreationRationale, ILaunchpadCelebrities,
+    NotFoundError, CreateBugParams)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType)
+    BugTaskImportance, BugAttachmentType)
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugzilla')
 
@@ -150,8 +150,14 @@ class BugzillaBackend:
                      mimetype, ispatch, filename, thedata,
                      submitter_id) in self.cursor.fetchall()]
 
-    def findBugs(self, product=[], component=[], status=[]):
+    def findBugs(self, product=None, component=None, status=None):
         """Returns the requested bug IDs as a list"""
+        if product is None:
+            product = []
+        if component is None:
+            component = []
+        if status is None:
+            status = []
         joins = []
         conditions = []
         if product:
@@ -619,13 +625,20 @@ class Bugzilla:
                 lpdupe.duplicateof = lpdupe_of
             trans.commit()
 
-    def importBugs(self, trans, product=[], component=[], status=[]):
+    def importBugs(self, trans, product=None, component=None, status=None):
         """Import Bugzilla bugs matching the given constraints.
 
         Each of product, component and status gives a list of
         products, components or statuses to limit the import to.  An
         empty list matches all products, components or statuses.
         """
+        if product is None:
+            product = []
+        if component is None:
+            component = []
+        if status is None:
+            status = []
+
         bugs = self.backend.findBugs(product=product,
                                      component=component,
                                      status=status)

@@ -1,4 +1,6 @@
-<div>
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+>
   <form method="get" name="filter" id="filter_form"
         style="padding-bottom: 0.5em"
         tal:attributes="action context/request/URL">
@@ -55,17 +57,10 @@ field.onchange = submit_filter;
              tal:content="branch/name/fmt:shorten/30">
                Name
           </a>
-          <img src="/@@/private" alt="private branch" tal:condition="branch/private"/>
-          <tal:bugbranch repeat="bugbranch branch/bugbranches">
-            <tal:visible
-                define="bug bugbranch/bug"
-                condition="bug/required:launchpad.View">
-              <a tal:attributes="href bug/fmt:url;
-                                 title string:Bug ${bug/id} - ${bug/title} (${bugbranch/status/title})">
-                <img src="/@@/bug" alt="bug" />
-              </a>
-            </tal:visible>
-          </tal:bugbranch>
+          <img src="/@@/private" alt="private" title="Private"
+               tal:condition="branch/private"/>
+          <img src="/@@/bug" alt="bug" title="Related to a bug"
+               tal:condition="branch/bugbranches"/>
         </td>
         <td tal:condition="context/show_column/author|nothing">
           <a tal:condition="branch/author"

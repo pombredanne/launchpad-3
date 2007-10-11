@@ -12,6 +12,7 @@ from sha import sha
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.archiveuploader.tests import datadir
 from canonical.config import config
 from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
 from canonical.launchpad.interfaces import (
@@ -64,6 +65,11 @@ class TestQueueBase(TestCase):
 
         return runner.execute(argument.split())
 
+    def assertEmail(self, expected_to_addrs):
+        """Pop an email from the stub queue and check its recipients."""
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertEqual(to_addrs, expected_to_addrs)
+
 
 class TestQueueTool(TestQueueBase):
     layer = LaunchpadZopelessLayer
@@ -71,7 +77,16 @@ class TestQueueTool(TestQueueBase):
 
     def setUp(self):
         """Create contents in disk for librarian sampledata."""
-        fillLibrarianFile(1)
+        # Packageupload.notify() needs real changes file data to send
+        # email, so this nice simple "ed" changes file will do.  It's
+        # the /wrong/ changes file for the package in the upload queue,
+        # but that doesn't matter as only email addresses are parsed out
+        # of it.
+        changes_file_obj = open(
+            datadir('ed-0.2-21/ed_0.2-21_source.changes'), 'r')
+        self.test_changes_file = changes_file_obj.read()
+        changes_file_obj.close()
+        fillLibrarianFile(1, content=self.test_changes_file)
         TestQueueBase.setUp(self)
 
     def tearDown(self):
@@ -191,6 +206,24 @@ class TestQueueTool(TestQueueBase):
         self.assertEqual('pmount', pmount.displayname)
         self.assertEqual('alsa-utils', alsa.displayname)
 
+    def testAcceptingSourceGeneratesEmail(self):
+        """Check if accepting a source package generates an email."""
+        queue_action = self.execute_command('accept alsa-utils', no_mail=False)
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(2, len(stub.test_emails))
+        # Second email sent (first to pop from queue) is the announcement:
+        self.assertEmail(['autotest_changes@ubuntu.com'])
+        # First email sent (second to pop) is the uploader's notification:
+        self.assertEmail(
+            ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
+
+    def testAcceptingBinaryDoesntGenerateEmail(self):
+        """Check if accepting a binary package does not generate email."""
+        queue_action = self.execute_command(
+            'accept mozilla-firefox', no_mail=False)
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(0, len(stub.test_emails))
+
     def testAcceptActionWithMultipleIDs(self):
         """Check if accepting multiple items at once works.
 
@@ -301,16 +334,14 @@ class TestQueueTool(TestQueueBase):
         # Only one item considered.
         self.assertEqual(1, queue_action.items_size)
 
-        # One email was sent.
-        self.assertEqual(1, len(stub.test_emails))
-
         # Previously stored reference should have new state now
         self.assertEqual('ACCEPTED', target_queue.status.name)
 
-        # Email sent to the default recipient only, not the breezy-autotest
-        # announcelist.
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        self.assertEqual([queue_action.default_recipient], to_addrs)
+        # Only one email is sent to the changed-by email on the changes
+        # file.  No announcement email is sent.
+        self.assertEqual(len(stub.test_emails), 1)
+        self.assertEmail(
+            ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
 
     def testQueueDoesNotSendAnyEmailsForTranslations(self):
         """Check if no emails are sent when accepting translations.
@@ -442,15 +473,32 @@ class TestQueueTool(TestQueueBase):
         self.assertQueueLength(
             1, breezy_autotest, PackageUploadStatus.REJECTED, "cnews")
 
+    def testRejectSourceSendsEmail(self):
+        """Check that rejecting a source upload sends email."""
+        queue_action = self.execute_command(
+            'reject alsa-utils', no_mail=False)
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(1, len(stub.test_emails))
+        self.assertEmail(
+            ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
+
+    def testRejectBinarySendsEmail(self):
+        """Check that rejecting a binary upload sends email."""
+        queue_action = self.execute_command('reject 2', no_mail=False)
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(1, len(stub.test_emails))
+        self.assertEmail(
+            ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
+
     def testRejectWithMultipleIDs(self):
         """Check if rejecting multiple items at once works.
 
         We can specify multiple items to reject, even mixing IDs and names.
         e.g. queue reject alsa-utils 1 3
         """
-        # Set up.
-        fillLibrarianFile(1, content='One')
-        fillLibrarianFile(52, content='Fifty-Two')
+        # An additional librarian file is needed for queue item with ID 1
+        # because in the sample data it points to library file alias 52.
+        fillLibrarianFile(52, content=self.test_changes_file)
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
 
@@ -470,7 +518,7 @@ class TestQueueTool(TestQueueBase):
     def testOverrideSource(self):
         """Check if overriding sources works.
 
-        We can specify multiple items to reject, even mixing IDs and names.
+        We can specify multiple items to override, even mixing IDs and names.
         e.g. queue override source -c restricted alsa-utils 1 3
         """
         # Set up.
@@ -518,15 +566,15 @@ class TestQueueTool(TestQueueBase):
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         breezy_autotest = ubuntu['breezy-autotest']
 
-        # Test that it changes to commercial when required.
+        # Test that it changes to partner when required.
         queue_action = self.execute_command('override source alsa-utils',
-            component_name='commercial')
+            component_name='partner')
         self.assertEqual(1, queue_action.items_size)
         [queue_item] = breezy_autotest.getQueueItems(
             status=PackageUploadStatus.NEW, name="alsa-utils")
         [source] = queue_item.sources
         self.assertEqual(source.sourcepackagerelease.upload_archive.purpose,
-            ArchivePurpose.COMMERCIAL)
+            ArchivePurpose.PARTNER)
 
         # Test that it changes back to primary when required.
         queue_action = self.execute_command('override source alsa-utils',
@@ -548,19 +596,19 @@ class TestQueueTool(TestQueueBase):
 
         LaunchpadZopelessLayer.switchDbUser("testadmin")
         proxied_archive = getUtility(IArchiveSet).getByDistroPurpose(
-            ubuntu, ArchivePurpose.COMMERCIAL)
+            ubuntu, ArchivePurpose.PARTNER)
         comm_archive = removeSecurityProxy(proxied_archive)
         comm_archive.purpose = ArchivePurpose.EMBARGOED
         LaunchpadZopelessLayer.txn.commit()
         self.assertRaises(CommandRunnerError,
                           self.execute_command,
                           'override source alsa-utils',
-                          component_name='commercial')
+                          component_name='partner')
 
     def testOverrideBinary(self):
         """Check if overriding binaries works.
 
-        We can specify multiple items to reject, even mixing IDs and names.
+        We can specify multiple items to override, even mixing IDs and names.
         e.g. queue override binary -c restricted alsa-utils 1 3
         """
         # Set up.
@@ -612,10 +660,10 @@ class TestQueueTool(TestQueueBase):
         """
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
-        # Test that it changes to commercial when required.
+        # Test that it changes to partner when required.
         self.assertRaises(
             CommandRunnerError, self.execute_command, 'override binary pmount',
-            component_name='commercial')
+            component_name='partner')
 
 
 class TestQueueToolInJail(TestQueueBase):
@@ -725,6 +773,28 @@ class TestQueueToolInJail(TestQueueBase):
             queue_name='unapproved', suite_name='breezy-autotest')
 
         self.assertEqual(['netapplet-1.0.0.tar.gz'], self._listfiles())
+
+    def testQueueFetch(self):
+        """Check that a basic fetch operation works."""
+        FAKE_CHANGESFILE_CONTENT = "Fake Changesfile"
+        FAKE_DEB_CONTENT = "Fake DEB"
+        fillLibrarianFile(1, FAKE_CHANGESFILE_CONTENT)
+        fillLibrarianFile(37, FAKE_DEB_CONTENT)
+        queue_action = self.execute_command('fetch pmount')
+
+        # Check the files' names.
+        files = sorted(self._listfiles())
+        self.assertEqual(
+            ['netapplet-1.0.0.tar.gz', 'pmount_1.9-1_all.deb'],
+            files)
+
+        # Check the files' contents.
+        changes_file = open('netapplet-1.0.0.tar.gz')
+        self.assertEqual(changes_file.read(), FAKE_CHANGESFILE_CONTENT)
+        changes_file.close()
+        debfile = open('pmount_1.9-1_all.deb')
+        self.assertEqual(debfile.read(), FAKE_DEB_CONTENT)
+        debfile.close()
 
     def testFetchMultipleItems(self):
         """Check if fetching multiple items at once works.

@@ -1,8 +1,7 @@
 A bug is unassigned by choosing the "Assigned to" -> "Nobody" option.
 
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-
-    >>> browser.open("http://localhost:8086/firefox/+bug/1")
+    >>> browser = setupBrowser(auth= "Basic foo.bar@canonical.com:test")
+    >>> browser.open("http://launchpad.dev/firefox/+bug/1")
 
 Bug 1 is currently assigned to someone.
 

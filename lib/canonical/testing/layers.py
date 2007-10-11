@@ -159,6 +159,13 @@ class BaseLayer:
                     "Zopeless environment was setup and not torn down."
                     )
 
+        # Detect a test that forgot to reset the default socket timeout.
+        # This safety belt is cheap and protects us from very nasty
+        # intermittent test failures: see bug #140068 for an example.
+        if socket.getdefaulttimeout() is not None:
+            raise LayerIsolationError(
+                "Test didn't reset the socket default timeout.")
+
 
 class LibrarianLayer(BaseLayer):
     """Provides tests access to a Librarian instance.

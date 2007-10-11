@@ -305,21 +305,22 @@ class NoneFormatter:
     implements(ITraversable)
 
     allowed_names = set([
-        'nl_to_br',
-        'nice_pre',
+        'approximatedate',
+        'approximateduration',
         'breadcrumbs',
         'break-long-words',
         'date',
-        'time',
         'datetime',
-        'approximatedate',
         'displaydate',
-        'rfc822utcdatetime',
-        'exactduration',
-        'approximateduration',
-        'pagetitle',
-        'text-to-html',
         'email-to-html',
+        'exactduration',
+        'lower',
+        'nice_pre',
+        'nl_to_br',
+        'pagetitle',
+        'rfc822utcdatetime',
+        'text-to-html',
+        'time',
         'url',
         ])
 
@@ -354,6 +355,35 @@ class ObjectFormatterAPI:
         request = get_current_browser_request()
         return canonical_url(
             self._context, request, path_only_if_possible=True)
+
+
+class ObjectFormatterExtendedAPI(ObjectFormatterAPI):
+    """Adapter for any object to a formatted string.
+
+    Adds fmt:link which shows the icon and formatted string in an anchor.
+    """
+
+    implements(ITraversable)
+
+    allowed_names = set([
+        'url',
+        ])
+
+    def traverse(self, name, furtherPath):
+        if name == 'link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.link(extra_path)
+        elif name in self.allowed_names:
+            return getattr(self, name)()
+        else:
+            raise TraversalError, name
+
+    def link(self, extra_path):
+        """Return an HTML link to the person's page containing an icon
+        followed by the person's name.
+        """
+        raise NotImplemented
 
 
 class ObjectImageDisplayAPI:
@@ -639,24 +669,8 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
         return self.icon_template % (alt, title, source)
 
 
-class PersonFormatterAPI(ObjectFormatterAPI):
+class PersonFormatterAPI(ObjectFormatterExtendedAPI):
     """Adapter for IPerson objects to a formatted string."""
-
-    implements(ITraversable)
-
-    allowed_names = set([
-        'url',
-        ])
-
-    def traverse(self, name, furtherPath):
-        if name == 'link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.link(extra_path)
-        elif name in self.allowed_names:
-            return getattr(self, name)()
-        else:
-            raise TraversalError, name
 
     def link(self, extra_path):
         """Return an HTML link to the person's page containing an icon
@@ -671,35 +685,50 @@ class PersonFormatterAPI(ObjectFormatterAPI):
             url, image_html, person.browsername)
 
 
-class BranchFormatterAPI(ObjectFormatterAPI):
-    """Adapter for IPerson objects to a formatted string."""
-
-    implements(ITraversable)
-
-    allowed_names = set([
-        'url',
-        ])
-
-    def traverse(self, name, furtherPath):
-        if name == 'link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.link(extra_path)
-        elif name in self.allowed_names:
-            return getattr(self, name)()
-        else:
-            raise TraversalError, name
+class BranchFormatterAPI(ObjectFormatterExtendedAPI):
+    """Adapter for IBranch objects to a formatted string."""
 
     def link(self, extra_path):
-        """Return an HTML link to the person's page containing an icon
-        followed by the person's name.
+        """Return an HTML link to the branch page containing an icon
+        followed by the branch's unique name.
         """
         branch = self._context
         url = canonical_url(branch)
         if extra_path:
             url = '%s/%s' % (url, extra_path)
-        return '<a href="%s"><img src="/@@/branch" alt=""/>&nbsp;%s</a>' % (
-            url, branch.displayname)
+        return ('<a href="%s" title="%s"><img src="/@@/branch" alt=""/>'
+                '&nbsp;%s</a>' % (url, branch.displayname, branch.unique_name))
+
+
+class BugFormatterAPI(ObjectFormatterExtendedAPI):
+    """Adapter for IBug objects to a formatted string."""
+
+    def link(self, extra_path):
+        """Return an HTML link to the bug page containing an icon
+        followed by the bug's title.
+        """
+        bug = self._context
+        url = canonical_url(bug)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        return ('<a href="%s"><img src="/@@/bug" alt=""/>'
+                '&nbsp;Bug #%d: %s</a>' % (url, bug.id, bug.title))
+
+
+class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
+    """Adapter for IBugTask objects to a formatted string."""
+
+    def link(self, extra_path):
+        """Return an HTML link to the bug task's page containing an icon
+        appropriate to the importance of the bug task.
+        """
+        bugtask = self._context
+        url = canonical_url(bugtask)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        image_html = BugTaskImageDisplayAPI(bugtask).icon()
+        return '<a href="%s">%s&nbsp;Bug #%d: %s</a>' % (
+            url, image_html, bugtask.bug.id, bugtask.bug.title)
 
 
 class NumberFormatterAPI:
@@ -1424,7 +1453,7 @@ class FormattersAPI:
     # '> > ' are valid quoting sequences.
     # The dpkg version is used for exceptional cases where it
     # is better to not assume '|' is a start of a quoted passage.
-    _re_quoted = re.compile('^(([|] ?)+ |(&gt; ?)+ )')
+    _re_quoted = re.compile('^(([|] ?)+|(&gt; ?)+)')
     _re_dpkg_quoted = re.compile('^(&gt; ?)+ ')
 
     # Match blocks that start as signatures or PGP inclusions.
@@ -1587,6 +1616,10 @@ class FormattersAPI:
             r'<email address hidden>', self._stringtoformat)
         return text
 
+    def lower(self):
+        """Return the string in lowercase"""
+        return self._stringtoformat.lower()
+
     def shorten(self, maxlength):
         """Use like tal:content="context/foo/fmt:shorten/60"."""
         if len(self._stringtoformat) > maxlength:
@@ -1597,6 +1630,8 @@ class FormattersAPI:
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
             return self.nl_to_br()
+        elif name == 'lower':
+            return self.lower()
         elif name == 'break-long-words':
             return self.break_long_words()
         elif name == 'text-to-html':
