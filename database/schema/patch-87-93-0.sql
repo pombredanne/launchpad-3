@@ -5,17 +5,17 @@ ALTER TABLE Branch
 
 /*
 The date_last_modified for a branch is the maximum of the
-revision_date of the tip revision or the date created.
+date_created of the tip revision or the date the branch was created.
 */
 
 UPDATE Branch
 SET date_last_modified = date_created;
 
 UPDATE Branch
-SET date_last_modified = Revision.revision_date
+SET date_last_modified = Revision.date_created
 FROM Revision
 WHERE Branch.last_scanned_id = Revision.revision_id
-AND Revision.revision_date > Branch.date_last_modified;
+AND Revision.date_created > Branch.date_last_modified;
 
 ALTER TABLE Branch
   ALTER COLUMN date_last_modified SET NOT NULL,

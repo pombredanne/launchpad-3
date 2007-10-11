@@ -349,6 +349,10 @@ class Branch(SQLBase):
 
     def createBranchRevision(self, sequence, revision):
         """See `IBranch`."""
+        # Don't update the branch last modified date if the revision
+        # is in the ancestry not the revision history.
+        if sequence is not None:
+            self.date_last_modified = UTC_NOW
         return BranchRevision(
             branch=self, sequence=sequence, revision=revision)
 
