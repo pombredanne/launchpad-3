@@ -24,6 +24,10 @@ class SourcePackageReleaseView(LaunchpadView):
         return self._linkify_changelog(
             self.context.changelog, self.context.name)
 
+    def change_summary(self):
+        return self._linkify_changelog(
+            self.context.change_summary, self.context.name)
+
     def _linkify_bug_numbers(self, changelog):
         """Linkify to a bug if LP: #number appears in the changelog text."""
         # FormattersAPI._linkify_substitution requires a match object

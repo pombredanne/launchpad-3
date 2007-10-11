@@ -18,19 +18,14 @@
     </table>
   </div>
 
-  <div class="boardCommentBody">
+  <div class="boardCommentBody"
+   tal:define="change_summary context/sourcepackagerelease/@@+change_summary">
 
-    <div style="font-family: monospace;"
-      tal:condition="not: view/user"
-      tal:content="structure
-        context/sourcepackagerelease/change_summary/fmt:obfuscate-email/fmt:email-to-html">
-      Change summary text
-    </div>
-    <div style="font-family: monospace;"
-      tal:condition="view/user"
-      tal:content="structure
-        context/sourcepackagerelease/change_summary/fmt:email-to-html">
-      Change summary text
+    <div style="font-family: monospace;">
+      <span tal:condition="not: view/user"
+            tal:content="structure change_summary/fmt:obfuscate-email"/>
+      <span tal:condition="view/user"
+            tal:content="structure change_summary"/>
     </div>
 
   </div>

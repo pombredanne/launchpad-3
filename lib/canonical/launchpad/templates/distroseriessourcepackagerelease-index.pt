@@ -61,7 +61,8 @@
 
   <h2>Changelog</h2>
 
-  <pre id="changelog" tal:content="context/sourcepackagerelease/changelog" />
+  <pre id="changelog"
+       tal:replace="structure context/sourcepackagerelease/@@+changelog" />
 
    <div id="changesfile" tal:define="changesfile context/changesfile">
      <p tal:condition="changesfile">
