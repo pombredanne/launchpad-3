@@ -76,10 +76,9 @@ class TestNameBlacklist(LaunchpadTestCase):
         # is_blacklisted is a method in canonical.foaf.nickname
         # which corresponds to is_blacklisted_name in this test
         # except that it also allows unicode strings.
-        self.failUnless(is_blacklisted("foo", self.cur) == 1)
-        self.failUnless(is_blacklisted(u"foo", self.cur) == 1)
-        self.failUnless(is_blacklisted("bar", self.cur) == 0)
-        self.failUnless(is_blacklisted(u"bar", self.cur) == 0)
+        self.failUnless(is_blacklisted(u"foo", self.cur))
+        self.failIf(is_blacklisted(u"bar", self.cur))
+        self.failIf(is_blacklisted(u"bar\u0434", self.cur))
 
     def test_is_blacklisted_name(self):
         # is_blacklisted_name() is just a wrapper around name_blacklist_match
