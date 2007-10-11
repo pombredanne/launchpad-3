@@ -10,6 +10,15 @@
   i18n:domain="launchpad"
 >
 <body>
+
+  <metal:rightportlets fill-slot="portlets_two">
+  <div
+    tal:condition="context/official_rosetta"
+    tal:replace="structure context/@@+portlet-translation-groups-and-permission"
+    />
+  <div tal:replace="structure context/@@+portlet-preflangs" />
+  </metal:rightportlets>
+
   <tal:tag condition="view/update"/>
   <metal:heading fill-slot="pageheading">
     <h1>Select a new translation group</h1>

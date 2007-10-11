@@ -11,7 +11,11 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-details" />
+  <div
+    tal:condition="context/official_rosetta"
+    tal:replace="structure context/@@+portlet-translation-groups-and-permission"
+    />
+  <div tal:replace="structure context/@@+portlet-preflangs" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">

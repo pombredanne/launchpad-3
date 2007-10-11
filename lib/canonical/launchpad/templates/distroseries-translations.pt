@@ -13,12 +13,14 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/distribution/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+  <div
+    tal:condition="context/distribution/official_rosetta"
+    tal:replace="structure context/distribution/@@+portlet-translation-groups-and-permission"
+    />
   <div tal:replace="structure context/@@+portlet-preflangs" />
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">

@@ -15,6 +15,10 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+  <div
+    tal:condition="context/official_rosetta"
+    tal:replace="structure context/@@+portlet-translation-groups-and-permission"
+    />
   <div tal:replace="structure request/@@+portlet-preflangs" />
 </metal:rightportlets>
 

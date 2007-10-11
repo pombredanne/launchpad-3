@@ -39,9 +39,6 @@
             <a tal:replace="structure context/members/fmt:link" />
           </td>
         </tr>
-        <tal:translation-group
-          condition="context/official_rosetta"
-          replace="structure context/@@+translation-group-and-permission-info" />
         <tr>
           <th>Uses Launchpad for:</th>
           <td tal:condition="not:context/full_functionality">Nothing</td>

@@ -7,12 +7,13 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:condition="context/project"
-       tal:replace="structure context/project/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
+  <div
+    tal:condition="context/official_rosetta"
+    tal:replace="structure context/@@+portlet-translation-groups-and-permission"
+    />
   <div tal:replace="structure context/@@+portlet-preflangs" />
 </metal:rightportlets>
 

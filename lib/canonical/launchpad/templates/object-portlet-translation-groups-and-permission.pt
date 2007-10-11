@@ -1,0 +1,24 @@
+<div class="portlet" id="portlet-preferred-langs">
+  <h2>Translation permissions</h2>
+  <div class="portletBody">
+    <div class="portletContent">
+      <table>
+        <tr>
+          <th>Translation group:</th>
+          <td tal:condition="not: context/translationgroup">
+            Not assigned
+          </td>
+          <td tal:condition="context/translationgroup">
+            <a tal:attributes="href context/translationgroup/fmt:url"
+               tal:content="context/translationgroup/title" />
+          </td>
+        </tr>
+        <tr>
+          <th>Permissions:</th>
+          <td tal:content="context/translationpermission/title">Open</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+

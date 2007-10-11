@@ -173,13 +173,6 @@
     />
 
   <browser:page
-    name="+translation-group-and-permission-info"
-    for="canonical.launchpad.interfaces.IProduct"
-    class="canonical.launchpad.browser.TranslationGroupAndPermissionInfoView"
-    permission="zope.Public"
-    />
-
-  <browser:page
     name="+translations"
     for="canonical.launchpad.interfaces.IProduct"
     class="canonical.launchpad.browser.TranslationsRedirectView"

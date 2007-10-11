@@ -81,9 +81,6 @@
             <tal:none condition="not:bugtracker">None specified</tal:none>
           </td>
         </tr>
-        <tal:translation-group
-          condition="context/official_rosetta"
-          replace="structure context/@@+translation-group-and-permission-info" />
       </tbody>
     </table>
   </div>

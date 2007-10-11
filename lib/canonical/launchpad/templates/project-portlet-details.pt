@@ -43,8 +43,6 @@
             <tal:none condition="not:context/bugtracker">None specified</tal:none>
           </td>
         </tr>
-        <tal:translation-group
-          replace="structure context/@@+translation-group-and-permission-info" />
       </tbody>
     </table>
   </div>

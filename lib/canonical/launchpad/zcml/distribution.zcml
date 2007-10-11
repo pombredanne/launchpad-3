@@ -411,13 +411,6 @@
     permission="zope.Public"
     />
 
-  <browser:page
-    name="+translation-group-and-permission-info"
-    for="canonical.launchpad.interfaces.IDistribution"
-    class="canonical.launchpad.browser.TranslationGroupAndPermissionInfoView"
-    permission="zope.Public"
-    />
-
   <browser:editform
     name="+changetranslators"
     for="canonical.launchpad.interfaces.IDistribution"
