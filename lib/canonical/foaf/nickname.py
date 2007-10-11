@@ -29,11 +29,11 @@ def _is_nick_registered(nick):
 
 def is_blacklisted(name, cur=None):
     if cur is None:
-        # cursor is passed only for testing
+        # A cursor is passed only for testing.
         cur = cursor()
     cur.execute("SELECT is_blacklisted_name(%(name)s)" % sqlvalues(
         name=name.encode('utf-8')))
-    return bool(cur.fetchone()[0])
+    return cur.fetchone()[0]
 
 
 def generate_nick(email_addr, is_registered=_is_nick_registered):
