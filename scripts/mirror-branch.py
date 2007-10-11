@@ -1,6 +1,11 @@
 #!/usr/bin/python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
+# Script run by cronscripts/supermirror-pull.py to mirror individual branches.
+# This script does not use the standard Launchpad script framework as it is
+# not intended to be run by itself.
+
+
 import _pythonpath
 from optparse import OptionParser
 import sys
@@ -49,7 +54,7 @@ if __name__ == '__main__':
     shut_up_deprecation_warning()
     force_bzr_to_use_urllib()
 
-    protocol = PullerWorkerProtocol(sys.stdout, sys.stderr)
+    protocol = PullerWorkerProtocol(sys.stdout)
     PullerWorker(
         source_url, destination_url, int(branch_id), unique_name, branch_type,
         protocol).mirror()
