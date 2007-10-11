@@ -18,6 +18,7 @@ from xml.dom import minidom
 from BeautifulSoup import BeautifulSoup, Comment, SoupStrainer
 from zope.interface import implements
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical import encoding
 from canonical.database.constants import UTC_NOW
@@ -702,54 +703,14 @@ class Mantis(ExternalBugTracker):
         # authentication.
         return self._opener.open(request, data)
 
-    def initializeRemoteBugDB(self, bug_ids):
-        """See `ExternalBugTracker`."""
-        super(Mantis, self).initializeRemoteBugDB(bug_ids)
+    @cachedproperty
+    def csv_data(self):
+        """Attempt to retrieve a CSV export from the remote server.
 
-    def getRemoteBug(self, bug_id):
-        """See `ExternalBugTracker`."""
-        # Only parse tables to save time and memory. If we didn't have
-        # to check for application errors in the page (using
-        # _checkForApplicationError) then we could be much more
-        # specific than this.
-        bug_page = BeautifulSoup(
-            self._getPage('view.php?id=%s' % bug_id),
-            convertEntities=BeautifulSoup.HTML_ENTITIES,
-            parseOnlyThese=SoupStrainer('table'))
-
-        app_error = self._checkForApplicationError(bug_page)
-        if app_error:
-            app_error_code, app_error_message = app_error
-            # 1100 is ERROR_BUG_NOT_FOUND in Mantis (see
-            # mantisbt/core/constant_inc.php).
-            if app_error_code == '1100':
-                return None, None
-            else:
-                raise BugWatchUpdateError(
-                    "Mantis APPLICATION ERROR #%s: %s" % (
-                    app_error_code, app_error_message))
-
-        bug = {
-            'id': bug_id,
-            'status': self._findValueRightOfKey(bug_page, 'Status'),
-            'resolution': self._findValueRightOfKey(bug_page, 'Resolution')}
-
-        return int(bug_id), bug
-
-    def getRemoteBugBatch(self, bug_ids):
-        """See `ExternalBugTracker`."""
-        # It's unfortunate that Mantis offers no way of limiting its CSV
-        # export to a set of bugs; we end up having to pull the CSV for
-        # the entire bugtracker at once (and some of them actually blow
-        # up in the process!); this is why we ignore the bug_ids
-        # argument here.
-
-        if not bug_ids:
-            # Well, not completely: if we have no ids to refresh from
-            # this Mantis instance, don't even start the process and
-            # save us some time and bandwidth.
-            return
-
+        If the export succeeds
+        If the export fails (i.e. the response is 0-length), None will
+        be returned.
+        """
         # Next step is getting our query filter cookie set up; we need
         # to do this weird submit in order to get the closed bugs
         # included in the results; the default Mantis filter excludes
@@ -797,9 +758,76 @@ class Mantis(ExternalBugTracker):
         # MANTIS_VIEW_ALL_COOKIE set in the previous step to specify
         # what's being viewed.
         csv_data = self._getPage("csv_export.php")
-        # We store CSV in the instance just to make debugging easier.
-        self.csv_data = csv_data
 
+        if not csv_data:
+            return None
+        else:
+            return csv_data
+
+    def canUseCSVExports(self):
+        """Return True if a Mantis instance does CSV exports.
+
+        If the Mantis instance cannot or does not support CSV exports,
+        False will be returned.
+        """
+        return self.csv_data is not None
+
+    def initializeRemoteBugDB(self, bug_ids):
+        """See `ExternalBugTracker`.
+
+        This method is overridden so that it can take into account the
+        fact that not all Mantis instances support CSV exports. In
+        those cases all bugs will be imported individually, regardless
+        of how many there are.
+        """
+        self.bugs = {}
+        if (len(bug_ids) > self.batch_query_threshold and
+            self.canUseCSVExports()):
+            self.bugs = self.getRemoteBugBatch(bug_ids)
+        else:
+            # XXX: 2007-08-24 Graham Binns
+            #      It might be better to do this synchronously for the sake of
+            #      handling timeouts nicely. For now, though, we do it
+            #      sequentially for the sake of easing complexity and making
+            #      testing easier.
+            for bug_id in bug_ids:
+                bug_id, remote_bug = self.getRemoteBug(bug_id)
+
+                if bug_id is not None:
+                    self.bugs[bug_id] = remote_bug
+
+    def getRemoteBug(self, bug_id):
+        """See `ExternalBugTracker`."""
+        # Only parse tables to save time and memory. If we didn't have
+        # to check for application errors in the page (using
+        # _checkForApplicationError) then we could be much more
+        # specific than this.
+        bug_page = BeautifulSoup(
+            self._getPage('view.php?id=%s' % bug_id),
+            convertEntities=BeautifulSoup.HTML_ENTITIES,
+            parseOnlyThese=SoupStrainer('table'))
+
+        app_error = self._checkForApplicationError(bug_page)
+        if app_error:
+            app_error_code, app_error_message = app_error
+            # 1100 is ERROR_BUG_NOT_FOUND in Mantis (see
+            # mantisbt/core/constant_inc.php).
+            if app_error_code == '1100':
+                return None, None
+            else:
+                raise BugWatchUpdateError(
+                    "Mantis APPLICATION ERROR #%s: %s" % (
+                    app_error_code, app_error_message))
+
+        bug = {
+            'id': bug_id,
+            'status': self._findValueRightOfKey(bug_page, 'Status'),
+            'resolution': self._findValueRightOfKey(bug_page, 'Resolution')}
+
+        return int(bug_id), bug
+
+    def getRemoteBugBatch(self, bug_ids):
+        """See `ExternalBugTracker`."""
         # You may find this zero in "\r\n0" funny. Well I don't. This is
         # to work around the fact that Mantis' CSV export doesn't cope
         # with the fact that the bug summary can contain embedded "\r\n"
@@ -808,7 +836,7 @@ class Mantis(ExternalBugTracker):
         # same number as fields as the header.
         # XXX: kiko 2007-07-05: Report Mantis bug.
         # XXX: allenap 2007-09-06: Reported in LP as bug #137780.
-        csv_data = csv_data.strip().split("\r\n0")
+        csv_data = self.csv_data.strip().split("\r\n0")
 
         if not csv_data:
             raise UnparseableBugData("Empty CSV for %s" % self.baseurl)

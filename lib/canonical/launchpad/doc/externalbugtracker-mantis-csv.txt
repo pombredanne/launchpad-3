@@ -124,6 +124,7 @@ Instead of issuing one request per bug watch, like was done before,
 updateBugWatches() issues only one request to update all watches:
 
     >>> example_ext_bug_tracker.trace_calls = True
+    >>> example_ext_bug_tracker.cleanCache()
     >>> example_ext_bug_tracker.updateBugWatches(example_bug_tracker.watches)
     CALLED _postPage('view_all_set.php?f=3', ...)
     CALLED _getPage('csv_export.php')
