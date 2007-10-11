@@ -18,7 +18,7 @@
         <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
       </div>
 
-      <h1>Create a question from this bug</h1>
+      <h1>This is a question</h1>
     </metal:heading>
 
     <metal:leftportlets fill-slot="portlets_one">
@@ -62,7 +62,7 @@
             tal:condition="view/can_be_a_question" />
           <input
             tal:replace="structure view/cancel_action/render"
-            tal:condition="not: view/can_be_a_question" />  
+            tal:condition="not: view/can_be_a_question" />
         </div>
       </metal:form>
     </metal:main>

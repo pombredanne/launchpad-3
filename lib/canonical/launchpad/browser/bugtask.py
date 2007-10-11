@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'get_comments_for_bugtask',
     'BugCreateQuestionView',
+    'BugRemoveQuestionView',
     'BugTargetTraversalMixin',
     'BugTaskNavigation',
     'BugTaskSetNavigation',
@@ -71,9 +72,9 @@ from canonical.launchpad.interfaces import (
     IFrontPageBugTaskSearch, ILaunchBag,
     INominationsReviewTableBatchNavigator, INullBugTask,
     IPerson, IPersonBugTaskSearch, IProduct, IProductSeries,
-    IProductSeriesBugTask, IProject, ISourcePackage, IUpstreamBugTask,
-    IUpstreamProductBugTaskSearch, NotFoundError,
-    RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    IProductSeriesBugTask, IProject, IRemoveQuestionFromBugForm,
+    ISourcePackage, IUpstreamBugTask, IUpstreamProductBugTaskSearch,
+    NotFoundError, RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
     UNRESOLVED_BUGTASK_STATUSES, validate_distrotask, valid_upstreamtask)
 
 from canonical.launchpad.searchbuilder import any, NULL
@@ -2341,7 +2342,7 @@ class BugCreateQuestionView(LaunchpadFormView):
         if comment.strip() == '':
             self.setFieldError('comment', 'A comment was not provided.')
 
-    @action('Create a Question from this Bug', name='create')
+    @action('This is a Question', name='create')
     def create_action(self, action, data):
         """Create a question from this bug and set this bug to Invalid.
         
@@ -2358,6 +2359,61 @@ class BugCreateQuestionView(LaunchpadFormView):
             return
 
         self.context.bug.createQuestionFromBug(self.user, data['comment'])
+
+    @action('Cancel', name='cancel')
+    def cancel_action(self, action, data):
+        """Do nothing, return to the bugtask view."""
+
+
+class BugRemoveQuestionView(LaunchpadFormView):
+    """View for creating a question from a bug."""
+    schema = IRemoveQuestionFromBugForm
+
+    def initialize(self):
+        """Do not process the form when Cancel is the chosen action."""
+        cancel = self.request.form.get('field.actions.cancel', None)
+        if cancel is not None:
+            self.request.response.redirect(self.next_url)
+        super(BugRemoveQuestionView, self).initialize()
+
+    @property
+    def next_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    def validate(self, data):
+        """Verify that a comment was provided."""
+        comment = data.get('comment', '')
+        if comment.strip() == '':
+            self.setFieldError('comment', 'A comment was not provided.')
+
+    @property
+    def has_question(self):
+        """Return True if a question was created from this bug, or False."""
+        return self.context.bug.getQuestionCreatedFromBug() is not None
+
+    @action('This is Not a Question', name='remove')
+    def remove_action(self, action, data):
+        """Remove a question from this bug.
+        
+        The question will be unlinked from the bug. The question is not
+        altered in any other way; it belongs to the question workflow.
+        The bug's bugtasks are editable, though none are changed. Bug
+        contacts are responsible for updating the bugtasks.
+        """
+        question = self.context.bug.getQuestionCreatedFromBug()
+        if question is None:
+            self.request.response.addNotification(
+                'This bug does not have a question to remove')
+            return
+
+        question.unlinkBug(self.context.bug)
+        # The question.owner was implicitly unsubscribed when the bug
+        # was unlinked.
+        self.context.bug.subscribe(question.owner)
+        self.request.response.addNotification(
+            'Removed Question #%s: <a href="%s">%s<a>.'
+            % (question.id, canonical_url(question), question.title))
 
     @action('Cancel', name='cancel')
     def cancel_action(self, action, data):

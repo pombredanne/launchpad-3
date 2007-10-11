@@ -227,8 +227,9 @@ bug_secrecy = ContextBugId('Bug #%d - Set visibility')
 
 bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
 
-bug_create_question = LaunchbagBugID(
-    'Bug #%d - Create a question from this bug')
+bug_create_question = LaunchbagBugID('Bug #%d - This is a question')
+
+bug_remove_question = LaunchbagBugID('Bug #%d - This is not a question')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 

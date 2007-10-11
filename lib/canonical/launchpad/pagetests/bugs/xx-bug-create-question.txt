@@ -1,4 +1,4 @@
-= Create a question from a bug =
+= This bug is a question =
 
 Some bugs that are filed, aren't really bugs, they are questions.
 When the bug target's pillar uses Launchpad to track bugs, the
@@ -29,14 +29,13 @@ is really a question. He chooses to make a question from it.
     'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
     >>> user_browser.getLink('This is a question').click()
     >>> user_browser.title
-    'Bug #10 - Create a question from this bug'
+    'Bug #10 - This is a question'
 
-The 'Create a question from this bug' page explains what will happen
-if No Privileges Person chooses the 'Create a Question' button at the
-bottom of the page. There is a required field for a comment. No
-other input is needed. No Privileges Person must choose between the
-'Cancel' button and the 'Create a Question from this Bug' button.
-He decides to create the question.
+The 'This is a question' page explains what will happen if No
+Privileges Person chooses to make the bug into a question. There is a
+required field for a comment. No other input is needed. No Privileges
+Person must choose between the 'Cancel' button and the 'This is not a
+question' button. He decides to create the question.
 
     >>> find_main_content(user_browser.contents).p
     <p>... the bug's status is set to Invalid. The new question
@@ -46,7 +45,7 @@ He decides to create the question.
     'submit'
 
     >>> user_browser.getControl('Comment').value = 'This bug is a question.'
-    >>> user_browser.getControl('Create a Question from this Bug').click()
+    >>> user_browser.getControl('This is a Question').click()
 
 No Privileges Person is shown the bug page again. There is a permanent
 informational message stating that a question was was created from the
@@ -61,12 +60,11 @@ bug.
      Question #...: <a ...>another test bug</a>. </p>
 
 The bug status is Invalid for 'linux-source-2.6.15 (Ubuntu)'--It
-cannot be editied.
+cannot be edited.
 
     >>> print extract_text(content(['table'], {'class' : 'listing'})[0])
     Affects                       Status   Importance  Assigned to
     linux-source-2.6.15 (Ubuntu)  Invalid  Medium      &mdash;
-
 
 No Privileges Person looks at the page heading and sees that Foo Bar
 is the bu owner. He sees the link to the question in the 'Related
@@ -141,7 +139,7 @@ into a question.
     'Bug #9 in Mozilla Thunderbird: ...Thunderbird crashes...'
     >>> user_browser.getLink('This is a question').click()
     >>> user_browser.title
-    'Bug #9 - Create a question from this bug'
+    'Bug #9 - This is a question'
     >>> find_main_content(user_browser.contents).p
     <p>
     A question cannot be created from this bug.
@@ -150,7 +148,7 @@ into a question.
 The form is present, but without a button to create the question.
 No Privileges Person chooses the Cancel button.
 
-    >>> user_browser.getControl('Create a Question from this Bug').click()
+    >>> user_browser.getControl('This is a Question').click()
     Traceback (most recent call last):
     ...
     LookupError: ...
@@ -167,7 +165,7 @@ or a bookmark, he sees that he cannot create the question again.
     ...     'http://bugs.launchpad.dev'
     ...     '/ubuntu/+source/linux-source-2.6.15/+bug/10/+create-question')
     >>> user_browser.title
-    'Bug #10 - Create a question from this bug'
+    'Bug #10 - This is a question'
     >>> find_main_content(user_browser.contents).p
     <p>
     A question cannot be created from this bug.
@@ -179,8 +177,8 @@ or a bookmark, he sees that he cannot create the question again.
     LookupError: ...
 
 Most browsers cache pages. When No Privileges Person uses his his
-browser's back button, after creating a question, he is reshown the
-form as it was. He resubmit the form and is notified that a question
+browser's back button, after creating a question, he is re-shown the
+form as it was. He resubmit the form, and is notified that a question
 could not be created.
 
     >>> user_browser.open(
@@ -188,8 +186,8 @@ could not be created.
     >>> user_browser.title
     'Bug #12 in Jokosher: ...Copy, Cut and Delete operations should work...'
     >>> user_browser.getLink('This is a question').click()
-    >>> user_browser.getControl('Comment').value = 'This will succede.'
-    >>> user_browser.getControl('Create a Question from this Bug').click()
+    >>> user_browser.getControl('Comment').value = 'This will succeed.'
+    >>> user_browser.getControl('This is a Question').click()
     >>> user_browser.title
     'Bug #12 in Jokosher: ...Copy, Cut and Delete operations should work...'
     >>> get_feedback_messages(user_browser)[0]
@@ -197,7 +195,71 @@ could not be created.
 
     >>> user_browser.goBack(count=1)
     >>> user_browser.getControl('Comment').value = 'This will fail.'
-    >>> user_browser.getControl('Create a Question from this Bug').click()
+    >>> user_browser.getControl('This is a Question').click()
     >>> get_feedback_messages(user_browser)[0]
     u'A question could not created from this bug.'
 
+
+== This is not a question ==
+
+After a question is created from a bug, the bug's Action menu displays
+the 'This is not a question' link. No Privileges Person decides to
+reactivate a bug report.
+
+    >>> user_browser.title
+    'Bug #12 in Jokosher: ...Copy, Cut and Delete operations should work...'
+    >>> user_browser.getLink('This is not a question').click()
+    >>> user_browser.title
+    'Bug #12 - This is not a question'
+
+The 'This is not a question' page explains what will happen if No
+Privileges Person chooses to reactivate the bug. There is a required
+field for a comment. No other input is needed. No Privileges Person
+must choose between the 'Cancel' button and the 'This is not a
+question' button. He decides to create the question.
+
+    >>> find_main_content(user_browser.contents).p
+    <p>... Reactivate this bug report by removing the question created
+    from the bug. ...
+
+    >>> user_browser.getControl('Cancel').type
+    'submit'
+
+    >>> user_browser.getControl('Comment').value = 'I misunderstood.'
+    >>> user_browser.getControl('This is Not a Question').click()
+
+No Privileges Person is shown the bug page again. There is a notice
+stating that a question was removed from the bug. The Related
+Questions portlet is gone too. He views the question and sees that
+it is still in the Open status.
+
+    >>> user_browser.title
+    'Bug #12 in Jokosher: ...Copy, Cut and Delete operations should work...'
+
+    >>> get_feedback_messages(user_browser)
+    [u'Removed Question #...: Copy, Cut and Delete operations should work...']
+
+    >>> portlet = find_portlet(user_browser.contents, 'Related questions')
+    >>> portlet == None
+    True
+
+    >>> user_browser.getLink(
+    ...     'Copy, Cut and Delete operations should work on '
+    ...     'selections').click()
+    >>> user_browser.title
+    'Jokosher question #16: ...Copy, Cut and Delete operations should work...'
+
+    >>> content = find_main_content(user_browser.contents)
+    >>> print extract_text(content(['img'], src='/@@/question')[0].parent)
+    Open Question #..., asked ... by Foo Bar
+
+No Privileges Person uses his browser's back button to view the bug
+again. The bug status is sill Invalid for Jokosher, but he can edit it.
+
+    >>> user_browser.goBack(count=1)
+    >>> content = find_main_content(user_browser.contents)
+    >>> print extract_text(content(['table'], {'class' : 'listing'})[0])
+    Affects                       Status   Importance  Assigned to
+    Jokosher                      Invalid  Critical     &mdash;
+    Affecting: Jokosher
+    Filed here by: Foo Bar...

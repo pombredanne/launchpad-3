@@ -25,6 +25,7 @@ __all__ = [
     'IPersonBugTaskSearch',
     'IProductSeriesBugTask',
     'ISelectResultsSlicable',
+    'IRemoveQuestionFromBugForm',
     'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
@@ -892,5 +893,13 @@ class ICreateQuestionFromBugForm(Interface):
     """Form for creating and question from a bug."""
     comment = Text(
         title=_('Comment'),
-        description=_('An explanation of why the bug is a question.'),
+        description=_('An explanation of why the bug report is a question.'),
+        required=True)
+
+
+class IRemoveQuestionFromBugForm(Interface):
+    """Form for removing a question created from a bug."""
+    comment = Text(
+        title=_('Comment'),
+        description=_('An explanation of why the bug report is valid.'),
         required=True)
