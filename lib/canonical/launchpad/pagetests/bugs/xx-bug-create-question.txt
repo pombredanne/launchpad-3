@@ -6,18 +6,7 @@ bug can be converted to a question. The process creates a new
 question using the bug's owner, title, and description. The bug's
 status is set to Invalid in every location that it affects.
 
-Thunderbird does not use Launchpad to track bugs. Questions cannot
-be made from its bugs.
-
-    >>> user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/9')
-    >>> user_browser.title
-    'Bug #9 in Mozilla Thunderbird: ...Thunderbird crashes...'
-    >>> user_browser.getLink('Is a question')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-An user with permission to edit a bug may create a question from
+A user with permission to edit a bug may create a question from
 a bug. An anonymous user cannot create a question.
 
     >>> anon_browser.open(
@@ -79,9 +68,9 @@ cannot be editied.
     linux-source-2.6.15 (Ubuntu)  Invalid  Medium      &mdash;
 
 
-No Privileges Person can see the link to the question in the 'Related
-questions' portlet. After noting that Foo Bar is the bug owner, he
-uses the link to see the question page.
+No Privileges Person looks at the page heading and sees that Foo Bar
+is the bu owner. He sees the link to the question in the 'Related
+questions' portlet, and uses it to go to the question page.
 
     >>> print extract_text(content(['img'], src='/@@/bug-medium')[0].parent)
     Bug #10, first reported on 2004-01-10 by Foo Bar
@@ -96,12 +85,12 @@ uses the link to see the question page.
     >>> user_browser.title
     'linux-source-2.6.15 in ubuntu question #...: ...another test bug...'
 
-No Privileges Person sees that the question status is Open and
-that is was asked by Foo Bar. Foo Bar is the only subscriber to
-this question (a question in Ubuntu would have many indirect
-subscribers in the real world). As No Privileges Person is not
-the question owner, he is invited to help answer the problem.
-He uses the link to Related bug to return to the bug.
+No Privileges Person sees that the question status is Open and that is
+was asked by Foo Bar in the page heading. Foo Bar is the only
+subscriber to this question (a question in Ubuntu would have many
+indirect subscribers in the real world). As No Privileges Person is not
+the question owner, he is invited to help answer the problem. He uses
+the link to Related bug to return to the bug.
 
     >>> content = find_main_content(user_browser.contents)
     >>> print extract_text(content(['img'], src='/@@/question')[0].parent)
@@ -138,3 +127,83 @@ used the link the email to view the page in his browser.
     'submit'
     >>> admin_browser.getControl("I'm Providing More Information").type
     'submit'
+
+
+== When a question cannot be created from a bug  ==
+
+Thunderbird does not use Launchpad to track bugs. Questions cannot
+be made from its bugs. The link is not available from the Bug Actions
+menu.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/9')
+    >>> user_browser.title
+    'Bug #9 in Mozilla Thunderbird: ...Thunderbird crashes...'
+    >>> user_browser.getLink('Is a question')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+If No Priveleges Person were to hack the URL, the page explains
+that he cannot make a question. The Cancel button is present that
+will return to the bug report page.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/thunderbird/+bug/9/+create-question')
+    >>> user_browser.title
+    'Bug #9 - Create a question from this bug'
+    >>> find_main_content(user_browser.contents).p
+    <p>
+    A question cannot be created from this bug.
+    Mozilla Thunderbird does not use Launchpad to track bugs. ...
+
+    >>> user_browser.getControl('Create a Question from this Bug').click()
+    Traceback (most recent call last):
+    ...
+    LookupError: ...
+
+    >>> user_browser.getControl('Cancel').click()
+    >>> user_browser.title
+    'Bug #9 in Mozilla Thunderbird: ...Thunderbird crashes...'
+
+If No Privileges Person were to return to the create a question
+from a bug page using his back button or a bookmark, he sees that
+he cannot create the question again.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev'
+    ...     '/ubuntu/+source/linux-source-2.6.15/+bug/10/+create-question')
+    >>> user_browser.title
+    'Bug #10 - Create a question from this bug'
+    >>> find_main_content(user_browser.contents).p
+    <p>
+    A question cannot be created from this bug.
+    A question was already created from this bug. ...
+
+    >>> user_browser.getControl('Create a Question from this Bug').click()
+    Traceback (most recent call last):
+    ...
+    LookupError: ...
+
+Most browsers cache pages. When No Privileges Person uses his his
+browser's back button, after creating a question, he is reshown the
+form as it was. He resubmit the form and is notified that a question
+could not be created.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bug/12')
+    >>> user_browser.title
+    'Bug #12 in Jokosher: ...Copy, Cut and Delete operations should work...'
+    >>> user_browser.getLink('Is a question').click()
+    >>> user_browser.getControl('Comment').value = 'This will succede.'
+    >>> user_browser.getControl('Create a Question from this Bug').click()
+    >>> user_browser.title
+    'Bug #12 in Jokosher: ...Copy, Cut and Delete operations should work...'
+    >>> get_feedback_messages(user_browser)[0]
+    u'This report is a question:...Question #16:\nCopy, Cut and Delete...'
+
+    >>> user_browser.goBack(count=1)
+    >>> user_browser.getControl('Comment').value = 'This will fail.'
+    >>> user_browser.getControl('Create a Question from this Bug').click()
+    >>> get_feedback_messages(user_browser)[0]
+    u'A question could not created from this bug.'
+

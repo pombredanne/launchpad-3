@@ -45,8 +45,9 @@ The primary use case for converting a bug into a question is when
 a bug contact recognises a bug is really a question. This happens
 at the UI level. For example, Sample Person would recognise that
 this bug is a question while reviewing Jokosher's bugs, and choose
-to make it into a question. The UI would pass Jokosher as the
-QuestionTarget and Sample Person as the Person.
+to make it into a question. The UI would pass Sample Person as the
+Person changing the status, and a message about why the report is
+a question.
 
     >>> login('test@canonical.com')
     >>> question = bug.createQuestionFromBug(
