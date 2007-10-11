@@ -270,7 +270,7 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
         return helpers.browserLanguages(self.request)
 
     def potemplatenames(self):
-        potemplates = self.context.potemplates
+        potemplates = self.context.getTranslationTemplates()
         potemplatenames = set([p.potemplatename for p in potemplates])
         return sorted(potemplatenames, key=lambda item: item.name)
 

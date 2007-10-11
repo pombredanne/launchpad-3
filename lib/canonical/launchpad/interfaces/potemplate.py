@@ -91,6 +91,12 @@ class IHasTranslationTemplates(Interface):
         are set to False.
         """
 
+    def getTranslationTemplates():
+        """Return an iterator over all its translation templates.
+
+        The returned templates are either obsolete or current.
+        """
+
 
 class IPOTemplate(IRosettaStats):
     """A translation template."""

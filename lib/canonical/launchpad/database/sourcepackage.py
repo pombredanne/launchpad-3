@@ -545,10 +545,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         result = POTemplate.select('''
             distrorelease = %s AND
             sourcepackagename = %s AND
-            (iscurrent IS FALSE OR
-             (distrorelease = DistroRelease.id AND
-              DistroRelease.distribution = Distribution.id AND
-              Distribution.official_rosetta IS FALSE))
+            distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = Distribution.id AND
+            (iscurrent IS FALSE OR Distribution.official_rosetta IS FALSE)
             ''' % sqlvalues(self.distroseries, self.sourcepackagename),
             clauseTables = ['DistroRelease', 'Distribution'])
         result = result.prejoin(['potemplatename'])

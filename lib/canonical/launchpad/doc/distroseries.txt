@@ -514,12 +514,17 @@ distribution.
 
 Only current PO templates are copied from the distribution parent:
 
-   >>> len(hoary.potemplates) > len(hoary.getCurrentTranslationTemplates())
+   >>> len(hoary.getTranslationTemplates()) > len(
+   ...     hoary.getCurrentTranslationTemplates())
    True
-   >>> len(humpy.potemplates) == len(humpy.getCurrentTranslationTemplates())
+   >>> len(humpy.getTranslationTemplates()) == len(
+   ...     humpy.getCurrentTranslationTemplates())
    True
-   >>> len(humpy.potemplates) == len(hoary.getCurrentTranslationTemplates())
+   >>> len(humpy.getTranslationTemplates()) == len(
+   ...     hoary.getCurrentTranslationTemplates())
    True
+   >>> humpy.getObsoleteTranslationTemplates()
+   []
 
 Define a couple of functions we will need to compare the files from the parent
 and child distro series.
@@ -551,7 +556,9 @@ and child distro series.
    ...     orig_templates = sorted(
    ...         orig_distroseries.getCurrentTranslationTemplates(),
    ...         key=sortkey)
-   ...     dest_templates = sorted(dest_distroseries.potemplates, key=sortkey)
+   ...     dest_templates = sorted(
+   ...         dest_distroseries.getCurrentTranslationTemplates(),
+   ...         key=sortkey)
    ...
    ...     output_text = ''
    ...     for i in range(len(orig_templates)):
@@ -872,8 +879,8 @@ to do the translation migration to this new distro series.
     >>> testing_series = distroseriesset.new(
     ...     ubuntu, 'testing', 'Testing Test', 'The Testing Test', 'Fat',
     ...     'Yo Momma', '99.4',hoary, hoary.owner)
-    >>> len(testing_series.potemplates)
-    0
+    >>> testing_series.getTranslationTemplates()
+    []
 
 The script starts its own transactions, so we need to commit here to be sure
 the new series will be available in the script.
@@ -900,7 +907,7 @@ translations from testing_series' parent distro series (hoary)
 
 Once the script finished, new distro series does have templates.
 
-    >>> len(testing_series.potemplates) > 0
+    >>> len(testing_series.getCurrentTranslationTemplates()) > 0
     True
 
 And all current templates were copied.

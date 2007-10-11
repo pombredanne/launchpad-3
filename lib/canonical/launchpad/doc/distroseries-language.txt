@@ -54,7 +54,8 @@ But if we get the whole list of templates, even non current ones, we can see
 that there is one extra template that was not shown in distroserieslanguage
 listing.
 
-    >>> for potemplate in hoary.potemplates: print potemplate.name
+    >>> for potemplate in hoary.getTranslationTemplates():
+    ...     print potemplate.name
     evolution-2.2
     disabled-template
     man
@@ -71,7 +72,7 @@ Which is exactly the one that obsolete.
 Also, we can see that the template has an Spanish translation that
 hoary_spanish.pofiles is hidding as expected.
 
-    >>> for potemplate in hoary.potemplates:
+    >>> for potemplate in hoary.getTranslationTemplates():
     ...     if potemplate.name == 'disabled-template':
     ...         print potemplate.getPOFileByLang('es').title
     Spanish (es) translation of disabled-template in Ubuntu Hoary package "evolution"
