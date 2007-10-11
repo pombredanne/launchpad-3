@@ -512,9 +512,9 @@
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
     permission="launchpad.Edit"
-    class="canonical.launchpad.browser.TeamEmailView"
-    name="+editemail"
-    template="../templates/team-editemail.pt"
+    class="canonical.launchpad.browser.TeamContactAddressView"
+    name="+contactaddress"
+    template="../templates/team-contactaddress.pt"
     />
 
   <browser:page

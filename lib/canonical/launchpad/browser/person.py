@@ -961,7 +961,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     @enabled_with_permission('launchpad.Edit')
     def editemail(self):
-        target = '+editemail'
+        target = '+contactaddress'
         text = 'Change contact address'
         summary = (
             'The address Launchpad uses to contact %s' %

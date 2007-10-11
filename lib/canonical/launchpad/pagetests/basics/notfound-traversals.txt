@@ -385,7 +385,6 @@ This is for a team:
 
 >>> check("/~name18/+teamhierarchy")
 >>> check("/~name18/+edit", auth=True)
->>> check("/~name18/+editemail", auth=True)
 >>> check("/~name18/+members")
 >>> check("/~name18/+packages")
 >>> check("/~name18/+leave", auth=True)
