@@ -183,6 +183,15 @@ class BranchListingView(LaunchpadFormView):
         vocab_items = BranchListingSort.items.items[:]
         for item in self.no_sort_by:
             vocab_items.remove(item)
+        lifecycle_field = IBranchListingFilter['lifecycle']
+        name = self.prefix + '.' + lifecycle_field.__name__
+        form_value = self.request.form.get(name)
+        if form_value is not None:
+            status_filter = BranchLifecycleStatusFilter.getTermByToken(
+                form_value).value
+            if status_filter not in (BranchLifecycleStatusFilter.ALL,
+                                     BranchLifecycleStatusFilter.CURRENT):
+                vocab_items.remove(BranchListingSort.LIFECYCLE)
         return vocab_items
 
     @property

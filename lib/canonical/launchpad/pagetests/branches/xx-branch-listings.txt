@@ -221,7 +221,7 @@ is by lifecycle status.
     >>> browser.getControl('ordered by').value
     ['Lifecycle Status']
 
-The implicitly sorted listings do not have an ordering at all.
+The implicitly sorted listings do not have an ordering widget at all.
 
     >>> browser.open('http://code.launchpad.dev/+recently-registered-branches')
     >>> browser.getControl('ordered by')

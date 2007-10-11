@@ -128,7 +128,7 @@ from canonical.launchpad.interfaces import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, LoginTokenType, SSHKeyType,
     EmailAddressStatus, TeamMembershipStatus, TeamSubscriptionPolicy,
     PersonCreationRationale, TeamMembershipRenewalPolicy,
-    QuestionParticipation)
+    QuestionParticipation, BranchListingSort)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -3363,6 +3363,7 @@ class PersonAuthoredBranchesView(BranchListingView):
 
     extra_columns = ('product',)
     title_prefix = 'Authored'
+    no_sort_by = [BranchListingSort.AUTHOR]
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesAuthoredByPerson(
@@ -3374,6 +3375,7 @@ class PersonRegisteredBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product')
     title_prefix = 'Registered'
+    no_sort_by = [BranchListingSort.REGISTRANT]
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(

@@ -930,6 +930,12 @@ class BranchListingSort(EnumeratedType):
         Sort branches by the lifecycle status.
         """)
 
+    AUTHOR = Item("""
+        Author
+
+        Sort branches by the display name of the author.
+        """)
+
     NEWEST_FIRST = Item("""
         Newest First
 
@@ -960,12 +966,6 @@ class BranchListingSort(EnumeratedType):
         Registrant
 
         Sort branches by the display name of the registrant.
-        """)
-
-    AUTHOR = Item("""
-        Author
-
-        Sort branches by the display name of the author.
         """)
 
 
