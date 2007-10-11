@@ -53,7 +53,7 @@ should now be displayed to the user.
 We can observe this for each of the BugWatchErrorType values:
 
     >>> for item in sorted(BugWatchErrorType.items):
-    ...     login('foo.bar@canonical.com')
+    ...     login('test@canonical.com')
     ...     watch.remotestatus = None
     ...     watch.lasterror = item
     ...     watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
@@ -73,3 +73,15 @@ We can observe this for each of the BugWatchErrorType values:
     Launchpad couldn't determine the version of Bugzilla running on The
     Mozilla.org Bug Tracker.
     Launchpad doesn't support importing bugs from Bugzilla bug trackers.
+
+Finally, if the error gets solved (or no error occurs), the error
+message will go away.
+
+    >>> login('test@canonical.com')
+    >>> watch.remotestatus = None
+    >>> watch.lasterror = None
+    >>> watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
+    >>> logout()
+    >>> user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/12')
+    >>> len(find_tags_by_class(user_browser.contents, 'error message'))
+    0
