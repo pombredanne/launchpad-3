@@ -1061,8 +1061,7 @@ k            </description>
     </sectiontype>
 
     <sectiontype name="mailman" prefix="canonical.mailman.config">
-        <section name="*" type="mailman-build"
-                 attribute="build" required="yes" />
+        <section name="*" type="mailman-build" attribute="build" />
 
         <key name="launch" datatype="boolean"       default="false" />
         <key name="smtp"   datatype="inet-address"  default="localhost:25" />
