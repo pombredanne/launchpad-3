@@ -8,7 +8,8 @@ import unittest
 
 from canonical.launchpad.ftests.harness import (
     LaunchpadTestCase, LaunchpadTestSetup)
-
+from canonical.database.sqlbase import sqlvalues
+from canonical.foaf.nickname import is_blacklisted
 
 class TestNameBlacklist(LaunchpadTestCase):
     def setUp(self):
@@ -70,6 +71,15 @@ class TestNameBlacklist(LaunchpadTestCase):
                 "UPDATE NameBlacklist SET regexp='nomatch2' where id=-100"
                 )
         self.failUnless(self.name_blacklist_match("foobar") is None)
+
+    def test_is_blacklisted(self):
+        # is_blacklisted is a method in canonical.foaf.nickname
+        # which corresponds to is_blacklisted_name in this test
+        # except that it also allows unicode strings
+        self.failUnless(is_blacklisted("foo", self.cur) == 1)
+        self.failUnless(is_blacklisted(u"foo", self.cur) == 1)
+        self.failUnless(is_blacklisted("bar", self.cur) == 0)
+        self.failUnless(is_blacklisted(u"bar", self.cur) == 0)
 
     def test_is_blacklisted_name(self):
         # is_blacklisted_name() is just a wrapper around name_blacklist_match

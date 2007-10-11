@@ -8,7 +8,7 @@ __all__ = []
 import random
 import re
 
-from canonical.database.sqlbase import cursor
+from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 
@@ -27,10 +27,13 @@ def _is_nick_registered(nick):
     return PersonSet().getByName(nick) is not None
 
 
-def is_blacklisted(name):
-    cur = cursor()
-    cur.execute("SELECT is_blacklisted_name(%(name)s)", vars())
-    return cur.fetchone()[0]
+def is_blacklisted(name, cur=None):
+    if cur is None:
+        # cursor is passed only for testing
+        cur = cursor()
+    cur.execute("SELECT is_blacklisted_name(%(name)s)" % sqlvalues(
+        name=name.encode('utf-8')))
+    return bool(cur.fetchone()[0])
 
 
 def generate_nick(email_addr, is_registered=_is_nick_registered):
