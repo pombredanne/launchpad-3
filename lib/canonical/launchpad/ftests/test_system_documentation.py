@@ -21,7 +21,7 @@ from canonical.database.sqlbase import (
     flush_database_updates, READ_COMMITTED_ISOLATION)
 from canonical.functional import FunctionalDocFileSuite, StdoutHandler
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
-from canonical.launchpad.ftests import xmlrpc_helper
+from canonical.launchpad.ftests import mailinglists_helper
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet,
     ILaunchBag, IPersonSet)
@@ -235,17 +235,17 @@ def mailingListXMLRPCInternalSetUp(test):
     # stdout instead of in an OOPS report living in some log file somewhere.
     from canonical.launchpad.xmlrpc import MailingListAPIView
     class ImpedenceMatchingView(MailingListAPIView):
-        @xmlrpc_helper.fault_catcher
+        @mailinglists_helper.fault_catcher
         def getPendingActions(self):
             return super(ImpedenceMatchingView, self).getPendingActions()
-        @xmlrpc_helper.fault_catcher
+        @mailinglists_helper.fault_catcher
         def reportStatus(self, statuses):
             return super(ImpedenceMatchingView, self).reportStatus(statuses)
-        @xmlrpc_helper.fault_catcher
+        @mailinglists_helper.fault_catcher
         def getMembershipInformation(self, teams):
             return super(ImpedenceMatchingView, self).getMembershipInformation(
                 teams)
-        @xmlrpc_helper.fault_catcher
+        @mailinglists_helper.fault_catcher
         def isLaunchpadMember(self, address):
             return super(ImpedenceMatchingView, self).isLaunchpadMember(
                 address)
@@ -253,10 +253,10 @@ def mailingListXMLRPCInternalSetUp(test):
     # IMailingListAPI interface.  Also expose the helper functions.
     mailinglist_api = ImpedenceMatchingView(context=None, request=None)
     test.globs['mailinglist_api'] = mailinglist_api
-    test.globs['new_person'] = xmlrpc_helper.mailingListNewPerson
-    test.globs['new_team'] = xmlrpc_helper.mailingListNewTeam
-    test.globs['print_actions'] = xmlrpc_helper.mailingListPrintActions
-    test.globs['print_info'] = xmlrpc_helper.mailingListPrintInfo
+    test.globs['new_person'] = mailinglists_helper.mailingListNewPerson
+    test.globs['new_team'] = mailinglists_helper.mailingListNewTeam
+    test.globs['print_actions'] = mailinglists_helper.mailingListPrintActions
+    test.globs['print_info'] = mailinglists_helper.mailingListPrintInfo
     # Expose different commit() functions to handle the 'external' case below
     # where there is more than one connection.  The 'internal' case here has
     # just one coneection so the flush is all we need.
@@ -279,17 +279,17 @@ def mailingListXMLRPCExternalSetUp(test):
     # mailinglist-xmlrpc.txt-external declaration below, I suspect that these
     # two globals will end up being different functions.
     test.globs['mailinglist_api'] = mailinglist_api
-    test.globs['new_person'] = xmlrpc_helper.mailingListNewPerson
-    test.globs['new_team'] = xmlrpc_helper.mailingListNewTeam
-    test.globs['print_actions'] = xmlrpc_helper.mailingListPrintActions
-    test.globs['print_info'] = xmlrpc_helper.mailingListPrintInfo
+    test.globs['new_person'] = mailinglists_helper.mailingListNewPerson
+    test.globs['new_team'] = mailinglists_helper.mailingListNewTeam
+    test.globs['print_actions'] = mailinglists_helper.mailingListPrintActions
+    test.globs['print_info'] = mailinglists_helper.mailingListPrintInfo
     test.globs['commit'] = flush_database_updates
 
 
-def mailingListSubscriptionSetUp(test):
+def mailingListGeneralSetUp(test):
     setUp(test)
-    test.globs['new_team'] = xmlrpc_helper.mailingListNewTeam
-    test.globs['new_person'] = xmlrpc_helper.mailingListNewPerson
+    test.globs['new_team'] = mailinglists_helper.mailingListNewTeam
+    test.globs['new_person'] = mailinglists_helper.mailingListNewPerson
 
 
 def LayeredDocFileSuite(*args, **kw):
@@ -616,6 +616,13 @@ special = {
                 tearDown=tearDown,
                 optionflags=default_optionflags, layer=LaunchpadZopelessLayer
                 ),
+    'mailinglists.txt': FunctionalDocFileSuite(
+            '../doc/mailinglists.txt',
+            setUp=mailingListGeneralSetUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadFunctionalLayer,
+            ),
     'mailinglist-subscriptions-xmlrpc.txt': FunctionalDocFileSuite(
             '../doc/mailinglist-subscriptions-xmlrpc.txt',
             setUp=mailingListXMLRPCInternalSetUp,
@@ -632,7 +639,7 @@ special = {
             ),
     'mailinglist-subscriptions.txt': FunctionalDocFileSuite(
             '../doc/mailinglist-subscriptions.txt',
-            setUp=mailingListSubscriptionSetUp,
+            setUp=mailingListGeneralSetUp,
             tearDown=tearDown,
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer,
