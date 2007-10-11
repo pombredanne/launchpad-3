@@ -207,6 +207,12 @@ lp-buildd-admins) have access for retrying PPA build.
   >>> print_action_links(user_browser.contents)
   Retry build: http://localhost/~no-priv/+archive/+build/24/+retry
 
+PPA build pages also have some text telling the viewer that they can retry
+the build if that action is possible:
+
+  >>> extract_text(find_main_content(admin_browser.contents))
+  u"...Use the 'Retry build' link in the Actions menu if you wish..."
+
 PPA owner can 'retry' a build.
 
   >>> no_priv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
