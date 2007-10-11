@@ -121,7 +121,7 @@
        <tal:show-edit condition="show_edit|nothing">
          <a tal:condition="bug_branch/required:launchpad.Edit"
             tal:attributes="href string:+bug/${bug_branch/bug/id}/+edit;
-                            onclick string:return switchFormAndWhiteboard('${bug_branch/id}')">
+                            onclick string:return switchBugBranchFormAndWhiteboard('${bug_branch/id}')">
 <tal:bug_branch_status replace="bug_branch/status/title"/>         <img src="/@@/expand"/></a>
        </tal:show-edit>
        <tal:show-whiteboard condition="show_whiteboard|nothing">

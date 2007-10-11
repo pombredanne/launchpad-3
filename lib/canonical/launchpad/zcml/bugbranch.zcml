@@ -20,7 +20,7 @@
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.IBugBranch"
-      name="+status" />
+      name="+edit" />
 
   <browser:page
       name="+edit"

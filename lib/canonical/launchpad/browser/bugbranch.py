@@ -11,18 +11,13 @@ __all__ = [
     "BugBranchBugInlineEditView",
     ]
 
-from zope.app.form.interfaces import IInputWidget, IDisplayWidget
-from zope.app.form.utility import setUpWidgets
 from zope.event import notify
 
-from canonical.launchpad.event import (
-    SQLObjectDeletedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.event import SQLObjectDeletedEvent
 from canonical.launchpad.interfaces import IBugBranch
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
     LaunchpadFormView)
-from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.launchpad.webapp.authorization import check_permission
 
 from canonical.widgets.link import LinkWidget
 

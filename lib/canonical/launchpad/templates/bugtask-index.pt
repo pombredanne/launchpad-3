@@ -122,32 +122,6 @@
                 condition="bug_branches">
     <h2>Related branches</h2>
 
-<script type="text/javascript">
-  function switchFormAndWhiteboard(id) {
-    var div = document.getElementById('bugbranch' + id);
-    var wb = document.getElementById('bugbranch' + id + '-wb');
-
-    if (div.style.display == "none") {
-      /* Expanding the form */
-      if (wb != null) {
-        wb.style.display = "none";
-      }
-      div.style.display = "block";
-      /* Use two focus calls to get the browser to scroll to the end of the
-       * form first, then focus back to the first field of the form.
-       */
-      document.getElementById('field'+id+'.actions.update').focus();
-      document.getElementById('field'+id+'.status').focus();
-    } else {
-      if (wb != null) {
-        wb.style.display = "block";
-      }
-      div.style.display = "none";
-    }
-    return false;
-  }
-</script>
-
 <tal:bug-branches repeat="bug_branch bug_branches">
   <div tal:define="show_edit bug_branch/required:launchpad.Edit"
        tal:condition="bug_branch/branch/required:launchpad.View">
@@ -160,7 +134,7 @@
                              replace="bug_branch/status/title"/>
       <a tal:condition="show_edit"
          tal:attributes="href string:${bug_branch/branch/fmt:url}/+bug/${bug_branch/bug/id}/+edit;
-                         onclick string:return switchFormAndWhiteboard('${bug_branch/id}')">
+                         onclick string:return switchBugBranchFormAndWhiteboard('${bug_branch/id}')">
         <tal:bug_branch_status replace="bug_branch/status/title"/>
         <img src="/@@/expand"/>
       </a>

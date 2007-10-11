@@ -149,4 +149,4 @@ the bug from the branch.
 
     >>> user_browser.getControl('Delete').click()
     >>> printBugBranchLinks(user_browser)
-        No bug branch links
+    No bug branch links
