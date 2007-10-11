@@ -524,6 +524,7 @@ class Bug(SQLBase):
 
         bug_branch = BugBranch(
             branch=branch, bug=self, whiteboard=whiteboard, status=status)
+        branch.last_modified_date = UTC_NOW
 
         notify(SQLObjectCreatedEvent(bug_branch))
 

@@ -167,6 +167,11 @@ class Branch(SQLBase):
 
         if date_created is None:
             date_created = UTC_NOW
+        # Update the last_modified_date of the source and target branches to be
+        # the date_created for the merge proposal.
+        self.last_modified_date = date_created
+        target_branch.last_modified_date = date_created
+        
         return BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
@@ -607,7 +612,6 @@ class BranchSet:
             home_page = None
         if date_created is None:
             date_created = UTC_NOW
-
         if product is None and owner.isTeam():
             # We disallow team-owned junk branches -- with the exception of
             # ~vcs-imports, to allow the eventual creation of code imports not
@@ -623,7 +627,8 @@ class BranchSet:
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             home_page=home_page, whiteboard=whiteboard, private=private,
-            date_created=date_created, branch_type=branch_type)
+            date_created=date_created, branch_type=branch_type,
+            date_last_modified=date_created)
 
         # Implicit subscriptions are to enable teams to see private branches
         # as soon as they are created.  The subscriptions can be edited at
