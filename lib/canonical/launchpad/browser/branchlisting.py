@@ -15,13 +15,15 @@ from datetime import datetime
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.formlib import form
+from zope.schema import Choice
 
 from canonical.config import config
 from canonical.lp import decorates
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    BranchLifecycleStatus, BranchLifecycleStatusFilter,
+    BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchListingSort,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchSet, IBugBranchSet, IBranchBatchNavigator, IBranchListingFilter)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
@@ -119,6 +121,7 @@ class BranchListingView(LaunchpadFormView):
     custom_widget('sort_by', LaunchpadDropdownWidget)
     extra_columns = []
     title_prefix = 'Bazaar'
+    no_sort_by = []
 
     @property
     def page_title(self):
@@ -174,6 +177,34 @@ class BranchListingView(LaunchpadFormView):
                 'participation in your project using '
                 'distributed version control.')
         return message % self.context.displayname
+
+    @property
+    def branch_listing_sort_values(self):
+        vocab_items = BranchListingSort.items.items[:]
+        for item in self.no_sort_by:
+            vocab_items.remove(item)
+        return vocab_items
+
+    @property
+    def sort_by_field(self):
+        orig_field = IBranchListingFilter['sort_by']
+        values = self.branch_listing_sort_values
+        return Choice(__name__=orig_field.__name__,
+                      title=orig_field.title,
+                      required=True, values=values, default=values[0])
+
+    def setUpWidgets(self, context=None):
+        fields = []
+        for field_name in self.field_names:
+            if field_name == 'sort_by':
+                field = form.FormField(
+                    self.sort_by_field,
+                    custom_widget=self.custom_widgets[field_name])
+            else:
+                field = self.form_fields[field_name]
+            fields.append(field)
+        self.form_fields = form.Fields(*fields)
+        super(BranchListingView, self).setUpWidgets(context)
 
 
 class NoContextBranchListingView(BranchListingView):

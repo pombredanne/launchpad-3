@@ -52,7 +52,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IProduct,
+    BranchListingSort, ILaunchpadCelebrities, IProduct,
     ICountry, IProductSet, IProductSeries, IProject, ISourcePackage,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     IBranchSet, RESOLVED_BUGTASK_STATUSES,
@@ -1054,6 +1054,7 @@ class ProductBranchesView(BranchListingView):
     """View for branch listing for a product."""
 
     extra_columns = ('author',)
+    no_sort_by = [BranchListingSort.PRODUCT]
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForProduct(

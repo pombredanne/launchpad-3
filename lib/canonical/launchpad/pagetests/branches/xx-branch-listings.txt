@@ -208,18 +208,18 @@ allows sorting.
 
 On a listing that can have branches from more than one product (such
 as the listing of branches owned by a person), the default ordering is
-by product.
+by product name.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> browser.getControl('ordered by').value
-    ['PRODUCT']
+    ['Product Name']
 
 On a listing that can only have branches from one product, the default
-is by lifecycle state.
+is by lifecycle status.
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal')
     >>> browser.getControl('ordered by').value
-    ['LIFECYCLE']
+    ['Lifecycle Status']
 
 The implicitly sorted listings do not have an ordering at all.
 
