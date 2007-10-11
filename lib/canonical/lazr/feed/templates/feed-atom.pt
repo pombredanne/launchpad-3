@@ -13,7 +13,6 @@
 -->
 
 <feed xmlns="http://www.w3.org/2005/Atom"
-      xmlns:lp="http://api.launchpad.net/schema"
       xmlns:tal="http://xml.zope.org/namespaces/tal"
       xmlns:metal="http://xml.zope.org/namespaces/metal">
 

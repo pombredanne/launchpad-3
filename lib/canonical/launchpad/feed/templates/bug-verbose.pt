@@ -1,6 +1,5 @@
 <div xmlns="http://www.w3.org/1999/xhtml"
     xmlns:tal="http://xml.zope.org/namespaces/tal"
-    xmlns:lp="http://api.launchpad.net/schema"
     xmlns:metal="http://xml.zope.org/namespaces/metal">
 
     <style type="text/css">
@@ -17,8 +16,7 @@
             background: #99cc00;
         }
     </style>
-    <h1>VERBOSE</h1>
-    <table>
+    <table tal:define="site_url view/feed/getSiteURL">
         <tr>
             <th>Affects</th>
             <th>Status</th>
@@ -29,13 +27,15 @@
         <!-- Bugtask -->
         <tr tal:repeat="bugtask context/bugtasks">
             <td tal:condition="bugtask/product">
-                <img src="http://bugs.launchpad.net/@@/product" />
+                <img alt=""
+                  tal:attributes="src string:${site_url}/@@/product" />
                 <span tal:replace="bugtask/target/name">Fake BugTask Name</span>
             </td>
 
             <td style="padding: 0.3em 0em 0.3em 1.5em"
                 tal:condition="not:bugtask/product">
-                <img src="http://bugs.launchpad.net/@@/milestone" />
+                <img alt=""
+                  tal:attributes="src string:${site_url}/@@/milestone" />
                 <span tal:replace="bugtask/target/name">Fake BugTask Name</span>
             </td>
             <td tal:content="bugtask/status/title">Won't Fix</td>

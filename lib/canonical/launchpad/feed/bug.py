@@ -43,10 +43,11 @@ class BugFeedContentView(LaunchpadView):
     short_template = ViewPageTemplateFile('templates/bug.pt')
     long_template = ViewPageTemplateFile('templates/bug-verbose.pt')
 
-    def __init__(self, context, request, verbose=False):
+    def __init__(self, context, request, feed, verbose=False):
         super(BugFeedContentView, self).__init__(context, request)
         self.verbose = verbose
         self.format = None
+        self.feed = feed
 
     def getBugCommentsForDisplay(self):
         bug_task_view = BugTaskView(self.context.bugtasks[0], self.request)
@@ -133,7 +134,8 @@ class BugsFeedBase(FeedBase):
         bug = bugtask.bug
         title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
         url = canonical_url(bugtask, rootsite=self.rootsite)
-        content_view = BugFeedContentView(bug, self.request, self.verbose)
+        content_view = BugFeedContentView(bug, self.request, 
+            self, self.verbose)
         entry = FeedEntry(title = title,
                           id_ = url,
                           link_alternate = url,
