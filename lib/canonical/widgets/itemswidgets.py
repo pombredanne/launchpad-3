@@ -94,7 +94,7 @@ class LaunchpadRadioWidget(RadioWidget):
 
 class CheckBoxMatrixWidget(LabeledMultiCheckBoxWidget):
     def __init__(self, field, vocabulary, request):
-        LabeledMultiCheckBoxWidget.__init__(self, field, vocabulary, request)
+        super(CheckBoxMatrixWidget, self).__init__(field, vocabulary, request)
         self.column_count = 1
 
     def renderValue(self, value):

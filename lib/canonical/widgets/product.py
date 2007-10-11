@@ -10,10 +10,11 @@ import cgi
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import (
-    LaunchpadDropdownWidget, LaunchpadRadioWidget)
+    CheckBoxMatrixWidget, LaunchpadDropdownWidget, LaunchpadRadioWidget)
 
 
 class ProductBugTrackerWidget(LaunchpadRadioWidget):
@@ -105,3 +106,14 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
                 self.renderSelectedItem(**project_bugtracker_arguments))
 
         return items
+
+class LicenseWidget(CheckBoxMatrixWidget):
+    template = ViewPageTemplateFile('templates/license.pt')
+
+    def __init__(self, field, vocabulary, request):
+        super(LicenseWidget, self).__init__(field, vocabulary, request)
+
+    def __call__(self):
+        self.checkbox_matrix = super(LicenseWidget, self).__call__()
+        return self.template()
+

@@ -9,7 +9,7 @@ __all__ = [
     'IProductSet',
     ]
 
-from zope.schema import Bool, Choice, Int, Text, TextLine
+from zope.schema import Bool, Choice, Int, Text, TextLine, Set
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
@@ -220,15 +220,15 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     private_bugs = Bool(title=_('Private bugs'), description=_("""Whether
         or not bugs reported into this project are private by default"""))
 
-    licenses = Description(
+    licenses = Set(
         title=_('Licenses'),
-        required=False,
-        description=_("""All the licenses that the software falls under"""))
+        value_type=Choice(vocabulary="License"))
 
     license_info = Description(
-        title=_('Description of other licenses'),
+        title=_('Description of additional licenses'),
         required=False,
-        description=_("""Description of other licenses"""))
+        description=_("""Description of licenses that do not appear in 
+          the list above."""))
 
     def getExternalBugTracker():
         """Return the external bug tracker used by this bug tracker.

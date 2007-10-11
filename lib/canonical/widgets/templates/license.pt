@@ -1,0 +1,14 @@
+<tal:comment replace="nothing">
+  This macro expects the widget variables defined:
+
+  :licenses: A matrix of licenses.
+  :license_info: A textarea for the license description.
+</tal:comment>
+
+<div style="color: black">
+  <input tal:replace="structure view/checkbox_matrix" />
+  Launchpad.net is free to use for software projects 
+  that comply with 
+  <a href="http://www.ubuntu.com/community/ubuntustory/licensing">
+  these licensing policies.</a>
+</div>
