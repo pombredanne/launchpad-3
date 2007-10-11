@@ -90,11 +90,6 @@ class LaunchpadBrowserPublication(
         if request.principal is not None:
             txn.setUser(request.principal.id)
 
-        # Work around methods that are usually used for views
-        bare = removeSecurityProxy(ob)
-        if isinstance(bare, instancemethod):
-            ob = bare.im_self
-
         return txn
 
     def getDefaultTraversal(self, request, ob):
