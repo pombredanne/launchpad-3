@@ -199,10 +199,10 @@ class TestPullerWorker(unittest.TestCase, PullerWorkerMixin):
 class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
 
     def setUp(self):
-        super(TestPullerWorkerFormats, self).setUp()
+        TestCaseWithRepository.setUp(self)
 
     def tearDown(self):
-        super(TestPullerWorkerFormats, self).tearDown()
+        TestCaseWithRepository.tearDown(self)
         reset_logging()
 
     def testMirrorKnitAsKnit(self):
