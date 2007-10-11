@@ -72,7 +72,6 @@
     for="*"
     facet="translations"
     class="canonical.launchpad.browser.RosettaApplicationView"
-    layer="canonical.launchpad.layers.TranslationsLayer"
     permission="zope.Public" >
     <browser:page
         name="+portlet-preflangs"
