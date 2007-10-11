@@ -15,6 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.archiveuploader.tests import datadir
 from canonical.config import config
 from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
+from canonical.launchpad.database import PackageUploadBuild
 from canonical.launchpad.interfaces import (
     IArchiveSet, IDistributionSet, IPackageUploadSet)
 from canonical.launchpad.mail import stub
@@ -651,6 +652,44 @@ class TestQueueTool(TestQueueBase):
         self.assertRaises(
             CommandRunnerError, self.execute_command, 'override binary 1',
             component_name='multiverse')
+
+    def testOverridingMulipleBinariesFromSameBuild(self):
+        """Check that multiple binary override works for the same build.
+
+        Overriding binary packages generated from the same build should
+        override each package individually.
+        """
+        # Start off by setting up a packageuploadbuild that points to
+        # a build with two binaries.  I could include this in the sample
+        # data but doing so causes many tests to fail so it's far easier
+        # to set it up here.
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+
+        [mozilla_queue_item] = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='mozilla-firefox')
+        # The build with ID '2' is for mozilla-firefox, which produces
+        # binaries for 'mozilla-firefox' and 'mozilla-firefox-data'.
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        PackageUploadBuild(packageupload=mozilla_queue_item, build=2)
+
+        queue_action = self.execute_command(
+            'override binary mozilla-firefox-data mozilla-firefox',
+            component_name='restricted', section_name='editors',
+            priority_name='optional')
+
+        self.assertEqual(2, queue_action.items_size)
+        queue_items = list(breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='mozilla-firefox-data'))
+        queue_items.extend(list(breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='mozilla-firefox')))
+        for queue_item in queue_items:
+            for packagebuild in queue_item.builds:
+                for package in packagebuild.build.binarypackages:
+                    self.assertEqual('restricted', package.component.name)
+                    self.assertEqual('editors', package.section.name)
+                    self.assertEqual('OPTIONAL', package.priority.name)
+
 
     def testOverrideBinaryWithArchiveChange(self):
         """Check if archive changes are disallowed for binary overrides.

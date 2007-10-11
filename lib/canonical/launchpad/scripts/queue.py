@@ -613,8 +613,6 @@ class QueueActionOverride(QueueAction):
                                         binary.priority.name))
                         binary.override(component=component, section=section,
                                         priority=priority)
-                        # break loop, just in case
-                        break
                 # See if the new component requires a new archive on the build:
                 if component:
                     distribution = (
