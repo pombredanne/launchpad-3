@@ -746,13 +746,14 @@ class IBranchSet(Interface):
             see are returned.  Private branches are only visible to the owner
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
-        :param sort_by: ...
-        :type sort_by: A value from the BranchListingSort enumeration.
+        :param sort_by: What to sort the returned branches by.
+        :type sort_by: A value from the `BranchListingSort` enumeration or
+            None.
         """
 
     def getBranchesAuthoredByPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None):
+        visible_by_user=None, sort_by=None):
         """Branches authored by person with appropriate lifecycle.
 
         Only branches that are authored by the person are returned.
@@ -768,11 +769,14 @@ class IBranchSet(Interface):
             see are returned.  Private branches are only visible to the owner
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
+        :param sort_by: What to sort the returned branches by.
+        :type sort_by: A value from the `BranchListingSort` enumeration or
+            None.
         """
 
     def getBranchesRegisteredByPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None ):
+        visible_by_user=None, sort_by=None):
         """Branches registered by person with appropriate lifecycle.
 
         Only branches registered by the person but *NOT* authored by
@@ -789,11 +793,14 @@ class IBranchSet(Interface):
             see are returned.  Private branches are only visible to the owner
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
+        :param sort_by: What to sort the returned branches by.
+        :type sort_by: A value from the `BranchListingSort` enumeration or
+            None.
         """
 
     def getBranchesSubscribedByPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None):
+        visible_by_user=None, sort_by=None):
         """Branches subscribed by person with appropriate lifecycle.
 
         All branches where the person has subscribed to the branch
@@ -810,11 +817,14 @@ class IBranchSet(Interface):
             see are returned.  Private branches are only visible to the owner
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
+        :param sort_by: What to sort the returned branches by.
+        :type sort_by: A value from the `BranchListingSort` enumeration or
+            None.
         """
 
     def getBranchesForProduct(
         product, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None):
+        visible_by_user=None, sort_by=None):
         """Branches associated with product with appropriate lifecycle.
 
         If lifecycle_statuses evaluates to False then branches
@@ -828,11 +838,14 @@ class IBranchSet(Interface):
             see are returned.  Private branches are only visible to the owner
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
+        :param sort_by: What to sort the returned branches by.
+        :type sort_by: A value from the `BranchListingSort` enumeration or
+            None.
         """
 
     def getBranchesForProject(
         project, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None):
+        visible_by_user=None, sort_by=None):
         """Branches associated with project with appropriate lifecycle.
 
         If lifecycle_statuses evaluates to False then branches
@@ -846,6 +859,9 @@ class IBranchSet(Interface):
             see are returned.  Private branches are only visible to the owner
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
+        :param sort_by: What to sort the returned branches by.
+        :type sort_by: A value from the `BranchListingSort` enumeration or
+            None.
         """
 
     def getHostedBranchesForPerson(person):

@@ -878,25 +878,29 @@ the sort is by lifecycle, product, author, name).
     New ~name12/+junk/junk.contrib
 
     >>> branches = branchset.getBranchesAuthoredByPerson(
-    ...     sample_person, visible_by_user=sample_person)
+    ...     sample_person, visible_by_user=sample_person,
+    ...     sort_by=BranchListingSort.REGISTRANT)
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
     New ~name12/firefox/main
     Merged ~name12/gnome-terminal/slowness
     Experimental ~name12/gnome-terminal/klingon
     New ~name12/landscape/feature-x
-    New ~landscape-developers/landscape/trunk
     New ~name12/+junk/junk.contrib
+    New ~landscape-developers/landscape/trunk
 
-    >>> for branch in branchset.getBranchesRegisteredByPerson(sample_person):
-    ...     print branch.lifecycle_status.title, branch.unique_name
-    Abandoned ~name12/gnome-terminal/2.4
-    Mature ~name12/gnome-terminal/2.6
-    Development ~name12/gnome-terminal/main
-    New ~name12/gnome-terminal/mirrored
-    New ~name12/gnome-terminal/pushed
-    New ~name12/gnome-terminal/scanned
-    Experimental ~name12/+junk/junk.dev
+    >>> for branch in branchset.getBranchesRegisteredByPerson(
+    ...     sample_person, sort_by=BranchListingSort.AUTHOR):
+    ...     print branch.lifecycle_status.title,
+    ...     print getattr(branch.author, 'displayname', '-'),
+    ...     print branch.unique_name
+    Experimental Ubuntu Team ~name12/+junk/junk.dev
+    Abandoned - ~name12/gnome-terminal/2.4
+    Mature - ~name12/gnome-terminal/2.6
+    Development - ~name12/gnome-terminal/main
+    New - ~name12/gnome-terminal/mirrored
+    New - ~name12/gnome-terminal/pushed
+    New - ~name12/gnome-terminal/scanned
 
     >>> for branch in branchset.getBranchesSubscribedByPerson(sample_person):
     ...     print branch.lifecycle_status.title, branch.unique_name

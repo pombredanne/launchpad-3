@@ -939,15 +939,16 @@ class BranchSet:
             orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesAuthoredByPerson(self, person, lifecycle_statuses=None,
-                                    visible_by_user=None):
+                                    visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = 'Branch.author = %s %s' % (person.id, lifecycle_clause)
         return Branch.select(
-            self._generateBranchClause(query, visible_by_user))
+            self._generateBranchClause(query, visible_by_user),
+            orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesRegisteredByPerson(self, person, lifecycle_statuses=None,
-                                      visible_by_user=None):
+                                      visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
@@ -957,10 +958,11 @@ class BranchSet:
             '''
             % (person.id, person.id, lifecycle_clause))
         return Branch.select(
-            self._generateBranchClause(query, visible_by_user))
+            self._generateBranchClause(query, visible_by_user),
+            orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesSubscribedByPerson(self, person, lifecycle_statuses=None,
-                                      visible_by_user=None):
+                                      visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
@@ -970,10 +972,11 @@ class BranchSet:
             % (person.id, lifecycle_clause))
         return Branch.select(
             self._generateBranchClause(query, visible_by_user),
-            clauseTables=['BranchSubscription'])
+            clauseTables=['BranchSubscription'],
+            orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesForProduct(self, product, lifecycle_statuses=None,
-                              visible_by_user=None):
+                              visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         assert product is not None, "Must have a valid product."
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
@@ -981,10 +984,11 @@ class BranchSet:
         query = 'Branch.product = %s %s' % (product.id, lifecycle_clause)
 
         return Branch.select(
-            self._generateBranchClause(query, visible_by_user))
+            self._generateBranchClause(query, visible_by_user),
+            orderBy=self._listingSortToOrderBy(sort_by))
 
     def getBranchesForProject(self, project, lifecycle_statuses=None,
-                              visible_by_user=None):
+                              visible_by_user=None, sort_by=None):
         """See `IBranchSet`."""
         assert project is not None, "Must have a valid project."
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
@@ -994,7 +998,8 @@ class BranchSet:
 
         return Branch.select(
             self._generateBranchClause(query, visible_by_user),
-            clauseTables=['Product'])
+            clauseTables=['Product'],
+            orderBy=self._listingSortToOrderBy(sort_by))
 
     def getHostedBranchesForPerson(self, person):
         """See `IBranchSet`."""
