@@ -21,11 +21,9 @@
   <div class="boardCommentBody"
    tal:define="change_summary context/sourcepackagerelease/@@+change_summary">
 
-    <div style="font-family: monospace;">
-      <span tal:condition="not: view/user"
-            tal:content="structure change_summary/fmt:obfuscate-email"/>
-      <span tal:condition="view/user"
-            tal:content="structure change_summary"/>
+    <div style="font-family: monospace;"
+         tal:content=
+           "structure context/sourcepackagerelease/@@+change_summary">
     </div>
 
   </div>

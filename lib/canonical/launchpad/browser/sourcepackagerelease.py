@@ -20,10 +20,12 @@ from canonical.launchpad.interfaces import IBugSet, NotFoundError
 
 class SourcePackageReleaseView(LaunchpadView):
 
+    @property
     def changelog(self):
         return self._linkify_changelog(
             self.context.changelog, self.context.name)
 
+    @property
     def change_summary(self):
         return self._linkify_changelog(
             self.context.change_summary, self.context.name)
