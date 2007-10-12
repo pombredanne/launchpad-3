@@ -324,9 +324,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
-                          SpecificationDefinitionStatus.SUPERSEDED)
+            query += (' AND Specification.definition_status NOT IN ( %s, %s ) '
+                      % sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                                  SpecificationDefinitionStatus.SUPERSEDED))
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -424,8 +424,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         elif self.rcstype == RevisionControlSystems.SVN:
             self.syncinterval = datetime.timedelta(hours=6)
         else:
-            raise AssertionError('Unknown default sync interval for rcs type: %s'
-                                 % self.rcstype.title)
+            raise AssertionError(
+                'Unknown default sync interval for rcs type: %s'
+                % self.rcstype.title)
         self.importstatus = ImportStatus.PROCESSING
 
     def markTestFailed(self):

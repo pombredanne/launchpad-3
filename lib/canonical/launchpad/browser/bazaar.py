@@ -20,7 +20,6 @@ from canonical.lp import decorates
 
 from canonical.launchpad.interfaces import (
     IBazaarApplication, IBranchSet, IProduct, IProductSet, IProductSeriesSet)
-from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
     ApplicationMenu, enabled_with_permission, LaunchpadView, Link, Navigation,
@@ -190,9 +189,9 @@ class BazaarProductView:
         for product in products:
             summary = branch_summaries.get(product)
             if not summary:
-                # If the only branches for the product were import branches
-                # or merged or abandoned branches, then there will not be
-                # a summary returned for that product, and we are not interested
+                # If the only branches for the product were import branches or
+                # merged or abandoned branches, then there will not be a
+                # summary returned for that product, and we are not interested
                 # in showing them in our cloud.
                 continue
             last_commit = summary['last_commit']
