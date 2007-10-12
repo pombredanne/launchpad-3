@@ -1,21 +1,38 @@
 SET client_min_messages=ERROR;
 
 /*
+In order to be able to have a single landing bot land branches
+for multiple target branches (that may be on different projects)
+we need to have a separate queue entity.
+
+The owner of the robot is the person or team that is able to manipulate
+the robot and manage the queue positions for that robot.
+*/
+CREATE TABLE BranchMergeRobot
+(
+  id serial NOT NULL PRIMARY KEY,
+  registrant INT REFERENCES Person NOT NULL,
+  owner INT REFERENCES Person NOT NULL,
+  name TEXT NOT NULL,
+  status INT NOT NULL, -- 1: Manual, 2: Automatic
+  whiteboard TEXT,
+  date_created TIMESTAMP WITHOUT TIME ZONE NOT NULL
+    DEFAULT timezone('UTC'::text, now()),
+  UNIQUE(owner, name)
+);
+
+/*
 The review team are able to transition merge proposals targetted
 a the branch through the CODE_APPROVED stage.
 */
-
 ALTER TABLE Branch
   ADD COLUMN reviewer INT REFERENCES Person;
-
 /*
-The queue status is an enumeration:
-  1: Disabled
-  2: Manual
-  3: Automatic
+A null queue means that there is no landing bot, and the owner
+of the branch can control the queue positions.
 */
 ALTER TABLE Branch
-  ADD COLUMN queue_status INT NOT NULL DEFAULT 1;
+  ADD COLUMN merge_robot INT REFERENCES BranchMergeRobot;
 
 
 ALTER TABLE BranchMergeProposal
