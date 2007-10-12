@@ -109,6 +109,7 @@ class Branch(SQLBase):
         orderBy='id')
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    date_last_modified = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
     landing_targets = SQLMultipleJoin(
         'BranchMergeProposal', joinColumn='source_branch')

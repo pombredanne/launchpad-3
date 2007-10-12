@@ -628,7 +628,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         branchlink = self.getBranchLink(branch)
         if branchlink is not None:
             return branchlink
-        branch.last_modified_date = UTC_NOW
+        branch.date_last_modified = UTC_NOW
         return SpecificationBranch(specification=self,
                                    branch=branch,
                                    summary=summary)

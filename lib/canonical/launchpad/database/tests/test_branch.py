@@ -4,9 +4,12 @@
 
 __metaclass__ = type
 
+from datetime import datetime
+from pytz import UTC
 import transaction
 from unittest import TestCase, TestLoader
 
+from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
@@ -285,6 +288,72 @@ class BranchAddLandingTarget(TestCase):
         self.assertEqual(proposal.target_branch, self.target)
         self.assertEqual(proposal.dependent_branch, self.dependent)
         self.assertEqual(proposal.whiteboard, whiteboard)
+
+
+class BranchDateLastModified(BranchTestCase):
+    """Exercies the situations where date_last_modifed is udpated."""
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        BranchTestCase.setUp(self)
+        login('test@canonical.com')
+
+    def tearDown(self):
+        logout()
+        BranchTestCase.tearDown(self)
+
+    def test_initialValue(self):
+        """Initially the date_last_modifed is the date_created."""
+        branch = self.makeBranch()
+        self.assertEqual(branch.date_last_modified, branch.date_created)
+
+    def test_bugBranchLinkUpdates(self):
+        """Linking a branch to a bug updates the last modified time."""
+        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
+        branch = self.makeBranch(date_created=date_created)
+        self.assertEqual(branch.date_last_modified, date_created)
+
+        params = CreateBugParams(
+            owner=branch.owner, title='A bug', comment='blah')
+        params.setBugTarget(product=branch.product)
+        bug = getUtility(IBugSet).createBug(params)
+
+        bug.addBranch(branch)
+        self.assertTrue(branch.date_last_modified > date_created,
+                        "Date last modified was not updated.")
+
+    def test_specBranchLinkUpdates(self):
+        """Linking a branch to a spec updates the last modified time."""
+        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
+        branch = self.makeBranch(date_created=date_created)
+        self.assertEqual(branch.date_last_modified, date_created)
+
+        spec = getUtility(ISpecificationSet).new(
+            name='some-spec', title='Some spec', product=branch.product,
+            owner=branch.owner, summary='', specurl=None,
+            definition_status=SpecificationDefinitionStatus.NEW)
+        spec.linkBranch(branch)
+        self.assertTrue(branch.date_last_modified > date_created,
+                        "Date last modified was not updated.")
+
+    def test_revisionsUpdateModifedTime(self):
+        """A branch that gets a new revision is considered modified."""
+        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
+        branch = self.makeBranch(date_created=date_created)
+        self.assertEqual(branch.date_last_modified, date_created)
+        transaction.commit()
+
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        revision = RevisionSet().new(
+            revision_id='some-unique-id', log_body='commit message',
+            revision_date=None, revision_author='ddaa@localhost',
+            owner=branch.owner, parent_ids=[], properties=None)
+        branch.createBranchRevision(0, revision)
+        transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
+
+        self.assertTrue(branch.date_last_modified > date_created,
+                        "Date last modified was not updated.")
 
 
 def test_suite():
