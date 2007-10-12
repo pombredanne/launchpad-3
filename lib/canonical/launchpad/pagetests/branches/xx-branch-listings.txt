@@ -208,11 +208,11 @@ allows sorting.
 
 On a listing that can have branches from more than one product (such
 as the listing of branches owned by a person), the default ordering is
-by product name.
+by product name (which is of course called "Project Name" in the UI).
 
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> browser.getControl('ordered by').value
-    ['Product Name']
+    ['Project Name']
 
 On a listing that can only have branches from one product, the default
 is to sort by lifecycle status.

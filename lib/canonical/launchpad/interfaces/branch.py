@@ -938,9 +938,9 @@ class BranchLifecycleStatusFilter(EnumeratedType):
 
 class BranchListingSort(EnumeratedType):
     PRODUCT = Item("""
-        Product Name
+        Project Name
 
-        Sort branches by name of the product the branch is for.
+        Sort branches by name of the project the branch is for.
         """)
 
     LIFECYCLE = Item("""
