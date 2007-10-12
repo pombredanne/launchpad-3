@@ -9,8 +9,8 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
+    IBugTaskSet
     IFeedsApplication,
-    IMaloneApplication,
     IPersonSet,
     IPillarNameSet,
     NotFoundError,
@@ -26,7 +26,7 @@ class FeedsNavigation(Navigation):
     newlayer = FeedsLayer
 
     stepto_utilities = {
-        'bugs': IMaloneApplication,
+        'bugs': IBugTaskSet,
         }
 
     def traverse(self, name):
