@@ -358,6 +358,35 @@ class ObjectFormatterAPI:
             self._context, request, path_only_if_possible=True)
 
 
+class ObjectFormatterExtendedAPI(ObjectFormatterAPI):
+    """Adapter for any object to a formatted string.
+
+    Adds fmt:link which shows the icon and formatted string in an anchor.
+    """
+
+    implements(ITraversable)
+
+    allowed_names = set([
+        'url',
+        ])
+
+    def traverse(self, name, furtherPath):
+        if name == 'link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.link(extra_path)
+        elif name in self.allowed_names:
+            return getattr(self, name)()
+        else:
+            raise TraversalError, name
+
+    def link(self, extra_path):
+        """Return an HTML link to the person's page containing an icon
+        followed by the person's name.
+        """
+        raise NotImplemented
+
+
 class ObjectImageDisplayAPI:
     """Base class for producing the HTML that presents objects
     as an icon, a logo, a mugshot or a set of badges.
@@ -662,24 +691,8 @@ class BadgeDisplayAPI:
         return ''.join([badge.renderHeadingImage() for badge in badges])
 
 
-class PersonFormatterAPI(ObjectFormatterAPI):
+class PersonFormatterAPI(ObjectFormatterExtendedAPI):
     """Adapter for IPerson objects to a formatted string."""
-
-    implements(ITraversable)
-
-    allowed_names = set([
-        'url',
-        ])
-
-    def traverse(self, name, furtherPath):
-        if name == 'link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.link(extra_path)
-        elif name in self.allowed_names:
-            return getattr(self, name)()
-        else:
-            raise TraversalError, name
 
     def link(self, extra_path):
         """Return an HTML link to the person's page containing an icon
@@ -694,24 +707,8 @@ class PersonFormatterAPI(ObjectFormatterAPI):
             url, image_html, person.browsername)
 
 
-class BranchFormatterAPI(ObjectFormatterAPI):
+class BranchFormatterAPI(ObjectFormatterExtendedAPI):
     """Adapter for IBranch objects to a formatted string."""
-
-    implements(ITraversable)
-
-    allowed_names = set([
-        'url',
-        ])
-
-    def traverse(self, name, furtherPath):
-        if name == 'link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.link(extra_path)
-        elif name in self.allowed_names:
-            return getattr(self, name)()
-        else:
-            raise TraversalError, name
 
     def link(self, extra_path):
         """Return an HTML link to the branch page containing an icon
@@ -725,28 +722,27 @@ class BranchFormatterAPI(ObjectFormatterAPI):
                 '&nbsp;%s</a>' % (url, branch.displayname, branch.unique_name))
 
 
-class BugTaskFormatterAPI(ObjectFormatterAPI):
-    """Adapter for IBugTask objects to a formatted string."""
-
-    implements(ITraversable)
-
-    allowed_names = set([
-        'url',
-        ])
-
-    def traverse(self, name, furtherPath):
-        if name == 'link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.link(extra_path)
-        elif name in self.allowed_names:
-            return getattr(self, name)()
-        else:
-            raise TraversalError, name
+class BugFormatterAPI(ObjectFormatterExtendedAPI):
+    """Adapter for IBug objects to a formatted string."""
 
     def link(self, extra_path):
-        """Return an HTML link to the person's page containing an icon
-        followed by the person's name.
+        """Return an HTML link to the bug page containing an icon
+        followed by the bug's title.
+        """
+        bug = self._context
+        url = canonical_url(bug)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        return ('<a href="%s"><img src="/@@/bug" alt=""/>'
+                '&nbsp;Bug #%d: %s</a>' % (url, bug.id, bug.title))
+
+
+class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
+    """Adapter for IBugTask objects to a formatted string."""
+
+    def link(self, extra_path):
+        """Return an HTML link to the bug task's page containing an icon
+        appropriate to the importance of the bug task.
         """
         bugtask = self._context
         url = canonical_url(bugtask)

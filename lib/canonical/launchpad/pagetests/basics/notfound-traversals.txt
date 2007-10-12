@@ -56,7 +56,8 @@ status is returned.
 >>> check("/")
 >>> check("/rdf")
 >>> check_redirect("/legal", status=301)
->>> check("/feedback")
+>>> check_redirect("/faq", status=301)
+>>> check_redirect("/feedback", status=301)
 >>> check("/+graphics")
 
 >>> check("/translations/+about")
@@ -384,7 +385,6 @@ This is for a team:
 
 >>> check("/~name18/+teamhierarchy")
 >>> check("/~name18/+edit", auth=True)
->>> check("/~name18/+editemail", auth=True)
 >>> check("/~name18/+members")
 >>> check("/~name18/+packages")
 >>> check("/~name18/+leave", auth=True)

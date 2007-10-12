@@ -16,9 +16,16 @@
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_form/form">
-
+  <div style="margin-bottom: 1em">
+    This project was registered by <a tal:attributes="href
+    context/owner/fmt:url" tal:content="context/owner/unique_displayname" />
+    <a tal:condition="context/owner/preferredemail" 
+       tal:attributes="href string:mailto:${context/owner/preferredemail/email}"
+       tal:content="string: &lt;${context/owner/preferredemail/email}&gt;" /> on
+    <span tal:replace="context/datecreated/fmt:datetime" />
   </div>
+
+  <div metal:use-macro="context/@@launchpad_form/form" />
     
 </div>
 
