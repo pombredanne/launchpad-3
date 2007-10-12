@@ -78,7 +78,6 @@ class FeedBase(LaunchpadFormView):
     def getSiteURL(self):
         from canonical.launchpad.webapp.vhosts import allvhosts
         return allvhosts.configs['mainsite'].rooturl[:-1]
-        #return self.request.getApplicationURL()
 
     def getItems(self):
         raise NotImplementedError

@@ -84,11 +84,11 @@ Define a helper function for parsing the entries:
     >>> soup = BeautifulSoup(browser.contents)
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
-    10
+    11
 
     >>> entry = entries[1]
     >>> print extract_text(entry('td')[1])
-    9
+    3
     >>> print entry('td')[1].a['href']
     http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3
     >>> print extract_text(entry('td')[2])

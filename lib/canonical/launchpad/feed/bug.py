@@ -107,7 +107,8 @@ class BugsFeedBase(FeedBase):
 
     def getURL(self):
         """Get the identifying URL for the feed."""
-        return "%s/%s" % (canonical_url(self.context), self.feedname)
+        return "%s/%s.%s" % (
+          canonical_url(self.context), self.feedname, self.format)
 
     def getLogo(self):
         """Get the application-specific logo."""
