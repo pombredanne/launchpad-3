@@ -5,8 +5,8 @@
 import xmlrpclib
 
 from canonical.launchpad.interfaces import (
-    IEmailAddressSet, IMailingListSet, IPersonSet, MailingListStatus,
-    PersonCreationRationale, TeamSubscriptionPolicy)
+    EmailAddressStatus, IEmailAddressSet, IMailingListSet, IPersonSet,
+    MailingListStatus, PersonCreationRationale, TeamSubscriptionPolicy)
 from zope.component import getUtility
 
 
@@ -35,7 +35,7 @@ def fault_catcher(func):
     return caller
 
 
-def mailingListPrintActions(pending_actions):
+def print_actions(pending_actions):
     """A helper function for the mailinglist-xmlrpc.txt doctest.
 
     This helps print the data structure returned from .getPendingActions() in
@@ -68,7 +68,7 @@ def mailingListPrintActions(pending_actions):
                 print team, '-->', action
 
 
-def mailingListPrintInfo(info):
+def print_info(info):
     """A helper function for the mailinglist-subscription-xmlrpc.txt doctest.
     """
     for team_name in sorted(info):
@@ -78,7 +78,7 @@ def mailingListPrintInfo(info):
             print '   ', address, realname, flags, status
 
 
-def mailingListNewTeam(team_name, with_list=False):
+def new_team(team_name, with_list=False):
     """A helper function for the mailinglist doctests.
 
     This just provides a convenience function for creating the kinds of teams
@@ -103,7 +103,7 @@ def mailingListNewTeam(team_name, with_list=False):
     return team, team_list
 
 
-def mailingListNewPerson(first_name):
+def new_person(first_name):
     """Create a new person with the given first name.
 
     The person will be given two email addresses, with the 'long form'
@@ -121,5 +121,6 @@ def mailingListNewPerson(first_name):
         PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
         name=variable_name, displayname=full_name)
     person.setPreferredEmail(email)
-    getUtility(IEmailAddressSet).new(alternative_address, person)
+    getUtility(IEmailAddressSet).new(alternative_address, person,
+                                     EmailAddressStatus.VALIDATED)
     return person

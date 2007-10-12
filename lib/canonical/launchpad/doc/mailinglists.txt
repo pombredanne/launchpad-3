@@ -12,12 +12,10 @@ an existing team.  This is done through an IMailingListSet utility.
     >>> verifyObject(IMailingListSet, list_set)
     True
 
-    # Note that this test includes globals from the test harness, such as
-    # new_person() and new_team().
-
 In the following description of how to use team mailing lists, we will need
 several teams.
 
+    >>> from canonical.launchpad.ftests.mailinglists_helper import new_team
     >>> team_one = new_team('team-one')
     >>> team_two = new_team('team-two')
     >>> team_three = new_team('team-three')
@@ -67,6 +65,7 @@ created right away.
 
 You may not register a mailing list for a person.
 
+    >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
     >>> anne = new_person('Anne')
     >>> list_set.new(anne, anne)
     Traceback (most recent call last):
