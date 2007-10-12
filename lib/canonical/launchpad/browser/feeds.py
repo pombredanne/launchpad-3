@@ -22,11 +22,26 @@ class FeedsNavigation(Navigation):
 
     def traverse(self, name):
         try:
-            # XXX: statik 2007-10-05 bug=56646 Redirect to lowercase before 
-            # doing the lookup
+            if name.startswith('~'):
+                # redirect to the lower() version before doing the lookup
+                if name.lower() != name:
+                    return self.redirectSubTree(
+                        canonical_url(self.context) + name.lower(), status=301)
+                else:
+                    personset = getUtility(IPersonSet)
+                    person = personset.getByName(name[1:])
+                    return person
+
             # XXX: statik 2007-10-09 bug=150941
             # Need to block pages not registered on the FeedsLayer
-            return getUtility(IPillarNameSet)[name.lower()]
+
+            # redirect to the lower() version before doing the lookup
+            if name.lower() != name:
+                return self.redirectSubTree(
+                    canonical_url(self.context) + name.lower(), status=301)
+            else:
+                return getUtility(IPillarNameSet)[name]
+
         except NotFoundError:
             return None
 
