@@ -89,7 +89,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
     @cachedproperty
     def has_bug_branch_links(self):
-        """Get all bugs associated the with current batch."""
+        """Return a set of branch ids that should show bug badges."""
         bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
             self.batch, self.view.user)
         result = set()
@@ -99,7 +99,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
     @cachedproperty
     def has_branch_spec_links(self):
-        """Get all the specs associated with the current batch."""
+        """Return a set of branch ids that should show blueprint badges."""
         spec_branches = getUtility(
             ISpecificationBranchSet).getSpecificationBranchesForBranches(
             self.batch, self.view.user)

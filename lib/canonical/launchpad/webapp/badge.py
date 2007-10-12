@@ -70,7 +70,11 @@ STANDARD_BADGES = {
 
 
 class IHasBadges(Interface):
-    """Provides methods to determine visible badges.
+    """A method to determine visible badges.
+
+    Badges are used to show connections between different content objects, for
+    example a BugBranch is a link between a bug and a branch.  To represent
+    this link a bug has a branch badge, and the branch has a bug badge.
 
     Badges should honour the visibility of the linked objects.
     """
@@ -82,12 +86,14 @@ class IHasBadges(Interface):
 class HasBadgeBase:
     """The standard base implementation for badge visibility.
 
-    Derived classes need to override at least `isBadgeVisible`.
+    Derived classes need to provide a sequence of badge names that
+    could be visible available through the attribute `badges`.
+
+    The visibility of these badges are checked by calling a method like
+    `isFooBadgeVisible` where Foo is the capitalised name of the badge.
     """
     implements(IHasBadges)
 
-    # Derived classes need to provide a sequence of badge names that
-    # could be visible.
     badges = None
 
     def getVisibleBadges(self):

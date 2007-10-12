@@ -24,7 +24,7 @@ alternate text and titles.
 
 Iterating over this collection gives:
 
-    >>> for name in sorted(STANDARD_BADGES.keys()):
+    >>> for name in sorted(STANDARD_BADGES):
     ...     print name
     blueprint
     branch
