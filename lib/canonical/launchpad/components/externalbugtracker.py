@@ -92,15 +92,15 @@ def get_external_bugtracker(bugtracker, version=None):
     """Return an `ExternalBugTracker` for bugtracker."""
     bugtrackertype = bugtracker.bugtrackertype
     if bugtrackertype == BugTrackerType.BUGZILLA:
-        return Bugzilla(bugtracker.baseurl, version)
+        return Bugzilla(bugtracker, version)
     elif bugtrackertype == BugTrackerType.DEBBUGS:
-        return DebBugs()
+        return DebBugs(bugtracker)
     elif bugtrackertype == BugTrackerType.MANTIS:
-        return Mantis(bugtracker.baseurl)
+        return Mantis(bugtracker)
     elif bugtrackertype == BugTrackerType.TRAC:
-        return Trac(bugtracker.baseurl)
+        return Trac(bugtracker)
     elif bugtrackertype == BugTrackerType.ROUNDUP:
-        return Roundup(bugtracker.baseurl)
+        return Roundup(bugtracker)
     else:
         raise UnknownBugTrackerTypeError(bugtrackertype.name,
             bugtracker.name)
@@ -111,6 +111,10 @@ class ExternalBugTracker:
 
     implements(IExternalBugtracker)
     batch_query_threshold = config.checkwatches.batch_query_threshold
+
+    def __init__(self, bugtracker):
+        self.bugtracker = bugtracker
+        self.baseurl = bugtracker.baseurl.rstrip('/')
 
     def urlopen(self, request, data=None):
         return urllib2.urlopen(request, data)
@@ -250,10 +254,8 @@ class Bugzilla(ExternalBugTracker):
 
     implements(IExternalBugtracker)
 
-    def __init__(self, baseurl, version=None):
-        if baseurl.endswith("/"):
-            baseurl = baseurl[:-1]
-        self.baseurl = baseurl
+    def __init__(self, bugtracker, version=None):
+        ExternalBugTracker.__init__(self, bugtracker)
         self.version = version
         self.is_issuezilla = False
 
@@ -492,7 +494,8 @@ class DebBugs(ExternalBugTracker):
     debbugs_pl = os.path.join(
         os.path.dirname(debbugs.__file__), 'debbugs-log.pl')
 
-    def __init__(self, db_location=None):
+    def __init__(self, bugtracker, db_location=None):
+        ExternalBugTracker.__init__(self, bugtracker)
         if db_location is None:
             self.db_location = config.malone.debbugs_db_location
         else:
@@ -519,10 +522,6 @@ class DebBugs(ExternalBugTracker):
         This method is overridden (and left empty) here to avoid breakage when
         the continuous bug-watch checking spec is implemented.
         """
-
-    @property
-    def baseurl(self):
-        return self.db_location
 
     def convertRemoteStatus(self, remote_status):
         """Convert a debbugs status to a Malone status.
@@ -677,8 +676,8 @@ class Mantis(ExternalBugTracker):
     # Mantis if (and only if) needed.
     _opener = ClientCookie.build_opener(MantisLoginHandler)
 
-    def __init__(self, baseurl, use_csv_export=False):
-        self.baseurl = baseurl.rstrip('/')
+    def __init__(self, bugtracker, use_csv_export=False):
+        ExternalBugTracker.__init__(self, bugtracker)
 
         # Use the CSV export method to get bug statuses. This is
         # disabled by default because there have been problems with
@@ -1048,12 +1047,6 @@ class Trac(ExternalBugTracker):
     batch_url = 'query?%s&order=resolution&format=csv'
     batch_query_threshold = 10
 
-    def __init__(self, baseurl):
-        # Trac can be really finicky about slashes in URLs, so we strip any
-        # trailing slashes to ensure we don't incur its wrath in the form of
-        # a 404.
-        self.baseurl = baseurl.rstrip('/')
-
     def supportsSingleExports(self, bug_ids):
         """Return True if the Trac instance provides CSV exports for single
         tickets, False otherwise.
@@ -1203,6 +1196,49 @@ class Trac(ExternalBugTracker):
 class Roundup(ExternalBugTracker):
     """An ExternalBugTracker descendant for handling Roundup bug trackers."""
 
+    def __init__(self, bugtracker):
+        """Create a new Roundup instance.
+
+        :bugtracker: The Roundup bugtracker.
+
+        If the bug tracker's baseurl is one which points to
+        bugs.python.org, the behaviour of the Roundup bugtracker will be
+        different from that which it exhibits to every other Roundup bug
+        tracker, since the Python Roundup instance is very specific to
+        Python and in fact behaves rather more like SourceForge than
+        Roundup.
+        """
+        ExternalBugTracker.__init__(self, bugtracker)
+
+        if self.isPython():
+            # The bug export URLs differ only from the base Roundup ones
+            # insofar as they need to include the resolution column in
+            # order for us to be able to successfully export it.
+            self.single_bug_export_url = (
+                "issue?@action=export_csv&@columns=title,id,activity,"
+                "status,resolution&@sort=id&@group=priority&@filter=id"
+                "&@pagesize=50&@startwith=0&id=%i")
+            self.batch_bug_export_url = (
+                "issue?@action=export_csv&@columns=title,id,activity,"
+                "status,resolution&@sort=activity&@group=priority"
+                "&@pagesize=50&@startwith=0")
+        else:
+            # XXX: 2007-08-29 Graham Binns
+            #      I really don't like these URLs but Roundup seems to
+            #      be very sensitive to changing them. These are the
+            #      only ones that I can find that work consistently on
+            #      all the roundup instances I can find to test them
+            #      against, but I think that refining these should be
+            #      looked into at some point.
+            self.single_bug_export_url = (
+                "issue?@action=export_csv&@columns=title,id,activity,"
+                "status&@sort=id&@group=priority&@filter=id"
+                "&@pagesize=50&@startwith=0&id=%i")
+            self.batch_bug_export_url = (
+                "issue?@action=export_csv&@columns=title,id,activity,"
+                "status&@sort=activity&@group=priority&@pagesize=50"
+                "&@startwith=0")
+
     @property
     def status_map(self):
         """Return the remote status -> BugTaskStatus mapping for the
@@ -1259,50 +1295,6 @@ class Roundup(ExternalBugTracker):
                 7: BugTaskStatus.FIXCOMMITTED, # Roundup status 'done-cbb'
                 8: BugTaskStatus.FIXRELEASED,  # Roundup status 'resolved'
                 UNKNOWN_REMOTE_STATUS: BugTaskStatus.UNKNOWN}
-
-
-    def __init__(self, baseurl):
-        """Create a new Roundup instance.
-
-        :baseurl: The base url (including protocol) for the Roundup
-            bugtracker. Trailing slashes will be removed from this.
-
-        If the baseurl passed is one which points to bugs.python.org,
-        the behaviour of the Roundup bugtracker will be different from
-        that which it exhibits to every other Roundup bug tracker, since
-        the Python Roundup instance is very specific to Python and in
-        fact behaves rather more like SourceForge than Roundup.
-        """
-        self.baseurl = baseurl.rstrip('/')
-
-        if self.isPython():
-            # The bug export URLs differ only from the base Roundup ones
-            # insofar as they need to include the resolution column in
-            # order for us to be able to successfully export it.
-            self.single_bug_export_url = (
-                "issue?@action=export_csv&@columns=title,id,activity,"
-                "status,resolution&@sort=id&@group=priority&@filter=id"
-                "&@pagesize=50&@startwith=0&id=%i")
-            self.batch_bug_export_url = (
-                "issue?@action=export_csv&@columns=title,id,activity,"
-                "status,resolution&@sort=activity&@group=priority"
-                "&@pagesize=50&@startwith=0")
-        else:
-            # XXX: 2007-08-29 Graham Binns
-            #      I really don't like these URLs but Roundup seems to
-            #      be very sensitive to changing them. These are the
-            #      only ones that I can find that work consistently on
-            #      all the roundup instances I can find to test them
-            #      against, but I think that refining these should be
-            #      looked into at some point.
-            self.single_bug_export_url = (
-                "issue?@action=export_csv&@columns=title,id,activity,"
-                "status&@sort=id&@group=priority&@filter=id"
-                "&@pagesize=50&@startwith=0&id=%i")
-            self.batch_bug_export_url = (
-                "issue?@action=export_csv&@columns=title,id,activity,"
-                "status&@sort=activity&@group=priority&@pagesize=50"
-                "&@startwith=0")
 
     def isPython(self):
         """Return True if the remote bug tracker is at bugs.python.org.
@@ -1457,9 +1449,6 @@ class SourceForge(ExternalBugTracker):
     """An ExternalBugTracker for SourceForge bugs."""
 
     export_url = 'support/tracker.php?aid=%s'
-
-    def __init__(self, baseurl):
-        self.baseurl = baseurl.rstrip('/')
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.

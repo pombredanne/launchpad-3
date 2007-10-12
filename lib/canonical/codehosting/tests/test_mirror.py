@@ -1,8 +1,8 @@
 import logging
 import unittest
 
-from canonical.launchpad.scripts.supermirror import mirror
-from canonical.launchpad.scripts.supermirror.jobmanager import LockError
+from canonical.codehosting.puller import mirror
+from canonical.codehosting.puller.jobmanager import LockError
 from canonical.testing import reset_logging
 
 

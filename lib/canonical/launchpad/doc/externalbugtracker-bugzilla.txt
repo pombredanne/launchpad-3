@@ -12,14 +12,17 @@ The class that implements EBT is called Bugzilla. It works differently
 depending on which version of Bugzilla it is talking to. If it's a
 version we can't parse, UnparseableBugTrackerVersion is raised:
 
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
-    >>> external_bugzilla = Bugzilla('http://foo.com/', version='A.B4')
-    >>> external_bugzilla.batch_query_threshold = -1
+    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> invalid_version_bugzilla = new_bugtracker(BugTrackerType.BUGZILLA)
+    >>> external_bugzilla = Bugzilla(invalid_version_bugzilla, version='A.B4')
     >>> external_bugzilla.updateBugWatches([])
     Traceback (most recent call last):
       ...
     UnparseableBugTrackerVersion:
-    Failed to parse version 'A.B4' for http://foo.com
+    Failed to parse version 'A.B4' for http://...
 
 Since we don't want to depend on a working network connection, we use a
 slightly modified implementation.
@@ -29,7 +32,7 @@ slightly modified implementation.
     ...     get_external_bugtracker)
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
-    >>> external_bugzilla = TestBugzilla(gnome_bugzilla.baseurl)
+    >>> external_bugzilla = TestBugzilla(gnome_bugzilla)
     >>> version = external_bugzilla._probe_version()
     >>> version
     u'2.20+'
@@ -157,7 +160,6 @@ updated:
 Now let's take a look at what happens when a bug watch is linked to
 from a bug task.
 
-    >>> login('foo.bar@canonical.com')
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> thunderbird_task = bug_nine.bugtasks[0]
     >>> print thunderbird_task.status.title
@@ -176,7 +178,7 @@ We need to create a new ExternalBugtracker for the Mozilla tracker:
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName(
     ...     'mozilla.org')
     >>> external_bugzilla = TestBugzilla(
-    ...     mozilla_bugzilla.baseurl, version)
+    ...     mozilla_bugzilla, version)
     >>> external_bugzilla.bugzilla_bugs = {1234: ('ASSIGNED', '')}
 
 Let's update the bug watch, and see that the linked bug watch got
@@ -196,7 +198,8 @@ status mapping.
 
     >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> thunderbird_task.transitionToStatus(
-    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
+    ...     BugTaskStatus.CONFIRMED,
+    ...     getUtility(IPersonSet).getByName('no-priv'))
     >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
     >>> print thunderbird_task.status.title
     In Progress

@@ -14,6 +14,7 @@ __all__ = [
     'IMailingListSubscription',
     'MailingListAutoSubscribePolicy',
     'MailingListStatus',
+    'MAILING_LISTS_DOMAIN',
     'PersonalStanding',
     'PostedMessageStatus',
     ]
@@ -26,6 +27,9 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import IEmailAddress
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.lazr.enum import DBEnumeratedType, DBItem
+
+
+MAILING_LISTS_DOMAIN = 'lists.launchpad.net'
 
 
 class IMailingListApplication(ILaunchpadApplication):
@@ -277,6 +281,10 @@ class IMailingList(Interface):
                       'MODIFIED.')
         )
 
+    address = TextLine(
+        title=_("This list's email address."), required=True, readonly=True,
+        description=_("The text representation of this team's email address."))
+
     def review(reviewer, status):
         """Review the mailing list's registration.
 
@@ -330,6 +338,21 @@ class IMailingList(Interface):
 
         :raises AssertionError: When prior to deactivation, the status of the
             mailing list is not `MailingListStatus.ACTIVE`.
+        """
+
+    def reactivate():
+        """Reactivate the mailing list.
+
+        This sets the status to `MailingListStatus.APPROVED`.
+
+        :raises AssertionError: When prior to reactivation, the status of the
+            mailing list is not `MailingListStatus.INACTIVE`.
+        """
+
+    def cancelRegistration():
+        """Delete this mailing list from the database.
+
+        Only mailing lists in the REGISTERED state can be deleted.
         """
 
     def subscribe(person, address=None):
