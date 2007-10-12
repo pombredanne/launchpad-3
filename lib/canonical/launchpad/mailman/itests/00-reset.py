@@ -5,7 +5,7 @@
 Reset the database without having to 'make schema'.
 """
 
-from subprocess import call, Popen, PIPE, STDOUT
+import itest_helper
 from canonical.database.sqlbase import cursor
 
 
@@ -31,9 +31,10 @@ def main():
     WHERE id IN (SELECT id FROM DeathRowTeams);
     """)
     # Now delete any mailing lists still hanging around.  We don't care if
-    # this fails because the lists don't exist.
+    # this fails because it means the list doesn't exist.
     for team_name in ('team-one', 'team-two', 'team-three'):
-        call(('./rmlist', '-a', team_name),
-             stdout=PIPE, stderr=STDOUT,
-             cwd=MAILMAN_BIN)
-    transactionmgr.commit()
+        try:
+            itest_helper.run_mailman('./rmlist', '-a', team_name)
+        except itest_helper.IntegrationTestFailure:
+            pass
+    itest_helper.transactionmgr.commit()

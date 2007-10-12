@@ -6,66 +6,41 @@
 
 import os
 import sys
-import base64
+import shutil
 import traceback
+import itest_helper
+
 from operator import itemgetter
 
-here = os.path.abspath(os.path.dirname(sys.argv[0]))
-top = os.path.normpath(os.path.join(here, '../../../..'))
-sys.path.insert(0, top)
-
-MAILMAN_BIN = os.path.normpath(os.path.join(
-    os.path.dirname(sys.argv[0]), '../../../../', 'mailman', 'bin'))
+sys.path.insert(0, itest_helper.TOP)
 
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 execute_zcml_for_scripts()
-
-# Set up the  connection to the database.  We use the 'testadmin' uses because
-# it has rights to do nasty things like delete Person entries.
-from canonical.lp import initZopeless
-transactionmgr = initZopeless(dbuser='testadmin')
+itest_helper.create_transaction_manager()
 
 
-# XXX I don't understand why we have to base64 encode the password here, but
-# the Launchpad page tests don't.
-def auth(user, password):
-    return 'Basic ' + base64.encodestring('%s:%s' % (user, password))
-
-
-class IntegrationTestFailure(Exception):
-    """An integration test failed."""
-
-
-def main():
-    # Global namespace for all integration test scripts.
-    namespace = {
-        'transactionmgr': transactionmgr,
-        'IntegrationTestFailure': IntegrationTestFailure,
-        'MAILMAN_BIN': MAILMAN_BIN,
-        'auth': auth,
-        'HERE': here,
-        }
-
+def real_main():
     # Search for all sub-tests and run them in order.
     tests = []
-    for filename in os.listdir(here):
+    for filename in os.listdir(itest_helper.HERE):
         if os.path.splitext(filename)[1] <> '.py':
             continue
         try:
             index = int(filename[:2])
         except (ValueError, IndexError):
             continue
-        path = os.path.join(here, filename)
+        path = os.path.join(itest_helper.HERE, filename)
         tests.append((index, path, filename))
 
     for index, path, filename in sorted(tests, key=itemgetter(0)):
         print 'WORKING:', filename,
         sys.stdout.flush()
+        namespace = {}
         execfile(path, namespace)
         main = namespace['main']
         try:
             main()
-        except IntegrationTestFailure, error:
+        except itest_helper.IntegrationTestFailure, error:
             print 'FAILED:', error
             return -1
         except Exception:
@@ -76,6 +51,20 @@ def main():
             print 'PASSED'
 
     return 0
+
+
+def main():
+    # Several of the tests require a bin/withlist helper to print useful
+    # information about mailing lists.  Mailman requires the withlist script
+    # to be in its bin directory or on sys.path.  Hacking the latter in the
+    # subprocess is tricky, so it's easier to just copy the file in place.
+    src_path = os.path.join(itest_helper.HERE, 'mmhelper.py')
+    dst_path = os.path.join(itest_helper.MAILMAN_BIN, 'mmhelper.py')
+    shutil.copyfile(src_path, dst_path)
+    try:
+        return real_main()
+    finally:
+        os.remove(dst_path)
 
 
 if __name__ == '__main__':

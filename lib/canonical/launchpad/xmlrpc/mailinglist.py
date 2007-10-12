@@ -150,7 +150,7 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             list_two.review(lpadmin, MailingListStatus.DECLINED)
             return step
         if step == '02-review-lists':
-            # Approve team one's list so that further tests can proceed.
+            # Approve team three's list so that further tests can proceed.
             list_one = listset.get('team-three')
             list_one.review(lpadmin, MailingListStatus.APPROVED)
             return step
@@ -158,4 +158,14 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             # At some point this will be possible to do through the web.
             list_one = listset.get('team-three')
             list_one.deactivate()
+            return step
+        if step == '03-modify-lists-A':
+            # At some point this will be possible to do through the web.
+            list_one = listset.get('team-one')
+            list_one.welcome_message = 'Greetings team one members!'
+            return step
+        if step == '03-modify-lists-B':
+            # At some point this will be possible to do through the web.
+            list_one = listset.get('team-one')
+            list_one.welcome_message = 'Saluations team one members!'
             return step

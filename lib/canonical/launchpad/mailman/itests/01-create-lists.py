@@ -5,26 +5,23 @@
 Check that Mailman actually creates approved mailing lists.
 """
 
-import os
-import sys
-import time
-import datetime
 import xmlrpclib
+import itest_helper
 
-from zope.testbrowser.browser import Browser
 
+def check_lists():
+    stdout = itest_helper.run_mailman('./list_lists', '-a', '-b')
+    team_names = sorted(stdout.splitlines())
+    return team_names == ['team-one']
 
-XMLRPC_URL = 'http://xmlrpc.launchpad.dev:8087/mailinglists'
 
 def main():
     """Test end-to-end mailing list creation."""
-    proxy = xmlrpclib.ServerProxy(XMLRPC_URL)
+    proxy = xmlrpclib.ServerProxy(itest_helper.XMLRPC_URL)
+    browser = itest_helper.make_browser()
     #
     # Create Team One, whose list will get approved.
     #
-    browser = Browser()
-    browser.handleErrors = False
-    browser.addHeader('Authorization', auth('no-priv@canonical.com', 'test'))
     browser.open('http://launchpad.dev/people/+newteam')
     # Use the field names here to disambiguate or properly locate the control.
     browser.getControl(name='field.name').value = 'team-one'
@@ -52,21 +49,4 @@ def main():
     # Now wait a little while for Mailman to create the Team One mailing list.
     # Using the default Mailman polling frequency, the list should get created
     # in under 20 seconds.
-    until = datetime.datetime.now() + datetime.timedelta(seconds=20)
-    team_names = None
-    while datetime.datetime.now() < until:
-        proc = Popen(('./list_lists', '-a', '-b'),
-                     stdout=PIPE, stderr=STDOUT,
-                     cwd=MAILMAN_BIN)
-        stdout, stderr = proc.communicate()
-        team_names = sorted(stdout.splitlines())
-        if team_names == ['team-one']:
-            break
-    # On the Mailman side, only team-one should exist.
-    if team_names == ['team-one']:
-        # The test passed.
-        return
-    elif 'team-two' in team_names:
-        raise IntegrationTestFailure('team-two was created unexpectedly')
-    else:
-        raise IntegrationTestFailure('unexpected teams: %s' % team_names)
+    itest_helper.poll_mailman(check_lists)
