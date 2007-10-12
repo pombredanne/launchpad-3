@@ -841,11 +841,12 @@ return all branches associated with that person:
   - subscribed branches by person
   - person is author or owner of the branch
 
-The default sort order is by product, lifecycle, author and finally
-name, but any value from the BranchListingSort enumeration can be used
-(when a sort order is specified, it only affects the initial ordering
--- so when BranchListingSort.LIFECYCLE is specified as the sort order,
-the sort is by lifecycle, product, author, name).
+The default sort order is by product name, lifecycle, author name and
+finally branch name (with NULL names sorting at the end, as is usual
+for SQL), but any value from the BranchListingSort enumeration can be
+used (when a sort order is specified, it only affects the initial
+ordering -- so when BranchListingSort.LIFECYCLE is specified as the
+sort order, the sort is by lifecycle, product, author, name).
 
     >>> from canonical.launchpad.interfaces import (
     ...     BranchListingSort, DEFAULT_BRANCH_STATUS_IN_LISTING)
@@ -878,29 +879,26 @@ the sort is by lifecycle, product, author, name).
     New ~name12/+junk/junk.contrib
 
     >>> branches = branchset.getBranchesAuthoredByPerson(
-    ...     sample_person, visible_by_user=sample_person,
-    ...     sort_by=BranchListingSort.REGISTRANT)
+    ...     sample_person, visible_by_user=sample_person)
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
     New ~name12/firefox/main
     Merged ~name12/gnome-terminal/slowness
     Experimental ~name12/gnome-terminal/klingon
     New ~name12/landscape/feature-x
-    New ~name12/+junk/junk.contrib
     New ~landscape-developers/landscape/trunk
+    New ~name12/+junk/junk.contrib
 
     >>> for branch in branchset.getBranchesRegisteredByPerson(
-    ...     sample_person, sort_by=BranchListingSort.AUTHOR):
-    ...     print branch.lifecycle_status.title,
-    ...     print getattr(branch.author, 'displayname', '-'),
-    ...     print branch.unique_name
-    Experimental Ubuntu Team ~name12/+junk/junk.dev
-    Abandoned - ~name12/gnome-terminal/2.4
-    Mature - ~name12/gnome-terminal/2.6
-    Development - ~name12/gnome-terminal/main
-    New - ~name12/gnome-terminal/mirrored
-    New - ~name12/gnome-terminal/pushed
-    New - ~name12/gnome-terminal/scanned
+    ...     sample_person, sort_by=BranchListingSort.PRODUCT):
+    ...     print branch.lifecycle_status.title, branch.unique_name
+    Abandoned ~name12/gnome-terminal/2.4
+    Mature ~name12/gnome-terminal/2.6
+    Development ~name12/gnome-terminal/main
+    New ~name12/gnome-terminal/mirrored
+    New ~name12/gnome-terminal/pushed
+    New ~name12/gnome-terminal/scanned
+    Experimental ~name12/+junk/junk.dev
 
     >>> for branch in branchset.getBranchesSubscribedByPerson(sample_person):
     ...     print branch.lifecycle_status.title, branch.unique_name
@@ -916,33 +914,41 @@ extra display information.
 
     >>> gnome_terminal = productset.getByName('gnome-terminal')
     >>> branches = branchset.getBranchesForProduct(
-    ...     gnome_terminal, DEFAULT_BRANCH_STATUS_IN_LISTING)
+    ...     gnome_terminal, DEFAULT_BRANCH_STATUS_IN_LISTING,
+    ...     sort_by=BranchListingSort.REGISTRANT)
     >>> for branch in branches:
-    ...     print branch.lifecycle_status.title, branch.unique_name
-    Mature ~name12/gnome-terminal/2.6
-    Development ~name12/gnome-terminal/main
-    Experimental ~name12/gnome-terminal/klingon
-    New ~launchpad/gnome-terminal/launchpad
-    New ~ddaa/gnome-terminal/dev
-    New ~vcs-imports/gnome-terminal/import
-    New ~name12/gnome-terminal/mirrored
-    New ~name12/gnome-terminal/pushed
-    New ~name12/gnome-terminal/scanned
+    ...     print branch.lifecycle_status.title, branch.owner.displayname,
+    ...     print branch.unique_name
+    New David Allouche ~ddaa/gnome-terminal/dev
+    New Launchpad Developers ~launchpad/gnome-terminal/launchpad
+    Mature Sample Person ~name12/gnome-terminal/2.6
+    Development Sample Person ~name12/gnome-terminal/main
+    Experimental Sample Person ~name12/gnome-terminal/klingon
+    New Sample Person ~name12/gnome-terminal/mirrored
+    New Sample Person ~name12/gnome-terminal/pushed
+    New Sample Person ~name12/gnome-terminal/scanned
+    New VCS imports ~vcs-imports/gnome-terminal/import
 
-    >>> branches = branchset.getBranchesForProduct(gnome_terminal)
+    >>> branches = branchset.getBranchesForProduct(
+    ...     gnome_terminal, sort_by=BranchListingSort.AUTHOR)
     >>> for branch in branches:
-    ...     print branch.lifecycle_status.title, branch.unique_name
-    Abandoned ~name12/gnome-terminal/2.4
-    Merged ~name12/gnome-terminal/slowness
-    Mature ~name12/gnome-terminal/2.6
-    Development ~name12/gnome-terminal/main
-    Experimental ~name12/gnome-terminal/klingon
-    New ~launchpad/gnome-terminal/launchpad
-    New ~ddaa/gnome-terminal/dev
-    New ~vcs-imports/gnome-terminal/import
-    New ~name12/gnome-terminal/mirrored
-    New ~name12/gnome-terminal/pushed
-    New ~name12/gnome-terminal/scanned
+    ...     print branch.lifecycle_status.title,
+    ...     if branch.author:
+    ...         print branch.author.displayname,
+    ...     else:
+    ...         print '<none>',
+    ...     print branch.unique_name
+    New Launchpad Developers ~launchpad/gnome-terminal/launchpad
+    Merged Sample Person ~name12/gnome-terminal/slowness
+    Experimental Sample Person ~name12/gnome-terminal/klingon
+    Abandoned <none> ~name12/gnome-terminal/2.4
+    Mature <none> ~name12/gnome-terminal/2.6
+    Development <none> ~name12/gnome-terminal/main
+    New <none> ~ddaa/gnome-terminal/dev
+    New <none> ~vcs-imports/gnome-terminal/import
+    New <none> ~name12/gnome-terminal/mirrored
+    New <none> ~name12/gnome-terminal/pushed
+    New <none> ~name12/gnome-terminal/scanned
 
     >>> branches = branchset.getBranchesForProduct(
     ...     gnome_terminal, [BranchLifecycleStatus.DEVELOPMENT])
@@ -976,12 +982,17 @@ Filtering by status must work here too.
 We update the branches for the Mozilla project in the sample data to use a
 variety of different statuses, so that we can demonstrate filtering by status.
 
+    >>> from canonical.database.sqlbase import flush_database_caches
     >>> def setMultipleStatus(branch_status_pairs):
     ...     for unique_name, new_status_name in branch_status_pairs:
     ...         branch = branchset.getByUniqueName(unique_name)
     ...         new_status = getattr(BranchLifecycleStatus, new_status_name)
     ...         branch.lifecycle_status = new_status
     ...         syncUpdate(branch)
+    ...     # getBranchesForProject queries BranchWithSortKeys but we've just
+    ...     # updated Branch.  SQLObject doesn't know that these are related
+    ...     # so we have to drop the cached BranchWithSortKeys objects.
+    ...     flush_database_caches()
     >>> login('foo.bar@canonical.com')
     >>> setMultipleStatus([
     ...     ('~name12/firefox/main', 'DEVELOPMENT'),
@@ -990,7 +1001,7 @@ variety of different statuses, so that we can demonstrate filtering by status.
     ...     ('~sabdfl/firefox/release--0.9.1', 'ABANDONED'),
     ...     ('~sabdfl/firefox/release-0.9.2', 'MATURE'),
     ...     ('~stevea/thunderbird/main', 'DEVELOPMENT')])
-    
+
     >>> printMozillaBranches()
     Abandoned ~sabdfl/firefox/release--0.9.1
     Abandoned ~sabdfl/firefox/release-0.8
