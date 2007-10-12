@@ -4,6 +4,7 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
+    'BranchWithSortKeys',
     ]
 
 from datetime import datetime, timedelta
@@ -455,16 +456,27 @@ class Branch(SQLBase):
             datetime.now(pytz.timezone('UTC')) + timedelta(hours=6))
         self.syncUpdate()
 
+class BranchWithSortKeys(Branch):
+    """A total hack."""
+
+    product_name = StringCol()
+    author_name = StringCol()
+    owner_name = StringCol()
+
+    @classmethod
+    def select(cls, query, clauseTables=None, orderBy=None):
+        query = "BranchWithSortKeys.id IN (SELECT Branch.id FROM BRANCH WHERE %s)"%(query,)
+        return super(BranchWithSortKeys, cls).select(query, clauseTables=clauseTables, orderBy=orderBy)
 
 LISTINGSORT_TO_COLUMN = {
-    BranchListingSort.PRODUCT: 'product',
+    BranchListingSort.PRODUCT: 'product_name',
     BranchListingSort.LIFECYCLE: '-lifecycle_status',
-    BranchListingSort.AUTHOR: 'author',
+    BranchListingSort.AUTHOR: 'author_name',
     BranchListingSort.NEWEST_FIRST: 'date_created',
     BranchListingSort.OLDEST_FIRST: '-date_created',
     BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: 'last_scanned',
     BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: '-last_scanned',
-    BranchListingSort.REGISTRANT: 'owner'
+    BranchListingSort.REGISTRANT: 'owner_name'
     }
 
 class BranchSet:
@@ -891,10 +903,10 @@ class BranchSet:
 
     @staticmethod
     def _listingSortToOrderBy(sort_by):
+        order_by = ['product_name', '-lifecycle_status', 'author_name', 'name']
         if sort_by is None:
-            return Branch._defaultOrder
+            return order_by
         else:
-            order_by = list(Branch._defaultOrder)
             column = LISTINGSORT_TO_COLUMN[sort_by]
             if column.startswith('-'):
                 variant_column = column[1:]
@@ -934,7 +946,7 @@ class BranchSet:
             '''
             % query_params)
 
-        return Branch.select(
+        return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
             orderBy=self._listingSortToOrderBy(sort_by))
 
@@ -943,7 +955,7 @@ class BranchSet:
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = 'Branch.author = %s %s' % (person.id, lifecycle_clause)
-        return Branch.select(
+        return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
             orderBy=self._listingSortToOrderBy(sort_by))
 
@@ -957,7 +969,7 @@ class BranchSet:
             Branch.author != %s) %s
             '''
             % (person.id, person.id, lifecycle_clause))
-        return Branch.select(
+        return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
             orderBy=self._listingSortToOrderBy(sort_by))
 
@@ -970,7 +982,7 @@ class BranchSet:
             AND BranchSubscription.person = %s %s
             '''
             % (person.id, lifecycle_clause))
-        return Branch.select(
+        return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
             clauseTables=['BranchSubscription'],
             orderBy=self._listingSortToOrderBy(sort_by))
@@ -983,7 +995,7 @@ class BranchSet:
 
         query = 'Branch.product = %s %s' % (product.id, lifecycle_clause)
 
-        return Branch.select(
+        return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
             orderBy=self._listingSortToOrderBy(sort_by))
 
@@ -996,7 +1008,7 @@ class BranchSet:
         query = 'Branch.product = Product.id AND Product.project = %s %s' % (
             project.id, lifecycle_clause)
 
-        return Branch.select(
+        return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
             clauseTables=['Product'],
             orderBy=self._listingSortToOrderBy(sort_by))
