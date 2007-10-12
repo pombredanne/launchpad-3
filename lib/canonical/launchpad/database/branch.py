@@ -456,8 +456,16 @@ class Branch(SQLBase):
             datetime.now(pytz.timezone('UTC')) + timedelta(hours=6))
         self.syncUpdate()
 
+
 class BranchWithSortKeys(Branch):
-    """A total hack."""
+    """A hack to allow the sorting of Branch queries by human-meaningful keys.
+
+    If we could get SQLObject to generate LEFT OUTER JOINs nicely,
+    this class and the view it queries wouldn't be necessary.
+
+    XXX MichaelHudson, 2007-10-12: Get rid of this hack when we've converted
+    over to using Storm.
+    """
 
     product_name = StringCol()
     author_name = StringCol()
@@ -465,8 +473,18 @@ class BranchWithSortKeys(Branch):
 
     @classmethod
     def select(cls, query, clauseTables=None, orderBy=None):
-        query = "BranchWithSortKeys.id IN (SELECT Branch.id FROM BRANCH WHERE %s)"%(query,)
-        return super(BranchWithSortKeys, cls).select(query, clauseTables=clauseTables, orderBy=orderBy)
+        """Wrap a query that refers to Branch to refer to BranchWithSortKeys.
+
+        All the queries carefully and generically created in this file refer
+        to the Branch table.  To be able to query the BranchWithSortKeys view
+        instead, we ask the view for the rows with the same ids as the
+        branches returned by the generated query.
+        """
+        query = """BranchWithSortKeys.id IN
+                   (SELECT Branch.id FROM BRANCH WHERE %s)"""%(query,)
+        return super(BranchWithSortKeys, cls).select(
+            query, clauseTables=clauseTables, orderBy=orderBy)
+
 
 LISTINGSORT_TO_COLUMN = {
     BranchListingSort.PRODUCT: 'product_name',
@@ -478,6 +496,9 @@ LISTINGSORT_TO_COLUMN = {
     BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: '-last_scanned',
     BranchListingSort.REGISTRANT: 'owner_name'
     }
+DEFAULT_BRANCH_LISTING_SORT = [
+    'product_name', '-lifecycle_status', 'author_name', 'name']
+
 
 class BranchSet:
     """The set of all branches."""
@@ -903,7 +924,7 @@ class BranchSet:
 
     @staticmethod
     def _listingSortToOrderBy(sort_by):
-        order_by = ['product_name', '-lifecycle_status', 'author_name', 'name']
+        order_by = DEFAULT_BRANCH_LISTING_SORT[:]
         if sort_by is None:
             return order_by
         else:
