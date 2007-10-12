@@ -3364,7 +3364,7 @@ class PersonAuthoredBranchesView(BranchListingView):
 
     extra_columns = ('product',)
     title_prefix = 'Authored'
-    no_sort_by = [BranchListingSort.AUTHOR]
+    no_sort_by = (BranchListingSort.AUTHOR,)
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesAuthoredByPerson(
@@ -3377,7 +3377,7 @@ class PersonRegisteredBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product')
     title_prefix = 'Registered'
-    no_sort_by = [BranchListingSort.REGISTRANT]
+    no_sort_by = (BranchListingSort.REGISTRANT,)
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(

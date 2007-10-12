@@ -121,7 +121,7 @@ class BranchListingView(LaunchpadFormView):
     custom_widget('sort_by', LaunchpadDropdownWidget)
     extra_columns = []
     title_prefix = 'Bazaar'
-    no_sort_by = []
+    no_sort_by = ()
 
     @property
     def page_title(self):

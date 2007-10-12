@@ -1061,7 +1061,7 @@ class ProductBranchesView(BranchListingView):
     """View for branch listing for a product."""
 
     extra_columns = ('author',)
-    no_sort_by = [BranchListingSort.PRODUCT]
+    no_sort_by = (BranchListingSort.PRODUCT,)
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForProduct(
