@@ -924,6 +924,10 @@ class BranchSet:
 
     @staticmethod
     def _listingSortToOrderBy(sort_by):
+        """Compute a value to pass as orderBy to BranchWithSortKeys.select().
+
+        :param sort_by: an item from the BranchListingSort enumeration.
+        """
         order_by = DEFAULT_BRANCH_LISTING_SORT[:]
         if sort_by is None:
             return order_by
