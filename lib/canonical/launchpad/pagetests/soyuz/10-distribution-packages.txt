@@ -101,3 +101,56 @@ is not mentioned in anything else that is indexed.
   Source Package "libstdc++" in The Test Distribution
   Source Package "pmount" in The Test Distribution
 
+
+== Distribution package change summary ==
+
+/$DISTRO/+source/$PACKAGE pages contain a version history that lists
+each published version of a package with its changelog entry for that
+version.
+
+  >>> browser.open("http://launchpad.dev/ubuntu/+source/alsa-utils/")
+
+Each version history entry has a header with the version as the title
+and details of the publishing status in each distroseries it's published
+in.
+
+  >>> first_header = find_tag_by_id(browser.contents,
+  ...     'detail_alsa-utils_1.0.9a-4ubuntu1')
+  >>> print extract_text(first_header)
+  1.0.9a-4ubuntu1
+  Pending in warty-release
+  Published in hoary-release on 2005-09-15 
+
+Following the header we get a body with the changelog in it.  Note that
+any email addreses in the changelog are obfuscated because we are not
+logged in (this prevents bots from harvesting email addresses).
+
+  >>> first_body = find_tag_by_id(browser.contents,
+  ...     'body_alsa-utils_1.0.9a-4ubuntu1')
+  >>> print extract_text(first_body)
+  alsa-utils (1.0.9a-4ubuntu1) hoary; urgency=low
+  * Placeholder
+  LP: #10
+  LP: #999
+  LP: #badid
+  -- Sample Person &lt;&gt; Tue, 7 Feb 2006 12:10:08 +0300
+
+If we view the same page as a logged-in user, we can see the email
+address:
+
+  >>> browser2 = user_browser
+  >>> browser2.open("http://launchpad.dev/ubuntu/+source/alsa-utils/")
+  >>> print extract_text(find_tag_by_id(browser2.contents,
+  ...     'body_alsa-utils_1.0.9a-4ubuntu1'))
+  alsa-utils (1.0.9a-4ubuntu1) hoary; urgency=low
+  ...
+  -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
+
+The presented changelog is also linkified for the version and any
+bugs mentioned in the form LP: #nnn where nnn is the bug number.
+
+  >>> browser.getLink('1.0.9a-4ubuntu1').url
+  'http://launchpad.dev/ubuntu/hoary/+source/alsa-utils/1.0.9a-4ubuntu1'
+
+  >>> browser.getLink('LP: #10').url
+  'http://launchpad.dev/bugs/10'
