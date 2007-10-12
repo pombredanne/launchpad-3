@@ -467,9 +467,10 @@ class BranchWithSortKeys(Branch):
     over to using Storm.
     """
 
-    product_name = StringCol()
-    author_name = StringCol()
-    owner_name = StringCol()
+    # We don't want to step on the names of @properties of Branch!
+    product_name_ = StringCol(dbName='product_name')
+    author_name_ = StringCol(dbName='author_name')
+    owner_name_ = StringCol(dbName='owner_name')
 
     @classmethod
     def select(cls, query, clauseTables=None, orderBy=None):
