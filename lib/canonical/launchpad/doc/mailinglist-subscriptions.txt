@@ -6,18 +6,8 @@ people, a team and its team mailing list.
 
     >>> from canonical.launchpad.interfaces import IEmailAddressSet
     >>> address_set = getUtility(IEmailAddressSet)
-    >>> def get_alternative_email(person):
-    ...     """Return a non-preferred IEmailAddress for a person.
-    ...
-    ...     This assumes and asserts that there is exactly one non-preferred
-    ...     email address for the person.
-    ...     """
-    ...     alternatives = list(person.validatedemails)
-    ...     assert len(alternatives) == 1, (
-    ...         'Unexpected email count: %d' % len(alternatives))
-    ...     return alternatives[0]
-
-    >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     get_alternative_email, new_person)
     >>> anne = new_person('Anne')
     >>> flush_database_updates()
 

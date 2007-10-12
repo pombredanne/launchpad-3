@@ -14,3 +14,5 @@ Then, from the top of your Launchpad tree run this:
 
 You should see all the numbered integration tests run in order, with no
 failures.
+
+You might also want a +mail-configure.zcml in your override-includes.

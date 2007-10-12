@@ -136,6 +136,9 @@ class XMLRPCRunner(Runner):
         except xmlrpclib.Fault, error:
             syslog('xmlrpc', 'Launchpad exception: %s', error)
             return
+        if info:
+            syslog('xmlrpc', 'Received subscription info for these lists: %s',
+                   COMMASPACE.join(info))
         for list_name in info:
             mlist = MailList(list_name, lock=True)
             try:

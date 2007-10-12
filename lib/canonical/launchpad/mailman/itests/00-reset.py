@@ -12,6 +12,8 @@ from canonical.database.sqlbase import cursor
 def main():
     # Start by cleaning up the Launchpad database.
     cursor().execute("""
+    DELETE FROM MailingListSubscription;
+
     CREATE TEMP VIEW DeathRowTeams AS SELECT id FROM Person WHERE name IN
     ('team-one', 'team-two', 'team-three');
 

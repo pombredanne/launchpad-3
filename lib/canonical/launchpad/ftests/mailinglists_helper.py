@@ -2,6 +2,14 @@
 
 """Helper functions for testing XML-RPC services."""
 
+__all__ = [
+    'fault_catcher',
+    'new_person',
+    'new_team',
+    'print_actions',
+    'print_info',
+    ]
+
 import xmlrpclib
 
 from canonical.launchpad.interfaces import (
@@ -124,3 +132,15 @@ def new_person(first_name):
     getUtility(IEmailAddressSet).new(alternative_address, person,
                                      EmailAddressStatus.VALIDATED)
     return person
+
+
+def get_alternative_email(person):
+    """Return a non-preferred IEmailAddress for a person.
+
+    This assumes and asserts that there is exactly one non-preferred email
+    address for the person.
+    """
+    alternatives = list(person.validatedemails)
+    assert len(alternatives) == 1, (
+        'Unexpected email count: %d' % len(alternatives))
+    return alternatives[0]

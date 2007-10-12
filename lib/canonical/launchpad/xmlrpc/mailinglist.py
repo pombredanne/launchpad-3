@@ -11,12 +11,16 @@ __all__ = [
 from operator import itemgetter
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.ftests.mailinglists_helper import (
+    get_alternative_email, new_person)
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities,
     IMailingListAPIView, IMailingListSet, IPersonSet, MailingListStatus)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
+
 
 # Not all developers will have built the Mailman instance (via
 # 'make mailman_instance').  In that case, this import will fail, but in that
@@ -168,4 +172,17 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             # At some point this will be possible to do through the web.
             list_one = listset.get('team-one')
             list_one.welcome_message = 'Saluations team one members!'
+            return step
+        if step == '04-setup-users-A':
+            team_one = personset.getByName('team-one')
+            list_one = listset.get('team-one')
+            # Subscribe Anne with her preferred address.
+            anne = new_person('Anne')
+            anne.join(team_one)
+            list_one.subscribe(removeSecurityProxy(anne))
+            # Subscribe Bart with his alternative address.
+            bart = new_person('Bart')
+            bart.join(team_one)
+            list_one.subscribe(removeSecurityProxy(bart),
+                               get_alternative_email(bart))
             return step
