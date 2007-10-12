@@ -5,7 +5,7 @@
 import unittest
 
 from canonical.launchpad.database.branch import (
-    Branch, BranchSet, DEFAULT_BRANCH_LISTING_SORT)
+    BranchSet, DEFAULT_BRANCH_LISTING_SORT)
 from canonical.launchpad.interfaces import BranchListingSort
 
 class TestListingToSortOrder(unittest.TestCase):
