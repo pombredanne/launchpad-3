@@ -460,17 +460,21 @@ class Branch(SQLBase):
 class BranchWithSortKeys(Branch):
     """A hack to allow the sorting of Branch queries by human-meaningful keys.
 
-    If we could get SQLObject to generate LEFT OUTER JOINs nicely,
-    this class and the view it queries wouldn't be necessary.
+    The view BranchWithSortKeys has all of the columns of Branch, with:
+
+     - product.name joined as product_name
+     - author.displayname joined as author_name
+     - owner.displayname joined as owner_name
+
+    These columns are never accessed at the Python level so we don't define
+    them in this class.
+
+    If we could get SQLObject to generate LEFT OUTER JOINs nicely, all this
+    wouldn't be necessary.
 
     XXX MichaelHudson, 2007-10-12: Get rid of this hack when we've converted
     over to using Storm.
     """
-
-    # We don't want to step on the names of @properties of Branch!
-    product_name_ = StringCol(dbName='product_name')
-    author_name_ = StringCol(dbName='author_name')
-    owner_name_ = StringCol(dbName='owner_name')
 
     @classmethod
     def select(cls, query, clauseTables=None, orderBy=None):
