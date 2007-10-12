@@ -10,6 +10,12 @@
         <allow
             interface="canonical.launchpad.interfaces.IFeedsApplication" />
     </securedutility>
+    
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
+        for="canonical.launchpad.interfaces.IFeedsApplication"
+        factory="canonical.launchpad.browser.feeds.FeedsRootUrlData"
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IFeedsApplication"
