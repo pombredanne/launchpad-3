@@ -326,7 +326,7 @@ class IBug(IMessageTarget, ICanBeMentored):
         question was previously created from the bug.
 
         :person: The `IPerson` creating a question from this bug
-        :comment: A string. An explaination of why the bug is a question.
+        :comment: A string. An explanation of why the bug is a question.
         """
 
     def getQuestionCreatedFromBug():
