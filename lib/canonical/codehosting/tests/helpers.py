@@ -6,7 +6,8 @@ __metaclass__ = type
 __all__ = [
     'AvatarTestCase', 'CodeHostingTestProviderAdapter',
     'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
-    'ServerTestCase', 'adapt_suite', 'deferToThread']
+    'ServerTestCase', 'adapt_suite', 'create_branch_with_one_revision',
+    'deferToThread']
 
 import os
 import shutil
@@ -404,7 +405,7 @@ def adapt_suite(adapter, base_suite):
     return suite
 
 
-def create_branch(branch_dir):
+def create_branch_with_one_revision(branch_dir):
     os.makedirs(branch_dir)
     tree = bzrdir.BzrDir.create_standalone_workingtree(branch_dir)
     f = open(branch_dir + 'hello', 'w')

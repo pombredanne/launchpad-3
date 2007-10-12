@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -28,7 +28,7 @@ __all__ = [
     'BranchReferenceLoopError',
     'BranchReferenceForbidden',
     'BranchReferenceValueError',
-    'get_canonical_url',
+    'get_canonical_url_for_branch_name',
     'PullerWorker',
     'PullerWorkerProtocol'
     ]
@@ -68,10 +68,10 @@ class BranchReferenceLoopError(Exception):
     """
 
 
-def get_canonical_url(unique_name):
+def get_canonical_url_for_branch_name(unique_name):
     """Custom implementation of canonical_url(branch) for error reporting.
 
-    The actual canonical_url method cannot be used because we do not have
+    The actual `canonical_url` function cannot be used because we do not have
     access to real content objects.
     """
     if config.launchpad.vhosts.use_https:
@@ -83,31 +83,17 @@ def get_canonical_url(unique_name):
 
 
 class PullerWorkerProtocol:
+    """The protocol used to communicate with the puller scheduler.
 
-    def __init__(self, output, error):
-        self.output = output
-        self.error = error
+    This protocol notifies the scheduler of events such as startMirroring,
+    mirrorSucceeded and mirrorFailed.
+    """
+
+    def __init__(self, output):
+        self.out_stream = output
 
     def sendNetstring(self, string):
-        self.output.write('%d:%s,' % (len(string), string))
-
-    def _record_oops(self, branch_to_mirror, message=None):
-        """Record an oops for the current exception.
-
-        This must only be called while handling an exception.
-
-        :param message: custom explanatory error message. Do not use
-            str(exception) to fill in this parameter, it should only be set
-            when a human readable error has been explicitely generated.
-        """
-        request = errorlog.ScriptRequest([
-            ('branch_id', branch_to_mirror.branch_id),
-            ('source', branch_to_mirror.source),
-            ('dest', branch_to_mirror.dest),
-            ('error-explanation', str(message))])
-        request.URL = get_canonical_url(branch_to_mirror.unique_name)
-        errorlog.globalErrorUtility.raising(sys.exc_info(), request)
-        return request.oopsid
+        self.out_stream.write('%d:%s,' % (len(string), string))
 
     def startMirroring(self, branch_to_mirror):
         self.sendNetstring('startMirroring')
@@ -116,10 +102,10 @@ class PullerWorkerProtocol:
         self.sendNetstring('mirrorSucceeded')
         self.sendNetstring(str(last_revision))
 
-    def mirrorFailed(self, branch_to_mirror, message):
+    def mirrorFailed(self, branch_to_mirror, message, oops_id):
         self.sendNetstring('mirrorFailed')
         self.sendNetstring(str(message))
-        self.sendNetstring(self._record_oops(branch_to_mirror, message))
+        self.sendNetstring(oops_id)
 
 
 def identical_formats(branch_one, branch_two):
@@ -282,6 +268,26 @@ class PullerWorker:
         branch.pull(self._source_branch)
         return branch
 
+    def _record_oops(self, message=None):
+        """Record an oops for the current exception.
+
+        This must only be called while handling an exception.
+
+        :param message: custom explanatory error message. Do not use
+            str(exception) to fill in this parameter, it should only be set
+            when a human readable error has been explicitly generated.
+        """
+        request = errorlog.ScriptRequest([
+            ('branch_id', self.branch_id), ('source', self.source),
+            ('dest', self.dest), ('error-explanation', str(message))])
+        request.URL = get_canonical_url_for_branch_name(self.unique_name)
+        errorlog.globalErrorUtility.raising(sys.exc_info(), request)
+        return request.oopsid
+
+    def _mirrorFailed(self, error):
+        oops_id = self._record_oops(error)
+        self.protocol.mirrorFailed(self, error, oops_id)
+
     def mirror(self):
         """Open source and destination branches and pull source into
         destination.
@@ -302,28 +308,28 @@ class PullerWorker:
                 # be able to get rid of this.
                 # https://launchpad.net/products/bzr/+bug/42383
                 msg = "Authentication required."
-            self.protocol.mirrorFailed(self, msg)
+            self._mirrorFailed(msg)
 
         except socket.error, e:
             msg = 'A socket error occurred: %s' % str(e)
-            self.protocol.mirrorFailed(self, msg)
+            self._mirrorFailed(msg)
 
         except UnsupportedFormatError, e:
             msg = ("Launchpad does not support branches from before "
                    "bzr 0.7. Please upgrade the branch using bzr upgrade.")
-            self.protocol.mirrorFailed(self, msg)
+            self._mirrorFailed(msg)
 
         except UnknownFormatError, e:
-            self.protocol.mirrorFailed(self, e)
+            self._mirrorFailed(e)
 
         except (ParamikoNotPresent, BadUrlSsh), e:
             msg = ("Launchpad cannot mirror branches from SFTP and SSH URLs."
                    " Please register a HTTP location for this branch.")
-            self.protocol.mirrorFailed(self, msg)
+            self._mirrorFailed(msg)
 
         except BadUrlLaunchpad:
             msg = "Launchpad does not mirror branches from Launchpad."
-            self.protocol.mirrorFailed(self, msg)
+            self._mirrorFailed(msg)
 
         except NotBranchError, e:
             hosted_branch_error = NotBranchError(
@@ -333,23 +339,23 @@ class PullerWorker:
                 BranchType.IMPORTED: "Not a branch.",
                 }
             msg = message_by_type.get(self.branch_type, str(e))
-            self.protocol.mirrorFailed(self, msg)
+            self._mirrorFailed(msg)
 
         except BranchReferenceForbidden, e:
             msg = ("Branch references are not allowed for branches of type %s."
                    % (self.branch_type.title,))
-            self.protocol.mirrorFailed(self, msg)
+            self._mirrorFailed(msg)
 
         except BranchReferenceValueError, e:
             msg = "Bad branch reference value: %s" % (e.url,)
-            self.protocol.mirrorFailed(self, msg)
+            self._mirrorFailed(msg)
 
         except BranchReferenceLoopError, e:
             msg = "Circular branch reference."
-            self.protocol.mirrorFailed(self, msg)
+            self._mirrorFailed(msg)
 
         except BzrError, e:
-            self.protocol.mirrorFailed(self, e)
+            self._mirrorFailed(e)
 
         except (KeyboardInterrupt, SystemExit):
             # Do not record OOPS for those exceptions.

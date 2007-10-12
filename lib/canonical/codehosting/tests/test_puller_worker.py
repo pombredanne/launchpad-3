@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import httplib
 import os
+import re
 import shutil
 import socket
 from StringIO import StringIO
@@ -16,6 +17,7 @@ import urllib2
 import bzrlib.branch
 from bzrlib import bzrdir
 from bzrlib.branch import BranchReferenceFormat
+from bzrlib.revision import ensure_null, NULL_REVISION
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
@@ -28,9 +30,10 @@ from bzrlib.errors import (
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (
     PullerWorker, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
-    BranchReferenceForbidden, BranchReferenceValueError, get_canonical_url,
-    PullerWorkerProtocol)
-from canonical.codehosting.tests.helpers import create_branch
+    BranchReferenceForbidden, BranchReferenceValueError,
+    get_canonical_url_for_branch_name, PullerWorkerProtocol)
+from canonical.codehosting.tests.helpers import (
+    create_branch_with_one_revision)
 from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import canonical_url
@@ -49,8 +52,9 @@ class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
         self.calls.append(
             ('mirrorSucceeded', branch_to_mirror, last_revision))
 
-    def mirrorFailed(self, branch_to_mirror, message):
-        self.calls.append(('mirrorFailed', branch_to_mirror, message))
+    def mirrorFailed(self, branch_to_mirror, message, oops_id):
+        self.calls.append(
+            ('mirrorFailed', branch_to_mirror, message, oops_id))
 
 
 class StubbedPullerWorker(PullerWorker):
@@ -97,7 +101,7 @@ class PullerWorkerMixin:
         if dest_dir is None:
             dest_dir = os.path.join(self.test_dir, 'dest_dir')
         if protocol is None:
-            protocol = PullerWorkerProtocol(StringIO(), StringIO())
+            protocol = PullerWorkerProtocol(StringIO())
         return PullerWorker(
             src_dir, dest_dir, branch_id=1, unique_name='foo/bar/baz',
             branch_type=branch_type, protocol=protocol)
@@ -170,7 +174,7 @@ class TestPullerWorker(unittest.TestCase, PullerWorkerMixin):
     def testMirrorActuallyMirrors(self):
         # Check that mirror() will mirror the Bazaar branch.
         to_mirror = self.makePullerWorker()
-        tree = create_branch(to_mirror.source)
+        tree = create_branch_with_one_revision(to_mirror.source)
         to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(
@@ -180,26 +184,25 @@ class TestPullerWorker(unittest.TestCase, PullerWorkerMixin):
         # Check that we can mirror an empty branch, and that the
         # last_mirrored_id for an empty branch can be distinguished from an
         # unmirrored branch.
-
-        # Create a branch
         to_mirror = self.makePullerWorker()
 
-        # create empty source branch
+        # Create an empty source branch.
         os.makedirs(to_mirror.source)
-        tree = bzrdir.BzrDir.create_standalone_workingtree(to_mirror.source)
+        tree = bzrdir.BzrDir.create_branch_and_repo(to_mirror.source)
 
         to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
-        self.assertEqual(None, mirrored_branch.last_revision())
+        self.assertEqual(
+            NULL_REVISION, ensure_null(mirrored_branch.last_revision()))
 
 
 class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
 
     def setUp(self):
-        super(TestPullerWorkerFormats, self).setUp()
+        TestCaseWithRepository.setUp(self)
 
     def tearDown(self):
-        super(TestPullerWorkerFormats, self).tearDown()
+        TestCaseWithRepository.tearDown(self)
         reset_logging()
 
     def testMirrorKnitAsKnit(self):
@@ -290,6 +293,8 @@ class TestPullerWorker_SourceProblems(TestCaseInTempDir, PullerWorkerMixin):
     def assertMirrorFailed(self, puller_worker, message_substring):
         """Assert that puller_worker failed, and that message_substring is in
         the message.
+
+        'puller_worker' must use a StubbedPullerWorkerProtocol.
         """
         protocol = puller_worker.protocol
         self.assertEqual(
@@ -299,9 +304,8 @@ class TestPullerWorker_SourceProblems(TestCaseInTempDir, PullerWorkerMixin):
         startMirroring, mirrorFailed = protocol.calls
         self.assertEqual(('startMirroring', puller_worker), startMirroring)
         self.assertEqual(('mirrorFailed', puller_worker), mirrorFailed[:2])
-        self.assertTrue(
-            message_substring in str(mirrorFailed[2]),
-            "%r not in %r" % (message_substring, str(mirrorFailed[2])))
+        self.assertContainsRe(
+            str(mirrorFailed[2]), re.escape(message_substring))
 
     def testUnopenableSourceDoesNotCreateMirror(self):
         non_existent_source = os.path.abspath('nonsensedir')
@@ -755,15 +759,21 @@ class TestWorkerProtocol(unittest.TestCase, PullerWorkerMixin):
         PullerWorkerMixin.setUp(self)
         self.test_dir = tempfile.mkdtemp()
         self.output = StringIO()
-        self.error = StringIO()
-        self.resetBuffers()
-        self.protocol = PullerWorkerProtocol(self.output, self.error)
+        self.protocol = PullerWorkerProtocol(self.output)
         self.branch_to_mirror = self.makePullerWorker()
 
     def tearDown(self):
         PullerWorkerMixin.tearDown(self)
 
+    def assertSentNetstrings(self, expected_netstrings):
+        """Assert that the protocol sent the given netstrings (in order)."""
+        observed_netstrings = self.getNetstrings(self.output.getvalue())
+        self.assertEqual(expected_netstrings, observed_netstrings)
+
     def getNetstrings(self, line):
+        """Return the sequence of strings that are the netstrings that make up
+        'line'.
+        """
         strings = []
         while len(line) > 0:
             colon_index = line.find(':')
@@ -773,48 +783,34 @@ class TestWorkerProtocol(unittest.TestCase, PullerWorkerMixin):
             line = line[colon_index+length+2:]
         return strings
 
-    def assertNoError(self):
-        self.assertEqual('', self.error.getvalue())
-
     def resetBuffers(self):
         """Empty the test output and error buffers."""
         self.output.truncate(0)
-        self.error.truncate(0)
         self.assertEqual('', self.output.getvalue())
-        self.assertNoError()
 
     def test_nothingSentOnConstruction(self):
         """The protocol sends nothing until it receives an event."""
-        self.assertEqual('', self.output.getvalue())
-        self.assertNoError()
+        self.assertSentNetstrings([])
 
     def test_startMirror(self):
         """Calling startMirroring sends 'startMirroring' as a netstring."""
         self.protocol.startMirroring(self.branch_to_mirror)
-        [command] = self.getNetstrings(self.output.getvalue())
-        self.assertEqual('startMirroring', command)
-        self.assertNoError()
+        self.assertSentNetstrings(['startMirroring'])
 
     def test_mirrorSucceeded(self):
         """Calling 'mirrorSucceeded' sends the revno and 'mirrorSucceeded'."""
         self.protocol.startMirroring(self.branch_to_mirror)
         self.resetBuffers()
         self.protocol.mirrorSucceeded(self.branch_to_mirror, 1234)
-        [command, revno] = self.getNetstrings(self.output.getvalue())
-        self.assertEqual('mirrorSucceeded', command)
-        self.assertEqual('1234', revno)
-        self.assertNoError()
+        self.assertSentNetstrings(['mirrorSucceeded', '1234'])
 
     def test_mirrorFailed(self):
         """Calling 'mirrorFailed' sends the error message."""
         self.protocol.startMirroring(self.branch_to_mirror)
         self.resetBuffers()
-        self.protocol.mirrorFailed(self.branch_to_mirror, 'Error Message')
-        [command, message, oops] = self.getNetstrings(self.output.getvalue())
-        self.assertEqual('mirrorFailed', command)
-        self.assertEqual('Error Message', message)
-        self.failUnless(oops.startswith('OOPS'))
-        self.assertNoError()
+        self.protocol.mirrorFailed(
+            self.branch_to_mirror, 'Error Message', 'OOPS')
+        self.assertSentNetstrings(['mirrorFailed', 'Error Message', 'OOPS'])
 
 
 class TestCanonicalUrl(unittest.TestCase):
@@ -823,8 +819,8 @@ class TestCanonicalUrl(unittest.TestCase):
     layer = LaunchpadScriptLayer
 
     def testCanonicalUrlConsistent(self):
-        # worker.get_canonical_url is consistent with webapp.canonical_url, if
-        # the provided unique_name is correct.
+        # worker.get_canonical_url_for_branch_name is consistent with
+        # webapp.canonical_url, if the provided unique_name is correct.
         branch = Branch.get(15)
         # Check that the unique_name used in this test is consistent with the
         # sample data. This is an invariant of the test, so use a plain assert.
@@ -833,7 +829,8 @@ class TestCanonicalUrl(unittest.TestCase):
         # Now check that our implementation of canonical_url is consistent with
         # the canonical one.
         self.assertEqual(
-            canonical_url(branch), get_canonical_url(unique_name))
+            canonical_url(branch),
+            get_canonical_url_for_branch_name(unique_name))
 
 
 def test_suite():
