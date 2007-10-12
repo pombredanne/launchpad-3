@@ -525,7 +525,7 @@ k            </description>
                 notifications.
             </description>
         </key>
-        <key name="bugnotification_interval" datatye="integer"
+        <key name="bugnotification_interval" datatype="integer"
             required="no" default="5">
           <description>
               The number of minutes that at most should pass between
