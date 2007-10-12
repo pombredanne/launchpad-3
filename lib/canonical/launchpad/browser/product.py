@@ -137,6 +137,26 @@ class ProductSetNavigation(Navigation):
         return self.redirectSubTree(canonical_url(product))
 
 
+class LicenseValidateMixin:
+    def validate(self, data):
+        licenses = data.get('licenses', [])
+        if len(licenses) == 0:
+            self.setFieldError('licenses', 
+                'Select all licenses for this software or select '
+                'Other/Proprietary or Other/Open Source.')
+        elif License.OTHER_PROPRIETARY in licenses:
+            if not data.get('license_info'):
+                self.setFieldError('license_info', 
+                    'A description of the "Other/Proprietary" '
+                    'license you checked is required.')
+        elif License.OTHER_OPEN_SOURCE in licenses:
+            if not data.get('license_info'):
+                self.setFieldError('license_info', 
+                    'A description of the "Other/Open Source" '
+                    'license you checked is required.')
+        else:
+            # Launchpad is ok with all licenses used in this project
+            pass
 class ProductSOP(StructuralObjectPresentation):
 
     def getIntroHeading(self):
@@ -651,7 +671,7 @@ class ProductBrandingView(BrandingChangeView):
     field_names = ['icon', 'logo', 'mugshot']
 
 
-class ProductEditView(LaunchpadEditFormView):
+class ProductEditView(LicenseValidateMixin, LaunchpadEditFormView):
     """View class that lets you edit a Product object."""
 
     schema = IProduct
@@ -881,7 +901,7 @@ class ProductSetView(LaunchpadView):
         return self.matches > self.max_results_to_display
 
 
-class ProductAddViewBase(LaunchpadFormView):
+class ProductAddViewBase(LicenseValidateMixin, LaunchpadFormView):
     """Abstract class for adding a new product.
 
     Requires the "product" attribute be set in the child
@@ -899,26 +919,6 @@ class ProductAddViewBase(LaunchpadFormView):
     custom_widget('screenshotsurl', TextWidget, displayWidth=30)
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
-
-    def validate(self, data):
-        licenses = data.get('licenses', [])
-        if len(licenses) == 0:
-            self.setFieldError('licenses', 
-                'Select all licenses for this software or select '
-                'Other/Proprietary or Other/Open Source.')
-        elif License.OTHER_PROPRIETARY in licenses:
-            if not data.get('license_info'):
-                self.setFieldError('license_info', 
-                    'A description of the "Other/Proprietary" '
-                    'license you checked is required.')
-        elif License.OTHER_OPEN_SOURCE in licenses:
-            if not data.get('license_info'):
-                self.setFieldError('license_info', 
-                    'A description of the "Other/Open Source" '
-                    'license you checked is required.')
-        else:
-            # Launchpad is ok with all licenses used in this project
-            pass
 
     def notifyFeedbackMailingList(self):
         if (License.OTHER_PROPRIETARY in self.product.licenses
