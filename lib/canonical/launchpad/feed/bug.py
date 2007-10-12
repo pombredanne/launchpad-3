@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 from zope.app.pagetemplate import ViewPageTemplateFile
-
+from zope.component import getUtility
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 from canonical.launchpad.webapp import canonical_url
@@ -23,7 +23,12 @@ from canonical.launchpad.browser import (
     BugsBugTaskSearchListingView, BugTargetView,
     PersonRelatedBugsView)
 from canonical.launchpad.interfaces import (
-    IBug, IBugTarget, IBugTaskSet, IPerson)
+    IBug,
+    IBugTarget,
+    IBugTaskSet,
+    IMaloneApplication,
+    IPerson,
+    )
 
 
 def get_unique_bug_tasks(items):
@@ -234,7 +239,9 @@ class SearchBugsFeed(BugsFeedBase):
     def getRawItems(self):
         """Perform the search."""
 
-        results =  self.delegate_view.search(searchtext=None, context=None, extra_params=None)
+        search_context = getUtility(IMaloneApplication)
+        results =  self.delegate_view.search(searchtext=None,
+            context=search_context, extra_params=None)
         items = results.getBugListingItems()
         return get_unique_bug_tasks(items)[:self.quantity]
 
