@@ -16,6 +16,7 @@ import unittest
 
 import transaction
 
+from bzrlib import bzrdir
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.errors import SmartProtocolError
 
@@ -158,6 +159,15 @@ class BranchTestCase(TestCaseWithTransport):
         self._integer = 0
         self.cursor = cursor()
         self.branch_set = getUtility(IBranchSet)
+
+    def createTemporaryBazaarBranchAndTree(self, base_directory='.'):
+        """Create a local branch with one revision, return the working tree."""
+        tree = self.make_branch_and_tree(base_directory)
+        self.local_branch = tree.branch
+        self.build_tree([os.path.join(base_directory, 'foo')])
+        tree.add('foo')
+        tree.commit('Added foo', rev_id='rev1')
+        return tree
 
     def emptyPullQueues(self):
         transaction.begin()
@@ -392,3 +402,13 @@ def adapt_suite(adapter, base_suite):
     for test in iter_suite_tests(base_suite):
         suite.addTests(adapter.adapt(test))
     return suite
+
+
+def create_branch(branch_dir):
+    os.makedirs(branch_dir)
+    tree = bzrdir.BzrDir.create_standalone_workingtree(branch_dir)
+    f = open(branch_dir + 'hello', 'w')
+    f.write('foo')
+    f.close()
+    tree.commit('message')
+    return tree

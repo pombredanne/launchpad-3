@@ -307,7 +307,7 @@ URL validation should check that the entered URL is not from Launchpad.
     ...     print message
     There is 1 error.
     For Launchpad to mirror a branch, the original branch cannot be on
-    launchpad.dev. Did you want to create a hosted branch instead?
+    launchpad.dev.
 
 
 == Attempting to create a branch in a forbidden project ==

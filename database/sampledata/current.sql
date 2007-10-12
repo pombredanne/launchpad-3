@@ -3527,6 +3527,7 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates) VALUES (243603, 'One Membership', '52kdKnxgzc0LWK2ltsED9SeqQcjZgDAj+wWlaRotx3BvsXJCH0AUdQ==', NULL, NULL, 'one-membership', NULL, NULL, NULL, NULL, 1, NULL, '2007-02-21 10:53:59.700105', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'one-membership_oid', NULL, 20, 0, NULL, NULL, 1, true);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates) VALUES (243604, 'Simple Team', NULL, 243603, 'This team should have only one member, the "One Membership" user.', 'simple-team', NULL, NULL, NULL, NULL, 3, NULL, '2007-02-21 10:55:03.899255', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'simple-team_oid', NULL, 10, 0, NULL, NULL, 1, true);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates) VALUES (243606, 'Julian Edwards', NULL, NULL, NULL, 'launchpad-julian-edwards', NULL, NULL, NULL, NULL, 1, NULL, '2007-08-09 21:25:37.832976', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 7, 'when the commercialpackage_1.0-1 package was uploaded to breezy-autotest/RELEASE', NULL, NULL, 10, 'neMCQNd', NULL, 10, 9, NULL, NULL, 1, true);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates) VALUES (243607, 'Mailing List Experts', NULL, 25, 'This team is responsible for the management of Launchpad-hosted mailing lists.', 'mailing-list-experts', NULL, NULL, NULL, NULL, 3, NULL, '2007-10-04 19:59:03.615674', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'CQGNewe', NULL, 10, 0, NULL, NULL, 1, true);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -9490,6 +9491,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (67, 63, 64, 5, '2005-05-10 17:22:02.377319', '2006-05-10 17:22:02.377319', 16, '');
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (68, 12, 17, 1, '2007-05-16 15:03:47.748238', NULL, 12, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (69, 69, 17, 2, '2007-06-20 14:18:41.185147', NULL, 16, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (70, 25, 243607, 3, '2007-10-04 19:59:03.615674', NULL, 25, NULL);
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -9624,6 +9626,19 @@ INSERT INTO teamparticipation (id, team, person) VALUES (136, 17, 69);
 INSERT INTO teamparticipation (id, team, person) VALUES (137, 32, 68);
 INSERT INTO teamparticipation (id, team, person) VALUES (138, 17, 68);
 INSERT INTO teamparticipation (id, team, person) VALUES (140, 243606, 243606);
+INSERT INTO teamparticipation (id, team, person) VALUES (141, 243607, 243607);
+INSERT INTO teamparticipation (id, team, person) VALUES (142, 243607, 25);
+INSERT INTO teamparticipation (id, team, person) VALUES (143, 243607, 7);
+INSERT INTO teamparticipation (id, team, person) VALUES (144, 243607, 13);
+INSERT INTO teamparticipation (id, team, person) VALUES (145, 243607, 14);
+INSERT INTO teamparticipation (id, team, person) VALUES (146, 243607, 27);
+INSERT INTO teamparticipation (id, team, person) VALUES (147, 243607, 26);
+INSERT INTO teamparticipation (id, team, person) VALUES (148, 243607, 16);
+INSERT INTO teamparticipation (id, team, person) VALUES (149, 243607, 29);
+INSERT INTO teamparticipation (id, team, person) VALUES (150, 243607, 1);
+INSERT INTO teamparticipation (id, team, person) VALUES (151, 243607, 2);
+INSERT INTO teamparticipation (id, team, person) VALUES (152, 243607, 11);
+INSERT INTO teamparticipation (id, team, person) VALUES (153, 243607, 22);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -9711,6 +9726,7 @@ INSERT INTO validpersonorteamcache (id) VALUES (243601);
 INSERT INTO validpersonorteamcache (id) VALUES (243602);
 INSERT INTO validpersonorteamcache (id) VALUES (243603);
 INSERT INTO validpersonorteamcache (id) VALUES (243604);
+INSERT INTO validpersonorteamcache (id) VALUES (243607);
 
 
 ALTER TABLE validpersonorteamcache ENABLE TRIGGER ALL;

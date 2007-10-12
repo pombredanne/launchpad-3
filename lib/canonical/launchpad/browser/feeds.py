@@ -4,9 +4,11 @@ __metaclass__ = type
 
 __all__ = [
     'FeedsNavigation',
+    'FeedsRootUrlData'
     ]
 
 from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     IBugTaskSet,
@@ -17,7 +19,21 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp import (
-    canonical_url, Navigation)
+    canonical_name, canonical_url, Navigation)
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+
+class FeedsRootUrlData:
+    """ICanonicalUrlData for Feeds."""
+
+    implements(ICanonicalUrlData)
+
+    path = ''
+    inside = None
+    rootsite = 'feeds'
+
+    def __init__(self, context):
+        self.context = context
+
 
 class FeedsNavigation(Navigation):
 
@@ -37,19 +53,21 @@ class FeedsNavigation(Navigation):
             return getUtility(self.stepto_utilities[name])
 
         if name.startswith('~'):
-            # redirect to the lower() version before doing the lookup
-            if name.lower() != name:
+            # redirect to the canonical name before doing the lookup
+            if canonical_name(name) != name:
                 return self.redirectSubTree(
-                    canonical_url(self.context) + name.lower(), status=301)
+                    canonical_url(self.context) + canonical_name(name),
+                    status=301)
             else:
                 person = getUtility(IPersonSet).getByName(name[1:])
                 return person
 
         try:
-            # redirect to the lower() version before doing the lookup
-            if name.lower() != name:
+            # redirect to the canonical name before doing the lookup
+            if canonical_name(name) != name:
                 return self.redirectSubTree(
-                    canonical_url(self.context) + name.lower(), status=301)
+                    canonical_url(self.context) + canonical_name(name),
+                    status=301)
             else:
                 return getUtility(IPillarNameSet)[name]
 

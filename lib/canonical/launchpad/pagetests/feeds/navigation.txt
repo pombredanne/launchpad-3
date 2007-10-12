@@ -7,7 +7,17 @@ that the navigation is fixed and we get a 404 here.
 
 == Index of a product ==
 
-    >>> browser.open('http://feeds.launchpad.dev/jokosher/')
+    >>> browser.open('http://feeds.launchpad.dev/jokosher')
     >>> browser.url
-    'http://feeds.launchpad.dev/jokosher/'
+    'http://feeds.launchpad.dev/jokosher'
 
+== Redirection ==
+
+We expect that people may manually enter feed URLs, since they follow
+a predictable pattern. If someone enters a feed URL and it has
+uppercase letters in it, we redirect to the canonical form of the URL
+before serving the page.
+
+   >>> browser.open('http://feeds.launchpad.dev/jOkOshEr')
+   >>> browser.url
+   'http://feeds.launchpad.dev/jokosher'

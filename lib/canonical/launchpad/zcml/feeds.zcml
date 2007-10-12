@@ -10,6 +10,12 @@
         <allow
             interface="canonical.launchpad.interfaces.IFeedsApplication" />
     </securedutility>
+    
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
+        for="canonical.launchpad.interfaces.IFeedsApplication"
+        factory="canonical.launchpad.browser.feeds.FeedsRootUrlData"
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IFeedsApplication"
@@ -23,46 +29,33 @@
         for="canonical.launchpad.interfaces.IFeedsApplication"
         name="+index"
         />
-
+<!--
     <browser:page
         for="canonical.launchpad.interfaces.IFeedsApplication"
         name="+index"
         permission="zope.Public"
         template="../templates/feeds-index.pt"
         />
-
+-->
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="FeedsNavigation"
         />
 
     <!-- Macros -->
+<!--
     <browser:page
         for="*"
         name="feed-entry-atom"
         permission="zope.Public"
         template="../../lazr/feed/templates/feed-entry-atom.pt"
         />
-
+-->
     <!-- Feeds -->
+<!--
     <browser:feeds
         module="canonical.launchpad.feed"
         classes="BugFeed BugTargetBugsFeed PersonBugsFeed SearchBugsFeed"
         />
- <!--
-    <browser:page
-        name="latest-bugs.atom"
-        for="canonical.launchpad.interfaces.IBugTarget"
-        permission="zope.Public"
-        class="canonical.launchpad.feed.BugTargetBugsFeed"
-    />
- -->
-
-    <!-- elliot and bac added this but we don't know why -->
-    <browser:url
-        for="canonical.launchpad.interfaces.IFeedsApplication"
-        path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-        />
-
+-->
 </configure>

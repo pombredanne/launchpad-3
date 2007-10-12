@@ -28,31 +28,6 @@
     href="http://bazaar-vcs.org/">Bazaar</a> version control system. (<a
     href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>).</p>
 
-  <p>This page lists all the branches that are associated to a project. Here,
-     you can see what code contributions are being worked on or proposed for
-     inclusion in this project.</p>
-
-  <p>Although it is possible for a branch not to be associated to any project,
-    we recommend against using this feature: such branches are harder to
-    locate. Associating your branches to the right project makes it easier for
-    other developers to locate your contributions.</p>
-
-  <p>From this page you can:</p>
-
-  <ul>
-    <li>Browse to every listed branch.</li>
-
-    <li>See this listing in a more detailed format.</li>
-
-    <li>Register a new mirror branch associated to this project.</li>
-  </ul>
-
-  <p>
-    If you want
-    to <a href="https://help.launchpad.net/CreatingAHostedBranch">create
-    an <em>upload</em> branch</a> on Launchpad, you do not need to
-    use this page.
-  </p>
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
 
 </body>
