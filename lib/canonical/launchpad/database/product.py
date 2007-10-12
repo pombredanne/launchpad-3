@@ -142,7 +142,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def _setLicenses(self, licenses):
         """Set the licenses from a tuple of license enums.
         The licenses parameter must not be an empty tuple."""
-        assert isinstance(licenses, tuple), "licenses must be a tuple"
         assert len(licenses) != 0, "licenses argument must not be empty"
         licenses = set(licenses)
         for license in licenses:
@@ -678,7 +677,6 @@ class ProductSet:
         """See canonical.launchpad.interfaces.product.IProductSet.
         The licenses parameter must not be an empty tuple."""
 
-        assert isinstance(licenses, tuple), "licenses must be a tuple"
         assert len(licenses) != 0, "licenses argument must not be empty"
 
         product = Product(
