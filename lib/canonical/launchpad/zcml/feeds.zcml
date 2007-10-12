@@ -49,20 +49,5 @@
         module="canonical.launchpad.feed"
         classes="BugFeed BugTargetBugsFeed PersonBugsFeed SearchBugsFeed"
         />
- <!--
-    <browser:page
-        name="latest-bugs.atom"
-        for="canonical.launchpad.interfaces.IBugTarget"
-        permission="zope.Public"
-        class="canonical.launchpad.feed.BugTargetBugsFeed"
-    />
- -->
-
-    <!-- elliot and bac added this but we don't know why -->
-    <browser:url
-        for="canonical.launchpad.interfaces.IFeedsApplication"
-        path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-        />
 
 </configure>
