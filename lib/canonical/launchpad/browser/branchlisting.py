@@ -180,10 +180,22 @@ class BranchListingView(LaunchpadFormView):
 
     @property
     def branch_listing_sort_values(self):
+        """The enum items we should present in the 'sort_by' widget.
+
+        Subclasses get the chance to avoid some sort options (it makes no
+        sense to offer to sort the product branch listing by product name!)
+        and if we're filtering to a single lifecycle status it doesn't make
+        much sense to sort by lifecycle.
+        """
         # This is pretty painful.
+        # First we copy all the items.
         vocab_items = BranchListingSort.items.items[:]
+        # Then we remove any that aren't appropriate for this view.
         for item in self.no_sort_by:
             vocab_items.remove(item)
+        # Finding the value of the lifecycle_filter widget is awkward as we do
+        # this when the widgets are being set up.  We go digging in the
+        # request.
         lifecycle_field = IBranchListingFilter['lifecycle']
         name = self.prefix + '.' + lifecycle_field.__name__
         form_value = self.request.form.get(name)
@@ -192,6 +204,9 @@ class BranchListingView(LaunchpadFormView):
                 status_filter = BranchLifecycleStatusFilter.getTermByToken(
                     form_value).value
             except LookupError:
+                # We explicitly support bogues values in field.lifecycle --
+                # they are treated the same as "CURRENT", which includes more
+                # than one lifecycle.
                 pass
             else:
                 if status_filter not in (BranchLifecycleStatusFilter.ALL,
@@ -201,6 +216,7 @@ class BranchListingView(LaunchpadFormView):
 
     @property
     def sort_by_field(self):
+        """The zope.schema field for the 'sort_by' widget."""
         orig_field = IBranchListingFilter['sort_by']
         values = self.branch_listing_sort_values
         return Choice(__name__=orig_field.__name__,
@@ -209,6 +225,7 @@ class BranchListingView(LaunchpadFormView):
 
     @property
     def sort_by(self):
+        """The value of the 'sort_by' widget, or None if none was present."""
         widget = self.widgets['sort_by']
         if widget.hasValidInput():
             return widget.getInputValue()
@@ -216,6 +233,7 @@ class BranchListingView(LaunchpadFormView):
             return None
 
     def setUpWidgets(self, context=None):
+        """Set up the 'sort_by' widget with only the applicable choices."""
         fields = []
         for field_name in self.field_names:
             if field_name == 'sort_by':
