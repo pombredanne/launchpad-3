@@ -26,7 +26,7 @@ function submit_filter()
 var field = document.getElementById('field.lifecycle');
 field.onchange = submit_filter;
 field = document.getElementById('field.sort_by')
-field.onchange = submit_filter;
+if (field) field.onchange = submit_filter;
 </script>
 
   <tal:needs-batch condition="context/multiple_pages">
