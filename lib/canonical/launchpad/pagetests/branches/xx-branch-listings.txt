@@ -239,3 +239,27 @@ The implicitly sorted listings do not have an ordering widget at all.
     ...
     LookupError: label 'ordered by'
 
+Finally, sorting by a particular criterion has the desired effect.
+
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    2.6                                 Mature
+    main                                Development
+    klingon     Sample Person           Experimental
+    launchpad   Launchpad Developers    New
+    import                              New
+    mirrored                            New
+
+    >>> browser.getControl('ordered by').value = ['Author']
+    >>> browser.getControl('Filter').click()
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    launchpad   Launchpad Developers    New
+    klingon     Sample Person           Experimental
+    2.6                                 Mature
+    main                                Development
+    import                              New
+    mirrored                            New
