@@ -322,3 +322,21 @@ And it is not allowed to call linkFAQ() when the FAQ is already linked:
     Traceback (most recent call last):
       ...
     AssertionError: cannot call linkFAQ() with already linked FAQ
+
+A FAQ can be linked to a 'solved' question, in which case, the
+status is not changed.
+
+    >>> login('foo.bar@canonical.com')
+    >>> confirm_message = other_question.confirmAnswer(
+    ...     "That answerded my question.", answer=other_question.messages[-1])
+    >>> print other_question.status.title
+    Solved
+
+    >>> login('no-priv@canonical.com')
+    >>> message = other_question.linkFAQ(
+    ...     no_priv, firefox_faq,
+    ...     'If you look carefully, you will find the fnords!')
+    >>> print message.action.title
+    Comment
+    >>> print other_question.status.title
+    Solved
