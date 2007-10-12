@@ -676,53 +676,73 @@ special = {
     }
 
 
-def processMailSetup(test):
-    setGlobs(test)
-    test._old_policy = getSecurityPolicy()
-    setSecurityPolicy(LaunchpadSecurityPolicy)
-    LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+class ProcessMailLayer(LaunchpadZopelessLayer):
+    """Layer containing the tests running inside process-mail.py."""
 
 
-def processMailTearDown(test):
-    setSecurityPolicy(test._old_policy)
+    @classmethod
+    def testSetUp(cls):
+        """Fixture replicating the process-mail.py environment.
 
+        This zopeless script uses the regular security policy and
+        connects as a specific DB user.
+        """
+        cls._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
+        LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
 
-def addProcessMailTestsToSpecial():
-    """Adds all the documentation tests related to process-mail.py."""
-    filenames = [
+    @classmethod
+    def testTearDown(cls):
+        """Tear down the test fixture."""
+        setSecurityPolicy(cls._old_policy)
+
+    doctests_without_logging = [
         'answer-tracker-emailinterface.txt',
         'bugs-emailinterface.txt',
         'bugs-email-affects-path.txt',
         'emailauthentication.txt',
-        ]
-    for filename in filenames:
-        special[filename] = LayeredDocFileSuite(
-            "../doc/%s" % filename,
-            setUp=processMailSetup, tearDown=processMailTearDown,
-            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
-            stdout_logging=False)
+    ]
 
-    # Tests requiring stdout logging.
-    for filename in ['incomingmail.txt', 'spec-mail-exploder.txt']:
-        special[filename] = LayeredDocFileSuite(
+    doctests_with_logging = [
+        'incomingmail.txt',
+        'spec-mail-exploder.txt'
+    ]
+
+    @classmethod
+    def addTestsToSpecial(cls):
+        """Adds all the tests related to process-mail.py. to special"""
+        global special
+
+        for filename in cls.doctests_without_logging:
+            special[filename] = cls.createLayeredDocFileSuite(filename)
+
+        for filename in cls.doctests_without_logging:
+            special[filename] = cls.createLayeredDocFileSuite(
+                filename, stdout_logging=True)
+
+        # Adds a copy of bug-set-status.txt that will be run with
+        # the processmail user.
+        def bugSetStatusSetUp(test):
+            setUp(test)
+            test.globs['test_dbuser'] = config.processmail.dbuser
+
+        special['bug-set-status.txt-processmail'] = LayeredDocFileSuite(
+                '../doc/bug-set-status.txt',
+                setUp=bugSetStatusSetUp, tearDown=tearDown,
+                optionflags=default_optionflags, layer=cls,
+                stdout_logging=False)
+
+    @classmethod
+    def createLayeredDocFileSuite(cls, filename, stdout_logging=False):
+        """Helper to create a doctest using this layer."""
+        return LayeredDocFileSuite(
             "../doc/%s" % filename,
-            setUp=processMailSetup, tearDown=processMailTearDown,
-            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
+            setUp=setUp, tearDown=tearDown,
+            optionflags=default_optionflags, layer=cls,
+            stdout_logging=stdout_logging,
             stdout_logging_level=logging.WARNING)
 
-    # Adds a copy of bug-set-status.txt that will be run with
-    # the processmail user.
-    def bugSetStatusSetUp(test):
-        processMailSetup(test)
-        test.globs['test_dbuser'] = config.processmail.dbuser
 
-    special['bug-set-status.txt-processmail'] = LayeredDocFileSuite(
-            '../doc/bug-set-status.txt',
-            setUp=bugSetStatusSetUp, tearDown=processMailTearDown,
-            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
-            stdout_logging=False)
-
-addProcessMailTestsToSpecial()
+ProcessMailLayer.addTestsToSpecial()
 
 
 def test_suite():
