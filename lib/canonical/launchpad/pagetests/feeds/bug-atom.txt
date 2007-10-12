@@ -54,11 +54,11 @@ Define a helper function for parsing the entries:
     >>> browser.title
     'Bugs in the Mozilla Project'
     >>> browser.url
-    'http://launchpad.dev/mozilla/latest-bugs.atom'
+    'http://feeds.launchpad.dev/mozilla/latest-bugs.atom'
 
     >>> soup = BSS(browser.contents)
     >>> print extract_text(soup.find('id'))
-    http://launchpad.dev/mozilla/latest-bugs.atom
+    http://feeds.launchpad.dev/mozilla/latest-bugs.atom
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     4
@@ -81,15 +81,15 @@ Define a helper function for parsing the entries:
 
 == Latest bugs for a person ==
 
-    >>> browser.open('http://launchpad.dev/~name16/latest-bugs.atom')
+    >>> browser.open('http://feeds.launchpad.dev/~name16/latest-bugs.atom')
     >>> browser.title
     'Bugs for Foo Bar'
     >>> browser.url
-    'http://launchpad.dev/~name16/latest-bugs.atom'
+    'http://feeds.launchpad.dev/~name16/latest-bugs.atom'
 
     >>> soup = BSS(browser.contents)
     >>> print extract_text(soup.find('id'))
-    http://launchpad.dev/~name16/latest-bugs.atom
+    http://feeds.launchpad.dev/~name16/latest-bugs.atom
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     6
@@ -142,13 +142,13 @@ Subscribe simple-team to a number of bugs.
 Now we can do a query on the lastest bugs for simple team and expect
 some results.
 
-    >>> browser.open('http://launchpad.dev/~simple-team/latest-bugs.atom')
+    >>> browser.open('http://feeds.launchpad.dev/~simple-team/latest-bugs.atom')
     >>> browser.title
     'Bugs for Simple Team'
 
     >>> soup = BSS(browser.contents)
     >>> print extract_text(soup.find('id'))
-    http://launchpad.dev/~simple-team/latest-bugs.atom
+    http://feeds.launchpad.dev/~simple-team/latest-bugs.atom
 
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
@@ -157,7 +157,7 @@ some results.
 == General bug search ==
 
     >>> import cgi
-    >>> url = ("http://launchpad.dev/bugs/search-bugs.atom?"
+    >>> url = ("http://feeds.launchpad.dev/bugs/search-bugs.atom?"
     ...        "field.searchtext=&search=Search+Bug+Reports&"
     ...        "field.scope=all&field.scope.target=")
     >>> browser.open(url)
@@ -190,7 +190,7 @@ some results.
 
 == Results for a single bug ==
 
-    >>> browser.open('http://launchpad.dev/bugs/1/bug.atom')
+    >>> browser.open('http://feeds.launchpad.dev/bugs/1/bug.atom')
     >>> browser.title
     'Bug 1'
     >>> entries = parse_entries(browser.contents)

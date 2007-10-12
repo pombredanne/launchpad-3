@@ -18,12 +18,12 @@ Define a helper function for parsing the entries:
 
 == Latest bugs for a product ==
 
-    >>> browser.open('http://launchpad.dev/jokosher/latest-bugs.html?'
+    >>> browser.open('http://feeds.launchpad.dev/jokosher/latest-bugs.html?'
     ...              'show_column=bugtargetdisplayname')
     >>> browser.title
     'Bugs in Jokosher'
     >>> browser.url
-    'http://launchpad.dev/jokosher/latest-bugs.html?show_column=bugtargetdisplayname'
+    'http://feeds.launchpad.dev/jokosher/latest-bugs.html?show_column=bugtargetdisplayname'
 
     >>> soup = BeautifulSoup(browser.contents)
     >>> entries = parse_entries(browser.contents)
@@ -47,12 +47,12 @@ Define a helper function for parsing the entries:
 
 == Latest bugs for a project ==
 
-    >>> browser.open('http://launchpad.dev/mozilla/latest-bugs.html?'
+    >>> browser.open('http://feeds.launchpad.dev/mozilla/latest-bugs.html?'
     ...              'show_column=bugtargetdisplayname')
     >>> browser.title
     'Bugs in the Mozilla Project'
     >>> browser.url
-    'http://launchpad.dev/mozilla/latest-bugs.html?show_column=bugtargetdisplayname'
+    'http://feeds.launchpad.dev/mozilla/latest-bugs.html?show_column=bugtargetdisplayname'
 
     >>> soup = BeautifulSoup(browser.contents)
     >>> entries = parse_entries(browser.contents)
@@ -75,20 +75,20 @@ Define a helper function for parsing the entries:
 
 == Latest bugs for a person ==
 
-    >>> browser.open('http://launchpad.dev/~name16/latest-bugs.html')
+    >>> browser.open('http://feeds.launchpad.dev/~name16/latest-bugs.html')
     >>> browser.title
     'Bugs for Foo Bar'
     >>> browser.url
-    'http://launchpad.dev/~name16/latest-bugs.html'
+    'http://feeds.launchpad.dev/~name16/latest-bugs.html'
 
     >>> soup = BeautifulSoup(browser.contents)
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
-    11
+    10
 
     >>> entry = entries[1]
     >>> print extract_text(entry('td')[1])
-    3
+    9
     >>> print entry('td')[1].a['href']
     http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3
     >>> print extract_text(entry('td')[2])
@@ -105,7 +105,7 @@ Define a helper function for parsing the entries:
 == General bug search ==
 
     >>> import cgi
-    >>> url = ("http://launchpad.dev/bugs/search-bugs.html?"
+    >>> url = ("http://feeds.launchpad.dev/bugs/search-bugs.html?"
     ...        "field.searchtext=&search=Search+Bug+Reports&"
     ...        "field.scope=all&field.scope.target=")
     >>> browser.open(url)
