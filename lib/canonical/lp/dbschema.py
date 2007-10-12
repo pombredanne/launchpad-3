@@ -38,7 +38,6 @@ __all__ = (
 'DistroSeriesStatus',
 'ImportTestStatus',
 'ImportStatus',
-'License',
 'MirrorContent',
 'MirrorPulseType',
 'MirrorSpeed',
@@ -1731,39 +1730,4 @@ class ArchivePurpose(DBSchema):
 
         This is the archive for obsolete packages.
         """)
-
-class License(DBSchema):
-    """This schema contains OSI approved licenses."""
-
-    AFL = Item(10, "Academic Free License")
-    AFFERO = Item(20, "Affero GPL")
-    APACHE = Item(30, "Apache License")
-    ARTISTIC = Item(40, "Artistic License")
-    BSD = Item(50, "BSD License (revised)")
-    CECILL = Item(60, "CeCILL License")
-    CDDL = Item(70, "CDDL")
-    COMMON_PUBLIC = Item(80, "Common Public License")
-    ECLIPSE = Item(90, "Eclipse Public License")
-    EDUCATIONAL_COMMUNITY = Item(100, "Educational Community License")
-    EIFFEL = Item(110, "Eiffel Forum License")
-    GNAT = Item(120, "GNAT Modified GPL")
-    GPL = Item(130, "GPL")
-    LGPL = Item(140, "LGPL")
-    IBM = Item(150, "IBM Public License")
-    MIT = Item(160, "MIT / X / Expat License")
-    MPL = Item(170, "Mozilla Public License")
-    OPEN_CONTENT = Item(180, "Open Content License")
-    OPEN_SOFTWARE = Item(190, "Open Software License")
-    PERL = Item(200, "Perl License")
-    PHP = Item(210, "PHP License")
-    PUBLIC_DOMAIN = Item(220, "Public Domain")
-    PYTHON = Item(230, "Python License")
-    QPL = Item(240, "Q Public License")
-    SUN_PUBLIC = Item(250, "SUN Public License")
-    W3C = Item(260, "W3C License")
-    ZLIB = Item(270, "zlib/libpng License")
-    ZPL = Item(280, "Zope Public License")
-
-    OTHER_PROPRIETARY = Item(1000, "Other/Proprietary")
-    OTHER_OPEN_SOURCE = Item(1010, "Other/Open Source")
 

@@ -46,10 +46,10 @@ from canonical.launchpad.interfaces import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, ICalendarOwner, IFAQTarget,
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, IPersonSet, IProduct, IProductSet,
-    IQuestionTarget, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
+    IQuestionTarget, License, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
     TranslationPermission)
 from canonical.lp.dbschema import (
-    License, SpecificationSort, SpecificationFilter, 
+    SpecificationSort, SpecificationFilter, 
     SpecificationDefinitionStatus, SpecificationImplementationStatus)
 
 
@@ -134,27 +134,28 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     def _getLicenses(self):
         """Get the licenses as a tuple."""
-        licenses = [
+        return tuple(
             product_license.license
             for product_license 
-                in ProductLicense.selectBy(product=self, orderBy='license')
-            ]
-        return tuple(licenses)
+                in ProductLicense.selectBy(product=self, orderBy='license'))
 
-    def _setLicenses(self, new_licenses):
-        """Set the licenses from a list of license enums."""
-        new_licenses = set(new_licenses)
-        for license in new_licenses:
+    def _setLicenses(self, licenses):
+        """Set the licenses from a tuple of license enums.
+        The licenses parameter must not be an empty tuple."""
+        assert isinstance(licenses, tuple), "licenses must be a tuple"
+        assert len(licenses) != 0, "licenses argument must not be empty"
+        licenses = set(licenses)
+        for license in licenses:
             if license not in License:
-                raise AttributeError, "%s is not a License" % license
+                raise AssertionError, "%s is not a License" % license
         old_licenses = set(self.licenses)
 
-        for license in old_licenses.difference(new_licenses):
+        for license in old_licenses.difference(licenses):
             product_license = ProductLicense.selectOneBy(product=self, 
                                                          license=license)
             product_license.destroySelf()
 
-        for license in new_licenses.difference(old_licenses):
+        for license in licenses.difference(old_licenses):
             ProductLicense(product=self, license=license)
 
     licenses = property(_getLicenses, _setLicenses)
@@ -674,7 +675,12 @@ class ProductSet:
                       sourceforgeproject=None, programminglang=None,
                       reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=(), license_info=None):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
+        """See canonical.launchpad.interfaces.product.IProductSet.
+        The licenses parameter must not be an empty tuple."""
+
+        assert isinstance(licenses, tuple), "licenses must be a tuple"
+        assert len(licenses) != 0, "licenses argument must not be empty"
+
         product = Product(
             owner=owner, name=name, displayname=displayname,
             title=title, project=project, summary=summary,
@@ -684,6 +690,7 @@ class ProductSet:
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang, reviewed=reviewed,
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
+
         product.licenses = licenses
 
         # Create a default trunk series and set it as the development focus

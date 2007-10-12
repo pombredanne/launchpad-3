@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IProduct',
     'IProductSet',
+    'License',
     ]
 
 from zope.schema import Bool, Choice, Int, Text, TextLine, Set
@@ -33,6 +34,43 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload)
+from canonical.lazr import DBEnumeratedType, DBItem
+
+
+class License(DBEnumeratedType):
+    """This schema contains OSI approved licenses."""
+
+    AFL = DBItem(10, "Academic Free License")
+    AFFERO = DBItem(20, "Affero GPL")
+    APACHE = DBItem(30, "Apache License")
+    ARTISTIC = DBItem(40, "Artistic License")
+    BSD = DBItem(50, "BSD License (revised)")
+    CECILL = DBItem(60, "CeCILL License")
+    CDDL = DBItem(70, "CDDL")
+    COMMON_PUBLIC = DBItem(80, "Common Public License")
+    ECLIPSE = DBItem(90, "Eclipse Public License")
+    EDUCATIONAL_COMMUNITY = DBItem(100, "Educational Community License")
+    EIFFEL = DBItem(110, "Eiffel Forum License")
+    GNAT = DBItem(120, "GNAT Modified GPL")
+    GPL = DBItem(130, "GPL")
+    LGPL = DBItem(140, "LGPL")
+    IBM = DBItem(150, "IBM Public License")
+    MIT = DBItem(160, "MIT / X / Expat License")
+    MPL = DBItem(170, "Mozilla Public License")
+    OPEN_CONTENT = DBItem(180, "Open Content License")
+    OPEN_SOFTWARE = DBItem(190, "Open Software License")
+    PERL = DBItem(200, "Perl License")
+    PHP = DBItem(210, "PHP License")
+    PUBLIC_DOMAIN = DBItem(220, "Public Domain")
+    PYTHON = DBItem(230, "Python License")
+    QPL = DBItem(240, "Q Public License")
+    SUN_PUBLIC = DBItem(250, "SUN Public License")
+    W3C = DBItem(260, "W3C License")
+    ZLIB = DBItem(270, "zlib/libpng License")
+    ZPL = DBItem(280, "Zope Public License")
+
+    OTHER_PROPRIETARY = DBItem(1000, "Other/Proprietary")
+    OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
 class ProductNameField(PillarNameField):
@@ -222,7 +260,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     licenses = Set(
         title=_('Licenses'),
-        value_type=Choice(vocabulary="License"))
+        value_type=Choice(vocabulary=License))
 
     license_info = Description(
         title=_('Description of additional licenses'),
@@ -444,3 +482,4 @@ class IProductSet(Interface):
         """Return the number of projects that have branches associated with
         them.
         """
+

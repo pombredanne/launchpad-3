@@ -58,7 +58,7 @@ from canonical.launchpad.interfaces import (
     IBranchSet, ICalendarOwner, ICountry, IDistribution, IHasIcon,
     ILaunchBag, ILaunchpadCelebrities, IPillarNameSet, IProduct,
     IProductSeries, IProductSet, IProject, ISourcePackage,
-    ITranslationImportQueue, NotFoundError,
+    ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -88,8 +88,6 @@ from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
-from canonical.launchpad.vocabularies import LicenseVocabulary
-from canonical.lp.dbschema import License
 
 
 class ProductNavigation(
@@ -942,13 +940,13 @@ class ProductAddViewBase(LaunchpadFormView):
                 + 'License info:\n%s\n\n' % indent(self.product.license_info))
 
             simple_sendmail(fromaddress, 
-                            #config.launchpad.launchpad_team_address,
                             'feedback@launchpad.net',
                             subject, message)
 
             self.request.response.addInfoNotification(_(
-              "Launchpad is free to use for software under approved licenses."
-              " The Launchpad team will be in contact with you soon."))
+                "Launchpad is free to use for software under approved "
+                "licenses. The Launchpad team will be in contact with "
+                "you soon."))
 
     @property
     def next_url(self):

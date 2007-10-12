@@ -156,11 +156,6 @@
     />
 
   <vocabulary
-    name="License"
-    factory="canonical.launchpad.vocabularies.LicenseVocabulary"
-    />
-
-  <vocabulary
     name="TranslatableLanguage"
     factory="canonical.launchpad.vocabularies.TranslatableLanguageVocabulary"
     />
