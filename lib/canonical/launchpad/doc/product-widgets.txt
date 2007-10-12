@@ -193,3 +193,31 @@ switch to not using Malone, and its bug tracker will be set to None.
     False
     >>> firefox.bugtracker is None
     True
+
+= Choosing a License =
+
+A custom widget to display a link to the license policy.
+
+    >>> from canonical.widgets.product import LicenseWidget
+
+Set up a test request and test widget.
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.interfaces import (
+    ...     IProduct, IProductSet, License)
+    >>> product = getUtility(IProductSet).get(1)
+    >>> licenses_field = IProduct['licenses'].bind(product)
+    >>> vtype = licenses_field.value_type
+    >>> request = LaunchpadTestRequest()
+    >>> license_widget = LicenseWidget(licenses_field, vtype, request)
+
+There should be one checkbox for each license, and there should be a
+link to the license policy.
+
+    >>> html = license_widget()
+    >>> soup = BeautifulSoup(html)
+    >>> len(soup.table('input')) == len(License)
+    True
+    >>> soup.a['href']
+    u'http://www.ubuntu.com/community/ubuntustory/licensing'
