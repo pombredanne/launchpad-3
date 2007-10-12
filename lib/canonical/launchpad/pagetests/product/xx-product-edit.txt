@@ -1,15 +1,14 @@
 Page to edit a product - does the page load as the product owner?
 
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox')
   >>> browser.getLink('Change details').click()
   >>> print browser.url
   http://launchpad.dev/firefox/+edit
   >>> print browser.contents
   <!DOCTYPE...
-  ...<title>Mozilla Firefox in Launchpad</title>...
-  ...<h1>Edit details</h1>...
+  ...<title>Change project details</title>...
+  ...<h1>Change project details</h1>...
 
 We try to change the project related to that product. First with a invalid
 project.

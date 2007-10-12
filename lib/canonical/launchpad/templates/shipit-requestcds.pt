@@ -20,7 +20,7 @@
 <table>
 <tbody>
 <tr>
-<td width="75%" style="vertical-align: top;" id="main-content">
+<td width="75%" style="vertical-align: top;" id="maincontent">
 
 <tal:shipit-is-open condition="view/is_open" define="user view/user">
 
@@ -73,15 +73,26 @@
 
   <tal:no-current-order condition="not: view/current_order">
     <h1 tal:condition="not: view/current_order">
-      Request <span tal:replace="view/flavour/title" />
+      <span tal:condition="view/prerelease_mode">Pre-order</span>
+      <span tal:condition="not: view/prerelease_mode">Request</span>
+      <span tal:replace="view/flavour/title" />
       <span tal:replace="view/series/title" /> CDs
     </h1>
 
     <p class="informational message">
-      We can send you CDs free of charge, but it will take from
-      six to ten weeks to deliver, so you may prefer to
-      <a tal:attributes="href view/download_url">download the CD images</a>
-      and record them yourself.
+      <tal:no-prerelease condition="not: view/prerelease_mode">
+        We can send you CDs free of charge, but it will take from
+        six to ten weeks to deliver, so you may prefer to
+        <a tal:attributes="href view/download_url">download the CD images</a>
+        and record them yourself.
+      </tal:no-prerelease>
+      <tal:prerelease condition="view/prerelease_mode">
+      <span tal:replace="view/flavour/title" />
+        <span tal:replace="view/series/title" /> has not been released yet,
+        but we'll record your request and send you the CDs as soon as that
+        happens. Note that delivery will take from six to ten weeks once
+        they are sent.
+      </tal:prerelease>
     </p>
   </tal:no-current-order>
 
