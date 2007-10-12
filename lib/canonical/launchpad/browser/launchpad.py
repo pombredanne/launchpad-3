@@ -90,7 +90,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
-    LaunchpadFormView, Navigation, stepto, canonical_url, custom_widget)
+    LaunchpadFormView, Navigation, stepto, canonical_name, canonical_url,
+    custom_widget)
+from canonical.launchpad.webapp.interfaces import POSTToNonCanonicalURL
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
@@ -467,10 +469,13 @@ class LaunchpadRootNavigation(Navigation):
 
         # Allow traversal to ~foo for People
         if name.startswith('~'):
-            # redirect to the lower() version before doing the lookup
-            if name.lower() != name:
+            # account for common typing mistakes
+            if canonical_name(name) != name:
+                if self.request.method == 'POST':
+                    raise POSTToNonCanonicalURL
                 return self.redirectSubTree(
-                    canonical_url(self.context) + name.lower(), status=301)
+                    canonical_url(self.context) + canonical_name(name),
+                    status=301)
             else:
                 person = getUtility(IPersonSet).getByName(name[1:])
                 return person
@@ -485,10 +490,13 @@ class LaunchpadRootNavigation(Navigation):
             return getUtility(IBazaarApplication)
 
         try:
-            # redirect to the lower() version before doing the lookup
-            if name.lower() != name:
+            # account for common typing mistakes
+            if canonical_name(name) != name:
+                if self.request.method == 'POST':
+                    raise POSTToNonCanonicalURL
                 return self.redirectSubTree(
-                    canonical_url(self.context) + name.lower(), status=301)
+                    canonical_url(self.context) + canonical_name(name),
+                    status=301)
             else:
                 return getUtility(IPillarNameSet)[name]
         except NotFoundError:

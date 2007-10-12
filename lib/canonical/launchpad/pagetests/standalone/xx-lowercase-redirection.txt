@@ -24,3 +24,16 @@ The redirection also works for other Launchpad subdomains:
     >>> anon_browser.open('http://answers.launchpad.dev/~nAmE12')
     >>> print anon_browser.url
     http://answers.launchpad.dev/~name12
+    
+When doing a POST to an invalid URL, we get an error:
+
+    >>> print http(r"""
+    ... POST /UbUntU/hoary/+source/evolution/+pots/evolution-2.2/es/+translate HTTP/1.1
+    ... Host: translations.launchpad.dev
+    ... """)
+    HTTP/1.1 500 Internal Server Error
+    ...
+    </ul>POSTToNonCanonicalURL
+    ...
+
+   
