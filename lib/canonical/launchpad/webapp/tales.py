@@ -48,6 +48,7 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.webapp.interfaces import (
     IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
+from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
@@ -422,7 +423,7 @@ class ObjectImageDisplayAPI:
             return '/@@/meeting-mugshot'
         return '/@@/nyet-mugshot'
 
-    def icon(self):
+    def icon(self, rootsite = None):
         """Return the appropriate <img> tag for this object's icon."""
         context = self._context
         if context is None:
@@ -431,7 +432,11 @@ class ObjectImageDisplayAPI:
         if IHasIcon.providedBy(context) and context.icon is not None:
             url = context.icon.getURL()
         else:
-            url = self.default_icon_resource(context)
+            if rootsite is not None:
+                root_url = allvhosts.configs[rootsite].rooturl[:-1]
+            else:
+                root_url = ''
+            url = root_url + self.default_icon_resource(context)
         icon = '<img alt="" width="14" height="14" src="%s" />'
         return icon % url
 
@@ -650,24 +655,28 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         ])
 
     def traverse(self, name, furtherPath):
-        if name == 'link':
+        if name == 'link' or name[:5] == 'link:':
+            if name == 'link':
+                rootsite = None
+            else:
+                rootsite = name.split(':')[1]
             extra_path = '/'.join(reversed(furtherPath))
             del furtherPath[:]
-            return self.link(extra_path)
+            return self.link(extra_path, rootsite=rootsite)
         elif name in self.allowed_names:
             return getattr(self, name)()
         else:
             raise TraversalError, name
 
-    def link(self, extra_path):
+    def link(self, extra_path, rootsite=None):
         """Return an HTML link to the person's page containing an icon
         followed by the person's name.
         """
         person = self._context
-        url = canonical_url(person)
+        url = canonical_url(person, rootsite=rootsite)
         if extra_path:
             url = '%s/%s' % (url, extra_path)
-        image_html = ObjectImageDisplayAPI(person).icon()
+        image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
         return '<a href="%s">%s&nbsp;%s</a>' % (
             url, image_html, person.browsername)
 

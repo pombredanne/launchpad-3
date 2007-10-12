@@ -81,6 +81,13 @@ link:
     >>> test_tales("person/fmt:link/foo/bar", person=spiv)
     u'<a href=".../~spiv/foo/bar">...'
 
+If you are on feeds.launchpad.net, you need to specify the rootsite, so
+that the links and images are pointing at the right hostname.
+    >>> test_tales("person/fmt:link:mainsite/foo/bar", person=spiv)
+    u'<a href="http://launchpad.dev/~spiv/foo/bar"><img...src="http://launchpad.dev/@@/person-inactive"...'
+    >>> test_tales("person/fmt:link:bugs/foo/bar", person=spiv)
+    u'<a href="http://bugs.launchpad.dev/~spiv/foo/bar"><img...src="http://bugs.launchpad.dev/@@/person-inactive"...'
+
 We also have image:icon for KarmaCategory:
 
     >>> from canonical.launchpad.database import KarmaCategory
