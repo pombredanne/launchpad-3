@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'AccountStatus',
     'IAdminRequestPeopleMerge',
+    'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'IObjectReassignment',
     'IPersonChangePassword',
@@ -14,11 +15,13 @@ __all__ = [
     'IPersonSet',
     'IPerson',
     'IRequestPeopleMerge',
+    'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
     'ITeam',
     'JoinNotAllowed',
     'PersonCreationRationale',
+    'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamMembershipStatus',
     'TeamSubscriptionPolicy',
@@ -33,7 +36,7 @@ from zope.interface.interface import invariant
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, StrippedTextLine)
@@ -78,6 +81,10 @@ class AccountStatus(DBEnumeratedType):
         The account associated with this Person has been suspended by a
         Launchpad admin.
         """)
+
+
+INACTIVE_ACCOUNT_STATUSES = [
+    AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED]
 
 
 class PersonCreationRationale(DBEnumeratedType):
@@ -785,8 +792,17 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             'open_inprogress': The number of open bugs that ar In Progress.
         """
 
+    def setContactAddress(email):
+        """Set the given email address as this team's contact address.
+
+        This method must be used only for teams.
+        """
+
     def setPreferredEmail(email):
-        """Set the given email address as this person's preferred one."""
+        """Set the given email address as this person's preferred one.
+
+        This method must be used only for people, not teams.
+        """
 
     def getBranch(product_name, branch_name):
         """The branch associated to this person and product with this name.
@@ -1278,7 +1294,7 @@ class IPersonSet(Interface):
         address.
         """
 
-    def findPerson(text="", orderBy=None):
+    def findPerson(text="", orderBy=None, exclude_inactive_accounts=True):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
 
@@ -1289,6 +1305,10 @@ class IPersonSet(Interface):
         or a list of column names as strings.
         If no orderBy is specified the results will be ordered using the
         default ordering specified in Person._defaultOrder.
+
+        If exclude_inactive_accounts is True, any accounts whose
+        account_status is any of INACTIVE_ACCOUNT_STATUSES will not be in the
+        returned set.
 
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email
@@ -1385,6 +1405,41 @@ class ITeamCreation(ITeam):
             "the team creation, a new message will be sent to this address "
             "with instructions on how to finish its registration."),
         constraint=validate_new_team_email)
+
+
+class TeamContactMethod(EnumeratedType):
+    """The method used by Launchpad to contact a given team."""
+
+    HOSTED_LIST = Item("""
+        The Launchpad mailing list for this team
+
+        Notifications directed to this team are sent to its Launchpad-hosted
+        mailing list.
+        """)
+
+    NONE = Item("""
+        Each member individually
+
+        Notifications directed to this team will be sent to each of its
+        members.
+        """)
+
+    EXTERNAL_ADDRESS = Item("""
+        Another e-mail address
+
+        Notifications directed to this team are sent to the contact address
+        specified.
+        """)
+
+
+class ITeamContactAddressForm(Interface):
+
+    contact_address = TextLine(
+        title=_("Contact Email Address"), required=False, readonly=False)
+
+    contact_method = Choice(
+        title=_("How do people contact these team's members?"),
+        required=True, vocabulary=TeamContactMethod)
 
 
 class JoinNotAllowed(Exception):

@@ -1,0 +1,56 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets">
+  <div tal:replace="structure context/branch/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Edit bug branch status</h1>
+
+  <div class="documentDescription">
+    The bug branch status indicates the status of the fix for a
+    particular bug in a particular branch.
+  </div>
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+  </div>
+
+</div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
+
+<metal:block fill-slot="help">
+
+  <p>Launchpad is integrated with the <a
+    href="http://bazaar-vcs.org/">Bazaar</a> version control system. (<a
+    href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>).</p>
+
+  <p>The status indicates the progress made on this branch to fix the bug.</p>
+
+  <ul>
+    <li><em>Fix In progress</em>: Development to fix this bug is currently
+      going on in this branch.</li>
+
+    <li><em>Fix available</em>: This branch contains a potentially useful fix
+      for this bug.</li>
+
+    <li><em>Abandoned Attempt</em>: A fix for this bug is no longer being
+      worked on in this branch.</li>
+
+    <li><em>Best Fix Available</em>: This branch contains a fix agreed upon by
+      the community as being the best available branch from which to merge to
+      fix this bug.</li>
+  </ul>
+
+  <p>The whiteboard is a place to write additional comments.</p>
+
+</metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
+
+</body>
+</html>
