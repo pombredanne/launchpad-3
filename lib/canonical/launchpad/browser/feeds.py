@@ -9,7 +9,7 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IBugTaskSet
+    IBugTaskSet,
     IFeedsApplication,
     IPersonSet,
     IPillarNameSet,
