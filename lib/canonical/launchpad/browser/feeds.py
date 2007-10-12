@@ -7,12 +7,17 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.publisher.interfaces import NotFound
 
 from canonical.launchpad.interfaces import (
-    IFeedsApplication, IPillarNameSet, NotFoundError)
+    IFeedsApplication,
+    IMaloneApplication,
+    IPersonSet,
+    IPillarNameSet,
+    NotFoundError,
+    )
 from canonical.launchpad.layers import FeedsLayer
-from canonical.launchpad.webapp import Navigation
+from canonical.launchpad.webapp import (
+    canonical_url, Navigation)
 
 class FeedsNavigation(Navigation):
 
@@ -20,13 +25,34 @@ class FeedsNavigation(Navigation):
 
     newlayer = FeedsLayer
 
+    stepto_utilities = {
+        'bugs': IMaloneApplication,
+        }
+
     def traverse(self, name):
+        # XXX: statik 2007-10-09 bug=150941
+        # Need to block pages not registered on the FeedsLayer
+
+        if name in self.stepto_utilities:
+            return getUtility(self.stepto_utilities[name])
+
+        if name.startswith('~'):
+            # redirect to the lower() version before doing the lookup
+            if name.lower() != name:
+                return self.redirectSubTree(
+                    canonical_url(self.context) + name.lower(), status=301)
+            else:
+                person = getUtility(IPersonSet).getByName(name[1:])
+                return person
+
         try:
-            # XXX: statik 2007-10-05 bug=56646 Redirect to lowercase before 
-            # doing the lookup
-            # XXX: statik 2007-10-09 bug=150941
-            # Need to block pages not registered on the FeedsLayer
-            return getUtility(IPillarNameSet)[name.lower()]
+            # redirect to the lower() version before doing the lookup
+            if name.lower() != name:
+                return self.redirectSubTree(
+                    canonical_url(self.context) + name.lower(), status=301)
+            else:
+                return getUtility(IPillarNameSet)[name]
+
         except NotFoundError:
             return None
 
