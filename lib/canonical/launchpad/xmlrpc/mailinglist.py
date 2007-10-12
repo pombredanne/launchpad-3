@@ -186,3 +186,21 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             list_one.subscribe(removeSecurityProxy(bart),
                                get_alternative_email(bart))
             return step
+        if step == '04-setup-users-B':
+            team_one = personset.getByName('team-one')
+            list_one = listset.get('team-one')
+            # Subscribe Cris with her preferred address.
+            cris = new_person('Cris')
+            cris.join(team_one)
+            list_one.subscribe(removeSecurityProxy(cris))
+            # Subscribe Dirk with his preferred address.
+            dirk = new_person('Dirk')
+            dirk.join(team_one)
+            list_one.subscribe(removeSecurityProxy(dirk))
+            # Unsubscribe Bart.
+            bart = personset.getByName('bart')
+            list_one.unsubscribe(bart)
+            # Change Anne's email address to her alternative.
+            anne = personset.getByName('anne')
+            anne.setPreferredEmail(get_alternative_email(anne))
+            return step

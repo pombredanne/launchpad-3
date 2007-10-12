@@ -43,6 +43,10 @@ def real_main():
         except itest_helper.IntegrationTestFailure, error:
             print 'FAILED:', error
             return -1
+        except itest_helper.IntegrationTestTimeout:
+            print 'TIMEOUT!'
+            traceback.print_exc()
+            -1
         except Exception:
             print
             traceback.print_exc()

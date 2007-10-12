@@ -22,6 +22,10 @@ class IntegrationTestFailure(Exception):
     """An integration test failed."""
 
 
+class IntegrationTestTimeout(Exception):
+    """A timeout occurred without getting expected output."""
+
+
 def auth(user, password):
     """Create a Base64 encoded Basic Auth string."""
     return 'Basic ' + base64.encodestring('%s:%s' % (user, password))
@@ -36,7 +40,7 @@ def poll_mailman(function):
     while datetime.datetime.now() < until:
         if function():
             return
-    raise IntegrationTestFailure('Timed out before success')
+    raise IntegrationTestTimeout('Timed out before success')
 
 
 def run_mailman(*args):

@@ -14,23 +14,28 @@ def main():
     cursor().execute("""
     DELETE FROM MailingListSubscription;
 
-    CREATE TEMP VIEW DeathRowTeams AS SELECT id FROM Person WHERE name IN
-    ('team-one', 'team-two', 'team-three');
+    CREATE TEMP VIEW DeathRow AS SELECT id FROM Person WHERE name IN (
+    'team-one', 'team-two', 'team-three',
+    'anne', 'bart', 'cris', 'dirk'
+    );
 
     DELETE FROM EmailAddress
-    WHERE person in (SELECT id FROM DeathRowTeams);
+    WHERE person in (SELECT id FROM DeathRow);
 
     DELETE FROM TeamMembership
-    WHERE team IN (SELECT id FROM DeathRowTeams);
+    WHERE team IN (SELECT id FROM DeathRow);
 
     DELETE FROM TeamParticipation
-    WHERE team IN (SELECT id FROM DeathRowTeams);
+    WHERE team IN (SELECT id FROM DeathRow);
 
     DELETE FROM MailingList
-    WHERE team IN (SELECT id FROM DeathRowTeams);
+    WHERE team IN (SELECT id FROM DeathRow);
+
+    DELETE FROM WikiName
+    WHERE person IN (SELECT id FROM DeathRow);
 
     DELETE FROM Person
-    WHERE id IN (SELECT id FROM DeathRowTeams);
+    WHERE id IN (SELECT id FROM DeathRow);
     """)
     # Now delete any mailing lists still hanging around.  We don't care if
     # this fails because it means the list doesn't exist.
