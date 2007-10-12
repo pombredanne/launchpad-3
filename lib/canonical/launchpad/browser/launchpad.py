@@ -472,8 +472,8 @@ class LaunchpadRootNavigation(Navigation):
                 return self.redirectSubTree(
                     canonical_url(self.context) + name.lower(), status=301)
             else:
-                person = getUtility(IPersonSet).getByName(name[1:].lower())
-            return person
+                person = getUtility(IPersonSet).getByName(name[1:])
+                return person
 
         # Dapper and Edgy shipped with https://launchpad.net/bazaar hard coded
         # into the Bazaar Launchpad plugin (part of Bazaar core). So in theory
