@@ -21,9 +21,7 @@
 
   <div
    class="boardCommentBody"
-   tal:attributes="id string:body_${context/name}_${context/version}"
-   tal:define="change_summary context/sourcepackagerelease/@@+change_summary">
-
+   tal:attributes="id string:body_${context/name}_${context/version}">
     <div style="font-family: monospace;"
          tal:content=
            "structure context/sourcepackagerelease/@@+change_summary">
