@@ -826,19 +826,6 @@ class FeedsPublication(LaunchpadBrowserPublication):
 
     root_object_interface = IFeedsApplication
 
-    # XXX, bac 20071010 -- attempt to defeat the default 'index.html' traversal
-    def traverseName(self, request, ob, name):
-        """Traverse to an end point or let normal traversal do its thing."""
-        assert isinstance(request, FeedsBrowserRequest), (
-            'Not a private FeedsBrowser request')
-        missing = object()
-        end_point = getattr(ob, name, missing)
-        if end_point is missing:
-            return super(FeedsPublication, self).traverseName(
-                request, ob, name)
-        return end_point
-
-
 
 class FeedsBrowserRequest(LaunchpadBrowserRequest):
     """Request type for a launchpad feed."""
