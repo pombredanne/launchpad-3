@@ -20,12 +20,10 @@ from canonical import encoding
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     IBuildQueue, IBuildQueueSet, NotFoundError)
 from canonical.lp.dbschema import (
-    BuildStatus, PackagePublishingStatus, SourcePackageUrgency)
+    BuildStatus, SourcePackageUrgency)
 
 
 class BuildQueue(SQLBase):
