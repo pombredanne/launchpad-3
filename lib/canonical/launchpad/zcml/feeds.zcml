@@ -43,19 +43,16 @@
         />
 
     <!-- Macros -->
-<!--
     <browser:page
         for="*"
         name="feed-entry-atom"
         permission="zope.Public"
         template="../../lazr/feed/templates/feed-entry-atom.pt"
         />
--->
+
     <!-- Feeds -->
-<!--
     <browser:feeds
         module="canonical.launchpad.feed"
         classes="BugFeed BugTargetBugsFeed PersonBugsFeed SearchBugsFeed"
         />
--->
 </configure>
