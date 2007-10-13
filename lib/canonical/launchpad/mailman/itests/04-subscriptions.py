@@ -26,14 +26,14 @@ def main():
     proxy = xmlrpclib.ServerProxy(itest_helper.XMLRPC_URL)
     proxy.testStep('04-setup-users-A')
     # Now wait a little while for Mailman to modify the mailing list.
-    itest_helper.poll_mailman(dump_membership([
+    itest_helper.poll(dump_membership([
         'Anne Person <anne.person@example.com>',
         'Bart Person <bperson@example.org>',
         ]))
     # Add Cris and Dirk, change Anne's preferred email address address and
     # unsubscribe Bart.
     proxy.testStep('04-setup-users-B')
-    itest_helper.poll_mailman(dump_membership([
+    itest_helper.poll(dump_membership([
         'Anne Person <aperson@example.org>',
         'Cris Person <cris.person@example.com>',
         'Dirk Person <dirk.person@example.com>',

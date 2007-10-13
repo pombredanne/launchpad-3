@@ -31,7 +31,7 @@ def auth(user, password):
     return 'Basic ' + base64.encodestring('%s:%s' % (user, password))
 
 
-def poll_mailman(function):
+def poll(function):
     """Standard loop for checking something for a while."""
     # Now wait a little while for Mailman to do some operation.  Using the
     # default Mailman polling frequency, the list should get created in under

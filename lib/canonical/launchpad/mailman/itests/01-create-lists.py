@@ -49,4 +49,4 @@ def main():
     # Now wait a little while for Mailman to create the Team One mailing list.
     # Using the default Mailman polling frequency, the list should get created
     # in under 20 seconds.
-    itest_helper.poll_mailman(check_lists)
+    itest_helper.poll(check_lists)

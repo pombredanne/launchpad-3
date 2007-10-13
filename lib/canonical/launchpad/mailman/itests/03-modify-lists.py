@@ -23,7 +23,7 @@ def main():
     proxy = xmlrpclib.ServerProxy(itest_helper.XMLRPC_URL)
     proxy.testStep('03-modify-lists-A')
     # Now wait a little while for Mailman to modify the mailing list.
-    itest_helper.poll_mailman(compare_message('Greetings team one members!'))
+    itest_helper.poll(compare_message('Greetings team one members!'))
     # Set a new welcome message and poll until Mailman has done its work.
     proxy.testStep('03-modify-lists-B')
-    itest_helper.poll_mailman(compare_message('Saluations team one members!'))
+    itest_helper.poll(compare_message('Saluations team one members!'))

@@ -13,6 +13,7 @@ import itest_helper
 from operator import itemgetter
 
 sys.path.insert(0, itest_helper.TOP)
+sys.path.insert(1, os.path.join(itest_helper.TOP, 'mailman'))
 
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 execute_zcml_for_scripts()

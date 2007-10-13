@@ -16,3 +16,7 @@ You should see all the numbered integration tests run in order, with no
 failures.
 
 You might also want a +mail-configure.zcml in your override-includes.
+
+You should set the 'smtp' variable in the <mailman> section to
+'localhost:9025'.  Note that you may need to set the LPCONFIG environment
+variable to get the correct configuration file.

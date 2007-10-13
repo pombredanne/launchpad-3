@@ -40,7 +40,7 @@ def main():
     browser.getControl('Apply for Mailing List').click()
     # We cannot deactivate lists through the web yet.
     proxy.testStep('02-review-lists')
-    itest_helper.poll_mailman(check_lists_active)
+    itest_helper.poll(check_lists_active)
     # Before we deactivate the mailing list, use withlist to get a path we'll
     # need to check later.
     stdout = itest_helper.run_mailman(
@@ -48,7 +48,7 @@ def main():
     backup_path = stdout.splitlines()[0]
     # Now deactivate the mailing list.
     proxy.testStep('02-deactivate-lists')
-    itest_helper.poll_mailman(check_lists_deactive)
+    itest_helper.poll(check_lists_deactive)
     try:
         if not os.path.exists(backup_path):
             raise itest_helper.IntegrationTestFailure(
