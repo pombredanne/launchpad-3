@@ -78,15 +78,13 @@ class LaunchpadBrowserPublication(
         self.db = db
 
     def annotateTransaction(self, txn, request, ob):
-        """Set some useful meta-information on the transaction. This
-        information is used by the undo framework, for example.
+        """See `zope.app.publication.zopepublication.ZopePublication`.
 
-        This method is not part of the `IPublication` interface, since
-        it's specific to this particular implementation.
+        We override the method to simply save the authenticated user id
+        in the transaction.
         """
         # It is possible that request.principal is None if the principal has
         # not been set yet.
-
         if request.principal is not None:
             txn.setUser(request.principal.id)
 
@@ -299,6 +297,30 @@ class LaunchpadBrowserPublication(
             request.setInWSGIEnvironment('launchpad.pageid', pageid)
 
         return mapply(ob, request.getPositionalArguments(), request)
+
+    def afterCall(self, request, ob):
+        """See `zope.publisher.interfaces.IPublication`.
+
+        Our implementation aborts() the transaction on read-only requests.
+        Because of this we cannot chain to the superclass and implement
+        the whole behaviour here.
+        """
+
+        # Annotate the transaction with user data. That was done by
+        # zope.app.publication.zopepublication.ZopePublication.
+        txn = transaction.get()
+        self.annotateTransaction(txn, request, ob)
+
+        # Abort the transaction on a read-only request.
+        if request.method in ['GET', 'HEAD']:
+            txn.abort()
+        else:
+            txn.commit()
+
+        # Don't render any content for a HEAD.  This was done
+        # by zope.app.publication.browser.BrowserPublication
+        if request.method == 'HEAD':
+            request.response.setResult('')
 
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
