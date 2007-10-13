@@ -385,7 +385,6 @@ This is for a team:
 
 >>> check("/~name18/+teamhierarchy")
 >>> check("/~name18/+edit", auth=True)
->>> check("/~name18/+editemail", auth=True)
 >>> check("/~name18/+members")
 >>> check("/~name18/+packages")
 >>> check("/~name18/+leave", auth=True)
@@ -439,7 +438,6 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/~sabdfl/+packages")
 
 >>> check("/+code")
->>> check("/+code/+portlet-importstats")
 >>> check("/+code/series", auth=True)
 >>> check("/+code/series/+bazaar-index", auth=True)
 

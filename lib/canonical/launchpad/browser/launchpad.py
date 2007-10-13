@@ -90,7 +90,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
-    LaunchpadFormView, Navigation, stepto, canonical_url, custom_widget)
+    LaunchpadFormView, Navigation, stepto, canonical_name, canonical_url,
+    custom_widget)
+from canonical.launchpad.webapp.interfaces import POSTToNonCanonicalURL
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI

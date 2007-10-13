@@ -93,7 +93,6 @@ class ShipItKUbuntuLayer(ShipItLayer):
 class ShipItEdUbuntuLayer(ShipItLayer):
     """The `ShipIt` for EdUbuntu layer."""
 
-
 class FeedsLayer(LaunchpadLayer):
-    """The `Feeds` Layer."""
+    """The `FeedsLayer` Layer."""
 

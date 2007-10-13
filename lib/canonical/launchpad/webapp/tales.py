@@ -48,6 +48,7 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.webapp.interfaces import (
     IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
+from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
@@ -357,6 +358,35 @@ class ObjectFormatterAPI:
             self._context, request, path_only_if_possible=True)
 
 
+class ObjectFormatterExtendedAPI(ObjectFormatterAPI):
+    """Adapter for any object to a formatted string.
+
+    Adds fmt:link which shows the icon and formatted string in an anchor.
+    """
+
+    implements(ITraversable)
+
+    allowed_names = set([
+        'url',
+        ])
+
+    def traverse(self, name, furtherPath):
+        if name == 'link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.link(extra_path)
+        elif name in self.allowed_names:
+            return getattr(self, name)()
+        else:
+            raise TraversalError, name
+
+    def link(self, extra_path):
+        """Return an HTML link to the person's page containing an icon
+        followed by the person's name.
+        """
+        raise NotImplemented
+
+
 class ObjectImageDisplayAPI:
     """Base class for producing the HTML that presents objects
     as an icon, a logo, a mugshot or a set of badges.
@@ -422,7 +452,7 @@ class ObjectImageDisplayAPI:
             return '/@@/meeting-mugshot'
         return '/@@/nyet-mugshot'
 
-    def icon(self):
+    def icon(self, rootsite = None):
         """Return the appropriate <img> tag for this object's icon."""
         context = self._context
         if context is None:
@@ -431,7 +461,11 @@ class ObjectImageDisplayAPI:
         if IHasIcon.providedBy(context) and context.icon is not None:
             url = context.icon.getURL()
         else:
-            url = self.default_icon_resource(context)
+            if rootsite is not None:
+                root_url = allvhosts.configs[rootsite].rooturl[:-1]
+            else:
+                root_url = ''
+            url = root_url + self.default_icon_resource(context)
         icon = '<img alt="" width="14" height="14" src="%s" />'
         return icon % url
 
@@ -640,7 +674,7 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
         return self.icon_template % (alt, title, source)
 
 
-class PersonFormatterAPI(ObjectFormatterAPI):
+class PersonFormatterAPI(ObjectFormatterExtendedAPI):
     """Adapter for IPerson objects to a formatted string."""
 
     implements(ITraversable)
@@ -650,46 +684,34 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         ])
 
     def traverse(self, name, furtherPath):
-        if name == 'link':
+        if name == 'link' or name[:5] == 'link:':
+            if name == 'link':
+                rootsite = None
+            else:
+                rootsite = name.split(':')[1]
             extra_path = '/'.join(reversed(furtherPath))
             del furtherPath[:]
-            return self.link(extra_path)
+            return self.link(extra_path, rootsite=rootsite)
         elif name in self.allowed_names:
             return getattr(self, name)()
         else:
             raise TraversalError, name
 
-    def link(self, extra_path):
+    def link(self, extra_path, rootsite=None):
         """Return an HTML link to the person's page containing an icon
         followed by the person's name.
         """
         person = self._context
-        url = canonical_url(person)
+        url = canonical_url(person, rootsite=rootsite)
         if extra_path:
             url = '%s/%s' % (url, extra_path)
-        image_html = ObjectImageDisplayAPI(person).icon()
+        image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
         return '<a href="%s">%s&nbsp;%s</a>' % (
             url, image_html, person.browsername)
 
 
-class BranchFormatterAPI(ObjectFormatterAPI):
+class BranchFormatterAPI(ObjectFormatterExtendedAPI):
     """Adapter for IBranch objects to a formatted string."""
-
-    implements(ITraversable)
-
-    allowed_names = set([
-        'url',
-        ])
-
-    def traverse(self, name, furtherPath):
-        if name == 'link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.link(extra_path)
-        elif name in self.allowed_names:
-            return getattr(self, name)()
-        else:
-            raise TraversalError, name
 
     def link(self, extra_path):
         """Return an HTML link to the branch page containing an icon
@@ -703,28 +725,27 @@ class BranchFormatterAPI(ObjectFormatterAPI):
                 '&nbsp;%s</a>' % (url, branch.displayname, branch.unique_name))
 
 
-class BugTaskFormatterAPI(ObjectFormatterAPI):
-    """Adapter for IBugTask objects to a formatted string."""
-
-    implements(ITraversable)
-
-    allowed_names = set([
-        'url',
-        ])
-
-    def traverse(self, name, furtherPath):
-        if name == 'link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.link(extra_path)
-        elif name in self.allowed_names:
-            return getattr(self, name)()
-        else:
-            raise TraversalError, name
+class BugFormatterAPI(ObjectFormatterExtendedAPI):
+    """Adapter for IBug objects to a formatted string."""
 
     def link(self, extra_path):
-        """Return an HTML link to the person's page containing an icon
-        followed by the person's name.
+        """Return an HTML link to the bug page containing an icon
+        followed by the bug's title.
+        """
+        bug = self._context
+        url = canonical_url(bug)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        return ('<a href="%s"><img src="/@@/bug" alt=""/>'
+                '&nbsp;Bug #%d: %s</a>' % (url, bug.id, bug.title))
+
+
+class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
+    """Adapter for IBugTask objects to a formatted string."""
+
+    def link(self, extra_path):
+        """Return an HTML link to the bug task's page containing an icon
+        appropriate to the importance of the bug task.
         """
         bugtask = self._context
         url = canonical_url(bugtask)

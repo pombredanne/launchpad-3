@@ -10,6 +10,12 @@
         <allow
             interface="canonical.launchpad.interfaces.IFeedsApplication" />
     </securedutility>
+    
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
+        for="canonical.launchpad.interfaces.IFeedsApplication"
+        factory="canonical.launchpad.browser.feeds.FeedsRootUrlData"
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IFeedsApplication"
@@ -23,14 +29,14 @@
         for="canonical.launchpad.interfaces.IFeedsApplication"
         name="+index"
         />
-
+<!--
     <browser:page
         for="canonical.launchpad.interfaces.IFeedsApplication"
         name="+index"
         permission="zope.Public"
         template="../templates/feeds-index.pt"
         />
-
+-->
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="FeedsNavigation"
@@ -49,5 +55,4 @@
         module="canonical.launchpad.feed"
         classes="BugFeed BugTargetBugsFeed PersonBugsFeed SearchBugsFeed"
         />
-
 </configure>
