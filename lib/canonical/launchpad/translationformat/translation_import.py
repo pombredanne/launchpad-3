@@ -52,6 +52,9 @@ class CurrentPOFileInDatabase:
         # dict indexed by (msgid, context) containing active
         # TranslationMessages: doing this for the speed
         self.messages = {}
+        # messages which have been seen in the file (used to expire
+        # all the rest)
+        self.seen = {}
 
         # contains published but inactive translations
         self.published = {}
@@ -128,24 +131,44 @@ class CurrentPOFileInDatabase:
             else:
                 message.fuzzy = False
 
+    def getUnseenMessages(self):
+        unseen = []
+        for (msgid, context) in self.messages:
+            if (msgid, context) not in self.seen:
+                unseen.append((msgid, context))
+        for (msgid, context) in self.published:
+            if ((msgid, context) not in self.messages and
+                (msgid, context) not in self.seen):
+                unseen.append((msgid, context))
+        return unseen
+
+    def _compareTwoMessages(self, msg1, msg2):
+        if ((msg1.msgid_plural != msg2.msgid_plural) or
+            (msg1.fuzzy != ('fuzzy' in msg2.flags))):
+            return False
+        if len(msg2.translations) < len(msg1.translations):
+            return False
+        for pluralform, translation in enumerate(msg2.translations):
+            if translation and len(msg1.translations) <= pluralform:
+                return False
+            elif translation != msg1.translations[pluralform]:
+                return False
+        return True
+
+
     def isAlreadyTranslatedTheSame(self, message):
         """Check whether this message is already translated in exactly
         the same way.
+
+        message can be active or inactive and published.  Inactive and
+        published messages are considered translated in the same way
+        iff...
         """
         (msgid, context) = (message.msgid, message.context)
+        self.seen[(msgid, context)] = True
         if (msgid, context) in self.messages:
             msg_in_db = self.messages[(msgid, context)]
-            if ((msg_in_db.msgid_plural != message.msgid_plural) or
-                (msg_in_db.fuzzy != ('fuzzy' in message.flags))):
-                return False
-            if len(message.translations) < len(msg_in_db.translations):
-                return False
-            for pluralform, translation in enumerate(message.translations):
-                if translation and len(msg_in_db.translations) <= pluralform:
-                    return False
-                elif translation != message.translations[pluralform]:
-                    return False
-            return True
+            return self._compareTwoMessages(msg_in_db, message)
         else:
             return False
 
@@ -157,17 +180,7 @@ class CurrentPOFileInDatabase:
         (msgid, context) = (message.msgid, message.context)
         if ((msgid, context) in self.published) and self.is_published:
             msg_in_db = self.published[(msgid, context)]
-            if ((msg_in_db.msgid_plural != message.msgid_plural) or
-                (msg_in_db.fuzzy != ('fuzzy' in message.flags))):
-                return False
-            if len(message.translations) < len(msg_in_db.translations):
-                return False
-            for pluralform, translation in enumerate(message.translations):
-                if translation and len(msg_in_db.translations) <= pluralform:
-                    return False
-                elif translation != message.translations[pluralform]:
-                    return False
-            return True
+            return self._compareTwoMessages(msg_in_db, message)
         else:
             return False
 
@@ -335,6 +348,7 @@ class TranslationImporter:
             if self.pofile is not None:
                 if (pofile_in_db.isAlreadyTranslatedTheSame(message) or
                     pofile_in_db.isAlreadyPublishedTheSame(message)):
+                    count += 1
                     continue
 
             # Add the msgid.
@@ -516,5 +530,15 @@ class TranslationImporter:
                 }
 
                 errors.append(error)
+
+        # Finally, lets expire messages which we have not seen in the new upload
+        if self.pofile is not None:
+            unseen = pofile_in_db.getUnseenMessages()
+            for unseen_message in unseen:
+                (msgid, context) = unseen_message
+                pomsgset = self.pofile.getPOMsgSet(key=msgid, context=context,
+                                                   only_current=False)
+                if pomsgset:
+                    pomsgset.sequence = 0
 
         return errors
