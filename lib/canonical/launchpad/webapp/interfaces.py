@@ -27,6 +27,13 @@ class UnexpectedFormData(AssertionError):
     """Got form data that is not what is expected by a form handler."""
 
 
+class POSTToNonCanonicalURL(UnexpectedFormData):
+    """Got a POST to an incorrect URL.
+
+    One example would be a URL containing uppercase letters.
+    """
+
+
 class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
     """Marker interface for the root object of Launchpad."""
 
