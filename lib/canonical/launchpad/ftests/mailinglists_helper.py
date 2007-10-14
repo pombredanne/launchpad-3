@@ -4,6 +4,7 @@
 
 __all__ = [
     'fault_catcher',
+    'get_alternative_email',
     'new_person',
     'new_team',
     'print_actions',
