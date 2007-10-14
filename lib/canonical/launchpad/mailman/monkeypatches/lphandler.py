@@ -36,7 +36,7 @@ def process(mlist, msg, msgdata):
     # The cache entry was missing or out of date, so check with Launchpad.
     proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
     try:
-        if proxy.isLaunchpadMember(sender):
+        if proxy.isRegisteredInLaunchpad(sender):
             status =_MEMBER
         else:
             status = _NOT_A_MEMBER

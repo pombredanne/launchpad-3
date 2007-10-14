@@ -40,9 +40,9 @@ class Server(smtpd.SMTPServer):
         msg = message_from_string(data)
         print >> self._mbox, msg
         print >> self._mbox
+        self._mbox.flush()
 
     def close(self):
-        self._mbox.flush()
         self._mbox.close()
 
 
