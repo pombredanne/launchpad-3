@@ -5,8 +5,11 @@
 Reset the database without having to 'make schema'.
 """
 
+import os
 import itest_helper
+
 from canonical.database.sqlbase import cursor
+from Mailman.mm_cfg import QUEUE_DIR
 
 
 def main():
@@ -37,6 +40,7 @@ def main():
     DELETE FROM Person
     WHERE id IN (SELECT id FROM DeathRow);
     """)
+    itest_helper.transactionmgr.commit()
     # Now delete any mailing lists still hanging around.  We don't care if
     # this fails because it means the list doesn't exist.
     for team_name in ('team-one', 'team-two', 'team-three'):
@@ -44,4 +48,8 @@ def main():
             itest_helper.run_mailman('./rmlist', '-a', team_name)
         except itest_helper.IntegrationTestFailure:
             pass
-    itest_helper.transactionmgr.commit()
+    # Clear out any qfiles hanging around from a previous run.
+    for dirpath, dirnames, filenames in os.walk(QUEUE_DIR):
+        for filename in filenames:
+            if os.path.splitext(filename)[1] == '.pck':
+                os.remove(os.path.join(dirpath, filename))

@@ -25,6 +25,7 @@ def mboxiter(mbox_filename):
     message = mbox.next()
     while message is not None:
         yield message
+        message = mbox.next()
 
 
 def get_temp_filename():
@@ -46,8 +47,6 @@ def size(filename):
 
 def file_has_grown(filename, last_size):
     def poll_function():
-        # The file will only grow in size when the discard message is logged
-        # to the logs/vette file.
         return size(filename) > last_size
     return poll_function
 
@@ -76,10 +75,10 @@ def exit_smtpd():
 
 
 def parent(mbox_filename):
-    # Get the size of the vette log file before it can grow due to the
+    # Get the size of a Mailman log file before it can grow due to the
     # following test.
-    vette_log_file = os.path.join(LOG_DIR, 'vette')
-    current_size = size(vette_log_file)
+    mailman_log_file = os.path.join(LOG_DIR, 'vette')
+    current_size = size(mailman_log_file)
     # Inject a message from a non-member into the Mailman incoming queue.
     # This should get discarded by the handler that assures the poster is a
     # Launchpad member.  We can tell this the fact that the mbox file will be
@@ -99,8 +98,8 @@ Hi, I am not a member of Launchpad (yet).
             './inject', '-l', 'team-one', message_filename)
     finally:
         os.remove(message_filename)
-    # Poll until the logs/vette file has grown.
-    itest_helper.poll(file_has_grown(vette_log_file, current_size))
+    # Poll until the log file has grown.
+    itest_helper.poll(file_has_grown(mailman_log_file, current_size))
     if os.path.getsize(mbox_filename) > 0:
         raise itest_helper.IntegrationTestFailure(
             'Unexpected mbox file contents')
@@ -123,17 +122,22 @@ Hi, I am a member of Launchpad.
     # This time, wait for the mbox file to grow, since it will contain the
     # posted message.
     itest_helper.poll(file_has_grown(mbox_filename, current_size))
-    # Read the message from the mbox file
+    # Read the message from the mbox file.  Because we are not personalizing
+    # delivery and because we have two .com recipients and one .org recipient,
+    # we should have exactly two copies of the message in the mbox file.
     messages = list(mboxiter(mbox_filename))
-    if len(messages) != 1:
-        raise IntegrationTestFailure('Unexpected mbox count: %s' %
-                                     len(messages))
+    if len(messages) != 2:
+        raise itest_helper.IntegrationTestFailure(
+            'Expected 2 message sin the mbox, got: %s' % len(messages))
+    if str(messages[0]) != str(messages[1]):
+        raise itest_helper.IntegrationTestFailure('Copies are different')
     message = messages[0]
-    if (message['subject'] != 'A member post' or
+    if (message['subject'] != '[Team-one] A member post' or
         message['from'] != 'aperson@example.org' or
         message['to'] != 'team-one@lists.launchpad.net'):
         # This is not the message we are looking for.
-        raise IntegrationTestFailure('Did not get the message we expected')
+        raise itest_helper.IntegrationTestFailure(
+            'Did not get the message we expected')
 
 
 def main():
