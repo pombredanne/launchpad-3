@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugExternalReferenceType',
     'IBugExternalRef',
     'IBugExternalRefSet',
     ]
@@ -15,6 +16,31 @@ from zope.schema import Datetime, Int, TextLine
 from canonical.launchpad.fields import Title
 from canonical.launchpad.interfaces.validation import valid_webref
 from canonical.launchpad import _
+
+from canonical.lazr import DBEnumeratedType, DBItem
+
+
+class BugExternalReferenceType(DBEnumeratedType):
+    """Bug External Reference Type
+
+    Malone allows external information references to be attached to
+    a bug. This schema lists the known types of external references.
+    """
+
+    CVE = DBItem(1, """
+        CVE Reference
+
+        This external reference is a CVE number, which means it
+        exists in the CVE database of security bugs.
+        """)
+
+    URL = DBItem(2, """
+        URL
+
+        This external reference is a URL. Typically that means it
+        is a reference to a web page or other internet resource
+        related to the bug.
+        """)
 
 
 class IBugExternalRef(Interface):

@@ -16,17 +16,16 @@ from zope.event import notify
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IAddBugTaskForm, IBug, IBugTaskSet, IBugTrackerSet,
-    IBugWatchSet, IDistributionSourcePackage, ILaunchBag, ILaunchpadCelebrities,
-    IProductSet, NoBugTrackerFound, validate_new_distrotask,
-    valid_upstreamtask)
+    BugTaskImportance, BugTaskStatus, IAddBugTaskForm, IBug, IBugTaskSet,
+    IBugTrackerSet, IBugWatchSet, IDistributionSourcePackage, ILaunchBag,
+    ILaunchpadCelebrities, IProductSet, NoBugTrackerFound,
+    validate_new_distrotask, valid_upstreamtask)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.validators import LaunchpadValidationError
 
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, LaunchpadFormView, LaunchpadView)
 
-from canonical.lp.dbschema import BugTaskImportance
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 

@@ -26,10 +26,10 @@ and SourceForge because there is only one instance (SourceForge.net).
 
   >>> for control in user_browser.getControl('Bug Tracker Type').controls:
   ...     print control.optionValue
-  Bugzilla
-  Roundup
-  Trac
-  Mantis
+  BUGZILLA
+  ROUNDUP
+  TRAC
+  MANTIS
 
 The bug tracker name is used in URLs and certain characters (like '!')
 aren't allowed.
@@ -89,15 +89,14 @@ bugtracker without them is acceptable.
   >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/+newbugtracker')
   >>> user_browser.getControl('Name').value = 'test-bugzilla'
   >>> user_browser.getControl('Title').value = 'Test Bugzilla'
-  >>> user_browser.getControl('Bug Tracker Type').value = ['Bugzilla']
+  >>> user_browser.getControl('Bug Tracker Type').value = ['BUGZILLA']
   >>> user_browser.getControl('Base URL').value = 'http://bugzilla.example.org/'
   >>> user_browser.getControl('Add').click()
   >>> user_browser.url
   'http://launchpad.dev/bugs/bugtrackers/test-bugzilla'
 
   >>> from zope.component import getUtility
-  >>> from canonical.lp.dbschema import BugTrackerType
-  >>> from canonical.launchpad.interfaces import IBugTrackerSet
+  >>> from canonical.launchpad.interfaces import BugTrackerType, IBugTrackerSet
   >>> from canonical.launchpad.ftests import login, logout
   >>> login('test@canonical.com')
   >>> bugtrackerset = getUtility(IBugTrackerSet)

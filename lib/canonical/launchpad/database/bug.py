@@ -21,10 +21,10 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    IBug, IBugSet, IBugWatchSet, ICveSet, ILaunchpadCelebrities,
-    IDistroBugTask, IDistroSeriesBugTask, ILibraryFileAliasSet,
-    IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroSeries,
-    IProductSeries, IProductSeriesBugTask, NominationError,
+    BugAttachmentType, IBug, IBugSet, IBugWatchSet, ICveSet,
+    ILaunchpadCelebrities, IDistroBugTask, IDistroSeriesBugTask,
+    ILibraryFileAliasSet, IBugAttachmentSet, IMessage, IUpstreamBugTask,
+    IDistroSeries, IProductSeries, IProductSeriesBugTask, NominationError,
     NominationSeriesObsoleteError, NotFoundError, IProduct, IDistribution,
     UNRESOLVED_BUGTASK_STATUSES,
     IBugBranch, ISourcePackage)
@@ -55,7 +55,7 @@ from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import BugAttachmentType, DistroSeriesStatus
+from canonical.lp.dbschema import DistroSeriesStatus
 
 
 _bug_tag_query_template = """

@@ -313,8 +313,7 @@ out to the bug notification recipient list. Let's create a CVE ref and
 attach it to the firefox_crashes bug that we've been using throughout
 this document:
 
-    >>> from canonical.launchpad.interfaces import ICveSet
-    >>> from canonical.lp.dbschema import CveStatus
+    >>> from canonical.launchpad.interfaces import CveStatus, ICveSet
     >>> cve = getUtility(ICveSet).new(sequence="2004-0276",
     ...     description="a brief CVE description", status=CveStatus.ENTRY)
     >>> from canonical.launchpad.database import Bug

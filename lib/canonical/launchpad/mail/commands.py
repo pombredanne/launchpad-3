@@ -13,7 +13,7 @@ from zope.schema import ValidationError
 
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
-        IProduct, IDistribution, IDistroSeries, IBug,
+        BugTaskImportance, IProduct, IDistribution, IDistroSeries, IBug,
         IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
         IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag,
         IBugTaskSet, IMessageSet, IDistroBugTask,
@@ -27,8 +27,6 @@ from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 
 from canonical.launchpad.webapp.snapshot import Snapshot
-
-from canonical.lp.dbschema import BugTaskImportance
 
 
 def get_error_message(filename, **interpolation_items):

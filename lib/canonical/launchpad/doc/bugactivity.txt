@@ -172,7 +172,7 @@ EVENT: upstream product assignment edited
 
 EVENT: source package infestation gets documented
 
-  >>> from canonical.lp.dbschema import BugInfestationStatus
+  >>> from canonical.launchpad.interfaces import BugInfestationStatus
   >>> right_now = UTC_NOW
   >>> package_infestation = BugPackageInfestation(
   ...     bug=bug.id, explicit=True, datecreated=right_now,

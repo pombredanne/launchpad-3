@@ -60,17 +60,15 @@ from canonical.launchpad.interfaces import (
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     BUG_CONTACT_BUGTASK_STATUSES,
+    BugNominationStatus,
     BugTaskStatus,
     BugTaskStatusSearch,
+    BugTaskImportance,
     )
 from canonical.launchpad.helpers import shortlist
 # XXX: kiko 2006-06-14 bug=49029
 
-from canonical.lp.dbschema import (
-    BugNominationStatus,
-    BugTaskImportance,
-    PackagePublishingStatus,
-    )
+from canonical.lp.dbschema import PackagePublishingStatus
 
 
 debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,

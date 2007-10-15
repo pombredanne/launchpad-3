@@ -23,18 +23,9 @@ __all__ = (
 'BinaryPackageFileType',
 'BinaryPackageFormat',
 'BranchReviewStatus',
-'BugBranchStatus',
-'BugNominationStatus',
-'BugAttachmentType',
-'BugTrackerType',
-'BugExternalReferenceType',
-'BugInfestationStatus',
-'BugRelationship',
-'BugTaskImportance',
 'BuildStatus',
 'CodereleaseRelationships',
 'CodeImportReviewStatus',
-'CveStatus',
 'DistroSeriesStatus',
 'ImportTestStatus',
 'ImportStatus',
@@ -57,6 +48,46 @@ __all__ = (
 
 from canonical.lazr import DBEnumeratedType as DBSchema
 from canonical.lazr import DBItem as Item
+
+
+class ArchivePurpose(DBSchema):
+    """The purpose, or type, of an archive.
+
+    A distribution can be associated with different archives and this
+    schema item enumerates the different archive types and their purpose.
+    For example, old distro releases may need to be obsoleted so their
+    archive would be OBSOLETE_ARCHIVE.
+    """
+
+    PRIMARY = Item(1, """
+        Primary Archive
+
+        This is the primary Ubuntu archive.
+        """)
+
+    PPA = Item(2, """
+        PPA Archive
+
+        This is a Personal Package Archive.
+        """)
+
+    EMBARGOED = Item(3, """
+        Embargoed Archive
+
+        This is the archive for embargoed packages.
+        """)
+
+    PARTNER = Item(4, """
+        Partner Archive
+
+        This is the archive for partner packages.
+        """)
+
+    OBSOLETE = Item(5, """
+        Obsolete Archive
+
+        This is the archive for obsolete packages.
+        """)
 
 
 class BinaryPackageFormat(DBSchema):
@@ -121,119 +152,59 @@ class ImportTestStatus(DBSchema):
         The sourcesource was successfully imported by the autotester.
         """)
 
-class BugTrackerType(DBSchema):
-    """The Types of BugTracker Supported by Launchpad
 
-    This enum is used to differentiate between the different types of Bug
-    Tracker that are supported by Malone in the Launchpad.
+class ProjectStatus(DBSchema):
+    """A Project Status
+
+    This is an enum of the values that Project.status can assume.
+    Essentially it indicates whether or not this project has been reviewed,
+    and if it has whether or not it passed review and should be considered
+    active.
     """
 
-    BUGZILLA = Item(1, """
-        Bugzilla
+    NEW = Item(1, """
+        New
 
-        The godfather of open source bug tracking, the Bugzilla system was
-        developed for the Mozilla project and is now in widespread use. It
-        is big and ugly but also comprehensive.
+        This project is new and has not been reviewed.
         """)
 
-    DEBBUGS = Item(2, """
-        Debbugs
+    ACTIVE = Item(2, """
+        Active
 
-        The debbugs tracker is email based, and allows you to treat every
-        bug like a small mailing list.
-        """)
+        This Project has been reviewed and is considered active in the
+        launchpad.""")
 
-    ROUNDUP = Item(3, """
-        Roundup
+    DISABLED = Item(3, """
+        Disabled
 
-        Roundup is a lightweight, customisable and fast web/email based bug
-        tracker written in Python.
-        """)
-
-    TRAC = Item(4, """
-        Trac
-
-        Trac is an enhanced wiki and issue tracking system for
-        software development projects.
-        """)
-
-    SOURCEFORGE = Item(5, """
-        SourceForge
-
-        SourceForge is a project hosting service which includes bug,
-        support and request tracking.
-        """)
-
-    MANTIS = Item(6, """
-        Mantis
-
-        Mantis is a web-based bug tracking system written in PHP.
-        """)
+        This project has been reviewed, and has been disabled. Typically
+        this is because the contents appear to be bogus. Such a project
+        should not show up in searches etc.""")
 
 
-class CveStatus(DBSchema):
-    """The Status of this item in the CVE Database
+class ProjectRelationship(DBSchema):
+    """Project Relationship
 
-    When a potential problem is reported to the CVE authorities they assign
-    a CAN number to it. At a later stage, that may be converted into a CVE
-    number. This indicator tells us whether or not the issue is believed to
-    be a CAN or a CVE.
+    Launchpad tracks different open source projects, and the relationships
+    between them. This schema is used to describe the relationship between
+    two open source projects.
     """
 
-    CANDIDATE = Item(1, """
-        Candidate
+    AGGREGATES = Item(1, """
+        Subject Project Aggregates Object Project
 
-        The vulnerability is a candidate, it has not yet been confirmed and
-        given "Entry" status.
+        Some open source projects are in fact an aggregation of several
+        other projects. For example, the Gnome Project aggregates
+        Gnumeric, Abiword, EOG, and many other open source projects.
         """)
 
-    ENTRY = Item(2, """
-        Entry
+    SIMILAR = Item(2, """
+        Subject Project is Similar to Object Project
 
-        This vulnerability or threat has been assigned a CVE number, and is
-        fully documented. It has been through the full CVE verification
-        process.
-        """)
-
-    DEPRECATED = Item(3, """
-        Deprecated
-
-        This entry is deprecated, and should no longer be referred to in
-        general correspondence. There is either a newer entry that better
-        defines the problem, or the original candidate was never promoted to
-        "Entry" status.
-        """)
-
-
-class BugBranchStatus(DBSchema):
-    """The status of a bugfix branch."""
-
-    ABANDONED = Item(10, """
-        Abandoned Attempt
-
-        A fix for this bug is no longer being worked on in this
-        branch.
-        """)
-
-    INPROGRESS = Item(20, """
-        Fix In Progress
-
-        Development to fix this bug is currently going on in this
-        branch.
-        """)
-
-    FIXAVAILABLE = Item(30, """
-        Fix Available
-
-        This branch contains a potentially useful fix for this bug.
-        """)
-
-    BESTFIX = Item(40, """
-        Best Fix Available
-
-        This branch contains a fix agreed upon by the community as
-        being the best available branch from which to merge to fix
-        this bug.
+        Often two different groups will start open source projects
+        that are similar to one another. This relationship is used
+        to describe projects that are similar to other projects in
+        the system.
         """)
 
 
@@ -875,61 +846,6 @@ class CodeImportReviewStatus(DBSchema):
     processed.""")
 
 
-class BugInfestationStatus(DBSchema):
-    """Bug Infestation Status
-
-    Malone is the bug tracking application that is part of Launchpad. It
-    tracks the status of bugs in different distributions as well as
-    upstream. This schema documents the kinds of infestation of a bug
-    in a coderelease.
-    """
-
-    AFFECTED = Item(60, """
-        Affected
-
-        It is believed that this bug affects that coderelease. The
-        verifiedby field will indicate whether that has been verified
-        by a package maintainer.
-        """)
-
-    DORMANT = Item(50, """
-        Dormant
-
-        The bug exists in the code of this coderelease, but it is dormant
-        because that codepath is unused in this release.
-        """)
-
-    VICTIMIZED = Item(40, """
-        Victimized
-
-        This code release does not actually contain the buggy code, but
-        it is affected by the bug nonetheless because of the way it
-        interacts with the products or packages that are actually buggy.
-        Often users will report a bug against the package which displays
-        the symptoms when the bug itself lies elsewhere.
-        """)
-
-    FIXED = Item(30, """
-        Fixed
-
-        It is believed that the bug is actually fixed in this release of code.
-        Setting the "fixed" flag allows us to generate lists of bugs fixed
-        in a release.
-        """)
-
-    UNAFFECTED = Item(20, """
-        Unaffected
-
-        It is believed that this bug does not infest this release of code.
-        """)
-
-    UNKNOWN = Item(10, """
-        Unknown
-
-        We don't know if this bug infests that coderelease.
-        """)
-
-
 class BranchReviewStatus(DBSchema):
     """Branch Review Cycle
 
@@ -977,156 +893,6 @@ class BranchReviewStatus(DBSchema):
 
         The reviewer is satisfied that the branch can be merged without
         further changes.
-        """)
-
-
-class BugNominationStatus(DBSchema):
-    """Bug Nomination Status
-
-    The status of the decision to fix a bug in a specific release.
-    """
-
-    PROPOSED = Item(10, """
-        Nominated
-
-        This nomination hasn't yet been reviewed, or is still under
-        review.
-        """)
-
-    APPROVED = Item(20, """
-        Approved
-
-        The release management team has approved fixing the bug for this
-        release.
-        """)
-
-    DECLINED = Item(30, """
-        Declined
-
-        The release management team has declined fixing the bug for this
-        release.
-        """)
-
-
-class BugTaskImportance(DBSchema):
-    """Bug Task Importance
-
-    Importance is used by developers and their managers to indicate how
-    important fixing a bug is. Importance is typically a combination of the
-    harm caused by the bug, and how often it is encountered.
-    """
-
-    UNKNOWN = Item(999, """
-        Unknown
-
-        The severity of this bug task is unknown.
-        """)
-
-    CRITICAL = Item(50, """
-        Critical
-
-        This bug is essential to fix as soon as possible. It affects
-        system stability, data integrity and / or remote access
-        security.
-        """)
-
-    HIGH = Item(40, """
-        High
-
-        This bug needs urgent attention from the maintainer or
-        upstream. It affects local system security or data integrity.
-        """)
-
-    MEDIUM = Item(30, """
-        Medium
-
-        This bug warrants an upload just to fix it, but can be put
-        off until other major or critical bugs have been fixed.
-        """)
-
-    LOW = Item(20, """
-        Low
-
-        This bug does not warrant an upload just to fix it, but
-        should if possible be fixed when next the maintainer does an
-        upload. For example, it might be a typo in a document.
-        """)
-
-    WISHLIST = Item(10, """
-        Wishlist
-
-        This is not a bug, but is a request for an enhancement or
-        new feature that does not yet exist in the package. It does
-        not affect system stability, it might be a usability or
-        documentation fix.
-        """)
-
-    UNDECIDED = Item(5, """
-        Undecided
-
-        A relevant developer or manager has not yet decided how
-        important this bug is.
-        """)
-
-
-class BugExternalReferenceType(DBSchema):
-    """Bug External Reference Type
-
-    Malone allows external information references to be attached to
-    a bug. This schema lists the known types of external references.
-    """
-
-    CVE = Item(1, """
-        CVE Reference
-
-        This external reference is a CVE number, which means it
-        exists in the CVE database of security bugs.
-        """)
-
-    URL = Item(2, """
-        URL
-
-        This external reference is a URL. Typically that means it
-        is a reference to a web page or other internet resource
-        related to the bug.
-        """)
-
-
-class BugRelationship(DBSchema):
-    """Bug Relationship
-
-    Malone allows for rich relationships between bugs to be specified,
-    and this schema lists the types of relationships supported.
-    """
-
-    RELATED = Item(1, """
-        Related Bug
-
-        This indicates that the subject and object bugs are related in
-        some way. The order does not matter. When displaying one bug, it
-        would be appropriate to list the other bugs which are related to it.
-        """)
-
-
-class BugAttachmentType(DBSchema):
-    """Bug Attachment Type.
-
-    An attachment to a bug can be of different types, since for example
-    a patch is more important than a screenshot. This schema describes the
-    different types.
-    """
-
-    PATCH = Item(1, """
-        Patch
-
-        This is a patch that potentially fixes the bug.
-        """)
-
-    UNSPECIFIED = Item(2, """
-        Unspecified
-
-        This is everything else. It can be a screenshot, a log file, a core
-        dump, etc. Basically anything that adds more information to the bug.
         """)
 
 
@@ -1210,41 +976,17 @@ class BuildStatus(DBSchema):
         """)
 
 
-class ArchivePurpose(DBSchema):
-    """The purpose, or type, of an archive.
+class UpstreamReleaseVersionStyle(DBSchema):
+    """Upstream Release Version Style
 
-    A distribution can be associated with different archives and this
-    schema item enumerates the different archive types and their purpose.
-    For example, old distro releases may need to be obsoleted so their
-    archive would be OBSOLETE_ARCHIVE.
+    Sourcerer will actively look for new upstream releases, and it needs
+    to know roughly what version numbering format upstream uses. The
+    release version number schemes understood by Sourcerer are documented
+    in this schema. XXX andrew please fill in!
     """
 
-    PRIMARY = Item(1, """
-        Primary Archive
+    GNU = Item(1, """
+        GNU-style Version Numbers
 
-        This is the primary Ubuntu archive.
-        """)
-
-    PPA = Item(2, """
-        PPA Archive
-
-        This is a Personal Package Archive.
-        """)
-
-    EMBARGOED = Item(3, """
-        Embargoed Archive
-
-        This is the archive for embargoed packages.
-        """)
-
-    PARTNER = Item(4, """
-        Partner Archive
-
-        This is the archive for partner packages.
-        """)
-
-    OBSOLETE = Item(5, """
-        Obsolete Archive
-
-        This is the archive for obsolete packages.
+        XXX Andrew need description here
         """)

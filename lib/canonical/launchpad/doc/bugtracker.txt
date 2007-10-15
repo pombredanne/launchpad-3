@@ -134,8 +134,8 @@ timeout and call the checkwatches cronscript machinery directly.
 First, we create some bug watches to test with:
 
     >>> from canonical.launchpad.database import BugTracker
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
-    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, IBugSet, IPersonSet)
     >>> from canonical.launchpad.scripts.checkwatches import (
     ...     BugWatchUpdater)
 

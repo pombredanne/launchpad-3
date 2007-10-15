@@ -5,20 +5,45 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugAttachmentType',
     'IBugAttachment',
     'IBugAttachmentSet',
     'IBugAttachmentEditForm',
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Object, Choice, Int, TextLine, Text, Bytes, Bool
+from zope.schema import Object, Choice, Int, TextLine, Bool
 
-from canonical.lp import dbschema
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.launchpad import IHasBug
 
 from canonical.launchpad.fields import Title
 from canonical.launchpad import _
+
+from canonical.lazr import DBEnumeratedType, DBItem
+
+
+class BugAttachmentType(DBEnumeratedType):
+    """Bug Attachment Type.
+
+    An attachment to a bug can be of different types, since for example
+    a patch is more important than a screenshot. This schema describes the
+    different types.
+    """
+
+    PATCH = DBItem(1, """
+        Patch
+
+        This is a patch that potentially fixes the bug.
+        """)
+
+    UNSPECIFIED = DBItem(2, """
+        Unspecified
+
+        This is everything else. It can be a screenshot, a log file, a core
+        dump, etc. Basically anything that adds more information to the bug.
+        """)
+
 
 class IBugAttachment(IHasBug):
     """A file attachment to an IBug."""
@@ -29,8 +54,8 @@ class IBugAttachment(IHasBug):
         title=_('Attachment Type'),
         description=_(
             'The type of the attachment, for example Patch or Unspecified.'),
-        vocabulary="BugAttachmentType",
-        default=dbschema.BugAttachmentType.UNSPECIFIED,
+        vocabulary=BugAttachmentType,
+        default=BugAttachmentType.UNSPECIFIED,
         required=True)
     title = Title(
         title=_('Title'),

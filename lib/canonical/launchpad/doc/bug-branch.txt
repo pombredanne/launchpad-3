@@ -46,7 +46,7 @@ sample data.
 
 By default, a bug branch is in the state BugBranchStatus.INPROGRESS.
 
-    >>> from canonical.lp.dbschema import BugBranchStatus
+    >>> from canonical.launchpad.interfaces import BugBranchStatus
 
     >>> bug_branch.status == BugBranchStatus.INPROGRESS
     True

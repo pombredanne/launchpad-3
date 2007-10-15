@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CveStatus',
     'ICve',
     'ICveSet',
     ]
@@ -14,7 +15,42 @@ from zope.schema import Choice, Datetime, Int, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.validation import valid_cve_sequence
-from canonical.lp.dbschema import CveStatus
+
+from canonical.lazr import DBEnumeratedType, DBItem
+
+
+class CveStatus(DBEnumeratedType):
+    """The Status of this item in the CVE Database
+
+    When a potential problem is reported to the CVE authorities they assign
+    a CAN number to it. At a later stage, that may be converted into a CVE
+    number. This indicator tells us whether or not the issue is believed to
+    be a CAN or a CVE.
+    """
+
+    CANDIDATE = DBItem(1, """
+        Candidate
+
+        The vulnerability is a candidate, it has not yet been confirmed and
+        given "Entry" status.
+        """)
+
+    ENTRY = DBItem(2, """
+        Entry
+
+        This vulnerability or threat has been assigned a CVE number, and is
+        fully documented. It has been through the full CVE verification
+        process.
+        """)
+
+    DEPRECATED = DBItem(3, """
+        Deprecated
+
+        This entry is deprecated, and should no longer be referred to in
+        general correspondence. There is either a newer entry that better
+        defines the problem, or the original candidate was never promoted to
+        "Entry" status.
+        """)
 
 
 class ICve(Interface):

@@ -16,9 +16,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import BugBranchStatus
-
-from canonical.launchpad.interfaces import IBugBranch, IBugBranchSet
+from canonical.launchpad.interfaces import (
+    BugBranchStatus, IBugBranch, IBugBranchSet)
 
 
 class BugBranch(SQLBase):
