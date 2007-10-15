@@ -11,7 +11,7 @@
 
   <div metal:use-macro="context/@@launchpad_form/form">
     <tal:confirmation metal:fill-slot="extra_info"
-                      condition="view/should_show_confirmation_message" > 
+                      condition="view/should_show_confirmation_message">
       <p>Are you sure you want to merge
         <strong tal:content="view/dupe_person/unique_displayname">
           name12

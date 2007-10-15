@@ -1,9 +1,9 @@
 = Merging people or teams =
 
-Launchpad admins can merge any two people or teams, without the need of any
-email address confirmation or something like that.  There's one page for
-merging people and another one for merging teams, which obviously are only
-accessible to LP admins.
+Launchpad admins can merge any two people or teams, without the need of
+any email address confirmation or something like that.  There's one page
+for merging people and another one for merging teams, which obviously
+are only accessible to LP admins.
 
     >>> user_browser.open('http://launchpad.dev/people/+adminpeoplemerge')
     Traceback (most recent call last):
@@ -14,9 +14,9 @@ accessible to LP admins.
     ...
     Unauthorized: ...
 
-When there are email addresses associated with the person/team being merged
-into another one, a notification is shown to inform the user these emails
-are going to be transfered.
+When there are email addresses associated with the person/team being
+merged into another one, a notification is shown to inform the user
+these emails are going to be transferred.
 
     >>> admin_browser.open('http://launchpad.dev/people/+adminpeoplemerge')
     >>> admin_browser.getControl('Duplicated Person').value = 'spiv'
@@ -50,8 +50,8 @@ If the user confirms, spiv will be merged into salgado.
     >>> logout()
 
 As said before, there's a separate page for merging teams.  In this case
-there's no email addresses to be transfered, so the merge is done without
-asking the user for confirmation.
+there's no email addresses to be transferred, so the merge is done
+without asking the user for confirmation.
 
     >>> admin_browser.open('http://launchpad.dev/people/+adminteammerge')
     >>> admin_browser.getControl('Duplicated Team').value = (
@@ -68,8 +68,8 @@ asking the user for confirmation.
     >>> landscape.merged.name
     u'guadamen'
 
-If the duplicated team is associated to mailing list, it can't be merged,
-though.
+If the duplicated team is associated to mailing list, it can't be
+merged, though.
 
     >>> guadamen = person_set.getByName('guadamen')
     >>> mailing_list = getUtility(IMailingListSet).new(guadamen)

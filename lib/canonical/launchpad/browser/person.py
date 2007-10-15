@@ -100,7 +100,7 @@ from zope.app.form.browser import SelectWidget, TextAreaWidget
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.interfaces import (
-        IInputWidget, ConversionError, WidgetInputError)
+    ConversionError, IInputWidget, WidgetInputError)
 from zope.app.session.interfaces import ISession
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.event import notify
@@ -117,19 +117,19 @@ from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    ISSHKeySet, IPersonSet, IEmailAddressSet, IWikiNameSet, ICountry,
-    IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
-    ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
-    ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
-    IPerson, ICalendarOwner, ITeam, IPollSet, IAdminPeopleMergeSchema,
-    NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
-    GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
-    IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    BugTaskStatus, BugTaskSearchParams, IBranchSet, ITeamMembership,
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, LoginTokenType, SSHKeyType,
-    EmailAddressStatus, TeamMembershipStatus, TeamSubscriptionPolicy,
-    PersonCreationRationale, TeamMembershipRenewalPolicy,
-    QuestionParticipation, IAdminTeamMergeSchema, IMailingListSet)
+    BugTaskSearchParams, BugTaskStatus, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+    EmailAddressStatus, GPGKeyNotFoundError, IAdminPeopleMergeSchema,
+    IAdminTeamMergeSchema, IBranchSet, ICalendarOwner, ICountry,
+    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
+    ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson,
+    IObjectReassignment, IPasswordEncryptor, IPerson, IPersonChangePassword,
+    IPersonClaim, IPersonSet, IPollSet, IPollSubset, IPOTemplateSet,
+    IRequestPreferredLanguages, ISignedCodeOfConductSet, ISSHKeySet, ITeam,
+    ITeamMembership, ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
+    LoginTokenType, NotFoundError, PersonCreationRationale,
+    QuestionParticipation, SSHKeyType, TeamMembershipRenewalPolicy,
+    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
+    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -141,7 +141,7 @@ from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
-from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
+from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
 
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
@@ -153,10 +153,9 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, ContextMenu,
-    ApplicationMenu, enabled_with_permission, Navigation, stepto,
-    stepthrough, smartquote, LaunchpadEditFormView, LaunchpadFormView,
-    action, custom_widget)
+    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
+    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView, 
+    Link, Navigation, smartquote, StandardLaunchpadFacets, stepthrough, stepto)
 
 from canonical.launchpad import _
 
@@ -632,8 +631,8 @@ class PersonBugsMenu(ApplicationMenu):
 
     def softwarebugs(self):
         text = 'Show package report'
-        summary = 'A summary report for packages where %s is a bug contact.' % \
-            self.context.displayname
+        summary = ('A summary report for packages where %s is a bug contact.'
+                   % self.context.displayname)
         return Link('+packagebugs', text, summary=summary)
 
     def reportedbugs(self):
@@ -643,21 +642,21 @@ class PersonBugsMenu(ApplicationMenu):
 
     def subscribedbugs(self):
         text = 'List subscribed bugs'
-        summary = 'Lists bug reports %s is subscribed to.' % \
-            self.context.displayname
+        summary = ('Lists bug reports %s is subscribed to.'
+                   % self.context.displayname)
         return Link('+subscribedbugs', text, summary=summary)
 
     def mentoring(self):
         text = 'Mentoring offered'
-        summary = 'Lists bugs for which %s has offered to mentor someone.' % \
-            self.context.displayname
+        summary = ('Lists bugs for which %s has offered to mentor someone.'
+                   % self.context.displayname)
         enabled = self.context.mentoring_offers
         return Link('+mentoring', text, enabled=enabled, summary=summary)
 
     def commentedbugs(self):
         text = 'List commented bugs'
-        summary = 'Lists bug reports on which %s has commented.' % \
-            self.context.displayname
+        summary = ('Lists bug reports on which %s has commented.'
+                   % self.context.displayname)
         return Link('+commentedbugs', text, summary=summary)
 
 
@@ -1427,8 +1426,8 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
             # We must UTF-8 encode searchtext to play nicely with
             # urllib.urlencode, because it may contain non-ASCII characters.
             if extra_params.has_key("field.searchtext"):
-                extra_params["field.searchtext"] = \
-                    extra_params["field.searchtext"].encode("utf8")
+                extra_params["field.searchtext"] = (
+                    extra_params["field.searchtext"].encode("utf8"))
 
             params.update(extra_params)
 
@@ -2728,11 +2727,11 @@ class PersonEditEmailsView:
 
         emailset = getUtility(IEmailAddressSet)
         emailaddress = emailset.getByEmail(email)
-        assert emailaddress.person.id == self.context.id, \
-                "differing ids in emailaddress.person.id(%s,%d) == " \
-                "self.context.id(%s,%d) (%s)" % \
-                (emailaddress.person.name, emailaddress.person.id,
-                 self.context.name, self.context.id, emailaddress.email)
+        assert emailaddress.person.id == self.context.id, (
+                "differing ids in emailaddress.person.id(%s,%d) == "
+                "self.context.id(%s,%d) (%s)"
+                % (emailaddress.person.name, emailaddress.person.id,
+                   self.context.name, self.context.id, emailaddress.email))
 
         if emailaddress.status != EmailAddressStatus.VALIDATED:
             self.message = (
@@ -2797,6 +2796,7 @@ class AdminMergeBaseView(LaunchpadFormView):
     target_person = None
 
     def validate(self, data):
+        """Check that user is not attempting to merge a person into itself."""
         dupe_person = data.get('dupe_person')
         target_person = data.get('target_person')
         if dupe_person == target_person and dupe_person is not None:
@@ -2805,6 +2805,11 @@ class AdminMergeBaseView(LaunchpadFormView):
 
     @action('Merge', name='merge')
     def merge_action(self, action, data):
+        """Merge the two person/team entries specified in the form.
+
+        If the duplicated person has email addresses associated with, we'll
+        ask for confirmation before actually performing the merge.
+        """
         emailset = getUtility(IEmailAddressSet)
         self.dupe_person = data['dupe_person']
         self.target_person = data['target_person']
@@ -2816,6 +2821,7 @@ class AdminMergeBaseView(LaunchpadFormView):
         for email in self.dupe_person_emails:
             # XXX: Maybe this status change should be done only when merging
             # people but not when merging teams.
+            # -- Guilherme Salgado, 2007-10-15
             email.status = EmailAddressStatus.NEW
             email.person = self.target_person
         getUtility(IPersonSet).merge(self.dupe_person, self.target_person)
@@ -2836,6 +2842,7 @@ class AdminTeamMergeView(AdminMergeBaseView):
     schema = IAdminTeamMergeSchema
 
     def validate(self, data):
+        """Check there are no mailing lists associated with the dupe team."""
         super(AdminTeamMergeView, self).validate(data)
         mailing_list = getUtility(IMailingListSet).get(
             data['dupe_person'].name)

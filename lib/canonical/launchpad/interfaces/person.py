@@ -1334,11 +1334,11 @@ class IPersonSet(Interface):
     def merge(from_person, to_person):
         """Merge a person into another.
 
-        The old user (from_person) will be left as an atavism
+        The old user (from_person) will be left as an atavism.
 
         We are not yet game to delete the `from_person` entry from the
         database yet. We will let it roll for a while and see what cruft
-        develops -- StuartBishop 20050812
+        develops. -- StuartBishop 20050812
         """
 
     def getTranslatorsByLanguage(language):
@@ -1365,12 +1365,12 @@ class IAdminPeopleMergeSchema(Interface):
     dupe_person = Choice(
         title=_('Duplicated Person'), required=True,
         vocabulary='PersonAccountToMerge',
-        description=_("The duplicated person found in Launchpad"))
+        description=_("The duplicated person found in Launchpad."))
 
     target_person = Choice(
         title=_('Target Person'), required=True,
         vocabulary='PersonAccountToMerge',
-        description=_("The person to be merged on"))
+        description=_("The person to be merged on."))
 
 
 class IAdminTeamMergeSchema(Interface):
@@ -1378,11 +1378,11 @@ class IAdminTeamMergeSchema(Interface):
 
     dupe_person = Choice(
         title=_('Duplicated Team'), required=True, vocabulary='ValidTeam',
-        description=_("The duplicated team found in Launchpad"))
+        description=_("The duplicated team found in Launchpad."))
 
     target_person = Choice(
         title=_('Target Team'), required=True, vocabulary='ValidTeam',
-        description=_("The team to be merged on"))
+        description=_("The team to be merged on."))
 
 
 class IObjectReassignment(Interface):

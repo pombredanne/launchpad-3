@@ -176,31 +176,63 @@ merged accounts from lists etc.
     >>> cur.fetchone()[0] is None
     True
 
+
 == Merging teams ==
 
 Merging of teams is also possible and uses the same API used for merging
-people.  Note, though, that when merging teams, its members and polls will
-not be carried over to the remaining team.  Team memberships, on the other
-hand, are carried over just like when merging people.
+people.  Note, though, that when merging teams, its members and polls
+will not be carried over to the remaining team.  Team memberships, on
+the other hand, are carried over just like when merging people.
 
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> from canonical.launchpad.interfaces import IPollSubset, PollSecrecy
     >>> guadamen = personset.getByName('guadamen')
+    >>> launchpad_devs = personset.getByName('launchpad')
+    >>> launchpad_devs.addMember(
+    ...     guadamen, reviewer=launchpad_devs.teamowner, force_team_add=True)
+    >>> today = datetime.now(pytz.timezone('UTC'))
+    >>> tomorrow = today + timedelta(days=1)
+    >>> poll = IPollSubset(guadamen).new(
+    ...     'test-poll', 'Title', 'Proposition', today, tomorrow,
+    ...     PollSecrecy.OPEN, allowspoilt=True)
+
+    # Guadamen has a superteam, 4 members and a single poll.
+    >>> [team.name for team in guadamen.getSuperTeams()]
+    [u'launchpad']
     >>> guadamen.teamowner.name
     u'name16'
     >>> [member.name for member in guadamen.allmembers]
     [u'name16', u'launchpad-beta-owner', u'launchpad-beta-testers',
      u'ubuntu-team']
+    >>> list(IPollSubset(guadamen).getAll())
+    [<Poll at ...]
+
+    # Landscape-developers has no super teams, two members and no polls.
     >>> landscape = personset.getByName('landscape-developers')
+    >>> [team.name for team in landscape.getSuperTeams()]
+    []
     >>> landscape.teamowner.name
     u'name12'
     >>> [member.name for member in landscape.allmembers]
     [u'salgado', u'name12']
+    >>> list(IPollSubset(landscape).getAll())
+    []
 
+    # Do the actual merge!
     >>> personset.merge(guadamen, landscape)
 
+    # The resulting Landscape-developers has now a super team, but has
+    # no polls and its members are still the same two from before the
+    # merge.
     >>> landscape.teamowner.name
     u'name12'
     >>> [member.name for member in landscape.allmembers]
     [u'salgado', u'name12']
+    >>> [team.name for team in landscape.getSuperTeams()]
+    [u'launchpad']
+    >>> list(IPollSubset(landscape).getAll())
+    []
 
 A team can't be merged into another one if it has an associated mailing
 list.  This is for the sole reason that it's very unlikely to happen and
