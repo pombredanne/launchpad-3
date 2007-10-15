@@ -323,9 +323,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
-                          SpecificationDefinitionStatus.SUPERSEDED)
+            query += (' AND Specification.definition_status NOT IN ( %s, %s ) '
+                      % sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                                  SpecificationDefinitionStatus.SUPERSEDED))
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -423,8 +423,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         elif self.rcstype == RevisionControlSystems.SVN:
             self.syncinterval = datetime.timedelta(hours=6)
         else:
-            raise AssertionError('Unknown default sync interval for rcs type: %s'
-                                 % self.rcstype.title)
+            raise AssertionError(
+                'Unknown default sync interval for rcs type: %s'
+                % self.rcstype.title)
         self.importstatus = ImportStatus.PROCESSING
 
     def markTestFailed(self):
@@ -555,10 +556,6 @@ class ProductSeriesSet:
         query = self.composeQueryString(text, importstatus)
         return ProductSeries.select(
             query, distinct=True, clauseTables=['Product', 'Project'])
-
-    def importcount(self, status=None):
-        """See `IProductSeriesSet`."""
-        return self.searchImports(importstatus=status).count()
 
     def composeQueryString(self, text=None, importstatus=None):
         """Build SQL "where" clause for `ProductSeries` search.

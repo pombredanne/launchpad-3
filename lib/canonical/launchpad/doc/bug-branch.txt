@@ -17,7 +17,7 @@ and when fixes are committed.
 BugBranch links a bug and a branch.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBranchSet)
+    ...     BugBranchStatus, IBugSet, IBranchSet)
     >>> from canonical.database.sqlbase import flush_database_updates
 
     >>> login("no-priv@canonical.com")
@@ -45,8 +45,6 @@ sample data.
     [u'release-0.9.2']
 
 By default, a bug branch is in the state BugBranchStatus.INPROGRESS.
-
-    >>> from canonical.launchpad.interfaces import BugBranchStatus
 
     >>> bug_branch.status == BugBranchStatus.INPROGRESS
     True

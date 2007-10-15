@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
@@ -21,13 +22,12 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, IBug, IBugSet, IBugWatchSet, ICveSet,
-    ILaunchpadCelebrities, IDistroBugTask, IDistroSeriesBugTask,
-    ILibraryFileAliasSet, IBugAttachmentSet, IMessage, IUpstreamBugTask,
-    IDistroSeries, IProductSeries, IProductSeriesBugTask, NominationError,
-    NominationSeriesObsoleteError, NotFoundError, IProduct, IDistribution,
-    UNRESOLVED_BUGTASK_STATUSES,
-    IBugBranch, ISourcePackage)
+    BugAttachmentType, IBug, IBugAttachmentSet, IBugBranch, IBugSet, IBugWatchSet, ICveSet,
+    IDistribution, IDistroBugTask, IDistroSeries, IDistroSeriesBugTask,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IProduct,
+    IProductSeries, IProductSeriesBugTask, ISourcePackage,
+    IUpstreamBugTask, NominationError, NominationSeriesObsoleteError,
+    NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW

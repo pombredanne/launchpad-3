@@ -4,12 +4,14 @@
 
 __metaclass__ = type
 
-__all__ = ["BugBranchStatus",
-           "IBugBranch",
-           "IBugBranchSet",]
+__all__ = [
+    "BugBranchStatus",
+    "IBugBranch",
+    "IBugBranchSet",
+    ]
 
 from zope.interface import Interface
-from zope.schema import Int, Text, TextLine, Choice
+from zope.schema import Choice, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import BugField
@@ -59,7 +61,7 @@ class IBugBranch(IHasDateCreated, IHasBug):
         title=_("The bug that is linked to."), required=True, readonly=True)
     branch = Choice(
         title=_("Branch"), vocabulary="Branch",
-        constraint=non_duplicate_branch)
+        constraint=non_duplicate_branch, required=True, readonly=True)
     revision_hint = TextLine(title=_("Revision Hint"))
     status = Choice(
         title=_("State"), vocabulary=BugBranchStatus,
@@ -69,6 +71,14 @@ class IBugBranch(IHasDateCreated, IHasBug):
         description=_(
             'Additional information about the status of the bugfix '
             'in this branch.'))
+
+    bug_task = Object(
+        schema=IBugTask, title=_("The bug task that the branch fixes"),
+        description=_(
+            "the bug task reported against this branch's product or the "
+            "first bug task (in case where there is no task reported "
+            "against the branch's product)."),
+        readonly=True)
 
 
 class IBugBranchSet(Interface):

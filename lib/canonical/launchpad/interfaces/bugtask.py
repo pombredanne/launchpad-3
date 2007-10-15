@@ -498,7 +498,10 @@ class IBugTaskSearchBase(Interface):
     searchtext = TextLine(title=_("Bug ID or text:"), required=False)
     status = List(
         title=_('Status'),
-        value_type=Choice(title=_('Status'), vocabulary=BugTaskStatusSearch, default=BugTaskStatusSearch.NEW),
+        value_type=Choice(
+            title=_('Status'),
+            vocabulary=BugTaskStatusSearch,
+            default=BugTaskStatusSearch.NEW),
         default=list(DEFAULT_SEARCH_BUGTASK_STATUSES),
         required=False)
     importance = List(
@@ -574,7 +577,7 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
 
 class IUpstreamProductBugTaskSearch(IBugTaskSearch):
     """The schema used by the bug task search form for upstream products.
-    
+
     This schema is the same as IBugTaskSearch, except that it has only
     one choice for Status Upstream.
     """
@@ -684,7 +687,7 @@ class IProductSeriesBugTask(IBugTask):
 # the bug that makes this hackery necessary.
 class ISelectResultsSlicable(ISelectResults):
     """ISelectResults (from SQLOS) should be specifying __getslice__.
-    
+
     This interface defines the missing __getslice__ method.
     """
     def __getslice__(i, j):
@@ -857,7 +860,7 @@ class IBugTaskSet(Interface):
 
     def findExpirableBugTasks(min_days_old):
         """Return a list of bugtasks that are at least min_days_old.
-        
+
         An Expirable bug task is unassigned, in the INCOMPLETE status,
         and belongs to a Product or Distribtion that uses Malone.
         """
@@ -905,10 +908,11 @@ class IBugTaskSet(Interface):
 
 
 def valid_remote_bug_url(value):
+    """Verify that the URL is to a bug to a known bug tracker."""
     from canonical.launchpad.interfaces.bugwatch import (
         IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
     try:
-        tracker, bug = getUtility(IBugWatchSet).extractBugTrackerAndBug(value)
+        getUtility(IBugWatchSet).extractBugTrackerAndBug(value)
     except NoBugTrackerFound:
         pass
     except UnrecognizedBugTrackerURL:

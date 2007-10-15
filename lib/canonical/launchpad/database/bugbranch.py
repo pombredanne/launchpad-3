@@ -29,9 +29,18 @@ class BugBranch(SQLBase):
     branch = ForeignKey(dbName="branch", foreignKey="Branch", notNull=True)
     revision_hint = StringCol(default=None)
     status = EnumCol(
-        dbName="status", schema=BugBranchStatus, notNull=False,
+        dbName="status", enum=BugBranchStatus, notNull=False,
         default=BugBranchStatus.INPROGRESS)
     whiteboard = StringCol(notNull=False, default=None)
+
+    @property
+    def bug_task(self):
+        """See `IBugBranch`."""
+        task = self.bug.getBugTask(self.branch.product)
+        if task is None:
+            # Just choose the first task for the bug.
+            task = self.bug.bugtasks[0]
+        return task
 
 
 class BugBranchSet:

@@ -1549,6 +1549,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
+        assert not self.isTeam(), "This method must not be used for teams."
         if not IEmailAddress.providedBy(email):
             raise TypeError, (
                 "Any person's email address must provide the IEmailAddress "
@@ -1567,25 +1568,19 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # This branch will be executed only in the first time a person
             # uses Launchpad. Either when creating a new account or when
             # resetting the password of an automatically created one.
-            self.setPreferredEmail(email)
+            self._setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
 
+    def setContactAddress(self, email):
+        """See `IPerson`."""
+        assert self.isTeam(), "This method must be used only for teams."
+        self._setPreferredEmail(email)
+
     def setPreferredEmail(self, email):
         """See `IPerson`."""
-        if not IEmailAddress.providedBy(email):
-            raise TypeError, (
-                "Any person's email address must provide the IEmailAddress "
-                "interface. %s doesn't." % email)
-        assert email.person.id == self.id
-        preferredemail = self.preferredemail
-        if preferredemail is not None:
-            preferredemail.status = EmailAddressStatus.VALIDATED
-            # We need to flush updates, because we don't know what order
-            # SQLObject will issue the changes and we can't set the new
-            # address to PREFERRED until the old one has been set to VALIDATED
-            preferredemail.syncUpdate()
-        elif not self.isTeam():
+        assert not self.isTeam(), "This method must not be used for teams."
+        if self.preferredemail is None:
             # This is the first time we're confirming this person's email
             # address, so we now assume this person has a Launchpad account.
             # XXX: This is a hack! In the future we won't have this
@@ -1593,10 +1588,29 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # will do for now. -- Guilherme Salgado, 2007-07-03
             self.account_status = AccountStatus.ACTIVE
             self.account_status_comment = None
-        else:
-            # This is a team, so we just need to create the new email address
-            # and set it as its preferred one.
-            pass
+        self._setPreferredEmail(email)
+
+    def _setPreferredEmail(self, email):
+        """Set this person's preferred email to the given email address.
+
+        If the person already has an email address, then its status is
+        changed to VALIDATED and the given one is made its preferred one.
+
+        The given email address must implement IEmailAddress and be owned by
+        this person.
+        """
+        if not IEmailAddress.providedBy(email):
+            raise TypeError, (
+                "Any person's email address must provide the IEmailAddress "
+                "interface. %s doesn't." % email)
+        assert email.person.id == self.id
+
+        if self.preferredemail is not None:
+            self.preferredemail.status = EmailAddressStatus.VALIDATED
+            # We need to flush updates, because we don't know what order
+            # SQLObject will issue the changes and we can't set the new
+            # address to PREFERRED until the old one has been set to VALIDATED
+            self.preferredemail.syncUpdate()
 
         # Get the non-proxied EmailAddress object, so we can call
         # syncUpdate() on it.
