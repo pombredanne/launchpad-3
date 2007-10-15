@@ -31,7 +31,6 @@ from canonical.launchpad.interfaces import (
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (http://bugs.launchpad.net/)"
 
-
 #
 # Exceptions caught in scripts/checkwatches.py
 #
@@ -106,18 +105,18 @@ def get_external_bugtracker(bugtracker, version=None):
         raise UnknownBugTrackerTypeError(bugtrackertype.name,
             bugtracker.name)
 
+_exception_to_bugwatcherrortype = [
+   (BugTrackerConnectError, BugWatchErrorType.CONNECTIONERROR),
+   (UnparseableBugData, BugWatchErrorType.UNPARSABLEBUG),
+   (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLEBUGTRACKER),
+   (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTEDBUGTRACKER),
+   (socket.timeout, BugWatchErrorType.TIMEOUT)]
+
 def get_bugwatcherrortype_for_error(error):
     """Return the correct `BugWatchErrorType` for a given error."""
-    if isinstance(error, BugTrackerConnectError):
-        return BugWatchErrorType.CONNECTIONERROR
-    elif isinstance(error, UnparseableBugData):
-        return BugWatchErrorType.UNPARSABLEBUG
-    elif isinstance(error, UnparseableBugTrackerVersion):
-        return BugWatchErrorType.UNPARSABLEBUGTRACKER
-    elif isinstance(error, UnsupportedBugTrackerVersion):
-        return BugWatchErrorType.UNSUPPORTEDBUGTRACKER
-    elif isinstance(error, socket.timeout):
-        return BugWatchErrorType.TIMEOUT
+    for exc_type, bugwatcherrortype in _exception_to_bugwatcherrortype:
+        if isinstance(error, exc_type):
+            return bugwatcherrortype
     else:
         return None
 
