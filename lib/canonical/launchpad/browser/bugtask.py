@@ -65,7 +65,7 @@ from canonical.launchpad.interfaces import (
     BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay, IBug,
     IBugAttachmentSet, IBugBranchSet, IBugExternalRefSet,
     IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch, IBugTaskSet,
-    IDistribution, IDistributionSourcePackage, IDistroBugTask,
+    ICveSet, IDistribution, IDistributionSourcePackage, IDistroBugTask,
     IDistroSeries, IDistroSeriesBugTask, IFrontPageBugTaskSearch,
     ILaunchBag, INominationsReviewTableBatchNavigator, INullBugTask,
     IPerson, IPersonBugTaskSearch, IProduct, IProductSeries,
@@ -2130,6 +2130,10 @@ class BugTasksAndNominationsView(LaunchpadView):
         """
         return getUtility(ILaunchBag).bugtask
 
+    def displayAlsoAffectsLinks(self):
+        """Return True if the Also Affects links should be displayed."""
+        return self.request.getNearest(ICveSet) == (None, None)
+
 
 class BugTaskTableRowView(LaunchpadView):
     """Browser class for rendering a bugtask row on the bug page."""
@@ -2141,7 +2145,8 @@ class BugTaskTableRowView(LaunchpadView):
         not a duplicate. It is independent of whether they can *change* the
         status; you need to expand the details to see any milestone set.
         """
-        return (self.context.conjoined_master is None and
+        return (self.displayForms() and
+                self.context.conjoined_master is None and
                 self.context.bug.duplicateof is None)
 
     def getTaskRowCSSClass(self):
@@ -2204,6 +2209,10 @@ class BugTaskTableRowView(LaunchpadView):
             return "/@@/product"
         else:
             return None
+
+    def displayForms(self):
+        """Return true if the BugTask edit form should be shown."""
+        return self.request.getNearest(ICveSet) == (None, None)
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):

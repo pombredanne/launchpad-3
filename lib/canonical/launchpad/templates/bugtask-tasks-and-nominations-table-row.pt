@@ -129,11 +129,13 @@
       /></a>
     </td>
   </tr>
-  <tr
-    tal:attributes="id form_row_id"
-    tal:condition="expandable"
-    style="display: none"
-  >
-   <td colspan="5" tal:content="structure context/@@+edit-form" />
-  </tr>
+  <tal:form condition="view/displayForms">
+    <tr
+      tal:attributes="id form_row_id"
+      tal:condition="expandable"
+      style="display: none"
+    >
+     <td colspan="5" tal:content="structure context/@@+edit-form" />
+    </tr>
+  </tal:form>
 </tal:bugtask>

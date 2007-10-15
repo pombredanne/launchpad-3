@@ -17,17 +17,13 @@
         module="canonical.launchpad.browser"
         classes="BugNominationContextMenu" />
 
-    <browser:pages
+    <browser:page
       for="canonical.launchpad.interfaces.IBugNomination"
       class="canonical.launchpad.browser.BugNominationTableRowView"
-      permission="launchpad.View">
-      <browser:page
-        name="+bugtasks-and-nominations-table-row"
-        template="../templates/bugnomination-tasks-and-nominations-table-row.pt" />
-      <browser:page
-        name="+cve-tasks-and-nominations-table-row"
-        template="../templates/cve-bugnomination-tasks-and-nominations-table-row.pt" />
-    </browser:pages>
+      permission="launchpad.View"
+      name="+bugtasks-and-nominations-table-row"
+      template="../templates/bugnomination-tasks-and-nominations-table-row.pt"
+      />
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugNomination"

@@ -20,7 +20,7 @@ from zope.publisher.interfaces import NotFound
 from canonical.launchpad import _
 from canonical.launchpad.browser import BugContextMenu
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IBug, IBugNomination, IBugNominationForm,
+    ICveSet, ILaunchBag, IBug, IBugNomination, IBugNominationForm,
     INullBugTask)
 
 from canonical.launchpad.webapp import (
@@ -165,6 +165,10 @@ class BugNominationTableRowView(LaunchpadView):
     def userCanMakeDecisionForNomination(self):
         """Can the user approve/decline this nomination?"""
         return check_permission("launchpad.Driver", self.context)
+
+    def displayNominationEditLinks(self):
+        """Return true if the Nomination edit links should be shown."""
+        return self.request.getNearest(ICveSet) == (None, None)
 
 
 class BugNominationEditView(LaunchpadView):
