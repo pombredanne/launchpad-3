@@ -508,7 +508,7 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadFormView):
         if self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL:
             if requester.preferredemail is not None:
                 requester.preferredemail.destroySelf()
-            requester.setPreferredEmail(email)
+            requester.setContactAddress(email)
         elif self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
             requester.validateAndEnsurePreferredEmail(email)
         else:
