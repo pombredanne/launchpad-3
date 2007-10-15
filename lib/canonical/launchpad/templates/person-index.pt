@@ -288,7 +288,7 @@
             </td>
           </tr>
           <tr tal:condition="context/isTeam">
-            <td colspan="2">
+            <td colspan="2" id="subscription_policy">
               <strong tal:content="context/subscriptionpolicy/title">
                 Moderated
               </strong>:
