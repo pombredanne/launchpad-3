@@ -11,13 +11,14 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
+    IBugSet,
     IBugTaskSet,
     IFeedsApplication,
     IPersonSet,
     IPillarNameSet,
     NotFoundError,
     )
-from canonical.launchpad.layers import FeedsLayer
+from canonical.launchpad.layers import FeedsLayer, BugsLayer
 from canonical.launchpad.webapp import (
     canonical_name, canonical_url, Navigation)
 from canonical.launchpad.webapp.publisher import RedirectionView
@@ -42,10 +43,6 @@ class FeedsNavigation(Navigation):
 
     newlayer = FeedsLayer
 
-    stepto_utilities = {
-        'bugs': IBugTaskSet,
-        }
-
     def traverse(self, name):
         # XXX: statik 2007-10-09 bug=150941
         # Need to block pages not registered on the FeedsLayer
@@ -64,8 +61,18 @@ class FeedsNavigation(Navigation):
             redirect = RedirectionView(target, self.request, 301)
             return redirect
 
-        if name in self.stepto_utilities:
-            return getUtility(self.stepto_utilities[name])
+        # handle the two formats of urls:
+        # http://feeds.launchpad.net/bugs/1/bug.atom
+        # http://feeds.launchpad.net/bugs/search-bugs.atom?...
+        if name == 'bugs':
+            stack = self.request.getTraversalStack()
+            try:
+                bug_id = int(stack.pop())
+            except ValueError:
+                return getUtility(IBugTaskSet)
+            else:
+                self.request.stepstogo.consume()
+                return getUtility(IBugSet).get(bug_id)
 
         if name.startswith('~'):
             # redirect to the canonical name before doing the lookup

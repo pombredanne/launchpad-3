@@ -166,7 +166,9 @@ some results.
 
     >>> soup = BSS(browser.contents)
     >>> entry_id = extract_text(soup.find('id'))
-    >>> assert entry_id==cgi.escape(url), "Id does match URL (%s)" % entry_id
+    >>> assert entry_id==cgi.escape(browser.url), (
+    ...     "Id does not match URL \n  %s\n  %s" 
+    ...     % (entry_id, cgi.escape(url)))
 
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)

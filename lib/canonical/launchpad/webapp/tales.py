@@ -520,12 +520,27 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     Used for image:icon.
     """
+    implements(ITraversable)
 
     icon_template = (
         '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
 
-    def icon(self):
+    def traverse(self, name, furtherPath):
+        if name == 'icon' or name[:5] == 'icon:':
+            if name == 'icon':
+                rootsite = None
+            else:
+                rootsite = name.split(':')[1]
+            return self.icon(rootsite=rootsite)
+        else:
+            return None
+
+    def icon(self, rootsite=None):
         # The icon displayed is dependent on the IBugTask.importance.
+        if rootsite is not None:
+            root_url = allvhosts.configs[rootsite].rooturl[:-1]
+        else:
+            root_url = ''
         if self._context.importance:
             importance = self._context.importance.title.lower()
             alt = "(%s)" % importance
@@ -534,11 +549,11 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
                 # The other status names do not make a lot of sense on
                 # their own, so tack on a noun here.
                 title += " importance"
-            src = "/@@/bug-%s" % importance
+            src = "%s/@@/bug-%s" % (root_url, importance)
         else:
             alt = ""
             title = ""
-            src = "/@@/bug"
+            src = "%s/@@/bug" % root_url
 
         return self.icon_template % (alt, title, src)
 

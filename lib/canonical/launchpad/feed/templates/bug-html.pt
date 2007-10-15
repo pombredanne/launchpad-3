@@ -19,7 +19,8 @@
     <div tal:omit-tag="python:True" tal:repeat="bugtask view/getPublicRawItems">
       <tr tal:repeat="bugtask bugtask/bug/bugtasks">
         <td class="icon right">
-          <img src="/@@/bug" tal:replace="structure bugtask/image:icon" />
+          <img src="/@@/bug" 
+            tal:replace="structure bugtask/image:icon:mainsite" />
         </td>
         <td class="amount">
           <a tal:attributes="href bugtask/fmt:url"
