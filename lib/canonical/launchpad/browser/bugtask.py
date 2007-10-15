@@ -2145,7 +2145,7 @@ class BugTaskTableRowView(LaunchpadView):
         not a duplicate. It is independent of whether they can *change* the
         status; you need to expand the details to see any milestone set.
         """
-        return (self.displayForms() and
+        return (self.displayEditForm() and
                 self.context.conjoined_master is None and
                 self.context.bug.duplicateof is None)
 
@@ -2210,7 +2210,7 @@ class BugTaskTableRowView(LaunchpadView):
         else:
             return None
 
-    def displayForms(self):
+    def displayEditForm(self):
         """Return true if the BugTask edit form should be shown."""
         return self.request.getNearest(ICveSet) == (None, None)
 

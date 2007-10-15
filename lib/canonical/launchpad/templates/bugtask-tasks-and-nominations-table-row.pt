@@ -129,7 +129,7 @@
       /></a>
     </td>
   </tr>
-  <tal:form condition="view/displayForms">
+  <tal:form condition="view/displayEditForm">
     <tr
       tal:attributes="id form_row_id"
       tal:condition="expandable"
