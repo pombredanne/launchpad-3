@@ -119,4 +119,5 @@ CREATE TABLE Notification (
      posubscription IS NOT NULL))
 );
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (88, 11, 0);
+
