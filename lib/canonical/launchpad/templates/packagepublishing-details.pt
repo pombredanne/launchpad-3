@@ -12,7 +12,7 @@
             tal:content="context/removed_by/displayname"/> 
       (<span tal:replace="context/removal_comment/fmt:shorten/20" />)
     </li>
-    <li tal:condition="view/isSuperseded">
+    <li tal:condition="view/wasSuperseded">
       <strong>Superseded</strong>
       <span tal:attributes="title context/datesuperseded/fmt:datetime"
             tal:content="context/datesuperseded/fmt:displaydate"/> 

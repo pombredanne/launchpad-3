@@ -48,7 +48,7 @@
   <div tal:replace="structure context/sourcepackagerelease/@@+portlet-builds" />
 
   <h2>Publishing history</h2>
-  <div id='publishings'>
+  <div id="publishing_history">
     <tal:block repeat="publishing context/publishing_history"
                replace="structure publishing/@@+listing-detailed">
     </tal:block>

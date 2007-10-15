@@ -46,11 +46,11 @@ Let's have a look at the firefox DistributionSourcePackage.
   >>> print browser.url
   http://localhost/ubuntu/+source/mozilla-firefox
 
-There we can see the entire publishing history for the source and
-links to the pages with more specific (useful) information.
+Click the "Show publishing history" link to see specific information
+about Firefox's publishing history.
 
   >>> browser.getLink("Show publishing history").click()
-  >>> print extract_text(find_tag_by_id(browser.contents, 'publishings'))
+  >>> print extract_text(find_tag_by_id(browser.contents, 'publishing_history'))
   0.9
   PENDING:
   WartyII
@@ -80,8 +80,8 @@ SourcePackage page:
 This page provides its versions publications organised by pocket.
 We can see 'mozilla-firefox' is published once in pocket RELEASE:
 
-  >>> print find_tag_by_id(browser.contents, 'publishings')
-  <dl id="publishings">
+  >>> print find_tag_by_id(browser.contents, 'publishing_history')
+  <dl id="publishing_history">
     <dt><dfn>Release</dfn></dt>
     <dd>
       <p>The package versions that were published
@@ -279,8 +279,8 @@ in the previous section of this page.
 This page provides its versions publications organised by pocket.
 We can see 'commercialpackage' is published once in pocket RELEASE:
 
-    >>> print find_tag_by_id(browser.contents, 'publishings')
-    <dl id="publishings">
+    >>> print find_tag_by_id(browser.contents, 'publishing_history')
+    <dl id="publishing_history">
     ...
     <a href="/ubuntu/breezy-autotest/+source/commercialpackage/1.0-1">commercialpackage 1.0-1</a>
     ...

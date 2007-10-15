@@ -20,7 +20,7 @@
 
   <h1>Source package publishing history</h1>
 
-  <div id="publishings">
+  <div id="publishing_history">
     <tal:block repeat="publishing context/publishing_history"
                replace="structure publishing/@@+listing-detailed">
     </tal:block>

@@ -22,7 +22,7 @@ URL:
 This page provides the publishing history of this BinaryPackage within
 this architecture:
 
-  >>> print extract_text(find_tag_by_id(browser.contents, 'publishings'))
+  >>> print extract_text(find_tag_by_id(browser.contents, 'publishing_history'))
   1.0
   PUBLISHED:
   warty i386
@@ -138,7 +138,7 @@ in the previous section of this page.
 This page provides the publishing history of this BinaryPackage within
 this architecture:
 
-  >>> print extract_text(find_tag_by_id(browser.contents, 'publishings'))
+  >>> print extract_text(find_tag_by_id(browser.contents, 'publishing_history'))
   1.0-1
   PUBLISHED:
   breezy-autotest i386
