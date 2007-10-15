@@ -24,6 +24,7 @@ from email.utils import formataddr
 LAUNCHPAD_REVIEWS = 'Launchpad Reviews <launchpad-reviews@lists.canonical.com>'
 SLASH = '/'
 COMMASPACE = ', '
+COLON = ':'
 # Hack the urlparse module global because it stupidly hardcodes the scheme
 # identifiers, doesn't know about bzr+ssh, and doesn't provide an API for
 # amending the schemes.
@@ -32,11 +33,11 @@ urlparse.uses_netloc.append('bzr+ssh')
 
 def address_callback(option, opt, value, parser):
     """Return (host, port) parsed from string."""
-    if ':' in value:
-        host, port = value.split(':', 1)
-        if not host:
+    if COLON in value:
+        host, port = value.split(COLON, 1)
+        if host == '':
             host = 'localhost'
-        if not port:
+        if port == '':
             port = 0
         return host, int(port)
     else:
@@ -131,19 +132,23 @@ def main():
         for recipient in envto:
             print 'RCPT TO:', recipient
         print msg.as_string()
+        return
     # In debug mode 2, we mail the message to ourselves.
     elif opts.debug_mode > 1:
         envto = [sender]
     else:
-        # Send the message.
-        s = smtplib.SMTP()
-        if opts.address is None:
-            s.connect()
-        else:
-            host, port = opts.address
-            s.connect(host, port)
-        s.sendmail(envfrom, envto, str(msg))
-        s.quit()
+        # We already have the SMTP recipients set up as expected, so there's
+        # nothing more to do.
+        pass
+    # Send the message.
+    s = smtplib.SMTP()
+    if opts.address is None:
+        s.connect()
+    else:
+        host, port = opts.address
+        s.connect(host, port)
+    s.sendmail(envfrom, envto, str(msg))
+    s.quit()
 
 
 if __name__ == '__main__':
