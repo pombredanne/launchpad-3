@@ -401,6 +401,7 @@ class CodeHostingTestProviderAdapter:
 
 
 def make_bazaar_branch_and_tree(db_branch):
+    """Make a dummy Bazaar branch and working tree from a database Branch."""
     assert db_branch.branch_type == BranchType.HOSTED, (
         "Can only create branches for HOSTED branches: %r"
         % db_branch)
@@ -418,6 +419,7 @@ def adapt_suite(adapter, base_suite):
 
 
 def create_branch(branch_dir):
+    """Create a dummy Bazaar branch at the given directory."""
     if not os.path.exists(branch_dir):
         os.makedirs(branch_dir)
     try:

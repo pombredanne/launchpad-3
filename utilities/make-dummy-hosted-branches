@@ -1,6 +1,18 @@
 #!/usr/bin/python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
+"""Create dummy Bazaar branches for all HOSTED branches in the database.
+
+The Launchpad sample data includes a number of HOSTED branches that users can
+branch from, push to and view on the website. However, some of these things
+will break if we are missing the actual Bazaar branches, so we have a script
+to create them.
+
+NOTE: This script will delete any existing sample data branches, so that the
+sample data on the filesystem is consistent with the sample data in the
+database.
+"""
+
 import _pythonpath
 
 import os
@@ -39,4 +51,4 @@ def main(argv):
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    main(sys.argv)
