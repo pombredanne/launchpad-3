@@ -333,6 +333,13 @@ if [ ! `bzr info | grep -i "parent branch" | cut -d: -f3` = \
 fi
 
 # Setup Bazaar locations configuration
+if [ ! -d ~/.bazaar ]; then
+  mkdir ~/.bazaar
+  if [ $? -ne 0 ]; then
+    echo "Unable to create ~/.bazaar/ directory"
+    exit 1
+  fi
+fi
 if [ ! -e ~/.bazaar/locations.conf ]; then
   touch ~/.bazaar/locations.conf
 fi
