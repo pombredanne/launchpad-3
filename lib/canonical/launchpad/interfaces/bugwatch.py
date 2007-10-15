@@ -18,8 +18,7 @@ from zope.schema import Choice, Datetime, Int, TextLine, Text
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces import IHasBug
-from canonical.lazr import (
-    DBEnumeratedType, DBItem, use_template)
+from canonical.lazr import DBEnumeratedType, DBItem
 
 class BugWatchErrorType(DBEnumeratedType):
     """An enumeration of possible BugWatch errors."""
