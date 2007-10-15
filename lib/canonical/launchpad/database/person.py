@@ -39,8 +39,9 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.lp.dbschema import (
-    BugTaskImportance, SpecificationFilter, SpecificationDefinitionStatus,
-    SpecificationImplementationStatus, SpecificationSort)
+    ArchivePurpose, BugTaskImportance, SpecificationFilter,
+    SpecificationDefinitionStatus, SpecificationImplementationStatus,
+    SpecificationSort)
 
 from canonical.launchpad.interfaces import (
     AccountStatus, BugTaskSearchParams, BugTaskStatus, EmailAddressStatus,
@@ -1687,39 +1688,70 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
-    def latestMaintainedPackages(self):
+    def getLatestMaintainedPackages(self):
         """See `IPerson`."""
         return self._latestSeriesQuery()
 
-    def latestUploadedButNotMaintainedPackages(self):
+    def getLatestUploadedButNotMaintainedPackages(self):
         """See `IPerson`."""
         return self._latestSeriesQuery(uploader_only=True)
 
-    def _latestSeriesQuery(self, uploader_only=False):
-        # Issues a special query that returns the most recent
-        # sourcepackagereleases that were maintained/uploaded to
-        # distribution series by this person.
+    def getLatestUploadedPPAPackages(self):
+        """See `IPerson`."""
+        return self._latestSeriesQuery(
+            uploader_only=True, ppa_only=True)
+
+    def _latestSeriesQuery(self, uploader_only=False, ppa_only=False):
+        """Return the sourcepackagereleases (SPRs) related to this person.
+
+        :param uploader_only: controls if we are interested in SPRs where
+            the person in question is only the uploader (creator) and not the
+            maintainer (debian-syncs), or, if the flag is False, it returns all
+            SPR maintained by this person.
+
+        :param ppa_only: controls if we are interested only in source
+            package releases targeted to any PPAs or, if False, sources targeted
+            to primary archives.
+
+        Active 'ppa_only' flag is usually associated with active 'uploader_only'
+        because there shouldn't be any sense of maintainership for packages
+        uploaded to PPAs by someone else than the user himself.
+        """
+        clauses = ['sourcepackagerelease.upload_archive = archive.id']
+
         if uploader_only:
-            extra = """sourcepackagerelease.creator = %d AND
-                       sourcepackagerelease.maintainer != %d""" % (
-                       self.id, self.id)
+            clauses.append(
+                'sourcepackagerelease.creator = %s' % quote(self.id))
+            clauses.append(
+                'sourcepackagerelease.maintainer != %s' % quote(self.id))
         else:
-            extra = "sourcepackagerelease.maintainer = %d" % self.id
+            clauses.append(
+                'sourcepackagerelease.maintainer = %s' % quote(self.id))
+
+        if ppa_only:
+            clauses.append('archive.purpose = %s' % quote(ArchivePurpose.PPA))
+        else:
+            clauses.append('archive.purpose != %s' % quote(ArchivePurpose.PPA))
+
+        query_clause = " AND ".join(clauses)
         query = """
             SourcePackageRelease.id IN (
-                SELECT DISTINCT ON (uploaddistrorelease,sourcepackagename)
+                SELECT DISTINCT ON (uploaddistrorelease, sourcepackagename,
+                                    upload_archive)
                        sourcepackagerelease.id
                   FROM sourcepackagerelease
                  WHERE %s
-              ORDER BY uploaddistrorelease, sourcepackagename,
+              ORDER BY uploaddistrorelease, sourcepackagename, upload_archive,
                        dateuploaded DESC
               )
-              """ % extra
+              """ % (query_clause)
+
         return SourcePackageRelease.select(
             query,
+            clauseTables=['Archive'],
             orderBy=['-SourcePackageRelease.dateuploaded',
                      'SourcePackageRelease.id'],
-            prejoins=['sourcepackagename', 'maintainer'])
+            prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
 
     def isUploader(self, distribution):
         """See `IPerson`."""

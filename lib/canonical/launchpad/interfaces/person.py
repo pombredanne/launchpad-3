@@ -910,16 +910,23 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         Return an iterable of matching results.
         """
 
-    def latestMaintainedPackages():
-        """Return SourcePackageReleases maintained by this person.
+    def getLatestMaintainedPackages():
+        """Return `SourcePackageRelease`s maintained by this person.
 
         This method will only include the latest source package release
         for each source package name, distribution series combination.
         """
 
-    def latestUploadedButNotMaintainedPackages():
-        """Return SourcePackageReleases created by this person but
+    def getLatestUploadedButNotMaintainedPackages():
+        """Return `SourcePackageRelease`s created by this person but
         not maintained by him.
+
+        This method will only include the latest source package release
+        for each source package name, distribution series combination.
+        """
+
+    def getLatestUploadedPPAPackages():
+        """Return `SourcePackageRelease`s uploaded by this person to any PPA.
 
         This method will only include the latest source package release
         for each source package name, distribution series combination.
