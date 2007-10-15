@@ -161,11 +161,15 @@ Subversion URL.
 When a code import is modified, the ICodeImportEventSet utility should
 be used to create an event describing the changes.
 
-The ICodeImport interface does not have a set_schema, so all changes
-have to be applied by calling methods which create MODIFY events when
-appropriate. In this document, we are using unproxied CodeImport
-objects, so we are able to modify them directly and illustrate how
-MODIFY events are created.
+Application code should not modify CodeImport objects directly, instead they
+should call the appropriate mutator methods. This allow CodeImportEvent objects
+to be transparently created by the mutator methods when needed. This is
+enforced by not defining a set_schema for ICodeImport.
+
+In this document, we are testing the CodeImportEvent creation infrastructure
+used by those mutator methods, so we need to directly modify the state of
+CodeImport objects. We can do this because we are working on unproxied database
+objects.
 
 ICodeImportEventSet defines a protocol so it is able to find changes
 applied to the code import. Before making any change, the beginModify
@@ -211,7 +215,7 @@ when changes were made without creating a correponding event.
     UPDATE_INTERVAL None
     SVN_BRANCH_URL u'svn://svn.example.com/trunk'
 
-If no change of interest were found, no event is created.
+If no change of interest are found, no event is created.
 
     >>> old_event_set_len = len(list(event_set.getAll()))
     >>> token = event_set.beginModify(svn_import)

@@ -203,18 +203,18 @@ class CodeImportEventSet:
         that describe the old and new state of the modified code import.
 
         :param code_import: CodeImport object that was presumably modified.
-        :param token: Object returned by a call to makeModificationToken before
-            the code import was modified.
+
+        :param token: Object returned by a call to makeModificationToken
+            before the code import was modified.
         :return: Set of items that can be passed to _recordItems, or None.
         """
-        # We record some redundant data so we can have some confidence it will
-        # be possible to detect whether changes were done without recording
-        # corresponding events.
         old_dict = dict(token.items)
         new_dict = dict(self._iterItemsForSnapshot(code_import))
 
-        # Sanity check that the token was produced from the same CodeImport.
-        assert old_dict['CODE_IMPORT'] == new_dict['CODE_IMPORT']
+        assert old_dict['CODE_IMPORT'] == new_dict['CODE_IMPORT'], (
+            "Token was produced from a different CodeImport object: "
+            "id in token = %s, id of code_import = %s"
+            % (old_dict['CODE_IMPORT'], new_dict['CODE_IMPORT']))
 
         # The set of keys are not identical if the rcstype changed.
         all_keys = set(old_dict.keys()).union(set(new_dict.keys()))
@@ -224,16 +224,15 @@ class CodeImportEventSet:
         for key in all_keys:
             old_value = old_dict.get(key)
             new_value = new_dict.get(key)
+
+            # Record current value for this key.
+            items.add((key, new_value))
+
             if old_value != new_value:
+                # Value has changed. Record previous value as well as current.
                 has_changes = True
-                # Record old and current pairs for any changed value. This
-                # unambigously records when a value changed from or to None.
                 items.add(('OLD_' + key, old_value))
-                items.add((key, new_value))
-            else:
-                # Record key-value pairs for all current values. Those pairs
-                # are recorded only for redundancy.
-                items.add((key, new_value))
+
         if has_changes:
             return items
         else:

@@ -269,7 +269,7 @@ on those objects.
     ForbiddenAttribute: ('svn_branch_url', <CodeImport at 0x...>)
 
 Modifications can be done using the CodeImport.updateFromData method. If
-any change was made, this method creates a CodeImportEvent describing
+any change were made, this method creates a CodeImportEvent describing
 them. The CodeImportEvent records the user that made the change, so we
 need to pass the user as an argument.
 
