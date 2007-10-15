@@ -7,8 +7,9 @@ is, currently capable of performing imports).
     >>> from canonical.launchpad.interfaces import (
     ...     ICodeImportMachine, ICodeImportMachineSet, CodeImportMachineState)
 
-This test runs in the ZopelessLayer to allow switching database users.
-Because of bug 3989, we must use transaction commands from sqlbase.
+XXX: This test runs in the ZopelessLayer to allow switching database
+users. Because of bug 3989, we must use transaction commands from
+sqlbase. -- DavidAllouche 2007-10-15
 
     >>> from canonical.database.sqlbase import begin, commit, rollback
 
@@ -103,7 +104,7 @@ UPDATE rights on the CodeImportMachine table.
     ...
     >>> begin()
 
-Jobs running on the machine itself will connect as the 'importd' user,
+The code-import-controller daemon uses the 'importd' database user,
 which has rights to update the CodeImportMachine table.
 
     >>> from canonical.testing import LaunchpadZopelessLayer
@@ -114,7 +115,7 @@ under the PermissiveSecurityPolicy.
 
     >>> from zope.security.management import setSecurityPolicy
     >>> from zope.security.simplepolicies import PermissiveSecurityPolicy
-    >>> _ = setSecurityPolicy(PermissiveSecurityPolicy)
+    >>> unused = setSecurityPolicy(PermissiveSecurityPolicy)
     >>> login(ANONYMOUS)
 
 Even scripts cannot directly set attributes of CodeImportMachine
@@ -233,8 +234,8 @@ running jobs.
 
 Not all CodeImportMachine.state transitions are allowed.
 
-From the OFFLINE state, a machine can only go ONLINE, setOffline and
-setQuiescing must fail.
+From the OFFLINE state, a machine can only go ONLINE. The setOffline and
+setQuiescing methods must fail.
 
     >>> machine = reset_machine(machine)
     >>> machine.setOnline()
@@ -273,8 +274,8 @@ must fail.
     ...
     AssertionError: State of machine frobisher was ONLINE.
 
-From the QUIESCING state, a machine can only go OFFLINE, setOnline and
-setQuiescing must fail.
+From the QUIESCING state, a machine can only go OFFLINE. The setOnline
+and setQuiescing method must fail.
 
 It would be meaningful to allow the transition from QUIESCING to ONLINE,
 meaning "oops, I did not want you to quiesce, after all", but it would

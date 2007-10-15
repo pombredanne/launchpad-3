@@ -49,8 +49,8 @@ class CodeImportMachineState(DBEnumeratedType):
 class CodeImportMachineOfflineReason(DBEnumeratedType):
     """Reason why a CodeImportMachine is offline.
 
-    A machine goes offline when a code-import-controller daemon process
-    shutdowns or appears to have crashed. Recording the reason a machine went
+    A machine goes offline when a code-import-controller daemon process shuts
+    down, or appears to have crashed. Recording the reason a machine went
     offline provides useful diagnostic information.
     """
 
@@ -66,8 +66,8 @@ class CodeImportMachineOfflineReason(DBEnumeratedType):
     QUIESCED = DBItem(120, """
         Quiesced
 
-        The code-import-controller daemon has stopped accepting new jobs,
-        completed running jobs, and then shut down.
+        The code-import-controller daemon has shut down after completing
+        running jobs.
         """)
 
     # Crash recovery
@@ -101,16 +101,23 @@ class ICodeImportMachine(Interface):
                       " running."))
 
     def setOnline():
-        """Set state to ONLINE, and record the corresponding event."""
+        """Record that the machine is online, marking it ready to accept jobs.
+
+        Set state to ONLINE, and record the corresponding event.
+        """
 
     def setOffline(reason):
-        """Set state to OFFLINE, and record the corresponding event.
+        """Record that the machine is offline.
+
+        Set state to OFFLINE, and record the corresponding event.
 
         :param reason: CodeImportMachineOfflineReason enum value.
         """
 
     def setQuiescing(user, message):
-        """Set state to QUIESCING, and record the corresponding event.
+        """Initiate an orderly shut down without interrupting running jobs.
+
+        Set state to QUIESCING, and record the corresponding event.
 
         :param user: `Person` that requested the machine to quiesce.
         :param message: User-provided message.

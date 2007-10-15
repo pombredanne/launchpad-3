@@ -315,9 +315,9 @@ offline.
     >>> print_items(offline_event)
     OFFLINE_REASON u'QUIESCED'
 
-The the offline reason must be a value of the
-CodeImportMachineOfflineReason enum. Since it is internally stored as a
-string, we need to manually check that it is a legal value.
+The offline reason must be a value of the CodeImportMachineOfflineReason
+enum. Since it is internally stored as a string, we need to manually
+check that it is a legal value.
 
     >>> event_set.newOffline(machine, CodeImportReviewStatus.SUSPENDED)
     Traceback (most recent call last):
