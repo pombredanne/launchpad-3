@@ -533,7 +533,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
                 rootsite = name.split(':')[1]
             return self.icon(rootsite=rootsite)
         else:
-            raise TraversalError, name
+            return None
 
     def icon(self, rootsite=None):
         # The icon displayed is dependent on the IBugTask.importance.
