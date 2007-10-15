@@ -2132,6 +2132,7 @@ class BugTasksAndNominationsView(LaunchpadView):
 
     def displayAlsoAffectsLinks(self):
         """Return True if the Also Affects links should be displayed."""
+        # Hide the links when the bug is viewed in a CVE context
         return self.request.getNearest(ICveSet) == (None, None)
 
 
@@ -2212,6 +2213,7 @@ class BugTaskTableRowView(LaunchpadView):
 
     def displayEditForm(self):
         """Return true if the BugTask edit form should be shown."""
+        # Hide the edit form when the bug is viewed in a CVE context
         return self.request.getNearest(ICveSet) == (None, None)
 
 

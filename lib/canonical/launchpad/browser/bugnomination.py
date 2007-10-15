@@ -168,6 +168,7 @@ class BugNominationTableRowView(LaunchpadView):
 
     def displayNominationEditLinks(self):
         """Return true if the Nomination edit links should be shown."""
+        # Hide the link when the bug is viewed in a CVE context
         return self.request.getNearest(ICveSet) == (None, None)
 
 
