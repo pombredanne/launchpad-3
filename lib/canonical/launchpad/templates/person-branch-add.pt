@@ -41,24 +41,13 @@
     branch must be already available on the internet in a publicly accessible
     location.</p>
 
-  <p>The URL of the branch mirror is based on the nickname of the registrant,
+  <p>The URL of the branch is based on the nickname of the registrant,
     not the author.</p>
 
-  <p>The project this branch belongs to is specified by the
-    &ldquo;Project&rdquo; entry. You can also register branches from project
-    pages.</p>
-
-  <p>Do not use this page to:</p>
-
-  <ul>
-    <li>Request a <em>VCS import</em>, that is a Bazaar mirror of a CVS or
-      Subversion branch. Instead, edit the source details of the trunk release
-      series of this project.</li>
-
-    <li><a href="https://help.launchpad.net/CreatingAHostedBranch">Create
-      an <em>upload</em> branch</a>, that is a branch that you upload
-      directly, to use Launchpad as a community hosting service.</li>
-  </ul>
+  <p>Do not use this page to request a <em>VCS import</em>, that is a
+    Bazaar mirror of a CVS or Subversion branch. See the
+    <a href="https://help.launchpad.net/VcsImports">VCS Imports</a> help page.
+  </p>
 
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
 </body>

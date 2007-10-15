@@ -57,18 +57,6 @@
     team is presented as the registrant only if the branch has different
     author, or if the author is not specified.</p>
 
-  <p>From this page you can:<p>
-
-  <ul>
-    <li>Browse to every listed branch.</li>
-
-    <li>See detailed listings that only show the branches of which this
-      person is the author, the registrant (and not the author), or a
-      subcriber.</li>
-
-    <li>Register a new mirror branch whose author is this person.</li>
-  </ul>
-
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
 
 </body>
