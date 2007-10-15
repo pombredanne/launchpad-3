@@ -135,6 +135,49 @@ class TestUploadProcessorBase(unittest.TestCase):
             results.append(result)
         return results
 
+    def assertEmail(self, contents=None, recipients=None):
+        """Check last email content and recipients.
+
+        :param contents: A list of lines; assert that each is in the email.
+        :param recipients: A list of recipients that must be on the email.
+                           Supply an empty list if you don't want them
+                           checked.  Default action is to check that the
+                           recipient is foo.bar@canonical.com, which is the
+                           signer on most of the test data uploads.
+        """
+        if recipients is None:
+            recipients = [self.name16_recipient]
+        if contents is None:
+            contents = []
+
+        self.assertEqual(
+            len(stub.test_emails), 1,
+            'Unexpected number of emails sent: %s' % len(stub.test_emails))
+
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        body = msg.get_payload(decode=True)
+
+        # Only check recipients if callsite didn't provide an empty list.
+        if recipients != []:
+            clean_recipients = [r.strip() for r in to_addrs]
+            for recipient in list(recipients):
+                self.assertTrue(
+                    recipient in clean_recipients,
+                    "%s not found in %s" % (recipients, clean_recipients))
+            self.assertEqual(
+                len(recipients), len(clean_recipients),
+                "Email recipients do not match exactly. Expected %s, got %s" %
+                    (recipients, clean_recipients))
+
+        subject = "Subject: %s\n" % msg['Subject']
+        body = subject + body
+
+        for content in list(contents):
+            self.assertTrue(
+                content in body,
+                "Expect: '%s'\nGot:\n%s" % (content, body))
+
 
 class TestUploadProcessor(TestUploadProcessorBase):
     """Basic tests on uploadprocessor class.
@@ -416,9 +459,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("foocomm_1.0-1_binary")
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Check it went ok to the NEW queue and all is going well so far.
-        self._checkPartnerUploadEmailSuccess()
-
         # Find the binarypackagerelease and check its component.
         foocomm_binname = BinaryPackageName.selectOneBy(name="foocomm")
         foocomm_bpr = BinaryPackageRelease.selectOneBy(
@@ -474,11 +514,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Now do the same thing with a binary package.
         upload_dir = self.queueUpload("foocomm_1.0-1_binary")
         self.processUpload(uploadprocessor, upload_dir)
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        self.assertTrue(
-            "NEW" in raw_msg,
-            "Expected email containing 'NEW', got:\n%s"
-            % raw_msg)
 
         # Accept and publish the upload.
         self._publishPackage("foocomm", "1.0-1", source=False,
@@ -488,23 +523,24 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("foocomm_1.0-2")
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Check it is in the accepted queue.
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        self.assertTrue(
-            "OK: foocomm_1.0-2.dsc" in raw_msg,
-            "Expected email containing 'OK: foocomm_1.0-2.dsc', got:\n%s"
-            % raw_msg)
+        # Check the upload is in the DONE queue since pure source uploads
+        # with ancestry (previously uploaded) will skip the ACCEPTED state.
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.DONE,
+            version="1.0-2",
+            name="foocomm")
+        self.assertEqual(queue_items.count(), 1)
 
         # Upload the next binary version of the package.
         upload_dir = self.queueUpload("foocomm_1.0-2_binary")
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Check it is in the accepted queue.
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        self.assertTrue(
-            "OK: foocomm_1.0-2_i386.deb" in raw_msg,
-            "Expected email containing 'OK: foocomm_1.0-2_i386.deb', got:\n%s"
-            % raw_msg)
+        # Check that the binary upload was accepted:
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED,
+            version="1.0-2",
+            name="foocomm")
+        self.assertEqual(queue_items.count(), 1)
 
     def testPartnerUploadToProposedPocket(self):
         """Upload a partner package to the proposed pocket."""
@@ -592,6 +628,29 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.layer.txn.commit()
         self._uploadPartnerToNonReleasePocketAndCheckFail()
 
+    def testUploadWithBadSectionIsOverriddenToMisc(self):
+        """Uploads with a bad section are overridden to the 'misc' section."""
+        self.setupBreezy()
+        self.layer.txn.commit()
+        self.options.context = 'insecure'
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        upload_dir = self.queueUpload("bar_1.0-1_bad_section")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check it is accepted and the section is converted to misc.
+        contents = [
+            "Subject: bar_1.0-1_source.changes is NEW",
+            ]
+        self.assertEmail(contents=contents, recipients=[])
+
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.NEW, name="bar",
+            version="1.0-1", exact_match=True)
+        [queue_item] = queue_items
+        self.assertEqual(queue_item.sourcepackagerelease.section.name, "misc")
+
 
 class TestUploadProcessorPPA(TestUploadProcessorBase):
     """Functional tests for uploadprocessor.py in PPA operation."""
@@ -631,42 +690,6 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.options.context = 'insecure'
         self.uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
-
-    def assertEmail(self, contents=None, recipients=None):
-        """Check email last email content and recipients."""
-        if contents is None:
-            contents = []
-        if recipients is None:
-            recipients = []
-
-        if not recipients:
-            recipients = [self.name16_recipient]
-        if not contents:
-            contents = []
-
-        self.assertEqual(
-            len(stub.test_emails), 1,
-            'Unexpected number of emails sent: %s' % len(stub.test_emails))
-
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        msg = message_from_string(raw_msg)
-        body = msg.get_payload(decode=True)
-
-        clean_recipients = [r.strip() for r in to_addrs]
-        for recipient in list(recipients):
-            self.assertTrue(recipient in clean_recipients)
-        self.assertEqual(
-            len(recipients), len(clean_recipients),
-            "Email recipients do not match exactly. Expected %s, got %s" %
-                (recipients, clean_recipients))
-
-        subject = "Subject: %s" % msg['Subject']
-        body = subject + body
-
-        for content in list(contents):
-            self.assertTrue(
-                content in body,
-                "Expect: '%s'\nGot:\n%s" % (content, body))
 
     def testUploadToPPA(self):
         """Upload to a PPA gets there.
@@ -947,6 +970,20 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.assertEmail(
             contents,
             recipients=[self.name16_recipient, self.kinnison_recipient])
+
+    def testUploadWithBadSection(self):
+        """Uploads with a bad section are rejected."""
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_bad_section", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected",
+            "bar_1.0-1.dsc: Section 'badsection' is not valid",
+            "bar_1.0.orig.tar.gz: Section 'badsection' is not valid",
+            "bar_1.0-1.diff.gz: Section 'badsection' is not valid"]
+        self.assertEmail(contents)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
