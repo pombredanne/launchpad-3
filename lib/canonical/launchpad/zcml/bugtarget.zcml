@@ -6,6 +6,7 @@
 
   <facet facet="bugs">
 
+
     <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
         class="canonical.launchpad.browser.BugTargetView"

@@ -1,0 +1,126 @@
+= Feeds components =
+
+`Feeds` is a ZCML directive for handling feeds requests.  The
+directive requires minimal ZCML configuration and relies on
+implementing view classes defining the `usedfor` and `name` class
+variables.
+
+Feeds are defined on the `FeedsLayer` layer.
+
+== Demonstrating a feeds class ==
+
+
+In order to demonstrate a feed class, we need to create an interface
+for the thing comprising the feed.  Rather than use a standard
+Launchpad interface, we'll define one here.
+
+    >>> from zope.interface import Interface, Attribute, implements
+
+    >>> class IThing(Interface):
+    ...     value = Attribute('the value of the thing')
+
+
+    >>> class Thing(object):
+    ...     implements(IThing)
+    ...
+    ...     def __init__(self, value):
+    ...         self.value = value
+    ...
+    ...     def __repr__(self):
+    ...         return "<Thing '%s'>" % self.value
+
+
+== ZCML for browser:feeds ==
+
+The zcml processor `browser:feeds` processes feeds classes.
+
+    >>> import canonical.launchpad.ftests
+    >>> from canonical.launchpad.webapp.publisher import LaunchpadView
+    >>> canonical.launchpad.ftests.IThing = IThing
+
+    >>> class ThingFeedView(LaunchpadView):
+    ...     usedfor = IThing
+    ...     feedname = "thing-feed"
+    ...     def __call__(self):
+    ...         return "a feed view on an IThing"
+
+    >>> canonical.launchpad.ftests.ThingFeedView = ThingFeedView
+
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <include file="lib/zope/app/meta.zcml" />
+    ...   <browser:feeds
+    ...       module="canonical.launchpad.ftests"
+    ...       classes="ThingFeedView"
+    ...       />
+    ... </configure>
+    ... """)
+
+Get the view from a `thing` on 'thing-feed' for a request.
+
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.layers import setFirstLayer, FeedsLayer
+
+    >>> request = LaunchpadTestRequest()
+
+To successfully get a view, the lookup must be on an object that is an
+`IThing` and the view name must be one of the three supported.  If the
+view is not found a ComponentLookupError is raised.  Also, the request
+must be in the FeedsLayer.
+
+The request we just created is not in the FeedsLayer, so the view will
+not be found.
+
+    >>> thing = Thing('thing 1')
+    >>> verifyObject(IThing, thing)
+    True
+    >>> feed_view = getMultiAdapter((thing, request), name='thing-feed.xml')
+    Traceback (most recent call last):
+      ...
+    ComponentLookupError: ...
+
+Set the layer on the request for all subsequent uses.
+
+    >>> setFirstLayer(request, FeedsLayer)
+
+If the context object is not an IThing then the view will not be
+found.
+
+    >>> thing = object()
+    >>> verifyObject(IThing, thing)
+    Traceback (most recent call last):
+      ...
+    DoesNotImplement: ...
+    >>> feed_view = getMultiAdapter((thing, request), name='thing-feed.atom')
+    Traceback (most recent call last):
+      ...
+    ComponentLookupError: ...
+
+If the name is not one of the supported names the view will not be
+found.
+
+    >>> thing = Thing('thing 1')
+    >>> verifyObject(IThing, thing)
+    True
+    >>> feed_view = getMultiAdapter((thing, request), name='thing-feed.xml')
+    Traceback (most recent call last):
+      ...
+    ComponentLookupError: ...
+
+If the thing is an IThing and the name is supported the view will be
+found, indicated by the absence of a ComponentLookupError.
+
+    >>> thing = Thing('thing 1')
+    >>> verifyObject(IThing, thing)
+    True
+    >>> for name in ['thing-feed.atom', 'thing-feed.js', 'thing-feed.html']:
+    ...     feed_view = getMultiAdapter((thing, request), name=name)
+    >>> print feed_view()
+    a feed view on an IThing
+    
+
+
