@@ -19,7 +19,7 @@
     <allow interface="canonical.launchpad.interfaces.ICodeImportEventSet" />
   </securedutility>
 
-  <!-- CodeImportJournalToken -->
+  <!-- CodeImportEventToken -->
 
   <content class="canonical.launchpad.database.CodeImportEventToken">
     <allow interface="canonical.launchpad.interfaces.ICodeImportEventToken" />

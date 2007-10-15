@@ -108,14 +108,14 @@ class ICodeImport(Interface):
         "value selected by Launchpad adminstrators."))
 
     def updateFromData(data, user):
-        """Modify attributes of the CodeImport.
+        """Modify attributes of the `CodeImport`.
 
-        Create a MODIFY CodeImportEvent if needed.
+        Create a MODIFY `CodeImportEvent` if needed.
 
         :param data: dict whose keys are attribute names and values are
             attribute values.
         :param user: user who made the change, to record in the
-            CodeImportEvent.
+            `CodeImportEvent`.
         """
 
 
