@@ -18,7 +18,9 @@ ExternalBugTracker.
 
 We'll create an example bug watch with which to test this. This will
 be passed to external_bugtracker's updateBugWatches() method and should
-have errors recorded against it.
+have errors recorded against it. We log in as Sample Person to make
+these changes since there's no particular need to use one Person over
+another.
 
     >>> from canonical.launchpad.database import BugTracker
     >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
@@ -62,7 +64,7 @@ because we're only interested in the bug watch's last error field.
     ...     external_bugtracker.initialize_remote_bugdb_error = error
     ...     try:
     ...         external_bugtracker.updateBugWatches([example_bugwatch])
-    ...     except:
+    ...     except error:
     ...         pass
     ...     example_bugwatch.lasterror.title
     'Connection Error'
@@ -75,9 +77,9 @@ we're not interested in it.
 
     >>> from canonical.launchpad.scripts import log
     >>> loglevel = log._log.level
+    >>> external_bugtracker.initialize_remote_bugdb_error = None
     >>> try:
     ...     log._log.setLevel(100)
-    ...     external_bugtracker.initialize_remote_bugdb_error = None
     ...     for error in [BugNotFound, InvalidBugId, UnparseableBugData]:
     ...         external_bugtracker.get_remote_status_error = error
     ...         try:
