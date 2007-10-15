@@ -20,9 +20,10 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.layers import FeedsLayer, BugsLayer
 from canonical.launchpad.webapp import (
-    canonical_name, canonical_url, Navigation)
+    canonical_name, canonical_url, Navigation, stepto)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+
 
 class FeedsRootUrlData:
     """ICanonicalUrlData for Feeds."""
@@ -43,6 +44,12 @@ class FeedsNavigation(Navigation):
 
     newlayer = FeedsLayer
 
+    @stepto('+index')
+    def redirect_index(self):
+        """Redirect /+index to help.launchpad.net/Feeds site."""
+        return self.redirectSubTree(
+            'https://help.launchpad.net/Feeds', status=301)
+
     def traverse(self, name):
         # XXX: statik 2007-10-09 bug=150941
         # Need to block pages not registered on the FeedsLayer
@@ -53,7 +60,7 @@ class FeedsNavigation(Navigation):
         normalized_query_string = '&'.join(fields)
         if query_string != normalized_query_string:
             # must consume the stepstogo to prevent an error
-            # trying to call RedirectionView.publishTraverse() 
+            # trying to call RedirectionView.publishTraverse()
             while self.request.stepstogo.consume():
                 pass
             target = (self.request.getApplicationURL()
@@ -95,4 +102,3 @@ class FeedsNavigation(Navigation):
 
         except NotFoundError:
             return None
-
