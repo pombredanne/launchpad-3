@@ -6,8 +6,17 @@ being watched in Launchpad that error will be displayed to users.
 To test this we will add a watch to an existing bug, bug #12, which has
 no existing bug watches.
 
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> login('test@canonical.com')
+    >>> bug12 = getUtility(IBugSet).get(12)
+    >>> bug12.watches.count() == 0
+    True
+    >>> logout()
+
     >>> user_browser.open(
-    ...     'http://bugs.launchpad.dev/jokosher/+bug/12 ')
+    ...     'http://bugs.launchpad.dev/jokosher/+bug/12')
     >>> user_browser.getLink('Also affects project').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/jokosher/+bug/12/+choose-affected-product'
@@ -23,16 +32,10 @@ no existing bug watches.
 We can now alter the bug watch manually to check that the correct error
 messages are displayed.
 
-    >>> from datetime import datetime
-    >>> import pytz
-    >>> import transaction
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (BugWatchErrorType,
-    ...     BugTaskStatus, IBugSet, IBugTrackerSet, UNKNOWN_REMOTE_STATUS)
+    ...     BugTaskStatus, IBugTrackerSet, UNKNOWN_REMOTE_STATUS)
 
     >>> login('test@canonical.com')
-    >>> now = datetime.now(pytz.timezone('UTC'))
     >>> tracker = getUtility(IBugTrackerSet).getByName('mozilla.org')
     >>> bug12 = getUtility(IBugSet).get(12)
     >>> watch = bug12.getBugWatch(tracker, 900)
@@ -52,12 +55,10 @@ should now be displayed to the user.
 
 We can observe this for each of the BugWatchErrorType values:
 
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     set_bugwatch_error_type)
     >>> for item in sorted(BugWatchErrorType.items):
-    ...     login('test@canonical.com')
-    ...     watch.remotestatus = None
-    ...     watch.lasterror = item
-    ...     watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
-    ...     logout()
+    ...     set_bugwatch_error_type(watch, item)
     ...     user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/12')
     ...     for tag in find_tags_by_class(user_browser.contents,
     ...         'error message'):

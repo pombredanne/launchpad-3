@@ -14,7 +14,9 @@ from canonical.database.sqlbase import commit, ZopelessTransactionManager
 from canonical.launchpad.components.externalbugtracker import (
     Bugzilla, BugTrackerConnectError, ExternalBugTracker, Mantis, Trac,
     Roundup, SourceForge)
-from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
+from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.interfaces import (
+    BugTaskStatus, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
 from canonical.testing.layers import LaunchpadZopelessLayer
@@ -108,6 +110,13 @@ def convert_python_status(status, resolution):
 
     return "%s:%s" % (status_map[status], resolution_map[resolution])
 
+def set_bugwatch_error_type(bug_watch, error_type):
+    """Set the lasterror field of a bug watch to a given error type."""
+    login('test@canonical.com')
+    bug_watch.remotestatus = None
+    bug_watch.lasterror = error_type
+    bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
+    logout()
 
 class TestBrokenExternalBugTracker(ExternalBugTracker):
     """A test version of ExternalBugTracker, designed to break."""
