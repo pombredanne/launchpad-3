@@ -9,7 +9,7 @@ Architecture.
 Bugs are created and retrieved via IBugSet.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.interfaces import IBugSet, IBug
     >>> bugset = getUtility(IBugSet)
 
 To retrieve a specific Bug, use IBugSet.get:
@@ -37,6 +37,16 @@ raised:
       ...
     NotFoundError: 'Unable to locate bug with nickname +bugs.'
 
+== Interface check ==
+
+It is guaranteed to implement the correct interface, too:
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(IBug, firefox_crashes)
+    True
+
+(We grab the object directly from the database here to avoid it being
+security proxied, which doesn't make sense to test here.)
 
 == Searching for Bugs ==
 
@@ -120,7 +130,7 @@ Now we can mark bug #6 private:
     ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent,
     ...     SQLObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IBug)
+    ...     IPersonSet)
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
 
     >>> new_values = {"private" : True}
@@ -150,12 +160,16 @@ firefox_crashes bug, we can still access properties of this bug:
     >>> firefox_crashes.title
     u'Firefox crashes when Save As dialog for a nonexistent window is closed'
 
-Note that a search will return all the bugs, as well:
+Note that a search will return all public bugs, omitting bug 14 which is
+private:
 
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
-    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+
+(This test breaks if you add a new public bug to sampledata; rely on it
+to ensure it worked!)
 
 Likewise Foo Bar, an admin, can access the bug.
 
@@ -169,12 +183,15 @@ Likewise Foo Bar, an admin, can access the bug.
     >>> firefox_crashes.title
     u'Firefox crashes when Save As dialog for a nonexistent window is closed'
 
-Bug #6 is returned by the search results for an admin as well:
+Bug 14, which is private, is  returned by the search results for an
+admin as well:
 
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
-    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+
+(This test breaks if you add any bug to sampledata.)
 
 As one would expect, the permissions are team aware. So, let's retrieve a bug
 and set it private (as Foo Bar again who, of course, is an admin.)
@@ -224,7 +241,7 @@ and see it (bug #2) in searches:
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
-    [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12]
+    [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13]
 
 If we login as someone who *isn't* a member of the Ubuntu Team (and
 isn't otherwise someone who should be allowed to access the properties
@@ -246,7 +263,7 @@ And, as you might have guessed, is once again invisible in searches
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
-    [1, 3, 4, 5, 7, 8, 9, 10, 11, 12]
+    [1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13]
 
 === Filing Public vs. Private Bugs ===
 
@@ -435,8 +452,9 @@ Changing the description.
 
 Modifying a bugtask will update IBug.date_last_updated.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
-    >>> from canonical.launchpad.interfaces import IUpstreamBugTask
+    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskStatus, IUpstreamBugTask)
 
     >>> firefox_task = firefox_bug.bugtasks[0]
 
@@ -614,8 +632,7 @@ Adding a branch.
 
 Editing a branch.
 
-    >>> from canonical.launchpad.interfaces import IBugBranch
-    >>> from canonical.lp.dbschema import BugBranchStatus
+    >>> from canonical.launchpad.interfaces import BugBranchStatus, IBugBranch
 
     >>> branch_before_modification = Snapshot(
     ...     bug_branch, providing=IBugBranch)

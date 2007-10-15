@@ -21,9 +21,9 @@ import cStringIO
 import csv
 import re
 
-from canonical.lp.dbschema import EntitlementState, EntitlementType
 from canonical.launchpad.interfaces import (
-    IEntitlementSet, IPersonSet, NotFoundError)
+    EntitlementState, EntitlementType, IEntitlementSet, IPersonSet,
+    NotFoundError)
 from canonical.launchpad.utilities.unicode_csv import (
     UnicodeDictReader, UnicodeDictWriter)
 

@@ -30,6 +30,13 @@ is only available to users which have 'Admin' privileges on the project.
     >>> admin_browser.getLink('Register another project').url
     'http://launchpad.dev/mozilla/+newproduct'
 
+Also, it has a link to help translate it.
+
+    >>> admin_browser.getLink('Help translate').click()
+    >>> print admin_browser.title
+    Translatable projects for The Mozilla Project
+
+
 == Empty Project Groups ==
 
 An empty project group needs to be set up first...
@@ -104,17 +111,6 @@ the new product form for the project group.
     ...     'register another project that is part of Test Group').click()
     >>> admin_browser.title
     'Register a project in Launchpad'
-
-== Overview Fallback ==
-
-When a project is accessed through a facet not usually available on
-the project, the overview page is also displayed:
-
-    >>> browser.open('http://code.launchpad.dev/mozilla')
-    >>> browser.title
-    'The Mozilla Project in Launchpad'
-    >>> browser.url
-    'http://code.launchpad.dev/mozilla'
 
 == Products of a project ==
 

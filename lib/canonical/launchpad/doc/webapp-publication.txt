@@ -28,7 +28,7 @@ All Launchpad requests provides the ILaunchpadBrowserApplicationRequest
 interface. That interface is an extension of the zope standard
 IBrowserApplicationRequest.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     ILaunchpadBrowserApplicationRequest)
 
@@ -119,3 +119,106 @@ All the submitted field names can be iterated over:
     ...     print name
     a_field
     items_field
+
+
+== Transaction Logging ==
+
+The publication implementation is responsible for putting the name
+of the logged in user in the transaction. (The afterCall() hook is
+responsible for that part. In these examples, None is passed as the
+published object, because the implementation doesn't make use of it.)
+
+The user attribute is an empty string, when no user is logged in.
+
+    >>> import transaction
+    >>> txn = transaction.begin()
+    >>> print request.principal
+    None
+    >>> request, publication = get_request_and_publication()
+    >>> publication.afterCall(request, None)
+    >>> txn.user
+    ''
+
+But if there is a logged in user, the transaction user attribute will
+contains its ID (as well as an empty '/' path, which is a Zope artefact
+allowing different authentication based on the traversed objects):
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> personset = getUtility(IPersonSet)
+    >>> txn = transaction.begin()
+    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+    >>> foo_bar.id
+    16
+    >>> request.setPrincipal(foo_bar)
+    >>> publication.afterCall(request, None)
+    >>> print txn.user
+     / 16
+
+
+== Read-Only Requests ==
+
+Our publication implementation make sure that requests supposed to be
+read-only (GET and HEAD) don't change anything in the database.
+(Actually, if the published method calls transaction.commit() itself,
+that assumption won't hold.) 
+
+Again this is handled by the afterCall() publication hook.
+
+For example, the following database modification will be automatically
+reverted in a GET request.
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+
+    >>> login('foo.bar@canonical.com')
+    >>> txn = transaction.begin()
+    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+    >>> print foo_bar.city
+    None
+    >>> foo_bar.city = 'Montreal'
+    >>> syncUpdate(foo_bar)
+
+    >>> request, publication = get_request_and_publication('GET')
+    >>> publication.afterCall(request, None)
+    >>> publication.clearSQLOSCache()
+    >>> txn = transaction.begin()
+    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+    >>> print foo_bar.city
+    None
+
+But not if the request uses POST, the changes will be preserved.
+
+    >>> foo_bar.city = 'Montreal'
+    >>> syncUpdate(foo_bar)
+
+    >>> request, publication = get_request_and_publication('POST')
+    >>> publication.afterCall(request, None)
+    >>> publication.clearSQLOSCache()
+    >>> txn = transaction.begin()
+    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+    >>> print foo_bar.city
+    Montreal
+
+
+== HEAD requests have empty body ==
+
+The publication implementation also makes sure that no body is
+returned as part of HEAD requests. (Again this is handled by the
+afterCall() publication hook.)
+
+    >>> txn = transaction.begin()
+    >>> request, publication = get_request_and_publication('HEAD')
+    >>> response = request.response
+    >>> response.setResult('Content that will disappear.')
+    >>> publication.afterCall(request, None)
+    >>> request.response.consumeBody()
+    ''
+
+In other cases, like a GET, the body would be unchanged.
+
+    >>> txn = transaction.begin()
+    >>> request, publication = get_request_and_publication('GET')
+    >>> response = request.response
+    >>> response.setResult('Some boring content.')
+    >>> publication.afterCall(request, None)
+    >>> print request.response.consumeBody()
+    Some boring content.

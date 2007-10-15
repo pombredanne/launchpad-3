@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="malone"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone"
 >
 <body>
 
@@ -9,11 +15,19 @@
   <div tal:replace="structure context/@@+portlet-latestbugs|nothing" />
 </metal:leftportlets>
 
-<metal:heading fill-slot="pageheading">
-  <h1>Report a new bug</h1>
-</metal:heading>
-
 <div metal:fill-slot="main">
+
+      <h1>
+        <img
+          tal:condition="view/isPrivate"
+          alt="(Private)"
+          id="privatebadge"
+          src="/@@/private-large"
+          style="float: right;"
+          title="This bug report will be private, though you can disclose it later."
+        />
+        Report a bug
+      </h1>
 
  <metal:not_uses_malone
     use-macro="context/@@+filebug-macros/not_uses_malone" />
@@ -87,6 +101,7 @@
     </tal:most-common-bugs>
   </tal:uses_malone>
 
-</div>
 
+    </div>
+  </body>
 </html>

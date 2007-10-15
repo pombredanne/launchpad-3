@@ -1,0 +1,13 @@
+= Code Import Jobs =
+
+A CodeImportJob is a record of a pending or running code import job.
+They are accessed via a utility registered for the
+ICodeImportResultSet interface.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ICodeImportJob, ICodeImportJobSet)
+
+    >>> job_set = getUtility(ICodeImportJobSet)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(ICodeImportJobSet, job_set)
+    True

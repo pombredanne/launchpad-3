@@ -74,14 +74,25 @@ class TestPoppy(unittest.TestCase):
         return os.path.join(self.root_dir, upload_dir, path)
 
     def testLOGIN(self):
-        """Check login procedure."""
+        """Check login procedure and the state of the toplevel lockfile.
+
+        The toplevel lockfile should allow the process-upload runner (lp_queue,
+        member of lp_upload group) to be blocked on it, thus 'g+w' permission.
+        """
         conn = self.getFTPConnection(login=0)
         self.assertEqual(
             conn.login("annonymous", ""), "230 Login Successful.")
         conn.quit()
+        self.waitForClose()
+
+        lockfile_path = os.path.join(self.root_dir, '.lock')
+        self.assertEqual(os.stat(lockfile_path).st_mode, 0100664)
 
     def testCWD(self):
-        """Check automatic creation of directories 'cwd'ed in."""
+        """Check automatic creation of directories 'cwd'ed in.
+
+        Also ensure they are created with proper permission (g+rwx)
+        """
         conn = self.getFTPConnection()
         self.assertEqual(
             conn.cwd("foo/bar"), "250 CWD command successful.")
@@ -90,10 +101,15 @@ class TestPoppy(unittest.TestCase):
         conn.quit()
         self.waitForClose()
         wanted_path = self._uploadPath('foo/bar')
+
         self.assertTrue(os.path.exists(wanted_path))
+        self.assertEqual(os.stat(wanted_path).st_mode, 040775)
 
     def testMKD(self):
-        """Check recursive MKD (aka mkdir -p)"""
+        """Check recursive MKD (aka mkdir -p).
+
+        Also ensure they are created with proper permission (g+rwx)
+        """
         conn = self.getFTPConnection()
         self.assertEqual(
             conn.mkd("foo/bar"), "")
@@ -106,7 +122,9 @@ class TestPoppy(unittest.TestCase):
         conn.quit()
         self.waitForClose()
         wanted_path = self._uploadPath('foo/bar')
+
         self.assertTrue(os.path.exists(wanted_path))
+        self.assertEqual(os.stat(wanted_path).st_mode, 040775)
 
     def testRMD(self):
         """Check recursive RMD (aka rmdir)"""

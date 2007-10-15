@@ -19,6 +19,7 @@ from zope.app.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
 
 from canonical.config import config
+from canonical.launchpad import versioninfo
 from canonical.launchpad.webapp.adapter import (
     RequestExpired, get_request_statements, get_request_duration,
     soft_timeout_expired)
@@ -91,8 +92,10 @@ def _is_sensitive(request, name):
     if name == 'HTTP_COOKIE':
         return True
 
-    # Allow remaining UPPERCASE names and remaining form variables
-    if name == upper_name or name in request.form:
+    # Allow remaining UPPERCASE names and remaining form variables.  Note that
+    # XMLRPC requests won't have a form attribute.
+    form = getattr(request, 'form', [])
+    if name == upper_name or name in form:
         return False
 
     # Block everything else
@@ -114,6 +117,8 @@ class ErrorReport:
         self.duration = duration
         self.req_vars = req_vars
         self.db_statements = db_statements
+        self.branch_nick = versioninfo.branch_nick
+        self.revno  = versioninfo.revno
 
     def __repr__(self):
         return '<ErrorReport %s>' % self.id
@@ -123,6 +128,8 @@ class ErrorReport:
         fp.write('Exception-Type: %s\n' % _normalise_whitespace(self.type))
         fp.write('Exception-Value: %s\n' % _normalise_whitespace(self.value))
         fp.write('Date: %s\n' % self.time.isoformat())
+        fp.write('Branch: %s\n' % self.branch_nick)
+        fp.write('Revision: %s\n' % self.revno)
         fp.write('User: %s\n' % _normalise_whitespace(self.username))
         fp.write('URL: %s\n' % _normalise_whitespace(self.url))
         fp.write('Duration: %s\n' % self.duration)

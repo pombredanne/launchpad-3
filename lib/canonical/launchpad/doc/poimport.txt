@@ -27,7 +27,7 @@ We need this for the Librarian to work properly.
 
 And also, the DBSchema to change the imports status
 
-    >>> from canonical.lp.dbschema import RosettaImportStatus
+    >>> from canonical.launchpad.interfaces import RosettaImportStatus
 
 Then, let's get a handle to our mailer. This is the thing we'll examine to show
 what email has been sent, to whom, and what the body of the message contains:
@@ -37,26 +37,7 @@ what email has been sent, to whom, and what the body of the message contains:
 
 Here's a fake logger to capture any errors that happen.
 
-    >>> class FakeLogger:
-    ...     def message(self, prefix, *stuff, **kw):
-    ...         print prefix, ' '.join(stuff)
-    ...
-    ...         if 'exc_info' in kw:
-    ...             import sys
-    ...             import traceback
-    ...             exception = traceback.format_exception(*sys.exc_info())
-    ...             for thing in exception:
-    ...                 for line in thing.splitlines():
-    ...                     self.log(line)
-    ...
-    ...     def log(self, *stuff, **kw):
-    ...         self.message('log>', *stuff, **kw)
-    ...
-    ...     def warning(self, *stuff, **kw):
-    ...         self.message('WARNING', *stuff, **kw)
-    ...
-    ...     def info(self, *stuff, **kw):
-    ...         self.message('INFO', *stuff, **kw)
+    >>> from canonical.launchpad.scripts import FakeLogger
 
 Login as an admin to be able to do changes to the import queue.
 
@@ -258,7 +239,7 @@ errors.
     ... ''' % datetime.datetime.now(UTC).isoformat()
 
 This is the dbschema that controls the validation of a translation.
-    >>> from canonical.lp.dbschema import TranslationValidationStatus
+    >>> from canonical.launchpad.interfaces import TranslationValidationStatus
 
 The process of importing a PO file is much like that of importing a PO
 template. Remember, we need to tell the system that this po file is a
@@ -693,7 +674,7 @@ caring that imports are deferred.  The entry still gets approved as normal:
 Since imports for warty are suspended, and the only entry we happen to have
 waiting right now is for warty, the queue has no importable entries for us.
 
-    >>> translation_import_queue.getFirstEntryToImport() is None
+    >>> warty.getFirstEntryToImport() is None
     True
 
 So if we try to import now, nothing happens.  Our request remains on the queue,

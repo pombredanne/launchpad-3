@@ -15,6 +15,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import initZopeless
+from canonical.lp.dbschema import ArchivePurpose
 
 
 def parse_options():
@@ -47,7 +48,8 @@ def parse_options():
 
     parser.add_option("-R", "--distsroot",
                       dest="distsroot", metavar="SUFFIX", default=None,
-                      help="Override the dists path for generation")
+                      help="Override the dists path for generation of the "
+                           "PRIMARY archive only.")
 
     parser.add_option("--ppa", action="store_true",
                       dest="ppa", metavar="PPA", default=False,
@@ -79,7 +81,7 @@ def main():
             clear_current_connection_cache()
             gc.collect()
         except:
-            log.exception("Bad muju while %s" % description)
+            log.exception("Unexpected exception while %s" % description)
             txn.abort()
             raise
 
@@ -118,7 +120,7 @@ def main():
         allowed_suites.add((distroseries.name, pocket))
 
     if not options.ppa:
-        archives = [distribution.main_archive]
+        archives = distribution.all_distro_archives
     else:
         if options.careful or options.careful_publishing:
             archives = distribution.getAllPPAs()
@@ -130,24 +132,31 @@ def main():
             return
 
     for archive in archives:
-        if not options.ppa:
-            log.info("Processing %s main_archive" % distribution.name)
+        if archive.purpose != ArchivePurpose.PPA:
+            log.info("Processing %s %s" % (
+                distribution.name, archive.title))
         else:
             log.info("Processing %s" % archive.archive_url)
 
-        publisher = getPublisher(
-            archive, allowed_suites, log, options.distsroot)
+        # Only let the primary archive override the distsroot.
+        if archive.purpose == ArchivePurpose.PRIMARY:
+            publisher = getPublisher(
+                archive, allowed_suites, log, options.distsroot)
+        else:
+            publisher = getPublisher(archive, allowed_suites, log)
 
         try_and_commit("publishing", publisher.A_publish,
                        options.careful or options.careful_publishing)
         try_and_commit("dominating", publisher.B_dominate,
                        options.careful or options.careful_domination)
 
-        if not options.ppa:
-            try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
+        # The primary archive uses apt-ftparchive to generate the indexes,
+        # everything else uses the newer internal LP code.
+        if archive.purpose != ArchivePurpose.PRIMARY:
+            try_and_commit("building indexes", publisher.C_writeIndexes,
                            options.careful or options.careful_apt)
         else:
-            try_and_commit("building indexes", publisher.C_writeIndexes,
+            try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
                            options.careful or options.careful_apt)
 
         try_and_commit("doing release files", publisher.D_writeReleaseFiles,

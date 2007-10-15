@@ -8,15 +8,23 @@
   <content class="canonical.launchpad.database.Distribution">
     <allow interface="canonical.launchpad.interfaces.IDistribution"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <require
       permission="launchpad.Edit"
       set_attributes="displayname title summary description
                       translationgroup translationpermission
                       driver members owner bugcontact
-                      official_malone official_rosetta official_answers
                       security_contact upload_admin upload_sender
                       mirror_admin homepage_content icon logo
                       mugshot"
+      />
+    <require
+      permission="launchpad.Admin"
+      set_attributes="official_malone official_rosetta official_answers"
+      />
+    <require
+      permission="launchpad.TranslationsAdmin"
+      set_attributes="language_pack_admin"
       />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
@@ -48,6 +56,15 @@
       DistributionSetContextMenu
       "
     />
+
+  <browser:page
+    name="+addspec"
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.NewSpecificationFromDistributionView"
+    facet="specifications"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+  />
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistribution"
@@ -197,16 +214,6 @@
       template="../templates/related-bounties.pt"
       />
     <browser:page
-      name="+members"
-      facet="overview"
-      template="../templates/distribution-members.pt"
-      />
-    <browser:page
-      name="+translations"
-      facet="translations"
-      template="../templates/distribution-translations.pt"
-        />
-    <browser:page
       name="+builds"
       facet="overview"
       template="../templates/distribution-builds.pt"
@@ -219,7 +226,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistribution"
-    class="canonical.launchpad.browser.DistributionPPAView"
+    class="canonical.launchpad.browser.DistributionPPASearchView"
     name="+ppas"
     permission="zope.Public"
     facet="overview"
@@ -336,15 +343,6 @@
     template="../templates/object-branding.pt"
     />
 
-  <browser:page
-    name="+launchpad"
-    for="canonical.launchpad.interfaces.IDistribution"
-    class="canonical.launchpad.browser.DistributionLaunchpadUsageEditView"
-    facet="overview"
-    permission="launchpad.Edit"
-    template="../templates/object-launchpadusage.pt"
-    />
-
   <browser:editform
     name="+uploadadmin"
     for="canonical.launchpad.interfaces.IDistribution"
@@ -388,6 +386,31 @@
     template="../templates/distribution-bugcontact.pt"
     />
 
+  <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionView"
+    permission="zope.Public"
+    name="+translations"
+    facet="translations"
+    template="../templates/distribution-translations.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+      name="+help-translate-button"
+      facet="translations"
+      for="canonical.launchpad.interfaces.IDistribution"
+      class="canonical.launchpad.browser.HelpTranslateButtonView"
+      permission="zope.Public"
+      />
+
   <browser:editform
     name="+changetranslators"
     for="canonical.launchpad.interfaces.IDistribution"
@@ -396,6 +419,27 @@
     fields="translationgroup translationpermission"
     permission="launchpad.Edit"
     template="../templates/distribution-translators.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    name="+select-language-pack-admin"
+    class="canonical.launchpad.browser.DistributionLanguagePackAdminView"
+    facet="translations"
+    permission="launchpad.TranslationsAdmin"
+    template="../templates/distribution-language-pack-admin.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
   <browser:addform

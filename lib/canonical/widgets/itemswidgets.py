@@ -50,7 +50,7 @@ class LaunchpadRadioWidget(RadioWidget):
         return contents
 
     def renderItems(self, value):
-        """Render the items with with the correct radio button selected."""
+        """Render the items with the correct radio button selected."""
         # XXX Brad Bollenbach 2006-08-11: Workaround the fact that
         # value is a value taken directly from the form, when it should
         # instead have been already converted to a vocabulary term, to

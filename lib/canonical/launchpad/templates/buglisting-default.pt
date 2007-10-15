@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="malone"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone"
 >
   <body>
     <metal:heading fill-slot="pageheading"> 
@@ -13,7 +19,7 @@
             <span tal:replace="context/displayname">project displayname</span>.
             <br />
             You need to <a href="+newproduct">register another project that is
-            part of <tal:project replace="context/displayname" /></a>or
+            part of <tal:project replace="context/displayname" /></a> or
             associate an existing project with it.
           </p>
         </tal:block>

@@ -5,6 +5,13 @@
 __metaclass__ = type
 
 __all__ = [
+    'NewSpecificationFromDistributionView',
+    'NewSpecificationFromDistroSeriesView',
+    'NewSpecificationFromProductView',
+    'NewSpecificationFromProductSeriesView',
+    'NewSpecificationFromProjectView',
+    'NewSpecificationFromRootView',
+    'NewSpecificationFromSprintView',
     'SpecificationContextMenu',
     'SpecificationNavigation',
     'SpecificationView',
@@ -12,8 +19,6 @@ __all__ = [
     'SpecificationGoalProposeView',
     'SpecificationGoalDecideView',
     'SpecificationLinkBranchView',
-    'SpecificationAddView',
-    'SprintSpecificationAddView',
     'SpecificationRetargetingView',
     'SpecificationSprintAddView',
     'SpecificationSupersedingView',
@@ -31,6 +36,7 @@ from operator import attrgetter
 from zope.component import getUtility
 from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.formlib import form
+from zope.formlib.form import Fields
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -40,14 +46,16 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IDistribution,
     ILaunchBag,
+    INewSpecification,
+    INewSpecificationSeriesGoal,
+    INewSpecificationSprint,
+    INewSpecificationTarget,
+    INewSpecificationProjectTarget,
     IPersonSet,
     IProduct,
-    IProject,
     ISpecification,
-    INewSpecificationForm,
     ISpecificationBranch,
     ISpecificationSet,
-    ISprint,
     NotFoundError,
     )
 
@@ -66,6 +74,172 @@ from canonical.launchpad.browser.launchpad import (
 from canonical.launchpad.webapp.authorization import check_permission
 
 from canonical.lp.dbschema import SpecificationDefinitionStatus
+
+
+class NewSpecificationView(LaunchpadFormView):
+    """An abstract view for creating a new specification."""
+
+    label = "Register a new blueprint"
+
+    @action(_('Register Blueprint'), name='register')
+    def register(self, action, data):
+        """Registers a new specification."""
+        self.transform(data)
+        spec = getUtility(ISpecificationSet).new(
+            owner = self.user,
+            name = data.get('name'),
+            title = data.get('title'),
+            specurl = data.get('specurl'),
+            summary = data.get('summary'),
+            product = data.get('product'),
+            drafter = data.get('drafter'),
+            assignee = data.get('assignee'),
+            approver = data.get('approver'),
+            distribution = data.get('distribution'),
+            definition_status = data.get('definition_status'))
+        # Propose the specification as a series goal, if specified.
+        series = data.get('series')
+        if series is not None:
+            propose_goal_with_automatic_approval(spec, series, self.user)
+        # Propose the specification as a sprint topic, if specified.
+        sprint = data.get('sprint')
+        if sprint is not None:
+            spec.linkSprint(sprint, self.user)
+        # Set the default value for the next URL.
+        self._next_url = canonical_url(spec)
+
+    def transform(self, data):
+        """Transforms the given form data.
+
+        Called after the new specification form is submitted, but before the
+        new specification is created.
+
+        Ensures that the given data dictionary contains valid entries for each
+        of the arguments in ISpecificationSet.new(), to be used when creating
+        the new specification.
+
+        Optionally provides values for the following additional keys:
+
+        series: causes the new specification to be proposed as a series goal.
+        sprint: causes the new specification to be proposed as a sprint topic.
+        """
+        raise NotImplementedError
+
+    @property
+    def next_url(self):
+        """The next URL to redirect to after creating a new specification.
+
+        The default implementation returns a URL for the new specification
+        itself. Subclasses can override this behaviour by returning an
+        alternative URL.
+        """
+        return self._next_url
+
+
+class NewSpecificationFromTargetView(NewSpecificationView):
+    """An abstract view for creating a specification from a target context.
+
+    The context must correspond to a unique specification target.
+    """
+    schema = Fields(INewSpecification,
+                    INewSpecificationSprint)
+
+
+class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
+    """A view for creating a specification from a distribution."""
+
+    def transform(self, data):
+        data['distribution'] = self.context
+
+
+class NewSpecificationFromProductView(NewSpecificationFromTargetView):
+    """A view for creating a specification from a product."""
+
+    def transform(self, data):
+        data['product'] = self.context
+
+
+class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
+    """An abstract view for creating a specification from a series."""
+
+    schema = Fields(INewSpecification,
+                    INewSpecificationSprint,
+                    INewSpecificationSeriesGoal)
+
+    def transform(self, data):
+        if data['goal']:
+            data['series'] = self.context
+
+
+class NewSpecificationFromDistroSeriesView(NewSpecificationFromSeriesView):
+    """A view for creating a specification from a distro series."""
+
+    def transform(self, data):
+        super(NewSpecificationFromDistroSeriesView, self).transform(data)
+        data['distribution'] = self.context.distribution
+
+
+class NewSpecificationFromProductSeriesView(NewSpecificationFromSeriesView):
+    """A view for creating a specification from a product series."""
+
+    def transform(self, data):
+        super(NewSpecificationFromProductSeriesView, self).transform(data)
+        data['product'] = self.context.product
+
+
+class NewSpecificationFromNonTargetView(NewSpecificationView):
+    """An abstract view for creating a specification outside a target context.
+
+    The context may not correspond to a unique specification target. Hence
+    sub-classes must define a schema requiring the user to specify a target.
+    """
+    def transform(self, data):
+        data['distribution'] = IDistribution(data['target'], None)
+        data['product'] = IProduct(data['target'], None)
+
+    def validate(self, data):
+        """Ensures that the name for the new specification is unique.
+
+        The name must be unique within the context of the chosen target.
+        """
+        name = data.get('name')
+        target = data.get('target')
+        if name is not None and target is not None:
+            if target.getSpecification(name):
+                errormessage = self.schema['name'].errormessage
+                self.setFieldError('name', errormessage % name)
+
+
+class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
+    """A view for creating a specification from a project."""
+
+    schema = Fields(INewSpecificationProjectTarget,
+                    INewSpecification,
+                    INewSpecificationSprint)
+
+
+class NewSpecificationFromRootView(NewSpecificationFromNonTargetView):
+    """A view for creating a specification from the root of Launchpad."""
+
+    schema = Fields(INewSpecificationTarget,
+                    INewSpecification,
+                    INewSpecificationSprint)
+
+
+class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
+    """A view for creating a specification from a sprint."""
+
+    schema = Fields(INewSpecificationTarget,
+                    INewSpecification)
+
+    def transform(self, data):
+        super(NewSpecificationFromSprintView, self).transform(data)
+        data['sprint'] = self.context
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
 
 class SpecificationNavigation(Navigation):
 
@@ -194,7 +368,7 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+supersede', text, icon='edit')
 
     def linkbug(self):
-        text = 'Link to bug'
+        text = 'Link to bug report'
         return Link('+linkbug', text, icon='add')
 
     def unlinkbug(self):
@@ -326,13 +500,19 @@ class SpecificationGoalProposeView(GeneralFormView):
         if distroseries is not None:
             goal = distroseries
         self.context.whiteboard = whiteboard
-        self.context.proposeGoal(goal, self.user)
-        # Now we want to auto-approve the goal if the person making
-        # the proposal has permission to do this anyway
-        if goal is not None and check_permission('launchpad.Driver', goal):
-            self.context.acceptBy(self.user)
+        propose_goal_with_automatic_approval(self.context, goal, self.user)
         self._nextURL = canonical_url(self.context)
         return 'Done.'
+
+
+def propose_goal_with_automatic_approval(specification, series, user):
+    """Proposes the given specification as a goal for the given series. If
+    the given user has permission, the proposal is approved automatically.
+    """
+    specification.proposeGoal(series, user)
+    # If the proposer has permission, approve the goal automatically.
+    if series is not None and check_permission('launchpad.Driver', series):
+        specification.acceptBy(user)
 
 
 class SpecificationGoalDecideView(LaunchpadView):
@@ -369,7 +549,7 @@ class SpecificationRetargetingView(LaunchpadFormView):
         already a blueprint with the same name as this one for the
         given target.
         """
-        
+
         target = data.get('target')
 
         if target is None:
@@ -846,170 +1026,6 @@ class SpecificationTreeDotOutput(SpecificationTreeGraphView):
         return self.getDotFileText()
 
 
-class SpecificationAddViewBase(LaunchpadFormView):
-    """A base class for forms used to add a specification."""
-
-    schema = INewSpecificationForm
-    label = "Register a new Blueprint"
-
-    def _validate_name(self, name, target):
-        if target:
-            # The context does not correspond to a unique specification
-            # namespace. Instead, ensure that the specified name does
-            # not exist within the namespace of the specified target.
-            if target.getSpecification(name):
-                # The specified name already exists. Mark the field with
-                # an error.
-                self.setFieldError(
-                    'name',
-                    self.schema['name'].errormessage % name
-                )
-    @property
-    def field_names(self):
-        """Return the list of fields participating in the form.
-
-        This form is used sometimes on an IProject, IProduct or
-        IDistribution to get a new spec for them, and also on
-        ISpecificationSet as a system-wide "new spec" form. We need slightly
-        different field names in each case, so we make field_names a
-        property.
-        """
-        field_names = ['name', 'title', 'specurl', 'summary',
-                       'definition_status', 'assignee', 'drafter', 'approver']
-        if ISpecificationSet.providedBy(self.context):
-            field_names.insert(0, 'target')
-        elif IProject.providedBy(self.context):
-            field_names.insert(0, 'project_target')
-        else:
-            # Fields list can stay intact or modified by
-            # classes inheriting this one.
-            pass
-        return field_names
-
-    def validate(self, data):
-        """Validates the contents of the form.
-
-        Generally, we trust individual fields to perform validation in
-        isolation, but there are cases where fields must be validated
-        collectively. In the case where the current context does not
-        define a unique specification namespace, we need to identify
-        such a namespace from the user's specified target and check that
-        the specified name does not already exist in that namespace.
-        """
-        if ISpecificationSet.providedBy(self.context):
-            target = data.get('target')
-        elif IProject.providedBy(self.context):
-            target = data.get('project_target')
-        else:
-            # We can rely on the name field to validate itself.
-            target = None
-
-    def _add_spec(self, data):
-        """Add a new specification with the form values and return it."""
-        
-        owner = self.user
-        # clean up name
-        name = data['name'].strip().lower()
-        # determine product or distribution as target
-        product = distribution = None
-        target = data.get('target', None)
-        project_target = data.get('project_target', None)
-        if project_target is not None:
-            target = project_target
-        if target is None:
-            target = self.context
-        if IProduct.providedBy(target):
-            product = target
-        elif IDistribution.providedBy(target):
-            distribution = target
-        else:
-            raise AssertionError, 'Unknown kind of blueprint target'
-        spec = getUtility(ISpecificationSet).new(
-            name,
-            data['title'],
-            data['specurl'],
-            data['summary'],
-            data['definition_status'],
-            owner,
-            product=product,
-            distribution=distribution,
-            assignee=data.get('assignee', None),
-            drafter=data.get('drafter', None),
-            approver=data.get('approver', None))
-
-        sprint = data.get('sprint', None)
-        if sprint is not None:
-            spec.linkSprint(sprint, self.user)            
-        return spec
-
-
-class SpecificationAddView(SpecificationAddViewBase):
-    """A view for adding a specification from a project, project group
-    or distribution.
-    """
-    
-    @property
-    def field_names(self):
-        """Return the list of fields participating in the form.
-
-        For the general version of the form we always add the
-        sprint field.
-        """
-        field_names = super(SpecificationAddView, self).field_names
-        field_names.append('sprint')
-        return field_names
-
-    def validate(self, data):
-        """Validates the contents of the form.
-
-        Guarantees that the name chosen for the new blueprint
-        is unique within its target project.
-        """
-        if ISpecificationSet.providedBy(self.context):
-            target = data.get('target')
-        elif IProject.providedBy(self.context):
-            target = data.get('project_target')
-        else:
-            # We can rely on the name field to validate itself.
-            target = None
-        name = data.get('name')
-        self._validate_name(name, target)
-
-    @action(_('Register Blueprint'), name='register')
-    def register_action(self, action, data):
-        """Register a new blueprint."""
-        spec = self._add_spec(data)
-        self.next_url = canonical_url(spec)
-
-
-class SprintSpecificationAddView(SpecificationAddViewBase):
-    """A view for adding a specification from a sprint."""
-    
-    @property
-    def field_names(self):
-        """Return the list of fields participating in the form.
-
-        This form is used on an `ISprint` to get a new spec
-        for a project and propose it for the sprint.
-        """
-        field_names = super(SprintSpecificationAddView, self).field_names
-        field_names.insert(0, 'target')
-        return field_names
-
-    def validate(self, data):
-        """Validates the contents of the form."""
-        target = data.get('target')
-        name = data.get('name')
-        self._validate_name(name, target)
-
-    @action(_('Register Blueprint'), name='register')
-    def register_action(self, action, data):
-        """Register a new blueprint and propose it for a sprint."""
-        data['sprint'] = self.context
-        spec = self._add_spec(data)
-        self.next_url = canonical_url(self.context)
-        
-
 class SpecificationLinkBranchView(LaunchpadFormView):
     """A form used to link a branch to this specification."""
 
@@ -1042,12 +1058,18 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
     @action('Find blueprints', name="search")
     def search_action(self, action, data):
         """Redirect to the proper search page based on the scope widget."""
-        scope = data['scope']
-        search_text = data['search_text']
-        if scope is None:
+        # For the scope to be absent from the form, the user must
+        # build the query string themselves - most likely because they
+        # are a bot. In that case we just assume they want to search
+        # all projects.
+        scope = self.widgets['scope'].getScope()
+        if scope is None or scope == 'all':
+            # Use 'All projects' scope.
             url = '/'
         else:
-            url = canonical_url(scope)
+            url = canonical_url(
+                self.widgets['scope'].getInputValue())
+        search_text = data['search_text']
         if search_text is not None:
             url += '?searchtext=' + search_text
         self.next_url = url

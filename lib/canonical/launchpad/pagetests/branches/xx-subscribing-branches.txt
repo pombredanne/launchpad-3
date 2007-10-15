@@ -30,7 +30,7 @@ In order to subscribe to a branch, the user must be logged in.
 Let us subscribe to one of the branches. First, let's make sure we can see the
 link "Subscribe" from a branch's page.
 
-    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
 
 Initially there should be no subscribers.
@@ -46,8 +46,8 @@ are fairly arbitrary, so we'll explicitly choose the values.
     >>> browser.getControl('Generated Diff Size Limit').displayValue = [
     ...     '1000 lines']
 
-Now, post the subscription form. We should see a message that we have just
-subscribed.
+Now, post the subscription form. We should see a message that we have
+just subscribed.
 
     >>> browser.getControl('Subscribe').click()
     >>> print_informational_message(browser.contents)
@@ -60,8 +60,16 @@ There should be only one person subscribed to the branch now.
     >>> print_subscribers(browser.contents)
     No Privileges Person
 
-Now the link should say "Edit subscription" in the actions menu.
-Lets go to that page.
+Now, press the back button, and post the subscription form again. We
+should see a message that we are already subscribed.
+
+    >>> browser.goBack(count=1)
+    >>> browser.getControl('Subscribe').click()
+    >>> print_informational_message(browser.contents)
+    You are already subscribed to this branch.
+
+Now the subscription link should say "Edit subscription" in the actions
+menu.
 
     >>> browser.getLink('Edit subscription').click()
 
@@ -98,6 +106,19 @@ shown to the user.
     >>> print_informational_message(browser.contents)
     You have unsubscribed from this branch.
     >>> print_subscribers(browser.contents)
+
+Clicking the back button and then clicking on either Change or
+Unsubscribe will give a message that we are not subscribed.
+
+    >>> browser.goBack(count=1)
+    >>> browser.getControl('Change').click()
+    >>> print_informational_message(browser.contents)
+    You are not subscribed to this branch.
+
+    >>> browser.goBack(count=1)
+    >>> browser.getControl('Unsubscribe').click()
+    >>> print_informational_message(browser.contents)
+    You are not subscribed to this branch.
 
 
 == Subscribing someone else ==
@@ -166,10 +187,7 @@ The user can only subscribe teams that they are members of.
 
 Sample Person is a member of Landscape Developers.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-    >>> browser.addHeader(
-    ...     'Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> browser.getLink('Subscribe someone else').click()
@@ -222,8 +240,15 @@ the branch itself.
     >>> print extract_text(main_content.h1)
     Edit subscription to branch for Landscape Developers
 
-From this page the branch subscription can be altered or unsubscribed from.
+From this page the branch subscription can be altered...
 
+    >>> browser.getControl('Notification Level').displayValue = [
+    ...     'No email']
+    >>> browser.getControl('Change').click()
+
+... or unsubscribed from.
+
+    >>> browser.getLink(url='+subscription/landscape').click()
     >>> browser.getControl('Unsubscribe').click()
     >>> print_informational_message(browser.contents)
     Landscape Developers has been unsubscribed from this branch.

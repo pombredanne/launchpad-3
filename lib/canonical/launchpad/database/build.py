@@ -130,16 +130,19 @@ class Build(SQLBase):
         from canonical.launchpad.database.distroarchseriesbinarypackagerelease\
             import (DistroArchSeriesBinaryPackageRelease)
         return [DistroArchSeriesBinaryPackageRelease(
-            self.distroarchseries, bp) 
+            self.distroarchseries, bp)
             for bp in self.binarypackages]
 
     @property
     def can_be_retried(self):
         """See `IBuild`."""
-        # check if the build would be properly collected if it was
-        # reset. Do not reset denied builds.
-        if (self.is_trusted and not
-            self.distroseries.canUploadToPocket(self.pocket)):
+        # First check that the slave scanner would pick up the build record
+        # if we reset it.  Untrusted and Partner builds are always ok.
+        if (self.is_trusted and
+            self.archive.purpose != ArchivePurpose.PARTNER and
+            not self.distroseries.canUploadToPocket(self.pocket)):
+            # The slave scanner would not pick this up, so it cannot be
+            # re-tried.
             return False
 
         failed_buildstates = [
@@ -149,6 +152,8 @@ class Build(SQLBase):
             BuildStatus.FAILEDTOUPLOAD,
             ]
 
+        # If the build is currently in any of the failed states,
+        # it may be retried.
         return self.buildstate in failed_buildstates
 
     @property
@@ -163,6 +168,15 @@ class Build(SQLBase):
             "value is not suitable for this build record (%d)"
             % self.id)
         return self.datebuilt - self.buildduration
+
+    @property
+    def package_upload(self):
+        """See `IBuild`."""
+        packageuploadbuild = PackageUploadBuild.selectOneBy(build=self.id)
+        if packageuploadbuild is None:
+            return None
+        else:
+            return packageuploadbuild.packageupload
 
     def retry(self):
         """See `IBuild`."""
@@ -186,37 +200,21 @@ class Build(SQLBase):
                 return binpkg
         raise NotFoundError, 'No binary package "%s" in build' % name
 
-    def createBinaryPackageRelease(self, binarypackagename, version,
-                                   summary, description,
-                                   binpackageformat, component,
-                                   section, priority, shlibdeps,
-                                   depends, recommends, suggests,
-                                   conflicts, replaces, provides,
-                                   essential, installedsize,
-                                   copyright, licence,
-                                   architecturespecific):
-        """See `IBuild`."""
-        return BinaryPackageRelease(build=self,
-                                    binarypackagename=binarypackagename,
-                                    version=version,
-                                    summary=summary,
-                                    description=description,
-                                    binpackageformat=binpackageformat,
-                                    component=component,
-                                    section=section,
-                                    priority=priority,
-                                    shlibdeps=shlibdeps,
-                                    depends=depends,
-                                    recommends=recommends,
-                                    suggests=suggests,
-                                    conflicts=conflicts,
-                                    replaces=replaces,
-                                    provides=provides,
-                                    essential=essential,
-                                    installedsize=installedsize,
-                                    copyright=copyright,
-                                    licence=licence,
-                                    architecturespecific=architecturespecific)
+    def createBinaryPackageRelease(
+        self, binarypackagename, version, summary, description,
+        binpackageformat, component,section, priority, shlibdeps,
+        depends, recommends, suggests, conflicts, replaces, provides,
+        essential, installedsize, architecturespecific):
+        """See IBuild."""
+        return BinaryPackageRelease(
+            build=self, binarypackagename=binarypackagename, version=version,
+            summary=summary, description=description,
+            binpackageformat=binpackageformat,
+            component=component, section=section, priority=priority,
+            shlibdeps=shlibdeps, depends=depends, recommends=recommends,
+            suggests=suggests, conflicts=conflicts, replaces=replaces,
+            provides=provides, essential=essential, installedsize=installedsize,
+            architecturespecific=architecturespecific)
 
     def createBuildQueueEntry(self):
         """See `IBuild`"""
@@ -519,9 +517,9 @@ class BuildSet:
             DistroArchRelease.distrorelease = DistroRelease.id AND
             DistroRelease.distribution = Distribution.id AND
             Distribution.id = Archive.distribution AND
-            Archive.purpose = %s AND
+            Archive.purpose != %s AND
             Archive.id = Build.archive
-            """ % quote(ArchivePurpose.PRIMARY))
+            """ % quote(ArchivePurpose.PPA))
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,

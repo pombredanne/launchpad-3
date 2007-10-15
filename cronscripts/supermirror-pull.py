@@ -6,8 +6,9 @@ import _pythonpath
 from optparse import OptionParser
 
 from canonical.config import config
+from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.scripts import logger_options, logger
-from canonical.launchpad.scripts.supermirror import mirror, jobmanager
+from canonical.codehosting.puller import mirror, jobmanager
 
 import bzrlib.repository
 
@@ -43,18 +44,21 @@ if __name__ == '__main__':
     if arguments:
         parser.error("Unhandled arguments %s" % repr(arguments))
 
-    if which == 'upload':
-        errorreports = config.supermirror.upload_errorreports
-        manager_class = jobmanager.UploadJobManager
-    elif which == 'import':
-        errorreports = config.supermirror.import_errorreports
-        manager_class = jobmanager.ImportJobManager
-    elif which == 'mirror':
-        errorreports = config.supermirror.mirror_errorreports
-        manager_class = jobmanager.MirrorJobManager
-    else:
+    branch_type_map = {
+        'upload': BranchType.HOSTED,
+        'mirror': BranchType.MIRRORED,
+        'import': BranchType.IMPORTED
+        }
+
+    try:
+        branch_type = branch_type_map[which]
+    except KeyError:
         parser.error(
-            "Expected 'upload', 'import' or 'mirror', but got: %r" % which)
+            'Expected one of %s, but got: %r'
+            % (branch_type_map.keys(), which))
+
+    errorreports = getattr(config.supermirror, '%s_errorreports' % (which,))
+    manager = jobmanager.JobManager(branch_type)
 
     # Customize the oops reporting config.
     config.launchpad.errorreports.oops_prefix = errorreports.oops_prefix
@@ -65,5 +69,4 @@ if __name__ == '__main__':
 
     shut_up_deprecation_warning()
     force_bzr_to_use_urllib()
-    mirror(log, manager_class)
-
+    mirror(log, manager)

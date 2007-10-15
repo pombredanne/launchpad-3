@@ -73,9 +73,11 @@ will be displayed as well.
     >>> user_browser.getControl("Submit Bug Report").click()
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+filebug
+    >>> print find_main_content(user_browser.contents).renderContents()
+    <...
+    No similar bug reports were found...
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
-    No similar bugs were found.
     There is 1 error.
     Required input is missing.
 
@@ -110,7 +112,7 @@ This one matches, so we subscribe.
 
     >>> user_browser.getControl(
     ...     '#1 Firefox does not support SVG').selected = True
-    >>> user_browser.getControl('Subscribe to This Bug').click()
+    >>> user_browser.getControl('Subscribe to This Bug Report').click()
 
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/1

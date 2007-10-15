@@ -26,10 +26,8 @@
               }+id/${context/openid_identifier}"
           />
     </tal:valid_person_or_team>
-    <tal:not-team condition="not: context/isTeam">
-      <meta tal:condition="not: context/account_status/enumvalue:ACTIVE"
-            name="robots" content="noindex,nofollow" />
-    </tal:not-team>
+    <meta tal:condition="not: context/is_valid_person_or_team"
+          name="robots" content="noindex,nofollow" />
   </tal:block>
 </head>
 
@@ -244,7 +242,7 @@
             <th>Wiki:</th>
             <td>
               <span tal:repeat="wiki context/allwikis">
-                <a tal:content="wiki/wikiname"
+                <a tal:content="wiki/url"
                    tal:attributes="href wiki/url"
                  >WikiName</a><tal:block condition="not: repeat/wiki/end">,
                  </tal:block>
@@ -369,7 +367,8 @@
   </div>
   </tal:valid-person-or-team>
 
-  <div id="not-lp-user" condition="not: context/is_valid_person_or_team">
+  <div id="not-lp-user-or-team"
+       tal:condition="not: context/is_valid_person_or_team">
     <tal:noaccount tal:condition="context/account_status/enumvalue:NOACCOUNT">
       <p><span tal:replace="context/browsername" /> does not use Launchpad.
         <tal:block condition="context/creation_comment">

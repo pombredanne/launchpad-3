@@ -1,27 +1,30 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 """Launchpad XMLRPC faults."""
 
 __metaclass__ = type
+
 __all__ = [
+    'BadStatus',
     'BranchAlreadyRegistered',
+    'BranchCreationForbidden',
+    'BranchUniqueNameConflict',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
-    'NoSuchDistribution',
-    'NoSuchPackage',
-    'NoSuchProduct',
-    'NoSuchPerson',
+    'InvalidBranchUrl',
     'NoSuchBranch',
     'NoSuchBug',
+    'NoSuchDistribution',
+    'NoSuchPackage',
+    'NoSuchPerson',
+    'NoSuchProduct',
+    'NoSuchTeamMailingList',
     'RequiredParameterMissing',
-    'BranchCreationForbidden',
-    'InvalidBranchUrl',
-    'BranchUniqueNameConflict',
+    'UnexpectedStatusReport',
     ]
 
 import xmlrpclib
 
-from canonical.lp.dbschema import BugTaskStatus
 
 class LaunchpadFault(xmlrpclib.Fault):
     """Base class for a Launchpad XMLRPC fault.
@@ -106,7 +109,7 @@ class FileBugMissingProductOrDistribution(LaunchpadFault):
     error_code = 60
     msg_template = (
         "Required arguments missing. You must specify either a product or "
-        "distrubtion in which the bug exists.")
+        "distribution in which the bug exists.")
 
 
 class FileBugGotProductAndDistro(LaunchpadFault):
@@ -156,7 +159,8 @@ class BranchCreationForbidden(LaunchpadFault):
 
     error_code = 110
     msg_template = (
-        "You are not allowed to create a branch for project: %(parameter_name)s")
+        "You are not allowed to create a branch for project: "
+        "%(parameter_name)s")
 
     def __init__(self, parameter_name):
         LaunchpadFault.__init__(self, parameter_name=parameter_name)
@@ -180,3 +184,37 @@ class BranchUniqueNameConflict(LaunchpadFault):
 
     def __init__(self, unique_name):
         LaunchpadFault.__init__(self, unique_name=unique_name)
+
+class NoSuchTeamMailingList(LaunchpadFault):
+    """There is no such team mailing list with the given name."""
+
+    error_code = 140
+    msg_template = 'No such team mailing list: %(team_name)s'
+
+    def __init__(self, team_name):
+        LaunchpadFault.__init__(self, team_name=team_name)
+
+
+class UnexpectedStatusReport(LaunchpadFault):
+    """A team mailing list received an unexpected status report.
+
+    In other words, the mailing list was not in a state that was awaiting such
+    a status report.
+    """
+
+    error_code = 150
+    msg_template = ('Unexpected status report "%(status)s" '
+                    'for team: %(team_name)s')
+
+    def __init__(self, team_name, status):
+        LaunchpadFault.__init__(self, team_name=team_name, status=status)
+
+
+class BadStatus(LaunchpadFault):
+    """A bad status string was received."""
+
+    error_code = 160
+    msg_template = 'Bad status string "%(status)s" for team: %(team_name)s'
+
+    def __init__(self, team_name, status):
+        LaunchpadFault.__init__(self, team_name=team_name, status=status)

@@ -27,6 +27,9 @@ A, B, C, D = 'ABCD' # tsearch2 ranking constants
 
 # This data structure defines all of our full text indexes.  Each tuple in the
 # top level list creates a 'fti' column in the specified table.
+# The letters letters A-D assign a weight to the corresponding column.
+# A is most important, and D is least important. This affects result ordering
+# when you are ordering by rank.
 ALL_FTI = [
     ('bug', [
             ('name', A),
@@ -207,7 +210,7 @@ def fti(con, table, columns, configuration=DEFAULT_CONFIG):
     execute(con, r"""UPDATE %s SET fti=NULL""" % table)
 
     # Create the fti index
-    execute(con, "CREATE INDEX %s ON %s USING gin(fti)" % (
+    execute(con, "CREATE INDEX %s ON %s USING gist(fti)" % (
         index, table
         ))
 
@@ -455,17 +458,34 @@ def setup(con, configuration=DEFAULT_CONFIG):
     # doesn't support weighting so we need our own. We remove safety belts
     # since we know we will be calling it correctly.
     execute(con, r"""
-        CREATE OR REPLACE FUNCTION ftiupdate() RETURNS trigger AS '
+        CREATE OR REPLACE FUNCTION ts2.ftiupdate() RETURNS trigger AS '
             new = TD["new"]
             args = TD["args"][:]
+
+            # Short circuit if none of the relevant columns have been
+            # modified and fti is not being set to NULL (setting the fti
+            # column to NULL is thus how we can force a rebuild of the fti
+            # column).
+            if TD["event"] == "UPDATE" and new["fti"] != None:
+                old = TD["old"]
+                relevant_modification = False
+                for column_name in args[::2]:
+                    if new[column_name] != old[column_name]:
+                        relevant_modification = True
+                        break
+                if not relevant_modification:
+                    return "OK"
 
             # Generate an SQL statement that turns the requested
             # column values into a weighted tsvector
             sql = []
             for i in range(0, len(args), 2):
                 sql.append(
-                        "setweight(to_tsvector(''default'', "
-                        "coalesce($%d, '''')), $%d)" % (i+1,i+2))
+                        "setweight(to_tsvector(''default'', coalesce("
+                        "substring(ltrim($%d) from 1 for 2500),'''')),$%d)" % (
+                            i + 1, i + 2
+                            )
+                        )
                 args[i] = new[args[i]]
 
             sql = "SELECT %s AS fti" % "||".join(sql)

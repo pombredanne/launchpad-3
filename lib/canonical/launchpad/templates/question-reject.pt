@@ -27,7 +27,7 @@
         i18n:translate="">Reject question</h1>
 
     <p metal:fill-slot="extra_info" class="documentDescription">
-      If this question is an hoax, spam, a test, or sample data, it should
+      If this question is a hoax, spam, a test, or sample data, it should
       be rejected.
     </p>
   </div>

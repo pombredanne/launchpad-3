@@ -96,6 +96,17 @@ class ArchiveView(LaunchpadView):
         self.batchnav = BatchNavigator(publishing, self.request)
         self.search_results = self.batchnav.currentBatch()
 
+    def source_count_text(self):
+        if self.context.number_of_sources == 1:
+            return '%s source package' % self.context.number_of_sources
+        else:
+            return '%s source packages' % self.context.number_of_sources
+
+    def binary_count_text(self):
+        if self.context.number_of_binaries == 1:
+            return '%s binary package' % self.context.number_of_binaries
+        else:
+            return '%s binary packages' % self.context.number_of_binaries
 
 class ArchiveActivateView(LaunchpadFormView):
     """PPA activation view class.
@@ -124,8 +135,8 @@ class ArchiveActivateView(LaunchpadFormView):
     @action(_("Activate"), name="activate")
     def action_save(self, action, data):
         """Activate PPA and moves to its page."""
-        ppa = getUtility(IArchiveSet).new(
-            owner=self.context, purpose=ArchivePurpose.PPA,
+        ppa = getUtility(IArchiveSet).ensure(
+            owner=self.context, distribution=None, purpose=ArchivePurpose.PPA,
             description=data['description'])
         self.next_url = canonical_url(ppa)
 

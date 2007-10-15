@@ -31,16 +31,16 @@ There are two CodeImports in the sample data and they both show up in
 the page:
 
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
-    >>> ids = [extract_text(tr.td) for tr in table.tbody('tr')]
-    >>> ids
-    [u'1', u'2']
+    >>> names = [extract_text(tr.td) for tr in table.tbody('tr')]
+    >>> names
+    [u'gnome-terminal/import', u'evolution/import']
 
 If we click on the code import's name, we go to the page for that
 import:
 
-    >>> browser.getLink('1').click()
+    >>> browser.getLink('gnome-terminal/import').click()
     >>> browser.url
-    'http://code.launchpad.dev/+code-imports/1'
+    'http://code.launchpad.dev/~vcs-imports/gnome-terminal/import/+code-import'
     >>> browser.title
     'Code Import for gnome-terminal'
 
@@ -66,10 +66,10 @@ and to the person requesting the import:
 
 There's a similar page for the other import, which uses CVS:
 
-    >>> browser.getLink('Code Imports').click()
-    >>> browser.getLink('2').click()
+    >>> browser.open('http://code.launchpad.dev/+code-imports')
+    >>> browser.getLink('evolution/import').click()
     >>> browser.url
-    'http://code.launchpad.dev/+code-imports/2'
+    'http://code.launchpad.dev/~vcs-imports/evolution/import/+code-import'
     >>> extract_text(
     ...     find_tag_by_id(browser.contents, 'review-status'))
     u'Pending Review'
@@ -87,7 +87,7 @@ ensuring that the control for filtering on review status reads "Any"
 by default, as the code that ensures this is poking at Zope 3
 internals a bit.
 
-    >>> browser.getLink('Code Imports').click()
+    >>> browser.open('http://code.launchpad.dev/+code-imports')
     >>> control = browser.getControl(name="field.status")
     >>> control.displayValue
     ['Any']
@@ -103,9 +103,9 @@ imports appear again.
     >>> browser.getControl(name="field.status").displayValue = ["Any"]
     >>> browser.getControl(name="submit").click()
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
-    >>> ids = [extract_text(tr.td) for tr in table.tbody('tr')]
-    >>> ids
-    [u'1', u'2']
+    >>> names = [extract_text(tr.td) for tr in table.tbody('tr')]
+    >>> names
+    [u'gnome-terminal/import', u'evolution/import']
 
 If we create a lot of imports, the listing view will be batched.
 
@@ -114,7 +114,7 @@ If we create a lot of imports, the listing view will be batched.
     >>> from canonical.launchpad.interfaces import (
     ...     IBranchSet, ICodeImportSet, ILaunchpadCelebrities,
     ...     IPersonSet, IProductSet, BranchType)
-    >>> from canonical.lp.dbschema import RevisionControlSystems
+    >>> from canonical.launchpad.interfaces import RevisionControlSystems
 
     >>> login('david.allouche@canonical.com')
 

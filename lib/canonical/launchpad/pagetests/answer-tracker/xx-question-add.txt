@@ -156,8 +156,8 @@ redirect the user to the question page.
 
 The user automatically got subscribed to this new question.
 
-    >>> find_tag_by_id(user_browser.contents, 'question-subscribers')
-    <div id="question-subscribers" class="portlet">
+    >>> find_tag_by_id(user_browser.contents, 'portlet-subscribers')
+    <div class="portlet" id="portlet-subscribers">
     ...<a href=".../~no-priv">No Privileges Person</a>...
     </div>
 

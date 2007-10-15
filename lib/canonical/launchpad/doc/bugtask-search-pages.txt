@@ -235,8 +235,7 @@ need to be logged in.
 
     >>> login("test@canonical.com")
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from canonical.launchpad.interfaces import BugTaskStatus, IBugTaskSet
     >>> open_bugtask = getUtility(IBugTaskSet).get(19)
     >>> open_bugtask.status.name
     'NEW'
@@ -369,12 +368,12 @@ Person.
     >>> bugfilters_portlet_view = create_view(firefox, '+portlet-bugfilters')
 
     >>> print bugfilters_portlet_view.getOpenBugsURL()
-    http://...?search=Search&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed
+    +bugs?search=Search&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed
     >>> print bugfilters_portlet_view.context.open_bugtasks.count()
     3
 
     >>> print bugfilters_portlet_view.getBugsAssignedToMeURL()
-    http://...?search=Search&field.assignee=name12
+    +bugs?search=Search&field.assignee=name12
 
     >>> print bugfilters_portlet_view.getBugsAssignedToMeCount()
     1
@@ -400,7 +399,7 @@ it would not be included in the counts.
 The critical bugs link and counts consider only unresolved bugs.
 
     >>> print bugfilters_portlet_view.getCriticalBugsURL()
-    http://...?search=Search&field.importance=Critical&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed
+    +bugs?search=Search&field.importance=Critical&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed
 
     >>> bugfilters_portlet_view.context.critical_bugtasks.count()
     1
@@ -421,20 +420,20 @@ The critical bugs link and counts consider only unresolved bugs.
 Moving along...
 
     >>> print bugfilters_portlet_view.getNewBugsURL()
-    http://...?search=Search&field.status=New
+    +bugs?search=Search&field.status=New
 
     >>> print bugfilters_portlet_view.context.new_bugtasks.count()
     3
 
     >>> print bugfilters_portlet_view.getUnassignedBugsURL()
-    http://...?search=Search&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&assignee_option=none
+    +bugs?search=Search&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&assignee_option=none
     >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
     1
 
 And finally, all bugs ever reported.
 
     >>> print bugfilters_portlet_view.getAllBugsEverReportedURL()
-    http://...?search=Search&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&field.status=Fix+Released&field.status=Invalid&field.status=Won%27t+Fix&field.omit_dupes.used=
+    +bugs?search=Search&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&field.status=Fix+Released&field.status=Invalid&field.status=Won%27t+Fix&field.omit_dupes.used=
 
     >>> print bugfilters_portlet_view.context.all_bugtasks.count()
     4

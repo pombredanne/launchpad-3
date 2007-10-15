@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Launchpad Browser-Interface View classes
 
@@ -13,10 +13,12 @@ from canonical.launchpad.browser.bounty import *
 from canonical.launchpad.browser.bountysubscription import *
 from canonical.launchpad.browser.branch import *
 from canonical.launchpad.browser.branchlisting import *
+from canonical.launchpad.browser.branchmergeproposal import *
 from canonical.launchpad.browser.branchref import *
 from canonical.launchpad.browser.branchsubscription import *
 from canonical.launchpad.browser.branchvisibilitypolicy import *
 from canonical.launchpad.browser.bug import *
+from canonical.launchpad.browser.bugalsoaffects import *
 from canonical.launchpad.browser.buglinktarget import *
 from canonical.launchpad.browser.bugattachment import *
 from canonical.launchpad.browser.bugbranch import *
@@ -51,6 +53,8 @@ from canonical.launchpad.browser.branding import *
 from canonical.launchpad.browser.faq import *
 from canonical.launchpad.browser.faqcollection import *
 from canonical.launchpad.browser.faqtarget import *
+from canonical.launchpad.browser.hwdb import *
+from canonical.launchpad.browser.hastranslationimports import *
 from canonical.launchpad.browser.karma import *
 from canonical.launchpad.browser.language import *
 from canonical.launchpad.browser.librarian import *
@@ -74,7 +78,6 @@ from canonical.launchpad.browser.productrelease import *
 from canonical.launchpad.browser.productseries import *
 from canonical.launchpad.browser.project import *
 from canonical.launchpad.browser.publishedpackage import *
-from canonical.launchpad.browser.rosetta import *
 from canonical.launchpad.browser.shipit import *
 from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.sourcepackagerelease import *
@@ -91,6 +94,7 @@ from canonical.launchpad.browser.sprintspecification import *
 from canonical.launchpad.browser.team import *
 from canonical.launchpad.browser.teammembership import *
 from canonical.launchpad.browser.temporaryblobstorage import *
+from canonical.launchpad.browser.translations import *
 from canonical.launchpad.browser.question import *
 from canonical.launchpad.browser.questiontarget import *
 from canonical.launchpad.browser.build import *

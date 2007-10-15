@@ -106,21 +106,16 @@ def find_portlet(content, name):
 
 def find_main_content(content):
     """Find and return the main content area of the page"""
-    # Look for standard page with portlets first.
-    tag = find_tag_by_id(content, 'maincontent')
-    if tag:
-        return tag
-    # Fall back to looking for the single-column page.
-    return find_tag_by_id(content, 'singlecolumn')
+    return find_tag_by_id(content, 'maincontent')
 
 
 def get_feedback_messages(browser):
     """Find and return the feedback messages of the page."""
-    message_classes = ['message', 'informational message', 'error message']
-    soup = BeautifulSoup(
-        browser.contents,
-        parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
-    return [tag.string for tag in soup]
+    message_classes = [
+        'message', 'informational message', 'error message', 'warning message']
+    strainer = SoupStrainer(['div', 'p'], {'class': message_classes})
+    soup = BeautifulSoup(browser.contents, parseOnlyThese=strainer)
+    return [extract_text(tag) for tag in soup]
 
 
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
@@ -213,6 +208,14 @@ def print_action_links(content):
     for entry in entries:
         print '%s: %s' % (entry.a.string, entry.a['href'])
 
+def print_comments(page):
+    """Print the comments on a BugTask index page."""
+    main_content = find_main_content(page)
+    for comment in main_content('div', 'boardCommentBody'):
+        for li_tag in comment('li'):
+            print "Attachment: %s" % li_tag.a.renderContents()
+        print comment.div.renderContents()
+        print "-"*40
 
 def setUpGlobs(test):
     # Our tests report being on a different port.
@@ -245,6 +248,7 @@ def setUpGlobs(test):
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
+    test.globs['print_comments'] = print_comments
 
 
 class PageStoryTestCase(unittest.TestCase):

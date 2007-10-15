@@ -6,77 +6,60 @@ __metaclass__ = type
 __all__ = ['Product', 'ProductSet']
 
 
-from zope.interface import implements
-from zope.component import getUtility
-
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
+from zope.interface import implements
+from zope.component import getUtility
 
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
+from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
-from canonical.cachedproperty import cachedproperty
-
-from canonical.lp.dbschema import (
-    TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationDefinitionStatus, SpecificationImplementationStatus,
-    RosettaImportStatus)
-
-from canonical.launchpad.helpers import shortlist
-
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
-from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
-from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.faq import FAQ, FAQSearch
-from canonical.launchpad.database.productseries import ProductSeries
-from canonical.launchpad.database.productbounty import ProductBounty
+from canonical.launchpad.database.bugtarget import BugTargetBase
+from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.distribution import Distribution
-from canonical.launchpad.database.productrelease import ProductRelease
-from canonical.launchpad.database.bugtask import BugTaskSet
-from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
+from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.productbounty import ProductBounty
+from canonical.launchpad.database.productrelease import ProductRelease
+from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.question import (
     QuestionTargetSearch, QuestionTargetMixin)
-from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.translationimportqueue import (
-    TranslationImportQueueEntry)
-from canonical.launchpad.database.cal import Calendar
+    HasTranslationImportsMixin)
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    ICalendarOwner,
-    IFAQTarget,
-    IHasIcon,
-    IHasLogo,
-    IHasMugshot,
-    IHasTranslationImports,
-    ILaunchpadCelebrities,
-    ILaunchpadStatisticSet,
-    IPersonSet,
-    IProduct,
-    IProductSet,
-    IQuestionTarget,
-    NotFoundError,
-    QUESTION_STATUS_DEFAULT_SEARCH,
-    )
+    DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, ICalendarOwner, IFAQTarget,
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    ILaunchpadStatisticSet, IPersonSet, IProduct, IProductSet,
+    IQuestionTarget, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
+    TranslationPermission)
+from canonical.lp.dbschema import (
+    SpecificationSort, SpecificationFilter, SpecificationDefinitionStatus,
+    SpecificationImplementationStatus)
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
-              QuestionTargetMixin):
+              QuestionTargetMixin, HasTranslationImportsMixin):
     """A Product."""
 
     implements(IProduct, ICalendarOwner, IFAQTarget, IQuestionTarget,
-               IHasLogo, IHasMugshot, IHasIcon, IHasTranslationImports)
+               IHasLogo, IHasMugshot, IHasIcon)
 
     _table = 'Product'
 
@@ -334,7 +317,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     def getTargetTypes(self):
         """See `QuestionTargetMixin`.
-        
+
         Defines product as self.
         """
         return {'product': self}
@@ -384,10 +367,14 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         packages = self.translatable_packages
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         targetseries = ubuntu.currentseries
-        # First, go with the latest product series that has templates:
         series = self.translatable_series
+
+        # First, go with development focus branch
+        if series and self.development_focus in series:
+            return self.development_focus
+        # Next, go with the latest product series that has templates:
         if series:
-            return series[0]
+            return series[-1]
         # Otherwise, look for an Ubuntu package in the current distroseries:
         for package in packages:
             if package.distroseries == targetseries:
@@ -580,17 +567,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         ProductBounty(product=self, bounty=bounty)
         return None
 
-    def getFirstEntryToImport(self):
-        """See `IHasTranslationImports`."""
-        return TranslationImportQueueEntry.selectFirst(
-            '''status=%s AND
-            productseries=ProductSeries.id AND
-            ProductSeries.product=%s''' % sqlvalues(
-            RosettaImportStatus.APPROVED,
-            self.id),
-            clauseTables=['ProductSeries'],
-            orderBy='TranslationImportQueueEntry.dateimported')
-
 
 class ProductSet:
     implements(IProductSet)
@@ -641,11 +617,26 @@ class ProductSet:
             return default
         return product
 
-    def getProductsWithBranches(self):
+    def getProductsWithBranches(self, num_products=None):
         """See `IProductSet`."""
-        return Product.select(
-            'Product.id in (select distinct(product) from Branch)',
+        results = Product.select('''
+            Product.id in (
+                select distinct(product) from Branch
+                where lifecycle_status in %s)
+            ''' % sqlvalues(DEFAULT_BRANCH_STATUS_IN_LISTING),
             orderBy='name')
+        if num_products is not None:
+            results = results.limit(num_products)
+        return results
+
+    def getProductsWithUserDevelopmentBranches(self):
+        """See `IProductSet`."""
+        return Product.select('''
+            Product.development_focus = ProductSeries.id and
+            ProductSeries.user_branch = Branch.id and
+            Branch.branch_type in %s
+            ''' % quote((BranchType.HOSTED, BranchType.MIRRORED)),
+            orderBy='name', clauseTables=['ProductSeries', 'Branch'])
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,

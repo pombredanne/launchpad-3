@@ -446,9 +446,7 @@ And its binary:
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  DEBUG    NEW: foo_1.0-1_i386.deb
-  ...
-  DEBUG    Distribution: breezy
+  DEBUG   foo: (binary) NEW
   ...
 
 Set ubuntutest/breezy as the "current series" to activate post-release
@@ -492,7 +490,6 @@ ubuntutest/breezy.
   ...                          title='PowerPC G3/G4', description='G3/G4')
   >>> powerpc_dar = breezy.newArch('powerpc', powerpc_pf, True, breezy.owner)
 
-
 After having the respective DistroArchSeries in place we will submit a
 binary upload for the last source in BACKPORTS. The ancestry should be
 found in i386/RELEASE, because it's the only one available.
@@ -505,10 +502,6 @@ found in i386/RELEASE, because it's the only one available.
   ...
   DEBUG   Checking for foo/2.9-1/powerpc binary ancestry
   DEBUG   foo: (binary) exists in i386/RELEASE
-  ...
-  DEBUG     OK: foo_2.9-1_powerpc.deb
-  ...
-  DEBUG    Distribution: breezy-backports
   ...
 
 
@@ -697,6 +690,13 @@ First a couple helpers.
 
 
 First publish the distro carefully, to get everything in place.
+Before this can happen we need to set up some dummy librarian files for
+files that are published in the sample data.
+
+  >>> fillLibrarianFile(66)
+  >>> fillLibrarianFile(67)
+  >>> fillLibrarianFile(68)
+  >>> fillLibrarianFile(70)
 
   >>> (result, stdout, stderr) = run_publish_distro(["-C"])
   >>> result

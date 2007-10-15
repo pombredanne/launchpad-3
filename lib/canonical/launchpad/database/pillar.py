@@ -146,7 +146,7 @@ class PillarNameSet:
             SELECT 'distribution' AS otype, id, name, title, description,
                 icon,
                 9999999 AS rank
-            FROM distribution 
+            FROM distribution
             WHERE name = lower(%(text)s) OR lower(title) = lower(%(text)s)
 
             UNION ALL

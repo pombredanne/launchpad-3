@@ -47,7 +47,7 @@
     <resource name="blueprint-not" file="../images/blueprint-not.png" />
     <resource name="bounty" file="../images/bounty.png" />
     <resource name="branch" file="../images/branch.png" />
-    <resource name="branch-large" file="../images/branch-large.png" />
+    <resource name="branch-large" file="../images/branch-large.gif" />
     <resource name="bug" file="../images/bug.png" />
     <resource name="bug-critical" file="../images/bug-critical.png" />
     <resource name="bug-high" file="../images/bug-high.png" />
@@ -77,6 +77,7 @@
     <resource name="error" file="../images/error.png" />
     <resource name="error-badge" file="../images/error-badge.png" />
     <resource name="error-large" file="../images/error-large.png" />
+    <resource name="expand" file="../images/bug-status-expand.png" />
     <resource name="faq" file="../images/faq.png" />
     <resource name="favourite-yes" file="../images/fav-yes.png" />
     <resource name="favourite-no" file="../images/fav-no.png" />
@@ -91,9 +92,6 @@
     <resource name="list" file="../images/list.png" />
     <resource name="language" file="../images/language.png" />
     <resource name="link" file="../images/link.png" />
-    <resource name="locked" file="../images/locked.png" />
-    <resource name="locked-badge" file="../images/nyet-badge.png" />
-    <resource name="locked-large" file="../images/locked-large.png" />
     <resource name="mail" file="../images/mail.png" />
     <resource name="maybe" file="../images/maybe.png" />
     <resource name="mentoring" file="../images/mentoring.png" />
@@ -111,6 +109,9 @@
     <resource name="person-inactive-badge" file="../images/person-inactive-badge.png" />
     <resource name="person-inactive-logo" file="../images/person-inactive-logo.png" />
     <resource name="person-inactive-mugshot" file="../images/person-inactive-mugshot.png" />
+    <resource name="private" file="../images/padlock.png" />
+    <resource name="private-bg" file="../images/private-bg.png" />
+    <resource name="private-large" file="../images/padlock-large.png" />
     <resource name="product" file="../images/product.png" />
     <resource name="product-badge" file="../images/product-badge.png" />
     <resource name="product-logo" file="../images/product-logo.png" />
@@ -121,12 +122,15 @@
     <resource name="project-mugshot" file="../images/project-mugshot.png" />
     <resource name="purple-bar" file="../images/purple-bar.png" />
     <resource name="question" file="../images/question.png" />
+    <resource name="read-only" file="../images/pencil-crossed.png" />
     <resource name="red-bar" file="../images/red-bar.png" />
     <resource name="remove" file="../images/remove.png" />
     <resource name="required" file="../images/required.gif" />
     <!-- XXX mpt 2006-08-22: Remove this once we use "(Optional)" instead -->
     <resource name="retry" file="../images/retry.png" />
     <resource name="search" file="../images/search.png" />
+    <resource name="security" file="../images/warning.png" />
+    <resource name="security-large" file="../images/warning-large.png" />
     <resource name="sorry-closed" file="../images/sorry-closed.png" />
     <resource name="stop" file="../images/stop.png" />
     <resource name="meeting" file="../images/meeting.png" />

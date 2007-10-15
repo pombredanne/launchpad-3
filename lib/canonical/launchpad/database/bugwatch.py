@@ -24,6 +24,7 @@ from canonical.launchpad.event import SQLObjectModifiedEvent
 
 from canonical.launchpad.webapp import urlappend, urlsplit
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.webapp.uri import find_uris_in_text
 
 from canonical.launchpad.interfaces import (
     IBugWatch, IBugWatchSet, IBugTrackerSet, ILaunchpadCelebrities,
@@ -95,7 +96,8 @@ class BugWatch(SQLBase):
             linked_bugtask.transitionToAssignee(None)
             if linked_bugtask.status != old_bugtask.status:
                 event = SQLObjectModifiedEvent(
-                    linked_bugtask, old_bugtask, ['status'])
+                    linked_bugtask, old_bugtask, ['status'],
+                    user=getUtility(ILaunchpadCelebrities).bug_watch_updater)
                 notify(event)
 
     def destroySelf(self):
@@ -109,7 +111,6 @@ class BugWatchSet(BugSetBase):
 
     implements(IBugWatchSet)
     table = BugWatch
-    url_pattern = re.compile(r'(\bhttps?://.+/\S*)\.?\b')
 
     def __init__(self, bug=None):
         BugSetBase.__init__(self, bug)
@@ -137,13 +138,13 @@ class BugWatchSet(BugSetBase):
         """See IBugTrackerSet.fromText."""
         newwatches = []
         # Let's find all the URLs and see if they are bug references.
-        matches = self.url_pattern.findall(text)
+        matches = list(find_uris_in_text(text))
         if len(matches) == 0:
             return []
 
         for url in matches:
             try:
-                bugtracker, remotebug = self.extractBugTrackerAndBug(url)
+                bugtracker, remotebug = self.extractBugTrackerAndBug(str(url))
             except NoBugTrackerFound, error:
                 bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
                     error.base_url, owner, error.bugtracker_type)
@@ -181,7 +182,7 @@ class BugWatchSet(BugSetBase):
     def createBugWatch(self, bug, owner, bugtracker, remotebug):
         """See canonical.launchpad.interfaces.IBugWatchSet."""
         return BugWatch(
-            bug=bug, owner=owner, datecreated=UTC_NOW, lastchanged=UTC_NOW, 
+            bug=bug, owner=owner, datecreated=UTC_NOW, lastchanged=UTC_NOW,
             bugtracker=bugtracker, remotebug=remotebug)
 
     def parseBugzillaURL(self, scheme, host, path, query):
@@ -268,7 +269,8 @@ class BugWatchSet(BugSetBase):
         return the global SF instance. This makes it possible for people
         to use alternative host names, like sf.net.
         """
-        if not path.startswith('/tracker/'):
+        if (not path.startswith('/support/tracker.php') and
+            not path.startswith('/tracker/index.php')):
             return None
         if not query.get('aid'):
             return None

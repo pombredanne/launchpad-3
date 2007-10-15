@@ -12,7 +12,6 @@ from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
-
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -21,6 +20,7 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.interfaces import (
     IDistroSeriesSourcePackageRelease, ISourcePackageRelease)
+from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 from canonical.lp import decorates
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackageUploadStatus)
@@ -67,6 +67,11 @@ class DistroSeriesSourcePackageRelease:
         return pub_hist[0]
 
     @property
+    def version(self):
+        """See IDistroSeriesSourcePackageRelease."""
+        return self.sourcepackagerelease.version
+
+    @property
     def pocket(self):
         """See IDistroSeriesSourcePackageRelease."""
         currpub = self.current_publishing_record
@@ -95,11 +100,12 @@ class DistroSeriesSourcePackageRelease:
         """See IDistroSeriesSourcePackage."""
         return SourcePackagePublishingHistory.select("""
             distrorelease = %s AND
-            archive = %s AND
+            archive IN %s AND
             sourcepackagerelease = %s
-            """ % sqlvalues(self.distroseries,
-                            self.distroseries.main_archive,
-                            self.sourcepackagerelease),
+            """ % sqlvalues(
+                    self.distroseries,
+                    self.distroseries.distribution.all_distro_archive_ids,
+                    self.sourcepackagerelease),
             orderBy='-datecreated')
 
     @property
@@ -123,7 +129,6 @@ class DistroSeriesSourcePackageRelease:
     def binaries(self):
         """See IDistroSeriesSourcePackageRelease."""
         clauseTables = [
-            'SourcePackageRelease',
             'BinaryPackageRelease',
             'DistroArchRelease',
             'Build',
@@ -131,22 +136,21 @@ class DistroSeriesSourcePackageRelease:
         ]
 
         query = """
-        SourcePackageRelease.id=Build.sourcepackagerelease AND
         BinaryPackageRelease.build=Build.id AND
         DistroArchRelease.id =
             BinaryPackagePublishingHistory.distroarchrelease AND
         BinaryPackagePublishingHistory.binarypackagerelease=
             BinaryPackageRelease.id AND
         DistroArchRelease.distrorelease=%s AND
-        BinaryPackagePublishingHistory.archive = %s AND
+        BinaryPackagePublishingHistory.archive IN %s AND
         Build.sourcepackagerelease=%s
         """ % sqlvalues(self.distroseries,
-                        self.distroseries.main_archive,
+                        self.distroseries.distribution.all_distro_archive_ids,
                         self.sourcepackagerelease)
 
         return BinaryPackageRelease.select(
                 query, prejoinClauseTables=['Build'],
-                clauseTables=clauseTables)
+                clauseTables=clauseTables, distinct=True)
 
     @property
     def meta_binaries(self):
@@ -183,11 +187,11 @@ class DistroSeriesSourcePackageRelease:
         # Retrieve current publishing info
         current = SourcePackagePublishingHistory.selectFirst("""
         distrorelease = %s AND
-        archive = %s AND
+        archive IN %s AND
         sourcepackagerelease = %s AND
         status = %s
         """ % sqlvalues(self.distroseries,
-                        self.distroseries.main_archive,
+                        self.distroseries.distribution.all_distro_archive_ids,
                         self.sourcepackagerelease,
                         PackagePublishingStatus.PUBLISHED),
             orderBy='-datecreated')
@@ -216,6 +220,15 @@ class DistroSeriesSourcePackageRelease:
             new_section == current.section):
             return
 
+        # See if the archive has changed by virtue of the component
+        # changing:
+        new_archive = self.distribution.getArchiveByComponent(
+            new_component.name)
+        if new_archive != None and new_archive != current.archive:
+            raise ArchiveOverriderError(
+                "Overriding component to '%s' failed because it would "
+                "require a new archive." % new_component.name)
+
         SecureSourcePackagePublishingHistory(
             distroseries=current.distroseries,
             sourcepackagerelease=current.sourcepackagerelease,
@@ -225,7 +238,7 @@ class DistroSeriesSourcePackageRelease:
             pocket=current.pocket,
             component=new_component,
             section=new_section,
-            archive=current.distroseries.main_archive
+            archive=current.archive
         )
 
     def supersede(self):

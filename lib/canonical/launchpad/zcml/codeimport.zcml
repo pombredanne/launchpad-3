@@ -20,8 +20,8 @@
 
   <browser:url
     for="canonical.launchpad.interfaces.ICodeImport"
-    path_expression="string:${id}"
-    parent_utility="canonical.launchpad.interfaces.ICodeImportSet"
+    path_expression="string:+code-import"
+    attribute_to_parent="branch"
     rootsite="code" />
 
   <browser:defaultView
@@ -47,11 +47,6 @@
       permission="launchpad.View"
       interface="canonical.launchpad.interfaces.ICodeImportSet" />
   </securedutility>
-
-  <browser:navigation
-    module="canonical.launchpad.browser"
-    classes="CodeImportSetNavigation"
-    />
 
   <browser:url
     for="canonical.launchpad.interfaces.ICodeImportSet"

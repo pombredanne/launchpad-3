@@ -25,7 +25,7 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
 
 class DistroMirrorProber(LaunchpadCronScript):
     usage = ('%prog --content-type=(archive|cdimage) [--force] '
-             '[--no-owner-notification]')
+             '[--no-owner-notification] [--max-mirrors=N]')
 
     def _sanity_check_mirror(self, mirror):
         """Check that the given mirror is official and has an http_base_url."""
@@ -59,6 +59,9 @@ class DistroMirrorProber(LaunchpadCronScript):
         self.parser.add_option('--no-remote-hosts',
             dest='no_remote_hosts', default=False, action='store_true',
             help='Do not try to connect to any host other than localhost.')
+        self.parser.add_option('--max-mirrors',
+            dest='max_mirrors', default=None, action='store', type="int",
+            help='Only probe N mirrors.')
 
     def main(self):
         if self.options.content_type == 'archive':
@@ -94,7 +97,8 @@ class DistroMirrorProber(LaunchpadCronScript):
         self.txn.begin()
 
         results = mirror_set.getMirrorsToProbe(
-            content_type, ignore_last_probe=self.options.force)
+            content_type, ignore_last_probe=self.options.force,
+            limit=self.options.max_mirrors)
         mirror_ids = [mirror.id for mirror in results]
         unchecked_keys = []
         logfiles = {}

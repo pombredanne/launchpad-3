@@ -39,23 +39,22 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus,
-    SpecificationFilter, SpecificationDefinitionStatus,
+    BugTaskImportance, SpecificationFilter, SpecificationDefinitionStatus,
     SpecificationImplementationStatus, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, BugTaskSearchParams, EmailAddressStatus, IBugTaskSet,
-    ICalendarOwner, IDistribution, IDistributionSet, IEmailAddress,
-    IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo, IHasMugshot, IIrcID,
-    IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
-    ILaunchpadStatisticSet, ILoginTokenSet, IPasswordEncryptor, IPerson,
-    IPersonSet, IPillarNameSet, IProduct, ISignedCodeOfConductSet,
-    ISourcePackageNameSet, ISSHKey, ISSHKeySet, ITeam, ITranslationGroupSet,
-    IWikiName, IWikiNameSet, JoinNotAllowed, LoginTokenType,
-    PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants,
-    ShippingRequestStatus, SSHKeyType, TeamMembershipRenewalPolicy,
-    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
-    UNRESOLVED_BUGTASK_STATUSES)
+    AccountStatus, BugTaskSearchParams, BugTaskStatus, EmailAddressStatus,
+    IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
+    IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo,
+    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
+    ILaunchpadCelebrities, ILaunchpadStatisticSet, ILoginTokenSet,
+    INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
+    IPillarNameSet, IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet,
+    ISSHKey, ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
+    JoinNotAllowed, LoginTokenType, PersonCreationRationale,
+    QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants, ShippingRequestStatus,
+    SSHKeyType, TeamMembershipRenewalPolicy, TeamMembershipStatus,
+    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar
@@ -81,6 +80,8 @@ from canonical.launchpad.database.specificationfeedback import (
     SpecificationFeedback)
 from canonical.launchpad.database.specificationsubscription import (
     SpecificationSubscription)
+from canonical.launchpad.database.translationimportqueue import (
+    HasTranslationImportsMixin)
 from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamMembershipSet, TeamParticipation)
 from canonical.launchpad.database.question import QuestionPersonSearch
@@ -97,7 +98,7 @@ class ValidPersonOrTeamCache(SQLBase):
     # Look Ma, no columns! (apart from id)
 
 
-class Person(SQLBase, HasSpecificationsMixin):
+class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     """A Person."""
 
     implements(IPerson, ICalendarOwner, IHasIcon, IHasLogo, IHasMugshot)
@@ -177,8 +178,8 @@ class Person(SQLBase, HasSpecificationsMixin):
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
         orderBy='id')
-    # XXX: matsubara 2006-03-06 bug=33935: 
-    # Is this really needed? There's no attribute 'claimant' in the Bounty 
+    # XXX: matsubara 2006-03-06 bug=33935:
+    # Is this really needed? There's no attribute 'claimant' in the Bounty
     # database class or interface, but the column exists in the database.
     claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
         orderBy='id')
@@ -485,6 +486,16 @@ class Person(SQLBase, HasSpecificationsMixin):
                   WHERE owner = %(personID)s
             )""" % sqlvalues(personID=self.id),
             clauseTables=['Question'], distinct=True))
+
+    @property
+    def translatable_languages(self):
+        """See `IPerson`."""
+        return Language.select("""
+            Language.id = PersonLanguage.language AND
+            PersonLanguage.person = %s AND
+            Language.code <> 'en' AND
+            Language.visible""" % quote(self),
+            clauseTables=['PersonLanguage'], orderBy='englishname')
 
     def getDirectAnswerQuestionTargets(self):
         """See `IPerson`."""
@@ -813,7 +824,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             SELECT name
             FROM project, teamparticipation
             WHERE teamparticipation.person = %(person)s
-                AND (driver = teamparticipation.team 
+                AND (driver = teamparticipation.team
                      OR owner = teamparticipation.team)
 
             UNION
@@ -936,9 +947,11 @@ class Person(SQLBase, HasSpecificationsMixin):
                     sourcepackagename=None):
         """See `IPerson`."""
         # Teams don't get Karma. Inactive accounts don't get Karma.
+        # The system user and janitor, does not get karma.
         # No warning, as we don't want to place the burden on callsites
         # to check this.
-        if not self.is_valid_person:
+        if (not self.is_valid_person
+            or self.id == getUtility(ILaunchpadCelebrities).janitor.id):
             return None
 
         if product is not None:
@@ -1340,7 +1353,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             - Removing the user from all teams he's a member of;
             - Changing all his email addresses' status to NEW;
             - Revoking Code of Conduct signatures of that user;
-            - Reassigning bugs/specs assigned to him; 
+            - Reassigning bugs/specs assigned to him;
             - Changing the ownership of products/projects/teams owned by him.
         """
         assert self.is_valid_person, (
@@ -1538,6 +1551,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
+        assert not self.isTeam(), "This method must not be used for teams."
         if not IEmailAddress.providedBy(email):
             raise TypeError, (
                 "Any person's email address must provide the IEmailAddress "
@@ -1556,25 +1570,19 @@ class Person(SQLBase, HasSpecificationsMixin):
             # This branch will be executed only in the first time a person
             # uses Launchpad. Either when creating a new account or when
             # resetting the password of an automatically created one.
-            self.setPreferredEmail(email)
+            self._setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
 
+    def setContactAddress(self, email):
+        """See `IPerson`."""
+        assert self.isTeam(), "This method must be used only for teams."
+        self._setPreferredEmail(email)
+
     def setPreferredEmail(self, email):
         """See `IPerson`."""
-        if not IEmailAddress.providedBy(email):
-            raise TypeError, (
-                "Any person's email address must provide the IEmailAddress "
-                "interface. %s doesn't." % email)
-        assert email.person.id == self.id
-        preferredemail = self.preferredemail
-        if preferredemail is not None:
-            preferredemail.status = EmailAddressStatus.VALIDATED
-            # We need to flush updates, because we don't know what order
-            # SQLObject will issue the changes and we can't set the new
-            # address to PREFERRED until the old one has been set to VALIDATED
-            preferredemail.syncUpdate()
-        else:
+        assert not self.isTeam(), "This method must not be used for teams."
+        if self.preferredemail is None:
             # This is the first time we're confirming this person's email
             # address, so we now assume this person has a Launchpad account.
             # XXX: This is a hack! In the future we won't have this
@@ -1582,6 +1590,30 @@ class Person(SQLBase, HasSpecificationsMixin):
             # will do for now. -- Guilherme Salgado, 2007-07-03
             self.account_status = AccountStatus.ACTIVE
             self.account_status_comment = None
+        self._setPreferredEmail(email)
+
+    def _setPreferredEmail(self, email):
+        """Set this person's preferred email to the given email address.
+
+        If the person already has an email address, then its status is
+        changed to VALIDATED and the given one is made its preferred one.
+
+        The given email address must implement IEmailAddress and be owned by
+        this person.
+        """
+        if not IEmailAddress.providedBy(email):
+            raise TypeError, (
+                "Any person's email address must provide the IEmailAddress "
+                "interface. %s doesn't." % email)
+        assert email.person.id == self.id
+
+        if self.preferredemail is not None:
+            self.preferredemail.status = EmailAddressStatus.VALIDATED
+            # We need to flush updates, because we don't know what order
+            # SQLObject will issue the changes and we can't set the new
+            # address to PREFERRED until the old one has been set to VALIDATED
+            self.preferredemail.syncUpdate()
+
         # Get the non-proxied EmailAddress object, so we can call
         # syncUpdate() on it.
         email = EmailAddress.get(email.id)
@@ -1830,7 +1862,7 @@ class PersonSet:
 
     def getByOpenIdIdentifier(self, openid_identifier):
         """Returns a Person with the given openid_identifier, or None.
-       
+
         None is returned if the person is not enabled for OpenID usage
         (see Person.is_openid_enabled).
         """
@@ -1885,25 +1917,34 @@ class PersonSet:
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
+        base_query = ("Person.account_status not in (%s)"
+                      % ','.join(sqlvalues(*INACTIVE_ACCOUNT_STATUSES)))
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between two queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
-        email_query = """
-            EmailAddress.person = Person.id AND
-            lower(EmailAddress.email) LIKE %s || '%%'
+        email_query = base_query + """
+            AND EmailAddress.person = Person.id
+            AND lower(EmailAddress.email) LIKE %s || '%%'
             """ % quote_like(text)
         results = Person.select(email_query, clauseTables=['EmailAddress'])
         name_query = "fti @@ ftq(%s) AND merged is NULL" % quote(text)
+        name_query += " AND " + base_query
         return results.union(Person.select(name_query), orderBy=orderBy)
 
-    def findPerson(self, text="", orderBy=None):
+    def findPerson(
+            self, text="", orderBy=None, exclude_inactive_accounts=True):
         """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
-        base_query = (
-            'Person.teamowner IS NULL AND Person.merged IS NULL '
-            'AND EmailAddress.person = Person.id')
+        base_query = """
+            Person.teamowner IS NULL
+            AND Person.merged IS NULL
+            AND EmailAddress.person = Person.id
+            """
+        if exclude_inactive_accounts:
+            base_query += (" AND Person.account_status not in (%s)"
+                           % ','.join(sqlvalues(*INACTIVE_ACCOUNT_STATUSES)))
         clauseTables = ['EmailAddress']
         if text:
             # We use a UNION here because this makes things *a lot* faster
@@ -2094,7 +2135,7 @@ class PersonSet:
         # Update GPGKey. It won't conflict, but our sanity checks don't
         # know that
         cur.execute(
-            'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d' 
+            'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
             % vars())
         skip.append(('gpgkey','owner'))
 

@@ -1,3 +1,7 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  omit-tag="">
 <metal:header define-macro="batched-table">
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
@@ -261,7 +265,7 @@
                                    type="checkbox"
                                    tal:attributes="value widget_value/value;
                                                    checked widget_value/checked;
-                                                   id widget_id">
+                                                   id widget_id"/>
                             <label tal:content="widget_value/title"
                                    tal:attributes="for widget_id">
                               Unconfirmed
@@ -280,7 +284,7 @@
                                 type="checkbox"
                                 tal:attributes="value widget_value/value;
                                                 checked widget_value/checked;
-                                                id widget_id">
+                                                id widget_id"/>
                             <label tal:content="widget_value/title"
                                 tal:attributes="for widget_id">Critical</label>
 
@@ -310,14 +314,14 @@
                         name="assignee_option"
                         value="any"
                         id="any"
-                        checked>
+                        checked="checked" />
                       <label for="any">Doesn&#8217;t matter</label><br />
 
                       <input
                           type="radio"
                           name="assignee_option"
                           value="none"
-                          id="none">
+                          id="none" />
                         <label for="none"> Nobody</label><br />
                         <div class="field"
                           tal:define="error
@@ -327,7 +331,8 @@
                               <input
                                   type="radio"
                                   name="assignee_option"
-                                  value="choose">
+                                  id="assignee_option"
+                                  value="choose" />
                               <span
                                   tal:content="structure view/widgets/assignee"
                               />
@@ -343,79 +348,112 @@
                   </tr>
                 </table>
               </td>
-              <td width="40%" tal:condition="view/shouldShowReporterWidget">
+              <td width="40%">
                 <table>
-                  <tr>
-                    <td>
-                        <label for="field.bug_reporter">Reporter:</label>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="white-space: nowrap">
-                      <div class="field"
-                          tal:define="error
-                          python:view.getWidgetError('bug_reporter')">
-                        <div tal:attributes="class python:error and 'error' or None">
-                        <span tal:content="structure view/widgets/bug_reporter"
-                        />
-                        <div tal:condition="error"
-                             class="message"
-                             tal:content="error">An error on
-                             owner widget
+
+                  <tal:render-if condition="view/shouldShowReporterWidget">
+                    <tr>
+                      <td>
+                          <label for="field.bug_reporter">Reporter:</label>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="white-space: nowrap">
+                        <div class="field"
+                             tal:define="error
+                             python:view.getWidgetError('bug_reporter')">
+                          <div tal:attributes=
+                               "class python:error and 'error' or None">
+                            <span tal:content="structure
+                                               view/widgets/bug_reporter"/>
+                            <div tal:condition="error"
+                                 class="message"
+                                 tal:content="error">An error on owner widget
+                            </div>
+                          </div>
                         </div>
+                      </td>
+                    </tr>
+                  </tal:render-if>
+
+                  <tal:render-if condition="view/shouldShowContactWidget">
+                    <tr>
+                      <td>
+                          <label for="field.bug_contact">Bug contact:</label>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="white-space: nowrap">
+                        <div class="field"
+                             tal:define="error
+                             python:view.getWidgetError('bug_contact')">
+                          <div tal:attributes=
+                               "class python:error and 'error' or None">
+                            <span tal:content="structure
+                                               view/widgets/bug_contact"/>
+                            <div tal:condition="error"
+                                 class="message"
+                                 tal:content="error">An error on owner widget
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                        <label
-                            tal:attributes="for view/widgets/bug_contact/name">
-                          Bug contact:
-                        </label>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="white-space: nowrap"
-                        tal:define="error
-                        python:view.getWidgetError('bug_contact')">
-                      <div class="field">
-                        <div tal:attributes="
-                            class python: error and 'error' or None">
-                        <tal:widget
-                            tal:content="structure view/widgets/bug_contact" />
-                        <div tal:condition="error"
-                             class="message"
-                             tal:content="error">An error on
-                             Bug contact widget </div>
+                      </td>
+                    </tr>
+                  </tal:render-if>
+
+                  <tal:render-if condition="view/shouldShowCommenterWidget">
+                    <tr>
+                      <td>
+                          <label for="field.bug_commenter">
+                            Bug commenter:
+                          </label>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="white-space: nowrap">
+                        <div class="field"
+                             tal:define="error
+                             python:view.getWidgetError('bug_commenter')">
+                          <div tal:attributes=
+                               "class python:error and 'error' or None">
+                            <span tal:content="structure
+                                               view/widgets/bug_commenter"/>
+                            <div tal:condition="error"
+                                 class="message"
+                                 tal:content="error">An error on owner widget
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                        <label
-                            tal:attributes="for view/widgets/bug_commenter/name">
-                          Bug commenter:
-                        </label>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="white-space: nowrap"
-                        tal:define="error
-                        python:view.getWidgetError('bug_commenter')">
-                      <div class="field">
-                        <div tal:attributes="
-                            class python: error and 'error' or None">
-                        <tal:widget tal:content="structure view/widgets/bug_commenter" />
-                        <div tal:condition="error"
-                             class="message"
-                             tal:content="error">An error on
-                             Bug commenter widget </div>
+                      </td>
+                    </tr>
+                  </tal:render-if>
+
+                  <tal:render-if condition="view/shouldShowSubscriberWidget">
+                    <tr>
+                      <td>
+                          <label for="field.subscriber">
+                            Bug subscriber:
+                          </label>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="white-space: nowrap">
+                        <div class="field"
+                             tal:define="error
+                             python:view.getWidgetError('subscriber')">
+                          <div tal:attributes=
+                               "class python:error and 'error' or None">
+                            <span tal:content="structure
+                                               view/widgets/subscriber"/>
+                            <div tal:condition="error"
+                                 class="message"
+                                 tal:content="error">An error on owner widget
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                    </tr>
+                  </tal:render-if>
 
                 </table>
               </td>
@@ -442,7 +480,7 @@
                              type="checkbox"
                              tal:attributes="value widget_value/value;
                                              checked widget_value/checked;
-                                             id widget_id">
+                                             id widget_id" />
                       <label tal:content="widget_value/title"
                              tal:attributes="for widget_id">
                         dapper
@@ -548,3 +586,4 @@
     <div><input type="submit" name="search" value="Search" /></div>
   </form>
 </metal:advanced_search_form>
+</tal:root>
