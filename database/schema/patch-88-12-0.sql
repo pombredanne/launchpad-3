@@ -21,7 +21,7 @@ ALTER TABLE SecureBinaryPackagePublishingHistory
     FOREIGN KEY (removed_by) REFERENCES person(id);
 ALTER TABLE SecureBinaryPackagePublishingHistory
     ADD COLUMN removal_comment text;
-CREATE INDEX securebinarypackagepublishinghistory__removed_by__idx 
+CREATE INDEX securebinarypackagepublishinghistory__removed_by__idx
     ON SecureBinaryPackagePublishingHistory(removed_by)
     WHERE removed_by IS NOT NULL;
 
@@ -137,7 +137,7 @@ CREATE VIEW publishedpackage AS
 
 -- Aggregating 'removed_by' & 'removal_comment' to 1st stage publishing views.
 CREATE VIEW sourcepackagepublishinghistory AS
-    SELECT 
+    SELECT
       securesourcepackagepublishinghistory.id,
       securesourcepackagepublishinghistory.sourcepackagerelease,
       securesourcepackagepublishinghistory.status,
@@ -161,7 +161,7 @@ CREATE VIEW sourcepackagepublishinghistory AS
     WHERE securesourcepackagepublishinghistory.embargo = false;
 
 CREATE VIEW binarypackagepublishinghistory AS
-    SELECT 
+    SELECT
       securebinarypackagepublishinghistory.id,
       securebinarypackagepublishinghistory.binarypackagerelease,
       securebinarypackagepublishinghistory.status,
@@ -201,4 +201,4 @@ UPDATE SecureBinaryPackagePublishingHistory
     WHERE status IN (6, 7);
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 54, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (88, 12, 0);

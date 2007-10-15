@@ -686,8 +686,12 @@ class TestPublisher(TestNativePublishingBase):
              '114 main/source/Release'))
         # We can't probe checksums of compressed files because they contain
         # timestamps, their checksum varies with time.
+        print
+        for line in release_contents:
+            print line
+
         gz_sources_md5_line = release_contents[md5_header_index + 6]
-        self.assertTrue('282 main/source/Sources.gz' in gz_sources_md5_line)
+        self.assertTrue('main/source/Sources.gz' in gz_sources_md5_line)
 
         sha1_header = 'SHA1:'
         self.assertTrue(sha1_header in release_contents)
@@ -705,7 +709,7 @@ class TestPublisher(TestNativePublishingBase):
              '114 main/source/Release'))
         # See above.
         gz_sources_sha1_line = release_contents[sha1_header_index + 6]
-        self.assertTrue('282 main/source/Sources.gz' in gz_sources_sha1_line)
+        self.assertTrue('main/source/Sources.gz' in gz_sources_sha1_line)
 
         sha256_header = 'SHA256:'
         self.assertTrue(sha256_header in release_contents)
@@ -723,7 +727,7 @@ class TestPublisher(TestNativePublishingBase):
              '8d106a6338              114 main/source/Release'))
         # See above.
         gz_sources_sha256_line = release_contents[sha256_header_index + 6]
-        self.assertTrue('282 main/source/Sources.gz' in gz_sources_sha256_line)
+        self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
             
 
     def testReleaseFileForPartner(self):
